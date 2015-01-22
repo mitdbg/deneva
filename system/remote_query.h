@@ -26,6 +26,7 @@ public:
 	r_query * get_next_query(uint64_t thd_id); 
 	void add_query(uint64_t thd_id, r_query * query); 
 	void add_query(const char * buf); 
+	r_query * new_query(RemReqType type, uint64_t thd_id, uint64_t part_id, uint64_t txn_id, uint64_t ts, uint64_t address = 0, const char * data = NULL); 
 
 };
 #endif

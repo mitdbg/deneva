@@ -24,3 +24,16 @@ void Remote_query_queue::add_query(const char * buf) {
 	// Assumption: thd_id == part_id
 	add_query(rq->part_id,rq)
 }
+
+r_query * Remote_query_queue::new_query(RemReqType type, uint64_t thd_id, uint64_t part_id, uint64_t txn_id, uint64_t ts, uint64_t address = 0, const char * data = NULL) {
+	r_query * rq; 
+	rq->rtype = type;
+	rq->return_id = thd_id;
+	rq->part_id = part_id;
+	rq->txn_id = txn_id;
+	rq->ts = ts;
+	rq->address = address;
+	rq->data = data;
+
+	return rq;
+}
