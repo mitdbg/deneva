@@ -20,7 +20,6 @@ OptCC occ_man;
 VLLMan vll_man;
 #endif 
 Transport tport_man;
-Transport tport_man2;
 
 bool volatile warmup_finish = false;
 bool volatile enable_thread_mem_pool = false;
