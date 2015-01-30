@@ -3,6 +3,7 @@
 
 void print_usage() {
 	printf("[usage]:\n");
+	printf("\t-nidINT       ; NODE_ID\n");
 	printf("\t-pINT       ; PART_CNT\n");
 	printf("\t-vINT       ; VIRTUAL_PART_CNT\n");
 	printf("\t-tINT       ; THREAD_CNT\n");
@@ -66,7 +67,10 @@ void parser(int argc, char * argv[]) {
 		else if (argv[i][1] == 'd')
 			g_prt_lat_distr = atoi( &argv[i][2] );
 		else if (argv[i][1] == 'p')
-			g_part_cnt = atoi( &argv[i][2] );
+			if (argv[i][2] == 'i' && argv[i][3] == 'd')
+				g_node_id = atoi( &argv[i][4] );
+			else
+				g_part_cnt = atoi( &argv[i][2] );
 		else if (argv[i][1] == 'v')
 			g_virtual_part_cnt = atoi( &argv[i][2] );
 		else if (argv[i][1] == 't')

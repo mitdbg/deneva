@@ -7,6 +7,7 @@
 #include "plock.h"
 #include "occ.h"
 #include "vll.h"
+#include "transport.h"
 
 mem_alloc mem_allocator;
 Stats stats;
@@ -18,6 +19,8 @@ OptCC occ_man;
 #if CC_ALG == VLL
 VLLMan vll_man;
 #endif 
+Transport tport_man;
+Transport tport_man2;
 
 bool volatile warmup_finish = false;
 bool volatile enable_thread_mem_pool = false;
@@ -48,6 +51,7 @@ double g_read_perc = READ_PERC;
 double g_write_perc = WRITE_PERC;
 double g_zipf_theta = ZIPF_THETA;
 bool g_prt_lat_distr = PRT_LAT_DISTR;
+UInt32 g_node_id = 0;
 UInt32 g_part_cnt = PART_CNT;
 UInt32 g_virtual_part_cnt = VIRTUAL_PART_CNT;
 UInt32 g_thread_cnt = THREAD_CNT;

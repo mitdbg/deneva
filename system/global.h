@@ -39,6 +39,7 @@ class Query_queue;
 class Plock;
 class OptCC;
 class VLLMan;
+class Transport;
 
 typedef uint32_t UInt32;
 typedef int32_t SInt32;
@@ -60,6 +61,8 @@ extern OptCC occ_man;
 #if CC_ALG == VLL
 extern VLLMan vll_man;
 #endif
+extern Transport tport_man;
+extern Transport tport_man2;
 
 extern bool volatile warmup_finish;
 extern bool volatile enable_thread_mem_pool;
@@ -74,6 +77,7 @@ extern carbon_barrier_t enable_barrier;
 extern bool g_part_alloc;
 extern bool g_mem_pad;
 extern bool g_prt_lat_distr;
+extern UInt32 g_node_id;
 extern UInt32 g_part_cnt;
 extern UInt32 g_virtual_part_cnt;
 extern UInt32 g_thread_cnt;

@@ -3,12 +3,13 @@ CFLAGS=-Wall -g -std=c++0x
 
 .SUFFIXES: .o .cpp .h
 
-SRC_DIRS = ./ ./benchmarks/ ./concurrency_control/ ./storage/ ./system/
-DEPS = -I. -I./benchmarks -I./concurrency_control -I./storage -I./system
+SRC_DIRS = ./ ./benchmarks/ ./concurrency_control/ ./storage/ ./transport/ ./system/
+DEPS = -I. -I./benchmarks -I./concurrency_control -I./storage -I./transport -I./system
 
-CFLAGS += $(DEPS) -D NOGRAPHITE=1 -Werror
-LDFLAGS = -Wall -L. -pthread -g -lrt -std=c++0x 
+CFLAGS += $(DEPS) -D NOGRAPHITE=1 -Werror -Wno-sizeof-pointer-memaccess
+LDFLAGS = -Wall -L. -L./nanomsg-0.5-beta -pthread -g -lrt -std=c++0x 
 LDFLAGS += $(CFLAGS)
+LIBS = -lnanomsg
 
 CPPS = $(foreach dir,$(SRC_DIRS),$(wildcard $(dir)*.cpp)) 
 
@@ -27,13 +28,15 @@ deps:$(CPPS)
 -include obj/deps
 
 rundb : $(OBJS)
-	$(CC) -o $@ $^ $(LDFLAGS)
+	$(CC) -o $@ $^ $(LDFLAGS) $(LIBS)
 #./deps/%.d: %.cpp
 #	$(CC) -MM -MT $*.o -MF $@ $(CFLAGS) $<
 ./obj/%.o: benchmarks/%.cpp
 	$(CC) -c $(CFLAGS) $(INCLUDE) -o $@ $<
 ./obj/%.o: storage/%.cpp
 	$(CC) -c $(CFLAGS) $(INCLUDE) -o $@ $<
+./obj/%.o: transport/%.cpp
+	$(CC) -c $(CFLAGS) $(INCLUDE) $(LIBS) -o $@ $<
 ./obj/%.o: system/%.cpp
 	$(CC) -c $(CFLAGS) $(INCLUDE) -o $@ $<
 ./obj/%.o: concurrency_control/%.cpp
