@@ -6,6 +6,11 @@
 /***********************************************/
 #define THREAD_CNT					4
 #define PART_CNT					1 //CORE_CNT
+
+#define NODE_CNT	2
+#define TPORT_TYPE	"ipc" //inproc, ipc, tpc
+#define TPORT_PORT	"tmp.ipc" 
+#define MAX_TPORT_NAME 128
 // each transaction only accesses only 1 virtual partition. But the lock/ts manager and index are not aware of such partitioning. VIRTUAL_PART_CNT describes the request distribution and is only used to generate queries. For HSTORE, VIRTUAL_PART_CNT should be the same as PART_CNT.
 #define VIRTUAL_PART_CNT			1
 #define PAGE_SIZE					4096 

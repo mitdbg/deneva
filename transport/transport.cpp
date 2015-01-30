@@ -11,12 +11,14 @@ void Transport::init(uint64_t node_id) {
 //	s.socket(AF_SP, NN_BUS);
 	// Format: transport://addr
 	int rc;
+	char socket_name[MAX_TPORT_NAME];
+	strcpy(socket_name,TPORT_TYPE);
+	strcat(socket_name,"://");
+	strcat(socket_name,TPORT_PORT);
 	if(node_id == 0)
-		//rc = s.bind("inproc://a");
-		rc = s.bind("ipc://a.ipc");
+		rc = s.bind(socket_name);
 	else
-		//rc = s.connect("inproc://a");
-		rc = s.connect("ipc://a.ipc");
+		rc = s.connect(socket_name);
 	if(rc < 0) {
 		printf("Bind Error: %d\n",errno);
 	}
