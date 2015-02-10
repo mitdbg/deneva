@@ -3,8 +3,17 @@
 #include "transport.h"
 #include "nn.hpp"
 #include "mem_alloc.h"
+#include "remote_query.h"
 
+/*
+	 HEADER FORMAT:
+	 32b destination ID
+	 32b source ID
+	 32b message type
+	 32b transaction ID
+	 N?	data
 
+	 */
 void Transport::init(uint64_t node_id) {
 	printf("Init %ld\n",node_id);
 	_node_id = node_id;
@@ -62,45 +71,40 @@ void Transport::send_msg(uint64_t dest_id, void ** data, int * sizes, int num) {
 
 	// 2: Create message header
 	// TODO: Separate header for each packet?
-	encode_header(&sbuf,dest_id,size,0);
+	encode_header(&sbuf,dest_id);
 
 	printf("Sending %ld -> %ld: %d pkts, %ld bytes\n",get_node_id(),dest_id,packets,size);
 	// 3: Send message packets (may be multiple)
-	// Send data in packets
+	// TOOD: Send data in packets
+	/*
 	for(int p = 0; p < packets; p++) {
 		send_msg(&sbuf[p*MSG_SIZE]);
 	}
+	*/
+	send_msg(sbuf);
 
 }
 
 // Listens to socket for messages from other nodes
-void Transport::recv_msg() {
+uint64_t Transport::recv_msg(r_query * query) {
 	printf("recv_msg\n");
-	int rc;
-	int c = 0;
-	char * buf = (char *) mem_allocator.alloc(sizeof(char) * MSG_SIZE,get_node_id());
-	while(1) {
-		rc = s.recv(buf,MSG_SIZE,0);
-		if(rc < 0) {
-			printf("Recv Error %d\n",errno);
-			continue;
-		}
-		printf("RECV: %s\n",buf);
-		c++;
-		if(c >= 4)
-			return;
-		// Discard any messages not intended for this node
-		/*
-		decode_msg();
-		if(msg_recv_id != get_node_id())
-			continue;
-		if(msg_size > MSG_SIZE) {
-			printf("Message Size: %d\n",msg_size);
-		}
-		// Queue request for thread to execute
-		add_query(msg_send_id,&buf[HEADER_SIZE]);
-		*/
+	int bytes;
+	//char * buf = (char *) mem_allocator.alloc(sizeof(char) * MSG_SIZE,get_node_id());
+	char * buf = NULL;
+	bytes = s.recv(buf,MSG_SIZE, 0 | (int)NN_MSG);
+	if(bytes < 0) {
+		printf("Recv Error %d\n",errno);
 	}
+	// Discard any messages not intended for this node
+	if(bytes <= 0 || GET_RCV_NODE_ID(buf) != get_node_id()) {
+		nn::freemsg((void*)buf);	
+		return 0;
+	}
+	// Queue request for thread to execute
+	// Unpack request
+	rem_qry_man.unpack(query,buf);
+	nn::freemsg((void*)buf);	
+	return 1;
 
 }
 
@@ -112,11 +116,11 @@ void Transport::decode_msg_hdr() {
 }
 */
 
-void Transport::encode_header(char ** sbuf, uint64_t dest_id, uint64_t size, uint64_t n) {
+void Transport::encode_header(char ** sbuf, uint64_t dest_id) {
 	((uint32_t*) *sbuf) [0] = dest_id;
 	((uint32_t*) *sbuf) [1] = get_node_id();
-	((uint32_t*) *sbuf) [2] = size;
-	((uint32_t*) *sbuf) [2] = n;
+	//((uint32_t*) *sbuf) [2] = size;
+	//((uint32_t*) *sbuf) [2] = n;
 	//memcpy(&sbuf[HEADER_SIZE],data,size);
 
 }

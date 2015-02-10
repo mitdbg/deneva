@@ -3,6 +3,7 @@
 #include "plock.h"
 #include "mem_alloc.h"
 #include "txn.h"
+#include "remote_query.h"
 
 /************************************************/
 // per-partition Manager
@@ -14,6 +15,27 @@ void PartMan::init() {
 	waiters = (txn_man **)
 		mem_allocator.alloc(sizeof(txn_man *) * g_thread_cnt, part_id);
 	pthread_mutex_init( &latch, NULL );
+}
+
+void PartMan::unpack(r_query * query, char * data) {
+	uint64_t ptr = HEADER_SIZE;
+	memcpy(&query->part_cnt,&data[ptr],sizeof(query->part_cnt));
+	ptr += sizeof(query->part_cnt);
+	query->parts = new uint64_t[query->part_cnt];
+	for (uint64_t i = 0; i < query->part_cnt; i++) {
+		memcpy(&query->parts[i],&data[ptr],sizeof(query->parts[i]));
+		ptr += sizeof(query->parts[i]);
+	}
+		
+	switch(query->rtype) {
+		case RLK:
+			break;
+		default:
+			break;
+	}
+}
+
+void PartMan::pack(void ** data, void * size) {
 }
 
 RC PartMan::lock(txn_man * txn) {

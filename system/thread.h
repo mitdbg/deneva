@@ -25,6 +25,7 @@ public:
 	// to run with pthread.
 	// conversion is done within the function.
 	RC 			run();
+	RC 			run_remote();
 private:
 	uint64_t 	_host_cid;
 	uint64_t 	_cur_cid;

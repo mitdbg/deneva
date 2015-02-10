@@ -11,6 +11,8 @@
 #include "tpcc_query.h"
 #include "mem_alloc.h"
 #include "test.h"
+#include "transport.h"
+#include "remote_query.h"
 
 void thread_t::init(uint64_t thd_id, workload * workload) {
 	_thd_id = thd_id;
@@ -22,6 +24,79 @@ uint64_t thread_t::get_host_cid() {	return _host_cid; }
 void thread_t::set_host_cid(uint64_t cid) { _host_cid = cid; }
 uint64_t thread_t::get_cur_cid() { return _cur_cid; }
 void thread_t::set_cur_cid(uint64_t cid) {_cur_cid = cid; }
+
+RC thread_t::run_remote() {
+#if !NOGRAPHITE
+	_thd_id = CarbonGetTileId();
+#endif
+	if (warmup_finish) {
+		mem_allocator.register_thread(_thd_id);
+	}
+	pthread_barrier_wait( &warmup_bar );
+	stats.init(get_thd_id());
+	pthread_barrier_wait( &warmup_bar );
+	
+	myrand rdm;
+	rdm.init(get_thd_id());
+	RC rc = RCOK;
+	txn_man * m_txn;
+	rc = _wl->get_txn_man(m_txn, this);
+	assert (rc == RCOK);
+	glob_manager.set_txn_man(m_txn);
+
+#if !NOGRAPHITE
+	if (warmup_finish) {
+   		CarbonEnableModelsBarrier(&enable_barrier);
+	}
+#endif
+	
+
+	UInt64 txn_cnt = 0;
+
+	uint64_t len = 0;
+
+	r_query * m_query = NULL;
+
+#if WORKLOAD == TPCC
+	m_query = (tpcc_r_query *) mem_allocator.alloc(sizeof(tpcc_r_query), get_thd_id());
+#endif
+
+	while (true) {
+
+		len = tport_man.recv_msg(m_query);
+
+		if( len > 0 ) {
+
+#if WORKLOAD == TPCC
+			m_txn->run_rem_txn(m_query);
+#endif
+		}
+
+
+		if (!warmup_finish && txn_cnt >= WARMUP / g_thread_cnt) 
+		{
+			stats.clear( get_thd_id() );
+#if !NOGRAPHITE
+   			CarbonDisableModelsBarrier(&enable_barrier);
+#endif
+			return FINISH;
+		}
+
+		if (warmup_finish && txn_cnt >= MAX_TXN_PER_PART) {
+			assert(txn_cnt == MAX_TXN_PER_PART);
+	        if( !ATOM_CAS(_wl->sim_done, false, true) )
+				assert( _wl->sim_done);
+	    }
+	    if (_wl->sim_done) {
+#if !NOGRAPHITE
+   			CarbonDisableModelsBarrier(&enable_barrier);
+#endif
+   		    return FINISH;
+   		}
+	}
+	assert(false);
+}
+
 
 RC thread_t::run() {
 #if !NOGRAPHITE

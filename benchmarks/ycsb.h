@@ -34,6 +34,7 @@ class ycsb_txn_man : public txn_man
 public:
 	void init(thread_t * h_thd, workload * h_wl, uint64_t part_id); 
 	RC run_txn(base_query * query);
+	RC run_rem_txn(r_query * query) {assert(false);};
 private:
 	uint64_t row_cnt;
 	ycsb_wl * _wl;

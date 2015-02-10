@@ -4,6 +4,7 @@
 #include "global.h"
 #include "helper.h"
 #include "query.h"
+#include "remote_query.h"
 
 class workload;
 
@@ -12,6 +13,34 @@ struct Item_no {
 	uint64_t ol_i_id;
 	uint64_t ol_supply_w_id;
 	uint64_t ol_quantity;
+};
+
+enum TPCCRemTxnType {TPCC_PAYMENT0,TPCC_PAYMENT1,TPCC_NEWORDER0,TPCC_NEWORDER1,TPCC_NEWORDER2};
+
+class tpcc_r_query : public r_query {
+public:
+	void unpack(r_query * query, char * data);
+	void pack(r_query * query, void ** data, int * sizes, int * num);
+	uint64_t rtn_node_id;
+	TPCCRemTxnType type;
+	uint64_t w_id;
+	uint64_t d_id;
+	uint64_t c_id;
+	uint64_t d_w_id;
+	uint64_t c_w_id;
+	uint64_t c_d_id;
+	char c_last[LASTNAME_LEN];
+	double h_amount;
+	bool by_last_name;
+	bool remote;
+	uint64_t ol_cnt;
+	uint64_t o_entry_d;
+	uint64_t ol_i_id;
+	uint64_t ol_supply_w_id;
+	uint64_t ol_quantity;
+	uint64_t ol_number;
+	uint64_t o_id;
+
 };
 
 class tpcc_query : public base_query {

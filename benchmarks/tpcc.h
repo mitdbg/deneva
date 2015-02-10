@@ -3,6 +3,7 @@
 
 #include "wl.h"
 #include "txn.h"
+#include "remote_query.h"
 
 class table_t;
 class INDEX;
@@ -72,10 +73,18 @@ class tpcc_txn_man : public txn_man
 public:
 	void init(thread_t * h_thd, workload * h_wl, uint64_t part_id); 
 	RC run_txn(base_query * query);
+	RC run_rem_txn(r_query * query);
+	//void pack(r_query * query, void ** data, int * sizes, int * num);
+	//void unpack(r_query * query, char * data);
 private:
 	tpcc_wl * _wl;
 	RC run_payment(tpcc_query * m_query);
+	RC run_payment_0(uint64_t w_id, uint64_t d_id, uint64_t d_w_id, double h_amount);
+	RC run_payment_1(uint64_t w_id, uint64_t d_id,uint64_t c_id,uint64_t c_w_id, uint64_t c_d_id, char * c_last, double h_amount, bool by_last_name);
 	RC run_new_order(tpcc_query * m_query);
+	RC new_order_0(uint64_t w_id, uint64_t d_id, uint64_t c_id, bool remote, uint64_t  ol_cnt,uint64_t  o_entry_d, uint64_t * o_id);
+	RC new_order_1(uint64_t ol_i_id);
+	RC new_order_2(uint64_t w_id,uint64_t  d_id,bool remote, uint64_t ol_i_id, uint64_t ol_supply_w_id, uint64_t ol_quantity,uint64_t  ol_number,uint64_t  o_id);
 	RC run_order_status(tpcc_query * query);
 	RC run_delivery(tpcc_query * query);
 	RC run_stock_level(tpcc_query * query);

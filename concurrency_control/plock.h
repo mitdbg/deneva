@@ -3,6 +3,7 @@
 
 #include "global.h"
 #include "helper.h"
+#include "remote_query.h"
 
 class txn_man;
 
@@ -12,6 +13,8 @@ public:
 	void init();
 	RC lock(txn_man * txn);
 	void unlock(txn_man * txn);
+	void unpack(r_query * query, char * data);
+	void pack(void ** data, void * size);
 private:
 	pthread_mutex_t latch;
 	txn_man * owner;

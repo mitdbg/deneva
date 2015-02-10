@@ -8,6 +8,16 @@ class workload;
 class ycsb_query;
 class tpcc_query;
 
+/*
+class base_r_query {
+public:
+	uint64_t waiting_time;
+	uint64_t part_cnt;
+	uint64_t * parts;
+};
+*/
+
+
 class base_query {
 public:
 	virtual void init(uint64_t thd_id, workload * h_wl) = 0;
@@ -16,7 +26,7 @@ public:
 	uint64_t * part_to_access;
 };
 
-// All the querise for a particular thread.
+// All the queries for a particular thread.
 class Query_thd {
 public:
 	void init(workload * h_wl, int thread_id);

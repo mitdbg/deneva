@@ -8,6 +8,7 @@
 #include "occ.h"
 #include "vll.h"
 #include "transport.h"
+#include "remote_query.h"
 
 mem_alloc mem_allocator;
 Stats stats;
@@ -20,6 +21,7 @@ OptCC occ_man;
 VLLMan vll_man;
 #endif 
 Transport tport_man;
+Remote_query rem_qry_man;
 
 bool volatile warmup_finish = false;
 bool volatile enable_thread_mem_pool = false;

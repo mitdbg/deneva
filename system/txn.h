@@ -11,6 +11,7 @@ class row_t;
 class table_t;
 class base_query;
 class INDEX;
+class r_query;
 
 // each thread has a txn_man. 
 // a txn_man corresponds to a single transaction.
@@ -38,6 +39,7 @@ public:
 	uint64_t abort_cnt;
 
 	virtual RC 		run_txn(base_query * m_query) = 0;
+	virtual RC 		run_rem_txn(r_query * m_query) = 0;
 	uint64_t 		get_thd_id();
 	workload * 		get_wl();
 	void 			set_txn_id(txnid_t txn_id);

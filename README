@@ -32,7 +32,8 @@ DBMS BENCHMARK
 dbms benchmark has the following parameters in the config file. Parameters with a * sign should not be changed.
 
   CORE_CNT		: number of cores modeled in the system.
-  PART_CNT		: number of logical partitions in the system
+  NODE_CNT		: number of computation nodes modeled in the system
+  PART_CNT		: number of logical partitions in the system; Should equal CORE_CNT * NODE_CNT
   THREAD_CNT	: number of threads running at the same time
   PAGE_SIZE		: memory page size
   CL_SIZE		: cache line size

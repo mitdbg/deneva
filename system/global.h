@@ -40,6 +40,7 @@ class Plock;
 class OptCC;
 class VLLMan;
 class Transport;
+class Remote_query;
 
 typedef uint32_t UInt32;
 typedef int32_t SInt32;
@@ -62,6 +63,7 @@ extern OptCC occ_man;
 extern VLLMan vll_man;
 #endif
 extern Transport tport_man;
+extern Remote_query rem_qry_man;
 
 extern bool volatile warmup_finish;
 extern bool volatile enable_thread_mem_pool;
