@@ -150,16 +150,6 @@ itemid_t *
 txn_man::index_read(INDEX * index, idx_key_t key, int part_id) {
 	uint64_t starttime = get_sys_clock();
 
-	// FIXME: thd_id == part_id assumption
-	/*
-	if(part_id != get_thd_id()) {
-		// Remote Index Request
-		r_query rq = new_query();
-		send_msg(part_id,(char *)rq,sizeof(r_query));
-		wait_for_resp();
-	}
-	else {
-	*/
 		itemid_t * item;
 		index->index_read(key, item, part_id, get_thd_id());
 	//}

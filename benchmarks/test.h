@@ -26,7 +26,7 @@ public:
 	void init(thread_t * h_thd, workload * h_wl, uint64_t part_id); 
 	RC run_txn(int type, int access_num);
 	RC run_txn(base_query * m_query) { assert(false); };
-	RC run_rem_txn(r_query * m_query) {assert(false);};
+	RC run_rem_txn(base_query * m_query) {assert(false);};
 private:
 	RC testReadwrite(int access_num);
 	RC testConflict(int access_num);

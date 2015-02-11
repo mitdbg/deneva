@@ -121,17 +121,17 @@ RC tpcc_query::remote_qry(tpcc_query * query, TPCCRemTxnType type, int dest_id) 
 	// Blocks while waiting for response
 	// FIXME: Use tid as param
 	RC rc;
-	char * buf;
+	void * buf;
 	buf = rem_qry_man.send_remote_query(dest_id, data, sizes, num, 0);
 	unpack_rsp(query,buf,&rc);
 	return rc;
 }
 
-//void tpcc_r_query::pack(r_query * query, void ** data, int * sizes, int * num, RC rc) {
-void tpcc_r_query::remote_rsp(r_query * query, RC rc) {
-	tpcc_r_query * m_query = (tpcc_r_query *) query;
-	void ** data = NULL;
-	int * sizes = NULL;
+void tpcc_query::remote_rsp(base_query * query, RC rc) {
+	tpcc_query * m_query = (tpcc_query *) query;
+	int total = 4;
+	void ** data = new void *[total];
+	int * sizes = new int [total];
 	int num = 0;
 	RemReqType rtype = RQRY_RSP;
 
@@ -151,7 +151,8 @@ void tpcc_r_query::remote_rsp(r_query * query, RC rc) {
 	rem_qry_man.send_remote_rsp(m_query->return_id, data, sizes, num,0);
 }
 
-void tpcc_query::unpack_rsp(base_query * query, char * data, RC * rc) {
+void tpcc_query::unpack_rsp(base_query * query, void * d, RC * rc) {
+	char * data = (char *) d;
 	tpcc_query * m_query = (tpcc_query *) query;
 	uint64_t ptr = HEADER_SIZE;
 	memcpy(&m_query->type,&data[ptr],sizeof(m_query->type));
@@ -164,13 +165,13 @@ void tpcc_query::unpack_rsp(base_query * query, char * data, RC * rc) {
 			ptr += sizeof(m_query->o_id);
 			break;
 		default:
-			assert(false);
+			break;
 	}
 }
 
-void tpcc_r_query::unpack(r_query * query, char * data) {
-	tpcc_r_query * m_query = (tpcc_r_query *) query;
-	uint64_t ptr = HEADER_SIZE;
+void tpcc_query::unpack(base_query * query, char * data) {
+	tpcc_query * m_query = (tpcc_query *) query;
+	uint64_t ptr = HEADER_SIZE + sizeof(RemReqType);
 	memcpy(&m_query->type,&data[ptr],sizeof(m_query->type));
 	ptr += sizeof(m_query->type);
 	switch(m_query->type) {

@@ -17,7 +17,7 @@ void PartMan::init() {
 	pthread_mutex_init( &latch, NULL );
 }
 
-void PartMan::unpack(r_query * query, char * data) {
+void PartMan::unpack(base_query * query, char * data) {
 	uint64_t ptr = HEADER_SIZE;
 	memcpy(&query->part_cnt,&data[ptr],sizeof(query->part_cnt));
 	ptr += sizeof(query->part_cnt);

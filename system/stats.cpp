@@ -44,8 +44,8 @@ void Stats_tmp::clear() {
 void Stats::init() {
 	if (!STATS_ENABLE) 
 		return;
-	_stats = new Stats_thd * [g_thread_cnt];
-	tmp_stats = new Stats_tmp * [g_thread_cnt];
+	_stats = new Stats_thd * [g_thread_cnt +1];
+	tmp_stats = new Stats_tmp * [g_thread_cnt +1];
 	dl_detect_time = 0;
 	dl_wait_time = 0;
 	deadlock = 0;

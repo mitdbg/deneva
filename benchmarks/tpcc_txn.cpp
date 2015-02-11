@@ -17,8 +17,8 @@ void tpcc_txn_man::init(thread_t * h_thd, workload * h_wl, uint64_t thd_id) {
 	_wl = (tpcc_wl *) h_wl;
 }
 
-RC tpcc_txn_man::run_rem_txn(r_query * query) {
-	tpcc_r_query * m_query = (tpcc_r_query *) query;
+RC tpcc_txn_man::run_rem_txn(base_query * query) {
+	tpcc_query * m_query = (tpcc_query *) query;
 	uint64_t w_id = m_query->w_id;
   uint64_t d_id = m_query->d_id;
   uint64_t c_id = m_query->c_id;
@@ -164,12 +164,13 @@ RC tpcc_txn_man::run_new_order(tpcc_query * query) {
 			printf("run_new_order2 %ld:%ld -> %ld -- %ld\n",get_node_id(),get_thd_id(),part_id,GET_NODE_ID(part_id));
 			if(GET_NODE_ID(part_id) == get_node_id())
 				rc = new_order_2( w_id, d_id, remote, ol_i_id, ol_supply_w_id, ol_quantity,  ol_number, o_id); 
-			else
+			else {
 				query->ol_i_id = ol_i_id;
 				query->ol_supply_w_id = ol_supply_w_id;
 				query->ol_quantity = ol_quantity;
 				query->ol_number = ol_number;
 				rc = rem_qry_man.remote_qry(query,TPCC_NEWORDER2,GET_NODE_ID(part_id));
+			}
 			if(rc != RCOK)
 				return finish(rc);
 		//uint64_t i_price;

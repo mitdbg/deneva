@@ -53,13 +53,13 @@
 #define TPORT_PORT	"tmp.ipc" 
 #define MAX_TPORT_NAME 128
 #define MSG_SIZE 128 // in bytes
-#define HEADER_SIZE sizeof(uint32_t)*4 // in bits 
+#define HEADER_SIZE sizeof(uint32_t)*3 // in bits 
 
 /***********************************************/
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HSTORE, OCC, VLL
-#define CC_ALG 						DL_DETECT
+#define CC_ALG 					HSTORE	
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER					false

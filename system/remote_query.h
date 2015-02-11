@@ -7,11 +7,12 @@
 
 #define MAX_DATA_SIZE 100 
 class tpcc_query;
+class base_query;
 
-enum RemReqType {RLK, RULK, RQRY, RLK_RSP, RULK_RSP, RQRY_RSP};
 
 // different for different CC algos?
 // read/write
+/*
 struct r_query {
 public:
 	RemReqType rtype;
@@ -22,15 +23,16 @@ public:
 	uint64_t * parts;
 	char * data;
 };
+*/
 
 
 class Remote_query {
 public:
 	void init(uint64_t node_id);
 	RC remote_qry(base_query * query, int type, int dest_id);
-	char * send_remote_query(uint64_t dest_id, void ** data, int * sizes, int num, uint64_t tid);
+	void * send_remote_query(uint64_t dest_id, void ** data, int * sizes, int num, uint64_t tid);
 	void send_remote_rsp(uint64_t dest_id, void ** data, int * sizes, int num, uint64_t tid);
-	void unpack(r_query * query, char * data, int len);
+	void unpack(base_query * query, void * d, int len);
 	int q_idx;
 	char ** buf;
 	/*

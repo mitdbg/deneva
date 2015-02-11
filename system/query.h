@@ -8,15 +8,7 @@ class workload;
 class ycsb_query;
 class tpcc_query;
 
-/*
-class base_r_query {
-public:
-	uint64_t waiting_time;
-	uint64_t part_cnt;
-	uint64_t * parts;
-};
-*/
-
+enum RemReqType {RLK, RULK, RQRY, RLK_RSP, RULK_RSP, RQRY_RSP};
 
 class base_query {
 public:
@@ -24,6 +16,13 @@ public:
 	uint64_t waiting_time;
 	uint64_t part_num;
 	uint64_t * part_to_access;
+
+	// Remote query components
+	uint64_t return_id;
+	uint64_t txn_id;
+	uint64_t part_cnt;
+	uint64_t * parts;
+	RemReqType rtype;
 };
 
 // All the queries for a particular thread.

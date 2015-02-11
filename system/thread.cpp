@@ -57,24 +57,20 @@ RC thread_t::run_remote() {
 
 	UInt64 txn_cnt = 0;
 
-	/*
 	uint64_t len = 0;
-	r_query * m_query = NULL;
+	base_query * m_query = NULL;
 
 #if WORKLOAD == TPCC
-	m_query = (tpcc_r_query *) mem_allocator.alloc(sizeof(tpcc_r_query), get_thd_id());
+	m_query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), get_thd_id());
 #endif
-	*/
 
 	while (true) {
-		/*
 		len = tport_man.recv_msg(m_query);
 		if( len > 0 ) {
 #if WORKLOAD == TPCC
 			m_txn->run_rem_txn(m_query);
 #endif
 		}
-		*/
 
 		if (!warmup_finish && txn_cnt >= WARMUP / g_thread_cnt) 
 		{
@@ -112,6 +108,7 @@ RC thread_t::run() {
 	pthread_barrier_wait( &warmup_bar );
 	stats.init(get_thd_id());
 	pthread_barrier_wait( &warmup_bar );
+	sleep(3);
 	
 	printf("Run %ld:%ld\n",_node_id, _thd_id);
 	myrand rdm;
