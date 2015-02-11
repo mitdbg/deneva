@@ -43,7 +43,7 @@ void Transport::send_msg(void * buf) {
 	//int rc = s.send("ABC",3,0);
 	if (rc < 0) {
 		// Error; resend?
-		printf("send Error: %d\n",errno);
+		printf("send Error: %d %s\n",errno,strerror(errno));
 	}
 }
 
@@ -93,7 +93,7 @@ uint64_t Transport::recv_msg(r_query * query) {
 	char * buf = NULL;
 	bytes = s.recv(buf,MSG_SIZE, 0 | (int)NN_MSG);
 	if(bytes < 0) {
-		printf("Recv Error %d\n",errno);
+		printf("Recv Error %d %s\n",errno,strerror(errno));
 	}
 	// Discard any messages not intended for this node
 	if(bytes <= 0 || GET_RCV_NODE_ID(buf) != get_node_id()) {

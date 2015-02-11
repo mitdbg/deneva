@@ -5,10 +5,10 @@
 // Assume the data is strided across the L2 slices, stride granularity 
 // is the size of a page
 void mem_alloc::init(uint64_t part_cnt, uint64_t bytes_per_part) {
-	if (g_thread_cnt < g_init_parallelism)
+	if ((g_thread_cnt +1) < g_init_parallelism)
 		_bucket_cnt = g_init_parallelism * 4 + 1;
 	else
-		_bucket_cnt = g_thread_cnt * 4 + 1;
+		_bucket_cnt = (g_thread_cnt +1) * 4 + 1;
 	pid_arena = new std::pair<pthread_t, int>[_bucket_cnt];
 	for (int i = 0; i < _bucket_cnt; i ++)
 		pid_arena[i] = std::make_pair(0, 0);
@@ -57,7 +57,7 @@ Arena::free(void * ptr) {
 }
 
 void mem_alloc::init_thread_arena() {
-	UInt32 buf_cnt = g_thread_cnt;
+	UInt32 buf_cnt = (g_thread_cnt+1);
 	if (buf_cnt < g_init_parallelism)
 		buf_cnt = g_init_parallelism;
 	_arenas = new Arena * [buf_cnt];

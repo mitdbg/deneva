@@ -12,6 +12,7 @@
 #include "transport.h"
 
 void * f(void *);
+void * g(void *);
 
 // TODO the following global variables are HACK
 thread_t * m_thds;
@@ -50,8 +51,8 @@ int main(int argc, char* argv[])
 	uint64_t thd_cnt = g_thread_cnt;
 	
 	pthread_t * p_thds = 
-		(pthread_t *) malloc(sizeof(pthread_t) * (thd_cnt - 1));
-	m_thds = new thread_t[thd_cnt];
+		(pthread_t *) malloc(sizeof(pthread_t) * (thd_cnt));
+	m_thds = new thread_t[thd_cnt +1];
 	// query_queue should be the last one to be initialized!!!
 	// because it collects txn latency
 	if (WORKLOAD != TEST)
@@ -66,8 +67,8 @@ int main(int argc, char* argv[])
 	vll_man.init();
 #endif
 
-	for (uint32_t i = 0; i < thd_cnt; i++) 
-		m_thds[i].init(i, m_wl);
+	for (uint32_t i = 0; i <= thd_cnt; i++) 
+		m_thds[i].init(i, g_node_id, m_wl);
 
 	if (WARMUP > 0){
 		printf("WARMUP start!\n");
@@ -81,20 +82,20 @@ int main(int argc, char* argv[])
 		printf("WARMUP finished!\n");
 	}
 	warmup_finish = true;
-	pthread_barrier_init( &warmup_bar, NULL, g_thread_cnt );
+	pthread_barrier_init( &warmup_bar, NULL, g_thread_cnt + 1);
 #ifndef NOGRAPHITE
-	CarbonBarrierInit(&enable_barrier, g_thread_cnt);
+	CarbonBarrierInit(&enable_barrier, g_thread_cnt+ 1);
 #endif
-	pthread_barrier_init( &warmup_bar, NULL, g_thread_cnt );
+	pthread_barrier_init( &warmup_bar, NULL, g_thread_cnt + 1);
 
 	// spawn and run txns again.
 	int64_t starttime = get_server_clock();
-	for (uint32_t i = 0; i < thd_cnt - 1; i++) {
+	for (uint32_t i = 0; i < thd_cnt; i++) {
 		uint64_t vid = i;
 		pthread_create(&p_thds[i], NULL, f, (void *)vid);
 	}
-	f((void *)(thd_cnt - 1));
-	for (uint32_t i = 0; i < thd_cnt - 1; i++) 
+	g((void *)(thd_cnt));
+	for (uint32_t i = 0; i < thd_cnt; i++) 
 		pthread_join(p_thds[i], NULL);
 	int64_t endtime = get_server_clock();
 	
@@ -111,5 +112,11 @@ int main(int argc, char* argv[])
 void * f(void * id) {
 	uint64_t tid = (uint64_t)id;
 	m_thds[tid].run();
+	return NULL;
+}
+
+void * g(void * id) {
+	uint64_t tid = (uint64_t)id;
+	m_thds[tid].run_remote();
 	return NULL;
 }

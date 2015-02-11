@@ -14,18 +14,21 @@
 #include "transport.h"
 #include "remote_query.h"
 
-void thread_t::init(uint64_t thd_id, workload * workload) {
+void thread_t::init(uint64_t thd_id, uint64_t node_id, workload * workload) {
 	_thd_id = thd_id;
+	_node_id = node_id;
 	_wl = workload;
 }
 
 uint64_t thread_t::get_thd_id() { return _thd_id; }
+uint64_t thread_t::get_node_id() { return _node_id; }
 uint64_t thread_t::get_host_cid() {	return _host_cid; }
 void thread_t::set_host_cid(uint64_t cid) { _host_cid = cid; }
 uint64_t thread_t::get_cur_cid() { return _cur_cid; }
 void thread_t::set_cur_cid(uint64_t cid) {_cur_cid = cid; }
 
 RC thread_t::run_remote() {
+	printf("Run_remote %ld:%ld\n",_node_id, _thd_id);
 #if !NOGRAPHITE
 	_thd_id = CarbonGetTileId();
 #endif
@@ -35,6 +38,7 @@ RC thread_t::run_remote() {
 	pthread_barrier_wait( &warmup_bar );
 	stats.init(get_thd_id());
 	pthread_barrier_wait( &warmup_bar );
+	printf("Run_remote %ld:%ld\n",_node_id, _thd_id);
 	
 	myrand rdm;
 	rdm.init(get_thd_id());
@@ -53,25 +57,24 @@ RC thread_t::run_remote() {
 
 	UInt64 txn_cnt = 0;
 
+	/*
 	uint64_t len = 0;
-
 	r_query * m_query = NULL;
 
 #if WORKLOAD == TPCC
 	m_query = (tpcc_r_query *) mem_allocator.alloc(sizeof(tpcc_r_query), get_thd_id());
 #endif
+	*/
 
 	while (true) {
-
+		/*
 		len = tport_man.recv_msg(m_query);
-
 		if( len > 0 ) {
-
 #if WORKLOAD == TPCC
 			m_txn->run_rem_txn(m_query);
 #endif
 		}
-
+		*/
 
 		if (!warmup_finish && txn_cnt >= WARMUP / g_thread_cnt) 
 		{
@@ -99,6 +102,7 @@ RC thread_t::run_remote() {
 
 
 RC thread_t::run() {
+	printf("Run %ld:%ld\n",_node_id, _thd_id);
 #if !NOGRAPHITE
 	_thd_id = CarbonGetTileId();
 #endif
@@ -109,6 +113,7 @@ RC thread_t::run() {
 	stats.init(get_thd_id());
 	pthread_barrier_wait( &warmup_bar );
 	
+	printf("Run %ld:%ld\n",_node_id, _thd_id);
 	myrand rdm;
 	rdm.init(get_thd_id());
 	RC rc = RCOK;

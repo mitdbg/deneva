@@ -10,9 +10,11 @@ public:
 //	thread_t();
 //	~thread_t();
 	uint64_t _thd_id;
+	uint64_t _node_id;
 	workload * _wl;
 
 	uint64_t 	get_thd_id();
+	uint64_t 	get_node_id();
 
 	uint64_t 	get_host_cid();
 	void 	 	set_host_cid(uint64_t cid);
@@ -20,7 +22,7 @@ public:
 	uint64_t 	get_cur_cid();
 	void 		set_cur_cid(uint64_t cid);
 
-	void 		init(uint64_t thd_id, workload * workload);
+	void 		init(uint64_t thd_id, uint64_t node_id, workload * workload);
 	// the following function must be in the form void* (*)(void*)
 	// to run with pthread.
 	// conversion is done within the function.

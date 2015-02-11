@@ -67,9 +67,6 @@ void parser(int argc, char * argv[]) {
 		else if (argv[i][1] == 'd')
 			g_prt_lat_distr = atoi( &argv[i][2] );
 		else if (argv[i][1] == 'p')
-			if (argv[i][2] == 'i' && argv[i][3] == 'd')
-				g_node_id = atoi( &argv[i][4] );
-			else
 				g_part_cnt = atoi( &argv[i][2] );
 		else if (argv[i][1] == 'v')
 			g_virtual_part_cnt = atoi( &argv[i][2] );
@@ -82,7 +79,10 @@ void parser(int argc, char * argv[]) {
 		else if (argv[i][1] == 'f')
 			g_field_per_tuple = atoi( &argv[i][2] );
 		else if (argv[i][1] == 'n')
-			g_num_wh = atoi( &argv[i][2] );
+			if (argv[i][2] == 'i' && argv[i][3] == 'd')
+				g_node_id = atoi( &argv[i][4] );
+			else
+				g_num_wh = atoi( &argv[i][2] );
 		else if (argv[i][1] == 'G') {
 			if (argv[i][2] == 'a')
 				g_abort_penalty = atoi( &argv[i][3] );
