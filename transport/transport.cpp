@@ -9,8 +9,8 @@
 	 HEADER FORMAT:
 	 32b destination ID
 	 32b source ID
-	 32b message type
 	 32b transaction ID
+	 32b message type
 	 N?	data
 
 	 */
@@ -102,7 +102,7 @@ uint64_t Transport::recv_msg(r_query * query) {
 	}
 	// Queue request for thread to execute
 	// Unpack request
-	rem_qry_man.unpack(query,buf);
+	rem_qry_man.unpack(query,buf,bytes);
 	nn::freemsg((void*)buf);	
 	return 1;
 

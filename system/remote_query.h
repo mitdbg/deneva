@@ -3,9 +3,9 @@
 
 #include "global.h"
 #include "helper.h"
+#include "query.h"
 
-#define MAX_DATA_SIZE 100
-
+#define MAX_DATA_SIZE 100 
 class tpcc_query;
 
 enum RemReqType {RLK, RULK, RQRY, RLK_RSP, RULK_RSP, RQRY_RSP};
@@ -26,9 +26,23 @@ public:
 
 class Remote_query {
 public:
-	void init();
-	void unpack(r_query * query, char * data);
+	void init(uint64_t node_id);
+	RC remote_qry(base_query * query, int type, int dest_id);
+	char * send_remote_query(uint64_t dest_id, void ** data, int * sizes, int num, uint64_t tid);
+	void send_remote_rsp(uint64_t dest_id, void ** data, int * sizes, int num, uint64_t tid);
+	void unpack(r_query * query, char * data, int len);
 	int q_idx;
+	char ** buf;
+	/*
+#if WORKLOAD == TPCC
+	tpcc_query * queries;
+#endif
+*/
+private:
+	pthread_cond_t cnd;
+	pthread_mutex_t mtx;
+	
+	uint64_t _node_id;
 
 };
 #endif

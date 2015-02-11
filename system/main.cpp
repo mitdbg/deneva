@@ -29,6 +29,7 @@ int main(int argc, char* argv[])
 	stats.init();
 	glob_manager.init();
 	tport_man.init(g_node_id);
+	rem_qry_man.init(g_node_id);
 	if (g_cc_alg == DL_DETECT) 
 		dl_detector.init();
 	printf("mem_allocator initialized!\n");

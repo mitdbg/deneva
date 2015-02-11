@@ -42,6 +42,10 @@ uint64_t txn_man::get_thd_id() {
 	return h_thd->get_thd_id();
 }
 
+uint64_t txn_man::get_node_id() {
+	return h_thd->get_node_id();
+}
+
 void txn_man::set_ts(ts_t timestamp) {
 	this->timestamp = timestamp;
 }

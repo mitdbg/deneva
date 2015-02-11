@@ -41,6 +41,7 @@ public:
 	virtual RC 		run_txn(base_query * m_query) = 0;
 	virtual RC 		run_rem_txn(r_query * m_query) = 0;
 	uint64_t 		get_thd_id();
+	uint64_t 		get_node_id();
 	workload * 		get_wl();
 	void 			set_txn_id(txnid_t txn_id);
 	txnid_t 		get_txn_id();
