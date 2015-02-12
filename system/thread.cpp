@@ -63,10 +63,12 @@ RC thread_t::run_remote() {
 #if WORKLOAD == TPCC
 	m_query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), get_thd_id());
 #endif
+	ts_t rq_time = get_sys_clock();;
 
 	while (true) {
 		len = tport_man.recv_msg(m_query);
 		if( len > 0 ) {
+			rq_time = get_sys_clock();
 			switch(m_query->rtype) {
 				case RLK:
 					rc = part_lock_man.lock(m_txn, m_query->part_to_access, m_query->part_num);
@@ -84,6 +86,9 @@ RC thread_t::run_remote() {
 				default:
 					break;
 			}
+			ts_t endtime = get_sys_clock();
+			INC_STATS(_thd_id, time_rem, endtime - rq_time);
+
 		}
 
 		// Check if done
@@ -96,10 +101,13 @@ RC thread_t::run_remote() {
 			return FINISH;
 		}
 
-		if (warmup_finish && txn_cnt >= MAX_TXN_PER_PART) {
-			assert(txn_cnt == MAX_TXN_PER_PART);
-	        if( !ATOM_CAS(_wl->sim_done, false, true) )
-				assert( _wl->sim_done);
+		ts_t tend = get_sys_clock();
+		if (warmup_finish && ((tend - rq_time) > MSG_TIMEOUT)) {
+	      if( !ATOM_CAS(_wl->sim_done, false, true) )
+					assert( _wl->sim_done);
+				printf("Timeout %ld %ld %ld\n",tend,rq_time,MSG_TIMEOUT);
+				rem_qry_man.signal_end();
+
 	    }
 	    if (_wl->sim_done) {
 #if !NOGRAPHITE
@@ -169,6 +177,8 @@ RC thread_t::run() {
 
 			rc = RCOK;
 #if CC_ALG == HSTORE
+			if(m_query->part_num > 1)
+				INC_STATS(_thd_id,mpq_cnt,1);
 			if (WORKLOAD == TEST) {
 				uint64_t part_to_access[1] = {0};
 				rc = part_lock_man.lock(m_txn, &part_to_access[0], 1);
@@ -202,6 +212,8 @@ RC thread_t::run() {
 #endif
 			}
 			if (rc == Abort) {
+				if(_wl->sim_done)
+					break;
 				uint64_t t = get_sys_clock();
                 uint64_t penalty = 0;
 				uint64_t tt;

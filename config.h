@@ -6,7 +6,7 @@
 /***********************************************/
 #define THREAD_CNT					1
 #define NODE_CNT	2
-#define PART_CNT					2 // THREAD_CNT * NODE_CNT
+#define PART_CNT					THREAD_CNT * NODE_CNT // THREAD_CNT * NODE_CNT
 
 // each transaction only accesses only 1 virtual partition. But the lock/ts manager and index are not aware of such partitioning. VIRTUAL_PART_CNT describes the request distribution and is only used to generate queries. For HSTORE, VIRTUAL_PART_CNT should be the same as PART_CNT.
 #define VIRTUAL_PART_CNT			1
@@ -54,6 +54,7 @@
 #define MAX_TPORT_NAME 128
 #define MSG_SIZE 128 // in bytes
 #define HEADER_SIZE sizeof(uint32_t)*3 // in bits 
+#define MSG_TIMEOUT 10000000000UL // in ns
 
 /***********************************************/
 // Concurrency Control
@@ -115,7 +116,7 @@
 // max number of rows touched per transaction
 #define MAX_ROW_PER_TXN				64
 #define QUERY_INTVL 				1UL
-#define MAX_TXN_PER_PART 			100
+#define MAX_TXN_PER_PART 			1000000
 #define FIRST_PART_LOCAL 			true
 #define MAX_TUPLE_SIZE				1024 // in bytes
 // ==== [YCSB] ====
@@ -212,5 +213,8 @@ extern TestCases					g_test_case;
 #define TS_CAS						2
 #define TS_HW						3
 #define TS_CLOCK					4
+
+// Stats and timeout
+#define BILLION 1000000000UL
 
 #endif

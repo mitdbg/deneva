@@ -28,8 +28,9 @@ public:
 
 class Remote_query {
 public:
-	void init(uint64_t node_id);
+	void init(uint64_t node_id, workload * wl);
 	RC remote_qry(base_query * query, int type, int dest_id);
+	void signal_end();
 	void * send_remote_query(uint64_t dest_id, void ** data, int * sizes, int num, uint64_t tid);
 	void send_remote_rsp(uint64_t dest_id, void ** data, int * sizes, int num, uint64_t tid);
 	void unpack(base_query * query, void * d, int len);
@@ -45,6 +46,7 @@ private:
 	pthread_mutex_t mtx;
 	
 	uint64_t _node_id;
+	workload * _wl;
 
 };
 #endif

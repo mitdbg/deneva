@@ -161,7 +161,7 @@ RC tpcc_txn_man::run_new_order(tpcc_query * query) {
 
 				*/
 			part_id = wh_to_part(ol_supply_w_id);
-			printf("run_new_order2 %ld:%ld -> %ld -- %ld\n",get_node_id(),get_thd_id(),part_id,GET_NODE_ID(part_id));
+			//printf("run_new_order2 %ld:%ld -> %ld -- %ld\n",get_node_id(),get_thd_id(),part_id,GET_NODE_ID(part_id));
 			if(GET_NODE_ID(part_id) == get_node_id())
 				rc = new_order_2( w_id, d_id, remote, ol_i_id, ol_supply_w_id, ol_quantity,  ol_number, o_id); 
 			else {

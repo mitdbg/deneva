@@ -28,8 +28,6 @@ int main(int argc, char* argv[])
 	mem_allocator.init(g_part_cnt, MEM_SIZE / g_part_cnt); 
 	stats.init();
 	glob_manager.init();
-	tport_man.init(g_node_id);
-	rem_qry_man.init(g_node_id);
 	if (g_cc_alg == DL_DETECT) 
 		dl_detector.init();
 	printf("mem_allocator initialized!\n");
@@ -48,6 +46,10 @@ int main(int argc, char* argv[])
 	}
 	m_wl->init();
 	printf("workload initialized!\n");
+
+	rem_qry_man.init(g_node_id,m_wl);
+	tport_man.init(g_node_id);
+
 	// 2. spawn multiple threads
 	uint64_t thd_cnt = g_thread_cnt;
 	

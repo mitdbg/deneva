@@ -105,6 +105,10 @@ RC tpcc_query::remote_qry(tpcc_query * query, TPCCRemTxnType type, int dest_id) 
 	RC rc;
 	void * buf;
 	buf = rem_qry_man.send_remote_query(dest_id, data, sizes, num, 0);
+	// Simulation finished?
+	if(buf == NULL) {
+		return Abort;
+	}
 	unpack_rsp(query,buf,&rc);
 	return rc;
 }

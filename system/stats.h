@@ -18,6 +18,15 @@ public:
 	uint64_t time_ts_alloc;
 	double time_query;
 	uint64_t wait_cnt;
+
+	uint64_t mpq_cnt; // multi-partition queries
+	uint64_t msg_bytes;
+	uint64_t msg_sent_cnt;
+	uint64_t msg_rcv_cnt;
+	double time_msg_wait; // time blocking for remote response
+	double time_rem_req; // time preparing msg for remote request
+	double time_rem; // time preparing msg for remote request
+
 	uint64_t debug1;
 	uint64_t debug2;
 	uint64_t debug3;

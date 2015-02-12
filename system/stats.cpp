@@ -3,7 +3,6 @@
 #include "stats.h"
 #include "mem_alloc.h"
 
-#define BILLION 1000000000UL
 
 void Stats_thd::init(uint64_t thd_id) {
 	clear();
@@ -29,6 +28,15 @@ void Stats_thd::clear() {
 	time_ts_alloc = 0;
 	latency = 0;
 	time_query = 0;
+
+	mpq_cnt = 0;
+	msg_bytes = 0;
+	msg_sent_cnt = 0;
+	msg_rcv_cnt = 0;
+	time_msg_wait = 0;
+	time_rem_req = 0;
+	time_rem = 0;
+
 }
 
 void Stats_tmp::init() {
@@ -115,6 +123,13 @@ void Stats::print() {
 	double total_time_ts_alloc = 0;
 	double total_latency = 0;
 	double total_time_query = 0;
+	uint64_t total_mpq_cnt = 0;
+	uint64_t total_msg_bytes = 0;
+	uint64_t total_msg_sent_cnt = 0;
+	uint64_t total_msg_rcv_cnt = 0;
+	double total_time_msg_wait = 0;
+	double total_time_rem_req = 0;
+	double total_time_rem = 0;
 	for (uint64_t tid = 0; tid < g_thread_cnt; tid ++) {
 		total_txn_cnt += _stats[tid]->txn_cnt;
 		total_abort_cnt += _stats[tid]->abort_cnt;
@@ -132,6 +147,14 @@ void Stats::print() {
 		total_time_ts_alloc += _stats[tid]->time_ts_alloc;
 		total_latency += _stats[tid]->latency;
 		total_time_query += _stats[tid]->time_query;
+
+		total_mpq_cnt += _stats[tid]->mpq_cnt;
+		total_msg_bytes += _stats[tid]->msg_bytes;
+		total_msg_sent_cnt += _stats[tid]->msg_sent_cnt;
+		total_msg_rcv_cnt += _stats[tid]->msg_rcv_cnt;
+		total_time_msg_wait += _stats[tid]->time_msg_wait;
+		total_time_rem_req += _stats[tid]->time_rem_req;
+		total_time_rem += _stats[tid]->time_rem;
 		
 		printf("[tid=%ld] txn_cnt=%ld,abort_cnt=%ld\n", 
 			tid,
@@ -146,7 +169,10 @@ void Stats::print() {
 			",run_time=%f,time_wait=%f,time_ts_alloc=%f"
 			",time_man=%f,time_index=%f,time_abort=%f,time_cleanup=%f,latency=%f"
 			",deadlock_cnt=%ld,cycle_detect=%ld,dl_detect_time=%f,dl_wait_time=%f"
-			",time_query=%f,debug1=%f,debug2=%f,debug3=%f,debug4=%f,debug5=%f\n",
+			",time_query=%f"
+			",mpq_cnt=%ld,msg_bytes=%ld,msg_sent=%ld,msg_rcv=%ld"
+			",time_msg_wait=%f,time_req_req=%f,time_rem=%f"
+			",debug1=%f,debug2=%f,debug3=%f,debug4=%f,debug5=%f\n",
 			total_txn_cnt, 
 			total_abort_cnt,
 			total_run_time / BILLION,
@@ -162,6 +188,13 @@ void Stats::print() {
 			dl_detect_time / BILLION,
 			dl_wait_time / BILLION,
 			total_time_query / BILLION,
+			total_mpq_cnt, 
+			total_msg_bytes, 
+			total_msg_sent_cnt, 
+			total_msg_rcv_cnt, 
+			total_time_msg_wait / BILLION,
+			total_time_rem_req / BILLION,
+			total_time_rem / BILLION, 
 			total_debug1 / BILLION,
 			total_debug2 / BILLION,
 			total_debug3 / BILLION,
@@ -174,7 +207,10 @@ void Stats::print() {
 		", run_time=%f, time_wait=%f, time_ts_alloc=%f"
 		", time_man=%f, time_index=%f, time_abort=%f, time_cleanup=%f, latency=%f"
 		", deadlock_cnt=%ld, cycle_detect=%ld, dl_detect_time=%f, dl_wait_time=%f"
-		", time_query=%f, debug1=%f, debug2=%f, debug3=%f, debug4=%f, debug5=%f\n", 
+		",time_query=%f"
+		",mpq_cnt=%ld,msg_bytes=%ld,msg_sent=%ld,msg_rcv=%ld"
+		",time_msg_wait=%f,time_req_req=%f,time_rem=%f"
+		",debug1=%f,debug2=%f,debug3=%f,debug4=%f,debug5=%f\n",
 		total_txn_cnt, 
 		total_abort_cnt,
 		total_run_time / BILLION,
@@ -190,6 +226,13 @@ void Stats::print() {
 		dl_detect_time / BILLION,
 		dl_wait_time / BILLION,
 		total_time_query / BILLION,
+		total_mpq_cnt, 
+		total_msg_bytes, 
+		total_msg_sent_cnt, 
+		total_msg_rcv_cnt, 
+		total_time_msg_wait / BILLION,
+		total_time_rem_req / BILLION,
+		total_time_rem / BILLION, 
 		total_debug1 / BILLION,
 		total_debug2 / BILLION,
 		total_debug3 / BILLION,

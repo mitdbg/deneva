@@ -172,6 +172,9 @@ RC Plock::remote_qry(bool l, uint64_t * part_id) {
 	RC rc;
 	void * buf;
 	buf = rem_qry_man.send_remote_query(GET_NODE_ID(*part_id),data,sizes,num,0);
+	if(buf == NULL) {
+		return Abort;
+	}
 	rc = unpack_rsp(buf);
 	return rc;
 }
