@@ -61,7 +61,7 @@ int main(int argc, char* argv[])
 	pthread_barrier_init( &warmup_bar, NULL, g_thread_cnt );
 	printf("query_queue initialized!\n");
 #if CC_ALG == HSTORE
-	part_lock_man.init();
+	part_lock_man.init(g_node_id);
 #elif CC_ALG == OCC
 	occ_man.init();
 #elif CC_ALG == VLL

@@ -22,30 +22,12 @@ RC tpcc_query::remote_qry(tpcc_query * query, TPCCRemTxnType type, int dest_id) 
 	void ** data = NULL;
 	int * sizes = NULL;
 	int num = 0;
-	int total = 2;
+	// Maximum number of parameters
+	int max_num = 10;
 	RemReqType rtype = RQRY;
 
-	switch(type) {
-		case TPCC_PAYMENT0 :
-			total += 4;
-			break;
-		case TPCC_PAYMENT1 :
-			total += 8;
-			break;
-		case TPCC_NEWORDER0 :
-			total += 5;
-			break;
-		case TPCC_NEWORDER1 :
-			total += 1;
-			break;
-		case TPCC_NEWORDER2 :
-			total += 8;
-			break;
-		default:
-			assert(false);
-	}
-	data = new void *[total];
-	sizes = new int [total];
+	data = new void *[max_num];
+	sizes = new int [max_num];
 
 	data[num] = &rtype;
 	sizes[num++] = sizeof(RemReqType);

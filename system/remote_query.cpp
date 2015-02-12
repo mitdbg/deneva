@@ -4,6 +4,7 @@
 #include "tpcc_query.h"
 #include "query.h"
 #include "transport.h"
+#include "plock.h"
 
 void Remote_query::init(uint64_t node_id) {
 	q_idx = 0;
@@ -46,10 +47,15 @@ void Remote_query::unpack(base_query * query, void * d, int len) {
 	switch(query->rtype) {
 		case RLK:
 		case RULK:
-		case RLK_RSP:
-		case RULK_RSP:
-			// p_lock::unpack
+			part_lock_man.unpack(query,data);
 			break;
+		case RLK_RSP:
+		case RULK_RSP: {
+			buf[GET_THREAD_ID(query->return_id)] = (char *)mem_allocator.alloc(sizeof(char) * len, 0);
+			memcpy(&buf[GET_THREAD_ID(query->return_id)],data,len);
+			pthread_cond_signal(&cnd);
+			break;
+									 }
 		case RQRY: {
 #if WORKLOAD == TPCC
 			tpcc_query * m_query = new tpcc_query;

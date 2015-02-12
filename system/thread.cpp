@@ -67,11 +67,26 @@ RC thread_t::run_remote() {
 	while (true) {
 		len = tport_man.recv_msg(m_query);
 		if( len > 0 ) {
+			switch(m_query->rtype) {
+				case RLK:
+					rc = part_lock_man.lock(m_txn, m_query->part_to_access, m_query->part_num);
+					part_lock_man.remote_rsp(true,&rc,m_query->return_id);
+					break;
+				case RULK:
+					part_lock_man.unlock(m_txn, m_query->part_to_access, m_query->part_num);
+					part_lock_man.remote_rsp(false,&rc,m_query->return_id);
+					break;
+				case RQRY:
 #if WORKLOAD == TPCC
-			m_txn->run_rem_txn(m_query);
+					m_txn->run_rem_txn(m_query);
 #endif
+					break;
+				default:
+					break;
+			}
 		}
 
+		// Check if done
 		if (!warmup_finish && txn_cnt >= WARMUP / g_thread_cnt) 
 		{
 			stats.clear( get_thd_id() );

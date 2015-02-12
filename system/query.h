@@ -18,11 +18,13 @@ public:
 	uint64_t * part_to_access;
 
 	// Remote query components
+	uint64_t ts;
 	uint64_t return_id;
 	uint64_t txn_id;
 	uint64_t part_cnt;
 	uint64_t * parts;
 	RemReqType rtype;
+	RC rc;
 };
 
 // All the queries for a particular thread.

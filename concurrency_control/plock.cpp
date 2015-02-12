@@ -17,26 +17,7 @@ void PartMan::init() {
 	pthread_mutex_init( &latch, NULL );
 }
 
-void PartMan::unpack(base_query * query, char * data) {
-	uint64_t ptr = HEADER_SIZE;
-	memcpy(&query->part_cnt,&data[ptr],sizeof(query->part_cnt));
-	ptr += sizeof(query->part_cnt);
-	query->parts = new uint64_t[query->part_cnt];
-	for (uint64_t i = 0; i < query->part_cnt; i++) {
-		memcpy(&query->parts[i],&data[ptr],sizeof(query->parts[i]));
-		ptr += sizeof(query->parts[i]);
-	}
-		
-	switch(query->rtype) {
-		case RLK:
-			break;
-		default:
-			break;
-	}
-}
 
-void PartMan::pack(void ** data, void * size) {
-}
 
 RC PartMan::lock(txn_man * txn) {
 	RC rc;
@@ -99,7 +80,8 @@ void PartMan::unlock(txn_man * txn) {
 // Partition Lock
 /************************************************/
 
-void Plock::init() {
+void Plock::init(uint64_t node_id) {
+	_node_id = node_id;
 	ARR_PTR(PartMan, part_mans, g_part_cnt);
 	for (UInt32 i = 0; i < g_part_cnt; i++)
 		part_mans[i]->init();
@@ -111,14 +93,20 @@ RC Plock::lock(txn_man * txn, uint64_t * parts, uint64_t part_cnt) {
 	UInt32 i;
 	for (i = 0; i < part_cnt; i ++) {
 		uint64_t part_id = parts[i];
-		rc = part_mans[part_id]->lock(txn);
+		if(GET_NODE_ID(part_id) == get_node_id()) 
+			rc = part_mans[part_id]->lock(txn);
+		else
+			rc = remote_qry(true,&part_id);
 		if (rc == Abort)
 			break;
 	}
 	if (rc == Abort) {
 		for (UInt32 j = 0; j < i; j++) {
 			uint64_t part_id = parts[j];
-			part_mans[part_id]->unlock(txn);
+			if(GET_NODE_ID(part_id) == get_node_id()) 
+				part_mans[part_id]->unlock(txn);
+			else
+				remote_qry(false,&part_id);
 		}
 		assert(txn->ready_part == 0);
 		INC_TMP_STATS(txn->get_thd_id(), time_man, get_sys_clock() - starttime);
@@ -138,7 +126,66 @@ void Plock::unlock(txn_man * txn, uint64_t * parts, uint64_t part_cnt) {
 	ts_t starttime = get_sys_clock();
 	for (UInt32 i = 0; i < part_cnt; i ++) {
 		uint64_t part_id = parts[i];
-		part_mans[part_id]->unlock(txn);
+		if(GET_NODE_ID(part_id) == get_node_id()) 
+			part_mans[part_id]->unlock(txn);
+		else
+			remote_qry(false,&part_id);
 	}
 	INC_TMP_STATS(txn->get_thd_id(), time_man, get_sys_clock() - starttime);
+}
+
+RC Plock::unpack_rsp(void * d) {
+	char * data = (char *) d;
+	uint64_t ptr = HEADER_SIZE + sizeof(RemReqType);
+	RC rc;
+	memcpy(&rc,&data[ptr],sizeof(RC));
+	return rc;
+}
+
+void Plock::unpack(base_query * query, char * data) {
+	uint64_t ptr = HEADER_SIZE + sizeof(RemReqType);
+	assert(query->rtype == RLK || query->rtype == RULK);
+		
+	memcpy(&query->part_cnt,&data[ptr],sizeof(query->part_cnt));
+	ptr += sizeof(query->part_cnt);
+	query->parts = new uint64_t[query->part_cnt];
+	for (uint64_t i = 0; i < query->part_cnt; i++) {
+		memcpy(&query->parts[i],&data[ptr],sizeof(query->parts[i]));
+		ptr += sizeof(query->parts[i]);
+	}
+}
+
+RC Plock::remote_qry(bool l, uint64_t * part_id) {
+	int num = 0;
+	int max_num = 3;
+	uint64_t part_cnt = 1;
+	RemReqType rtype = l ? RLK : RULK;
+	void ** data = new void *[max_num];
+	int * sizes = new int [max_num];
+	data[num] = &rtype;
+	sizes[num++] = sizeof(RemReqType);
+	data[num] = &part_cnt;
+	sizes[num++] = sizeof(uint64_t);
+	data[num] = part_id;
+	sizes[num++] = sizeof(uint64_t);
+
+	RC rc;
+	void * buf;
+	buf = rem_qry_man.send_remote_query(GET_NODE_ID(*part_id),data,sizes,num,0);
+	rc = unpack_rsp(buf);
+	return rc;
+}
+
+void Plock::remote_rsp(bool l, RC * rc, uint64_t node_id) {
+	int max_num = 4;
+	void ** data = new void *[max_num];
+	int * sizes = new int [max_num];
+	int num = 0;
+	RemReqType rtype = l ? RLK_RSP : RULK_RSP;
+	data[num] = &rtype;
+	sizes[num++] = sizeof(RemReqType);
+	data[num] = &rc;
+	sizes[num++] = sizeof(RC);
+
+	rem_qry_man.send_remote_rsp(node_id,data,sizes,num,0);
 }
