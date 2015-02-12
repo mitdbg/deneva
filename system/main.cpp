@@ -54,7 +54,10 @@ int main(int argc, char* argv[])
 	uint64_t thd_cnt = g_thread_cnt;
 	
 	pthread_t * p_thds = 
-		(pthread_t *) malloc(sizeof(pthread_t) * (thd_cnt));
+		(pthread_t *) malloc(sizeof(pthread_t) * (thd_cnt + 1));
+	pthread_attr_t attr;
+	pthread_attr_init(&attr);
+	cpu_set_t cpus;
 	m_thds = new thread_t[thd_cnt +1];
 	// query_queue should be the last one to be initialized!!!
 	// because it collects txn latency
@@ -77,7 +80,10 @@ int main(int argc, char* argv[])
 		printf("WARMUP start!\n");
 		for (uint32_t i = 0; i < thd_cnt - 1; i++) {
 			uint64_t vid = i;
-			pthread_create(&p_thds[i], NULL, f, (void *)vid);
+			CPU_ZERO(&cpus);
+      CPU_SET(i, &cpus);
+      pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
+			pthread_create(&p_thds[i], &attr, f, (void *)vid);
 		}
 		f((void *)(thd_cnt - 1));
 		for (uint32_t i = 0; i < thd_cnt - 1; i++)
@@ -95,9 +101,16 @@ int main(int argc, char* argv[])
 	int64_t starttime = get_server_clock();
 	for (uint32_t i = 0; i < thd_cnt; i++) {
 		uint64_t vid = i;
-		pthread_create(&p_thds[i], NULL, f, (void *)vid);
+		CPU_ZERO(&cpus);
+    CPU_SET(i, &cpus);
+    pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
+		pthread_create(&p_thds[i], &attr, f, (void *)vid);
 	}
-	g((void *)(thd_cnt));
+	CPU_ZERO(&cpus);
+  CPU_SET(thd_cnt, &cpus);
+  pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
+	pthread_create(&p_thds[thd_cnt], &attr, g, (void *)thd_cnt);
+	//g((void *)(thd_cnt));
 	for (uint32_t i = 0; i < thd_cnt; i++) 
 		pthread_join(p_thds[i], NULL);
 	int64_t endtime = get_server_clock();
