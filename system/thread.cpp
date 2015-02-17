@@ -70,14 +70,17 @@ RC thread_t::run_remote() {
 		if( len > 0 ) {
 			rq_time = get_sys_clock();
 			switch(m_query->rtype) {
+#if CC_ALG == HSTORE
 				case RLK:
-					rc = part_lock_man.lock(m_txn, m_query->part_to_access, m_query->part_num);
-					part_lock_man.remote_rsp(true,&rc,m_query->return_id);
+					part_lock_man.rem_lock(m_query->pid,m_query->ts, m_query->parts, m_query->part_cnt);
 					break;
 				case RULK:
-					part_lock_man.unlock(m_txn, m_query->part_to_access, m_query->part_num);
-					part_lock_man.remote_rsp(false,&rc,m_query->return_id);
+					part_lock_man.rem_unlock(m_query->pid, m_query->parts, m_query->part_cnt);
 					break;
+				case RLK_RSP:
+					part_lock_man.rem_lock_rsp(m_query->pid,m_query->rc);
+					break;
+#endif
 				case RQRY:
 #if WORKLOAD == TPCC
 					m_txn->run_rem_txn(m_query);
@@ -101,6 +104,7 @@ RC thread_t::run_remote() {
 			return FINISH;
 		}
 
+		/*
 		ts_t tend = get_sys_clock();
 		if (warmup_finish && ((tend - rq_time) > MSG_TIMEOUT)) {
 	      if( !ATOM_CAS(_wl->sim_done, false, true) )
@@ -109,6 +113,7 @@ RC thread_t::run_remote() {
 				rem_qry_man.signal_end();
 
 	    }
+			*/
 	    if (_wl->sim_done) {
 #if !NOGRAPHITE
    			CarbonDisableModelsBarrier(&enable_barrier);

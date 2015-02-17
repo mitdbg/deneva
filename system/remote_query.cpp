@@ -11,8 +11,6 @@ void Remote_query::init(uint64_t node_id, workload * wl) {
 	_node_id = node_id;
 	_wl = wl;
 	buf = new char * [g_thread_cnt];
-	pthread_cond_init(&cnd,NULL);
-	pthread_mutex_init(&mtx,NULL);
 }
 
 RC Remote_query::remote_qry(base_query * query, int type, int dest_id) {
@@ -25,39 +23,13 @@ RC Remote_query::remote_qry(base_query * query, int type, int dest_id) {
 }
 
 void * Remote_query::send_remote_query(uint64_t dest_id, void ** data, int * sizes, int num, uint64_t tid) {
-	if(_wl->sim_done) {
-		printf("Timeout\n");
-		return NULL;
-	}
 	tport_man.send_msg(dest_id, data, sizes, num);
 	// TODO wait for response from remote node
 	// have remote thread signal local thread when a response message comes back
-	ts_t starttime = get_sys_clock();
-	/*
-	struct timespec timeout;
-	struct timespec now;
-	timeout.tv_sec = now.tv_sec + 5;
-	timeout.tv_nsec = now.tv_nsec;
-	printf("timeout %ld\n",timeout.tv_nsec);
-	pthread_mutex_lock(&mtx);
-	pthread_cond_timedwait(&cnd,&mtx,&timeout);
-	pthread_mutex_unlock(&mtx);
-	*/
-
-	pthread_mutex_lock(&mtx);
-	pthread_cond_wait(&cnd,&mtx);
-	pthread_mutex_unlock(&mtx);
-	if(_wl->sim_done) {
-		printf("Timeout\n");
-		return NULL;
-	}
-	ts_t endtime = get_sys_clock();
-	INC_STATS(tid,time_msg_wait,endtime - starttime);
 	return &buf[tid];
 }
 
 void Remote_query::signal_end() {
-	pthread_cond_signal(&cnd);
 }
 
 void Remote_query::send_remote_rsp(uint64_t dest_id, void ** data, int * sizes, int num, uint64_t tid) {
@@ -79,12 +51,9 @@ void Remote_query::unpack(base_query * query, void * d, int len) {
 			part_lock_man.unpack(query,data);
 			break;
 		case RLK_RSP:
-		case RULK_RSP: {
-			buf[GET_THREAD_ID(query->return_id)] = (char *)mem_allocator.alloc(sizeof(char) * len, 0);
-			memcpy(&buf[GET_THREAD_ID(query->return_id)],data,len);
-			pthread_cond_signal(&cnd);
+		case RULK_RSP: 
+			part_lock_man.unpack_rsp(query,data);
 			break;
-									 }
 		case RQRY: {
 #if WORKLOAD == TPCC
 			tpcc_query * m_query = new tpcc_query;
@@ -97,7 +66,6 @@ void Remote_query::unpack(base_query * query, void * d, int len) {
 			buf[GET_THREAD_ID(query->return_id)] = (char *)mem_allocator.alloc(sizeof(char) * len, 0);
 			memcpy(&buf[GET_THREAD_ID(query->return_id)],data,len);
 			// Signal local thread
-			pthread_cond_signal(&cnd);
 			break;
 									 }
 		default:

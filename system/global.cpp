@@ -53,6 +53,7 @@ double g_write_perc = WRITE_PERC;
 double g_zipf_theta = ZIPF_THETA;
 bool g_prt_lat_distr = PRT_LAT_DISTR;
 UInt32 g_node_id = 0;
+UInt32 g_node_cnt = NODE_CNT;
 UInt32 g_part_cnt = PART_CNT;
 UInt32 g_virtual_part_cnt = VIRTUAL_PART_CNT;
 UInt32 g_thread_cnt = THREAD_CNT;

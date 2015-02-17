@@ -82,8 +82,10 @@ void Transport::send_msg(uint64_t dest_id, void ** data, int * sizes, int num) {
 	}
 	*/
 	int rc = s.send(&sbuf,NN_MSG,0);
-	if(rc < 0)
+	if(rc < 0) {
 		printf("send Error: %d %s\n",errno,strerror(errno));
+		assert(false);
+	}
 	//send_msg(sbuf,size);
 	INC_STATS(0,msg_sent_cnt,1);
 	INC_STATS(0,msg_bytes,size);

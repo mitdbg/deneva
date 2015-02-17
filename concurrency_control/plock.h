@@ -11,14 +11,22 @@ class txn_man;
 // Parition manager for HSTORE
 class PartMan {
 public:
-	void init();
-	RC lock(txn_man * txn);
-	void unlock(txn_man * txn);
+	void init(uint64_t node_id);
+	RC lock(uint64_t pid,  uint64_t * rp, uint64_t ts);
+	void unlock(uint64_t pid,  uint64_t * rp);
+	void remote_rsp(bool l, RC rc, uint64_t node_id, uint64_t pid);
 private:
+	uint64_t _node_id;
 	pthread_mutex_t latch;
-	txn_man * owner;
-	txn_man ** waiters;
+	//txn_man * owner;
+	//txn_man ** waiters;
 	UInt32 waiter_cnt;
+	uint64_t owner;
+	uint64_t owner_ts;
+	uint64_t * owner_rp;
+	uint64_t * waiters;
+	uint64_t * waiters_ts;
+	uint64_t ** waiters_rp;
 };
 
 // Partition Level Locking
@@ -29,14 +37,19 @@ public:
 	RC lock(txn_man * txn, uint64_t * parts, uint64_t part_cnt);
 	void unlock(txn_man * txn, uint64_t * parts, uint64_t part_cnt);
 
-	RC unpack_rsp(void * d);
+	void unpack_rsp(base_query * query, void * d);
 	void unpack(base_query * query, char * data);
-	RC remote_qry(bool l, uint64_t * part_id);
-	void remote_rsp(bool l, RC * rc, uint64_t node_id);
+	void remote_qry(bool l, uint64_t pid, uint64_t lid, uint64_t ts);
 	uint64_t get_node_id() {return _node_id;};
+	void rem_unlock(uint64_t pid, uint64_t * parts, uint64_t part_cnt);
+	void rem_lock(uint64_t pid, uint64_t ts, uint64_t * parts, uint64_t part_cnt); 
+	void rem_lock_rsp(uint64_t pid, RC rc);
 private:
 	uint64_t _node_id;
 	PartMan ** part_mans;
+	// make sure these are on different cache lines
+	 uint64_t *_ready_parts;
+	RC * _rcs;
 };
 
 #endif

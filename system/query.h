@@ -25,6 +25,7 @@ public:
 	uint64_t * parts;
 	RemReqType rtype;
 	RC rc;
+	uint64_t pid;
 };
 
 // All the queries for a particular thread.

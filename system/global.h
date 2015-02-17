@@ -79,6 +79,7 @@ extern bool g_part_alloc;
 extern bool g_mem_pad;
 extern bool g_prt_lat_distr;
 extern UInt32 g_node_id;
+extern UInt32 g_node_cnt;
 extern UInt32 g_part_cnt;
 extern UInt32 g_virtual_part_cnt;
 extern UInt32 g_thread_cnt;
