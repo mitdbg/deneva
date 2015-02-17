@@ -156,9 +156,9 @@ void Plock::init(uint64_t node_id) {
 // TODO: send remote requests in parallel
 // TODO: make non-blocking remote requests
 RC Plock::lock(txn_man * txn, uint64_t * parts, uint64_t part_cnt) {
-	RC rc;
 	uint64_t tid = txn->get_thd_id();
 	uint64_t nid = txn->get_node_id();
+	RC rc = RCOK;
 	_rcs[tid] = RCOK;
 	_ready_parts[tid] = 0;
 	ts_t starttime = get_sys_clock();
