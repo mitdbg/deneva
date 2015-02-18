@@ -258,7 +258,7 @@ void tpcc_query::gen_payment(uint64_t thd_id) {
 	int y = URand(1, 100);
 
 
-	if(x <= 85) { 
+	if(x <= (100 - MPR)) { 
 		// home warehouse
 		c_d_id = d_id;
 		c_w_id = w_id;

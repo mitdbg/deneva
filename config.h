@@ -53,7 +53,7 @@
 #define TPORT_PORT	"tmp.ipc" 
 #define MAX_TPORT_NAME 128
 #define MSG_SIZE 128 // in bytes
-#define HEADER_SIZE sizeof(uint32_t)*3 // in bits 
+#define HEADER_SIZE sizeof(uint64_t)*2 // in bits 
 #define MSG_TIMEOUT 5000000000UL // in ns
 
 /***********************************************/
@@ -116,7 +116,7 @@
 // max number of rows touched per transaction
 #define MAX_ROW_PER_TXN				64
 #define QUERY_INTVL 				1UL
-#define MAX_TXN_PER_PART 			1000
+#define MAX_TXN_PER_PART 			10000
 #define FIRST_PART_LOCAL 			true
 #define MAX_TUPLE_SIZE				1024 // in bytes
 // ==== [YCSB] ====
@@ -141,6 +141,8 @@
 #define TPCC_ACCESS_ALL 			false 
 #define WH_UPDATE					true
 #define NUM_WH 						4
+// % of transactions that access multiple partitions
+#define MPR								15 // In %: 15 is default
 //
 enum TPCCTxnType {TPCC_ALL, 
 				TPCC_PAYMENT, 
