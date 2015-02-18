@@ -14,7 +14,7 @@ public:
 	void init(uint64_t node_id);
 	RC lock(uint64_t pid,  uint64_t * rp, uint64_t ts);
 	void unlock(uint64_t pid,  uint64_t * rp);
-	void remote_rsp(bool l, RC rc, uint64_t node_id, uint64_t pid);
+	void remote_rsp(bool l, RC rc, uint64_t node_id, uint64_t pid, uint64_t ts);
 private:
 	uint64_t _node_id;
 	pthread_mutex_t latch;
@@ -43,13 +43,14 @@ public:
 	uint64_t get_node_id() {return _node_id;};
 	void rem_unlock(uint64_t pid, uint64_t * parts, uint64_t part_cnt);
 	void rem_lock(uint64_t pid, uint64_t ts, uint64_t * parts, uint64_t part_cnt); 
-	void rem_lock_rsp(uint64_t pid, RC rc);
+	void rem_lock_rsp(uint64_t pid, RC rc, uint64_t ts);
 private:
 	uint64_t _node_id;
 	PartMan ** part_mans;
 	// make sure these are on different cache lines
 	 uint64_t *_ready_parts;
 	RC * _rcs;
+	uint64_t * _ts;
 };
 
 #endif

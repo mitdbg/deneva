@@ -53,7 +53,7 @@
 #define TPORT_PORT	"tmp.ipc" 
 #define MAX_TPORT_NAME 128
 #define MSG_SIZE 128 // in bytes
-#define HEADER_SIZE sizeof(uint64_t)*2 // in bits 
+#define HEADER_SIZE sizeof(uint32_t)*3 // in bits 
 #define MSG_TIMEOUT 5000000000UL // in ns
 
 /***********************************************/

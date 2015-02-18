@@ -78,7 +78,7 @@ RC thread_t::run_remote() {
 					part_lock_man.rem_unlock(m_query->pid, m_query->parts, m_query->part_cnt);
 					break;
 				case RLK_RSP:
-					part_lock_man.rem_lock_rsp(m_query->pid,m_query->rc);
+					part_lock_man.rem_lock_rsp(m_query->pid,m_query->rc,m_query->ts);
 					break;
 #endif
 				case RQRY:

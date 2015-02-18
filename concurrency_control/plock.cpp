@@ -35,7 +35,7 @@ RC PartMan::lock(uint64_t pid,  uint64_t * rp, uint64_t ts) {
 		owner_rp = rp;
 		// If not local, send remote response
 		if(GET_NODE_ID(owner) != _node_id)
-			remote_rsp(true,RCOK,GET_NODE_ID(owner),owner);
+			remote_rsp(true,RCOK,GET_NODE_ID(owner),owner, owner_ts);
 		rc = RCOK;
 	} else if (owner_ts < ts) {
 		int i;
@@ -68,7 +68,7 @@ RC PartMan::lock(uint64_t pid,  uint64_t * rp, uint64_t ts) {
 		rc = Abort;
 		// if we abort, need to send abort to remote node
 		if(GET_NODE_ID(pid) != _node_id)
-			remote_rsp(true,rc,GET_NODE_ID(pid),pid);
+			remote_rsp(true,rc,GET_NODE_ID(pid),pid, ts);
 	}
 	pthread_mutex_unlock( &latch );
 	return rc;
@@ -95,7 +95,7 @@ void PartMan::unlock(uint64_t pid,  uint64_t * rp) {
 			if(GET_NODE_ID(owner) == _node_id)
 				ATOM_SUB(*owner_rp, 1);
 			else {
-				remote_rsp(true,RCOK,GET_NODE_ID(owner),owner);
+				remote_rsp(true,RCOK,GET_NODE_ID(owner),owner, owner_ts);
 			}
 		} 
 	} else {
@@ -121,19 +121,23 @@ void PartMan::unlock(uint64_t pid,  uint64_t * rp) {
 	pthread_mutex_unlock( &latch );
 }
 
-void PartMan::remote_rsp(bool l, RC rc, uint64_t node_id, uint64_t pid) {
-	int max_num = 4;
+void PartMan::remote_rsp(bool l, RC rc, uint64_t node_id, uint64_t pid, uint64_t ts) {
+	int max_num = 5;
 	void ** data = new void *[max_num];
 	int * sizes = new int [max_num];
 	int num = 0;
 	uint64_t _pid = pid;
+	uint64_t _ts = ts;
 	RC _rc = rc;
 	RemReqType rtype = l ? RLK_RSP : RULK_RSP;
+
 	data[num] = &rtype;
 	sizes[num++] = sizeof(RemReqType);
 	data[num] = &_rc;
 	sizes[num++] = sizeof(RC);
 	data[num] = &_pid;
+	sizes[num++] = sizeof(uint64_t);
+	data[num] = &_ts;
 	sizes[num++] = sizeof(uint64_t);
 
 	rem_qry_man.send_remote_rsp(node_id,data,sizes,num);
@@ -149,6 +153,7 @@ void Plock::init(uint64_t node_id) {
 	ARR_PTR(PartMan, part_mans, g_part_cnt);
 	_ready_parts = new  uint64_t[g_thread_cnt];
 	_rcs = new RC[g_thread_cnt];
+	_ts = new uint64_t[g_thread_cnt];
 	for (UInt32 i = 0; i < g_part_cnt; i++)
 		part_mans[i]->init(node_id);
 }
@@ -159,6 +164,7 @@ RC Plock::lock(txn_man * txn, uint64_t * parts, uint64_t part_cnt) {
 	uint64_t tid = txn->get_thd_id();
 	uint64_t nid = txn->get_node_id();
 	RC rc = RCOK;
+	_ts[tid] = txn->get_ts();
 	_rcs[tid] = RCOK;
 	_ready_parts[tid] = 0;
 	ts_t starttime = get_sys_clock();
@@ -222,6 +228,8 @@ void Plock::unpack_rsp(base_query * query, void * d) {
 	ptr += sizeof(query->rc);
 	memcpy(&query->pid,&data[ptr],sizeof(query->pid));
 	ptr += sizeof(query->pid);
+	memcpy(&query->ts,&data[ptr],sizeof(query->ts));
+	ptr += sizeof(query->ts);
 }
 
 void Plock::unpack(base_query * query, char * data) {
@@ -286,8 +294,12 @@ void Plock::rem_lock(uint64_t pid, uint64_t ts, uint64_t * parts, uint64_t part_
 	INC_TMP_STATS(1, time_man, get_sys_clock() - starttime);
 }
 
-void Plock::rem_lock_rsp(uint64_t pid, RC rc) {
+void Plock::rem_lock_rsp(uint64_t pid, RC rc, uint64_t ts) {
 	ts_t starttime = get_sys_clock();
+	if(ts != _ts[GET_THREAD_ID(pid)]) {
+		printf("Old message with ts %ld(%ld) dropped\n", ts,_ts[GET_THREAD_ID(pid)]);
+		return;
+	}
 	if(rc != RCOK)
 		_rcs[GET_THREAD_ID(pid)] = rc;
 	if(rc == RCOK)
