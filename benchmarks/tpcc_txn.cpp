@@ -17,6 +17,9 @@ void tpcc_txn_man::init(thread_t * h_thd, workload * h_wl, uint64_t thd_id) {
 	_wl = (tpcc_wl *) h_wl;
 }
 
+void tpcc_txn_man::rem_txn_rsp(base_query * query) {
+}
+
 RC tpcc_txn_man::run_rem_txn(base_query * query) {
 	tpcc_query * m_query = (tpcc_query *) query;
 	uint64_t w_id = m_query->w_id;

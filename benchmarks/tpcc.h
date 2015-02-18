@@ -75,6 +75,7 @@ public:
 	void init(thread_t * h_thd, workload * h_wl, uint64_t part_id); 
 	RC run_txn(base_query * query);
 	RC run_rem_txn(base_query * query);
+	void rem_txn_rsp(base_query * query); 
 	//void pack(r_query * query, void ** data, int * sizes, int * num);
 	//void unpack(r_query * query, char * data);
 private:
