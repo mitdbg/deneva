@@ -34,8 +34,8 @@ public:
 	txn_man * get_txn_man(uint64_t tid);
 	void remote_qry(base_query * query, int type, int dest_id, txn_man * txn);
 	void signal_end();
-	void send_remote_query(uint64_t dest_id, void ** data, int * sizes, int num, uint64_t tid);
-	void send_remote_rsp(uint64_t dest_id, void ** data, int * sizes, int num, uint64_t tid);
+	void send_remote_query(uint64_t dest_id, void ** data, int * sizes, int num);
+	void send_remote_rsp(uint64_t dest_id, void ** data, int * sizes, int num);
 	void unpack(base_query * query, void * d, int len);
 	int q_idx;
 	/*

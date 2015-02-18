@@ -136,7 +136,7 @@ void PartMan::remote_rsp(bool l, RC rc, uint64_t node_id, uint64_t pid) {
 	data[num] = &_pid;
 	sizes[num++] = sizeof(uint64_t);
 
-	rem_qry_man.send_remote_rsp(node_id,data,sizes,num,0);
+	rem_qry_man.send_remote_rsp(node_id,data,sizes,num);
 }
 
 
@@ -263,7 +263,7 @@ void Plock::remote_qry(bool l, uint64_t pid, uint64_t lid, uint64_t ts) {
 	data[num] = &_lid;
 	sizes[num++] = sizeof(uint64_t);
 
-	rem_qry_man.send_remote_query(GET_NODE_ID(lid),data,sizes,num,0);
+	rem_qry_man.send_remote_query(GET_NODE_ID(lid),data,sizes,num);
 }
 
 void Plock::rem_unlock(uint64_t pid, uint64_t * parts, uint64_t part_cnt) {

@@ -25,14 +25,14 @@ void Remote_query::remote_qry(base_query * query, int type, int dest_id, txn_man
 	m_query->remote_qry(query,type,dest_id);
 }
 
-void Remote_query::send_remote_query(uint64_t dest_id, void ** data, int * sizes, int num, uint64_t tid) {
+void Remote_query::send_remote_query(uint64_t dest_id, void ** data, int * sizes, int num) {
 	tport_man.send_msg(dest_id, data, sizes, num);
 }
 
 void Remote_query::signal_end() {
 }
 
-void Remote_query::send_remote_rsp(uint64_t dest_id, void ** data, int * sizes, int num, uint64_t tid) {
+void Remote_query::send_remote_rsp(uint64_t dest_id, void ** data, int * sizes, int num) {
 	tport_man.send_msg(dest_id, data, sizes, num);
 }
 

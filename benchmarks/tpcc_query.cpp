@@ -10,6 +10,7 @@ void tpcc_query::init(uint64_t thd_id, workload * h_wl) {
 	double x = (double)(rand() % 100) / 100.0;
 	part_to_access = (uint64_t *) 
 		mem_allocator.alloc(sizeof(uint64_t) * g_part_cnt, thd_id);
+	pid = GET_PART_ID(thd_id,g_node_id);
 	// TODO
 	if (x < g_perc_payment)
 		gen_payment(thd_id);
@@ -25,8 +26,9 @@ void tpcc_query::remote_qry(base_query * query, int type, int dest_id) {
 	int * sizes = NULL;
 	int num = 0;
 	// Maximum number of parameters
-	int max_num = 10;
+	int max_num = 11;
 	RemReqType rtype = RQRY;
+	uint64_t _pid = m_query->pid;
 
 	data = new void *[max_num];
 	sizes = new int [max_num];
@@ -35,6 +37,9 @@ void tpcc_query::remote_qry(base_query * query, int type, int dest_id) {
 	sizes[num++] = sizeof(RemReqType);
 	data[num] = &t;
 	sizes[num++] = sizeof(TPCCRemTxnType); 
+	// The requester's PID
+	data[num] = &_pid;
+	sizes[num++] = sizeof(uint64_t); 
 	switch(t) {
 		case TPCC_PAYMENT0 :
 			data[num] = &m_query->w_id;
@@ -102,23 +107,17 @@ void tpcc_query::remote_qry(base_query * query, int type, int dest_id) {
 		default:
 			assert(false);
 	}
-	// Blocks while waiting for response
 	// FIXME: Use tid as param
-	void * buf;
-	buf = rem_qry_man.send_remote_query(dest_id, data, sizes, num, 0);
-	// Simulation finished?
-	if(buf == NULL) {
-		printf("No buf\n");
-	}
-	//unpack_rsp(query,buf,&rc);
+	rem_qry_man.send_remote_query(dest_id, data, sizes, num);
 }
 
 void tpcc_query::remote_rsp(base_query * query, RC rc) {
 	tpcc_query * m_query = (tpcc_query *) query;
-	int total = 4;
+	int total = 5;
 	void ** data = new void *[total];
 	int * sizes = new int [total];
 	int num = 0;
+	uint64_t _pid = m_query->pid;
 	RemReqType rtype = RQRY_RSP;
 
 	data[num] = &rtype;
@@ -127,6 +126,9 @@ void tpcc_query::remote_rsp(base_query * query, RC rc) {
 	sizes[num++] = sizeof(m_query->type);
 	data[num] = &rc;
 	sizes[num++] = sizeof(RC);
+	// The original requester's pid
+	data[num] = &_pid;
+	sizes[num++] = sizeof(uint64_t);
 	switch(m_query->type) {
 		case TPCC_NEWORDER0 :
 			data[num] = &m_query->o_id;
@@ -134,18 +136,19 @@ void tpcc_query::remote_rsp(base_query * query, RC rc) {
 		default:
 			break;
 	}
-	rem_qry_man.send_remote_rsp(m_query->return_id, data, sizes, num,0);
+	rem_qry_man.send_remote_rsp(m_query->return_id, data, sizes, num);
 }
 
 void tpcc_query::unpack_rsp(base_query * query, void * d) {
 	char * data = (char *) d;
 	tpcc_query * m_query = (tpcc_query *) query;
-	RC rc;
 	uint64_t ptr = HEADER_SIZE;
 	memcpy(&m_query->type,&data[ptr],sizeof(m_query->type));
 	ptr += sizeof(m_query->type);
-	memcpy(&rc,&data[ptr],sizeof(RC));
+	memcpy(&m_query->rc,&data[ptr],sizeof(RC));
 	ptr += sizeof(RC);
+	memcpy(&m_query->pid,&data[ptr],sizeof(uint64_t));
+	ptr += sizeof(uint64_t);
 	switch(m_query->type) {
 		case TPCC_NEWORDER0 :
 			memcpy(&m_query->o_id,&data[ptr],sizeof(m_query->o_id));
@@ -162,6 +165,8 @@ void tpcc_query::unpack(base_query * query, void * d) {
 	uint64_t ptr = HEADER_SIZE + sizeof(RemReqType);
 	memcpy(&m_query->type,&data[ptr],sizeof(m_query->type));
 	ptr += sizeof(m_query->type);
+	memcpy(&m_query->pid,&data[ptr],sizeof(uint64_t));
+	ptr += sizeof(uint64_t);
 	switch(m_query->type) {
 		case TPCC_PAYMENT0 :
 			memcpy(&m_query->w_id,&data[ptr],sizeof(m_query->w_id));
