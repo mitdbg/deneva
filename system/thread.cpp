@@ -86,6 +86,11 @@ RC thread_t::run_remote() {
 					m_txn->run_rem_txn(m_query);
 #endif
 					break;
+				case RQRY_RSP:
+					m_txn = rem_qry_man.get_txn_man(GET_THREAD_ID(m_query->pid));
+					m_txn->rem_txn_rsp(m_query);
+					break;
+
 				default:
 					break;
 			}

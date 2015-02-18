@@ -7,6 +7,8 @@
 
 #define MAX_DATA_SIZE 100 
 class tpcc_query;
+class tpcc_txn_man;
+class txn_man;
 class base_query;
 
 
@@ -29,7 +31,8 @@ public:
 class Remote_query {
 public:
 	void init(uint64_t node_id, workload * wl);
-	void remote_qry(base_query * query, int type, int dest_id);
+	txn_man * get_txn_man(uint64_t tid);
+	void remote_qry(base_query * query, int type, int dest_id, txn_man * txn);
 	void signal_end();
 	void send_remote_query(uint64_t dest_id, void ** data, int * sizes, int num, uint64_t tid);
 	void send_remote_rsp(uint64_t dest_id, void ** data, int * sizes, int num, uint64_t tid);
@@ -46,6 +49,7 @@ private:
 	
 	uint64_t _node_id;
 	workload * _wl;
+	txn_man ** txns;
 
 };
 #endif

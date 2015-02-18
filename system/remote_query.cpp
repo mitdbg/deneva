@@ -10,9 +10,15 @@ void Remote_query::init(uint64_t node_id, workload * wl) {
 	q_idx = 0;
 	_node_id = node_id;
 	_wl = wl;
+	txns = (txn_man **)mem_allocator.alloc(sizeof(txn_man *) * g_thread_cnt, g_thread_cnt);
 }
 
-void Remote_query::remote_qry(base_query * query, int type, int dest_id) {
+txn_man * Remote_query::get_txn_man(uint64_t tid) {
+	return txns[tid];
+}
+
+void Remote_query::remote_qry(base_query * query, int type, int dest_id, txn_man * txn) {
+	txns[txn->get_thd_id()] = txn;
 #if WORKLOAD == TPCC
 	tpcc_query * m_query = (tpcc_query *) query;
 #endif
