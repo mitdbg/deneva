@@ -80,6 +80,8 @@ public:
 	//void unpack(r_query * query, char * data);
 private:
 	tpcc_wl * _wl;
+	volatile RC _rc;
+	tpcc_query * _qry;
 	RC run_payment(tpcc_query * m_query);
 	RC run_payment_0(uint64_t w_id, uint64_t d_id, uint64_t d_w_id, double h_amount);
 	RC run_payment_1(uint64_t w_id, uint64_t d_id,uint64_t c_id,uint64_t c_w_id, uint64_t c_d_id, char * c_last, double h_amount, bool by_last_name);

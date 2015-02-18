@@ -15,9 +15,13 @@
 void tpcc_txn_man::init(thread_t * h_thd, workload * h_wl, uint64_t thd_id) {
 	txn_man::init(h_thd, h_wl, thd_id);
 	_wl = (tpcc_wl *) h_wl;
+	_qry = new tpcc_query;
 }
 
 void tpcc_txn_man::rem_txn_rsp(base_query * query) {
+	tpcc_query * m_query = (tpcc_query *) query;
+	_rc = m_query->rc;
+	*_qry = *m_query;
 }
 
 RC tpcc_txn_man::run_rem_txn(base_query * query) {
@@ -106,8 +110,12 @@ RC tpcc_txn_man::run_payment(tpcc_query * query) {
 
 	if(GET_NODE_ID(part_id) == get_node_id()) 
 		rc = run_payment_0(w_id, d_id, d_w_id, h_amount);
-	else 
+	else { 
+		_rc = NONE;
 		rem_qry_man.remote_qry(query,TPCC_PAYMENT0,GET_NODE_ID(part_id),this);
+		while(_rc == NONE) {}
+		rc = _rc;
+	}
 	if(rc != RCOK)
 		return finish(rc);
 
@@ -115,8 +123,12 @@ RC tpcc_txn_man::run_payment(tpcc_query * query) {
 	printf("run_payment1 %ld:%ld -> %ld -- %ld\n",get_node_id(),get_thd_id(),part_id,GET_NODE_ID(part_id));
 	if(GET_NODE_ID(part_id) == get_node_id())
 		rc = run_payment_1( w_id,  d_id, c_id, c_w_id,  c_d_id, c_last, h_amount, by_last_name); 
-	else
+	else {
+		_rc = NONE;
 		rem_qry_man.remote_qry(query,TPCC_PAYMENT1,GET_NODE_ID(part_id),this);
+		while(_rc == NONE) {}
+		rc = _rc;
+	}
 	if(rc != RCOK)
 		return finish(rc);
 
@@ -140,8 +152,14 @@ RC tpcc_txn_man::run_new_order(tpcc_query * query) {
 	printf("run_new_order0 %ld:%ld -> %ld -- %ld\n",get_node_id(),get_thd_id(),part_id,GET_NODE_ID(part_id));
 	if(GET_NODE_ID(part_id) == get_node_id())
 		rc = new_order_0( w_id, d_id, c_id, remote, ol_cnt, o_entry_d, &o_id); 
-	else
+	else {
+		_rc = NONE;
 		rem_qry_man.remote_qry(query,TPCC_NEWORDER0,GET_NODE_ID(part_id),this);
+		while(_rc == NONE) {}
+		rc = _rc;
+		if(rc == RCOK)
+			query->o_id = _qry->o_id;
+	}
 	if(rc != RCOK)
 		return finish(rc);
 
@@ -172,7 +190,10 @@ RC tpcc_txn_man::run_new_order(tpcc_query * query) {
 				query->ol_supply_w_id = ol_supply_w_id;
 				query->ol_quantity = ol_quantity;
 				query->ol_number = ol_number;
+				_rc = NONE;
 				rem_qry_man.remote_qry(query,TPCC_NEWORDER2,GET_NODE_ID(part_id),this);
+				while(_rc == NONE) {}
+				rc = _rc;
 			}
 			if(rc != RCOK)
 				return finish(rc);
