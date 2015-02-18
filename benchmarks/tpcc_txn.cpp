@@ -66,7 +66,8 @@ RC tpcc_txn_man::run_rem_txn(base_query * query) {
 			assert(false);
 	}
 	// return ack and any values to remote node
-	m_query->remote_rsp(query,rc);
+	m_query->rc = rc;
+	m_query->remote_rsp(query);
 	//m_query->pack(query,data,sizes,&num, rc);
 	return finish(rc);
 }

@@ -113,8 +113,6 @@ RC thread_t::run_remote() {
 		if (warmup_finish && _wl->sim_done && ((tend - rq_time) > MSG_TIMEOUT)) {
 	      if( !ATOM_CAS(_wl->sim_timeout, false, true) )
 					assert( _wl->sim_timeout);
-				printf("Timeout %ld %ld %ld\n",tend,rq_time,MSG_TIMEOUT);
-
 	    }
 	    if (_wl->sim_done && _wl->sim_timeout) {
 #if !NOGRAPHITE

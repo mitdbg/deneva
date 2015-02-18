@@ -18,20 +18,21 @@ void tpcc_query::init(uint64_t thd_id, workload * h_wl) {
 		gen_new_order(thd_id);
 }
 
+// Note: If you ever change the number of parameters sent, change "total"
 void tpcc_query::remote_qry(base_query * query, int type, int dest_id) {
 
 	tpcc_query * m_query = (tpcc_query *) query;
 	TPCCRemTxnType t = (TPCCRemTxnType) type;
-	void ** data = NULL;
-	int * sizes = NULL;
-	int num = 0;
+
 	// Maximum number of parameters
-	int max_num = 11;
+	// NOTE: Adjust if parameters sent is changed
+	int total = 11;
+
+	void ** data = new void *[total];
+	int * sizes = new int [total];
+	int num = 0;
 	RemReqType rtype = RQRY;
 	uint64_t _pid = m_query->pid;
-
-	data = new void *[max_num];
-	sizes = new int [max_num];
 
 	data[num] = &rtype;
 	sizes[num++] = sizeof(RemReqType);
@@ -111,11 +112,17 @@ void tpcc_query::remote_qry(base_query * query, int type, int dest_id) {
 	rem_qry_man.send_remote_query(dest_id, data, sizes, num);
 }
 
-void tpcc_query::remote_rsp(base_query * query, RC rc) {
+// Note: If you ever change the number of parameters sent, change "total"
+void tpcc_query::remote_rsp(base_query * query) {
 	tpcc_query * m_query = (tpcc_query *) query;
+
+	// Maximum number of parameters
+	// NOTE: Adjust if parameters sent is changed
 	int total = 5;
+
 	void ** data = new void *[total];
 	int * sizes = new int [total];
+
 	int num = 0;
 	uint64_t _pid = m_query->pid;
 	RemReqType rtype = RQRY_RSP;
@@ -124,7 +131,7 @@ void tpcc_query::remote_rsp(base_query * query, RC rc) {
 	sizes[num++] = sizeof(RemReqType);
 	data[num] = &m_query->type;
 	sizes[num++] = sizeof(m_query->type);
-	data[num] = &rc;
+	data[num] = &m_query->rc;
 	sizes[num++] = sizeof(RC);
 	// The original requester's pid
 	data[num] = &_pid;
@@ -142,7 +149,7 @@ void tpcc_query::remote_rsp(base_query * query, RC rc) {
 void tpcc_query::unpack_rsp(base_query * query, void * d) {
 	char * data = (char *) d;
 	tpcc_query * m_query = (tpcc_query *) query;
-	uint64_t ptr = HEADER_SIZE;
+	uint64_t ptr = HEADER_SIZE + sizeof(RemReqType);
 	memcpy(&m_query->type,&data[ptr],sizeof(m_query->type));
 	ptr += sizeof(m_query->type);
 	memcpy(&m_query->rc,&data[ptr],sizeof(RC));

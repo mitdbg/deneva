@@ -54,7 +54,7 @@
 #define MAX_TPORT_NAME 128
 #define MSG_SIZE 128 // in bytes
 #define HEADER_SIZE sizeof(uint32_t)*3 // in bits 
-#define MSG_TIMEOUT 10000000000UL // in ns
+#define MSG_TIMEOUT 5000000000UL // in ns
 
 /***********************************************/
 // Concurrency Control
@@ -116,7 +116,7 @@
 // max number of rows touched per transaction
 #define MAX_ROW_PER_TXN				64
 #define QUERY_INTVL 				1UL
-#define MAX_TXN_PER_PART 			100
+#define MAX_TXN_PER_PART 			1000
 #define FIRST_PART_LOCAL 			true
 #define MAX_TUPLE_SIZE				1024 // in bytes
 // ==== [YCSB] ====

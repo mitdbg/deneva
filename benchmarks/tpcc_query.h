@@ -50,7 +50,7 @@ class tpcc_query : public base_query {
 public:
 	void init(uint64_t thd_id, workload * h_wl);
 	void remote_qry(base_query * query, int type,int dest_id);
-	void remote_rsp(base_query * query, RC rc);
+	void remote_rsp(base_query * query);
 	void unpack(base_query * query, void * d);
 	void unpack_rsp(base_query * query, void * d);
 	void pack(base_query * query, void ** data, int * sizes, int * num, RC rc);
