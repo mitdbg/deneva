@@ -17,8 +17,10 @@ void tpcc_query::init(uint64_t thd_id, workload * h_wl) {
 		gen_new_order(thd_id);
 }
 
-RC tpcc_query::remote_qry(tpcc_query * query, TPCCRemTxnType type, int dest_id) {
+void tpcc_query::remote_qry(base_query * query, int type, int dest_id) {
 
+	tpcc_query * m_query = (tpcc_query *) query;
+	TPCCRemTxnType t = (TPCCRemTxnType) type;
 	void ** data = NULL;
 	int * sizes = NULL;
 	int num = 0;
@@ -31,70 +33,70 @@ RC tpcc_query::remote_qry(tpcc_query * query, TPCCRemTxnType type, int dest_id) 
 
 	data[num] = &rtype;
 	sizes[num++] = sizeof(RemReqType);
-	data[num] = &type;
-	sizes[num++] = sizeof(type); 
-	switch(type) {
+	data[num] = &t;
+	sizes[num++] = sizeof(TPCCRemTxnType); 
+	switch(t) {
 		case TPCC_PAYMENT0 :
-			data[num] = &query->w_id;
-			sizes[num++] = sizeof(query->w_id);
-			data[num] = &query->d_id;
-			sizes[num++] = sizeof(query->d_id);
-			data[num] = &query->d_w_id;
-			sizes[num++] = sizeof(query->d_w_id);
-			data[num] = &query->h_amount;
-			sizes[num++] = sizeof(query->h_amount);
+			data[num] = &m_query->w_id;
+			sizes[num++] = sizeof(m_query->w_id);
+			data[num] = &m_query->d_id;
+			sizes[num++] = sizeof(m_query->d_id);
+			data[num] = &m_query->d_w_id;
+			sizes[num++] = sizeof(m_query->d_w_id);
+			data[num] = &m_query->h_amount;
+			sizes[num++] = sizeof(m_query->h_amount);
 			break;
 		case TPCC_PAYMENT1 :
-			data[num] = &query->w_id;
-			sizes[num++] = sizeof(query->w_id);
-			data[num] = &query->d_id;
-			sizes[num++] = sizeof(query->d_id);
-			data[num] = &query->c_id;
-			sizes[num++] = sizeof(query->c_id);
-			data[num] = &query->c_w_id;
-			sizes[num++] = sizeof(query->c_w_id);
-			data[num] = &query->c_d_id;
-			sizes[num++] = sizeof(query->c_d_id);
-			data[num] = &query->c_last;
-			sizes[num++] = sizeof(query->c_last);
-			data[num] = &query->h_amount;
-			sizes[num++] = sizeof(query->h_amount);
-			data[num] = &query->by_last_name;
-			sizes[num++] = sizeof(query->by_last_name);
+			data[num] = &m_query->w_id;
+			sizes[num++] = sizeof(m_query->w_id);
+			data[num] = &m_query->d_id;
+			sizes[num++] = sizeof(m_query->d_id);
+			data[num] = &m_query->c_id;
+			sizes[num++] = sizeof(m_query->c_id);
+			data[num] = &m_query->c_w_id;
+			sizes[num++] = sizeof(m_query->c_w_id);
+			data[num] = &m_query->c_d_id;
+			sizes[num++] = sizeof(m_query->c_d_id);
+			data[num] = &m_query->c_last;
+			sizes[num++] = sizeof(m_query->c_last);
+			data[num] = &m_query->h_amount;
+			sizes[num++] = sizeof(m_query->h_amount);
+			data[num] = &m_query->by_last_name;
+			sizes[num++] = sizeof(m_query->by_last_name);
 			break;
 		case TPCC_NEWORDER0 :
-			data[num] = &query->w_id;
-			sizes[num++] = sizeof(query->w_id);
-			data[num] = &query->d_id;
-			sizes[num++] = sizeof(query->d_id);
-			data[num] = &query->c_id;
-			sizes[num++] = sizeof(query->c_id);
-			data[num] = &query->remote;
-			sizes[num++] = sizeof(query->remote);
-			data[num] = &query->ol_cnt;
-			sizes[num++] = sizeof(query->ol_cnt);
+			data[num] = &m_query->w_id;
+			sizes[num++] = sizeof(m_query->w_id);
+			data[num] = &m_query->d_id;
+			sizes[num++] = sizeof(m_query->d_id);
+			data[num] = &m_query->c_id;
+			sizes[num++] = sizeof(m_query->c_id);
+			data[num] = &m_query->remote;
+			sizes[num++] = sizeof(m_query->remote);
+			data[num] = &m_query->ol_cnt;
+			sizes[num++] = sizeof(m_query->ol_cnt);
 			break;
 		case TPCC_NEWORDER1 :
-			data[num] = &query->ol_i_id;
-			sizes[num++] = sizeof(query->ol_i_id);
+			data[num] = &m_query->ol_i_id;
+			sizes[num++] = sizeof(m_query->ol_i_id);
 			break;
 		case TPCC_NEWORDER2 :
-			data[num] = &query->w_id;
-			sizes[num++] = sizeof(query->w_id);
-			data[num] = &query->d_id;
-			sizes[num++] = sizeof(query->d_id);
-			data[num] = &query->remote;
-			sizes[num++] = sizeof(query->remote);
-			data[num] = &query->ol_i_id;
-			sizes[num++] = sizeof(query->ol_i_id);
-			data[num] = &query->ol_supply_w_id;
-			sizes[num++] = sizeof(query->ol_supply_w_id);
-			data[num] = &query->ol_quantity;
-			sizes[num++] = sizeof(query->ol_quantity);
-			data[num] = &query->ol_number;
-			sizes[num++] = sizeof(query->ol_number);
-			data[num] = &query->o_id;
-			sizes[num++] = sizeof(query->o_id);
+			data[num] = &m_query->w_id;
+			sizes[num++] = sizeof(m_query->w_id);
+			data[num] = &m_query->d_id;
+			sizes[num++] = sizeof(m_query->d_id);
+			data[num] = &m_query->remote;
+			sizes[num++] = sizeof(m_query->remote);
+			data[num] = &m_query->ol_i_id;
+			sizes[num++] = sizeof(m_query->ol_i_id);
+			data[num] = &m_query->ol_supply_w_id;
+			sizes[num++] = sizeof(m_query->ol_supply_w_id);
+			data[num] = &m_query->ol_quantity;
+			sizes[num++] = sizeof(m_query->ol_quantity);
+			data[num] = &m_query->ol_number;
+			sizes[num++] = sizeof(m_query->ol_number);
+			data[num] = &m_query->o_id;
+			sizes[num++] = sizeof(m_query->o_id);
 			break;
 
 		default:
@@ -102,15 +104,13 @@ RC tpcc_query::remote_qry(tpcc_query * query, TPCCRemTxnType type, int dest_id) 
 	}
 	// Blocks while waiting for response
 	// FIXME: Use tid as param
-	RC rc;
 	void * buf;
 	buf = rem_qry_man.send_remote_query(dest_id, data, sizes, num, 0);
 	// Simulation finished?
 	if(buf == NULL) {
-		return Abort;
+		printf("No buf\n");
 	}
-	unpack_rsp(query,buf,&rc);
-	return rc;
+	//unpack_rsp(query,buf,&rc);
 }
 
 void tpcc_query::remote_rsp(base_query * query, RC rc) {
@@ -137,13 +137,14 @@ void tpcc_query::remote_rsp(base_query * query, RC rc) {
 	rem_qry_man.send_remote_rsp(m_query->return_id, data, sizes, num,0);
 }
 
-void tpcc_query::unpack_rsp(base_query * query, void * d, RC * rc) {
+void tpcc_query::unpack_rsp(base_query * query, void * d) {
 	char * data = (char *) d;
 	tpcc_query * m_query = (tpcc_query *) query;
+	RC rc;
 	uint64_t ptr = HEADER_SIZE;
 	memcpy(&m_query->type,&data[ptr],sizeof(m_query->type));
 	ptr += sizeof(m_query->type);
-	memcpy(rc,&data[ptr],sizeof(RC));
+	memcpy(&rc,&data[ptr],sizeof(RC));
 	ptr += sizeof(RC);
 	switch(m_query->type) {
 		case TPCC_NEWORDER0 :
@@ -155,8 +156,9 @@ void tpcc_query::unpack_rsp(base_query * query, void * d, RC * rc) {
 	}
 }
 
-void tpcc_query::unpack(base_query * query, char * data) {
+void tpcc_query::unpack(base_query * query, void * d) {
 	tpcc_query * m_query = (tpcc_query *) query;
+	char * data = (char *) d;
 	uint64_t ptr = HEADER_SIZE + sizeof(RemReqType);
 	memcpy(&m_query->type,&data[ptr],sizeof(m_query->type));
 	ptr += sizeof(m_query->type);

@@ -49,11 +49,11 @@ public:
 class tpcc_query : public base_query {
 public:
 	void init(uint64_t thd_id, workload * h_wl);
-	RC remote_qry(tpcc_query * query, TPCCRemTxnType type,int dest_id);
-	void unpack_rsp(base_query * query, void * d, RC * rc);
-	void unpack(base_query * query, char * data);
-	void pack(base_query * query, void ** data, int * sizes, int * num, RC rc);
+	void remote_qry(base_query * query, int type,int dest_id);
 	void remote_rsp(base_query * query, RC rc);
+	void unpack(base_query * query, void * d);
+	void unpack_rsp(base_query * query, void * d);
+	void pack(base_query * query, void ** data, int * sizes, int * num, RC rc);
 	uint64_t rtn_node_id;
 	TPCCTxnType type;
 	TPCCRemTxnType rtype;

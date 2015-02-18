@@ -107,7 +107,7 @@ RC tpcc_txn_man::run_payment(tpcc_query * query) {
 	if(GET_NODE_ID(part_id) == get_node_id()) 
 		rc = run_payment_0(w_id, d_id, d_w_id, h_amount);
 	else 
-		rc = rem_qry_man.remote_qry(query,TPCC_PAYMENT0,GET_NODE_ID(part_id));
+		rem_qry_man.remote_qry(query,TPCC_PAYMENT0,GET_NODE_ID(part_id));
 	if(rc != RCOK)
 		return finish(rc);
 
@@ -116,7 +116,7 @@ RC tpcc_txn_man::run_payment(tpcc_query * query) {
 	if(GET_NODE_ID(part_id) == get_node_id())
 		rc = run_payment_1( w_id,  d_id, c_id, c_w_id,  c_d_id, c_last, h_amount, by_last_name); 
 	else
-		rc = rem_qry_man.remote_qry(query,TPCC_PAYMENT1,GET_NODE_ID(part_id));
+		rem_qry_man.remote_qry(query,TPCC_PAYMENT1,GET_NODE_ID(part_id));
 	if(rc != RCOK)
 		return finish(rc);
 
@@ -141,7 +141,7 @@ RC tpcc_txn_man::run_new_order(tpcc_query * query) {
 	if(GET_NODE_ID(part_id) == get_node_id())
 		rc = new_order_0( w_id, d_id, c_id, remote, ol_cnt, o_entry_d, &o_id); 
 	else
-		rc = rem_qry_man.remote_qry(query,TPCC_NEWORDER0,GET_NODE_ID(part_id));
+		rem_qry_man.remote_qry(query,TPCC_NEWORDER0,GET_NODE_ID(part_id));
 	if(rc != RCOK)
 		return finish(rc);
 
@@ -158,7 +158,7 @@ RC tpcc_txn_man::run_new_order(tpcc_query * query) {
 				rc = new_order_1(ol_i_id);
 			else
 				query->ol_i_id = ol_i_id;
-				rc = rem_qry_man.remote_qry(query,TPCC_NEWORDER1,GET_NODE_ID(part_id));
+				rem_qry_man.remote_qry(query,TPCC_NEWORDER1,GET_NODE_ID(part_id));
 			if(rc != RCOK)
 				return finish(rc);
 
@@ -172,7 +172,7 @@ RC tpcc_txn_man::run_new_order(tpcc_query * query) {
 				query->ol_supply_w_id = ol_supply_w_id;
 				query->ol_quantity = ol_quantity;
 				query->ol_number = ol_number;
-				rc = rem_qry_man.remote_qry(query,TPCC_NEWORDER2,GET_NODE_ID(part_id));
+				rem_qry_man.remote_qry(query,TPCC_NEWORDER2,GET_NODE_ID(part_id));
 			}
 			if(rc != RCOK)
 				return finish(rc);
