@@ -77,8 +77,10 @@ RC PartMan::lock(uint64_t pid,  uint64_t * rp, uint64_t ts) {
 void PartMan::unlock(uint64_t pid,  uint64_t * rp) {
 	pthread_mutex_lock( &latch );
 	if (pid == owner) {		
-		if (waiter_cnt == 0) 
+		if (waiter_cnt == 0) { 
 			owner = UINT64_MAX;
+			owner_ts = 0;
+		}
 		else {
 			// TODO: if waiter[0] is remote, send a RULK_RSP
 			owner = waiters[0];			
