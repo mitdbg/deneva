@@ -18,6 +18,7 @@ public:
 	uint64_t * part_to_access;
 
 	// Remote query components
+	uint64_t dest_id;
 	uint64_t ts;
 	uint64_t return_id;
 	uint64_t txn_id;

@@ -38,7 +38,13 @@ void Remote_query::send_remote_rsp(uint64_t dest_id, void ** data, int * sizes, 
 
 void Remote_query::unpack(base_query * query, void * d, int len) {
 	char * data = (char *) d;
-	uint64_t ptr = sizeof(uint32_t);
+	uint64_t ptr = 0;
+	memcpy(&query->dest_id,&data[ptr],sizeof(uint32_t));
+	ptr += sizeof(uint32_t);
+
+	if(query->dest_id != _node_id)
+		return;
+
 	memcpy(&query->return_id,&data[ptr],sizeof(uint32_t));
 	ptr += sizeof(uint32_t);
 	memcpy(&query->txn_id,&data[ptr],sizeof(uint32_t));
