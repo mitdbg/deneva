@@ -120,5 +120,5 @@ uint64_t MakeNumberString(int min, int max, char* str) {
 
 uint64_t wh_to_part(uint64_t wid) {
 	assert(g_part_cnt <= g_num_wh);
-	return wid % g_part_cnt;
+	return (wid-1) % g_part_cnt ;
 }

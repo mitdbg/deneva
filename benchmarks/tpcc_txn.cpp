@@ -107,7 +107,9 @@ RC tpcc_txn_man::run_payment(tpcc_query * query) {
 	char * c_last = query->c_last;
 
 	part_id = wh_to_part(w_id);
+#if DEBUG_DISTR
 	printf("run_payment0 %ld:%ld -> %ld -- %ld\n",get_node_id(),get_thd_id(),part_id,GET_NODE_ID(part_id));
+#endif
 
 	if(GET_NODE_ID(part_id) == get_node_id()) 
 		rc = run_payment_0(w_id, d_id, d_w_id, h_amount);
@@ -121,7 +123,9 @@ RC tpcc_txn_man::run_payment(tpcc_query * query) {
 		return finish(rc);
 
 	part_id = wh_to_part(c_w_id);
+#if DEBUG_DISTR
 	printf("run_payment1 %ld:%ld -> %ld -- %ld\n",get_node_id(),get_thd_id(),part_id,GET_NODE_ID(part_id));
+#endif
 	if(GET_NODE_ID(part_id) == get_node_id())
 		rc = run_payment_1( w_id,  d_id, c_id, c_w_id,  c_d_id, c_last, h_amount, by_last_name); 
 	else {
@@ -150,7 +154,9 @@ RC tpcc_txn_man::run_new_order(tpcc_query * query) {
 	uint64_t o_id;
 	
 	part_id = wh_to_part(w_id);
+#if DEBUG_DISTR
 	printf("run_new_order0 %ld:%ld -> %ld -- %ld\n",get_node_id(),get_thd_id(),part_id,GET_NODE_ID(part_id));
+#endif
 	if(GET_NODE_ID(part_id) == get_node_id())
 		rc = new_order_0( w_id, d_id, c_id, remote, ol_cnt, o_entry_d, &o_id); 
 	else {
@@ -183,6 +189,9 @@ RC tpcc_txn_man::run_new_order(tpcc_query * query) {
 
 				*/
 			part_id = wh_to_part(ol_supply_w_id);
+#if DEBUG_DISTR
+			printf("run_new_order2 %ld:%ld -> %ld -- %ld\n",get_node_id(),get_thd_id(),part_id,GET_NODE_ID(part_id));
+#endif
 			//printf("run_new_order2 %ld:%ld -> %ld -- %ld\n",get_node_id(),get_thd_id(),part_id,GET_NODE_ID(part_id));
 			if(GET_NODE_ID(part_id) == get_node_id())
 				rc = new_order_2( w_id, d_id, remote, ol_i_id, ol_supply_w_id, ol_quantity,  ol_number, o_id); 

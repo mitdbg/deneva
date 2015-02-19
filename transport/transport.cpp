@@ -74,7 +74,9 @@ void Transport::send_msg(uint64_t dest_id, void ** data, int * sizes, int num) {
 	((uint32_t*)sbuf)[0] = dest_id;
 	((uint32_t*)sbuf)[1] = get_node_id();
 
+#if DEBUG_DISTR
 	printf("Sending %ld -> %ld: %ld bytes\n",get_node_id(),dest_id,size);
+#endif
 	// TOOD: Send data in packets?
 	/*
 	for(int p = 0; p < packets; p++) {

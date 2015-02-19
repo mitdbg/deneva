@@ -13,9 +13,9 @@ void tpcc_query::init(uint64_t thd_id, workload * h_wl) {
 	pid = GET_PART_ID(thd_id,g_node_id);
 	// TODO
 	if (x < g_perc_payment)
-		gen_payment(thd_id);
+		gen_payment(pid);
 	else 
-		gen_new_order(thd_id);
+		gen_new_order(pid);
 }
 
 // Note: If you ever change the number of parameters sent, change "total"
@@ -258,7 +258,7 @@ void tpcc_query::gen_payment(uint64_t thd_id) {
 	int y = URand(1, 100);
 
 
-	if(x <= (100 - MPR)) { 
+	if(x > MPR) { 
 		// home warehouse
 		c_d_id = d_id;
 		c_w_id = w_id;
@@ -301,12 +301,18 @@ void tpcc_query::gen_new_order(uint64_t thd_id) {
 	part_to_access[0] = wh_to_part(w_id);
 	part_num = 1;
 
+	UInt32 y = URand(1, 100);
 	for (UInt32 oid = 0; oid < ol_cnt; oid ++) {
 		items[oid].ol_i_id = NURand(8191, 1, g_max_items);
-		UInt32 x = URand(1, 100);
-		if (x > 1 || g_num_wh == 1)
+		//UInt32 x = URand(1, 100);
+
+		//if (y > MPR || x > MPR_NEWORDER || g_num_wh == 1) {
+		if (y > MPR || remote || g_num_wh == 1) {
+			// home warehouse
 			items[oid].ol_supply_w_id = w_id;
+		}
 		else  {
+			// remote warehouse
 			while((items[oid].ol_supply_w_id = URand(1, g_num_wh)) == w_id) {}
 			remote = true;
 		}

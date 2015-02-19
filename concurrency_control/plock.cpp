@@ -297,7 +297,9 @@ void Plock::rem_lock(uint64_t pid, uint64_t ts, uint64_t * parts, uint64_t part_
 void Plock::rem_lock_rsp(uint64_t pid, RC rc, uint64_t ts) {
 	ts_t starttime = get_sys_clock();
 	if(ts != _ts[GET_THREAD_ID(pid)]) {
+#if DEBUG_DISTR
 		printf("Old message with ts %ld(%ld) dropped\n", ts,_ts[GET_THREAD_ID(pid)]);
+#endif
 		return;
 	}
 	if(rc != RCOK)
