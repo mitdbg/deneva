@@ -26,6 +26,8 @@ class Transport {
 		void send_msg(void * buf, int bytes);
 		void send_msg(uint64_t dest_id, void ** data, int * sizes, int num); 
 		uint64_t recv_msg(base_query * query);
+		void simple_send_msg(int size); 
+		uint64_t simple_recv_msg();
 	private:
 		nn::socket s;
 

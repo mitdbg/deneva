@@ -55,6 +55,7 @@
 #define MSG_SIZE 128 // in bytes
 #define HEADER_SIZE sizeof(uint32_t)*3 // in bits 
 #define MSG_TIMEOUT 5000000000UL // in ns
+#define NETWORK_TEST false
 
 /***********************************************/
 // Concurrency Control

@@ -119,3 +119,24 @@ uint64_t Transport::recv_msg(base_query * query) {
 
 }
 
+void Transport::simple_send_msg(int size) {
+	void * sbuf = nn_allocmsg(size,0);
+	int rc = s.send(&sbuf,NN_MSG,0);
+	if(rc < 0) {
+		printf("send Error: %d %s\n",errno,strerror(errno));
+		assert(false);
+	}
+}
+
+uint64_t Transport::simple_recv_msg() {
+	int bytes;
+	void * buf;
+	bytes = s.recv(&buf, NN_MSG, NN_DONTWAIT);
+	if(bytes <= 0 ) {
+		if(errno != 11)
+			nn::freemsg(buf);	
+		return 0;
+	}
+	nn::freemsg(buf);	
+	return bytes;
+}

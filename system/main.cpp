@@ -13,6 +13,9 @@
 
 void * f(void *);
 void * g(void *);
+void network_test();
+void network_test_recv();
+
 
 // TODO the following global variables are HACK
 thread_t * m_thds;
@@ -24,6 +27,19 @@ int main(int argc, char* argv[])
 {
 	// 0. initialize global data structure
 	parser(argc, argv);
+
+#if NETWORK_TEST
+	tport_man.init(g_node_id);
+	sleep(3);
+	if(g_node_id == 0)
+		network_test();
+	else if(g_node_id == 1)
+		network_test_recv();
+
+	return 0;
+#endif
+
+
 	// per-partition malloc
 	mem_allocator.init(g_part_cnt, MEM_SIZE / g_part_cnt); 
 	stats.init();
@@ -135,4 +151,33 @@ void * g(void * id) {
 	uint64_t tid = (uint64_t)id;
 	m_thds[tid].run_remote();
 	return NULL;
+}
+
+void network_test() {
+
+	ts_t start;
+	ts_t end;
+	double time;
+	int bytes;
+	for(int i=4; i < 257; i+=4) {
+		time = 0;
+		for(int j=0;j < 5; j++) {
+			start = get_sys_clock();
+			tport_man.simple_send_msg(i);
+			while((bytes = tport_man.simple_recv_msg()) == 0) {}
+			end = get_sys_clock();
+			assert(bytes == i);
+			time += end-start;
+		}
+		time = time/5;
+		printf("Network Bytes: %d, s: %f\n",i,time/BILLION);
+	}
+}
+
+void network_test_recv() {
+	int bytes;
+	while(1) {
+		if( (bytes = tport_man.simple_recv_msg()) > 0)
+			tport_man.simple_send_msg(bytes);
+	}
 }
