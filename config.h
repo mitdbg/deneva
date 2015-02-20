@@ -142,7 +142,7 @@
 #define WH_UPDATE					true
 #define NUM_WH 						4
 // % of transactions that access multiple partitions
-#define MPR								20 // In %: 15 is default
+#define MPR								1 // In %: 15 is default
 #define MPR_NEWORDER			20 // In %
 //
 enum TPCCTxnType {TPCC_ALL, 
@@ -191,7 +191,7 @@ extern TestCases					g_test_case;
 #define DEBUG_TIMESTAMP				false
 #define DEBUG_SYNTH					false
 #define DEBUG_ASSERT				false
-#define DEBUG_DISTR				false
+#define DEBUG_DISTR				true
 
 /***********************************************/
 // Constant

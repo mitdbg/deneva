@@ -97,7 +97,7 @@ RC thread_t::run_remote() {
 					break;
 			}
 			ts_t endtime = get_sys_clock();
-			INC_STATS(_thd_id, time_rem, endtime - rq_time);
+			INC_STATS(_thd_id, rtime_proc, endtime - rq_time);
 
 		}
 

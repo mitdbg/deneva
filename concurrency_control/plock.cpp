@@ -190,7 +190,7 @@ RC Plock::lock(txn_man * txn, uint64_t * parts, uint64_t part_cnt) {
 			if(_rcs[tid] == Abort)
 				break;
 		}
-		INC_TMP_STATS(tid, time_wait, get_sys_clock() - t);
+		INC_TMP_STATS(tid, time_wait_lock, get_sys_clock() - t);
 	}
 	// Abort and send unlock requests as necessary
 	if (rc == Abort || _rcs[tid] == Abort) {

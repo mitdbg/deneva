@@ -13,10 +13,13 @@ public:
 	double time_man;
 	double time_index;
 	double time_wait;
+	double time_wait_lock;
+	double time_wait_rem;
 	double time_abort;
 	double time_cleanup;
 	uint64_t time_ts_alloc;
 	double time_query;
+	double rtime_proc;
 	uint64_t wait_cnt;
 
 	uint64_t mpq_cnt; // multi-partition queries
@@ -45,6 +48,8 @@ public:
 	double time_man;
 	double time_index;
 	double time_wait;
+	double time_wait_lock;
+	double time_wait_rem;
 	char _pad[CL_SIZE - sizeof(double)*3];
 };
 

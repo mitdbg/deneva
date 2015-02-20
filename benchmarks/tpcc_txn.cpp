@@ -105,6 +105,7 @@ RC tpcc_txn_man::run_payment(tpcc_query * query) {
   double h_amount = query->h_amount;
 	bool by_last_name = query->by_last_name;
 	char * c_last = query->c_last;
+	ts_t start;
 
 	part_id = wh_to_part(w_id);
 #if DEBUG_DISTR
@@ -115,8 +116,10 @@ RC tpcc_txn_man::run_payment(tpcc_query * query) {
 		rc = run_payment_0(w_id, d_id, d_w_id, h_amount);
 	else { 
 		_rc = NONE;
+		start = get_sys_clock();
 		rem_qry_man.remote_qry(query,TPCC_PAYMENT0,GET_NODE_ID(part_id),this);
 		while(_rc == NONE) {}
+		INC_STATS(get_thd_id(),time_wait_rem,get_sys_clock()-start);
 		rc = _rc;
 	}
 	if(rc != RCOK)
@@ -130,8 +133,10 @@ RC tpcc_txn_man::run_payment(tpcc_query * query) {
 		rc = run_payment_1( w_id,  d_id, c_id, c_w_id,  c_d_id, c_last, h_amount, by_last_name); 
 	else {
 		_rc = NONE;
+		start = get_sys_clock();
 		rem_qry_man.remote_qry(query,TPCC_PAYMENT1,GET_NODE_ID(part_id),this);
 		while(_rc == NONE) {}
+		INC_STATS(get_thd_id(),time_wait_rem,get_sys_clock()-start);
 		rc = _rc;
 	}
 	if(rc != RCOK)
@@ -152,6 +157,7 @@ RC tpcc_txn_man::run_new_order(tpcc_query * query) {
 	uint64_t ol_cnt = query->ol_cnt;
 	uint64_t o_entry_d = query->o_entry_d;
 	uint64_t o_id;
+	ts_t start;
 	
 	part_id = wh_to_part(w_id);
 #if DEBUG_DISTR
@@ -161,8 +167,10 @@ RC tpcc_txn_man::run_new_order(tpcc_query * query) {
 		rc = new_order_0( w_id, d_id, c_id, remote, ol_cnt, o_entry_d, &o_id); 
 	else {
 		_rc = NONE;
+		start = get_sys_clock();
 		rem_qry_man.remote_qry(query,TPCC_NEWORDER0,GET_NODE_ID(part_id),this);
 		while(_rc == NONE) {}
+		INC_STATS(get_thd_id(),time_wait_rem,get_sys_clock()-start);
 		rc = _rc;
 		if(rc == RCOK)
 			query->o_id = _qry->o_id;
@@ -183,6 +191,7 @@ RC tpcc_txn_man::run_new_order(tpcc_query * query) {
 				rc = new_order_1(ol_i_id);
 			else
 				query->ol_i_id = ol_i_id;
+		start = get_sys_clock();
 				rem_qry_man.remote_qry(query,TPCC_NEWORDER1,GET_NODE_ID(part_id),this);
 			if(rc != RCOK)
 				return finish(rc);
@@ -201,8 +210,10 @@ RC tpcc_txn_man::run_new_order(tpcc_query * query) {
 				query->ol_quantity = ol_quantity;
 				query->ol_number = ol_number;
 				_rc = NONE;
+		start = get_sys_clock();
 				rem_qry_man.remote_qry(query,TPCC_NEWORDER2,GET_NODE_ID(part_id),this);
 				while(_rc == NONE) {}
+		INC_STATS(get_thd_id(),time_wait_rem,get_sys_clock()-start);
 				rc = _rc;
 			}
 			if(rc != RCOK)
