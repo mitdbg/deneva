@@ -89,8 +89,8 @@ void Transport::send_msg(uint64_t dest_id, void ** data, int * sizes, int num) {
 		assert(false);
 	}
 	//send_msg(sbuf,size);
-	INC_STATS(0,msg_sent_cnt,1);
-	INC_STATS(0,msg_bytes,size);
+	INC_STATS(1,msg_sent_cnt,1);
+	INC_STATS(1,msg_bytes,size);
 
 }
 
@@ -99,6 +99,7 @@ uint64_t Transport::recv_msg(base_query * query) {
 	int bytes;
 	//char * buf = (char *) mem_allocator.alloc(sizeof(char) * MSG_SIZE,get_node_id());
 	void * buf;
+	ts_t start = get_sys_clock();
 	bytes = s.recv(&buf, NN_MSG, NN_DONTWAIT);
 	if(bytes < 0 && errno != 11) {
 		printf("Recv Error %d %s\n",errno,strerror(errno));
@@ -112,9 +113,14 @@ uint64_t Transport::recv_msg(base_query * query) {
 	}
 	// Queue request for thread to execute
 	// Unpack request
-	INC_STATS(0,msg_rcv_cnt,1);
+	INC_STATS(1,msg_rcv_cnt,1);
 	rem_qry_man.unpack(query,buf,bytes);
 	nn::freemsg(buf);	
+	if(query->dest_id != get_node_id()) {
+		INC_STATS(1,rtime_unpack_ndest,get_sys_clock()-start);
+		return 0;
+	}
+	INC_STATS(1,rtime_unpack,get_sys_clock()-start);
 	return 1;
 
 }

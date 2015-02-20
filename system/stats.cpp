@@ -31,6 +31,8 @@ void Stats_thd::clear() {
 	latency = 0;
 	time_query = 0;
 	rtime_proc = 0;
+	rtime_unpack = 0;
+	rtime_unpack_ndest = 0;
 
 	mpq_cnt = 0;
 	msg_bytes = 0;
@@ -133,6 +135,8 @@ void Stats::print() {
 	double total_latency = 0;
 	double total_time_query = 0;
 	double total_rtime_proc = 0;
+	double total_rtime_unpack = 0;
+	double total_rtime_unpack_ndest = 0;
 	uint64_t total_mpq_cnt = 0;
 	uint64_t total_msg_bytes = 0;
 	uint64_t total_msg_sent_cnt = 0;
@@ -160,6 +164,8 @@ void Stats::print() {
 		total_latency += _stats[tid]->latency;
 		total_time_query += _stats[tid]->time_query;
 		total_rtime_proc += _stats[tid]->rtime_proc;
+		total_rtime_unpack += _stats[tid]->rtime_unpack;
+		total_rtime_unpack_ndest += _stats[tid]->rtime_unpack_ndest;
 
 		total_mpq_cnt += _stats[tid]->mpq_cnt;
 		total_msg_bytes += _stats[tid]->msg_bytes;
@@ -182,7 +188,7 @@ void Stats::print() {
 			",run_time=%f,time_wait=%f,time_wait_lock=%f,time_wait_rem=%f,time_ts_alloc=%f"
 			",time_man=%f,time_index=%f,time_abort=%f,time_cleanup=%f,latency=%f"
 			",deadlock_cnt=%ld,cycle_detect=%ld,dl_detect_time=%f,dl_wait_time=%f"
-			",time_query=%f,rtime_proc=%f"
+			",time_query=%f,rtime_proc=%f,rtime_unpack=%f,rtime_unpack_ndest=%f"
 			",mpq_cnt=%ld,msg_bytes=%ld,msg_sent=%ld,msg_rcv=%ld"
 			",time_msg_wait=%f,time_req_req=%f,time_rem=%f"
 			",debug1=%f,debug2=%f,debug3=%f,debug4=%f,debug5=%f\n",
@@ -204,6 +210,8 @@ void Stats::print() {
 			dl_wait_time / BILLION,
 			total_time_query / BILLION,
 			total_rtime_proc / BILLION,
+			total_rtime_unpack / BILLION,
+			total_rtime_unpack_ndest / BILLION,
 			total_mpq_cnt, 
 			total_msg_bytes, 
 			total_msg_sent_cnt, 
@@ -223,7 +231,7 @@ void Stats::print() {
 		",run_time=%f,time_wait=%f,time_wait_lock=%f,time_wait_rem=%f,time_ts_alloc=%f"
 		",time_man=%f,time_index=%f,time_abort=%f,time_cleanup=%f,latency=%f"
 		",deadlock_cnt=%ld,cycle_detect=%ld,dl_detect_time=%f,dl_wait_time=%f"
-		",time_query=%f,rtime_proc=%f"
+		",time_query=%f,rtime_proc=%f,rtime_unpack=%f,rtime_unpack_ndest=%f"
 		",mpq_cnt=%ld,msg_bytes=%ld,msg_sent=%ld,msg_rcv=%ld"
 		",time_msg_wait=%f,time_req_req=%f,time_rem=%f"
 		",debug1=%f,debug2=%f,debug3=%f,debug4=%f,debug5=%f\n",
@@ -245,6 +253,8 @@ void Stats::print() {
 		dl_wait_time / BILLION,
 		total_time_query / BILLION,
 		total_rtime_proc / BILLION,
+		total_rtime_unpack / BILLION,
+		total_rtime_unpack_ndest / BILLION,
 		total_mpq_cnt, 
 		total_msg_bytes, 
 		total_msg_sent_cnt, 

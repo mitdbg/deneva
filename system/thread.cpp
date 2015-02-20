@@ -69,8 +69,6 @@ RC thread_t::run_remote() {
 		len = tport_man.recv_msg(m_query);
 		if( len > 0 ) {
 			rq_time = get_sys_clock();
-			if(m_query->dest_id != _node_id)
-				continue;
 			switch(m_query->rtype) {
 #if CC_ALG == HSTORE
 				case RLK:

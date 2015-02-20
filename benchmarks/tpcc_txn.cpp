@@ -116,8 +116,8 @@ RC tpcc_txn_man::run_payment(tpcc_query * query) {
 		rc = run_payment_0(w_id, d_id, d_w_id, h_amount);
 	else { 
 		_rc = NONE;
-		start = get_sys_clock();
 		rem_qry_man.remote_qry(query,TPCC_PAYMENT0,GET_NODE_ID(part_id),this);
+		start = get_sys_clock();
 		while(_rc == NONE) {}
 		INC_STATS(get_thd_id(),time_wait_rem,get_sys_clock()-start);
 		rc = _rc;
@@ -133,8 +133,8 @@ RC tpcc_txn_man::run_payment(tpcc_query * query) {
 		rc = run_payment_1( w_id,  d_id, c_id, c_w_id,  c_d_id, c_last, h_amount, by_last_name); 
 	else {
 		_rc = NONE;
-		start = get_sys_clock();
 		rem_qry_man.remote_qry(query,TPCC_PAYMENT1,GET_NODE_ID(part_id),this);
+		start = get_sys_clock();
 		while(_rc == NONE) {}
 		INC_STATS(get_thd_id(),time_wait_rem,get_sys_clock()-start);
 		rc = _rc;
@@ -167,8 +167,8 @@ RC tpcc_txn_man::run_new_order(tpcc_query * query) {
 		rc = new_order_0( w_id, d_id, c_id, remote, ol_cnt, o_entry_d, &o_id); 
 	else {
 		_rc = NONE;
-		start = get_sys_clock();
 		rem_qry_man.remote_qry(query,TPCC_NEWORDER0,GET_NODE_ID(part_id),this);
+		start = get_sys_clock();
 		while(_rc == NONE) {}
 		INC_STATS(get_thd_id(),time_wait_rem,get_sys_clock()-start);
 		rc = _rc;
@@ -210,8 +210,8 @@ RC tpcc_txn_man::run_new_order(tpcc_query * query) {
 				query->ol_quantity = ol_quantity;
 				query->ol_number = ol_number;
 				_rc = NONE;
-		start = get_sys_clock();
 				rem_qry_man.remote_qry(query,TPCC_NEWORDER2,GET_NODE_ID(part_id),this);
+		start = get_sys_clock();
 				while(_rc == NONE) {}
 		INC_STATS(get_thd_id(),time_wait_rem,get_sys_clock()-start);
 				rc = _rc;

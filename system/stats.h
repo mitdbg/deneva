@@ -20,6 +20,8 @@ public:
 	uint64_t time_ts_alloc;
 	double time_query;
 	double rtime_proc;
+	double rtime_unpack;
+	double rtime_unpack_ndest;
 	uint64_t wait_cnt;
 
 	uint64_t mpq_cnt; // multi-partition queries
