@@ -161,7 +161,7 @@ void network_test() {
 	int bytes;
 	for(int i=4; i < 257; i+=4) {
 		time = 0;
-		for(int j=0;j < 5; j++) {
+		for(int j=0;j < 1000; j++) {
 			start = get_sys_clock();
 			tport_man.simple_send_msg(i);
 			while((bytes = tport_man.simple_recv_msg()) == 0) {}
@@ -169,7 +169,7 @@ void network_test() {
 			assert(bytes == i);
 			time += end-start;
 		}
-		time = time/5;
+		time = time/1000;
 		printf("Network Bytes: %d, s: %f\n",i,time/BILLION);
 	}
 }

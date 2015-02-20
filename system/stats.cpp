@@ -25,10 +25,12 @@ void Stats_thd::clear() {
 	time_abort = 0;
 	time_cleanup = 0;
 	time_wait = 0;
+	rtime_wait_plock = 0;
 	time_wait_lock = 0;
 	time_wait_rem = 0;
 	time_ts_alloc = 0;
 	latency = 0;
+	tport_lat = 0;
 	time_query = 0;
 	rtime_proc = 0;
 	rtime_unpack = 0;
@@ -129,10 +131,12 @@ void Stats::print() {
 	double total_time_abort = 0;
 	double total_time_cleanup = 0;
 	double total_time_wait = 0;
+	double total_rtime_wait_plock = 0;
 	double total_time_wait_lock = 0;
 	double total_time_wait_rem = 0;
 	double total_time_ts_alloc = 0;
 	double total_latency = 0;
+	double total_tport_lat = 0;
 	double total_time_query = 0;
 	double total_rtime_proc = 0;
 	double total_rtime_unpack = 0;
@@ -158,10 +162,12 @@ void Stats::print() {
 		total_time_abort += _stats[tid]->time_abort;
 		total_time_cleanup += _stats[tid]->time_cleanup;
 		total_time_wait += _stats[tid]->time_wait;
+		total_rtime_wait_plock += _stats[tid]->rtime_wait_plock;
 		total_time_wait_lock += _stats[tid]->time_wait_lock;
 		total_time_wait_rem += _stats[tid]->time_wait_rem;
 		total_time_ts_alloc += _stats[tid]->time_ts_alloc;
 		total_latency += _stats[tid]->latency;
+		total_tport_lat += _stats[tid]->tport_lat;
 		total_time_query += _stats[tid]->time_query;
 		total_rtime_proc += _stats[tid]->rtime_proc;
 		total_rtime_unpack += _stats[tid]->rtime_unpack;
@@ -185,8 +191,8 @@ void Stats::print() {
 	if (output_file != NULL) {
 		outf = fopen(output_file, "w");
 		fprintf(outf, "[summary] txn_cnt=%ld,abort_cnt=%ld"
-			",run_time=%f,time_wait=%f,time_wait_lock=%f,time_wait_rem=%f,time_ts_alloc=%f"
-			",time_man=%f,time_index=%f,time_abort=%f,time_cleanup=%f,latency=%f"
+			",run_time=%f,time_wait=%f,time_wait_lock=%f,rtime_wait_plock=%f,time_wait_rem=%f,time_ts_alloc=%f"
+			",time_man=%f,time_index=%f,time_abort=%f,time_cleanup=%f,latency=%f,tport_lat=%f"
 			",deadlock_cnt=%ld,cycle_detect=%ld,dl_detect_time=%f,dl_wait_time=%f"
 			",time_query=%f,rtime_proc=%f,rtime_unpack=%f,rtime_unpack_ndest=%f"
 			",mpq_cnt=%ld,msg_bytes=%ld,msg_sent=%ld,msg_rcv=%ld"
@@ -197,6 +203,7 @@ void Stats::print() {
 			total_run_time / BILLION,
 			total_time_wait / BILLION,
 			total_time_wait_lock / BILLION,
+			total_rtime_wait_plock / BILLION,
 			total_time_wait_rem / BILLION,
 			total_time_ts_alloc / BILLION,
 			(total_time_man - total_time_wait - total_time_wait_lock) / BILLION,
@@ -204,6 +211,7 @@ void Stats::print() {
 			total_time_abort / BILLION,
 			total_time_cleanup / BILLION,
 			total_latency / BILLION / total_txn_cnt,
+			total_tport_lat / BILLION / total_msg_rcv_cnt,
 			deadlock,
 			cycle_detect,
 			dl_detect_time / BILLION,
@@ -228,8 +236,8 @@ void Stats::print() {
 		fclose(outf);
 	}
 	printf("[summary] txn_cnt=%ld,abort_cnt=%ld"
-		",run_time=%f,time_wait=%f,time_wait_lock=%f,time_wait_rem=%f,time_ts_alloc=%f"
-		",time_man=%f,time_index=%f,time_abort=%f,time_cleanup=%f,latency=%f"
+		",run_time=%f,time_wait=%f,time_wait_lock=%f,rtime_wait_plock=%f,time_wait_rem=%f,time_ts_alloc=%f"
+		",time_man=%f,time_index=%f,time_abort=%f,time_cleanup=%f,latency=%f,tport_lat=%f"
 		",deadlock_cnt=%ld,cycle_detect=%ld,dl_detect_time=%f,dl_wait_time=%f"
 		",time_query=%f,rtime_proc=%f,rtime_unpack=%f,rtime_unpack_ndest=%f"
 		",mpq_cnt=%ld,msg_bytes=%ld,msg_sent=%ld,msg_rcv=%ld"
@@ -240,6 +248,7 @@ void Stats::print() {
 		total_run_time / BILLION,
 		total_time_wait / BILLION,
 		total_time_wait_lock / BILLION,
+		total_rtime_wait_plock / BILLION,
 		total_time_wait_rem / BILLION,
 		total_time_ts_alloc / BILLION,
 		(total_time_man - total_time_wait - total_time_wait_lock) / BILLION,
@@ -247,6 +256,7 @@ void Stats::print() {
 		total_time_abort / BILLION,
 		total_time_cleanup / BILLION,
 		total_latency / BILLION / total_txn_cnt,
+		total_tport_lat / BILLION / total_msg_rcv_cnt,
 		deadlock,
 		cycle_detect,
 		dl_detect_time / BILLION,

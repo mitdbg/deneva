@@ -86,6 +86,11 @@ void PartMan::unlock(uint64_t pid,  uint64_t * rp) {
 			owner = waiters[0];			
 			owner_ts = waiters_ts[0];
 			owner_rp = waiters_rp[0];
+			ts_t t = get_sys_clock() - owner_ts/g_thread_cnt;
+#if DEBUG_DISTR
+			printf("Plock wait: %ld %f\n",owner,float(t)/BILLION);
+#endif
+			INC_STATS(0,rtime_wait_plock,t);
 			for (UInt32 i = 0; i < waiter_cnt - 1; i++) {
 				assert( waiters_ts[i] < waiters_ts[i + 1] );
 				waiters[i] = waiters[i + 1];
@@ -190,7 +195,11 @@ RC Plock::lock(txn_man * txn, uint64_t * parts, uint64_t part_cnt) {
 			if(_rcs[tid] == Abort)
 				break;
 		}
-		INC_TMP_STATS(tid, time_wait_lock, get_sys_clock() - t);
+		ts_t wait_time = get_sys_clock() - t;
+		INC_TMP_STATS(tid, time_wait_lock, wait_time);
+#if DEBUG_DISTR
+		printf("Wait time: %f\n",(float(wait_time)/BILLION));
+#endif
 	}
 	// Abort and send unlock requests as necessary
 	if (rc == Abort || _rcs[tid] == Abort) {

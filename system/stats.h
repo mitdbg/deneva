@@ -13,6 +13,7 @@ public:
 	double time_man;
 	double time_index;
 	double time_wait;
+	double rtime_wait_plock;
 	double time_wait_lock;
 	double time_wait_rem;
 	double time_abort;
@@ -23,6 +24,7 @@ public:
 	double rtime_unpack;
 	double rtime_unpack_ndest;
 	uint64_t wait_cnt;
+	double tport_lat;
 
 	uint64_t mpq_cnt; // multi-partition queries
 	uint64_t msg_bytes;

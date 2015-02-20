@@ -59,6 +59,10 @@ void Transport::send_msg(uint64_t dest_id, void ** data, int * sizes, int num) {
 	}
 
 	//char * sbuf = (char *) mem_allocator.alloc(sizeof(char) * size,get_node_id());
+#if DEBUG_DISTR
+	size += sizeof(ts_t);
+#endif
+
 	void * sbuf = nn_allocmsg(size,0);
 	memset(sbuf,0,size);
 
@@ -68,7 +72,7 @@ void Transport::send_msg(uint64_t dest_id, void ** data, int * sizes, int num) {
 		memcpy(&((char*)sbuf)[dsize],data[i],sizes[i]);
 		dsize += sizes[i];
 	}
-	assert(size == dsize);
+
 
 	// 2: Create message header
 	((uint32_t*)sbuf)[0] = dest_id;
@@ -83,7 +87,16 @@ void Transport::send_msg(uint64_t dest_id, void ** data, int * sizes, int num) {
 		send_msg(&sbuf[p*MSG_SIZE]);
 	}
 	*/
+#if DEBUG_DISTR
+	ts_t time = get_sys_clock();
+	memcpy(&((char*)sbuf)[dsize],&time,sizeof(ts_t));
+	dsize += sizeof(ts_t);
+#endif
+
+	assert(size == dsize);
+
 	int rc = s.send(&sbuf,NN_MSG,0);
+
 	if(rc < 0) {
 		printf("send Error: %d %s\n",errno,strerror(errno));
 		assert(false);
@@ -113,6 +126,13 @@ uint64_t Transport::recv_msg(base_query * query) {
 	}
 	// Queue request for thread to execute
 	// Unpack request
+
+#if DEBUG_DISTR
+	ts_t time;
+	memcpy(&time,&((char*)buf)[bytes-sizeof(ts_t)],sizeof(ts_t));
+	INC_STATS(1,tport_lat,get_sys_clock() - time);
+#endif
+
 	INC_STATS(1,msg_rcv_cnt,1);
 	rem_qry_man.unpack(query,buf,bytes);
 	nn::freemsg(buf);	
