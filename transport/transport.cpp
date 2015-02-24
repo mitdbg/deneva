@@ -15,6 +15,7 @@
 	 N?	data
 
 	 */
+
 void Transport::init(uint64_t node_id) {
 	printf("Init %ld\n",node_id);
 	_node_id = node_id;
@@ -25,10 +26,16 @@ void Transport::init(uint64_t node_id) {
 	strcpy(socket_name,TPORT_TYPE);
 	strcat(socket_name,"://");
 	strcat(socket_name,TPORT_PORT);
-	if(node_id == 0)
+
+	int timeo = 1000; // timeout in ms
+	s.setsockopt(NN_SOL_SOCKET,NN_RCVTIMEO,&timeo,sizeof(timeo));
+
+	if(node_id == 0) {
 		rc = s.bind(socket_name);
-	else
+	}
+	else {
 		rc = s.connect(socket_name);
+	}
 	if(rc < 0) {
 		printf("Bind Error: %d %s\n",errno,strerror(errno));
 	}
@@ -36,17 +43,6 @@ void Transport::init(uint64_t node_id) {
 
 uint64_t Transport::get_node_id() {
 	return _node_id;
-}
-
-void Transport::send_msg(void * buf, int bytes) {
-	// Send message packets
-	int rc = s.send(buf,NN_MSG,0);
-	//int rc = s.send(buf,bytes,0);
-	//int rc = s.send("ABC",3,0);
-	if (rc < 0) {
-		// Error; resend?
-		printf("send Error: %d %s\n",errno,strerror(errno));
-	}
 }
 
 void Transport::send_msg(uint64_t dest_id, void ** data, int * sizes, int num) {
@@ -95,7 +91,9 @@ void Transport::send_msg(uint64_t dest_id, void ** data, int * sizes, int num) {
 
 	assert(size == dsize);
 
-	int rc = s.send(&sbuf,NN_MSG,0);
+	int rc;
+	
+	rc= s.send(&sbuf,NN_MSG,0);
 
 	if(rc < 0) {
 		printf("send Error: %d %s\n",errno,strerror(errno));
@@ -113,7 +111,9 @@ uint64_t Transport::recv_msg(base_query * query) {
 	//char * buf = (char *) mem_allocator.alloc(sizeof(char) * MSG_SIZE,get_node_id());
 	void * buf;
 	ts_t start = get_sys_clock();
-	bytes = s.recv(&buf, NN_MSG, NN_DONTWAIT);
+	bytes = s.recv(&buf, NN_MSG, 0);
+	//bytes = s.recv(&buf, NN_MSG, NN_DONTWAIT);
+
 	if(bytes < 0 && errno != 11) {
 		printf("Recv Error %d %s\n",errno,strerror(errno));
 	}
@@ -130,7 +130,9 @@ uint64_t Transport::recv_msg(base_query * query) {
 #if DEBUG_DISTR
 	ts_t time;
 	memcpy(&time,&((char*)buf)[bytes-sizeof(ts_t)],sizeof(ts_t));
-	INC_STATS(1,tport_lat,get_sys_clock() - time);
+	ts_t time2 = get_sys_clock();
+	INC_STATS(1,tport_lat,time2 - time);
+	printf("Msg delay: %d bytes, %f s\n",bytes,((float)(time2-time))/BILLION);
 #endif
 
 	INC_STATS(1,msg_rcv_cnt,1);
@@ -147,6 +149,10 @@ uint64_t Transport::recv_msg(base_query * query) {
 
 void Transport::simple_send_msg(int size) {
 	void * sbuf = nn_allocmsg(size,0);
+
+	ts_t time = get_sys_clock();
+	memcpy(&((char*)sbuf)[0],&time,sizeof(ts_t));
+
 	int rc = s.send(&sbuf,NN_MSG,0);
 	if(rc < 0) {
 		printf("send Error: %d %s\n",errno,strerror(errno));
@@ -163,6 +169,11 @@ uint64_t Transport::simple_recv_msg() {
 			nn::freemsg(buf);	
 		return 0;
 	}
+
+	ts_t time;
+	memcpy(&time,&((char*)buf)[0],sizeof(ts_t));
+	printf("%d bytes, %f s\n",bytes,((float)(get_sys_clock()-time)) / BILLION);
+
 	nn::freemsg(buf);	
 	return bytes;
 }

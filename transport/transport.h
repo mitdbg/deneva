@@ -23,7 +23,6 @@ class Transport {
 		Transport() : s(AF_SP, NN_BUS) {}
 		void init(uint64_t node_id);
 		uint64_t get_node_id();
-		void send_msg(void * buf, int bytes);
 		void send_msg(uint64_t dest_id, void ** data, int * sizes, int num); 
 		uint64_t recv_msg(base_query * query);
 		void simple_send_msg(int size); 
