@@ -303,13 +303,21 @@ void tpcc_query::gen_new_order(uint64_t thd_id) {
 
 	UInt32 y = URand(1, 100);
 	for (UInt32 oid = 0; oid < ol_cnt; oid ++) {
-		do {
+
+		while(1) {
+			UInt32 i;
 			items[oid].ol_i_id = NURand(8191, 1, g_max_items);
-		} while (oid > 0 && items[oid].ol_i_id == items[oid-1].ol_i_id);
+			for (i = 0; i < oid; i++) {
+				if (items[i].ol_i_id == items[oid].ol_i_id) {
+					break;
+				}
+			}
+			if(i == oid)
+				break;
+		} 
 
 		//UInt32 x = URand(1, 100);
 
-		//if (y > MPR || x > MPR_NEWORDER || g_num_wh == 1) {
 		if (y > MPR || remote || g_num_wh == 1) {
 			// home warehouse
 			items[oid].ol_supply_w_id = w_id;
@@ -332,9 +340,11 @@ void tpcc_query::gen_new_order(uint64_t thd_id) {
 			}
 		}
 	}
-	for (UInt32 i = 0; i < ol_cnt; i ++) 
+	for (UInt32 i = 0; i < ol_cnt; i ++) {
 		for (UInt32 j = 0; j < i; j++) 
 			assert(items[i].ol_i_id != items[j].ol_i_id);
+	}
+
 	// update part_to_access
 	for (UInt32 i = 0; i < ol_cnt; i ++) {
 		UInt32 j;
@@ -344,6 +354,7 @@ void tpcc_query::gen_new_order(uint64_t thd_id) {
 		if (j == part_num) // not found! add to it.
 		part_to_access[part_num ++] = wh_to_part( items[i].ol_supply_w_id );
 	}
+
 }
 
 void 
