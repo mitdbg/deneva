@@ -28,6 +28,10 @@ int main(int argc, char* argv[])
 	// 0. initialize global data structure
 	parser(argc, argv);
 
+	uint64_t seed = get_sys_clock();
+	srand(seed);
+	printf("Random seed: %ld\n",seed);
+
 #if NETWORK_TEST
 	tport_man.init(g_node_id);
 	sleep(3);
@@ -77,8 +81,9 @@ int main(int argc, char* argv[])
 	m_thds = new thread_t[thd_cnt +1];
 	// query_queue should be the last one to be initialized!!!
 	// because it collects txn latency
-	if (WORKLOAD != TEST)
+	if (WORKLOAD != TEST) {
 		query_queue.init(m_wl);
+	}
 	pthread_barrier_init( &warmup_bar, NULL, g_thread_cnt );
 	printf("query_queue initialized!\n");
 #if CC_ALG == HSTORE
@@ -118,12 +123,20 @@ int main(int argc, char* argv[])
 	for (uint32_t i = 0; i < thd_cnt; i++) {
 		uint64_t vid = i;
 		CPU_ZERO(&cpus);
+#if TPORT_TYPE_IPC
+    CPU_SET(g_node_id * (THREAD_CNT +1) + i, &cpus);
+#else
     CPU_SET(i, &cpus);
+#endif
     pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
 		pthread_create(&p_thds[i], &attr, f, (void *)vid);
 	}
 	CPU_ZERO(&cpus);
-  CPU_SET(thd_cnt, &cpus);
+#if TPORT_TYPE_IPC
+    CPU_SET(g_node_id * (THREAD_CNT +1) + thd_cnt, &cpus);
+#else
+    CPU_SET(thd_cnt, &cpus);
+#endif
   pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
 	pthread_create(&p_thds[thd_cnt], &attr, g, (void *)thd_cnt);
 	//g((void *)(thd_cnt));
