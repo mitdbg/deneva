@@ -53,11 +53,8 @@ void Transport::send_msg(uint64_t dest_id, void ** data, int * sizes, int num) {
 	for(int i = 0; i < num; i++) {
 		size += sizes[i];
 	}
-
-	//char * sbuf = (char *) mem_allocator.alloc(sizeof(char) * size,get_node_id());
-#if DEBUG_DISTR
+	// For step 3
 	size += sizeof(ts_t);
-#endif
 
 	void * sbuf = nn_allocmsg(size,0);
 	memset(sbuf,0,size);
@@ -77,29 +74,25 @@ void Transport::send_msg(uint64_t dest_id, void ** data, int * sizes, int num) {
 #if DEBUG_DISTR
 	printf("Sending %ld -> %ld: %ld bytes\n",get_node_id(),dest_id,size);
 #endif
-	// TOOD: Send data in packets?
-	/*
-	for(int p = 0; p < packets; p++) {
-		send_msg(&sbuf[p*MSG_SIZE]);
-	}
-	*/
-#if DEBUG_DISTR
+
+	// 3: Add time of message sending for stats purposes
 	ts_t time = get_sys_clock();
 	memcpy(&((char*)sbuf)[dsize],&time,sizeof(ts_t));
 	dsize += sizeof(ts_t);
-#endif
 
 	assert(size == dsize);
 
 	int rc;
 	
+	// 4: send message
 	rc= s.send(&sbuf,NN_MSG,0);
 
+	// Check for a send error
 	if(rc < 0) {
 		printf("send Error: %d %s\n",errno,strerror(errno));
 		assert(false);
 	}
-	//send_msg(sbuf,size);
+
 	INC_STATS(1,msg_sent_cnt,1);
 	INC_STATS(1,msg_bytes,size);
 
@@ -126,11 +119,12 @@ uint64_t Transport::recv_msg(base_query * query) {
 	// Queue request for thread to execute
 	// Unpack request
 
-#if DEBUG_DISTR
+	// Calculate time of message delay
 	ts_t time;
 	memcpy(&time,&((char*)buf)[bytes-sizeof(ts_t)],sizeof(ts_t));
 	ts_t time2 = get_sys_clock();
 	INC_STATS(1,tport_lat,time2 - time);
+#if DEBUG_DISTR
 	printf("Msg delay: %d bytes, %f s\n",bytes,((float)(time2-time))/BILLION);
 #endif
 
