@@ -35,6 +35,7 @@ void Stats_thd::clear() {
 	rtime_proc = 0;
 	rtime_unpack = 0;
 	rtime_unpack_ndest = 0;
+	lock_diff = 0;
 
 	mpq_cnt = 0;
 	msg_bytes = 0;
@@ -56,6 +57,7 @@ void Stats_tmp::clear() {
 	time_wait = 0;
 	time_wait_lock = 0;
 	time_wait_rem = 0;
+	mpq_cnt = 0;
 }
 
 void Stats::init() {
@@ -107,6 +109,7 @@ void Stats::commit(uint64_t thd_id) {
 		_stats[thd_id]->time_wait += tmp_stats[thd_id]->time_wait;
 		_stats[thd_id]->time_wait_lock += tmp_stats[thd_id]->time_wait_lock;
 		_stats[thd_id]->time_wait_rem += tmp_stats[thd_id]->time_wait_rem;
+		_stats[thd_id]->mpq_cnt += tmp_stats[thd_id]->mpq_cnt;
 		tmp_stats[thd_id]->init();
 	}
 }
@@ -127,6 +130,7 @@ void Stats::print() {
 	double total_debug3 = 0;
 	double total_debug4 = 0;
 	double total_debug5 = 0;
+	double total_lock_diff = 0;
 	double total_time_index = 0;
 	double total_time_abort = 0;
 	double total_time_cleanup = 0;
@@ -158,6 +162,7 @@ void Stats::print() {
 		total_debug3 += _stats[tid]->debug3;
 		total_debug4 += _stats[tid]->debug4;
 		total_debug5 += _stats[tid]->debug5;
+		total_lock_diff += _stats[tid]->lock_diff;
 		total_time_index += _stats[tid]->time_index;
 		total_time_abort += _stats[tid]->time_abort;
 		total_time_cleanup += _stats[tid]->time_cleanup;
@@ -196,7 +201,7 @@ void Stats::print() {
 			",deadlock_cnt=%ld,cycle_detect=%ld,dl_detect_time=%f,dl_wait_time=%f"
 			",time_query=%f,rtime_proc=%f,rtime_unpack=%f,rtime_unpack_ndest=%f"
 			",mpq_cnt=%ld,msg_bytes=%ld,msg_sent=%ld,msg_rcv=%ld"
-			",time_msg_wait=%f,time_req_req=%f,time_rem=%f"
+			",time_msg_wait=%f,time_req_req=%f,time_rem=%f,lock_diff=%f"
 			",debug1=%f,debug2=%f,debug3=%f,debug4=%f,debug5=%f\n",
 			total_txn_cnt, 
 			total_abort_cnt,
@@ -227,6 +232,7 @@ void Stats::print() {
 			total_time_msg_wait / BILLION,
 			total_time_rem_req / BILLION,
 			total_time_rem / BILLION, 
+			total_lock_diff / BILLION,
 			total_debug1 / BILLION,
 			total_debug2 / BILLION,
 			total_debug3 / BILLION,
@@ -241,7 +247,7 @@ void Stats::print() {
 		",deadlock_cnt=%ld,cycle_detect=%ld,dl_detect_time=%f,dl_wait_time=%f"
 		",time_query=%f,rtime_proc=%f,rtime_unpack=%f,rtime_unpack_ndest=%f"
 		",mpq_cnt=%ld,msg_bytes=%ld,msg_sent=%ld,msg_rcv=%ld"
-		",time_msg_wait=%f,time_req_req=%f,time_rem=%f"
+		",time_msg_wait=%f,time_req_req=%f,time_rem=%f,lock_diff=%f"
 		",debug1=%f,debug2=%f,debug3=%f,debug4=%f,debug5=%f\n",
 		total_txn_cnt, 
 		total_abort_cnt,
@@ -272,6 +278,7 @@ void Stats::print() {
 		total_time_msg_wait / BILLION,
 		total_time_rem_req / BILLION,
 		total_time_rem / BILLION, 
+		total_lock_diff / BILLION,
 		total_debug1 / BILLION,
 		total_debug2 / BILLION,
 		total_debug3 / BILLION,

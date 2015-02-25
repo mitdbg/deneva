@@ -110,7 +110,6 @@ uint64_t Transport::recv_msg(base_query * query) {
 	int bytes;
 	//char * buf = (char *) mem_allocator.alloc(sizeof(char) * MSG_SIZE,get_node_id());
 	void * buf;
-	ts_t start = get_sys_clock();
 	bytes = s.recv(&buf, NN_MSG, 0);
 	//bytes = s.recv(&buf, NN_MSG, NN_DONTWAIT);
 
@@ -135,6 +134,7 @@ uint64_t Transport::recv_msg(base_query * query) {
 	printf("Msg delay: %d bytes, %f s\n",bytes,((float)(time2-time))/BILLION);
 #endif
 
+	ts_t start = get_sys_clock();
 	INC_STATS(1,msg_rcv_cnt,1);
 	rem_qry_man.unpack(query,buf,bytes);
 	nn::freemsg(buf);	

@@ -175,11 +175,21 @@ RC Plock::lock(txn_man * txn, uint64_t * parts, uint64_t part_cnt) {
 	_rcs[tid] = RCOK;
 	_ready_parts[tid] = 0;
 	ts_t starttime = get_sys_clock();
+	ts_t lock1;
+	ts_t lock2;
+	bool l1 = false;
 	UInt32 i;
 	for (i = 0; i < part_cnt; i ++) {
 		uint64_t part_id = parts[i];
-		if(GET_NODE_ID(part_id) == get_node_id()) 
+		if(GET_NODE_ID(part_id) == get_node_id())  {
 			rc = part_mans[part_id]->lock(GET_PART_ID(tid,nid), &_ready_parts[tid], txn->get_ts());
+#if DEBUG_DISTR
+			if(part_cnt == 2 && rc == RCOK) {
+				lock1 = get_sys_clock();
+				l1 = true;
+			}
+#endif
+		}
 		else {
 			// Increment txn->ready_part; Pass txn to remote thr somehow?
 			// Have some Plock shared object and spin on that instead of txn object?
@@ -194,10 +204,23 @@ RC Plock::lock(txn_man * txn, uint64_t * parts, uint64_t part_cnt) {
 		while (_ready_parts[tid] > 0) {
 			if(_rcs[tid] == Abort)
 				break;
+#if DEBUG_DISTR
+			if(part_cnt == 2 && !l1 && _ready_parts[tid] ==1) {
+				l1 = true;
+				lock1 = get_sys_clock();
+			}
+#endif
+
 		}
 		ts_t wait_time = get_sys_clock() - t;
 		INC_TMP_STATS(tid, time_wait_lock, wait_time);
 #if DEBUG_DISTR
+		if(part_cnt == 2 && _rcs[tid] == RCOK) {
+			lock2 = get_sys_clock();
+			if(!l1)
+				lock1 = lock2;
+			INC_STATS(tid,lock_diff,lock2-lock1);
+		}
 		printf("Wait time: %f\n",(float(wait_time)/BILLION));
 #endif
 	}

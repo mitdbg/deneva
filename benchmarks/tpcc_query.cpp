@@ -303,7 +303,10 @@ void tpcc_query::gen_new_order(uint64_t thd_id) {
 
 	UInt32 y = URand(1, 100);
 	for (UInt32 oid = 0; oid < ol_cnt; oid ++) {
-		items[oid].ol_i_id = NURand(8191, 1, g_max_items);
+		do {
+			items[oid].ol_i_id = NURand(8191, 1, g_max_items);
+		} while (oid > 0 && items[oid].ol_i_id == items[oid-1].ol_i_id);
+
 		//UInt32 x = URand(1, 100);
 
 		//if (y > MPR || x > MPR_NEWORDER || g_num_wh == 1) {

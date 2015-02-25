@@ -25,6 +25,7 @@ public:
 	double rtime_unpack_ndest;
 	uint64_t wait_cnt;
 	double tport_lat;
+	double lock_diff;
 
 	uint64_t mpq_cnt; // multi-partition queries
 	uint64_t msg_bytes;
@@ -54,6 +55,7 @@ public:
 	double time_wait;
 	double time_wait_lock;
 	double time_wait_rem;
+	uint64_t mpq_cnt;
 	char _pad[CL_SIZE - sizeof(double)*3];
 };
 

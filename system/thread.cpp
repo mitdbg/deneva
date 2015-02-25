@@ -183,7 +183,7 @@ RC thread_t::run() {
 			rc = RCOK;
 #if CC_ALG == HSTORE
 			if(m_query->part_num > 1)
-				INC_STATS(_thd_id,mpq_cnt,1);
+				INC_TMP_STATS(_thd_id,mpq_cnt,1);
 			if (WORKLOAD == TEST) {
 				uint64_t part_to_access[1] = {0};
 				rc = part_lock_man.lock(m_txn, &part_to_access[0], 1);
@@ -230,10 +230,6 @@ RC thread_t::run() {
 				INC_STATS(_thd_id, time_abort, get_sys_clock() - t2);
 				INC_STATS(get_thd_id(), abort_cnt, 1);
 
-#if CC_ALG == HSTORE
-			if(m_query->part_num > 1)
-				INC_STATS(_thd_id,mpq_cnt,-1);
-#endif
 				stats.abort(get_thd_id());
 				m_txn->abort_cnt ++;
 //				printf("\n[Abort thd=%lld] %lld txns abort. ts=%lld", _thd_id, stats._stats[_thd_id]->txn_cnt, m_txn->get_ts());
