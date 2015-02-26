@@ -209,7 +209,7 @@ RC Plock::lock(txn_man * txn, uint64_t * parts, uint64_t part_cnt) {
 
 		}
 		ts_t wait_time = get_sys_clock() - t;
-		INC_TMP_STATS(tid, time_wait_lock, wait_time);
+		INC_STATS(tid, time_wait_lock, wait_time);
 		if(part_cnt == 2 && _rcs[tid] == RCOK) {
 			lock2 = get_sys_clock();
 			if(!l1)
