@@ -42,15 +42,16 @@ void Remote_query::unpack(base_query * query, void * d, int len) {
 	memcpy(&query->dest_id,&data[ptr],sizeof(uint32_t));
 	ptr += sizeof(uint32_t);
 
-	if(query->dest_id != _node_id)
-		return;
-
 	memcpy(&query->return_id,&data[ptr],sizeof(uint32_t));
 	ptr += sizeof(uint32_t);
 	memcpy(&query->txn_id,&data[ptr],sizeof(uint32_t));
 	ptr += sizeof(uint32_t);
 	memcpy(&query->rtype,&data[ptr],sizeof(query->rtype));
 	ptr += sizeof(query->rtype);
+
+	if(query->dest_id != _node_id)
+		return;
+
 	switch(query->rtype) {
 		case RLK:
 		case RULK:

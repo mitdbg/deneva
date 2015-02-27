@@ -9,7 +9,6 @@
 
 
 /*
-	 // TODO: Add checksum to data, in case network is faulty?
 	 Message format:
 Header: 4 Byte receiver ID
 				4 Byte sender ID
@@ -18,9 +17,17 @@ Data:	MSG_SIZE - HDR_SIZE bytes
 	 */
 
 #define GET_RCV_NODE_ID(b)  ((uint32_t*)b)[0]
+
+class Socket {
+	public:
+		Socket () : sock(AF_SP,NN_PAIR) {}
+		nn::socket sock;
+};
+
 class Transport {
 	public:
-		Transport() : s(AF_SP, NN_BUS) {}
+		Transport();
+		//Transport() : s(AF_SP,NN_PAIR) {}
 		void init(uint64_t node_id);
 		uint64_t get_node_id();
 		void send_msg(uint64_t dest_id, void ** data, int * sizes, int num); 
@@ -28,7 +35,7 @@ class Transport {
 		void simple_send_msg(int size); 
 		uint64_t simple_recv_msg();
 	private:
-		nn::socket s;
+		Socket * s;
 
 		uint64_t _node_id;
 		uint32_t msg_recv_id;
@@ -36,4 +43,5 @@ class Transport {
 		uint32_t msg_size;
 
 };
+
 #endif

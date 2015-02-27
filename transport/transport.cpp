@@ -15,26 +15,36 @@
 	 N?	data
 
 	 */
+Transport::Transport() {
+	s = new Socket[g_node_cnt];
+}
 
 void Transport::init(uint64_t node_id) {
 	printf("Init %ld\n",node_id);
 	_node_id = node_id;
-//	s.socket(AF_SP, NN_BUS);
-	// Format: transport://addr
+
 	int rc;
-	char socket_name[MAX_TPORT_NAME];
-	strcpy(socket_name,TPORT_TYPE);
-	strcat(socket_name,"://");
-	strcat(socket_name,TPORT_PORT);
 
 	int timeo = 1000; // timeout in ms
-	s.setsockopt(NN_SOL_SOCKET,NN_RCVTIMEO,&timeo,sizeof(timeo));
-
-	if(node_id == 0) {
-		rc = s.bind(socket_name);
+	for(uint64_t i=0;i<g_node_cnt;i++) {
+		s[i].sock.setsockopt(NN_SOL_SOCKET,NN_RCVTIMEO,&timeo,sizeof(timeo));
 	}
-	else {
-		rc = s.connect(socket_name);
+
+	for(uint64_t i=0;i<g_node_cnt-1;i++) {
+		for(uint64_t j=i+1;j<g_node_cnt;j++) {
+			if(i != g_node_id && j != g_node_id) {
+				continue;
+			}
+			char socket_name[MAX_TPORT_NAME];
+			// Socket name format: transport://addr
+			sprintf(socket_name,"%s://node_%ld_%ld_%s\n",TPORT_TYPE,i,j,TPORT_PORT);
+			printf("Bind/connecting to %s",socket_name);
+			if(i == g_node_id)
+				rc = s[j].sock.bind(socket_name);
+			else
+				rc = s[i].sock.connect(socket_name);
+		}
+
 	}
 	if(rc < 0) {
 		printf("Bind Error: %d %s\n",errno,strerror(errno));
@@ -85,7 +95,7 @@ void Transport::send_msg(uint64_t dest_id, void ** data, int * sizes, int num) {
 	int rc;
 	
 	// 4: send message
-	rc= s.send(&sbuf,NN_MSG,0);
+	rc= s[dest_id].sock.send(&sbuf,NN_MSG,0);
 
 	// Check for a send error
 	if(rc < 0) {
@@ -100,22 +110,29 @@ void Transport::send_msg(uint64_t dest_id, void ** data, int * sizes, int num) {
 
 // Listens to socket for messages from other nodes
 uint64_t Transport::recv_msg(base_query * query) {
-	int bytes;
-	//char * buf = (char *) mem_allocator.alloc(sizeof(char) * MSG_SIZE,get_node_id());
+	int bytes = 0;
 	void * buf;
-	bytes = s.recv(&buf, NN_MSG, 0);
-	//bytes = s.recv(&buf, NN_MSG, NN_DONTWAIT);
+	
+	// FIXME: Currently unfair round robin; prioritizes nodes with low node_id
+	for(uint64_t i=0;i<g_node_cnt;i++) {
+		bytes = s[i].sock.recv(&buf, NN_MSG, NN_DONTWAIT);
+
+		if(bytes <= 0 && errno != 11) {
+			nn::freemsg(buf);	
+		}
+
+		if(bytes>0)
+			break;
+	}
 
 	if(bytes < 0 && errno != 11) {
 		printf("Recv Error %d %s\n",errno,strerror(errno));
 	}
 	// Discard any messages not intended for this node
-	//if(bytes <= 0 || GET_RCV_NODE_ID(buf) != get_node_id()) {
 	if(bytes <= 0 ) {
-		if(errno != 11)
-			nn::freemsg(buf);	
 		return 0;
 	}
+
 	// Queue request for thread to execute
 	// Unpack request
 
@@ -124,13 +141,13 @@ uint64_t Transport::recv_msg(base_query * query) {
 	memcpy(&time,&((char*)buf)[bytes-sizeof(ts_t)],sizeof(ts_t));
 	ts_t time2 = get_sys_clock();
 	INC_STATS(1,tport_lat,time2 - time);
-#if DEBUG_DISTR
-	printf("Msg delay: %d bytes, %f s\n",bytes,((float)(time2-time))/BILLION);
-#endif
 
 	ts_t start = get_sys_clock();
 	INC_STATS(1,msg_rcv_cnt,1);
 	rem_qry_man.unpack(query,buf,bytes);
+#if DEBUG_DISTR
+	printf("Msg delay: %ld->%ld, %d bytes, %f s\n",query->return_id,query->dest_id,bytes,((float)(time2-time))/BILLION);
+#endif
 	nn::freemsg(buf);	
 	if(query->dest_id != get_node_id()) {
 		INC_STATS(1,rtime_unpack_ndest,get_sys_clock()-start);
@@ -147,7 +164,7 @@ void Transport::simple_send_msg(int size) {
 	ts_t time = get_sys_clock();
 	memcpy(&((char*)sbuf)[0],&time,sizeof(ts_t));
 
-	int rc = s.send(&sbuf,NN_MSG,0);
+	int rc = s[(g_node_id + 1) % g_node_cnt].sock.send(&sbuf,NN_MSG,0);
 	if(rc < 0) {
 		printf("send Error: %d %s\n",errno,strerror(errno));
 		assert(false);
@@ -157,7 +174,7 @@ void Transport::simple_send_msg(int size) {
 uint64_t Transport::simple_recv_msg() {
 	int bytes;
 	void * buf;
-	bytes = s.recv(&buf, NN_MSG, NN_DONTWAIT);
+	bytes = s[(g_node_id + 1) % g_node_cnt].sock.recv(&buf, NN_MSG, NN_DONTWAIT);
 	if(bytes <= 0 ) {
 		if(errno != 11)
 			nn::freemsg(buf);	
@@ -171,3 +188,5 @@ uint64_t Transport::simple_recv_msg() {
 	nn::freemsg(buf);	
 	return bytes;
 }
+
+
