@@ -21,12 +21,14 @@ Data:	MSG_SIZE - HDR_SIZE bytes
 class Socket {
 	public:
 		Socket () : sock(AF_SP,NN_PAIR) {}
+		~Socket () { delete &sock;}
 		nn::socket sock;
 };
 
 class Transport {
 	public:
 		Transport();
+		~Transport();
 		//Transport() : s(AF_SP,NN_PAIR) {}
 		void init(uint64_t node_id);
 		uint64_t get_node_id();

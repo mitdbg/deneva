@@ -19,6 +19,12 @@ Transport::Transport() {
 	s = new Socket[g_node_cnt];
 }
 
+Transport::~Transport() {
+	for(uint64_t i=0;i<g_node_cnt;i++) {
+		delete &s[i];
+	}
+}
+
 void Transport::init(uint64_t node_id) {
 	printf("Init %ld\n",node_id);
 	_node_id = node_id;
@@ -37,7 +43,7 @@ void Transport::init(uint64_t node_id) {
 			}
 			char socket_name[MAX_TPORT_NAME];
 			// Socket name format: transport://addr
-			sprintf(socket_name,"%s://node_%ld_%ld_%s\n",TPORT_TYPE,i,j,TPORT_PORT);
+			sprintf(socket_name,"%s://node_%ld_%ld_%s",TPORT_TYPE,i,j,TPORT_PORT);
 			printf("Bind/connecting to %s",socket_name);
 			if(i == g_node_id)
 				rc = s[j].sock.bind(socket_name);
