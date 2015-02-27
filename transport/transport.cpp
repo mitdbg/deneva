@@ -20,9 +20,11 @@ Transport::Transport() {
 }
 
 Transport::~Transport() {
+	/*
 	for(uint64_t i=0;i<g_node_cnt;i++) {
 		delete &s[i];
 	}
+	*/
 }
 
 void Transport::init(uint64_t node_id) {

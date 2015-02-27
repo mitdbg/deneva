@@ -185,23 +185,17 @@ RC tpcc_txn_man::run_new_order(tpcc_query * query) {
 		uint64_t ol_i_id = query->items[ol_number].ol_i_id;
 		uint64_t ol_supply_w_id = query->items[ol_number].ol_supply_w_id;
 		uint64_t ol_quantity = query->items[ol_number].ol_quantity;
-		/*
-			part_id = 0;
-			if(GET_NODE_ID(part_id) == get_node_id())
-				rc = new_order_1(ol_i_id);
-			else
-				query->ol_i_id = ol_i_id;
-		start = get_sys_clock();
-				rem_qry_man.remote_qry(query,TPCC_NEWORDER1,GET_NODE_ID(part_id),this);
+
+		// Read item from replicated item table locally
+			rc = new_order_1(ol_i_id);
+
 			if(rc != RCOK)
 				return finish(rc);
 
-				*/
 			part_id = wh_to_part(ol_supply_w_id);
 #if DEBUG_DISTR
 			//printf("run_new_order2 %ld:%ld -> %ld -- %ld\n",get_node_id(),get_thd_id(),part_id,GET_NODE_ID(part_id));
 #endif
-			//printf("run_new_order2 %ld:%ld -> %ld -- %ld\n",get_node_id(),get_thd_id(),part_id,GET_NODE_ID(part_id));
 			if(GET_NODE_ID(part_id) == get_node_id())
 				rc = new_order_2( w_id, d_id, remote, ol_i_id, ol_supply_w_id, ol_quantity,  ol_number, o_id); 
 			else {
@@ -497,6 +491,7 @@ inline RC tpcc_txn_man::new_order_0(uint64_t w_id, uint64_t d_id, uint64_t c_id,
 
 
 // new_order 1
+// Read from replicated read-only item table
 inline RC tpcc_txn_man::new_order_1(uint64_t ol_i_id) {
 		uint64_t key;
 		itemid_t * item;
@@ -531,29 +526,6 @@ inline RC tpcc_txn_man::new_order_1(uint64_t ol_i_id) {
 inline RC tpcc_txn_man::new_order_2(uint64_t w_id,uint64_t  d_id,bool remote, uint64_t ol_i_id, uint64_t ol_supply_w_id, uint64_t ol_quantity,uint64_t  ol_number,uint64_t  o_id) {
 		uint64_t key;
 		itemid_t * item;
-		/*===========================================+
-		EXEC SQL SELECT i_price, i_name , i_data
-			INTO :i_price, :i_name, :i_data
-			FROM item
-			WHERE i_id = :ol_i_id;
-		+===========================================*/
-		key = ol_i_id;
-		item = index_read(_wl->i_item, key, 0);
-		assert(item != NULL);
-		row_t * r_item = ((row_t *)item->location);
-
-		row_t * r_item_local = get_row(r_item, RD);
-		if (r_item_local == NULL) {
-			return finish(Abort);
-		}
-		int64_t i_price;
-		//char * i_name;
-		//char * i_data;
-		
-		r_item_local->get_value(I_PRICE, i_price);
-		//i_name = r_item_local->get_value(I_NAME);
-		//i_data = r_item_local->get_value(I_DATA);
-
 
 		/*===================================================================+
 		EXEC SQL SELECT s_quantity, s_data,
