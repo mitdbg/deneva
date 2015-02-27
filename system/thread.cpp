@@ -136,7 +136,7 @@ RC thread_t::run() {
 	pthread_barrier_wait( &warmup_bar );
 	stats.init(get_thd_id());
 	pthread_barrier_wait( &warmup_bar );
-	sleep(3);
+	sleep(4);
 	
 	printf("Run %ld:%ld\n",_node_id, _thd_id);
 	myrand rdm;
@@ -240,9 +240,14 @@ RC thread_t::run() {
 		uint64_t timespan = endtime - starttime;
 		INC_STATS(get_thd_id(), run_time, timespan);
 		INC_STATS(get_thd_id(), latency, timespan);
+		if(m_txn->abort_cnt > 0) 
+			INC_STATS(get_thd_id(), txn_abort_cnt, 1);
+
 		stats.add_lat(get_thd_id(), timespan);
-		
+		stats.add_abort_cnt(get_thd_id(), m_txn->abort_cnt);
+
 		INC_STATS(get_thd_id(), txn_cnt, 1);
+		
 		stats.commit(get_thd_id());
 
 		txn_cnt ++;

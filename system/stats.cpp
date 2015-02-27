@@ -9,11 +9,14 @@ void Stats_thd::init(uint64_t thd_id) {
 //	all_lat = new uint64_t [MAX_TXN_PER_PART]; 
 	all_lat = (uint64_t *)
 		mem_allocator.alloc(sizeof(uint64_t) * MAX_TXN_PER_PART, thd_id);
+	all_abort_cnt = (uint64_t *)
+		mem_allocator.alloc(sizeof(uint64_t) * MAX_TXN_PER_PART, thd_id);
 }
 
 void Stats_thd::clear() {
 	txn_cnt = 0;
 	abort_cnt = 0;
+	txn_abort_cnt = 0;
 	run_time = 0;
 	time_man = 0;
 	debug1 = 0;
@@ -102,6 +105,11 @@ void Stats::add_lat(uint64_t thd_id, uint64_t latency) {
 	}
 }
 
+void Stats::add_abort_cnt(uint64_t thd_id, uint64_t abort_cnt) {
+		uint64_t tnum = _stats[thd_id]->txn_cnt;
+		_stats[thd_id]->all_abort_cnt[tnum] = abort_cnt;
+}
+
 void Stats::commit(uint64_t thd_id) {
 	if (STATS_ENABLE) {
 		_stats[thd_id]->time_man += tmp_stats[thd_id]->time_man;
@@ -123,6 +131,7 @@ void Stats::print() {
 	
 	uint64_t total_txn_cnt = 0;
 	uint64_t total_abort_cnt = 0;
+	uint64_t total_txn_abort_cnt = 0;
 	double total_run_time = 0;
 	double total_time_man = 0;
 	double total_debug1 = 0;
@@ -155,6 +164,7 @@ void Stats::print() {
 	for (uint64_t tid = 0; tid < g_thread_cnt+1; tid ++) {
 		total_txn_cnt += _stats[tid]->txn_cnt;
 		total_abort_cnt += _stats[tid]->abort_cnt;
+		total_txn_abort_cnt += _stats[tid]->txn_abort_cnt;
 		total_run_time += _stats[tid]->run_time;
 		total_time_man += _stats[tid]->time_man;
 		total_debug1 += _stats[tid]->debug1;
@@ -195,7 +205,7 @@ void Stats::print() {
 	FILE * outf;
 	if (output_file != NULL) {
 		outf = fopen(output_file, "w");
-		fprintf(outf, "[summary] txn_cnt=%ld,abort_cnt=%ld"
+		fprintf(outf, "[summary] txn_cnt=%ld,abort_cnt=%ld,txn_abort_cnt=%ld"
 			",run_time=%f,time_wait=%f,time_wait_lock=%f,rtime_wait_plock=%f,time_wait_rem=%f,time_ts_alloc=%f"
 			",time_man=%f,time_index=%f,time_abort=%f,time_cleanup=%f,latency=%f,tport_lat=%f"
 			",deadlock_cnt=%ld,cycle_detect=%ld,dl_detect_time=%f,dl_wait_time=%f"
@@ -205,6 +215,7 @@ void Stats::print() {
 			",debug1=%f,debug2=%f,debug3=%f,debug4=%f,debug5=%f\n",
 			total_txn_cnt, 
 			total_abort_cnt,
+			total_txn_abort_cnt,
 			total_run_time / BILLION,
 			total_time_wait / BILLION,
 			total_time_wait_lock / BILLION,
@@ -241,7 +252,7 @@ void Stats::print() {
 		);
 		fclose(outf);
 	}
-	printf("[summary] txn_cnt=%ld,abort_cnt=%ld"
+	printf("[summary] txn_cnt=%ld,abort_cnt=%ld,txn_abort_cnt=%ld"
 		",run_time=%f,time_wait=%f,time_wait_lock=%f,rtime_wait_plock=%f,time_wait_rem=%f,time_ts_alloc=%f"
 		",time_man=%f,time_index=%f,time_abort=%f,time_cleanup=%f,latency=%f,tport_lat=%f"
 		",deadlock_cnt=%ld,cycle_detect=%ld,dl_detect_time=%f,dl_wait_time=%f"
@@ -251,6 +262,7 @@ void Stats::print() {
 		",debug1=%f,debug2=%f,debug3=%f,debug4=%f,debug5=%f\n",
 		total_txn_cnt, 
 		total_abort_cnt,
+		total_txn_abort_cnt,
 		total_run_time / BILLION,
 		total_time_wait / BILLION,
 		total_time_wait_lock / BILLION,
@@ -285,6 +297,7 @@ void Stats::print() {
 		total_debug4 / BILLION,
 		total_debug5 / BILLION 
 	);
+	print_abort_distr();
 	if (g_prt_lat_distr)
 		print_lat_distr();
 }
@@ -307,4 +320,27 @@ void Stats::print_lat_distr() {
 			printf("%f,", (double)_stats[tid]->all_lat[tnum] / BILLION);
 		printf("\n");
 	}
+}
+
+void Stats::print_abort_distr() {
+	FILE * outf;
+	if (output_file != NULL) {
+		outf = fopen(output_file, "a");
+		for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) {
+			fprintf(outf, "[all_abort_cnt thd=%d] ", tid);
+			for (UInt32 tnum = 0; tnum < _stats[tid]->txn_cnt; tnum ++) 
+				if(_stats[tid]->all_abort_cnt[tnum] > 0)
+					fprintf(outf, "%ld,", _stats[tid]->all_abort_cnt[tnum]);
+			fprintf(outf, "\n");
+		}
+		fclose(outf);
+	} 
+	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) {
+		printf("[all_abort_cnt thd=%d] ", tid);
+		for (UInt32 tnum = 0; tnum < _stats[tid]->txn_cnt; tnum ++) 
+			if(_stats[tid]->all_abort_cnt[tnum] > 0)
+				printf("%ld,", _stats[tid]->all_abort_cnt[tnum]);
+		printf("\n");
+	}
+
 }

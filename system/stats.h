@@ -9,6 +9,7 @@ public:
 	char _pad2[CL_SIZE];
 	uint64_t txn_cnt;
 	uint64_t abort_cnt;
+	uint64_t txn_abort_cnt;
 	double run_time;
 	double time_man;
 	double time_index;
@@ -43,6 +44,7 @@ public:
 	
 	uint64_t latency;
 	uint64_t * all_lat;
+	uint64_t * all_abort_cnt;
 	char _pad[CL_SIZE];
 };
 
@@ -77,10 +79,12 @@ public:
 	void init(uint64_t thread_id);
 	void clear(uint64_t tid);
 	void add_lat(uint64_t thd_id, uint64_t latency);
+	void add_abort_cnt(uint64_t thd_id, uint64_t abort_cnt);
 	void commit(uint64_t thd_id);
 	void abort(uint64_t thd_id);
 	void print();
 	void print_lat_distr();
+	void print_abort_distr();
 };
 
 #endif
