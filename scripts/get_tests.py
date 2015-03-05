@@ -4,7 +4,11 @@ import os
 
 PATH=os.getcwd()
 
-cmd = "scp rhardin@schroedinger.csail.mit.edu:/home/rhardin/research/ddbms/distDBX/tests.tgz ."
+user="rhardin"
+machine = "schroedinger.csail.mit.edu"
+project_dir = "/home/rhardin/research/ddbms/distDBX/"
+
+cmd = "scp {}@{}:{}tests.tgz .".format(user,machine,project_dir)
 os.system(cmd)
 
 cmd = "tar -xvf tests.tgz"
