@@ -9,7 +9,7 @@ DEPS = -I. -I./benchmarks -I./concurrency_control -I./storage -I./transport -I./
 CFLAGS += $(DEPS) -D NOGRAPHITE=1 -Werror -Wno-sizeof-pointer-memaccess
 LDFLAGS = -Wall -L. -L./nanomsg-0.5-beta -pthread -g -lrt -std=c++0x 
 LDFLAGS += $(CFLAGS)
-LIBS = -lnanomsg
+LIBS = -lnanomsg -lanl
 
 CPPS = $(foreach dir,$(SRC_DIRS),$(wildcard $(dir)*.cpp)) 
 
@@ -28,7 +28,7 @@ deps:$(CPPS)
 -include obj/deps
 
 rundb : $(OBJS)
-	$(CC) -o $@ $^ $(LDFLAGS) $(LIBS)
+	$(CC) -static -o $@ $^ $(LDFLAGS) $(LIBS)
 #./deps/%.d: %.cpp
 #	$(CC) -MM -MT $*.o -MF $@ $(CFLAGS) $<
 ./obj/%.o: benchmarks/%.cpp
@@ -36,7 +36,7 @@ rundb : $(OBJS)
 ./obj/%.o: storage/%.cpp
 	$(CC) -c $(CFLAGS) $(INCLUDE) -o $@ $<
 ./obj/%.o: transport/%.cpp
-	$(CC) -c $(CFLAGS) $(INCLUDE) $(LIBS) -o $@ $<
+	$(CC) -static -c $(CFLAGS) $(INCLUDE) $(LIBS) -o $@ $<
 ./obj/%.o: system/%.cpp
 	$(CC) -c $(CFLAGS) $(INCLUDE) -o $@ $<
 ./obj/%.o: concurrency_control/%.cpp
