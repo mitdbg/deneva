@@ -37,6 +37,7 @@ public:
 	workload * h_wl;
 	myrand * mrand;
 	uint64_t abort_cnt;
+    volatile uint64_t ack_cnt;
 
 	virtual RC 		run_txn(base_query * m_query) = 0;
 	virtual RC 		run_rem_txn(base_query * m_query) = 0;
@@ -60,7 +61,11 @@ public:
 	// [HSTORE]
 	int volatile 	ready_part;
 	RC 				finish(RC rc);
+	RC 				finish(base_query * query);
 	void 			cleanup(RC rc);
+    void            copy(txn_man * to);
+    RC              rem_fin_txn(base_query * query);
+    void            rem_fin_rsp(base_query * query);
 
 	////////////////////////////////
 	// LOGGING

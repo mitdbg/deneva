@@ -27,16 +27,26 @@ public:
 };
 */
 
+struct txn_node {
+ public:
+    txn_man * txn;
+    struct txn_node * next;
+};
+
+typedef txn_node * txn_node_t;
 
 class Remote_query {
 public:
 	void init(uint64_t node_id, workload * wl);
-	txn_man * get_txn_man(uint64_t tid);
+	txn_man * get_txn_man(uint64_t thd_id, uint64_t node_id, uint64_t txn_id);
+	txn_man * save_txn_man(uint64_t thd_id, uint64_t node_id, uint64_t txn_id, txn_man * txn_to_save);
 	void remote_qry(base_query * query, int type, int dest_id, txn_man * txn);
 	void signal_end();
 	void send_remote_query(uint64_t dest_id, void ** data, int * sizes, int num);
+    void remote_rsp(base_query * query, txn_man * txn);
 	void send_remote_rsp(uint64_t dest_id, void ** data, int * sizes, int num);
 	void unpack(base_query * query, void * d, int len);
+    void cleanup_remote(uint64_t thd_id, uint64_t node_id, uint64_t txn_id);
 	int q_idx;
 	/*
 #if WORKLOAD == TPCC
@@ -49,7 +59,9 @@ private:
 	
 	uint64_t _node_id;
 	workload * _wl;
-	txn_man ** txns;
+	//txn_man ** txns;
+    txn_node_t **txns;
 
+    void add_txn_man(uint64_t thd_id, uint64_t node_id, uint64_t txn_id, txn_man * txn);
 };
 #endif

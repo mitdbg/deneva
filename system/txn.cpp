@@ -2,6 +2,7 @@
 #include "row.h"
 #include "wl.h"
 #include "ycsb.h"
+#include "query.h"
 #include "thread.h"
 #include "mem_alloc.h"
 #include "occ.h"
@@ -9,6 +10,7 @@
 #include "catalog.h"
 #include "index_btree.h"
 #include "index_hash.h"
+#include "remote_query.h"
 
 void txn_man::init(thread_t * h_thd, workload * h_wl, uint64_t thd_id) {
 	this->h_thd = h_thd;
@@ -19,6 +21,7 @@ void txn_man::init(thread_t * h_thd, workload * h_wl, uint64_t thd_id) {
 	row_cnt = 0;
 	wr_cnt = 0;
 	insert_cnt = 0;
+    ack_cnt = 0;
 	//accesses = (Access **) mem_allocator.alloc(sizeof(Access **), 0);
 	accesses = new Access * [MAX_ROW_PER_TXN];
 	for (int i = 0; i < MAX_ROW_PER_TXN; i++)
@@ -172,9 +175,39 @@ RC txn_man::finish(RC rc) {
 	return rc;
 }
 
+void txn_man::rem_fin_rsp(base_query * query) {
+    assert(query->rc == DONE);
+    if (ATOM_ADD_FETCH(ack_cnt, 1) == query->part_cnt) {
+        rem_qry_man.cleanup_remote(get_thd_id(), query->dest_id, get_txn_id());
+    }
+}
+
+RC txn_man::rem_fin_txn(base_query * query) {
+    RC rc = finish(query->rc);
+    query->rc = DONE;
+    query->remote_finish_rsp(query);
+    return rc;
+}
+
+RC txn_man::finish(base_query * query) {
+	if (CC_ALG == HSTORE) 
+		return RCOK;	
+    // Send finish message to all participating transaction
+    for (uint64_t i = 0; i < query->part_cnt; ++i) {
+        query->remote_finish(query, query->parts[i]);    
+    }
+    return finish(query->rc);
+}
+
 void
 txn_man::release() {
 	for (int i = 0; i < num_accesses_alloc; i++)
 		mem_allocator.free(accesses[i], 0);
 	mem_allocator.free(accesses, 0);
 }
+
+void txn_man::copy(txn_man * to) {
+    // TODO: fix this
+    memcpy(to, this, sizeof(txn_man));
+}
+

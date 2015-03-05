@@ -83,14 +83,25 @@ RC thread_t::run_remote() {
 #endif
 				case RQRY:
 #if WORKLOAD == TPCC
+                    printf("Received remote query, txn_id: %lu\n", m_txn->get_txn_id());
+                    m_txn->set_txn_id(m_query->txn_id);
+                    printf("Updated txn_id: %lu\n", m_txn->get_txn_id());
 					m_txn->run_rem_txn(m_query);
 #endif
 					break;
 				case RQRY_RSP:
-					m_txn = rem_qry_man.get_txn_man(GET_THREAD_ID(m_query->pid));
+					m_txn = rem_qry_man.get_txn_man(GET_THREAD_ID(m_query->pid), m_query->return_id, m_query->txn_id);
 					m_txn->rem_txn_rsp(m_query);
 					break;
-
+                case RFIN:
+                    m_txn = rem_qry_man.get_txn_man(GET_THREAD_ID(m_query->pid), m_query->return_id, m_query->txn_id);
+                    m_txn = rem_qry_man.save_txn_man(GET_THREAD_ID(m_query->pid), m_query->return_id, m_query->txn_id, m_txn);
+                    m_txn->rem_fin_txn(m_query);
+                    break;
+                case RFIN_RSP:
+                    m_txn = rem_qry_man.get_txn_man(GET_THREAD_ID(m_query->pid), m_query->return_id, m_query->txn_id);
+                    m_txn->rem_fin_rsp(m_query);
+                    break;
 				default:
 					break;
 			}
@@ -170,8 +181,9 @@ RC thread_t::run() {
 //#endif
 		do {
 			ts_t t2 = get_sys_clock();
-			m_txn->set_txn_id(get_thd_id() + thd_txn_id * g_thread_cnt);
+			m_txn->set_txn_id(get_thd_id() + thd_txn_id * g_thread_cnt + get_node_id() * MAX_TXN_PER_PART);
 			thd_txn_id ++;
+            m_query->set_txn_id(m_txn->get_txn_id());
 
 			// for WAIT_DIE, the timestamp is not renewed after abort
 			if ((CC_ALG == HSTORE && !HSTORE_LOCAL_TS)
