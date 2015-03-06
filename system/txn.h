@@ -65,7 +65,6 @@ public:
 	void 			cleanup(RC rc);
     void            copy(txn_man * to);
     RC              rem_fin_txn(base_query * query);
-    void            rem_fin_rsp(base_query * query);
 
 	////////////////////////////////
 	// LOGGING

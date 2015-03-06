@@ -82,41 +82,7 @@ void base_query::remote_finish(base_query * query, int dest_id) {
     rem_qry_man.send_remote_query(dest_id, data, sizes, num);
 }
 
-void base_query::remote_finish_rsp(base_query * query) {
-    int total = 4;
-    void ** data = new void *[total];
-    int * sizes = new int [total];
-
-    int num = 0;
-    RemReqType rtype = RFIN_RSP;
-    uint64_t _pid = query->pid;
-    RC _rc = query->rc;
-    uint64_t _txn_id = query->txn_id;
-
-    data[num] = &rtype;
-    sizes[num++] = sizeof(RemReqType);
-    data[num] = &_pid;
-    sizes[num++] = sizeof(uint64_t);
-    data[num] = &_rc;
-    sizes[num++] = sizeof(RC);
-    data[num] = &_txn_id;
-    sizes[num++] = sizeof(uint64_t);
-
-    rem_qry_man.send_remote_rsp(query->return_id, data, sizes, num);
-}
-
 void base_query::unpack_finish(base_query * query, void * d) {
-    char * data = (char *) d;
-    uint64_t ptr = HEADER_SIZE + sizeof(RemReqType);
-    memcpy(&query->pid, &data[ptr], sizeof(uint64_t));
-    ptr += sizeof(uint64_t);
-    memcpy(&query->rc, &data[ptr], sizeof(RC));
-    ptr += sizeof(RC);
-    memcpy(&query->txn_id, &data[ptr], sizeof(uint64_t));
-    ptr += sizeof(uint64_t);
-}
-
-void base_query::unpack_finish_rsp(base_query * query, void * d) {
     char * data = (char *) d;
     uint64_t ptr = HEADER_SIZE + sizeof(RemReqType);
     memcpy(&query->pid, &data[ptr], sizeof(uint64_t));

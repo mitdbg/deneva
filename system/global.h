@@ -117,7 +117,7 @@ extern char * output_file;
 extern UInt32 g_max_items;
 extern UInt32 g_cust_per_dist;
 
-enum RC { RCOK, Commit, Abort, WAIT, ERROR, FINISH, NONE, DONE };
+enum RC { RCOK, Commit, Abort, WAIT, ERROR, FINISH, NONE };
 
 /* Thread */
 typedef uint64_t txnid_t;
