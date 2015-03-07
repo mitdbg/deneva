@@ -175,17 +175,8 @@ RC txn_man::finish(RC rc) {
 	return rc;
 }
 
-void txn_man::rem_fin_rsp(base_query * query) {
-    assert(query->rc == DONE);
-    if (ATOM_ADD_FETCH(ack_cnt, 1) == query->part_cnt) {
-        rem_qry_man.cleanup_remote(get_thd_id(), query->dest_id, get_txn_id());
-    }
-}
-
 RC txn_man::rem_fin_txn(base_query * query) {
     RC rc = finish(query->rc);
-    query->rc = DONE;
-    query->remote_finish_rsp(query);
     return rc;
 }
 
@@ -207,7 +198,10 @@ txn_man::release() {
 }
 
 void txn_man::copy(txn_man * to) {
-    // TODO: fix this
     memcpy(to, this, sizeof(txn_man));
+	to->accesses = new Access * [MAX_ROW_PER_TXN];
+	for (int i = 0; i < MAX_ROW_PER_TXN; i++)
+		to->accesses[i] = accesses[i];
+	to->num_accesses_alloc = num_accesses_alloc;
 }
 
