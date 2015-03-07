@@ -15,13 +15,15 @@
 
 RC tpcc_wl::init() {
 	workload::init();
-	char * cpath = getenv("GRAPHITE_HOME");
+	//char * cpath = getenv("GRAPHITE_HOME");
+	char * cpath = getenv("SCHEMA_PATH");
 	string path;	
 	if (cpath == NULL) 
 		path = "./benchmarks/";
 	else { 
 		path = string(cpath);
-		path += "/tests/apps/dbms/";
+		// Graphite:
+		//path += "/tests/apps/dbms/";
 	}
 #if TPCC_SMALL
 	path += "TPCC_short_schema.txt";

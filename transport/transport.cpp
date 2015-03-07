@@ -19,6 +19,7 @@ Transport::Transport() {
 	s = new Socket[g_node_cnt];
 }
 
+
 Transport::~Transport() {
 	/*
 	for(uint64_t i=0;i<g_node_cnt;i++) {
@@ -27,9 +28,39 @@ Transport::~Transport() {
 	*/
 }
 
+void Transport::read_ifconfig(const char * ifaddr_file) {
+	uint64_t cnt = 0;
+	ifstream fin(ifaddr_file);
+	string line;
+  while (getline(fin, line)) {
+		memcpy(ifaddr[cnt],&line[0],12);
+		cnt++;
+	}
+	for(uint64_t i=0;i<g_node_cnt;i++) {
+		printf("%ld: %s\n",i,ifaddr[i]);
+	}
+}
+
 void Transport::init(uint64_t node_id) {
 	printf("Init %ld\n",node_id);
 	_node_id = node_id;
+
+#if !TPORT_TYPE_IPC
+	// Read ifconfig file
+	ifaddr = new char *[g_node_cnt];
+	for(uint64_t i=0;i<g_node_cnt;i++) {
+		ifaddr[i] = new char[12];
+	}
+	char * cpath = getenv("SCHEMA_PATH");
+	string path;
+	if(cpath == NULL)
+		path = "./";
+	else
+		path = string(cpath);
+	path += "ifconfig.txt";
+	cout << "reading ifconfig file: " << path << endl;
+	read_ifconfig(path.c_str());
+#endif
 
 	int rc;
 
@@ -38,22 +69,57 @@ void Transport::init(uint64_t node_id) {
 		s[i].sock.setsockopt(NN_SOL_SOCKET,NN_RCVTIMEO,&timeo,sizeof(timeo));
 	}
 
+	printf("Node ID: %d/%d\n",g_node_id,g_node_cnt);
+
 	for(uint64_t i=0;i<g_node_cnt-1;i++) {
 		for(uint64_t j=i+1;j<g_node_cnt;j++) {
+			printf("Setting up %ld %ld\n",i,j);
 			if(i != g_node_id && j != g_node_id) {
 				continue;
 			}
 			char socket_name[MAX_TPORT_NAME];
 			// Socket name format: transport://addr
+#if TPORT_TYPE_IPC
 			sprintf(socket_name,"%s://node_%ld_%ld_%s",TPORT_TYPE,i,j,TPORT_PORT);
-			printf("Bind/connecting to %s",socket_name);
+#else
+			int port = TPORT_PORT + (i * g_node_cnt) + j;
 			if(i == g_node_id)
-				rc = s[j].sock.bind(socket_name);
+				sprintf(socket_name,"%s://eth0:%d",TPORT_TYPE,port);
 			else
+				sprintf(socket_name,"%s://eth0;%s:%d",TPORT_TYPE,ifaddr[i],port);
+#endif
+			if(i == g_node_id) {
+				printf("Binding to %s\n",socket_name);
+				rc = s[j].sock.bind(socket_name);
+			}
+			else {
+				printf("Connecting to %s\n",socket_name);
 				rc = s[i].sock.connect(socket_name);
+			}
 		}
 
 	}
+	fflush(stdout);
+	/*
+#if !TPORT_TYPE_IPC
+	for(uint64_t i=0;i<g_node_cnt;i++) {
+			int port = TPORT_PORT + (i * g_node_cnt) + j;
+			if(i == g_node_id) {
+				sprintf(socket_name,"%s://eth0:%d",TPORT_TYPE,port);
+				printf("Binding to %s",socket_name);
+				rc = s[i].sock.bind(socket_name);
+			}
+			else {
+				sprintf(socket_name,"%s://eth0;%s:%d",TPORT_TYPE,ifaddr[j],port);
+				printf("Connecting to %s",socket_name);
+				rc = s[i].sock.connect(socket_name);
+			}
+	}
+
+#endif
+*/
+
+
 	if(rc < 0) {
 		printf("Bind Error: %d %s\n",errno,strerror(errno));
 	}
@@ -191,7 +257,7 @@ uint64_t Transport::simple_recv_msg() {
 
 	ts_t time;
 	memcpy(&time,&((char*)buf)[0],sizeof(ts_t));
-	printf("%d bytes, %f s\n",bytes,((float)(get_sys_clock()-time)) / BILLION);
+	//printf("%d bytes, %f s\n",bytes,((float)(get_sys_clock()-time)) / BILLION);
 
 	nn::freemsg(buf);	
 	return bytes;

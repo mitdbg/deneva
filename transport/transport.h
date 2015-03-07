@@ -30,12 +30,14 @@ class Transport {
 		Transport();
 		~Transport();
 		//Transport() : s(AF_SP,NN_PAIR) {}
+		void read_ifconfig(const char * ifaddr_file);
 		void init(uint64_t node_id);
 		uint64_t get_node_id();
 		void send_msg(uint64_t dest_id, void ** data, int * sizes, int num); 
 		uint64_t recv_msg(base_query * query);
 		void simple_send_msg(int size); 
 		uint64_t simple_recv_msg();
+		//void set_ifaddr(const char * ifaddr, uint64_t n) { this.ifaddr[n] = ifaddr; }
 	private:
 		Socket * s;
 
@@ -43,6 +45,7 @@ class Transport {
 		uint32_t msg_recv_id;
 		uint32_t msg_send_id;
 		uint32_t msg_size;
+		char ** ifaddr;
 
 };
 

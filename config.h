@@ -5,7 +5,7 @@
 // Simulation + Hardware
 /***********************************************/
 #define THREAD_CNT					1
-#define NODE_CNT 16
+#define NODE_CNT 2 
 #define PART_CNT					THREAD_CNT * NODE_CNT // THREAD_CNT * NODE_CNT
 
 // each transaction only accesses only 1 virtual partition. But the lock/ts manager and index are not aware of such partitioning. VIRTUAL_PART_CNT describes the request distribution and is only used to generate queries. For HSTORE, VIRTUAL_PART_CNT should be the same as PART_CNT.
@@ -49,9 +49,9 @@
 /***********************************************/
 // Message Passing
 /***********************************************/
-#define TPORT_TYPE	"ipc" //inproc, ipc, tpc
-#define TPORT_TYPE_IPC	true 
-#define TPORT_PORT	"tmp.ipc" 
+#define TPORT_TYPE	"tcp" //"ipc", "tcp"
+#define TPORT_TYPE_IPC	false  // 
+#define TPORT_PORT	6100 // "_.ipc"
 #define MAX_TPORT_NAME 128
 #define MSG_SIZE 128 // in bytes
 #define HEADER_SIZE sizeof(uint32_t)*3 // in bits 
