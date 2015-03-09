@@ -79,6 +79,7 @@ uint64_t get_server_clock() {
 	timespec * tp = new timespec;
     clock_gettime(CLOCK_REALTIME, tp);
     uint64_t ret = tp->tv_sec * 1000000000 + tp->tv_nsec;
+		delete tp;
 //#endif
     return ret;
 }
