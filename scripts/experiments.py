@@ -4,6 +4,11 @@ import itertools
 
 # Format: [#Nodes,#Txns,Workload,CC_ALG,MPR]
 
+simple = [
+[2,100,'TPCC','HSTORE',1],
+[2,100,'TPCC','HSTORE',10]
+]
+
 experiments_100K = [
     [n,100000,'TPCC','HSTORE',m] for n,m in itertools.product([2,4,8,16],[1]+range(0,101,10))
 ]
@@ -31,4 +36,4 @@ configs = {
 ##################
 # FIXME
 #################
-experiments = experiments_10K
+experiments = simple

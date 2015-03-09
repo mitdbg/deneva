@@ -6,8 +6,21 @@ import subprocess
 from experiments import *
 from helper import *
 
+uname = "rhardin"
+
 now = datetime.datetime.now()
 strnow=now.strftime("%Y%m%d-%H%M%S")
+
+machines=[
+"istc1", 
+"istc3"
+#"istc4",
+#"istc5",
+#"istc6",
+#"istc7",
+#"istc8",
+#"istc9"
+]
 
 os.chdir('..')
 
@@ -19,10 +32,11 @@ test_dir_name = "tests-" + strnow
 cfgs = configs
 
 execute = True
+remote = False
 
 for arg in sys.argv:
     if arg == "-help" or arg == "-h":
-        sys.exit("Usage: %s [-exec/-e/-noexec/-ne]\n \
+        sys.exit("Usage: %s [-exec/-e/-noexec/-ne] [-remote/-rem]\n \
                 -exec/-e: compile and execute locally (default)\n \
                 -noexec/-ne: compile put in a tarball \
                 " % sys.argv[0])
@@ -30,6 +44,8 @@ for arg in sys.argv:
         execute = True
     if arg == "-noexec" or arg == "-ne":
         execute = False
+    if arg == "-remote" or arg == "-rem":
+        remote = True
 
 if not execute:
     cmd = "mkdir " + test_dir
@@ -62,19 +78,48 @@ for e in experiments:
         cmd = "cp config.h {}{}.cfg".format(result_dir,output_f)
         os.system(cmd)
 
-        nnodes = cfgs["NODE_CNT"]
-        pids = []
-        for n in range(nnodes):
-            cmd = "./rundb -nid{}".format(n)
+        if remote:
+            # create ifconfig file
+            # TODO: ensure that machine order and node order is the same for ifconfig
+            f = open("istc_ifconfig.txt",'r');
+            lines = f.readlines()
+            f.close()
+            with open("ifconfig.txt",'w') as f_ifcfg:
+                for line in lines:
+                    line = re.split(' ',line)
+                    if line[0] in machines:
+                        f_ifcfg.write(line[1])
+
+            files = ["rundb","ifconfig.txt","./benchmarks/TPCC_short_schema.txt"]
+            for m,f in itertools.product(machines,files):
+                cmd = 'scp {}/{} {}.csail.mit.edu:/home/{}/'.format(PATH,f,m,uname)
+                print(cmd)
+                os.system(cmd)
+
+            cmd = './scripts/deploy.sh \'{}\' /home/{}/'.format(' '.join(machines),uname)
             print(cmd)
-            cmd = shlex.split(cmd)
-            ofile_n = "{}{}_{}.out".format(result_dir,n,output_f)
-            ofile = open(ofile_n,'w')
-            #cmd = "./rundb -nid{} >> {}{}_{}.out &".format(n,result_dir,n,output_f)
-            p = subprocess.Popen(cmd,stdout=ofile)
-            pids.insert(0,p)
-        for n in range(nnodes):
-            pids[n].wait()
+            os.system(cmd)
+
+            for m,n in zip(machines,range(len(machines))):
+                cmd = 'scp {}.csail.mit.edu:/home/{}/results.out {}{}_{}.out'.format(m,uname,result_dir,n,output_f)
+                print(cmd)
+                os.system(cmd)
+
+
+        else:
+            nnodes = cfgs["NODE_CNT"]
+            pids = []
+            for n in range(nnodes):
+                cmd = "./rundb -nid{}".format(n)
+                print(cmd)
+                cmd = shlex.split(cmd)
+                ofile_n = "{}{}_{}.out".format(result_dir,n,output_f)
+                ofile = open(ofile_n,'w')
+                #cmd = "./rundb -nid{} >> {}{}_{}.out &".format(n,result_dir,n,output_f)
+                p = subprocess.Popen(cmd,stdout=ofile)
+                pids.insert(0,p)
+            for n in range(nnodes):
+                pids[n].wait()
     else:
         cmd = "mkdir {}/{}".format(test_dir,output_dir)
         os.system(cmd)
