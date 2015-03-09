@@ -11,15 +11,15 @@ uname = "rhardin"
 now = datetime.datetime.now()
 strnow=now.strftime("%Y%m%d-%H%M%S")
 
-machines=[
+machines_=[
 "istc1", 
-"istc3"
-#"istc4",
-#"istc5",
-#"istc6",
-#"istc7",
-#"istc8",
-#"istc9"
+"istc3",
+"istc4",
+"istc5",
+"istc6",
+"istc7",
+"istc8",
+"istc9"
 ]
 
 os.chdir('..')
@@ -75,10 +75,14 @@ for e in experiments:
     os.system(cmd)
 
     if execute:
+        #result_dir_ = result_dir + output_f + "/"
+        cmd = "mkdir {}".format(result_dir)
+        os.system(cmd)
         cmd = "cp config.h {}{}.cfg".format(result_dir,output_f)
         os.system(cmd)
 
         if remote:
+            machines = machines_[:cfgs["NODE_CNT"]]
             # create ifconfig file
             # TODO: ensure that machine order and node order is the same for ifconfig
             f = open("istc_ifconfig.txt",'r');
@@ -86,9 +90,10 @@ for e in experiments:
             f.close()
             with open("ifconfig.txt",'w') as f_ifcfg:
                 for line in lines:
+                    line = line.rstrip('\n')
                     line = re.split(' ',line)
                     if line[0] in machines:
-                        f_ifcfg.write(line[1])
+                        f_ifcfg.write(line[1] + "\n")
 
             files = ["rundb","ifconfig.txt","./benchmarks/TPCC_short_schema.txt"]
             for m,f in itertools.product(machines,files):

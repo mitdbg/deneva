@@ -37,7 +37,7 @@
 #define MEM_ALLIGN					8 
 
 // [THREAD_ALLOC]
-#define THREAD_ALLOC				true
+#define THREAD_ALLOC				false
 #define THREAD_ARENA_SIZE			(1UL << 22) 
 #define MEM_PAD 					true
 
@@ -49,13 +49,18 @@
 /***********************************************/
 // Message Passing
 /***********************************************/
-#define TPORT_TYPE	"tcp" //"ipc", "tcp"
-#define TPORT_TYPE_IPC	false  // 
-#define TPORT_PORT	6100 // "_.ipc"
+/*
+#define TPORT_TYPE	"tcp" 
+#define TPORT_TYPE_IPC	false 
+#define TPORT_PORT	6100 
+*/
+#define TPORT_TYPE	"ipc"
+#define TPORT_TYPE_IPC	true 
+#define TPORT_PORT	"_.ipc"
 #define MAX_TPORT_NAME 128
 #define MSG_SIZE 128 // in bytes
 #define HEADER_SIZE sizeof(uint32_t)*3 // in bits 
-#define MSG_TIMEOUT 5000000000UL // in ns
+#define MSG_TIMEOUT 50000000000UL //5000000000UL // in ns
 #define NETWORK_TEST false
 
 #define MAX_QUEUE_LEN NODE_CNT * 2
@@ -120,7 +125,7 @@
 // max number of rows touched per transaction
 #define MAX_ROW_PER_TXN				64
 #define QUERY_INTVL 				1UL
-#define MAX_TXN_PER_PART 100
+#define MAX_TXN_PER_PART 1000
 #define FIRST_PART_LOCAL 			true
 #define MAX_TUPLE_SIZE				1024 // in bytes
 // ==== [YCSB] ====

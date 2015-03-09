@@ -5,8 +5,10 @@ import itertools
 # Format: [#Nodes,#Txns,Workload,CC_ALG,MPR]
 
 simple = [
-[2,100,'TPCC','HSTORE',1],
-[2,100,'TPCC','HSTORE',10]
+[2,1000,'TPCC','HSTORE',1],
+[2,1000,'TPCC','HSTORE',10],
+[4,1000,'TPCC','HSTORE',1],
+[4,1000,'TPCC','HSTORE',10]
 ]
 
 experiments_100K = [
