@@ -176,11 +176,12 @@ RC txn_man::finish(RC rc) {
 }
 
 RC txn_man::rem_fin_txn(base_query * query) {
-    RC rc = finish(query->rc);
-    return rc;
+    return finish(query->rc);
 }
 
 RC txn_man::finish(base_query * query) {
+    if (query->part_cnt > 0)
+        rem_qry_man.cleanup_remote(get_thd_id(), get_node_id(), get_txn_id(), false);
 	if (CC_ALG == HSTORE) 
 		return RCOK;	
     // Send finish message to all participating transaction
@@ -195,13 +196,5 @@ txn_man::release() {
 	for (int i = 0; i < num_accesses_alloc; i++)
 		mem_allocator.free(accesses[i], 0);
 	mem_allocator.free(accesses, 0);
-}
-
-void txn_man::copy(txn_man * to) {
-    memcpy(to, this, sizeof(txn_man));
-	to->accesses = new Access * [MAX_ROW_PER_TXN];
-	for (int i = 0; i < MAX_ROW_PER_TXN; i++)
-		to->accesses[i] = accesses[i];
-	to->num_accesses_alloc = num_accesses_alloc;
 }
 
