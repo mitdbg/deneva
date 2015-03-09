@@ -63,7 +63,6 @@ public:
 	RC 				finish(RC rc);
 	RC 				finish(base_query * query);
 	void 			cleanup(RC rc);
-    void            copy(txn_man * to);
     RC              rem_fin_txn(base_query * query);
 
 	////////////////////////////////
