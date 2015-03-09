@@ -83,6 +83,8 @@ RC thread_t::run_remote() {
 #endif
 				case RQRY:
 #if WORKLOAD == TPCC
+	                rc = _wl->get_txn_man(m_txn, this);
+                    assert(rc == RCOK);
                     m_txn->set_txn_id(m_query->txn_id);
 					m_txn->run_rem_txn(m_query);
 #endif
@@ -92,9 +94,9 @@ RC thread_t::run_remote() {
 					m_txn->rem_txn_rsp(m_query);
 					break;
                 case RFIN:
-                    m_txn = rem_qry_man.get_txn_man(GET_THREAD_ID(m_query->pid), m_query->return_id, m_query->txn_id);
-                    m_txn = rem_qry_man.save_txn_man(GET_THREAD_ID(m_query->pid), m_query->return_id, m_query->txn_id, m_txn);
+                    m_txn = rem_qry_man.get_txn_man(get_thd_id(), m_query->return_id, m_query->txn_id);
                     m_txn->rem_fin_txn(m_query);
+                    rem_qry_man.cleanup_remote(get_thd_id(), m_query->return_id, m_query->txn_id, true);
                     break;
 				default:
 					break;
