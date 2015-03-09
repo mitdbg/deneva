@@ -138,7 +138,9 @@ void Remote_query::cleanup_remote(uint64_t thd_id, uint64_t node_id, uint64_t tx
             cur->next = cur->next->next;
         }
     }
-    if (free_txn)
+    if (free_txn) {
+        t_node->txn->release();
         mem_allocator.free(t_node->txn, sizeof(txn_man));
+    }
     mem_allocator.free(t_node, sizeof(struct txn_node));
 }

@@ -37,7 +37,7 @@
 #define MEM_ALLIGN					8 
 
 // [THREAD_ALLOC]
-#define THREAD_ALLOC				true
+#define THREAD_ALLOC		        false	
 #define THREAD_ARENA_SIZE			(1UL << 22) 
 #define MEM_PAD 					true
 
