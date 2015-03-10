@@ -67,9 +67,6 @@ RC tpcc_txn_man::run_rem_txn(base_query * query) {
 	}
 	// return ack and any values to remote node
 	m_query->rc = rc;
-	//m_query->remote_rsp(query);
-	//m_query->pack(query,data,sizes,&num, rc);
-	//return finish(rc);
     rem_qry_man.remote_rsp(m_query, this);
     return rc;
 }
@@ -117,7 +114,6 @@ RC tpcc_txn_man::run_payment(tpcc_query * query) {
 	if(GET_NODE_ID(part_id) == get_node_id()) 
 		rc = run_payment_0(w_id, d_id, d_w_id, h_amount);
 	else { 
-        //printf("Sending remote txn, txn_id: %lu", get_txn_id());
 		_rc = NONE;
 		rem_qry_man.remote_qry(query,TPCC_PAYMENT0,GET_NODE_ID(part_id),this);
 		start = get_sys_clock();
@@ -125,6 +121,7 @@ RC tpcc_txn_man::run_payment(tpcc_query * query) {
 		INC_STATS(get_thd_id(),time_wait_rem,get_sys_clock()-start);
 		rc = _rc;
 	}
+    query->rc = rc;
 	if(rc != RCOK)
         return finish(query);
 
@@ -143,6 +140,7 @@ RC tpcc_txn_man::run_payment(tpcc_query * query) {
 		INC_STATS(get_thd_id(),time_wait_rem,get_sys_clock()-start);
 		rc = _rc;
 	}
+    query->rc = rc;
 	if(rc != RCOK)
 		return finish(query);
 
@@ -170,7 +168,6 @@ RC tpcc_txn_man::run_new_order(tpcc_query * query) {
 	if(GET_NODE_ID(part_id) == get_node_id())
 		rc = new_order_0( w_id, d_id, c_id, remote, ol_cnt, o_entry_d, &o_id); 
 	else {
-        //printf("Sending remote txn, txn_id: %lu", get_txn_id());
 		_rc = NONE;
 		rem_qry_man.remote_qry(query,TPCC_NEWORDER0,GET_NODE_ID(part_id),this);
 		start = get_sys_clock();
@@ -180,6 +177,7 @@ RC tpcc_txn_man::run_new_order(tpcc_query * query) {
 		if(rc == RCOK)
 			query->o_id = _qry->o_id;
 	}
+    query->rc = rc;
 	if(rc != RCOK)
 		return finish(query);
 
@@ -194,6 +192,7 @@ RC tpcc_txn_man::run_new_order(tpcc_query * query) {
 		// Read item from replicated item table locally
 			rc = new_order_1(ol_i_id);
 
+            query->rc = rc;
 			if(rc != RCOK)
 				return finish(query);
 
@@ -216,11 +215,13 @@ RC tpcc_txn_man::run_new_order(tpcc_query * query) {
 		INC_STATS(get_thd_id(),time_wait_rem,get_sys_clock()-start);
 				rc = _rc;
 			}
+            query->rc = rc;
 			if(rc != RCOK)
 				return finish(query);
 		//uint64_t i_price;
 		//double w_tax;
 	}
+    assert(rc == RCOK);
 	return finish(query);
 }
 
