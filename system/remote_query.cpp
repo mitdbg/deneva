@@ -125,7 +125,6 @@ void Remote_query::add_txn_man(uint64_t thd_id, uint64_t node_id, uint64_t txn_i
 
     t_node->next = txns[thd_id][node_id]->next;
     txns[thd_id][node_id]->next = t_node;
-    //printf("Creating txn_man node for: thd_id: %lu, node_id: %lu, txn_id = %lu\n", thd_id, node_id, txn_id);
 }
 
 void Remote_query::cleanup_remote(uint64_t thd_id, uint64_t node_id, uint64_t txn_id, bool free_txn) {

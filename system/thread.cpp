@@ -86,6 +86,9 @@ RC thread_t::run_remote() {
 	                rc = _wl->get_txn_man(m_txn, this);
                     assert(rc == RCOK);
                     m_txn->set_txn_id(m_query->txn_id);
+#if CC_ALG == WAIT_DIE
+                    m_txn->set_ts(m_query->ts);
+#endif
 					m_txn->run_rem_txn(m_query);
 #endif
 					break;
@@ -172,6 +175,10 @@ RC thread_t::run() {
 		ts_t t1 = get_sys_clock() - starttime;
 		INC_STATS(_thd_id, time_query, t1);
 		m_txn->abort_cnt = 0;
+        if (CC_ALG == WAIT_DIE) {
+            m_txn->set_ts(get_next_ts());
+            m_query->ts = m_txn->get_ts();
+        }
 //#if CC_ALG == VLL
 //		_wl->get_txn_man(m_txn, this);
 //#endif

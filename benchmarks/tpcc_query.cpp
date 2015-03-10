@@ -44,6 +44,10 @@ void tpcc_query::remote_qry(base_query * query, int type, int dest_id) {
 	// NOTE: Adjust if parameters sent is changed
 	int total = 12;
 
+#if CC_ALG == WAIT_DIE
+    total ++;   // For timestamp
+#endif
+
 	void ** data = new void *[total];
 	int * sizes = new int [total];
 	int num = 0;
@@ -59,6 +63,10 @@ void tpcc_query::remote_qry(base_query * query, int type, int dest_id) {
 	sizes[num++] = sizeof(uint64_t); 
     data[num] = &m_query->txn_id;
     sizes[num++] = sizeof(uint64_t);
+#if CC_ALG == WAIT_DIE
+    data[num] = &m_query->ts;
+    sizes[num++] = sizeof(uint64_t);   // sizeof ts_t
+#endif
 	switch(t) {
 		case TPCC_PAYMENT0 :
 			data[num] = &m_query->w_id;
@@ -198,6 +206,10 @@ void tpcc_query::unpack(base_query * query, void * d) {
 	ptr += sizeof(uint64_t);
     memcpy(&m_query->txn_id, &data[ptr], sizeof(uint64_t));
     ptr += sizeof(uint64_t);
+#if CC_ALG == WAIT_DIE
+    memcpy(&m_query->ts, &data[ptr], sizeof(uint64_t));
+    ptr += sizeof(uint64_t);
+#endif
 	switch(m_query->type) {
 		case TPCC_PAYMENT0 :
 			memcpy(&m_query->w_id,&data[ptr],sizeof(m_query->w_id));
