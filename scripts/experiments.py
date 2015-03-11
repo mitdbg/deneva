@@ -5,10 +5,9 @@ import itertools
 # Format: [#Nodes,#Txns,Workload,CC_ALG,MPR]
 
 simple = [
-[2,1000,'TPCC','HSTORE',1],
-[2,1000,'TPCC','HSTORE',10],
-[4,1000,'TPCC','HSTORE',1],
-[4,1000,'TPCC','HSTORE',10]
+#[2,1000,'TPCC','HSTORE',1],
+[8,1000,'TPCC','HSTORE',40],
+[8,1000,'TPCC','HSTORE',50]
 ]
 
 experiments_100K = [
@@ -16,7 +15,19 @@ experiments_100K = [
 ]
 
 experiments_10K = [
-    [n,10000,'TPCC','HSTORE',m] for n,m in itertools.product([2,4,8,16],[1]+range(0,101,10))
+    [n,10000,'TPCC','HSTORE',m] for n,m in itertools.product([2,4,8],[1]+range(0,101,10))
+]
+
+experiments_1K = [
+    [n,1000,'TPCC',cc,m] for n,m,cc in itertools.product([2,4,8],[1]+range(0,51,10),['HSTORE','NO_WAIT','WAIT_DIE'])
+]
+
+experiments_1K_no_wait = [
+    [n,1000,'TPCC',cc,m] for n,m,cc in itertools.product([2,4,8],[1]+range(0,51,10),['NO_WAIT'])
+]
+
+experiments_1K_hstore = [
+    [n,1000,'TPCC',cc,m] for n,m,cc in itertools.product([2,4,8],[1]+range(0,51,10),['HSTORE'])
 ]
 
 experiments_n2 = [
@@ -38,4 +49,4 @@ configs = {
 ##################
 # FIXME
 #################
-experiments = simple
+experiments = experiments_1K_hstore

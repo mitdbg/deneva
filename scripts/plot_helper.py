@@ -48,6 +48,7 @@ def tput_mpr(mpr,nodes,algos,max_txn,summary):
                 avg_run_time = avg(summary[cfgs]['run_time'])
                 avg_txn_cnt = avg(summary[cfgs]['txn_cnt'])
             except KeyError:
+                print("KeyError: {} {} {} {}".format(algo,node,max_txn,m))
                 tpt[x][i] = 0
                 continue
             tpt[x][i] = (avg_txn_cnt/avg_run_time)
@@ -119,20 +120,31 @@ def time_breakdown(mpr,node,algo,max_txn,summary,normalized=False):
         cfgs = get_cfgs([node,max_txn,'TPCC',algo,m])
         cfgs = get_outfile_name(cfgs)
         if cfgs not in summary.keys(): break
-        if normalized:
-            run_time[i] = avg(summary[cfgs]['run_time'])
-        else:
+        try:
+            if normalized:
+                run_time[i] = avg(summary[cfgs]['run_time'])
+            else:
+                run_time[i] = 1.0
+            time_abort[i] = avg(summary[cfgs]['time_abort']) / run_time[i]
+            time_ts_alloc[i] = avg(summary[cfgs]['time_ts_alloc']) / run_time[i]
+            time_index[i] = avg(summary[cfgs]['time_index']) / run_time[i]
+            time_wait_lock[i] = avg(summary[cfgs]['time_wait_lock']) / run_time[i]
+            time_wait_rem[i] = avg(summary[cfgs]['time_wait_rem']) / run_time[i]
+            time_man[i] = avg(summary[cfgs]['time_man']) / run_time[i]
+            if normalized:
+                time_work[i] = 1.0 - sum([time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]])
+            else:
+                time_work[i] = avg(summary[cfgs]['run_time']) - sum([time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]])
+        except KeyError:
+            print("KeyError: {} {} {} {}".format(algo,node,max_txn,m))
             run_time[i] = 1.0
-        time_abort[i] = avg(summary[cfgs]['time_abort']) / run_time[i]
-        time_ts_alloc[i] = avg(summary[cfgs]['time_ts_alloc']) / run_time[i]
-        time_index[i] = avg(summary[cfgs]['time_index']) / run_time[i]
-        time_wait_lock[i] = avg(summary[cfgs]['time_wait_lock']) / run_time[i]
-        time_wait_rem[i] = avg(summary[cfgs]['time_wait_rem']) / run_time[i]
-        time_man[i] = avg(summary[cfgs]['time_man']) / run_time[i]
-        if normalized:
-            time_work[i] = 1.0 - sum([time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]])
-        else:
-            time_work[i] = avg(summary[cfgs]['run_time']) - sum([time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]])
+            time_abort[i] = 0.0
+            time_ts_alloc[i] = 0.0
+            time_index[i] = 0.0
+            time_wait_lock[i] = 0.0
+            time_wait_rem[i] = 0.0
+            time_man[i] = 0.0
+            time_work[i] = 0.0
     data = [time_man,time_wait_rem,time_wait_lock,time_index,time_ts_alloc,time_abort,time_work]
 
     draw_stack(data,mpr,stack_names,figname=name)
@@ -154,8 +166,12 @@ def cdf_aborts_mpr(mpr,node,algo,max_txn,summary):
         cfgs = get_cfgs([node,max_txn,'TPCC',algo,m])
         cfgs = get_outfile_name(cfgs)
         if cfgs not in summary.keys(): break
-        if len(summary[cfgs]['all_abort_cnts']) == 0: continue
-        max_abort = max(max_abort, max(summary[cfgs]['all_abort_cnts'].keys()))
+        try:
+            if len(summary[cfgs]['all_abort_cnts']) == 0: continue
+            max_abort = max(max_abort, max(summary[cfgs]['all_abort_cnts'].keys()))
+        except KeyError:
+            print("KeyError: {} {} {} {}".format(algo,node,max_txn,m))
+            max_abort = max_abort
 
     xs_mpr = range(max_abort + 1)
     for i in range(len(mpr)):
@@ -166,11 +182,16 @@ def cdf_aborts_mpr(mpr,node,algo,max_txn,summary):
         if cfgs not in summary.keys(): break
         y = 0
         for x in xs_mpr:
-            if x in summary[cfgs]['all_abort_cnts'].keys():
-                ys_mpr[m][x] = y + (summary[cfgs]['all_abort_cnts'][x] / sum(summary[cfgs]['txn_abort_cnt']))
-                y = ys_mpr[m][x]
-            else:
+            try:
+                if x in summary[cfgs]['all_abort_cnts'].keys():
+                    ys_mpr[m][x] = y + (summary[cfgs]['all_abort_cnts'][x] / sum(summary[cfgs]['txn_abort_cnt']))
+                    y = ys_mpr[m][x]
+                else:
+                    ys_mpr[m][x] = y
+            except KeyError:
+                print("KeyError: {} {} {} {}".format(algo,node,max_txn,m))
                 ys_mpr[m][x] = y
+
 
     draw_line(name,ys_mpr,xs_mpr,ylab='% Transactions',xlab='# Aborts',title='Cumulative Aborts per Transaction with varying MPR',bbox=[0.8,0.6],ylimit=1.0) 
 
@@ -192,8 +213,11 @@ def bar_aborts_mpr(mpr,node,algo,max_txn,summary):
         cfgs = get_cfgs([node,max_txn,'TPCC',algo,m])
         cfgs = get_outfile_name(cfgs)
         if cfgs not in summary.keys(): break
-        if len(summary[cfgs]['all_abort_cnts']) == 0: continue
-        max_abort = max(max_abort, max(summary[cfgs]['all_abort_cnts'].keys()))
+        try:
+            if len(summary[cfgs]['all_abort_cnts']) == 0: continue
+            max_abort = max(max_abort, max(summary[cfgs]['all_abort_cnts'].keys()))
+        except KeyError:
+            continue
 
     xs_mpr = range(max_abort + 1)
     for i in range(len(mpr)):
@@ -203,8 +227,12 @@ def bar_aborts_mpr(mpr,node,algo,max_txn,summary):
         cfgs = get_outfile_name(cfgs)
         if cfgs not in summary.keys(): break
         for x in xs_mpr:
-            if x in summary[cfgs]['all_abort_cnts'].keys():
-                ys_mpr[m][x] = summary[cfgs]['all_abort_cnts'][x]
+            try:
+                if x in summary[cfgs]['all_abort_cnts'].keys():
+                    ys_mpr[m][x] = summary[cfgs]['all_abort_cnts'][x]
+            except KeyError:
+                print("KeyError: {} {} {} {}".format(algo,node,max_txn,m))
+                ys_mpr[m][x] = 0
 
     draw_bars(ys_mpr,xs_mpr,ylab='# Transactions',xlab='# Aborts',title='Aborts per Transaction for varying MPR',figname=name) 
 
@@ -246,6 +274,7 @@ def plot_avg(mpr,nodes,algos,max_txn,summary,value='run_time'):
             try:
                 avg_ = avg(summary[cfgs][value])
             except KeyError:
+                print("KeyError: {} {} {} {}".format(algo,node,max_txn,m))
                 avgs[x][i] = 0
                 continue
             avgs[x][i] = avg_

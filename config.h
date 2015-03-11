@@ -49,14 +49,15 @@
 /***********************************************/
 // Message Passing
 /***********************************************/
-/*
 #define TPORT_TYPE	"tcp" 
 #define TPORT_TYPE_IPC	false 
 #define TPORT_PORT	6100 
-*/
+/*
 #define TPORT_TYPE	"ipc"
 #define TPORT_TYPE_IPC	true 
 #define TPORT_PORT	"_.ipc"
+*/
+
 #define MAX_TPORT_NAME 128
 #define MSG_SIZE 128 // in bytes
 #define HEADER_SIZE sizeof(uint32_t)*3 // in bits 
@@ -69,7 +70,7 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HSTORE, OCC, VLL
-#define CC_ALG HSTORE
+#define CC_ALG TIMESTAMP
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER					false
@@ -78,7 +79,7 @@
 // per-row lock/ts management or central lock/ts management
 #define CENTRAL_MAN					false
 #define BUCKET_CNT					31
-#define ABORT_PENALTY				1000000UL    // in ns.
+#define ABORT_PENALTY				10000000UL    //1000000UL    // in ns.
 // [ INDEX ]
 #define ENABLE_LATCH				false
 #define CENTRAL_INDEX				false
@@ -151,7 +152,7 @@
 #define WH_UPDATE					true
 #define NUM_WH 						PART_CNT //4
 // % of transactions that access multiple partitions
-#define MPR 10
+#define MPR 10 
 #define MPR_NEWORDER			20 // In %
 //
 enum TPCCTxnType {TPCC_ALL, 

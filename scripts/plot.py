@@ -54,18 +54,21 @@ for e in experiments:
 ############
 
 # Throughput vs. MPR for HStore, many node counts
-mpr = [0,1,10,20,30,40,50,60,70,80,90,100]
-nodes = [2,4,8,16]
+mpr = [0,1,10,20,30,40,50]
+#mpr = [0,1,10,20,30,40,50,60,70,80,90,100]
+nodes = [2,4,8]
 algos = ['HSTORE']
-tput_mpr(mpr,nodes,algos, 10000,summary)
+txn_cnt = 1000
+tput_mpr(mpr,nodes,algos, txn_cnt,summary)
 
 # Runtime contributions
-mpr = [0,1,10,20,30,40,50,60,70,80,90,100]
-nodes = [2,4,8,16]
+mpr = [0,1,10,20,30,40,50]
+nodes = [2,4,8]
 algo = 'HSTORE'
 for node in nodes:
-    time_breakdown(mpr,node,algo,10000,summary,normalized=False)
-    time_breakdown(mpr,node,algo,10000,summary,normalized=True)
-    cdf_aborts_mpr(mpr,node,algo,10000,summary)
+    time_breakdown(mpr,node,algo,txn_cnt,summary,normalized=False)
+    time_breakdown(mpr,node,algo,txn_cnt,summary,normalized=True)
+    cdf_aborts_mpr(mpr,node,algo,txn_cnt,summary)
+    bar_aborts_mpr(mpr,node,algo,txn_cnt,summary)
 
 
