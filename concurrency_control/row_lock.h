@@ -3,6 +3,7 @@
 
 struct LockEntry {
     lock_t type;
+    ts_t   start_ts;
     txn_man * txn;
 	LockEntry * next;
 	LockEntry * prev;

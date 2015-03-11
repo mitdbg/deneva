@@ -3,6 +3,7 @@
 #include "row_lock.h"
 #include "mem_alloc.h"
 #include "manager.h"
+#include "helper.h"
 
 void Row_lock::init(row_t * row) {
 	_row = row;
@@ -102,6 +103,7 @@ RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt
 				// insert txn to the right position
 				// the waiter list is always in timestamp order
 				LockEntry * entry = get_entry();
+                entry->start_ts = get_sys_clock();
 				entry->txn = txn;
 				entry->type = type;
 				en = waiters_head;
@@ -123,6 +125,7 @@ RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt
 	} else {
 		LockEntry * entry = get_entry();
 		entry->type = type;
+        entry->start_ts = get_sys_clock();
 		entry->txn = txn;
 		STACK_PUSH(owners, entry);
 		owner_cnt ++;
@@ -207,9 +210,12 @@ RC Row_lock::lock_release(txn_man * txn) {
 #endif
 
 	LockEntry * entry;
+    ts_t t;
 	// If any waiter can join the owners, just do it!
 	while (waiters_head && !conflict_lock(lock_type, waiters_head->type)) {
 		LIST_GET_HEAD(waiters_head, waiters_tail, entry);
+        t = get_sys_clock() - entry->start_ts;
+        INC_STATS(0, time_wait_lock, t);
 		STACK_PUSH(owners, entry);
 		owner_cnt ++;
 		waiter_cnt --;
