@@ -1,4 +1,6 @@
-import os, sys, re, math, os.path, math
+import os, sys, re, math, os.path
+import matplotlib
+matplotlib.use('Agg')
 from pylab import *
 from helper import *
 from draw import *

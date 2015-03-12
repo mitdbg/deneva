@@ -11,15 +11,24 @@ uname = "rhardin"
 now = datetime.datetime.now()
 strnow=now.strftime("%Y%m%d-%H%M%S")
 
+# ISTC Machines ranked by clock skew
 machines_=[
+#GOOD
 "istc1", 
 "istc3",
 "istc4",
-"istc5",
 "istc6",
-"istc7",
 "istc8",
-"istc9"
+#OK
+"istc7",
+"istc9",
+"istc10", 
+"istc13", 
+#BAD
+#"istc11"
+#"istc12", 
+#"istc2",
+#"istc5",
 ]
 
 os.chdir('..')

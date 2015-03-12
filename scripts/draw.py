@@ -1,3 +1,5 @@
+import matplotlib
+matplotlib.use('Agg')
 import os, sys, re, math,itertools
 from pylab import *
 from helper import *
