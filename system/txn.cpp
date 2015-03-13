@@ -155,8 +155,14 @@ txn_man::index_read(INDEX * index, idx_key_t key, int part_id) {
 
 		itemid_t * item;
 		index->index_read(key, item, part_id, get_thd_id());
-	//}
-	INC_STATS(get_thd_id(), time_index, get_sys_clock() - starttime);
+
+	if(get_thd_id() < g_thread_cnt) {
+		INC_STATS(get_thd_id(), time_index, get_sys_clock() - starttime);
+	}
+	else {
+		INC_STATS(get_thd_id(), rtime_index, get_sys_clock() - starttime);
+	}
+
 	return item;
 }
 

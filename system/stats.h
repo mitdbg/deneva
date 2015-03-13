@@ -15,6 +15,7 @@ public:
 	double time_lock_man;
 	double rtime_lock_man;
 	double time_index;
+	double rtime_index;
 	double time_wait;
 	double rtime_wait_plock;
 	double time_wait_lock;

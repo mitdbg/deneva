@@ -27,6 +27,7 @@ void Stats_thd::clear() {
 	debug4 = 0;
 	debug5 = 0;
 	time_index = 0;
+	rtime_index = 0;
 	time_abort = 0;
 	time_cleanup = 0;
 	time_wait = 0;
@@ -149,6 +150,7 @@ void Stats::print() {
 	double total_debug5 = 0;
 	double total_lock_diff = 0;
 	double total_time_index = 0;
+	double total_rtime_index = 0;
 	double total_time_abort = 0;
 	double total_time_cleanup = 0;
 	double total_time_wait = 0;
@@ -184,6 +186,7 @@ void Stats::print() {
 		total_debug5 += _stats[tid]->debug5;
 		total_lock_diff += _stats[tid]->lock_diff;
 		total_time_index += _stats[tid]->time_index;
+		total_rtime_index += _stats[tid]->rtime_index;
 		total_time_abort += _stats[tid]->time_abort;
 		total_time_cleanup += _stats[tid]->time_cleanup;
 		total_time_wait += _stats[tid]->time_wait;
@@ -218,7 +221,7 @@ void Stats::print() {
 		fprintf(outf, "[summary] txn_cnt=%ld,abort_cnt=%ld,txn_abort_cnt=%ld"
 			",run_time=%f,time_wait=%f,time_wait_lock=%f,rtime_wait_plock=%f,time_wait_rem=%f,time_ts_alloc=%f"
 			",time_man=%f,time_lock_man=%f,rtime_lock_man=%f"
-			",time_index=%f,time_abort=%f,time_cleanup=%f,latency=%f,tport_lat=%f"
+			",time_index=%f,rtime_index=%f,time_abort=%f,time_cleanup=%f,latency=%f,tport_lat=%f"
 			",deadlock_cnt=%ld,cycle_detect=%ld,dl_detect_time=%f,dl_wait_time=%f"
 			",time_query=%f,rtime_proc=%f,rtime_unpack=%f,rtime_unpack_ndest=%f"
 			",mpq_cnt=%ld,msg_bytes=%ld,msg_sent=%ld,msg_rcv=%ld"
@@ -238,6 +241,7 @@ void Stats::print() {
 			total_rtime_lock_man / BILLION,
 			//(total_time_man - total_time_wait - total_time_wait_lock) / BILLION,
 			total_time_index / BILLION,
+			total_rtime_index / BILLION,
 			total_time_abort / BILLION,
 			total_time_cleanup / BILLION,
 			total_latency / BILLION / total_txn_cnt,
@@ -269,7 +273,7 @@ void Stats::print() {
 	printf("[summary] txn_cnt=%ld,abort_cnt=%ld,txn_abort_cnt=%ld"
 		",run_time=%f,time_wait=%f,time_wait_lock=%f,rtime_wait_plock=%f,time_wait_rem=%f,time_ts_alloc=%f"
 		",time_man=%f,time_lock_man=%f,rtime_lock_man=%f"
-		",time_index=%f,time_abort=%f,time_cleanup=%f,latency=%f,tport_lat=%f"
+		",time_index=%f,rtime_index=%f,time_abort=%f,time_cleanup=%f,latency=%f,tport_lat=%f"
 		",deadlock_cnt=%ld,cycle_detect=%ld,dl_detect_time=%f,dl_wait_time=%f"
 		",time_query=%f,rtime_proc=%f,rtime_unpack=%f,rtime_unpack_ndest=%f"
 		",mpq_cnt=%ld,msg_bytes=%ld,msg_sent=%ld,msg_rcv=%ld"
@@ -288,6 +292,7 @@ void Stats::print() {
 		total_time_lock_man / BILLION,
 		total_rtime_lock_man / BILLION,
 		total_time_index / BILLION,
+		total_rtime_index / BILLION,
 		total_time_abort / BILLION,
 		total_time_cleanup / BILLION,
 		total_latency / BILLION / total_txn_cnt,
