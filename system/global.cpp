@@ -57,6 +57,7 @@ UInt32 g_node_cnt = NODE_CNT;
 UInt32 g_part_cnt = PART_CNT;
 UInt32 g_virtual_part_cnt = VIRTUAL_PART_CNT;
 UInt32 g_thread_cnt = THREAD_CNT;
+UInt32 g_rem_thread_cnt = REM_THREAD_CNT;
 UInt64 g_synth_table_size = SYNTH_TABLE_SIZE;
 UInt32 g_req_per_query = REQ_PER_QUERY;
 UInt32 g_field_per_tuple = FIELD_PER_TUPLE;

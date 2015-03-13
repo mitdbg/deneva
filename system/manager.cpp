@@ -7,9 +7,9 @@ void Manager::init() {
 	timestamp = 1;
 	last_min_ts_time = 0;
 	min_ts = 0;
-	all_ts = (ts_t *) malloc(sizeof(ts_t) * (g_thread_cnt +1));
-	_all_txns = new txn_man * [g_thread_cnt + 1];
-	for (UInt32 i = 0; i < g_thread_cnt + 1; i++) {
+	all_ts = (ts_t *) malloc(sizeof(ts_t) * (g_thread_cnt + g_rem_thread_cnt));
+	_all_txns = new txn_man * [g_thread_cnt + g_rem_thread_cnt];
+	for (UInt32 i = 0; i < g_thread_cnt + g_rem_thread_cnt; i++) {
 		all_ts[i] = UINT64_MAX;
 		_all_txns[i] = NULL;
 	}
@@ -43,7 +43,8 @@ Manager::get_ts(uint64_t thread_id) {
 #endif
 		break;
 	case TS_CLOCK :
-		time = get_sys_clock() * g_thread_cnt + thread_id;
+		//time = get_sys_clock() * g_thread_cnt + thread_id;
+		time = get_sys_clock() * g_node_cnt + g_node_id;
 		break;
 	default :
 		assert(false);

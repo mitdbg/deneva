@@ -11,16 +11,16 @@ void Remote_query::init(uint64_t node_id, workload * wl) {
 	_node_id = node_id;
 	_wl = wl;
 	//txns = (txn_man **)mem_allocator.alloc(sizeof(txn_man *) * g_thread_cnt, g_thread_cnt);
-    uint64_t thd_cnt = g_thread_cnt + 1;
+    uint64_t thd_cnt = g_thread_cnt + g_rem_thread_cnt;
     txns = (txn_node_t **) mem_allocator.alloc(
-            sizeof(txn_node_t **) * thd_cnt, g_thread_cnt);
+            sizeof(txn_node_t **) * thd_cnt, 0);
     for (uint64_t i = 0; i < thd_cnt; ++i) {
         txns[i] = (txn_node_t *) mem_allocator.alloc(
-                sizeof(txn_node_t) * g_node_cnt, g_thread_cnt);
+                sizeof(txn_node_t) * g_node_cnt, 0);
 
         for (uint64_t j = 0; j < g_node_cnt; ++j) {
             txn_node_t t_node = (txn_node_t) mem_allocator.alloc(
-                    sizeof(struct txn_node), g_thread_cnt);
+                    sizeof(struct txn_node), 0);
             memset(t_node, '\0', sizeof(struct txn_node));
             txns[i][j] = t_node;
         }
@@ -89,6 +89,7 @@ void Remote_query::unpack(base_query * query, void * d, int len) {
 		return;
 
 	switch(query->rtype) {
+#if CC_ALG == HSTORE
 		case RLK:
 		case RULK:
 			part_lock_man.unpack(query,data);
@@ -97,6 +98,7 @@ void Remote_query::unpack(base_query * query, void * d, int len) {
 		case RULK_RSP: 
 			part_lock_man.unpack_rsp(query,data);
 			break;
+#endif
 		case RQRY: {
 #if WORKLOAD == TPCC
 			tpcc_query * m_query = new tpcc_query;

@@ -72,13 +72,14 @@ int main(int argc, char* argv[])
 
 	// 2. spawn multiple threads
 	uint64_t thd_cnt = g_thread_cnt;
+	uint64_t rthd_cnt = g_rem_thread_cnt;
 	
 	pthread_t * p_thds = 
-		(pthread_t *) malloc(sizeof(pthread_t) * (thd_cnt + 1));
+		(pthread_t *) malloc(sizeof(pthread_t) * (thd_cnt + rthd_cnt));
 	pthread_attr_t attr;
 	pthread_attr_init(&attr);
 	cpu_set_t cpus;
-	m_thds = new thread_t[thd_cnt +1];
+	m_thds = new thread_t[thd_cnt + rthd_cnt];
 	// query_queue should be the last one to be initialized!!!
 	// because it collects txn latency
 	if (WORKLOAD != TEST) {
@@ -94,7 +95,7 @@ int main(int argc, char* argv[])
 	vll_man.init();
 #endif
 
-	for (uint32_t i = 0; i <= thd_cnt; i++) 
+	for (uint32_t i = 0; i < thd_cnt + rthd_cnt; i++) 
 		m_thds[i].init(i, g_node_id, m_wl);
 
 	if (WARMUP > 0){
@@ -112,35 +113,44 @@ int main(int argc, char* argv[])
 		printf("WARMUP finished!\n");
 	}
 	warmup_finish = true;
-	pthread_barrier_init( &warmup_bar, NULL, g_thread_cnt + 1);
+	pthread_barrier_init( &warmup_bar, NULL, g_thread_cnt + g_rem_thread_cnt);
 #ifndef NOGRAPHITE
-	CarbonBarrierInit(&enable_barrier, g_thread_cnt+ 1);
+	CarbonBarrierInit(&enable_barrier, g_thread_cnt+ g_rem_thread_cnt);
 #endif
-	pthread_barrier_init( &warmup_bar, NULL, g_thread_cnt + 1);
+	pthread_barrier_init( &warmup_bar, NULL, g_thread_cnt + g_rem_thread_cnt);
 
+	uint64_t cpu_cnt = 0;
 	// spawn and run txns again.
 	int64_t starttime = get_server_clock();
 	for (uint32_t i = 0; i < thd_cnt; i++) {
 		uint64_t vid = i;
 		CPU_ZERO(&cpus);
 #if TPORT_TYPE_IPC
-    CPU_SET(g_node_id * (THREAD_CNT +1) + i, &cpus);
+    CPU_SET(g_node_id * (g_thread_cnt + g_rem_thread_cnt) + cpu_cnt, &cpus);
 #else
-    CPU_SET(i, &cpus);
+    CPU_SET(cpu_cnt, &cpus);
 #endif
+		cpu_cnt++;
     pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
 		pthread_create(&p_thds[i], &attr, f, (void *)vid);
 	}
-	CPU_ZERO(&cpus);
+
+
+	for (uint32_t i = 0; i < rthd_cnt; i++) {
+		CPU_ZERO(&cpus);
 #if TPORT_TYPE_IPC
-    CPU_SET(g_node_id * (THREAD_CNT +1) + thd_cnt, &cpus);
+    CPU_SET(g_node_id * (g_thread_cnt + g_rem_thread_cnt) + cpu_cnt, &cpus);
 #else
-    CPU_SET(thd_cnt, &cpus);
+    CPU_SET(cpu_cnt, &cpus);
 #endif
-  pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
-	pthread_create(&p_thds[thd_cnt], &attr, g, (void *)thd_cnt);
+		cpu_cnt++;
+  	pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
+		pthread_create(&p_thds[thd_cnt], &attr, g, (void *)(thd_cnt + i));
 	//g((void *)(thd_cnt));
-	for (uint32_t i = 0; i < thd_cnt; i++) 
+	}
+
+
+	for (uint32_t i = 0; i < thd_cnt + rthd_cnt; i++) 
 		pthread_join(p_thds[i], NULL);
 	int64_t endtime = get_server_clock();
 	
