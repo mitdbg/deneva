@@ -19,6 +19,8 @@ void Stats_thd::clear() {
 	txn_abort_cnt = 0;
 	run_time = 0;
 	time_man = 0;
+	time_lock_man = 0;
+	rtime_lock_man = 0;
 	debug1 = 0;
 	debug2 = 0;
 	debug3 = 0;
@@ -55,19 +57,21 @@ void Stats_tmp::init() {
 }
 
 void Stats_tmp::clear() {	
+	/*
 	time_man = 0;
 	time_index = 0;
 	time_wait = 0;
 	time_wait_lock = 0;
 	time_wait_rem = 0;
+	*/
 	mpq_cnt = 0;
 }
 
 void Stats::init() {
 	if (!STATS_ENABLE) 
 		return;
-	_stats = new Stats_thd * [g_thread_cnt +1];
-	tmp_stats = new Stats_tmp * [g_thread_cnt +1];
+	_stats = new Stats_thd * [g_thread_cnt + g_rem_thread_cnt];
+	tmp_stats = new Stats_tmp * [g_thread_cnt + g_rem_thread_cnt];
 	dl_detect_time = 0;
 	dl_wait_time = 0;
 	deadlock = 0;
@@ -112,11 +116,13 @@ void Stats::add_abort_cnt(uint64_t thd_id, uint64_t abort_cnt) {
 
 void Stats::commit(uint64_t thd_id) {
 	if (STATS_ENABLE) {
+		/*
 		_stats[thd_id]->time_man += tmp_stats[thd_id]->time_man;
 		_stats[thd_id]->time_index += tmp_stats[thd_id]->time_index;
 		_stats[thd_id]->time_wait += tmp_stats[thd_id]->time_wait;
 		_stats[thd_id]->time_wait_lock += tmp_stats[thd_id]->time_wait_lock;
 		_stats[thd_id]->time_wait_rem += tmp_stats[thd_id]->time_wait_rem;
+		*/
 		_stats[thd_id]->mpq_cnt += tmp_stats[thd_id]->mpq_cnt;
 		tmp_stats[thd_id]->init();
 	}
@@ -134,6 +140,8 @@ void Stats::print() {
 	uint64_t total_txn_abort_cnt = 0;
 	double total_run_time = 0;
 	double total_time_man = 0;
+	double total_time_lock_man = 0;
+	double total_rtime_lock_man = 0;
 	double total_debug1 = 0;
 	double total_debug2 = 0;
 	double total_debug3 = 0;
@@ -161,12 +169,14 @@ void Stats::print() {
 	double total_time_msg_wait = 0;
 	double total_time_rem_req = 0;
 	double total_time_rem = 0;
-	for (uint64_t tid = 0; tid < g_thread_cnt+1; tid ++) {
+	for (uint64_t tid = 0; tid < g_thread_cnt + g_rem_thread_cnt; tid ++) {
 		total_txn_cnt += _stats[tid]->txn_cnt;
 		total_abort_cnt += _stats[tid]->abort_cnt;
 		total_txn_abort_cnt += _stats[tid]->txn_abort_cnt;
 		total_run_time += _stats[tid]->run_time;
 		total_time_man += _stats[tid]->time_man;
+		total_time_lock_man += _stats[tid]->time_lock_man;
+		total_rtime_lock_man += _stats[tid]->rtime_lock_man;
 		total_debug1 += _stats[tid]->debug1;
 		total_debug2 += _stats[tid]->debug2;
 		total_debug3 += _stats[tid]->debug3;
@@ -207,7 +217,8 @@ void Stats::print() {
 		outf = fopen(output_file, "w");
 		fprintf(outf, "[summary] txn_cnt=%ld,abort_cnt=%ld,txn_abort_cnt=%ld"
 			",run_time=%f,time_wait=%f,time_wait_lock=%f,rtime_wait_plock=%f,time_wait_rem=%f,time_ts_alloc=%f"
-			",time_man=%f,time_index=%f,time_abort=%f,time_cleanup=%f,latency=%f,tport_lat=%f"
+			",time_man=%f,time_lock_man=%f,rtime_lock_man=%f"
+			",time_index=%f,time_abort=%f,time_cleanup=%f,latency=%f,tport_lat=%f"
 			",deadlock_cnt=%ld,cycle_detect=%ld,dl_detect_time=%f,dl_wait_time=%f"
 			",time_query=%f,rtime_proc=%f,rtime_unpack=%f,rtime_unpack_ndest=%f"
 			",mpq_cnt=%ld,msg_bytes=%ld,msg_sent=%ld,msg_rcv=%ld"
@@ -222,7 +233,10 @@ void Stats::print() {
 			total_rtime_wait_plock / BILLION,
 			total_time_wait_rem / BILLION,
 			total_time_ts_alloc / BILLION,
-			(total_time_man - total_time_wait - total_time_wait_lock) / BILLION,
+			total_time_man / BILLION,
+			total_time_lock_man / BILLION,
+			total_rtime_lock_man / BILLION,
+			//(total_time_man - total_time_wait - total_time_wait_lock) / BILLION,
 			total_time_index / BILLION,
 			total_time_abort / BILLION,
 			total_time_cleanup / BILLION,
@@ -254,7 +268,8 @@ void Stats::print() {
 	}
 	printf("[summary] txn_cnt=%ld,abort_cnt=%ld,txn_abort_cnt=%ld"
 		",run_time=%f,time_wait=%f,time_wait_lock=%f,rtime_wait_plock=%f,time_wait_rem=%f,time_ts_alloc=%f"
-		",time_man=%f,time_index=%f,time_abort=%f,time_cleanup=%f,latency=%f,tport_lat=%f"
+		",time_man=%f,time_lock_man=%f,rtime_lock_man=%f"
+		",time_index=%f,time_abort=%f,time_cleanup=%f,latency=%f,tport_lat=%f"
 		",deadlock_cnt=%ld,cycle_detect=%ld,dl_detect_time=%f,dl_wait_time=%f"
 		",time_query=%f,rtime_proc=%f,rtime_unpack=%f,rtime_unpack_ndest=%f"
 		",mpq_cnt=%ld,msg_bytes=%ld,msg_sent=%ld,msg_rcv=%ld"
@@ -269,7 +284,9 @@ void Stats::print() {
 		total_rtime_wait_plock / BILLION,
 		total_time_wait_rem / BILLION,
 		total_time_ts_alloc / BILLION,
-		(total_time_man - total_time_wait - total_time_wait_lock) / BILLION,
+		total_time_man / BILLION,
+		total_time_lock_man / BILLION,
+		total_rtime_lock_man / BILLION,
 		total_time_index / BILLION,
 		total_time_abort / BILLION,
 		total_time_cleanup / BILLION,

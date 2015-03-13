@@ -12,6 +12,8 @@ public:
 	uint64_t txn_abort_cnt;
 	double run_time;
 	double time_man;
+	double time_lock_man;
+	double rtime_lock_man;
 	double time_index;
 	double time_wait;
 	double rtime_wait_plock;
@@ -52,11 +54,13 @@ class Stats_tmp {
 public:
 	void init();
 	void clear();
+	/*
 	double time_man;
 	double time_index;
 	double time_wait;
 	double time_wait_lock;
 	double time_wait_rem;
+	*/
 	uint64_t mpq_cnt;
 	char _pad[CL_SIZE - sizeof(double)*3];
 };

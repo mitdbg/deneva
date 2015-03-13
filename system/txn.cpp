@@ -138,7 +138,7 @@ row_t * txn_man::get_row(row_t * row, access_t type) {
 	if (type == WR)
 		wr_cnt ++;
 	uint64_t timespan = get_sys_clock() - starttime;
-	INC_TMP_STATS(get_thd_id(), time_man, timespan);
+	INC_STATS(get_thd_id(), time_man, timespan);
 	return accesses[row_cnt - 1]->data;
 }
 
@@ -156,7 +156,7 @@ txn_man::index_read(INDEX * index, idx_key_t key, int part_id) {
 		itemid_t * item;
 		index->index_read(key, item, part_id, get_thd_id());
 	//}
-	INC_TMP_STATS(get_thd_id(), time_index, get_sys_clock() - starttime);
+	INC_STATS(get_thd_id(), time_index, get_sys_clock() - starttime);
 	return item;
 }
 
@@ -170,7 +170,7 @@ RC txn_man::finish(RC rc) {
 	} else 
 		cleanup(rc);
 	uint64_t timespan = get_sys_clock() - starttime;
-	INC_TMP_STATS(get_thd_id(), time_man,  timespan);
+	INC_STATS(get_thd_id(), time_man,  timespan);
 	INC_STATS(get_thd_id(), time_cleanup,  timespan);
 	return rc;
 }

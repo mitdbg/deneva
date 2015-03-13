@@ -73,7 +73,6 @@ void Transport::init(uint64_t node_id) {
 
 	for(uint64_t i=0;i<g_node_cnt-1;i++) {
 		for(uint64_t j=i+1;j<g_node_cnt;j++) {
-			printf("Setting up %ld %ld\n",i,j);
 			if(i != g_node_id && j != g_node_id) {
 				continue;
 			}

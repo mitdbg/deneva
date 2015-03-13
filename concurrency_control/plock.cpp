@@ -231,11 +231,11 @@ RC Plock::lock(txn_man * txn, uint64_t * parts, uint64_t part_cnt) {
 				ATOM_SUB(_ready_parts[tid],1);
 			}
 		}
-		INC_TMP_STATS(tid, time_man, get_sys_clock() - starttime);
+		INC_STATS(tid, time_lock_man, get_sys_clock() - starttime);
 		return Abort;
 	}
 	assert(_ready_parts[tid] == 0);
-	INC_TMP_STATS(tid, time_man, get_sys_clock() - starttime);
+	INC_STATS(tid, time_lock_man, get_sys_clock() - starttime);
 	return RCOK;
 }
 
@@ -248,7 +248,7 @@ void Plock::unlock(txn_man * txn, uint64_t * parts, uint64_t part_cnt) {
 		else
 			remote_qry(false,GET_PART_ID(txn->get_thd_id(),txn->get_node_id()),part_id,txn->get_ts());
 	}
-	INC_TMP_STATS(txn->get_thd_id(), time_man, get_sys_clock() - starttime);
+	INC_STATS(txn->get_thd_id(), time_lock_man, get_sys_clock() - starttime);
 }
 
 void Plock::unpack_rsp(base_query * query, void * d) {
@@ -311,7 +311,7 @@ void Plock::rem_unlock(uint64_t pid, uint64_t * parts, uint64_t part_cnt) {
 		assert(GET_NODE_ID(part_id) == get_node_id());
 		part_mans[part_id]->unlock(pid,NULL);
 	}
-	INC_TMP_STATS(1, time_man, get_sys_clock() - starttime);
+	INC_STATS(1, rtime_lock_man, get_sys_clock() - starttime);
 }
 
 void Plock::rem_lock(uint64_t pid, uint64_t ts, uint64_t * parts, uint64_t part_cnt) {
@@ -321,7 +321,7 @@ void Plock::rem_lock(uint64_t pid, uint64_t ts, uint64_t * parts, uint64_t part_
 		assert(GET_NODE_ID(part_id) == get_node_id());
 		part_mans[part_id]->lock(pid,NULL,ts);
 	}
-	INC_TMP_STATS(1, time_man, get_sys_clock() - starttime);
+	INC_STATS(1, rtime_lock_man, get_sys_clock() - starttime);
 }
 
 void Plock::rem_lock_rsp(uint64_t pid, RC rc, uint64_t ts) {
@@ -336,5 +336,5 @@ void Plock::rem_lock_rsp(uint64_t pid, RC rc, uint64_t ts) {
 		_rcs[GET_THREAD_ID(pid)] = rc;
 	if(rc == RCOK)
 		ATOM_SUB(_ready_parts[GET_THREAD_ID(pid)], 1);
-	INC_TMP_STATS(1, time_man, get_sys_clock() - starttime);
+	INC_STATS(1, time_lock_man, get_sys_clock() - starttime);
 }
