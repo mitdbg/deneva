@@ -60,31 +60,34 @@ Query_thd::get_next_query() {
 void base_query::set_txn_id(uint64_t _txn_id) { txn_id = _txn_id; } 
 
 void base_query::remote_finish(base_query * query, int dest_id) {
-    int total = 4;
+  int total = 5;
 
-    void ** data = new void *[total];
-    int * sizes = new int [total];
-    int num = 0;
-    RemReqType rtype = RFIN;
-    uint64_t _pid = query->pid;
-    RC rc = query->rc;
-    uint64_t _txn_id = query->txn_id; 
+  void ** data = new void *[total];
+  int * sizes = new int [total];
+  int num = 0;
+  RemReqType rtype = RFIN;
+  uint64_t _pid = query->pid;
+  RC rc = query->rc;
+  uint64_t _txn_id = query->txn_id; 
 
-    data[num] = &rtype;
-    sizes[num++] = sizeof(RemReqType);
-    data[num] = &_pid;
-    sizes[num++] = sizeof(uint64_t);
-    data[num] = &rc;
-    sizes[num++] = sizeof(RC);
-    data[num] = &_txn_id;
-    sizes[num++] = sizeof(uint64_t);
+	data[num] = &_txn_id;
+	sizes[num++] = sizeof(txnid_t);
 
-    rem_qry_man.send_remote_query(dest_id, data, sizes, num);
+  data[num] = &rtype;
+  sizes[num++] = sizeof(RemReqType);
+  data[num] = &_pid;
+  sizes[num++] = sizeof(uint64_t);
+  data[num] = &rc;
+  sizes[num++] = sizeof(RC);
+  data[num] = &_txn_id;
+  sizes[num++] = sizeof(uint64_t);
+
+  rem_qry_man.send_remote_query(dest_id, data, sizes, num);
 }
 
 void base_query::unpack_finish(base_query * query, void * d) {
     char * data = (char *) d;
-    uint64_t ptr = HEADER_SIZE + sizeof(RemReqType);
+    uint64_t ptr = HEADER_SIZE + sizeof(txnid_t) + sizeof(RemReqType);
     memcpy(&query->pid, &data[ptr], sizeof(uint64_t));
     ptr += sizeof(uint64_t);
     memcpy(&query->rc, &data[ptr], sizeof(RC));

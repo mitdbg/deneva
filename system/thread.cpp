@@ -82,25 +82,23 @@ RC thread_t::run_remote() {
 					break;
 #endif
 				case RQRY:
-#if WORKLOAD == TPCC
-	                rc = _wl->get_txn_man(m_txn, this);
-                    assert(rc == RCOK);
-                    m_txn->set_txn_id(m_query->txn_id);
-#if CC_ALG == WAIT_DIE
-                    m_txn->set_ts(m_query->ts);
+	        rc = _wl->get_txn_man(m_txn, this);
+          assert(rc == RCOK);
+          m_txn->set_txn_id(m_query->txn_id);
+#if CC_ALG == WAIT_DIE || CC_ALG == TIMESTAMP
+          m_txn->set_ts(m_query->ts);
 #endif
 					m_txn->run_rem_txn(m_query);
-#endif
 					break;
 				case RQRY_RSP:
 					m_txn = rem_qry_man.get_txn_man(GET_THREAD_ID(m_query->pid), m_query->return_id, m_query->txn_id);
 					m_txn->rem_txn_rsp(m_query);
 					break;
-                case RFIN:
-                    m_txn = rem_qry_man.get_txn_man(get_thd_id(), m_query->return_id, m_query->txn_id);
-                    m_txn->rem_fin_txn(m_query);
-                    rem_qry_man.cleanup_remote(get_thd_id(), m_query->return_id, m_query->txn_id, true);
-                    break;
+        case RFIN:
+          m_txn = rem_qry_man.get_txn_man(get_thd_id(), m_query->return_id, m_query->txn_id);
+          m_txn->rem_fin_txn(m_query);
+          rem_qry_man.cleanup_remote(get_thd_id(), m_query->return_id, m_query->txn_id, true);
+          break;
 				default:
 					break;
 			}
@@ -175,7 +173,7 @@ RC thread_t::run() {
 		ts_t t1 = get_sys_clock() - starttime;
 		INC_STATS(_thd_id, time_query, t1);
 		m_txn->abort_cnt = 0;
-        if (CC_ALG == WAIT_DIE) {
+        if (CC_ALG == WAIT_DIE || CC_ALG == TIMESTAMP) {
             m_txn->set_ts(get_next_ts());
             m_query->ts = m_txn->get_ts();
         }
@@ -183,22 +181,27 @@ RC thread_t::run() {
 //		_wl->get_txn_man(m_txn, this);
 //#endif
 		do {
-			ts_t t2 = get_sys_clock();
+			//ts_t t2 = get_sys_clock();
 			m_txn->set_txn_id(get_thd_id() + thd_txn_id * g_thread_cnt + get_node_id() * MAX_TXN_PER_PART);
 			thd_txn_id ++;
-            m_query->set_txn_id(m_txn->get_txn_id());
+      m_query->set_txn_id(m_txn->get_txn_id());
 
 			// for WAIT_DIE, the timestamp is not renewed after abort
 			if ((CC_ALG == HSTORE && !HSTORE_LOCAL_TS)
 					|| CC_ALG == MVCC 
 					|| CC_ALG == TIMESTAMP) { 
 				m_txn->set_ts(get_next_ts());
+				m_query->ts = m_txn->get_ts();
 			}
 
 			rc = RCOK;
-#if CC_ALG == HSTORE
+
+			/*
 			if(m_query->part_num > 1)
 				INC_TMP_STATS(_thd_id,mpq_cnt,1);
+				*/
+
+#if CC_ALG == HSTORE
 			if (WORKLOAD == TEST) {
 				uint64_t part_to_access[1] = {0};
 				rc = part_lock_man.lock(m_txn, &part_to_access[0], 1);
@@ -242,7 +245,8 @@ RC thread_t::run() {
 					} while (tt < t + penalty);
 				}
 
-				INC_STATS(_thd_id, time_abort, get_sys_clock() - t2);
+				INC_STATS(_thd_id, time_abort, get_sys_clock() - t);
+				//INC_STATS(_thd_id, time_abort, get_sys_clock() - t2);
 				INC_STATS(get_thd_id(), abort_cnt, 1);
 
 				stats.abort(get_thd_id());
@@ -260,6 +264,8 @@ RC thread_t::run() {
 
 		stats.add_lat(get_thd_id(), timespan);
 		stats.add_abort_cnt(get_thd_id(), m_txn->abort_cnt);
+		if(m_query->part_num > 1)
+			INC_STATS(_thd_id,mpq_cnt,1);
 
 		INC_STATS(get_thd_id(), txn_cnt, 1);
 		

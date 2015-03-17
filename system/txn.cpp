@@ -90,6 +90,7 @@ void txn_man::cleanup(RC rc) {
 	}
 
 	if (rc == Abort) {
+		ts_t t = get_sys_clock();
 		for (UInt32 i = 0; i < insert_cnt; i ++) {
 			row_t * row = insert_rows[i];
 			assert(g_part_alloc == false);
@@ -99,6 +100,7 @@ void txn_man::cleanup(RC rc) {
 			row->free_row();
 			mem_allocator.free(row, sizeof(row));
 		}
+		INC_STATS(get_thd_id(), time_abort, get_sys_clock() - t);
 	}
 	row_cnt = 0;
 	wr_cnt = 0;
@@ -182,19 +184,29 @@ RC txn_man::finish(RC rc) {
 }
 
 RC txn_man::rem_fin_txn(base_query * query) {
-    return finish(query->rc);
+  return finish(query->rc);
 }
 
 RC txn_man::finish(base_query * query) {
-    if (query->part_cnt > 0)
-        rem_qry_man.cleanup_remote(get_thd_id(), get_node_id(), get_txn_id(), false);
+  //if (query->part_cnt > 0)
+  /*
+  if (query->part_num > 1)
+    rem_qry_man.cleanup_remote(get_thd_id(), get_node_id(), get_txn_id(), false);
+    */
 	if (CC_ALG == HSTORE) 
 		return RCOK;	
-    // Send finish message to all participating transaction
-    for (uint64_t i = 0; i < query->part_cnt; ++i) {
-        query->remote_finish(query, query->parts[i]);    
+  // Send finish message to all participating transaction
+  // FIXME
+  //for (uint64_t i = 0; i < query->part_cnt; ++i) {
+  for (uint64_t i = 0; i < query->part_num; ++i) {
+    if(query->part_to_access[i] == get_node_id()) {
+      continue;
     }
-    return finish(query->rc);
+    rem_qry_man.cleanup_remote(get_thd_id(), query->part_to_access[i], get_txn_id(), false);
+    query->remote_finish(query, query->part_to_access[i]);    
+    //query->remote_finish(query, query->parts[i]);    
+  }
+  return finish(query->rc);
 }
 
 void

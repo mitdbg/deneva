@@ -6,7 +6,7 @@
 /***********************************************/
 #define NODE_CNT 2
 #define THREAD_CNT					1
-#define REM_THREAD_CNT NODE_CNT
+#define REM_THREAD_CNT 2
 #define PART_CNT					THREAD_CNT * NODE_CNT // THREAD_CNT * NODE_CNT
 
 // each transaction only accesses only 1 virtual partition. But the lock/ts manager and index are not aware of such partitioning. VIRTUAL_PART_CNT describes the request distribution and is only used to generate queries. For HSTORE, VIRTUAL_PART_CNT should be the same as PART_CNT.
@@ -50,13 +50,13 @@
 /***********************************************/
 // Message Passing
 /***********************************************/
-#define TPORT_TYPE "tcp"
-#define TPORT_TYPE_IPC false
-#define TPORT_PORT 6100
+#define TPORT_TYPE "ipc"
+#define TPORT_TYPE_IPC true
+#define TPORT_PORT ".ipc"
 
 #define MAX_TPORT_NAME 128
 #define MSG_SIZE 128 // in bytes
-#define HEADER_SIZE sizeof(uint32_t)*3 // in bits 
+#define HEADER_SIZE sizeof(uint32_t)*2 // in bits 
 #define MSG_TIMEOUT 5000000000UL // in ns
 #define NETWORK_TEST false
 
@@ -66,7 +66,7 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HSTORE, OCC, VLL
-#define CC_ALG NO_WAIT
+#define CC_ALG TIMESTAMP
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER					false
@@ -148,7 +148,7 @@
 #define WH_UPDATE					true
 #define NUM_WH 						PART_CNT //4
 // % of transactions that access multiple partitions
-#define MPR 1
+#define MPR 100
 #define MPR_NEWORDER			20 // In %
 //
 enum TPCCTxnType {TPCC_ALL, 

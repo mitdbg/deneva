@@ -129,7 +129,7 @@ void PartMan::unlock(uint64_t pid,  uint64_t * rp) {
 }
 
 void PartMan::remote_rsp(bool l, RC rc, uint64_t node_id, uint64_t pid, uint64_t ts) {
-	int max_num = 5;
+	int max_num = 6;
 	void ** data = new void *[max_num];
 	int * sizes = new int [max_num];
 	int num = 0;
@@ -137,6 +137,10 @@ void PartMan::remote_rsp(bool l, RC rc, uint64_t node_id, uint64_t pid, uint64_t
 	uint64_t _ts = ts;
 	RC _rc = rc;
 	RemReqType rtype = l ? RLK_RSP : RULK_RSP;
+  txnid_t tid = 1; // FIXME
+
+	data[num] = &tid;
+	sizes[num++] = sizeof(txnid_t);
 
 	data[num] = &rtype;
 	sizes[num++] = sizeof(RemReqType);
@@ -253,7 +257,7 @@ void Plock::unlock(txn_man * txn, uint64_t * parts, uint64_t part_cnt) {
 
 void Plock::unpack_rsp(base_query * query, void * d) {
 	char * data = (char *) d;
-	uint64_t ptr = HEADER_SIZE + sizeof(RemReqType);
+	uint64_t ptr = HEADER_SIZE + sizeof(txnid_t) + sizeof(RemReqType);
 	memcpy(&query->rc,&data[ptr],sizeof(RC));
 	ptr += sizeof(query->rc);
 	memcpy(&query->pid,&data[ptr],sizeof(query->pid));
@@ -263,7 +267,7 @@ void Plock::unpack_rsp(base_query * query, void * d) {
 }
 
 void Plock::unpack(base_query * query, char * data) {
-	uint64_t ptr = HEADER_SIZE + sizeof(RemReqType);
+	uint64_t ptr = HEADER_SIZE + sizeof(txnid_t) + sizeof(RemReqType);
 	assert(query->rtype == RLK || query->rtype == RULK);
 		
 	memcpy(&query->pid,&data[ptr],sizeof(query->pid));
@@ -282,7 +286,7 @@ void Plock::unpack(base_query * query, char * data) {
 void Plock::remote_qry(bool l, uint64_t pid, uint64_t lid, uint64_t ts) {
 	assert(GET_NODE_ID(lid) != _node_id);
 	int num = 0;
-	int max_num = 5;
+	int max_num = 6;
 	uint64_t part_cnt = 1;
 	uint64_t _ts = ts;
 	uint64_t _pid = pid;
@@ -290,6 +294,12 @@ void Plock::remote_qry(bool l, uint64_t pid, uint64_t lid, uint64_t ts) {
 	RemReqType rtype = l ? RLK : RULK;
 	void ** data = new void *[max_num];
 	int * sizes = new int [max_num];
+
+  txnid_t tid = 1; // FIXME
+
+	data[num] = &tid;
+	sizes[num++] = sizeof(txnid_t);
+
 	data[num] = &rtype;
 	sizes[num++] = sizeof(RemReqType);
 	data[num] = &_pid;

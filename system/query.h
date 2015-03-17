@@ -21,7 +21,7 @@ public:
 	uint64_t dest_id;
 	uint64_t ts;
 	uint64_t return_id;
-	uint64_t txn_id;
+	txnid_t txn_id;
 	uint64_t part_cnt;
 	uint64_t * parts;
 	RemReqType rtype;

@@ -41,7 +41,6 @@ public:
 	txn_man * get_txn_man(uint64_t thd_id, uint64_t node_id, uint64_t txn_id);
 	txn_man * save_txn_man(uint64_t thd_id, uint64_t node_id, uint64_t txn_id, txn_man * txn_to_save);
 	void remote_qry(base_query * query, int type, int dest_id, txn_man * txn);
-	void signal_end();
 	void send_remote_query(uint64_t dest_id, void ** data, int * sizes, int num);
     void remote_rsp(base_query * query, txn_man * txn);
 	void send_remote_rsp(uint64_t dest_id, void ** data, int * sizes, int num);
@@ -60,8 +59,8 @@ private:
 	uint64_t _node_id;
 	workload * _wl;
 	//txn_man ** txns;
-    txn_node_t **txns;
+  txn_node_t **txns;
 
-    void add_txn_man(uint64_t thd_id, uint64_t node_id, uint64_t txn_id, txn_man * txn);
+  void add_txn_man(uint64_t thd_id, uint64_t node_id, uint64_t txn_id, txn_man * txn);
 };
 #endif

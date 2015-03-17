@@ -145,7 +145,7 @@ int main(int argc, char* argv[])
 #endif
 		cpu_cnt++;
   	pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
-		pthread_create(&p_thds[thd_cnt], &attr, g, (void *)(thd_cnt + i));
+		pthread_create(&p_thds[thd_cnt+i], &attr, g, (void *)(thd_cnt + i));
 	//g((void *)(thd_cnt));
 	}
 
