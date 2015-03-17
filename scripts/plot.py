@@ -61,7 +61,7 @@ for e in experiments:
 # Throughput vs. MPR for HStore, many node counts
 txn_cnt = 10000
 mpr = [0,1,10,20,30,40,50]
-nodes = [2,4,8]
+nodes = [2,4]
 algos = ['HSTORE','NO_WAIT','WAIT_DIE']
 for algo in algos:
     tput_mpr(mpr,nodes,[algo], txn_cnt,summary)

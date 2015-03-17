@@ -15,7 +15,7 @@ strnow=now.strftime("%Y%m%d-%H%M%S")
 machines_=[
 #GOOD
 "istc1", 
-"istc3",
+#"istc3", #Eugene Wu is using this machine until April 1
 "istc4",
 "istc6",
 "istc8",
@@ -56,12 +56,16 @@ for arg in sys.argv:
     if arg == "-remote" or arg == "-rem":
         remote = True
 
-if not execute:
-    cmd = "mkdir " + test_dir
-    os.system(cmd)
+#if not execute:
+#    cmd = "mkdir " + test_dir
+#    os.system(cmd)
 
 for e in experiments:
     cfgs["NODE_CNT"],cfgs["MAX_TXN_PER_PART"],cfgs["WORKLOAD"],cfgs["CC_ALG"],cfgs["MPR"] = e
+    if remote:
+        cfgs["TPORT_TYPE"],cfgs["TPORT_TYPE_IPC"],cfgs["TPORT_PORT"]="\"tcp\"","false",6100
+    if cfgs["CC_ALG"] == "TIMESTAMP":
+        cfgs["REM_THREAD_CNT"] = "NODE_CNT"
     output_f = get_outfile_name(cfgs)
     output_dir = output_f + "/"
     output_f = output_f + strnow 
@@ -134,15 +138,15 @@ for e in experiments:
                 pids.insert(0,p)
             for n in range(nnodes):
                 pids[n].wait()
-    else:
-        cmd = "mkdir {}/{}".format(test_dir,output_dir)
-        os.system(cmd)
-        cmd = "cp rundb {}/{}".format(test_dir,output_dir)
-        os.system(cmd)
-        cmd = "cp config.h {}/{}".format(test_dir,output_dir)
-        os.system(cmd)
+    #else:
+    #    cmd = "mkdir {}/{}".format(test_dir,output_dir)
+    #    os.system(cmd)
+    #    cmd = "cp rundb {}/{}".format(test_dir,output_dir)
+    #    os.system(cmd)
+    #    cmd = "cp config.h {}/{}".format(test_dir,output_dir)
+    #    os.system(cmd)
 
-if not execute:
-    cmd = "tar -czvf tests.tgz {}".format(test_dir_name,test_dir_name)
-    os.system(cmd)
+#if not execute:
+#    cmd = "tar -czvf tests.tgz {}".format(test_dir_name,test_dir_name)
+#    os.system(cmd)
 

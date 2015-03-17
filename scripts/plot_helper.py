@@ -132,7 +132,18 @@ def time_breakdown(mpr,node,algo,max_txn,summary,normalized=False):
             time_index[i] = avg(summary[cfgs]['time_index']) / run_time[i]
             time_wait_lock[i] = avg(summary[cfgs]['time_wait_lock']) / run_time[i]
             time_wait_rem[i] = avg(summary[cfgs]['time_wait_rem']) / run_time[i]
-            time_man[i] = avg(summary[cfgs]['time_man']) / run_time[i]
+            time_man[i] = (avg(summary[cfgs]['time_lock_man']) - avg(summary[cfgs]['time_wait_lock'])) / run_time[i]
+
+            if normalized:
+                print("{} {} {} {} {} {}".format(time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]))
+                print("Sum: {}, Runtime: {}".format(sum([time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]]),1.0))
+                assert(sum([time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]]) < 1.0)
+            else:
+                print("man wait_rem wait_lock index ts_alloc abort")
+                print("{} {} {} {} {} {}".format(time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]))
+                print("Sum: {}, Runtime: {}".format(sum([time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]]),avg(summary[cfgs]['run_time'])))
+                assert(sum([time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]]) < avg(summary[cfgs]['run_time']))
+
             if normalized:
                 time_work[i] = 1.0 - sum([time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]])
             else:

@@ -1,5 +1,6 @@
 import os,re,sys,math
 from experiments import configs
+from experiments import config_names
 
 def avg(l):
     return float(sum(l) / float(len(l)))
@@ -43,7 +44,8 @@ def process_abort_cnts(summary,results):
 
 def get_outfile_name(cfgs):
     output_f = ""
-    for key in sorted(cfgs.keys()):
+    #for key in sorted(cfgs.keys()):
+    for key in sorted(config_names):
         output_f += "{}-{}_".format(key,cfgs[key])
     return output_f
 
