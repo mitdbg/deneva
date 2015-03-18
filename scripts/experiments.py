@@ -6,7 +6,7 @@ import itertools
 
 simple = [
 #[2,1000,'TPCC','HSTORE',1],
-[2,10000,'TPCC','HSTORE',30]
+[4,10000,'TPCC','WAIT_DIE',30]
 ]
 
 experiments_100K = [
@@ -17,12 +17,18 @@ experiments_10K = [
     [n,10000,'TPCC','HSTORE',m] for n,m in itertools.product([2,4],[1]+range(0,101,10))
 ]
 
+experiments_10K_wait_die = [
+    [n,10000,'TPCC',cc,m] for n,m,cc in itertools.product([2,4],[1]+range(0,51,10),['WAIT_DIE'])
+]
+experiments_10K_no_wait = [
+    [n,10000,'TPCC',cc,m] for n,m,cc in itertools.product([2,4],[1]+range(0,51,10),['NO_WAIT'])
+]
 experiments_10K_2pl = [
-    [n,10000,'TPCC',cc,m] for n,m,cc in itertools.product([2,4],[1]+range(0,51,10),['NO_WAIT','WAIT_DIE'])
+    experiments_10K_no_wait + experiments_10K_wait_die
 ]
 
 experiments_10K_hstore = [
-    [n,10000,'TPCC',cc,m] for n,m,cc in itertools.product([2,4],[1]+range(0,51,10),['HSTORE'])
+    [n,10000,'TPCC',cc,m] for n,m,cc in itertools.product([4],[1]+range(0,51,10),['HSTORE'])
 ]
 
 experiments_10K_tso = [
@@ -71,4 +77,4 @@ configs = {
 ##################
 # FIXME
 #################
-experiments = experiments_10K_hstore + experiments_10K_2pl
+experiments = experiments_10K_hstore 
