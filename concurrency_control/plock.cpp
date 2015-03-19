@@ -74,7 +74,7 @@ RC PartMan::lock(uint64_t pid,  uint64_t * rp, uint64_t ts) {
 	return rc;
 }
 
-void PartMan::unlock(uint64_t pid,  uint64_t * rp) {
+void PartMan::unlock(uint64_t pid, uint64_t * rp, ts_t ts) {
 	pthread_mutex_lock( &latch );
 	if (pid == owner) {		
 		if (waiter_cnt == 0) { 
@@ -117,14 +117,20 @@ void PartMan::unlock(uint64_t pid,  uint64_t * rp) {
 			}
 		}
 		// if local, decr. shared variable
-		// We don't send response for rulk
 		if(GET_NODE_ID(pid) == _node_id)
 			ATOM_SUB(*rp, 1);
+
+
 		// We may not find a remote request among the waiters; ignore
 		//assert(find);
 		if(find)
 			waiter_cnt --;
 	}
+
+	// Send response for rulk
+  if(GET_NODE_ID(pid) != _node_id)
+	  remote_rsp(false,RCOK,GET_NODE_ID(pid),pid,ts);
+
 	pthread_mutex_unlock( &latch );
 }
 
@@ -163,6 +169,7 @@ void Plock::init(uint64_t node_id) {
 	_node_id = node_id;
 	ARR_PTR(PartMan, part_mans, g_part_cnt);
 	_ready_parts = new  uint64_t[g_thread_cnt];
+	_ready_ulks = new  uint64_t[g_thread_cnt];
 	_rcs = new RC[g_thread_cnt];
 	_ts = new uint64_t[g_thread_cnt];
 	for (UInt32 i = 0; i < g_part_cnt; i++)
@@ -178,6 +185,7 @@ RC Plock::lock(txn_man * txn, uint64_t * parts, uint64_t part_cnt) {
 	_ts[tid] = txn->get_ts();
 	_rcs[tid] = RCOK;
 	_ready_parts[tid] = 0;
+	_ready_ulks[tid] = 0;
 	ts_t starttime = get_sys_clock();
 	ts_t lock1;
 	ts_t lock2;
@@ -229,12 +237,18 @@ RC Plock::lock(txn_man * txn, uint64_t * parts, uint64_t part_cnt) {
 		for (UInt32 j = 0; j < i; j++) {
 			uint64_t part_id = parts[j];
 			if(GET_NODE_ID(part_id) == get_node_id()) 
-				part_mans[part_id]->unlock(GET_PART_ID(tid,nid),&_ready_parts[tid]);
+				part_mans[part_id]->unlock(GET_PART_ID(tid,nid),&_ready_parts[tid],txn->get_ts());
 			else {
+        ATOM_ADD(_ready_ulks[tid],1);
 				remote_qry(false,GET_PART_ID(tid,nid),part_id,txn->get_ts());
-				ATOM_SUB(_ready_parts[tid],1);
+				//ATOM_SUB(_ready_parts[tid],1);
 			}
 		}
+
+		ts_t t_abrt = get_sys_clock();
+		while (_ready_ulks[tid] > 0) { }
+		INC_STATS(tid, time_wait_lock, get_sys_clock() - t_abrt);
+
 		INC_STATS(tid, time_lock_man, get_sys_clock() - starttime);
 		return Abort;
 	}
@@ -244,15 +258,26 @@ RC Plock::lock(txn_man * txn, uint64_t * parts, uint64_t part_cnt) {
 }
 
 void Plock::unlock(txn_man * txn, uint64_t * parts, uint64_t part_cnt) {
+	uint64_t tid = txn->get_thd_id();
+	uint64_t nid = txn->get_node_id();
 	ts_t starttime = get_sys_clock();
+  _ready_ulks[tid] = 0;
 	for (UInt32 i = 0; i < part_cnt; i ++) {
 		uint64_t part_id = parts[i];
 		if(GET_NODE_ID(part_id) == get_node_id()) 
-			part_mans[part_id]->unlock(GET_PART_ID(txn->get_thd_id(),txn->get_node_id()),&_ready_parts[txn->get_thd_id()]);
-		else
-			remote_qry(false,GET_PART_ID(txn->get_thd_id(),txn->get_node_id()),part_id,txn->get_ts());
+			part_mans[part_id]->unlock(GET_PART_ID(tid,nid),&_ready_parts[tid],txn->get_ts());
+		else {
+      ATOM_ADD(_ready_ulks[tid],1);
+			remote_qry(false,GET_PART_ID(tid,nid),part_id,txn->get_ts());
+    }
 	}
-	INC_STATS(txn->get_thd_id(), time_lock_man, get_sys_clock() - starttime);
+  if(_ready_ulks[tid] > 0) {
+		ts_t t_abrt = get_sys_clock();
+		while (_ready_ulks[tid] > 0) { }
+		INC_STATS(tid, time_wait_lock, get_sys_clock() - t_abrt);
+  }
+	assert(_ready_ulks[tid] == 0);
+	INC_STATS(tid, time_lock_man, get_sys_clock() - starttime);
 }
 
 void Plock::unpack_rsp(base_query * query, void * d) {
@@ -314,12 +339,12 @@ void Plock::remote_qry(bool l, uint64_t pid, uint64_t lid, uint64_t ts) {
 	rem_qry_man.send_remote_query(GET_NODE_ID(lid),data,sizes,num);
 }
 
-void Plock::rem_unlock(uint64_t pid, uint64_t * parts, uint64_t part_cnt) {
+void Plock::rem_unlock(uint64_t pid, uint64_t * parts, uint64_t part_cnt,ts_t ts) {
 	ts_t starttime = get_sys_clock();
 	for (UInt32 i = 0; i < part_cnt; i ++) {
 		uint64_t part_id = parts[i];
 		assert(GET_NODE_ID(part_id) == get_node_id());
-		part_mans[part_id]->unlock(pid,NULL);
+		part_mans[part_id]->unlock(pid,NULL,ts);
 	}
 	INC_STATS(1, rtime_lock_man, get_sys_clock() - starttime);
 }
@@ -335,16 +360,28 @@ void Plock::rem_lock(uint64_t pid, uint64_t ts, uint64_t * parts, uint64_t part_
 }
 
 void Plock::rem_lock_rsp(uint64_t pid, RC rc, uint64_t ts) {
-	ts_t starttime = get_sys_clock();
 	if(ts != _ts[GET_THREAD_ID(pid)]) {
 #if DEBUG_DISTR
 		printf("Old message with ts %ld(%ld) dropped\n", ts,_ts[GET_THREAD_ID(pid)]);
 #endif
 		return;
 	}
+	ts_t starttime = get_sys_clock();
 	if(rc != RCOK)
 		_rcs[GET_THREAD_ID(pid)] = rc;
 	if(rc == RCOK)
 		ATOM_SUB(_ready_parts[GET_THREAD_ID(pid)], 1);
+	INC_STATS(1, time_lock_man, get_sys_clock() - starttime);
+}
+
+void Plock::rem_unlock_rsp(uint64_t pid, RC rc, uint64_t ts) {
+	if(ts != _ts[GET_THREAD_ID(pid)]) {
+#if DEBUG_DISTR
+		printf("Old message with ts %ld(%ld) dropped\n", ts,_ts[GET_THREAD_ID(pid)]);
+#endif
+		return;
+	}
+	ts_t starttime = get_sys_clock();
+	ATOM_SUB(_ready_ulks[GET_THREAD_ID(pid)], 1);
 	INC_STATS(1, time_lock_man, get_sys_clock() - starttime);
 }
