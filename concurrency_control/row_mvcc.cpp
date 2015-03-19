@@ -227,11 +227,12 @@ bool Row_mvcc::conflict(TsType type, ts_t ts) {
 RC Row_mvcc::access(txn_man * txn, TsType type, row_t * row) {
 	RC rc = RCOK;
 	ts_t ts = txn->get_ts();
+
 	if (g_central_man)
 		glob_manager.lock_row(_row);
 	else
 		pthread_mutex_lock( latch );
-	if (type == R_REQ) {
+  if (type == R_REQ) {
 		// figure out if ts is in interval(prewrite(x))
 		bool conf = conflict(type, ts);
 		if ( conf && rreq_len < MAX_READ_REQ) {

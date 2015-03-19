@@ -63,6 +63,27 @@ void Remote_query::remote_qry(base_query * query, int type, int dest_id, txn_man
 #endif
 }
 
+void Remote_query::ack_response(base_query * query) {
+
+	// Maximum number of parameters
+	// NOTE: Adjust if parameters sent is changed
+  uint64_t total = 2;
+	void ** data = new void *[total];
+	int * sizes = new int [total];
+	int num = 0;
+
+	RemReqType rtype = RACK;
+  txnid_t txn_id = query->txn_id;
+
+	data[num] = &txn_id;
+	sizes[num++] = sizeof(txnid_t);
+
+	data[num] = &rtype;
+	sizes[num++] = sizeof(RemReqType);
+
+  send_remote_query(query->return_id,data,sizes,num);
+}
+
 void Remote_query::send_remote_query(uint64_t dest_id, void ** data, int * sizes, int num) {
 	tport_man.send_msg(dest_id, data, sizes, num);
 }
@@ -126,6 +147,8 @@ void Remote_query::unpack(base_query * query, void * d, int len) {
         case RFIN:
             query->unpack_finish(query, data);
             break;
+    case RACK:
+      break;
 		default:
 			assert(false);
 	}
@@ -167,4 +190,21 @@ void Remote_query::cleanup_remote(uint64_t thd_id, uint64_t node_id, uint64_t tx
     mem_allocator.free(t_node, sizeof(struct txn_node));
 
     pthread_mutex_unlock(&mtx);
+}
+
+ts_t Remote_query::get_min_ts(ts_t min) {
+  ts_t min_ts = UINT64_MAX;
+  ts_t cur_ts = UINT64_MAX;
+  pthread_mutex_lock(&mtx);
+  for (UInt32 i = 0; i < g_node_cnt; i++) {
+    txn_node_t cur = txns[0][i];
+    while(cur->next != NULL) {
+      cur_ts = cur->next->txn->get_ts(); 
+      if(cur_ts < min_ts && min_ts >= min)
+        min_ts = cur_ts;
+      cur = cur->next;
+    }
+  }
+  pthread_mutex_unlock(&mtx);
+  return min_ts;
 }

@@ -126,7 +126,8 @@ int main(int argc, char* argv[])
 		uint64_t vid = i;
 		CPU_ZERO(&cpus);
 #if TPORT_TYPE_IPC
-    CPU_SET(g_node_id * (g_thread_cnt + g_rem_thread_cnt) + cpu_cnt, &cpus);
+    CPU_SET(g_node_id * (g_thread_cnt) + cpu_cnt, &cpus);
+    //CPU_SET(g_node_id * (g_thread_cnt + g_rem_thread_cnt) + cpu_cnt, &cpus);
 #else
     CPU_SET(cpu_cnt, &cpus);
 #endif
@@ -139,12 +140,12 @@ int main(int argc, char* argv[])
 	for (uint32_t i = 0; i < rthd_cnt; i++) {
 		CPU_ZERO(&cpus);
 #if TPORT_TYPE_IPC
-    CPU_SET(g_node_id * (g_thread_cnt + g_rem_thread_cnt) + cpu_cnt, &cpus);
+    //CPU_SET(g_node_id * (g_thread_cnt + g_rem_thread_cnt) + cpu_cnt, &cpus);
 #else
     CPU_SET(cpu_cnt, &cpus);
+  	pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
 #endif
 		cpu_cnt++;
-  	pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
 		pthread_create(&p_thds[thd_cnt+i], &attr, g, (void *)(thd_cnt + i));
 	//g((void *)(thd_cnt));
 	}

@@ -47,6 +47,8 @@ public:
 	workload * 		get_wl();
 	void 			set_txn_id(txnid_t txn_id);
 	txnid_t 		get_txn_id();
+  void incr_rsp(int i);
+  void decr_rsp(int i);
 
 	void 			set_ts(ts_t timestamp);
 	ts_t 			get_ts();
@@ -93,6 +95,7 @@ private:
 	row_t * 		insert_rows[MAX_ROW_PER_TXN];
 	txnid_t 		txn_id;
 	ts_t 			timestamp;
+  uint64_t rsp_cnt;
 };
 
 #endif

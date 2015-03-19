@@ -69,23 +69,31 @@ RC thread_t::run_remote() {
 		len = tport_man.recv_msg(m_query);
 		if( len > 0 ) {
 			rq_time = get_sys_clock();
+
+
 			switch(m_query->rtype) {
 #if CC_ALG == HSTORE
 				case RLK:
 					part_lock_man.rem_lock(m_query->pid,m_query->ts, m_query->parts, m_query->part_cnt);
 					break;
 				case RULK:
-					part_lock_man.rem_unlock(m_query->pid, m_query->parts, m_query->part_cnt);
+					part_lock_man.rem_unlock(m_query->pid, m_query->parts, m_query->part_cnt,m_query->ts);
 					break;
 				case RLK_RSP:
 					part_lock_man.rem_lock_rsp(m_query->pid,m_query->rc,m_query->ts);
 					break;
+				case RULK_RSP:
+					part_lock_man.rem_unlock_rsp(m_query->pid,m_query->rc,m_query->ts);
+					break;
 #endif
 				case RQRY:
+#if CC_ALG == MVCC
+          glob_manager.add_ts(m_query->return_id, 0, m_query->ts);
+#endif
 	        rc = _wl->get_txn_man(m_txn, this);
           assert(rc == RCOK);
           m_txn->set_txn_id(m_query->txn_id);
-#if CC_ALG == WAIT_DIE || CC_ALG == TIMESTAMP
+#if CC_ALG == WAIT_DIE || CC_ALG == TIMESTAMP || CC_ALG == MVCC
           m_txn->set_ts(m_query->ts);
 #endif
 					m_txn->run_rem_txn(m_query);
@@ -98,6 +106,11 @@ RC thread_t::run_remote() {
           m_txn = rem_qry_man.get_txn_man(get_thd_id(), m_query->return_id, m_query->txn_id);
           m_txn->rem_fin_txn(m_query);
           rem_qry_man.cleanup_remote(get_thd_id(), m_query->return_id, m_query->txn_id, true);
+          rem_qry_man.ack_response(m_query);
+          break;
+        case RACK:
+          m_txn = rem_qry_man.get_txn_man(get_thd_id(), m_query->return_id, m_query->txn_id);
+          m_txn->decr_rsp(1);
           break;
 				default:
 					break;
@@ -173,10 +186,10 @@ RC thread_t::run() {
 		ts_t t1 = get_sys_clock() - starttime;
 		INC_STATS(_thd_id, time_query, t1);
 		m_txn->abort_cnt = 0;
-        if (CC_ALG == WAIT_DIE || CC_ALG == TIMESTAMP) {
-            m_txn->set_ts(get_next_ts());
-            m_query->ts = m_txn->get_ts();
-        }
+    if (CC_ALG == WAIT_DIE || CC_ALG == TIMESTAMP || CC_ALG == MVCC) {
+      m_txn->set_ts(get_next_ts());
+      m_query->ts = m_txn->get_ts();
+    }
 //#if CC_ALG == VLL
 //		_wl->get_txn_man(m_txn, this);
 //#endif

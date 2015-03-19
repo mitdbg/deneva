@@ -53,6 +53,14 @@ void txn_man::set_ts(ts_t timestamp) {
 	this->timestamp = timestamp;
 }
 
+void txn_man::incr_rsp(int i) {
+  ATOM_ADD(this->rsp_cnt,i);
+}
+
+void txn_man::decr_rsp(int i) {
+  ATOM_SUB(this->rsp_cnt,i);
+}
+
 ts_t txn_man::get_ts() {
 	return this->timestamp;
 }
@@ -202,10 +210,20 @@ RC txn_man::finish(base_query * query) {
     if(query->part_to_access[i] == get_node_id()) {
       continue;
     }
-    rem_qry_man.cleanup_remote(get_thd_id(), query->part_to_access[i], get_txn_id(), false);
+    incr_rsp(1);
     query->remote_finish(query, query->part_to_access[i]);    
     //query->remote_finish(query, query->parts[i]);    
   }
+
+  while(rsp_cnt > 0) { }
+
+  for (uint64_t i = 0; i < query->part_num; ++i) {
+    if(query->part_to_access[i] == get_node_id()) {
+      continue;
+    }
+    rem_qry_man.cleanup_remote(get_thd_id(), query->part_to_access[i], get_txn_id(), false);
+  }
+
   return finish(query->rc);
 }
 

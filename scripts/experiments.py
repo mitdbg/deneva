@@ -6,7 +6,7 @@ import itertools
 
 simple = [
 #[2,1000,'TPCC','HSTORE',1],
-[4,10000,'TPCC','WAIT_DIE',30]
+[4,10000,'TPCC','HSTORE',50]
 ]
 
 experiments_100K = [
@@ -77,4 +77,4 @@ configs = {
 ##################
 # FIXME
 #################
-experiments = experiments_10K_hstore 
+experiments = simple #experiments_10K_hstore 
