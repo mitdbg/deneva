@@ -62,7 +62,7 @@ for e in experiments:
 txn_cnt = 10000
 mpr = [0,1,10,20,30,40,50]
 nodes = [2,4]
-algos = ['HSTORE','NO_WAIT','WAIT_DIE']
+algos = ['HSTORE','NO_WAIT','WAIT_DIE','TIMESTAMP']
 for algo in algos:
     tput_mpr(mpr,nodes,[algo], txn_cnt,summary)
 for node in nodes:

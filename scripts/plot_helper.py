@@ -130,7 +130,10 @@ def time_breakdown(mpr,node,algo,max_txn,summary,normalized=False):
             time_abort[i] = avg(summary[cfgs]['time_abort']) / run_time[i]
             time_ts_alloc[i] = avg(summary[cfgs]['time_ts_alloc']) / run_time[i]
             time_index[i] = avg(summary[cfgs]['time_index']) / run_time[i]
-            time_wait_lock[i] = avg(summary[cfgs]['time_wait_lock']) / run_time[i]
+            if algo == "HSTORE":
+                time_wait_lock[i] = avg(summary[cfgs]['time_wait_lock']) / run_time[i]
+            else:
+                time_wait_lock[i] = avg(summary[cfgs]['time_wait']) / run_time[i]
             time_wait_rem[i] = avg(summary[cfgs]['time_wait_rem']) / run_time[i]
             time_man[i] = (avg(summary[cfgs]['time_lock_man']) - avg(summary[cfgs]['time_wait_lock'])) / run_time[i]
 

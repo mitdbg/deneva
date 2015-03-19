@@ -13,9 +13,6 @@ experiments_100K = [
     [n,100000,'TPCC','HSTORE',m] for n,m in itertools.product([2,4,8,16],[1]+range(0,101,10))
 ]
 
-experiments_10K = [
-    [n,10000,'TPCC','HSTORE',m] for n,m in itertools.product([2,4],[1]+range(0,101,10))
-]
 
 experiments_10K_wait_die = [
     [n,10000,'TPCC',cc,m] for n,m,cc in itertools.product([2,4],[1]+range(0,51,10),['WAIT_DIE'])
@@ -23,17 +20,17 @@ experiments_10K_wait_die = [
 experiments_10K_no_wait = [
     [n,10000,'TPCC',cc,m] for n,m,cc in itertools.product([2,4],[1]+range(0,51,10),['NO_WAIT'])
 ]
-experiments_10K_2pl = [
-    experiments_10K_no_wait + experiments_10K_wait_die
-]
+experiments_10K_2pl = experiments_10K_no_wait + experiments_10K_wait_die
 
 experiments_10K_hstore = [
-    [n,10000,'TPCC',cc,m] for n,m,cc in itertools.product([4],[1]+range(0,51,10),['HSTORE'])
+    [n,10000,'TPCC',cc,m] for n,m,cc in itertools.product([2,4],[1]+range(0,51,10),['HSTORE'])
 ]
 
 experiments_10K_tso = [
     [n,10000,'TPCC',cc,m] for n,m,cc in itertools.product([2,4],[1]+range(0,51,10),['TIMESTAMP'])
 ]
+
+experiments_10K_all = experiments_10K_2pl + experiments_10K_tso + experiments_10K_hstore
 
 experiments_1K = [
     [n,1000,'TPCC',cc,m] for n,m,cc in itertools.product([2,4,8],[1]+range(0,51,10),['HSTORE','NO_WAIT','WAIT_DIE'])
@@ -77,4 +74,4 @@ configs = {
 ##################
 # FIXME
 #################
-experiments = simple #experiments_10K_hstore 
+experiments = experiments_10K_all
