@@ -6,7 +6,7 @@ import itertools
 
 simple = [
 #[2,1000,'TPCC','HSTORE',1],
-[4,10000,'TPCC','HSTORE',50]
+[2,1000,'TPCC','OCC',20]
 ]
 
 experiments_100K = [
@@ -30,7 +30,12 @@ experiments_10K_tso = [
     [n,10000,'TPCC',cc,m] for n,m,cc in itertools.product([2,4],[1]+range(0,51,10),['TIMESTAMP'])
 ]
 
-experiments_10K_all = experiments_10K_2pl + experiments_10K_tso + experiments_10K_hstore
+experiments_10K_mvcc = [
+    [n,10000,'TPCC',cc,m] for n,m,cc in itertools.product([2,4],[1]+range(0,51,10),['MVCC'])
+]
+
+
+experiments_10K_all = experiments_10K_2pl + experiments_10K_tso + experiments_10K_hstore + experiments_10K_mvcc
 
 experiments_1K = [
     [n,1000,'TPCC',cc,m] for n,m,cc in itertools.product([2,4,8],[1]+range(0,51,10),['HSTORE','NO_WAIT','WAIT_DIE'])
@@ -74,4 +79,4 @@ configs = {
 ##################
 # FIXME
 #################
-experiments = experiments_10K_all
+experiments = simple #experiments_10K_all

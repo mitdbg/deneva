@@ -115,6 +115,7 @@ for e in experiments:
                 print(cmd)
                 os.system(cmd)
 
+            print("Deploying: {}".format(output_f))
             cmd = './scripts/deploy.sh \'{}\' /home/{}/'.format(' '.join(machines),uname)
             print(cmd)
             os.system(cmd)
