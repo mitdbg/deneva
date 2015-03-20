@@ -130,7 +130,8 @@ MVReqEntry * Row_mvcc::debuffer_req( TsType type, txn_man * txn) {
 		// should return all non-conflicting read requests
 		// TODO The following code makes the assumption that each write op
 		// must read the row first. i.e., there is no write-only operation.
-		uint64_t min_pts = (1UL << 32);
+		uint64_t min_pts = UINT64_MAX;
+		//uint64_t min_pts = (1UL << 32);
 		for (MVReqEntry * preq = prereq_mvcc; preq != NULL; preq = preq->next)
 			if (preq->ts < min_pts)
 				min_pts = preq->ts;
