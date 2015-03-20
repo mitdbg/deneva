@@ -1,5 +1,6 @@
 import matplotlib
 matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 import os, sys, re, math,itertools
 from pylab import *
 from helper import *
@@ -91,6 +92,7 @@ def draw_bar(filename, data, label, names=None, dots=None,
         ncol=ncol, bbox_to_anchor=bbox, labelspacing=0.2) 
     subplots_adjust(left=left, bottom=bottom, right=right, top=top)
     savefig('../figs/' + filename)
+    plt.close()
 
 
 def draw_line(fname, data, xticks, 
@@ -152,6 +154,7 @@ def draw_line(fname, data, xticks,
     ax.set_axisbelow(True)
 
     savefig('../figs/' + fname +'.pdf', bbox_inches='tight')
+    plt.close()
 
 def draw_bars(data, xlabels, 
         figname='stack', 
@@ -187,10 +190,11 @@ def draw_bars(data, xlabels,
     legend(plots, sorted(data.keys()), bbox_to_anchor = bbox, prop={'size':11})
     subplots_adjust(bottom=0.25, right=0.7, top=None)
     savefig('../figs/' + figname + '.pdf', bbox_inches='tight')
+    plt.close()
 
 
 
-def draw_stack(data, xlabels, slabels, figname='stack', figsize=(8, 3),ymin=0, ymax=1) :
+def draw_stack(data, xlabels, slabels, figname='stack', title=None, figsize=(8, 3),ymin=0, ymax=1) :
     fig = figure(figsize=figsize)
     ind = range(0, len(xlabels))
 
@@ -209,9 +213,12 @@ def draw_stack(data, xlabels, slabels, figname='stack', figsize=(8, 3),ymin=0, y
         plots = plots + (p,)
         bottom = [a + b for a,b in zip(bottom, data[s])]
 
+    if title:
+        plt.title(title)
     legend(reversed(plots), tuple(slabels), bbox_to_anchor = (0.38, -0.2, 1, 1), prop={'size':11})
     subplots_adjust(bottom=0.25, right=0.7, top=None)
     savefig('../figs/' + figname + '.pdf', bbox_inches='tight')
+    plt.close()
 
 
 def draw_2line(x, y1, y2, figname="noname", ylimit=None):
@@ -248,4 +255,5 @@ def draw_2line(x, y1, y2, figname="noname", ylimit=None):
     subplots_adjust(left=0.18, bottom=0.15, right=0.9, top=None)
 
     savefig('../figs/' + figname + '.pdf', bbox_inches='tight')
+    plt.close()
 

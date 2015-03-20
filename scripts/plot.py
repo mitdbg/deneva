@@ -1,13 +1,8 @@
 import os, sys, re, math, os.path, math
-import matplotlib
-matplotlib.use('Agg')
-from pylab import *
 from helper import *
-from plot_helper import *
-from draw import *
-import matplotlib.pyplot as plt
 from experiments import experiments as experiments
 from experiments import configs
+from plot_helper import *
 import glob
 
 PATH=os.getcwd()

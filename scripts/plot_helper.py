@@ -1,14 +1,8 @@
 import os, sys, re, math, os.path
-import matplotlib
-matplotlib.use('Agg')
-from pylab import *
 from helper import *
 from draw import *
-import matplotlib.pyplot as plt
-from experiments import experiments as experiments
-from experiments import configs
-import glob
-import itertools
+#from experiments import experiments as experiments
+#from experiments import configs
 
 PATH=os.getcwd()
 
@@ -26,14 +20,17 @@ def tput_mpr(mpr,nodes,algos,max_txn,summary):
     xs = []
     node,algo = None,None
     name = 'tput_mpr'
+    _title = 'Per Node Throughput'
     if len(nodes) > 1:
         xs = nodes
         algo = algos[0]
         name = 'tput_mpr_' + algo
+        _title = 'Per Node Throughput ' + algo
     else:
         xs = algos
         node = nodes[0]
-        name = 'tput_mpr_node' + str(node)
+        name = 'tput_mpr_n' + str(node)
+        _title = 'Per Node Throughput ' + str(node) + ' Nodes'
 
     for x in xs:
         tpt[x] = [0] * len(mpr)
@@ -55,7 +52,7 @@ def tput_mpr(mpr,nodes,algos,max_txn,summary):
                 continue
             tpt[x][i] = (avg_txn_cnt/avg_run_time)
 
-    draw_line(name,tpt,mpr,ylab='Throughput (Txn/sec)',xlab='Multi-Partition Rate',title='Per Node Throughput',bbox=[0.5,0.95]) 
+    draw_line(name,tpt,mpr,ylab='Throughput (Txn/sec)',xlab='Multi-Partition Rate',title=_title,bbox=[0.5,0.95]) 
 
 # Plots Transport latency vs. MPR 
 # mpr: list of MPR values to plot along the x-axis
@@ -77,7 +74,7 @@ def tportlat_mpr(mpr,nodes,algos,max_txn,summary):
     else:
         xs = algos
         node = nodes[0]
-        name = 'tportlat_mpr_node' + str(node)
+        name = 'tportlat_mpr_n' + str(node)
 
     for x in xs:
         if algo == None: algo = x
@@ -103,10 +100,14 @@ def tportlat_mpr(mpr,nodes,algos,max_txn,summary):
 # normalized: if true, normalize the results
 def time_breakdown(mpr,node,algo,max_txn,summary,normalized=False):
     stack_names = ['Useful Work','Abort','Timestamp','Index','Lock Wait','Remote Wait','Manager']
+    _title = ''
+    _ymax=1.0
     if normalized:
-        name = 'time_breakdown_{}nodes_{}_normalized'.format(node,algo)
+        name = 'time_breakdown_n{}_{}_normalized'.format(node,algo)
+        _title = 'Normalized Time Breakdown {} {} Nodes'.format(algo,node)
     else:
-        name = 'time_breakdown_{}nodes_{}'.format(node,algo)
+        name = 'time_breakdown_n{}_{}'.format(node,algo)
+        _title = 'Time Breakdown {} {} Nodes'.format(algo,node)
 
     run_time = [0] * len(mpr)
     time_man = [0] * len(mpr)
@@ -137,20 +138,23 @@ def time_breakdown(mpr,node,algo,max_txn,summary,normalized=False):
             time_wait_rem[i] = avg(summary[cfgs]['time_wait_rem']) / run_time[i]
             time_man[i] = (avg(summary[cfgs]['time_lock_man']) - avg(summary[cfgs]['time_wait_lock'])) / run_time[i]
 
-            if normalized:
-                print("{} {} {} {} {} {}".format(time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]))
-                print("Sum: {}, Runtime: {}".format(sum([time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]]),1.0))
-                assert(sum([time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]]) < 1.0)
-            else:
-                print("man wait_rem wait_lock index ts_alloc abort")
-                print("{} {} {} {} {} {}".format(time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]))
-                print("Sum: {}, Runtime: {}".format(sum([time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]]),avg(summary[cfgs]['run_time'])))
-                assert(sum([time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]]) < avg(summary[cfgs]['run_time']))
+            #if normalized:
+            #    print("{} {} {} {} {} {}".format(time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]))
+            #    print("Sum: {}, Runtime: {}".format(sum([time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]]),1.0))
+            #    assert(sum([time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]]) < 1.0)
+            #else:
+            #    print("man wait_rem wait_lock index ts_alloc abort")
+            #    print("{} {} {} {} {} {}".format(time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]))
+            #    print("Sum: {}, Runtime: {}".format(sum([time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]]),avg(summary[cfgs]['run_time'])))
+            #    assert(sum([time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]]) < avg(summary[cfgs]['run_time']))
 
             if normalized:
+                assert(sum([time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]]) < 1.0)
                 time_work[i] = 1.0 - sum([time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]])
             else:
+                assert(sum([time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]]) < avg(summary[cfgs]['run_time']))
                 time_work[i] = avg(summary[cfgs]['run_time']) - sum([time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]])
+            _ymax = max(_ymax, sum([time_work[i],time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]])) 
         except KeyError:
             print("KeyError: {} {} {} {}".format(algo,node,max_txn,m))
             run_time[i] = 1.0
@@ -163,7 +167,7 @@ def time_breakdown(mpr,node,algo,max_txn,summary,normalized=False):
             time_work[i] = 0.0
     data = [time_man,time_wait_rem,time_wait_lock,time_index,time_ts_alloc,time_abort,time_work]
 
-    draw_stack(data,mpr,stack_names,figname=name)
+    draw_stack(data,mpr,stack_names,figname=name,title=_title,ymax=_ymax)
 
 # Cumulative density function of total number of aborts per transaction
 # mpr: list of MPR values to plot along the x-axis
@@ -173,7 +177,8 @@ def time_breakdown(mpr,node,algo,max_txn,summary,normalized=False):
 # summary: dictionary loaded with results
 def cdf_aborts_mpr(mpr,node,algo,max_txn,summary):
 
-    name = 'cdf_aborts_mpr_{}nodes_{}'.format(node,algo)
+    name = 'cdf_aborts_mpr_n{}_{}'.format(node,algo)
+    _title = 'CDF of Aborts {} {} Nodes'.format(algo,node)
     ys_mpr = {}
     # find max abort
     max_abort = 0
@@ -209,7 +214,7 @@ def cdf_aborts_mpr(mpr,node,algo,max_txn,summary):
                 ys_mpr[m][x] = y
 
 
-    draw_line(name,ys_mpr,xs_mpr,ylab='% Transactions',xlab='# Aborts',title='Cumulative Aborts per Transaction with varying MPR',bbox=[0.8,0.6],ylimit=1.0) 
+    draw_line(name,ys_mpr,xs_mpr,ylab='% Transactions',xlab='# Aborts',title=_title,bbox=[0.8,0.6],ylimit=1.0) 
 
 
 # Bar graph of total number of aborts per transaction
@@ -221,6 +226,7 @@ def cdf_aborts_mpr(mpr,node,algo,max_txn,summary):
 def bar_aborts_mpr(mpr,node,algo,max_txn,summary):
 
     name = 'bar_aborts_mpr_n{}_{}'.format(node,algo)
+    _title = 'Abort Counts {} {} Nodes'.format(algo,node)
     ys_mpr = {}
     # find max abort
     max_abort = 0
@@ -250,7 +256,7 @@ def bar_aborts_mpr(mpr,node,algo,max_txn,summary):
                 print("KeyError: {} {} {} {}".format(algo,node,max_txn,m))
                 ys_mpr[m][x] = 0
 
-    draw_bars(ys_mpr,xs_mpr,ylab='# Transactions',xlab='# Aborts',title='Aborts per Transaction for varying MPR',figname=name) 
+    draw_bars(ys_mpr,xs_mpr,ylab='# Transactions',xlab='# Aborts',title=_title,figname=name) 
 
 
 # Plots Average of a result vs. MPR 
