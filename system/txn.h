@@ -52,6 +52,8 @@ public:
 
 	void 			set_ts(ts_t timestamp);
 	ts_t 			get_ts();
+	void 			set_start_ts(uint64_t start_ts);
+	ts_t 			get_start_ts();
 
 	pthread_mutex_t txn_lock;
 	row_t * volatile cur_row;

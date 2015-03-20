@@ -4,7 +4,7 @@
 /***********************************************/
 // Simulation + Hardware
 /***********************************************/
-#define NODE_CNT 2
+#define NODE_CNT 4
 #define THREAD_CNT					1
 #define REM_THREAD_CNT NODE_CNT
 #define PART_CNT					THREAD_CNT * NODE_CNT // THREAD_CNT * NODE_CNT
@@ -50,9 +50,9 @@
 /***********************************************/
 // Message Passing
 /***********************************************/
-#define TPORT_TYPE "ipc"
-#define TPORT_TYPE_IPC true
-#define TPORT_PORT "_.ipc"
+#define TPORT_TYPE "tcp"
+#define TPORT_TYPE_IPC false
+#define TPORT_PORT 6100
 
 #define MAX_TPORT_NAME 128
 #define MSG_SIZE 128 // in bytes
@@ -66,7 +66,7 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HSTORE, OCC, VLL
-#define CC_ALG MVCC
+#define CC_ALG OCC
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER					false
@@ -122,7 +122,7 @@
 // max number of rows touched per transaction
 #define MAX_ROW_PER_TXN				64
 #define QUERY_INTVL 				1UL
-#define MAX_TXN_PER_PART 500
+#define MAX_TXN_PER_PART 10000
 #define FIRST_PART_LOCAL 			true
 #define MAX_TUPLE_SIZE				1024 // in bytes
 // ==== [YCSB] ====

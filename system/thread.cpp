@@ -93,9 +93,11 @@ RC thread_t::run_remote() {
 	        rc = _wl->get_txn_man(m_txn, this);
           assert(rc == RCOK);
           m_txn->set_txn_id(m_query->txn_id);
-#if CC_ALG == WAIT_DIE || CC_ALG == TIMESTAMP || CC_ALG == MVCC
           m_txn->set_ts(m_query->ts);
+#if CC_ALG == OCC
+          m_txn->set_start_ts(m_query->start_ts);
 #endif
+
 					m_txn->run_rem_txn(m_query);
 					break;
 				case RQRY_RSP:
@@ -229,6 +231,7 @@ RC thread_t::run() {
 			// But we advance the global ts here to simplify the implementation. However, the final
 			// results should be the same.
 			m_txn->start_ts = get_next_ts(); 
+      m_query->start_ts = m_txn->get_start_ts();
 			//glob_manager.get_ts( get_thd_id() ); 
 #endif
 			if (rc == RCOK) 

@@ -65,6 +65,14 @@ ts_t txn_man::get_ts() {
 	return this->timestamp;
 }
 
+void txn_man::set_start_ts(uint64_t start_ts) {
+	this->start_ts = start_ts;
+}
+
+ts_t txn_man::get_start_ts() {
+	return this->start_ts;
+}
+
 void txn_man::cleanup(RC rc) {
 	for (int rid = row_cnt - 1; rid >= 0; rid --) {
 #if !NOGRAPHITE

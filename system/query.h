@@ -19,18 +19,24 @@ public:
 
 	// Remote query components
 	uint64_t dest_id;
-	uint64_t ts;
 	uint64_t return_id;
 	txnid_t txn_id;
+	uint64_t ts;
+
 	uint64_t part_cnt;
 	uint64_t * parts;
+
 	RemReqType rtype;
 	RC rc;
 	uint64_t pid;
 
-    void set_txn_id(uint64_t _txn_id); 
-    void remote_finish(base_query * query, int dest_id);
-    void unpack_finish(base_query * query, void *d);
+  // OCC
+	uint64_t start_ts;
+	uint64_t end_ts;
+
+  void set_txn_id(uint64_t _txn_id); 
+  void remote_finish(base_query * query, int dest_id);
+  void unpack_finish(base_query * query, void *d);
 };
 
 // All the queries for a particular thread.
