@@ -213,25 +213,42 @@ RC txn_man::finish(base_query * query) {
 		return RCOK;	
   // Send finish message to all participating transaction
   // FIXME
-  //for (uint64_t i = 0; i < query->part_cnt; ++i) {
+  uint64_t part_node_ids[g_node_cnt]; 
+  uint64_t node_num = 0;
   for (uint64_t i = 0; i < query->part_num; ++i) {
-    if(query->part_to_access[i] == get_node_id()) {
+    uint64_t part_node_id = GET_NODE_ID(query->part_to_access[i]);
+    //if(query->part_to_access[i] == get_node_id()) {
+    if(part_node_id == get_node_id()) {
       continue;
     }
+    // Check if we have already sent this node an RFIN message
+    bool sent_rfin = false;
+    for (uint64_t j = 0; j < node_num; ++j) {
+      if (part_node_ids[j] == part_node_id) {
+        sent_rfin = true;
+        break;
+      }
+    }
+    if (sent_rfin) {
+      continue;
+    }
+    part_node_ids[node_num++] = part_node_id;
     incr_rsp(1);
-    query->remote_finish(query, query->part_to_access[i]);    
-    //query->remote_finish(query, query->parts[i]);    
+    query->remote_finish(query, part_node_id);    
+    //query->remote_finish(query, query->part_to_access[i]);    
   }
 
   ts_t t = get_sys_clock();
   while(rsp_cnt > 0) { }
   INC_STATS(get_thd_id(),time_wait_rem,get_sys_clock()-t);
 
-  for (uint64_t i = 0; i < query->part_num; ++i) {
-    if(query->part_to_access[i] == get_node_id()) {
+  //for (uint64_t i = 0; i < query->part_num; ++i) {
+  for (uint64_t i = 0; i < node_num; ++i) {
+    if(part_node_ids[i] == get_node_id()) {
       continue;
     }
-    rem_qry_man.cleanup_remote(get_thd_id(), query->part_to_access[i], get_txn_id(), false);
+    //rem_qry_man.cleanup_remote(get_thd_id(), query->part_to_access[i], get_txn_id(), false);
+    rem_qry_man.cleanup_remote(get_thd_id(), part_node_ids[i], get_txn_id(), false);
   }
 
   return finish(query->rc);
