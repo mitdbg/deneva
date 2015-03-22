@@ -11,11 +11,6 @@ void tpcc_query::init(uint64_t thd_id, workload * h_wl) {
 	part_to_access = (uint64_t *) 
 		mem_allocator.alloc(sizeof(uint64_t) * g_part_cnt, thd_id);
 	pid = GET_PART_ID(thd_id,g_node_id);
-#if CC_ALG == NO_WAIT || CC_ALG == WAIT_DIE || CC_ALG == DL_DETECT
-    parts = new uint64_t[g_part_cnt];
-    memset(parts, '\0', sizeof(uint64_t) * g_part_cnt);
-    part_cnt = 0;
-#endif
 	// TODO
 	if (x < g_perc_payment)
 		gen_payment(pid);
@@ -25,18 +20,6 @@ void tpcc_query::init(uint64_t thd_id, workload * h_wl) {
 
 // Note: If you ever change the number of parameters sent, change "total"
 void tpcc_query::remote_qry(base_query * query, int type, int dest_id) {
-#if CC_ALG == NO_WAIT || CC_ALG == WAIT_DIE || CC_ALG == DL_DETECT
-  // FIXME: part_cnt -> part_num? parts->part_to_access?
-    bool recorded = false;
-    for (uint64_t i = 0; i < part_cnt; ++i) {
-        if (parts[i] == (uint64_t) dest_id) {
-            recorded = true;
-            break;
-        }
-    }
-    if (!recorded)
-        parts[part_cnt++] = dest_id;
-#endif
 
 	tpcc_query * m_query = (tpcc_query *) query;
 	TPCCRemTxnType t = (TPCCRemTxnType) type;
