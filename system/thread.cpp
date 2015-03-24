@@ -88,7 +88,8 @@ RC thread_t::run_remote() {
 #endif
 				case RQRY:
 #if CC_ALG == MVCC
-          glob_manager.add_ts(m_query->return_id, 0, m_query->ts);
+          //glob_manager.add_ts(m_query->return_id, 0, m_query->ts);
+          glob_manager.add_ts(m_query->return_id, m_query->thd_id, m_query->ts);
 #endif
 	        rc = _wl->get_txn_man(m_txn, this);
           assert(rc == RCOK);
@@ -191,6 +192,9 @@ RC thread_t::run() {
     if (CC_ALG == WAIT_DIE || CC_ALG == TIMESTAMP || CC_ALG == MVCC) {
       m_txn->set_ts(get_next_ts());
       m_query->ts = m_txn->get_ts();
+    }
+    if (CC_ALG == MVCC) {
+      m_query->thd_id = _thd_id;
     }
 //#if CC_ALG == VLL
 //		_wl->get_txn_man(m_txn, this);

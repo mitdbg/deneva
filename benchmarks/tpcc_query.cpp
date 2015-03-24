@@ -31,6 +31,9 @@ void tpcc_query::remote_qry(base_query * query, int type, int dest_id) {
 #if CC_ALG == WAIT_DIE | CC_ALG == TIMESTAMP || CC_ALG == MVCC
   total ++;   // For timestamp
 #endif
+#if CC_ALG == MVCC
+  total ++;
+#endif
 #if CC_ALG == OCC
   total ++; // For start_ts
 #endif
@@ -57,6 +60,10 @@ void tpcc_query::remote_qry(base_query * query, int type, int dest_id) {
 #if CC_ALG == WAIT_DIE || CC_ALG == TIMESTAMP || CC_ALG == MVCC
   data[num] = &m_query->ts;
   sizes[num++] = sizeof(uint64_t);   // sizeof ts_t
+#endif
+#if CC_ALG == MVCC 
+  data[num] = &m_query->thd_id;
+  sizes[num++] = sizeof(uint64_t);
 #endif
 #if CC_ALG == OCC
   data[num] = &m_query->start_ts;
@@ -206,6 +213,10 @@ void tpcc_query::unpack(base_query * query, void * d) {
   ptr += sizeof(txnid_t);
 #if CC_ALG == WAIT_DIE || CC_ALG == TIMESTAMP || CC_ALG == MVCC
   memcpy(&m_query->ts, &data[ptr], sizeof(uint64_t));
+  ptr += sizeof(uint64_t);
+#endif
+#if CC_ALG == MVCC 
+  memcpy(&m_query->thd_id,&data[ptr], sizeof(uint64_t));
   ptr += sizeof(uint64_t);
 #endif
 #if CC_ALG == OCC

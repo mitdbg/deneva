@@ -34,6 +34,9 @@ public:
 	uint64_t start_ts;
 	uint64_t end_ts;
 
+  // MVCC
+  uint64_t thd_id;
+
   void set_txn_id(uint64_t _txn_id); 
   void remote_finish(base_query * query, int dest_id);
   void unpack_finish(base_query * query, void *d);
