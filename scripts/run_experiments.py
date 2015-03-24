@@ -90,7 +90,7 @@ for e in experiments:
 
     if execute:
         #result_dir_ = result_dir + output_f + "/"
-        cmd = "mkdir {}".format(result_dir)
+        cmd = "mkdir -p {}".format(result_dir)
         os.system(cmd)
         cmd = "cp config.h {}{}.cfg".format(result_dir,output_f)
         os.system(cmd)
