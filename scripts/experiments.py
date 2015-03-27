@@ -3,9 +3,11 @@ import itertools
 # Go to end of file to fill in experiments 
 
 # Format: [#Nodes,#Txns,Workload,CC_ALG,MPR]
+fmt1 = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR"]]
+fmt2 = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT"]]
 
 simple = [
-#[2,1000,'TPCC','HSTORE',1],
+[4,1000,'TPCC','HSTORE',1],
 [2,1000,'TPCC','OCC',20]
 ]
 
@@ -24,6 +26,10 @@ experiments_10K_2pl = experiments_10K_no_wait + experiments_10K_wait_die
 
 experiments_10K_hstore = [
     [n,10000,'TPCC',cc,m] for n,m,cc in itertools.product([2,4],[1]+range(0,51,10),['HSTORE'])
+]
+
+experiments_10K_hstore_mt = [
+    [n,10000,'TPCC',cc,m,t] for n,m,cc,t in itertools.product([2],[1]+range(0,51,10),['HSTORE'],[1,2,4])
 ]
 
 experiments_10K_tso = [
@@ -65,7 +71,7 @@ experiments_n4 = [
 ]
 
 # Configs used in output file names
-config_names=["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR"]
+config_names=["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR"]#,"THREAD_CNT","REM_THREAD_CNT","PART_CNT"]
 
 # Default values for variable configurations
 configs = {
@@ -77,10 +83,12 @@ configs = {
     "TPORT_TYPE":"\"ipc\"",
     "TPORT_TYPE_IPC":"true",
     "TPORT_PORT":"\"_.ipc\"",
-    "REM_THREAD_CNT": 1
+    "REM_THREAD_CNT": 2,
+    "THREAD_CNT": 1,
+    "PART_CNT": 2 
 }
 
 ##################
 # FIXME
 #################
-experiments = experiments_10K_all
+experiments = fmt1 + experiments_10K_all

@@ -31,9 +31,9 @@ if rem:
 # Compile results into single dictionary
 ############################################
 summary = {}
-for e in experiments:
+for e in experiments[1:]:
     r = {}
-    cfgs = get_cfgs(e)
+    cfgs = get_cfgs(experiments[0],e)
     output_f = get_outfile_name(cfgs)
     for n in range(cfgs["NODE_CNT"]):
         if rem:
@@ -57,16 +57,23 @@ for e in experiments:
 txn_cnt = 10000
 mpr = [0,1,10,20,30,40,50]
 nodes = [2,4]
+threads = [1,2,4]
 algos = ['HSTORE','NO_WAIT','WAIT_DIE','TIMESTAMP','MVCC','OCC']
 for algo in algos:
-    tput_mpr(mpr,nodes,[algo], txn_cnt,summary)
+    #tput_mpr(mpr,nodes,[algo], txn_cnt,summary)
+    tput(mpr,nodes,summary,cfg_fmt=["CC_ALG","MAX_TXN_PER_PART"],cfg=[algo,txn_cnt],xname="MPR",vname="CC_ALG",title="{}".format(algo))
+
 for node in nodes:
-    tput_mpr(mpr,[node],algos, txn_cnt,summary)
+    tput(mpr,algos,summary,cfg_fmt=["NODE_CNT","MAX_TXN_PER_PART"],cfg=[node,txn_cnt],xname="MPR",vname="CC_ALG",title="{} Nodes".format(node))
 
 for node,algo in itertools.product(nodes,algos):
-    time_breakdown(mpr,node,algo,txn_cnt,summary,normalized=False)
-    time_breakdown(mpr,node,algo,txn_cnt,summary,normalized=True)
-    cdf_aborts_mpr(mpr,node,algo,txn_cnt,summary)
-    bar_aborts_mpr(mpr,node,algo,txn_cnt,summary)
-
+    _cfg_fmt = ["NODE_CNT","CC_ALG","MAX_TXN_PER_PART"]
+    _cfg=[node,algo,txn_cnt]
+    _title="{} {} Nodes".format(algo,node)
+    time_breakdown(mpr,summary,normalized=False,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="MPR",title=_title)
+    time_breakdown(mpr,summary,normalized=True,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="MPR",title=_title)
+#    time_breakdown(mpr,node,algo,txn_cnt,summary,normalized=True)
+#    cdf_aborts_mpr(mpr,node,algo,txn_cnt,summary)
+#    bar_aborts_mpr(mpr,node,algo,txn_cnt,summary)
+    tput(mpr,threads,summary,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="MPR",vname="THREAD_CNT",title=_title)
 

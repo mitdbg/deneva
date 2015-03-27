@@ -5,9 +5,11 @@
 // Simulation + Hardware
 /***********************************************/
 #define NODE_CNT 4
-#define THREAD_CNT					1
-#define REM_THREAD_CNT NODE_CNT
-#define PART_CNT					THREAD_CNT * NODE_CNT // THREAD_CNT * NODE_CNT
+#define THREAD_CNT 2
+// REM_THREAD_CNT should be at least NODE_CNT to avoid deadlock
+#define REM_THREAD_CNT 4
+// PART_CNT should be at least THREAD_CNT * NODE_CNT
+#define PART_CNT 8
 
 // each transaction only accesses only 1 virtual partition. But the lock/ts manager and index are not aware of such partitioning. VIRTUAL_PART_CNT describes the request distribution and is only used to generate queries. For HSTORE, VIRTUAL_PART_CNT should be the same as PART_CNT.
 #define VIRTUAL_PART_CNT			1
@@ -66,7 +68,7 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HSTORE, OCC, VLL
-#define CC_ALG OCC
+#define CC_ALG HSTORE
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER					false
@@ -148,7 +150,7 @@
 #define WH_UPDATE					true
 #define NUM_WH 						PART_CNT //4
 // % of transactions that access multiple partitions
-#define MPR 50
+#define MPR 1
 #define MPR_NEWORDER			20 // In %
 //
 enum TPCCTxnType {TPCC_ALL, 

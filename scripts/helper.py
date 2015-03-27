@@ -49,9 +49,15 @@ def get_outfile_name(cfgs):
         output_f += "{}-{}_".format(key,cfgs[key])
     return output_f
 
-def get_cfgs(l):
+def get_cfgs(fmt,e):
     cfgs = configs
-    cfgs["NODE_CNT"],cfgs["MAX_TXN_PER_PART"],cfgs["WORKLOAD"],cfgs["CC_ALG"],cfgs["MPR"] = l
+    for f,n in zip(fmt,range(len(fmt))):
+        cfgs[f] = e[n]
+    # For now, spawn NODE_CNT remote threads to avoid potential deadlock
+    if "REM_THREAD_CNT" not in fmt:
+        cfgs["REM_THREAD_CNT"] = cfgs["NODE_CNT"]
+    if "PART_CNT" not in fmt:
+        cfgs["PART_CNT"] = cfgs["NODE_CNT"] * cfgs["THREAD_CNT"]
     return cfgs
 
 def avg(l):

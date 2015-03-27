@@ -14,9 +14,9 @@ strnow=now.strftime("%Y%m%d-%H%M%S")
 # ISTC Machines ranked by clock skew
 machines_=[
 #GOOD
-"istc1", 
+#"istc1", #Reserved on 3/27
 #"istc3", #Eugene Wu is using this machine until April 1
-"istc4",
+#"istc4", #Reserved on 3/27
 "istc6",
 "istc8",
 #OK
@@ -59,14 +59,13 @@ for arg in sys.argv:
 #if not execute:
 #    cmd = "mkdir " + test_dir
 #    os.system(cmd)
+fmt = experiments[0]
 
-for e in experiments:
-    cfgs["NODE_CNT"],cfgs["MAX_TXN_PER_PART"],cfgs["WORKLOAD"],cfgs["CC_ALG"],cfgs["MPR"] = e
+for e in experiments[1:]:
+    cfgs = get_cfgs(fmt,e)
     if remote:
         cfgs["TPORT_TYPE"],cfgs["TPORT_TYPE_IPC"],cfgs["TPORT_PORT"]="\"tcp\"","false",6100
-    #if cfgs["CC_ALG"] == "TIMESTAMP" or cfgs["CC_ALG"] == "MVCC" or cfgs["CC_ALG"] == "WAIT_DIE":
-    # For now, spawn NODE_CNT remote threads to avoid potential deadlock
-    cfgs["REM_THREAD_CNT"] = "NODE_CNT"
+
     output_f = get_outfile_name(cfgs)
     output_dir = output_f + "/"
     output_f = output_f + strnow 

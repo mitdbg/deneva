@@ -6,6 +6,36 @@ from draw import *
 
 PATH=os.getcwd()
 
+def tput(xval,vval,summary,
+        cfg_fmt=[],
+        cfg=[],
+        xname="MPR",
+        vname="CC_ALG",
+        title=""
+        ):
+    tpt = {}
+    name = 'tput_{}_{}'.format(xname.lower(),title.replace(" ","_").lower())
+    _title = 'Per Node Throughput {}'.format(title)
+
+    for v in vval:
+        tpt[v] = [0] * len(xval)
+
+        for x,xi in zip(xval,range(len(xval))):
+            cfgs = get_cfgs(cfg_fmt + [xname] + [vname], cfg + [x] + [v] )
+            cfgs = get_outfile_name(cfgs)
+            if cfgs not in summary.keys(): break
+            try:
+                avg_run_time = avg(summary[cfgs]['run_time'])
+                avg_txn_cnt = avg(summary[cfgs]['txn_cnt'])
+            except KeyError:
+                print("KeyError: {} {} {}".format(v,x,cfg))
+                tpt[v][xi] = 0
+                continue
+            tpt[v][xi] = (avg_txn_cnt/avg_run_time)
+
+    draw_line(name,tpt,xval,ylab='Throughput (Txn/sec)',xlab='Multi-Partition Rate',title=_title,bbox=[0.5,0.95]) 
+
+
 
 # Plots Throughput vs. MPR 
 # mpr: list of MPR values to plot along the x-axis
@@ -98,30 +128,34 @@ def tportlat_mpr(mpr,nodes,algos,max_txn,summary):
 # max_txn: MAX_TXN_PER_PART
 # summary: dictionary loaded with results
 # normalized: if true, normalize the results
-def time_breakdown(mpr,node,algo,max_txn,summary,normalized=False):
+def time_breakdown(xval,summary,
+        normalized=False,
+        xname="MPR",
+        cfg_fmt=[],
+        cfg=[],
+        title=''
+        ):
     stack_names = ['Useful Work','Abort','Timestamp','Index','Lock Wait','Remote Wait','Manager']
     _title = ''
     _ymax=1.0
     if normalized:
-        name = 'time_breakdown_n{}_{}_normalized'.format(node,algo)
-        _title = 'Normalized Time Breakdown {} {} Nodes'.format(algo,node)
+        _title = 'Time Breakdown Normalized {}'.format(title)
     else:
-        name = 'time_breakdown_n{}_{}'.format(node,algo)
-        _title = 'Time Breakdown {} {} Nodes'.format(algo,node)
+        _title = 'Time Breakdown {}'.format(title)
+    name = '{}'.format(_title.replace(" ","_").lower())
 
-    run_time = [0] * len(mpr)
-    time_man = [0] * len(mpr)
-    time_wait_rem = [0] * len(mpr)
-    time_wait_lock = [0] * len(mpr)
-    time_index = [0] * len(mpr)
-    time_ts_alloc = [0] * len(mpr)
-    time_abort = [0] * len(mpr)
-    time_work = [0] * len(mpr)
+    run_time = [0] * len(xval)
+    time_man = [0] * len(xval)
+    time_wait_rem = [0] * len(xval)
+    time_wait_lock = [0] * len(xval)
+    time_index = [0] * len(xval)
+    time_ts_alloc = [0] * len(xval)
+    time_abort = [0] * len(xval)
+    time_work = [0] * len(xval)
 
-    for i in range(len(mpr)):
-        m = mpr[i]
-        cfgs = get_cfgs([node,max_txn,'TPCC',algo,m])
-        cfgs = get_outfile_name(cfgs)
+    for x,i in zip(xval,range(len(xval))):
+        _cfgs = get_cfgs(cfg_fmt + [xname],cfg + [x])
+        cfgs = get_outfile_name(_cfgs)
         if cfgs not in summary.keys(): break
         try:
             if normalized:
@@ -131,22 +165,12 @@ def time_breakdown(mpr,node,algo,max_txn,summary,normalized=False):
             time_abort[i] = avg(summary[cfgs]['time_abort']) / run_time[i]
             time_ts_alloc[i] = avg(summary[cfgs]['time_ts_alloc']) / run_time[i]
             time_index[i] = avg(summary[cfgs]['time_index']) / run_time[i]
-            if algo == "HSTORE":
+            if _cfgs["CC_ALG"] == "HSTORE":
                 time_wait_lock[i] = avg(summary[cfgs]['time_wait_lock']) / run_time[i]
             else:
                 time_wait_lock[i] = avg(summary[cfgs]['time_wait']) / run_time[i]
             time_wait_rem[i] = avg(summary[cfgs]['time_wait_rem']) / run_time[i]
             time_man[i] = (avg(summary[cfgs]['time_lock_man']) - avg(summary[cfgs]['time_wait_lock'])) / run_time[i]
-
-            #if normalized:
-            #    print("{} {} {} {} {} {}".format(time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]))
-            #    print("Sum: {}, Runtime: {}".format(sum([time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]]),1.0))
-            #    assert(sum([time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]]) < 1.0)
-            #else:
-            #    print("man wait_rem wait_lock index ts_alloc abort")
-            #    print("{} {} {} {} {} {}".format(time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]))
-            #    print("Sum: {}, Runtime: {}".format(sum([time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]]),avg(summary[cfgs]['run_time'])))
-            #    assert(sum([time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]]) < avg(summary[cfgs]['run_time']))
 
             if normalized:
                 assert(sum([time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]]) < 1.0)
@@ -156,7 +180,7 @@ def time_breakdown(mpr,node,algo,max_txn,summary,normalized=False):
                 time_work[i] = avg(summary[cfgs]['run_time']) - sum([time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]])
             _ymax = max(_ymax, sum([time_work[i],time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]])) 
         except KeyError:
-            print("KeyError: {} {} {} {}".format(algo,node,max_txn,m))
+            print("KeyError: {} {}".format(x,cfg))
             run_time[i] = 1.0
             time_abort[i] = 0.0
             time_ts_alloc[i] = 0.0
@@ -167,7 +191,7 @@ def time_breakdown(mpr,node,algo,max_txn,summary,normalized=False):
             time_work[i] = 0.0
     data = [time_man,time_wait_rem,time_wait_lock,time_index,time_ts_alloc,time_abort,time_work]
 
-    draw_stack(data,mpr,stack_names,figname=name,title=_title,ymax=_ymax)
+    draw_stack(data,xval,stack_names,figname=name,title=_title,ymax=_ymax)
 
 # Cumulative density function of total number of aborts per transaction
 # mpr: list of MPR values to plot along the x-axis
