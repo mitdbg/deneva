@@ -37,7 +37,7 @@ row_t * Row_mvcc::clear_history(TsType type, ts_t ts) {
 	row_t * row = NULL;
 	while (his && his->prev && his->prev->ts < ts) {
 		prev = his->prev;
-		assert(prev->ts > his->ts);
+		assert(prev->ts >= his->ts);
 		if (row != NULL) {
 			row->free_row();
 			mem_allocator.free(row, sizeof(row_t));

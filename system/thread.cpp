@@ -13,6 +13,7 @@
 #include "test.h"
 #include "transport.h"
 #include "remote_query.h"
+#include "math.h"
 
 void thread_t::init(uint64_t thd_id, uint64_t node_id, workload * workload) {
 	_thd_id = thd_id;
@@ -87,6 +88,7 @@ RC thread_t::run_remote() {
 					break;
 #endif
 				case RQRY:
+          INC_STATS(1,rqry,1);
 #if CC_ALG == MVCC
           //glob_manager.add_ts(m_query->return_id, 0, m_query->ts);
           glob_manager.add_ts(m_query->return_id, m_query->thd_id, m_query->ts);
@@ -102,16 +104,19 @@ RC thread_t::run_remote() {
 					m_txn->run_rem_txn(m_query);
 					break;
 				case RQRY_RSP:
+          INC_STATS(1,rqry_rsp,1);
 					m_txn = rem_qry_man.get_txn_man(GET_THREAD_ID(m_query->pid), m_query->return_id, m_query->txn_id);
 					m_txn->rem_txn_rsp(m_query);
 					break;
         case RFIN:
+          INC_STATS(1,rfin,1);
           m_txn = rem_qry_man.get_txn_man(get_thd_id(), m_query->return_id, m_query->txn_id);
           m_txn->rem_fin_txn(m_query);
           rem_qry_man.cleanup_remote(get_thd_id(), m_query->return_id, m_query->txn_id, true);
           rem_qry_man.ack_response(m_query);
           break;
         case RACK:
+          INC_STATS(1,rack,1);
           m_txn = rem_qry_man.get_txn_man(get_thd_id(), m_query->return_id, m_query->txn_id);
           m_txn->decr_rsp(1);
           break;
@@ -201,7 +206,7 @@ RC thread_t::run() {
 //#endif
 		do {
 			//ts_t t2 = get_sys_clock();
-			m_txn->set_txn_id(get_thd_id() + thd_txn_id * g_thread_cnt + get_node_id() * MAX_TXN_PER_PART);
+			m_txn->set_txn_id( (get_thd_id() + get_node_id() * g_thread_cnt) + (g_thread_cnt * g_node_cnt * thd_txn_id));
 			thd_txn_id ++;
       m_query->set_txn_id(m_txn->get_txn_id());
 

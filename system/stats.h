@@ -44,6 +44,11 @@ public:
 	uint64_t debug3;
 	uint64_t debug4;
 	uint64_t debug5;
+
+	uint64_t rqry;
+	uint64_t rqry_rsp;
+	uint64_t rfin;
+	uint64_t rack;
 	
 	uint64_t latency;
 	uint64_t * all_lat;

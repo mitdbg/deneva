@@ -55,7 +55,7 @@ def get_cfgs(fmt,e):
         cfgs[f] = e[n]
     # For now, spawn NODE_CNT remote threads to avoid potential deadlock
     if "REM_THREAD_CNT" not in fmt:
-        cfgs["REM_THREAD_CNT"] = cfgs["NODE_CNT"]
+        cfgs["REM_THREAD_CNT"] = cfgs["NODE_CNT"] * cfgs["THREAD_CNT"]
     if "PART_CNT" not in fmt:
         cfgs["PART_CNT"] = cfgs["NODE_CNT"] * cfgs["THREAD_CNT"]
     return cfgs

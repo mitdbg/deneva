@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS=-Wall -g -std=c++0x
+CFLAGS=-Wall -gdwarf-3 -std=c++0x
 
 .SUFFIXES: .o .cpp .h
 
@@ -7,7 +7,7 @@ SRC_DIRS = ./ ./benchmarks/ ./concurrency_control/ ./storage/ ./transport/ ./sys
 DEPS = -I. -I./benchmarks -I./concurrency_control -I./storage -I./transport -I./system
 
 CFLAGS += $(DEPS) -D NOGRAPHITE=1 -Werror -Wno-sizeof-pointer-memaccess
-LDFLAGS = -Wall -L. -L./nanomsg-0.5-beta -pthread -g -lrt -std=c++0x 
+LDFLAGS = -Wall -L. -L./nanomsg-0.5-beta -pthread -gdwarf-3 -lrt -std=c++0x 
 LDFLAGS += $(CFLAGS)
 LIBS = -lnanomsg -lanl
 

@@ -213,6 +213,7 @@ RC txn_man::finish(base_query * query) {
 		return RCOK;	
   // Send finish message to all participating transaction
   // FIXME
+  assert(rsp_cnt == 0);
   uint64_t part_node_ids[g_node_cnt]; 
   uint64_t node_num = 0;
   for (uint64_t i = 0; i < query->part_num; ++i) {
