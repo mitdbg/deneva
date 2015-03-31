@@ -355,7 +355,11 @@ void tpcc_query::gen_new_order(uint64_t thd_id) {
 
 		while(1) {
 			UInt32 i;
+#if CONTENTION
+			items[oid].ol_i_id = 2000 + oid;
+#else
 			items[oid].ol_i_id = NURand(8191, 1, g_max_items);
+#endif
 			for (i = 0; i < oid; i++) {
 				if (items[i].ol_i_id == items[oid].ol_i_id) {
 					break;
