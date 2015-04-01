@@ -314,7 +314,8 @@ RC thread_t::run() {
 				assert( _wl->sim_done);
 	    }
 	    if (_wl->sim_done) {
-				while(!_wl->sim_timeout) {}
+        if(g_rem_thread_cnt > 0)
+				  while(!_wl->sim_timeout) {}
 #if !NOGRAPHITE
    			CarbonDisableModelsBarrier(&enable_barrier);
 #endif

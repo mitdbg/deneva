@@ -239,9 +239,11 @@ RC txn_man::finish(base_query * query) {
     //query->remote_finish(query, query->part_to_access[i]);    
   }
 
-  ts_t t = get_sys_clock();
-  while(rsp_cnt > 0) { }
-  INC_STATS(get_thd_id(),time_wait_rem,get_sys_clock()-t);
+  if(rsp_cnt >0) {
+    ts_t t = get_sys_clock();
+    while(rsp_cnt > 0) { }
+    INC_STATS(get_thd_id(),time_wait_rem,get_sys_clock()-t);
+  }
 
   //for (uint64_t i = 0; i < query->part_num; ++i) {
   for (uint64_t i = 0; i < node_num; ++i) {
