@@ -14,7 +14,7 @@ for arg in sys.argv:
     if arg == "-help" or arg == "-h":
         sys.exit("Usage: {} [-rem]".format(sys.argv[0]))
 
-result_dir = PATH + "/../results/"
+result_dir = PATH + "/../results/results_201503pt2/"
 test_dir = ""
 
 # Unpack results from remote machine
