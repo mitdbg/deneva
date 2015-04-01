@@ -378,7 +378,9 @@ void tpcc_query::gen_new_order(uint64_t thd_id) {
 		else  {
 			// remote warehouse
 			while((items[oid].ol_supply_w_id = URand(1, g_num_wh)) == w_id) {}
+#if STRICT_MPR
 			remote = true;
+#endif
 		}
 		items[oid].ol_quantity = URand(1, 10);
 	}
