@@ -58,6 +58,8 @@ def get_cfgs(fmt,e):
         cfgs["REM_THREAD_CNT"] = cfgs["NODE_CNT"] * cfgs["THREAD_CNT"]
     if "PART_CNT" not in fmt:
         cfgs["PART_CNT"] = cfgs["NODE_CNT"] * cfgs["THREAD_CNT"]
+    if "NUM_WH" not in fmt:
+        cfgs["NUM_WH"] = cfgs["PART_CNT"]
     return cfgs
 
 def avg(l):

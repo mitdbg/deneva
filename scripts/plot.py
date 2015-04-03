@@ -14,7 +14,8 @@ for arg in sys.argv:
     if arg == "-help" or arg == "-h":
         sys.exit("Usage: {} [-rem]".format(sys.argv[0]))
 
-result_dir = PATH + "/../results/results_201503pt2/"
+result_dir = PATH + "/../results/"
+#result_dir = PATH + "/../results/results_201503pt2/"
 test_dir = ""
 
 # Unpack results from remote machine
@@ -56,24 +57,38 @@ for e in experiments[1:]:
 # Throughput vs. MPR for HStore, many node counts
 txn_cnt = 10000
 mpr = [0,1,10,20,30,40,50]
-nodes = [2,4]
+nodes = [1]
 threads = [1,2,4]
+#warehouses = [2,4,6,8,10]
 algos = ['HSTORE','NO_WAIT','WAIT_DIE','TIMESTAMP','MVCC','OCC']
-for algo in algos:
-    #tput_mpr(mpr,nodes,[algo], txn_cnt,summary)
-    tput(mpr,nodes,summary,cfg_fmt=["CC_ALG","MAX_TXN_PER_PART"],cfg=[algo,txn_cnt],xname="MPR",vname="CC_ALG",title="{}".format(algo))
 
-for node in nodes:
-    tput(mpr,algos,summary,cfg_fmt=["NODE_CNT","MAX_TXN_PER_PART"],cfg=[node,txn_cnt],xname="MPR",vname="CC_ALG",title="{} Nodes".format(node))
+#for algo in algos:
+#    _cfg_fmt = ["NODE_CNT","CC_ALG","MAX_TXN_PER_PART","THREAD_CNT"]
+#    _cfg=[nodes[0],algo,txn_cnt,threads[0]]
+#    _title="{}".format(algo)
+#    tput(mpr,warehouses,summary,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="MPR",vname="NUM_WH",title=_title)
+
+for algo,thread in itertools.product(algos,threads):
+    #tput_mpr(mpr,nodes,[algo], txn_cnt,summary)
+    tput(mpr,nodes,summary,cfg_fmt=["CC_ALG","MAX_TXN_PER_PART","THREAD_CNT"],cfg=[algo,txn_cnt,1],xname="MPR",vname="NODE_CNT",title="{} {} Threads".format(algo,thread))
+        
+
+for node,thread in itertools.product(nodes,threads):
+    tput(mpr,algos,summary,cfg_fmt=["NODE_CNT","MAX_TXN_PER_PART","THREAD_CNT"],cfg=[node,txn_cnt,thread],xname="MPR",vname="CC_ALG",title="{} Nodes {} Threads".format(node,thread))
 
 for node,algo in itertools.product(nodes,algos):
     _cfg_fmt = ["NODE_CNT","CC_ALG","MAX_TXN_PER_PART"]
     _cfg=[node,algo,txn_cnt]
     _title="{} {} Nodes".format(algo,node)
+    tput(mpr,threads,summary,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="MPR",vname="THREAD_CNT",title=_title)
+
+for node,algo,thread in itertools.product(nodes,algos,threads):
+    _cfg_fmt = ["NODE_CNT","CC_ALG","MAX_TXN_PER_PART","THREAD_CNT"]
+    _cfg=[node,algo,txn_cnt,thread]
+    _title="{} {} Nodes {} Threads".format(algo,node,thread)
     time_breakdown(mpr,summary,normalized=False,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="MPR",title=_title)
     time_breakdown(mpr,summary,normalized=True,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="MPR",title=_title)
 #    time_breakdown(mpr,node,algo,txn_cnt,summary,normalized=True)
 #    cdf_aborts_mpr(mpr,node,algo,txn_cnt,summary)
 #    bar_aborts_mpr(mpr,node,algo,txn_cnt,summary)
-    tput(mpr,threads,summary,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="MPR",vname="THREAD_CNT",title=_title)
 

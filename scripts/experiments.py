@@ -4,28 +4,21 @@ import itertools
 
 # Format: [#Nodes,#Txns,Workload,CC_ALG,MPR]
 fmt1 = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR"]]
-fmt2 = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","REM_THREAD_CNT"]]
+fmt2 = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT"]]
+fmt3 = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","REM_THREAD_CNT"]]
+fmt4 = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","NUM_WH"]]
 
 simple = [
-#[2,1000,'TPCC','HSTORE',10]
-[2,10000,'TPCC','NO_WAIT',0,4,0],
-[2,10000,'TPCC','NO_WAIT',0,4,4],
-[2,10000,'TPCC','NO_WAIT',0,4,8],
-[2,10000,'TPCC','NO_WAIT',0,4,12],
-[4,10000,'TPCC','NO_WAIT',0,4,0],
-[4,10000,'TPCC','NO_WAIT',0,4,4],
-[4,10000,'TPCC','NO_WAIT',0,4,8],
-[4,10000,'TPCC','NO_WAIT',0,4,12],
-#[2,10000,'TPCC','TIMESTAMP',20,4],
-#[2,10000,'TPCC','TIMESTAMP',30,4],
-#[2,10000,'TPCC','TIMESTAMP',40,4]
+[]
 ]
 
 experiments_100K = [
     [n,100000,'TPCC','HSTORE',m] for n,m in itertools.product([2,4,8,16],[1]+range(0,101,10))
 ]
 
-
+experiments_10K_1node = [
+    [n,10000,'TPCC',cc,m,t] for n,m,cc,t in itertools.product([1],[1]+range(0,51,10),['HSTORE','NO_WAIT','WAIT_DIE','TIMESTAMP','MVCC','OCC'],[1,2,4])
+]
 experiments_10K_wait_die = [
     [n,10000,'TPCC',cc,m] for n,m,cc in itertools.product([2,4],[1]+range(0,51,10),['WAIT_DIE'])
 ]
@@ -78,6 +71,10 @@ experiments_10K_occ_mt = [
 
 experiments_10K_all_mt = experiments_10K_2pl_mt + experiments_10K_tso_mt + experiments_10K_hstore_mt + experiments_10K_mvcc_mt + experiments_10K_occ_mt
 
+experiments_10K_wh = [
+    [n,10000,'TPCC',cc,m,t,n*t*wh] for n,m,cc,t,wh in itertools.product([2],[1]+range(0,51,10),['HSTORE','NO_WAIT','WAIT_DIE','TIMESTAMP','MVCC','OCC'],[1],[1,2,3,4,5])
+]
+
 experiments_1K = [
     [n,1000,'TPCC',cc,m] for n,m,cc in itertools.product([2,4,8],[1]+range(0,51,10),['HSTORE','NO_WAIT','WAIT_DIE'])
 ]
@@ -116,11 +113,12 @@ configs = {
     "TPORT_PORT":"\"_.ipc\"",
     "REM_THREAD_CNT": 2,
     "THREAD_CNT": 1,
-    "PART_CNT": 2 
+    "PART_CNT": 2,
+    "NUM_WH": 2
 }
 
 ##################
 # FIXME
 #################
-experiments = fmt2 + simple #experiments_10K_all_mt
+experiments = fmt2 + experiments_10K_1node
 config_names = fmt2[0]

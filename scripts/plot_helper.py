@@ -14,8 +14,8 @@ def tput(xval,vval,summary,
         title=""
         ):
     tpt = {}
-    name = 'tput_{}_{}'.format(xname.lower(),title.replace(" ","_").lower())
-    _title = 'Per Node Throughput {}'.format(title)
+    name = 'tput_{}_{}_{}'.format(xname.lower(),vname.lower(),title.replace(" ","_").lower())
+    _title = 'Per Thread Throughput {}'.format(title)
 
     for v in vval:
         tpt[v] = [0] * len(xval)
@@ -23,7 +23,9 @@ def tput(xval,vval,summary,
         for x,xi in zip(xval,range(len(xval))):
             cfgs = get_cfgs(cfg_fmt + [xname] + [vname], cfg + [x] + [v] )
             cfgs = get_outfile_name(cfgs)
-            if cfgs not in summary.keys(): break
+            if cfgs not in summary.keys(): 
+                print("Not in summary: {}".format(cfgs))
+                break
             try:
                 avg_run_time = avg(summary[cfgs]['run_time'])
                 avg_txn_cnt = avg(summary[cfgs]['txn_cnt'])
@@ -50,17 +52,17 @@ def tput_mpr(mpr,nodes,algos,max_txn,summary):
     xs = []
     node,algo = None,None
     name = 'tput_mpr'
-    _title = 'Per Node Throughput'
+    _title = 'Per Thread Throughput'
     if len(nodes) > 1:
         xs = nodes
         algo = algos[0]
         name = 'tput_mpr_' + algo
-        _title = 'Per Node Throughput ' + algo
+        _title = 'Per Thread Throughput ' + algo
     else:
         xs = algos
         node = nodes[0]
         name = 'tput_mpr_n' + str(node)
-        _title = 'Per Node Throughput ' + str(node) + ' Nodes'
+        _title = 'Per Thread Throughput ' + str(node) + ' Nodes'
 
     for x in xs:
         tpt[x] = [0] * len(mpr)
@@ -325,6 +327,6 @@ def plot_avg(mpr,nodes,algos,max_txn,summary,value='run_time'):
                 continue
             avgs[x][i] = avg_
 
-    draw_line(name,avgs,mpr,ylab='average ' + value,xlab='Multi-Partition Rate',title='Per Node Throughput',bbox=[0.5,0.95]) 
+    draw_line(name,avgs,mpr,ylab='average ' + value,xlab='Multi-Partition Rate',title='Per Thread Throughput',bbox=[0.5,0.95]) 
 
 
