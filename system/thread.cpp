@@ -56,8 +56,6 @@ RC thread_t::run_remote() {
 #endif
 	
 
-	UInt64 txn_cnt = 0;
-
 	uint64_t len = 0;
 	base_query * m_query = NULL;
 
@@ -129,14 +127,6 @@ RC thread_t::run_remote() {
 		}
 
 		// Check if done
-		if (!warmup_finish && txn_cnt >= WARMUP / g_thread_cnt) 
-		{
-			stats.clear( get_thd_id() );
-#if !NOGRAPHITE
-   			CarbonDisableModelsBarrier(&enable_barrier);
-#endif
-			return FINISH;
-		}
 
 		ts_t tend = get_sys_clock();
 		if (warmup_finish && _wl->sim_done && ((tend - rq_time) > MSG_TIMEOUT)) {

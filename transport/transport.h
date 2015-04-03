@@ -22,7 +22,9 @@ class Socket {
 	public:
 		Socket () : sock(AF_SP,NN_PAIR) {}
 		~Socket () { delete &sock;}
+    char _pad1[CL_SIZE];
 		nn::socket sock;
+    char _pad[CL_SIZE - sizeof(nn::socket)];
 };
 
 class Transport {
