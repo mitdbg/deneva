@@ -190,6 +190,7 @@ RC thread_t::run() {
           // TODO: This should start up txn where it left off, not rem_txn_rsp() which sends signal
           INC_STATS(0,rqry_rsp,1);
 		      m_txn = txn_pool.get_txn(g_node_id, m_query->txn_id);
+          assert(m_txn != NULL);
 		      next_query = txn_pool.get_qry(g_node_id, m_query->txn_id);
 					m_txn->merge_txn_rsp(m_query,next_query);
           // free this m_query
@@ -209,9 +210,15 @@ RC thread_t::run() {
         case RFIN:
           // This transaction is from a remote node
           assert(m_query->txn_id % g_node_cnt != g_node_id);
-          assert(m_query->rtype == RFIN);
           INC_STATS(0,rfin,1);
 		      m_txn = txn_pool.get_txn(m_query->return_id, m_query->txn_id);
+          if(m_txn == NULL) {
+            rem_qry_man.ack_response(m_query);
+#if WORKLOAD == TPCC
+            mem_allocator.free(m_query, sizeof(tpcc_query));
+#endif
+            break;
+          }
           m_txn->rem_fin_txn(m_query);
           rem_qry_man.cleanup_remote(get_thd_id(), m_query->return_id, m_query->txn_id, true);
           txn_pool.delete_txn(m_query->return_id, m_query->txn_id);
@@ -227,6 +234,7 @@ RC thread_t::run() {
           assert(m_query->txn_id % g_node_cnt == g_node_id);
           INC_STATS(0,rack,1);
 		      m_txn = txn_pool.get_txn(g_node_id, m_query->txn_id);
+          assert(m_txn != NULL);
           m_txn->decr_rsp(1);
           rem_qry_man.cleanup_remote(get_thd_id(), m_query->return_id, m_query->txn_id, false);
           if(m_txn->get_rsp_cnt() == 0) {
@@ -272,6 +280,7 @@ RC thread_t::run() {
           else {
             // Re-executing transaction
             m_txn = txn_pool.get_txn(g_node_id,m_query->txn_id);
+            assert(m_txn != NULL);
           }
 
 			    if ((CC_ALG == HSTORE && !HSTORE_LOCAL_TS)
@@ -297,9 +306,7 @@ RC thread_t::run() {
 					break;
 			}
 
-    if(GET_NODE_ID(m_query->pid) != g_node_id) {
-      continue;
-    }
+    if(GET_NODE_ID(m_query->pid) == g_node_id) {
 
     switch(rc) {
       case RCOK:
@@ -342,6 +349,7 @@ RC thread_t::run() {
       default:
         assert(false);
         break;
+    }
     }
 
 		if (!warmup_finish && txn_cnt >= WARMUP / g_thread_cnt) 
