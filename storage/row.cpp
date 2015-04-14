@@ -144,43 +144,14 @@ RC row_t::get_row(access_t type, txn_man * txn, row_t *& row) {
 		uint64_t endtime;
 		txn->lock_abort = false;
 		INC_STATS(txn->get_thd_id(), wait_cnt, 1);
-		while (!txn->lock_ready && !txn->lock_abort) 
-		{
-#if CC_ALG == WAIT_DIE 
-			continue;
-#elif CC_ALG == DL_DETECT	
-			uint64_t last_detect = starttime;
-			uint64_t last_try = starttime;
 
-			uint64_t now = get_sys_clock();
-			if (now - starttime > g_timeout ) {
-				txn->lock_abort = true;
-				break;
-			}
-			if (g_no_dl)
-				continue;
-			int ok = 0;
-			if ((now - last_detect > g_dl_loop_detect) && (now - last_try > DL_LOOP_TRIAL)) {
-				if (!dep_added) {
-					ok = dl_detector.add_dep(txn->get_txn_id(), txnids, txncnt, txn->row_cnt);
-					if (ok == 0)
-						dep_added = true;
-					else if (ok == 16)
-						last_try = now;
-				}
-				if (dep_added) {
-					ok = dl_detector.detect_cycle(txn->get_txn_id());
-					if (ok == 16)  // failed to lock the deadlock detector
-						last_try = now;
-					else if (ok == 0) 
-						last_detect = now;
-					else if (ok == 1) {
-						last_detect = now;
-					}
-				}
-			} 
-#endif
-		}
+    // TODO: package, add to txn_pool; watch out for race conditions where txn is released before we check for it
+		//while (!txn->lock_ready && !txn->lock_abort) { }
+    if(!txn->lock_ready && !txn->lock_abort) {
+      rc = WAIT;
+      return rc;
+    }
+
 		if (txn->lock_ready) 
 			rc = RCOK;
 		else if (txn->lock_abort) { 
@@ -197,16 +168,11 @@ RC row_t::get_row(access_t type, txn_man * txn, row_t *& row) {
 	// For TIMESTAMP RD, a new copy of the row will be returned.
 	// for MVCC RD, the version will be returned instead of a copy
 	// So for MVCC RD-WR, the version should be explicitly copied.
-	row_t * newr = NULL;
+	// row_t * newr = NULL;
 #if CC_ALG == TIMESTAMP
 	// TIMESTAMP makes a whole copy of the row before reading
 	txn->cur_row = (row_t *) mem_allocator.alloc(sizeof(row_t), this->get_part_id());
 	txn->cur_row->init(get_table(), this->get_part_id());
-#elif CC_ALG == MVCC
-	if (type == WR) {
-		newr = (row_t *) mem_allocator.alloc(sizeof(row_t), get_part_id());
-		newr->init(this->get_table(), get_part_id());
-	}
 #endif
 	
 	if (type == WR) {
@@ -220,7 +186,13 @@ RC row_t::get_row(access_t type, txn_man * txn, row_t *& row) {
 			row = txn->cur_row;
 		} else if (rc == WAIT) {
 			uint64_t t1 = get_sys_clock();
-			while (!txn->ts_ready) {}
+      // TODO: divide into 2+ functions to restart after ts_ready 
+			//while (!txn->ts_ready) {}
+      if(!txn->ts_ready) {
+        rc = WAIT;
+        return rc;
+      }
+
 			uint64_t t2 = get_sys_clock();
 			INC_STATS(thd_id, time_wait, t2 - t1);
 			row = txn->cur_row;
@@ -233,6 +205,8 @@ RC row_t::get_row(access_t type, txn_man * txn, row_t *& row) {
 		}
 	}
 	if (rc != Abort && CC_ALG == MVCC && type == WR) {
+		row_t * newr = (row_t *) mem_allocator.alloc(sizeof(row_t), get_part_id());
+		newr->init(this->get_table(), get_part_id());
 		newr->copy(row);
 		row = newr;
 	}
@@ -250,6 +224,43 @@ RC row_t::get_row(access_t type, txn_man * txn, row_t *& row) {
 #else
 	assert(false);
 #endif
+}
+
+// Return call for get_row if waiting 
+RC row_t::get_row_rsp(access_t type, txn_man * txn, row_t *& row) {
+
+  RC rc = RCOK;
+  assert(CC_ALG == WAIT_DIE || CC_ALG == MVCC || CC_ALG == TIMESTAMP);
+#if CC_ALG == WAIT_DIE
+  assert(txn->lock_ready || txn->lock_abort);
+		if (txn->lock_ready) 
+			rc = RCOK;
+		else if (txn->lock_abort) { 
+			rc = Abort;
+			return_row(type, txn, NULL);
+		}
+		//ts_t endtime = get_sys_clock();
+		//INC_STATS(thd_id, time_wait, endtime - starttime);
+		row = this;
+
+#elif CC_ALG == MVCC || CC_ALG == TIMESTAMP
+			assert(txn->ts_ready);
+			INC_STATS(thd_id, time_wait, t2 - t1);
+			row = txn->cur_row;
+
+			assert(row->get_data() != NULL);
+			assert(row->get_table() != NULL);
+			assert(row->get_schema() == this->get_schema());
+			assert(row->get_table_name() != NULL);
+	if (CC_ALG == MVCC && type == WR) {
+		row_t * newr = (row_t *) mem_allocator.alloc(sizeof(row_t), get_part_id());
+		newr->init(this->get_table(), get_part_id());
+
+		newr->copy(row);
+		row = newr;
+	}
+#endif
+  return rc;
 }
 
 // the "row" is the row read out in get_row(). For locking based CC_ALG, 

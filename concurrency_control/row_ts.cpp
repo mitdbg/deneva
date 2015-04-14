@@ -256,6 +256,7 @@ void Row_ts::update_buffer() {
 			req->txn->cur_row->copy(_row);
 			if (rts < req->ts)
 				rts = req->ts;
+      // TODO: Add req->txn to work queue
 			req->txn->ts_ready = true;
 			req = req->next;
 		}

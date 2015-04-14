@@ -327,6 +327,7 @@ void Row_mvcc::update_buffer(txn_man * txn) {
 		assert(row->get_table() != NULL);
 		assert(row->get_schema() == _row->get_schema());
 
+    // TODO: add req->txn to work queue
 		req->txn->ts_ready = true;
 		tofree = req;
 		req = req->next;

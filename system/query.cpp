@@ -48,6 +48,9 @@ Query_thd::init(workload * h_wl, int thread_id) {
 		new(&queries[qid]) tpcc_query();
 #endif
 		queries[qid].init(thread_id, h_wl);
+    // Setup
+    queries[qid].txn_id = UINT64_MAX;
+    queries[qid].rtype = RTXN;
 	}
 }
 

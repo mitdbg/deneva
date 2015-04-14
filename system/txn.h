@@ -40,20 +40,21 @@ public:
     volatile uint64_t ack_cnt;
 
 	virtual RC 		run_txn(base_query * m_query) = 0;
-	virtual RC 		run_rem_txn(base_query * m_query) = 0;
-	virtual void 		rem_txn_rsp(base_query * m_query) = 0;
+	//virtual RC 		run_rem_txn(base_query * m_query) = 0;
+	virtual void 		merge_txn_rsp(base_query * m_query1, base_query *m_query2) = 0;
 	uint64_t 		get_thd_id();
 	uint64_t 		get_node_id();
 	workload * 		get_wl();
 	void 			set_txn_id(txnid_t txn_id);
 	txnid_t 		get_txn_id();
-  void incr_rsp(int i);
-  void decr_rsp(int i);
 
 	void 			set_ts(ts_t timestamp);
 	ts_t 			get_ts();
 	void 			set_start_ts(uint64_t start_ts);
 	ts_t 			get_start_ts();
+  uint64_t get_rsp_cnt(); 
+  void incr_rsp(int i); 
+  void decr_rsp(int i);
 
 	pthread_mutex_t txn_lock;
 	row_t * volatile cur_row;
@@ -90,7 +91,14 @@ public:
 	// For VLL
 	TxnType 		vll_txn_type;
 	itemid_t *		index_read(INDEX * index, idx_key_t key, int part_id);
-	row_t * 		get_row(row_t * row, access_t type);
+	RC 		get_row(row_t * row, access_t type, row_t *& row_rtn);
+  RC get_row_again();
+
+  // For Waiting
+  row_t * last_row;
+  row_t * last_row_rtn;
+  access_t last_type;
+  
 private:
 	// insert rows
 	uint64_t 		insert_cnt;

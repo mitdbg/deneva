@@ -1,6 +1,7 @@
 #include "test.h"
 #include "row.h"
 
+/*
 void TestTxnMan::init(thread_t * h_thd, workload * h_wl, uint64_t thd_id) {
 	txn_man::init(h_thd, h_wl, thd_id);
 	_wl = (TestWorkload *) h_wl;
@@ -80,3 +81,4 @@ TestTxnMan::testConflict(int access_num)
 	rc = finish(rc);
 	return rc;
 }
+*/

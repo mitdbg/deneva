@@ -15,6 +15,7 @@
 #include "mem_alloc.h"
 #include "query.h"
 
+/*
 int ycsb_wl::next_tid;
 
 RC ycsb_wl::init() {
@@ -169,4 +170,4 @@ RC ycsb_wl::get_txn_man(txn_man *& txn_manager, thread_t * h_thd){
 	return RCOK;
 }
 
-
+*/

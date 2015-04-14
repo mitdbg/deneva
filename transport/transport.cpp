@@ -4,6 +4,7 @@
 #include "nn.hpp"
 #include "mem_alloc.h"
 #include "remote_query.h"
+#include "tpcc_query.h"
 #include "query.h"
 
 /*
@@ -151,7 +152,9 @@ void Transport::send_msg(uint64_t dest_id, void ** data, int * sizes, int num) {
 
 
 	// 2: Create message header
+  // dest_id
 	((uint32_t*)sbuf)[0] = dest_id;
+  // return_id
 	((uint32_t*)sbuf)[1] = get_node_id();
 
 #if DEBUG_DISTR
@@ -182,9 +185,10 @@ void Transport::send_msg(uint64_t dest_id, void ** data, int * sizes, int num) {
 }
 
 // Listens to socket for messages from other nodes
-uint64_t Transport::recv_msg(base_query * query) {
+base_query * Transport::recv_msg() {
 	int bytes = 0;
 	void * buf;
+  base_query * query = NULL;
 	
 	// FIXME: Currently unfair round robin; prioritizes nodes with low node_id
 	for(uint64_t i=0;i<g_node_cnt;i++) {
@@ -217,17 +221,19 @@ uint64_t Transport::recv_msg(base_query * query) {
 
 	ts_t start = get_sys_clock();
 	INC_STATS(1,msg_rcv_cnt,1);
+  
+#if WORKLOAD == TPCC
+	query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), 0);
+#endif
 	rem_qry_man.unpack(query,buf,bytes);
 #if DEBUG_DISTR
-	printf("Msg delay: %ld->%ld, %d bytes, %f s\n",query->return_id,query->dest_id,bytes,((float)(time2-time))/BILLION);
+	printf("Msg delay: %d->%d, %d bytes, %f s\n",query->return_id,query->dest_id,bytes,((float)(time2-time))/BILLION);
 #endif
 	nn::freemsg(buf);	
-	if(query->dest_id != get_node_id()) {
-		INC_STATS(1,rtime_unpack_ndest,get_sys_clock()-start);
-		return 0;
-	}
+  assert(query->dest_id == get_node_id());
+
 	INC_STATS(1,rtime_unpack,get_sys_clock()-start);
-	return 1;
+	return query;
 
 }
 

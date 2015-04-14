@@ -25,6 +25,8 @@
 #include "config.h"
 #include "stats.h"
 #include "dl_detect.h"
+#include "query_work_queue.h"
+#include "txn_pool.h"
 #ifndef NOGRAPHITE
 #include "carbon_user.h"
 #endif
@@ -41,6 +43,8 @@ class OptCC;
 class VLLMan;
 class Transport;
 class Remote_query;
+class TxnPool;
+class QWorkQueue;
 
 typedef uint32_t UInt32;
 typedef int32_t SInt32;
@@ -64,6 +68,8 @@ extern VLLMan vll_man;
 #endif
 extern Transport tport_man;
 extern Remote_query rem_qry_man;
+extern TxnPool txn_pool;
+extern QWorkQueue work_queue;
 
 extern bool volatile warmup_finish;
 extern bool volatile enable_thread_mem_pool;
@@ -93,6 +99,7 @@ extern ts_t g_timeout;
 extern ts_t g_dl_loop_detect;
 extern bool g_ts_batch_alloc;
 extern UInt32 g_ts_batch_num;
+extern UInt32 g_inflight_max;
 
 
 extern bool g_hw_migrate;
@@ -118,7 +125,7 @@ extern char * output_file;
 extern UInt32 g_max_items;
 extern UInt32 g_cust_per_dist;
 
-enum RC { RCOK, Commit, Abort, WAIT, ERROR, FINISH, NONE };
+enum RC { RCOK, Commit, Abort, WAIT, WAIT_REM, ERROR, FINISH, NONE };
 
 /* Thread */
 typedef uint64_t txnid_t;
@@ -147,8 +154,14 @@ enum lock_t {LOCK_EX, LOCK_SH, LOCK_NONE };
 enum TsType {R_REQ, W_REQ, P_REQ, XP_REQ}; 
 
 #define GET_THREAD_ID(id)	(id % g_thread_cnt)
+#define GET_NODE_ID(id)	(id)
+#define GET_PART_ID(t,n)	(n) 
+
+/*
+#define GET_THREAD_ID(id)	(id % g_thread_cnt)
 #define GET_NODE_ID(id)	(id / g_thread_cnt)
 #define GET_PART_ID(t,n)	(n*g_thread_cnt + t) 
+*/
 
 #define MSG(str, args...) { \
 	printf("[%s : %d] " str, __FILE__, __LINE__, args); } \

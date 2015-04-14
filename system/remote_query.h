@@ -4,6 +4,7 @@
 #include "global.h"
 #include "helper.h"
 #include "query.h"
+#include "txn_pool.h"
 
 #define MAX_DATA_SIZE 100 
 class tpcc_query;
@@ -27,6 +28,7 @@ public:
 };
 */
 
+/*
 struct txn_node {
  public:
     txn_man * txn;
@@ -34,6 +36,7 @@ struct txn_node {
 };
 
 typedef txn_node * txn_node_t;
+*/
 
 class Remote_query {
 public:
@@ -60,8 +63,7 @@ private:
 	
 	uint64_t _node_id;
 	workload * _wl;
-	//txn_man ** txns;
-  txn_node_t **txns;
+  //txn_node_t **txns;
 
   void add_txn_man(uint64_t thd_id, uint64_t node_id, uint64_t txn_id, txn_man * txn);
 };

@@ -10,12 +10,26 @@ void tpcc_query::init(uint64_t thd_id, workload * h_wl) {
 	double x = (double)(rand() % 100) / 100.0;
 	part_to_access = (uint64_t *) 
 		mem_allocator.alloc(sizeof(uint64_t) * g_part_cnt, thd_id);
-	pid = GET_PART_ID(thd_id,g_node_id);
+	pid = GET_PART_ID(0,g_node_id);
 	// TODO
 	if (x < g_perc_payment)
 		gen_payment(pid);
 	else 
 		gen_new_order(pid);
+}
+
+void tpcc_query::reset() {
+  switch(txn_type) {
+    case TPCC_PAYMENT:
+      txn_rtype = TPCC_PAYMENT0;
+      break;
+    case TPCC_NEW_ORDER:
+      txn_rtype = TPCC_NEWORDER0;
+      break;
+    default:
+      assert(false);
+      break;
+  }
 }
 
 // Note: If you ever change the number of parameters sent, change "total"
@@ -80,7 +94,7 @@ void tpcc_query::remote_qry(base_query * query, int type, int dest_id) {
 			data[num] = &m_query->h_amount;
 			sizes[num++] = sizeof(m_query->h_amount);
 			break;
-		case TPCC_PAYMENT1 :
+		case TPCC_PAYMENT4 :
 			data[num] = &m_query->w_id;
 			sizes[num++] = sizeof(m_query->w_id);
 			data[num] = &m_query->d_id;
@@ -110,11 +124,11 @@ void tpcc_query::remote_qry(base_query * query, int type, int dest_id) {
 			data[num] = &m_query->ol_cnt;
 			sizes[num++] = sizeof(m_query->ol_cnt);
 			break;
-		case TPCC_NEWORDER1 :
+		case TPCC_NEWORDER6 :
 			data[num] = &m_query->ol_i_id;
 			sizes[num++] = sizeof(m_query->ol_i_id);
 			break;
-		case TPCC_NEWORDER2 :
+		case TPCC_NEWORDER8 :
 			data[num] = &m_query->w_id;
 			sizes[num++] = sizeof(m_query->w_id);
 			data[num] = &m_query->d_id;
@@ -160,8 +174,8 @@ void tpcc_query::remote_rsp(base_query * query) {
 
 	data[num] = &rtype;
 	sizes[num++] = sizeof(RemReqType);
-	data[num] = &m_query->type;
-	sizes[num++] = sizeof(m_query->type);
+	data[num] = &m_query->txn_rtype;
+	sizes[num++] = sizeof(m_query->txn_rtype);
 	data[num] = &m_query->rc;
 	sizes[num++] = sizeof(RC);
 	// The original requester's pid
@@ -169,13 +183,9 @@ void tpcc_query::remote_rsp(base_query * query) {
 	sizes[num++] = sizeof(uint64_t);
   data[num] = &m_query->txn_id;
   sizes[num++] = sizeof(txnid_t);
-	switch(m_query->type) {
-		case TPCC_NEWORDER0 :
-			data[num] = &m_query->o_id;
-			sizes[num++] = sizeof(m_query->o_id);
-		default:
-			break;
-	}
+  // TODO: only need to send this after first set of neworder subqueries
+	data[num] = &m_query->o_id;
+	sizes[num++] = sizeof(m_query->o_id);
 	rem_qry_man.send_remote_rsp(m_query->return_id, data, sizes, num);
 }
 
@@ -183,33 +193,27 @@ void tpcc_query::unpack_rsp(base_query * query, void * d) {
 	char * data = (char *) d;
 	tpcc_query * m_query = (tpcc_query *) query;
 	uint64_t ptr = HEADER_SIZE + sizeof(txnid_t) + sizeof(RemReqType);
-	memcpy(&m_query->type,&data[ptr],sizeof(m_query->type));
-	ptr += sizeof(m_query->type);
+	memcpy(&m_query->txn_rtype,&data[ptr],sizeof(TPCCRemTxnType));
+	ptr += sizeof(TPCCRemTxnType);
 	memcpy(&m_query->rc,&data[ptr],sizeof(RC));
 	ptr += sizeof(RC);
 	memcpy(&m_query->pid,&data[ptr],sizeof(uint64_t));
 	ptr += sizeof(uint64_t);
-  memcpy(&m_query->txn_id, &data[ptr], sizeof(txnid_t));
+  //memcpy(&m_query->txn_id, &data[ptr], sizeof(txnid_t));
   ptr += sizeof(txnid_t);
-	switch(m_query->type) {
-		case TPCC_NEWORDER0 :
-			memcpy(&m_query->o_id,&data[ptr],sizeof(m_query->o_id));
-			ptr += sizeof(m_query->o_id);
-			break;
-		default:
-			break;
-	}
+	memcpy(&m_query->o_id,&data[ptr],sizeof(m_query->o_id));
+	ptr += sizeof(m_query->o_id);
 }
 
 void tpcc_query::unpack(base_query * query, void * d) {
 	tpcc_query * m_query = (tpcc_query *) query;
 	char * data = (char *) d;
 	uint64_t ptr = HEADER_SIZE + sizeof(txnid_t) + sizeof(RemReqType);
-	memcpy(&m_query->type,&data[ptr],sizeof(m_query->type));
-	ptr += sizeof(m_query->type);
+	memcpy(&m_query->txn_rtype,&data[ptr],sizeof(TPCCRemTxnType));
+	ptr += sizeof(TPCCRemTxnType);
 	memcpy(&m_query->pid,&data[ptr],sizeof(uint64_t));
 	ptr += sizeof(uint64_t);
-  memcpy(&m_query->txn_id, &data[ptr], sizeof(txnid_t));
+  //memcpy(&m_query->txn_id, &data[ptr], sizeof(txnid_t));
   ptr += sizeof(txnid_t);
 #if CC_ALG == WAIT_DIE || CC_ALG == TIMESTAMP || CC_ALG == MVCC
   memcpy(&m_query->ts, &data[ptr], sizeof(uint64_t));
@@ -223,7 +227,7 @@ void tpcc_query::unpack(base_query * query, void * d) {
   memcpy(&m_query->start_ts, &data[ptr], sizeof(uint64_t));
   ptr += sizeof(uint64_t);
 #endif
-	switch(m_query->type) {
+	switch(m_query->txn_rtype) {
 		case TPCC_PAYMENT0 :
 			memcpy(&m_query->w_id,&data[ptr],sizeof(m_query->w_id));
 			ptr += sizeof(m_query->w_id);
@@ -234,7 +238,7 @@ void tpcc_query::unpack(base_query * query, void * d) {
 			memcpy(&m_query->h_amount,&data[ptr],sizeof(m_query->h_amount));
 			ptr += sizeof(m_query->h_amount);
 			break;
-		case TPCC_PAYMENT1 :
+		case TPCC_PAYMENT4 :
 			memcpy(&m_query->w_id,&data[ptr],sizeof(m_query->w_id));
 			ptr += sizeof(m_query->w_id);
 			memcpy(&m_query->d_id,&data[ptr],sizeof(m_query->d_id));
@@ -264,11 +268,11 @@ void tpcc_query::unpack(base_query * query, void * d) {
 			memcpy(&m_query->ol_cnt,&data[ptr],sizeof(m_query->ol_cnt));
 			ptr += sizeof(m_query->ol_cnt);
 			break;
-		case TPCC_NEWORDER1 :
+		case TPCC_NEWORDER6 :
 			memcpy(&m_query->ol_i_id,&data[ptr],sizeof(m_query->ol_i_id));
 			ptr += sizeof(m_query->ol_i_id);
 			break;
-		case TPCC_NEWORDER2 :
+		case TPCC_NEWORDER8 :
 			memcpy(&m_query->w_id,&data[ptr],sizeof(m_query->w_id));
 			ptr += sizeof(m_query->w_id);
 			memcpy(&m_query->d_id,&data[ptr],sizeof(m_query->d_id));
@@ -291,7 +295,8 @@ void tpcc_query::unpack(base_query * query, void * d) {
 	}
 }
 void tpcc_query::gen_payment(uint64_t thd_id) {
-	type = TPCC_PAYMENT;
+	txn_type = TPCC_PAYMENT;
+	txn_rtype = TPCC_PAYMENT0;
 	if (FIRST_PART_LOCAL)
 		w_id = thd_id % g_num_wh + 1;
 	else
@@ -335,7 +340,8 @@ void tpcc_query::gen_payment(uint64_t thd_id) {
 }
 
 void tpcc_query::gen_new_order(uint64_t thd_id) {
-	type = TPCC_NEW_ORDER;
+	txn_type = TPCC_NEW_ORDER;
+	txn_rtype = TPCC_NEWORDER0;
 	if (FIRST_PART_LOCAL)
 		w_id = thd_id % g_num_wh + 1;
 	else
@@ -414,7 +420,8 @@ void tpcc_query::gen_new_order(uint64_t thd_id) {
 
 void 
 tpcc_query::gen_order_status(uint64_t thd_id) {
-	type = TPCC_ORDER_STATUS;
+	txn_type = TPCC_ORDER_STATUS;
+	//txn_rtype = TPCC_ORDER_STATUS0;
 	if (FIRST_PART_LOCAL)
 		w_id = thd_id % g_num_wh + 1;
 	else

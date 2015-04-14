@@ -35,8 +35,9 @@ RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt
 		glob_manager.lock_row(_row);
 	else 
 		pthread_mutex_lock( latch );
-	assert(owner_cnt <= g_node_cnt * g_thread_cnt);
-	assert(waiter_cnt < g_node_cnt * g_thread_cnt);
+  // These asserts are no longer relevant when # of transactions is no longer tied to # nodes or threads
+	//assert(owner_cnt <= g_node_cnt * g_thread_cnt);
+	//assert(waiter_cnt < g_node_cnt * g_thread_cnt);
 #if DEBUG_ASSERT
 	if (owners != NULL)
 		assert(lock_type == owners->type); 

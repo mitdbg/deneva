@@ -15,7 +15,7 @@
 #include "row_mvcc.h"
 #include "mem_alloc.h"
 #include "query.h"
-
+/*
 void ycsb_txn_man::init(thread_t * h_thd, workload * h_wl, uint64_t thd_id) {
 	txn_man::init(h_thd, h_wl, thd_id);
 	_wl = (ycsb_wl *) h_wl;
@@ -90,4 +90,4 @@ final:
 	rc = finish(rc);
 	return rc;
 }
-
+*/

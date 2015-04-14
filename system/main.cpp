@@ -13,6 +13,8 @@
 
 void * f(void *);
 void * g(void *);
+void * worker(void *);
+void * nn_worker(void *);
 void network_test();
 void network_test_recv();
 
@@ -69,6 +71,8 @@ int main(int argc, char* argv[])
 
 	rem_qry_man.init(g_node_id,m_wl);
 	tport_man.init(g_node_id);
+  work_queue.init();
+  txn_pool.init();
 
 	// 2. spawn multiple threads
 	uint64_t thd_cnt = g_thread_cnt;
@@ -113,15 +117,35 @@ int main(int argc, char* argv[])
 		printf("WARMUP finished!\n");
 	}
 	warmup_finish = true;
-	pthread_barrier_init( &warmup_bar, NULL, g_thread_cnt + g_rem_thread_cnt);
+	pthread_barrier_init( &warmup_bar, NULL, thd_cnt + rthd_cnt);
 #ifndef NOGRAPHITE
-	CarbonBarrierInit(&enable_barrier, g_thread_cnt+ g_rem_thread_cnt);
+	CarbonBarrierInit(&enable_barrier, thd_cnt+ rthd_cnt);
 #endif
-	pthread_barrier_init( &warmup_bar, NULL, g_thread_cnt + g_rem_thread_cnt);
+	pthread_barrier_init( &warmup_bar, NULL, thd_cnt + rthd_cnt);
 
 	uint64_t cpu_cnt = 0;
 	// spawn and run txns again.
 	int64_t starttime = get_server_clock();
+
+	for (uint32_t i = 0; i < thd_cnt; i++) {
+		uint64_t vid = i;
+		CPU_ZERO(&cpus);
+#if TPORT_TYPE_IPC
+    CPU_SET(g_node_id * (g_thread_cnt) + cpu_cnt, &cpus);
+#else
+    CPU_SET(cpu_cnt, &cpus);
+#endif
+		cpu_cnt++;
+    pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
+		pthread_create(&p_thds[i], &attr, worker, (void *)vid);
+  }
+
+  nn_worker((void *)(thd_cnt));
+
+	for (uint32_t i = 0; i < thd_cnt; i++) 
+		pthread_join(p_thds[i], NULL);
+
+    /*
 	for (uint32_t i = 0; i < thd_cnt; i++) {
 		uint64_t vid = i;
 		CPU_ZERO(&cpus);
@@ -153,6 +177,7 @@ int main(int argc, char* argv[])
 
 	for (uint32_t i = 0; i < thd_cnt + rthd_cnt; i++) 
 		pthread_join(p_thds[i], NULL);
+    */
 	int64_t endtime = get_server_clock();
 	
 	if (WORKLOAD != TEST) {
@@ -165,17 +190,19 @@ int main(int argc, char* argv[])
 	return 0;
 }
 
-void * f(void * id) {
+void * worker(void * id) {
 	uint64_t tid = (uint64_t)id;
 	m_thds[tid].run();
 	return NULL;
 }
 
-void * g(void * id) {
+void * nn_worker(void * id) {
 	uint64_t tid = (uint64_t)id;
 	m_thds[tid].run_remote();
 	return NULL;
 }
+
+
 
 void network_test() {
 

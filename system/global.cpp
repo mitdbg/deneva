@@ -8,7 +8,9 @@
 #include "occ.h"
 #include "vll.h"
 #include "transport.h"
+#include "query_work_queue.h"
 #include "remote_query.h"
+#include "txn_pool.h"
 
 mem_alloc mem_allocator;
 Stats stats;
@@ -22,6 +24,8 @@ VLLMan vll_man;
 #endif 
 Transport tport_man;
 Remote_query rem_qry_man;
+TxnPool txn_pool;
+QWorkQueue work_queue;
 
 bool volatile warmup_finish = false;
 bool volatile enable_thread_mem_pool = false;
@@ -39,6 +43,7 @@ ts_t g_timeout = TIMEOUT;
 ts_t g_dl_loop_detect = DL_LOOP_DETECT;
 bool g_ts_batch_alloc = TS_BATCH_ALLOC;
 UInt32 g_ts_batch_num = TS_BATCH_NUM;
+UInt32 g_inflight_max = MAX_TXN_IN_FLIGHT;
 
 bool g_hw_migrate = HW_MIGRATE;
 

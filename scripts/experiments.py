@@ -17,7 +17,7 @@ experiments_100K = [
 ]
 
 experiments_10K_1node = [
-    [n,10000,'TPCC',cc,m,t] for n,m,cc,t in itertools.product([1],[1]+range(0,51,10),['HSTORE','NO_WAIT','WAIT_DIE','TIMESTAMP','MVCC','OCC'],[1,2,4])
+    [n,10000,'TPCC',cc,m,t,wh] for n,m,cc,t,wh in itertools.product([1],[1]+range(0,21,10),['HSTORE','NO_WAIT','WAIT_DIE','TIMESTAMP','MVCC','OCC'],[1,2,4],[4])
 ]
 experiments_10K_wait_die = [
     [n,10000,'TPCC',cc,m] for n,m,cc in itertools.product([2,4],[1]+range(0,51,10),['WAIT_DIE'])
@@ -120,5 +120,5 @@ configs = {
 ##################
 # FIXME
 #################
-experiments = fmt2 + experiments_10K_1node
-config_names = fmt2[0]
+experiments = fmt4 + experiments_10K_1node
+config_names = fmt4[0]

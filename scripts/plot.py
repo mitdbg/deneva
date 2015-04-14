@@ -56,7 +56,7 @@ for e in experiments[1:]:
 # Runtime contributions
 # Throughput vs. MPR for HStore, many node counts
 txn_cnt = 10000
-mpr = [0,1,10,20,30,40,50]
+mpr = [0,1,10,20]#,30,40,50]
 nodes = [1]
 threads = [1,2,4]
 #warehouses = [2,4,6,8,10]
@@ -74,7 +74,7 @@ for algo,thread in itertools.product(algos,threads):
         
 
 for node,thread in itertools.product(nodes,threads):
-    tput(mpr,algos,summary,cfg_fmt=["NODE_CNT","MAX_TXN_PER_PART","THREAD_CNT"],cfg=[node,txn_cnt,thread],xname="MPR",vname="CC_ALG",title="{} Nodes {} Threads".format(node,thread))
+    tput(mpr,algos,summary,cfg_fmt=["NODE_CNT","MAX_TXN_PER_PART","THREAD_CNT","NUM_WH"],cfg=[node,txn_cnt,thread,4],xname="MPR",vname="CC_ALG",title="{} Nodes {} Threads".format(node,thread))
 
 for node,algo in itertools.product(nodes,algos):
     _cfg_fmt = ["NODE_CNT","CC_ALG","MAX_TXN_PER_PART"]

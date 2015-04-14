@@ -12,6 +12,7 @@ void Remote_query::init(uint64_t node_id, workload * wl) {
 	_wl = wl;
   pthread_mutex_init(&mtx,NULL);
 	//txns = (txn_man **)mem_allocator.alloc(sizeof(txn_man *) * g_thread_cnt, g_thread_cnt);
+  /*
   uint64_t thd_cnt = g_thread_cnt + g_rem_thread_cnt;
   txns = (txn_node_t **) mem_allocator.alloc(
             sizeof(txn_node_t **) * thd_cnt, 0);
@@ -26,11 +27,13 @@ void Remote_query::init(uint64_t node_id, workload * wl) {
       txns[i][j] = t_node;
     }
   }
+  */
 }
 
 txn_man * Remote_query::get_txn_man(uint64_t thd_id, uint64_t node_id, uint64_t txn_id) {
 
   txn_man * next_txn = NULL;
+/*
 
   pthread_mutex_lock(&mtx);
 
@@ -49,14 +52,13 @@ txn_man * Remote_query::get_txn_man(uint64_t thd_id, uint64_t node_id, uint64_t 
   assert(next_txn != NULL);
 
   pthread_mutex_unlock(&mtx);
+*/
 
   return next_txn;
 }
 
 void Remote_query::remote_qry(base_query * query, int type, int dest_id, txn_man * txn) {
-	//txns[txn->get_thd_id()] = txn;
-  add_txn_man(0, dest_id, txn->get_txn_id(), txn);
-  //add_txn_man(txn->get_thd_id(), dest_id, txn->get_txn_id(), txn);
+  //add_txn_man(0, dest_id, txn->get_txn_id(), txn);
 #if WORKLOAD == TPCC
 	tpcc_query * m_query = (tpcc_query *) query;
 	m_query->remote_qry(query,type,dest_id);
@@ -72,8 +74,8 @@ void Remote_query::ack_response(base_query * query) {
 	int * sizes = new int [total];
 	int num = 0;
 
-	RemReqType rtype = RACK;
   txnid_t txn_id = query->txn_id;
+	RemReqType rtype = RACK;
 
 	data[num] = &txn_id;
 	sizes[num++] = sizeof(txnid_t);
@@ -144,9 +146,9 @@ void Remote_query::unpack(base_query * query, void * d, int len) {
 			m_query->unpack_rsp(query,data);
 			break;
 									 }
-        case RFIN:
-            query->unpack_finish(query, data);
-            break;
+    case RFIN:
+      query->unpack_finish(query, data);
+      break;
     case RACK:
       break;
 		default:
@@ -155,6 +157,7 @@ void Remote_query::unpack(base_query * query, void * d, int len) {
 }
 
 void Remote_query::add_txn_man(uint64_t thd_id, uint64_t node_id, uint64_t txn_id, txn_man *txn) {
+/*
     txn_node_t t_node = (txn_node_t) mem_allocator.alloc(sizeof(struct txn_node), g_thread_cnt);
     t_node->txn = txn;
 
@@ -164,10 +167,12 @@ void Remote_query::add_txn_man(uint64_t thd_id, uint64_t node_id, uint64_t txn_i
     txns[thd_id][node_id]->next = t_node;
 
     pthread_mutex_unlock(&mtx);
+*/
 }
 
 void Remote_query::cleanup_remote(uint64_t thd_id, uint64_t node_id, uint64_t txn_id, bool free_txn) {
 
+  /*
     pthread_mutex_lock(&mtx);
     //txn_node_t cur = txns[thd_id][node_id];
     txn_node_t cur = txns[0][node_id];
@@ -190,10 +195,12 @@ void Remote_query::cleanup_remote(uint64_t thd_id, uint64_t node_id, uint64_t tx
     mem_allocator.free(t_node, sizeof(struct txn_node));
 
     pthread_mutex_unlock(&mtx);
+    */
 }
 
 ts_t Remote_query::get_min_ts(ts_t min) {
   ts_t min_ts = UINT64_MAX;
+  /*
   ts_t cur_ts = UINT64_MAX;
   pthread_mutex_lock(&mtx);
   for (UInt32 i = 0; i < g_node_cnt; i++) {
@@ -206,5 +213,6 @@ ts_t Remote_query::get_min_ts(ts_t min) {
     }
   }
   pthread_mutex_unlock(&mtx);
+  */
   return min_ts;
 }

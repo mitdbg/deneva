@@ -28,6 +28,7 @@ public:
 	// conversion is done within the function.
 	RC 			run();
 	RC 			run_remote();
+	RC 			run_pool_txn();
 private:
 	uint64_t 	_host_cid;
 	uint64_t 	_cur_cid;

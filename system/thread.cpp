@@ -44,10 +44,7 @@ RC thread_t::run_remote() {
 	myrand rdm;
 	rdm.init(get_thd_id());
 	RC rc = RCOK;
-	txn_man * m_txn;
-	rc = _wl->get_txn_man(m_txn, this);
 	assert (rc == RCOK);
-	glob_manager.set_txn_man(m_txn);
 
 #if !NOGRAPHITE
 	if (warmup_finish) {
@@ -56,93 +53,38 @@ RC thread_t::run_remote() {
 #endif
 	
 
-	uint64_t len = 0;
 	base_query * m_query = NULL;
 
+  /*
 #if WORKLOAD == TPCC
 	m_query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), get_thd_id());
 #endif
-	ts_t rq_time = get_sys_clock();;
+*/
+	ts_t rq_time = get_sys_clock();
 
 	while (true) {
-		len = tport_man.recv_msg(m_query);
-		if( len > 0 ) {
+		m_query = tport_man.recv_msg();
+		if( m_query != NULL ) { 
 			rq_time = get_sys_clock();
-
-
-			switch(m_query->rtype) {
-#if CC_ALG == HSTORE
-				case RLK:
-					part_lock_man.rem_lock(m_query->pid,m_query->ts, m_query->parts, m_query->part_cnt);
-					break;
-				case RULK:
-					part_lock_man.rem_unlock(m_query->pid, m_query->parts, m_query->part_cnt,m_query->ts);
-					break;
-				case RLK_RSP:
-					part_lock_man.rem_lock_rsp(m_query->pid,m_query->rc,m_query->ts);
-					break;
-				case RULK_RSP:
-					part_lock_man.rem_unlock_rsp(m_query->pid,m_query->rc,m_query->ts);
-					break;
-#endif
-				case RQRY:
-          INC_STATS(1,rqry,1);
-#if CC_ALG == MVCC
-          //glob_manager.add_ts(m_query->return_id, 0, m_query->ts);
-          glob_manager.add_ts(m_query->return_id, m_query->thd_id, m_query->ts);
-#endif
-	        rc = _wl->get_txn_man(m_txn, this);
-          assert(rc == RCOK);
-          m_txn->set_txn_id(m_query->txn_id);
-          m_txn->set_ts(m_query->ts);
-#if CC_ALG == OCC
-          m_txn->set_start_ts(m_query->start_ts);
-#endif
-
-					m_txn->run_rem_txn(m_query);
-					break;
-				case RQRY_RSP:
-          INC_STATS(1,rqry_rsp,1);
-					m_txn = rem_qry_man.get_txn_man(GET_THREAD_ID(m_query->pid), m_query->return_id, m_query->txn_id);
-					m_txn->rem_txn_rsp(m_query);
-					break;
-        case RFIN:
-          INC_STATS(1,rfin,1);
-          m_txn = rem_qry_man.get_txn_man(get_thd_id(), m_query->return_id, m_query->txn_id);
-          m_txn->rem_fin_txn(m_query);
-          rem_qry_man.cleanup_remote(get_thd_id(), m_query->return_id, m_query->txn_id, true);
-          rem_qry_man.ack_response(m_query);
-          break;
-        case RACK:
-          INC_STATS(1,rack,1);
-          m_txn = rem_qry_man.get_txn_man(get_thd_id(), m_query->return_id, m_query->txn_id);
-          m_txn->decr_rsp(1);
-          break;
-				default:
-					break;
-			}
-			ts_t endtime = get_sys_clock();
-			INC_STATS(_thd_id, rtime_proc, endtime - rq_time);
-
-		}
-
-		// Check if done
+      work_queue.add_query(m_query);
+    }
 
 		ts_t tend = get_sys_clock();
 		if (warmup_finish && _wl->sim_done && ((tend - rq_time) > MSG_TIMEOUT)) {
 	      if( !ATOM_CAS(_wl->sim_timeout, false, true) )
 					assert( _wl->sim_timeout);
-	    }
-	    if (_wl->sim_done && _wl->sim_timeout) {
-#if !NOGRAPHITE
-   			CarbonDisableModelsBarrier(&enable_barrier);
-#endif
-   		    return FINISH;
-   		}
-	}
-	assert(false);
-}
+	  }
 
+	  if (_wl->sim_done && _wl->sim_timeout) {
+#if !NOGRAPHITE
+   	CarbonDisableModelsBarrier(&enable_barrier);
+#endif
+   	   return FINISH;
+   	}
+
+  }
+
+}
 
 RC thread_t::run() {
 	printf("Run %ld:%ld\n",_node_id, _thd_id);
@@ -155,9 +97,9 @@ RC thread_t::run() {
 	pthread_barrier_wait( &warmup_bar );
 	stats.init(get_thd_id());
 	pthread_barrier_wait( &warmup_bar );
-	sleep(4);
-	
+	//sleep(4);
 	printf("Run %ld:%ld\n",_node_id, _thd_id);
+
 	myrand rdm;
 	rdm.init(get_thd_id());
 	RC rc = RCOK;
@@ -171,12 +113,289 @@ RC thread_t::run() {
    		CarbonEnableModelsBarrier(&enable_barrier);
 	}
 #endif
-	
 
 	base_query * m_query = NULL;
+  base_query * next_query = NULL;
+  uint64_t txn_cnt = 0;
 	uint64_t thd_txn_id = 0;
-	UInt64 txn_cnt = 0;
+	
+  while(true) {
 
+    // FIXME: Susceptible to race conditions, but will hopefully even out eventually...
+    // Put here so first time through, threads will populate the work queue with new txns.
+    if(txn_pool.inflight_cnt < g_inflight_max && txn_cnt < MAX_TXN_PER_PART) {
+        // Fetch new txn from query queue and add to work queue
+        txn_pool.inflight_cnt++;
+			  m_query = query_queue.get_next_query( _thd_id );
+        work_queue.add_query(m_query);
+    }
+
+    while(!work_queue.poll_next_query() && !(_wl->sim_done && _wl->sim_timeout)) {}
+
+    // End conditions
+	  if (_wl->sim_done && _wl->sim_timeout) {
+#if !NOGRAPHITE
+   			CarbonDisableModelsBarrier(&enable_barrier);
+#endif
+   		    return FINISH;
+   	}
+
+    if((m_query = work_queue.get_next_query()) == NULL)
+      continue;
+
+
+		switch(m_query->rtype) {
+#if CC_ALG == HSTORE
+				case RLK:
+					part_lock_man.rem_lock(m_query->pid,m_query->ts, m_query->parts, m_query->part_cnt);
+					break;
+				case RULK:
+					part_lock_man.rem_unlock(m_query->pid, m_query->parts, m_query->part_cnt,m_query->ts);
+          // TODO: If this is last rulk we're waiting for, add waiting txn to query queue
+					break;
+				case RLK_RSP:
+					part_lock_man.rem_lock_rsp(m_query->pid,m_query->rc,m_query->ts);
+					break;
+				case RULK_RSP:
+					part_lock_man.rem_unlock_rsp(m_query->pid,m_query->rc,m_query->ts);
+					break;
+#endif
+				case RQRY:
+          // This transaction is from a remote node
+          assert(m_query->rtype == RQRY);
+          assert(m_query->txn_id % g_node_cnt != g_node_id);
+          INC_STATS(0,rqry,1);
+#if CC_ALG == MVCC
+          //glob_manager.add_ts(m_query->return_id, 0, m_query->ts);
+          glob_manager.add_ts(m_query->return_id, m_query->thd_id, m_query->ts);
+#endif
+          // FIXME: Theoretically, we could send multiple queries to one node.
+          //    m_txn could already be in txn_pool
+	        rc = _wl->get_txn_man(m_txn, this);
+          assert(rc == RCOK);
+          m_txn->set_txn_id(m_query->txn_id);
+          m_txn->set_ts(m_query->ts);
+#if CC_ALG == OCC
+          m_txn->set_start_ts(m_query->start_ts);
+#endif
+
+          m_txn->run_txn(m_query);
+          txn_pool.add_txn(m_query->return_id,m_txn,m_query);
+          rem_qry_man.remote_rsp(m_query,m_txn);
+					break;
+				case RQRY_RSP:
+          // This transaction originated from this node
+          assert(m_query->txn_id % g_node_cnt == g_node_id);
+          assert(m_query->rtype == RQRY_RSP);
+          // TODO: This should start up txn where it left off, not rem_txn_rsp() which sends signal
+          INC_STATS(0,rqry_rsp,1);
+		      m_txn = txn_pool.get_txn(g_node_id, m_query->txn_id);
+		      next_query = txn_pool.get_qry(g_node_id, m_query->txn_id);
+					m_txn->merge_txn_rsp(m_query,next_query);
+          // free this m_query
+#if WORKLOAD == TPCC
+          mem_allocator.free(m_query, sizeof(tpcc_query));
+#endif
+          m_query = next_query;
+          // Execute from original txn; Note: txn may finish
+          if(m_query->rc != RCOK) {
+            assert(m_query->rc == Abort);
+            rc = m_txn->finish(m_query);
+          }
+          else {
+            rc = m_txn->run_txn(m_query);
+          }
+					break;
+        case RFIN:
+          // This transaction is from a remote node
+          assert(m_query->txn_id % g_node_cnt != g_node_id);
+          assert(m_query->rtype == RFIN);
+          INC_STATS(0,rfin,1);
+		      m_txn = txn_pool.get_txn(m_query->return_id, m_query->txn_id);
+          m_txn->rem_fin_txn(m_query);
+          rem_qry_man.cleanup_remote(get_thd_id(), m_query->return_id, m_query->txn_id, true);
+          txn_pool.delete_txn(m_query->return_id, m_query->txn_id);
+          rem_qry_man.ack_response(m_query);
+#if WORKLOAD == TPCC
+          mem_allocator.free(m_query, sizeof(tpcc_query));
+#endif
+          // TODO: If a waiting txn was affected by this txn finishing, add waiting txn to queue.
+          break;
+        case RACK:
+          // This transaction originated from this node
+          assert(m_query->rtype == RACK);
+          assert(m_query->txn_id % g_node_cnt == g_node_id);
+          INC_STATS(0,rack,1);
+		      m_txn = txn_pool.get_txn(g_node_id, m_query->txn_id);
+          m_txn->decr_rsp(1);
+          rem_qry_man.cleanup_remote(get_thd_id(), m_query->return_id, m_query->txn_id, false);
+          if(m_txn->get_rsp_cnt() == 0) {
+            // TODO: Done waiting; 
+		        next_query = txn_pool.get_qry(g_node_id, m_query->txn_id);
+            rc = m_txn->finish(next_query->rc);
+            //txn_pool.delete_txn(g_node_id, m_query->txn_id);
+          }
+          // free this m_query
+#if WORKLOAD == TPCC
+          mem_allocator.free(m_query, sizeof(tpcc_query));
+#endif
+          m_query = next_query;
+          break;
+        case RTXN:
+          // This transaction is originating at this node
+          assert(m_query->txn_id == UINT64_MAX || (m_query->txn_id % g_node_cnt == g_node_id));
+
+          if(m_query->txn_id == UINT64_MAX) {
+            // New transaction
+
+	          rc = _wl->get_txn_man(m_txn, this);
+            assert(rc == RCOK);
+
+		        m_txn->abort_cnt = 0;
+            if (CC_ALG == WAIT_DIE || CC_ALG == TIMESTAMP || CC_ALG == MVCC) {
+              m_txn->set_ts(get_next_ts());
+              m_query->ts = m_txn->get_ts();
+            }
+            if (CC_ALG == MVCC) {
+              m_query->thd_id = _thd_id;
+            }
+
+		        if(m_query->part_num > 1)
+			        INC_STATS(get_thd_id(),mpq_cnt,1);
+
+            // Only set new txn_id when txn first starts
+			      m_txn->set_txn_id( (get_thd_id() + get_node_id() * g_thread_cnt) + (g_thread_cnt * g_node_cnt * thd_txn_id));
+			      thd_txn_id ++;
+            m_query->set_txn_id(m_txn->get_txn_id());
+
+          }
+          else {
+            // Re-executing transaction
+            m_txn = txn_pool.get_txn(g_node_id,m_query->txn_id);
+          }
+
+			    if ((CC_ALG == HSTORE && !HSTORE_LOCAL_TS)
+					  || CC_ALG == MVCC 
+					  || CC_ALG == TIMESTAMP) { 
+				    m_txn->set_ts(get_next_ts());
+				    m_query->ts = m_txn->get_ts();
+			    }
+
+          // TODO: HSTORE plocks here
+#if CC_ALG == MVCC
+			glob_manager.add_ts(get_thd_id(), m_txn->get_ts());
+#elif CC_ALG == OCC
+			m_txn->start_ts = get_next_ts(); 
+      m_query->start_ts = m_txn->get_start_ts();
+#endif
+
+          rc = m_txn->run_txn(m_query);
+
+          break;
+				default:
+          assert(false);
+					break;
+			}
+
+    if(GET_NODE_ID(m_query->pid) != g_node_id) {
+      continue;
+    }
+
+    switch(rc) {
+      case RCOK:
+        // Transaction is finished. Increment stats. Remove from txn pool
+        //rc = m_txn->finish(rc);
+        INC_STATS(get_thd_id(),txn_cnt,1);
+		    if(m_txn->abort_cnt > 0) 
+			    INC_STATS(get_thd_id(), txn_abort_cnt, 1);
+		    stats.add_abort_cnt(get_thd_id(), m_txn->abort_cnt);
+        
+        txn_pool.delete_txn(g_node_id,m_query->txn_id);
+        txn_cnt++;
+        txn_pool.inflight_cnt--;
+        break;
+      case Abort:
+        // TODO: Add to abort list that includes txn_id and ts
+        //    List will be checked periodically to restart transactions and put them back on the work queue
+        //    This will be used to implement abort penalty
+        // TODO: Increment abort stats 
+        // For now, just re-add query to work queue.
+        assert(m_txn != NULL);
+        assert(m_query->txn_id != UINT64_MAX);
+        //rc = m_txn->finish(rc);
+        txn_pool.add_txn(g_node_id,m_txn,m_query);
+        m_query->rtype = RTXN;
+        m_query->reset();
+        work_queue.add_query(m_query);
+				INC_STATS(get_thd_id(), abort_cnt, 1);
+        m_txn->abort_cnt++;
+
+        break;
+      case WAIT:
+      case WAIT_REM:
+        // Save transaction information for later
+        // FIXME: Race conditions between when WAIT was issued to txn saved
+        //    When > 1 thread
+        assert(m_txn != NULL);
+        txn_pool.add_txn(g_node_id,m_txn,m_query);
+        break;
+      default:
+        assert(false);
+        break;
+    }
+
+		if (!warmup_finish && txn_cnt >= WARMUP / g_thread_cnt) 
+		{
+			stats.clear( get_thd_id() );
+#if !NOGRAPHITE
+   			CarbonDisableModelsBarrier(&enable_barrier);
+#endif
+			return FINISH;
+		}
+
+		if (warmup_finish && txn_cnt >= MAX_TXN_PER_PART && txn_pool.empty(get_node_id()) && !work_queue.poll_next_query()) {
+			//assert(txn_cnt == MAX_TXN_PER_PART);
+	        if( !ATOM_CAS(_wl->sim_done, false, true) )
+				assert( _wl->sim_done);
+	    }
+
+
+  }
+
+}
+
+RC thread_t::run_pool_txn() {
+       printf("Run %ld:%ld\n",_node_id, _thd_id);
+#if !NOGRAPHITE
+       _thd_id = CarbonGetTileId();
+#endif
+       if (warmup_finish) {
+               mem_allocator.register_thread(_thd_id);
+       }
+       pthread_barrier_wait( &warmup_bar );
+       stats.init(get_thd_id());
+       pthread_barrier_wait( &warmup_bar );
+       //sleep(4);
+       printf("Run %ld:%ld\n",_node_id, _thd_id);
+
+       myrand rdm;
+       rdm.init(get_thd_id());
+       RC rc = RCOK;
+       txn_man * m_txn;
+       rc = _wl->get_txn_man(m_txn, this);
+       assert (rc == RCOK);
+       glob_manager.set_txn_man(m_txn);
+
+#if !NOGRAPHITE
+       if (warmup_finish) {
+               CarbonEnableModelsBarrier(&enable_barrier);
+       }
+#endif
+
+       base_query * m_query = NULL;
+  uint64_t txn_cnt = 0;
+       uint64_t thd_txn_id = 0;
+       
 	while (true) {
 		ts_t starttime = get_sys_clock();
 		if (WORKLOAD != TEST)
@@ -210,10 +429,8 @@ RC thread_t::run() {
 
 			rc = RCOK;
 
-			/*
 			if(m_query->part_num > 1)
 				INC_TMP_STATS(_thd_id,mpq_cnt,1);
-				*/
 
 #if CC_ALG == HSTORE
 			if (WORKLOAD == TEST) {
@@ -337,26 +554,3 @@ thread_t::get_next_ts() {
 	}
 }
 
-RC thread_t::runTest(txn_man * txn)
-{
-	RC rc = RCOK;
-	if (g_test_case == READ_WRITE) {
-		rc = ((TestTxnMan *)txn)->run_txn(g_test_case, 0);
-#if CC_ALG == OCC
-		txn->start_ts = get_next_ts(); 
-#endif
-		rc = ((TestTxnMan *)txn)->run_txn(g_test_case, 1);
-		printf("READ_WRITE TEST PASSED\n");
-		return FINISH;
-	}
-	else if (g_test_case == CONFLICT) {
-		rc = ((TestTxnMan *)txn)->run_txn(g_test_case, 0);
-//		printf("ts = %ld, tid=%ld, rc=%d\n", txn->get_ts(), get_thd_id(), rc);
-		if (rc == RCOK)
-			return FINISH;
-		else 
-			return rc;
-	}
-	assert(false);
-	return RCOK;
-}

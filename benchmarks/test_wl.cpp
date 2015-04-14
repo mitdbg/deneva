@@ -6,6 +6,7 @@
 #include "index_btree.h"
 #include "thread.h"
 
+/*
 RC TestWorkload::init() {
 	workload::init();
 	string path;
@@ -67,3 +68,4 @@ void TestWorkload::summarize() {
 		printf("CONFLICT TEST. PASSED.\n");
 	}
 }
+*/

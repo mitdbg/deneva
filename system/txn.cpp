@@ -53,14 +53,6 @@ void txn_man::set_ts(ts_t timestamp) {
 	this->timestamp = timestamp;
 }
 
-void txn_man::incr_rsp(int i) {
-  ATOM_ADD(this->rsp_cnt,i);
-}
-
-void txn_man::decr_rsp(int i) {
-  ATOM_SUB(this->rsp_cnt,i);
-}
-
 ts_t txn_man::get_ts() {
 	return this->timestamp;
 }
@@ -71,6 +63,18 @@ void txn_man::set_start_ts(uint64_t start_ts) {
 
 ts_t txn_man::get_start_ts() {
 	return this->start_ts;
+}
+
+uint64_t txn_man::get_rsp_cnt() {
+  return this->rsp_cnt;
+}
+
+void txn_man::incr_rsp(int i) {
+  ATOM_ADD(this->rsp_cnt,i);
+}
+
+void txn_man::decr_rsp(int i) {
+  ATOM_SUB(this->rsp_cnt,i);
 }
 
 void txn_man::cleanup(RC rc) {
@@ -126,9 +130,11 @@ void txn_man::cleanup(RC rc) {
 #endif
 }
 
-row_t * txn_man::get_row(row_t * row, access_t type) {
-	if (CC_ALG == HSTORE)
-		return row;
+RC txn_man::get_row(row_t * row, access_t type, row_t *& row_rtn) {
+	if (CC_ALG == HSTORE) {
+    row_rtn = row;
+		return RCOK;
+  }
 	uint64_t starttime = get_sys_clock();
 	RC rc = RCOK;
 //	assert(row_cnt < MAX_ROW_PER_TXN);
@@ -139,8 +145,13 @@ row_t * txn_man::get_row(row_t * row, access_t type) {
 		num_accesses_alloc ++;
 	}
 	rc = row->get_row(type, this, accesses[ row_cnt ]->data);
-	if (rc == Abort) {
-		return NULL;
+	if (rc == Abort || rc == WAIT) {
+    if(rc == WAIT) {
+      this->last_row = row;
+      this->last_type = type;
+    }
+    row_rtn = NULL;
+		return rc;
 	}
 	accesses[row_cnt]->type = type;
 	accesses[row_cnt]->orig_row = row;
@@ -157,7 +168,36 @@ row_t * txn_man::get_row(row_t * row, access_t type) {
 		wr_cnt ++;
 	uint64_t timespan = get_sys_clock() - starttime;
 	INC_STATS(get_thd_id(), time_man, timespan);
-	return accesses[row_cnt - 1]->data;
+	row_rtn  = accesses[row_cnt - 1]->data;
+  return rc;
+}
+
+RC txn_man::get_row_again() {
+  row_t * row = this->last_row;
+  access_t type = this->last_type;
+	uint64_t part_id = row->get_part_id();
+  assert(row != NULL);
+
+  row->get_row_rsp(type,this,accesses[ row_cnt ]->data);
+
+	accesses[row_cnt]->type = type;
+	accesses[row_cnt]->orig_row = row;
+#if ROLL_BACK && (CC_ALG == DL_DETECT || CC_ALG == NO_WAIT || CC_ALG == WAIT_DIE)
+	if (type == WR) {
+		accesses[row_cnt]->orig_data = (row_t *) 
+			mem_allocator.alloc(sizeof(row_t), part_id);
+		accesses[row_cnt]->orig_data->init(row->get_table(), part_id, 0);
+		accesses[row_cnt]->orig_data->copy(row);
+	}
+#endif
+	row_cnt ++;
+	if (type == WR)
+		wr_cnt ++;
+	//uint64_t timespan = get_sys_clock() - starttime;
+	//INC_STATS(get_thd_id(), time_man, timespan);
+	this->last_row_rtn  = accesses[row_cnt - 1]->data;
+  return RCOK;
+
 }
 
 void txn_man::insert_row(row_t * row, table_t * table) {
@@ -240,21 +280,14 @@ RC txn_man::finish(base_query * query) {
   }
 
   if(rsp_cnt >0) {
-    ts_t t = get_sys_clock();
-    while(rsp_cnt > 0) { }
-    INC_STATS(get_thd_id(),time_wait_rem,get_sys_clock()-t);
+    return WAIT_REM;
+    //ts_t t = get_sys_clock();
+    //while(rsp_cnt > 0) { }
+    //INC_STATS(get_thd_id(),time_wait_rem,get_sys_clock()-t);
   }
+  else
+    return finish(query->rc);
 
-  //for (uint64_t i = 0; i < query->part_num; ++i) {
-  for (uint64_t i = 0; i < node_num; ++i) {
-    if(part_node_ids[i] == get_node_id()) {
-      continue;
-    }
-    //rem_qry_man.cleanup_remote(get_thd_id(), query->part_to_access[i], get_txn_id(), false);
-    rem_qry_man.cleanup_remote(get_thd_id(), part_node_ids[i], get_txn_id(), false);
-  }
-
-  return finish(query->rc);
 }
 
 void

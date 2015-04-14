@@ -4,12 +4,12 @@
 /***********************************************/
 // Simulation + Hardware
 /***********************************************/
-#define NODE_CNT 1
-#define THREAD_CNT 4
+#define NODE_CNT 2
+#define THREAD_CNT 1
 // REM_THREAD_CNT should be at least NODE_CNT*THREAD_CNT to avoid deadlock
-#define REM_THREAD_CNT 4
+#define REM_THREAD_CNT 1
 // PART_CNT should be at least THREAD_CNT * NODE_CNT
-#define PART_CNT 4
+#define PART_CNT 2
 
 // each transaction only accesses only 1 virtual partition. But the lock/ts manager and index are not aware of such partitioning. VIRTUAL_PART_CNT describes the request distribution and is only used to generate queries. For HSTORE, VIRTUAL_PART_CNT should be the same as PART_CNT.
 #define VIRTUAL_PART_CNT			1
@@ -27,6 +27,8 @@
 #define PRT_LAT_DISTR				false
 #define STATS_ENABLE				true
 #define TIME_ENABLE					true //STATS_ENABLE
+
+#define MAX_TXN_IN_FLIGHT   2
 
 /***********************************************/
 // Memory System
@@ -52,9 +54,9 @@
 /***********************************************/
 // Message Passing
 /***********************************************/
-#define TPORT_TYPE "tcp"
-#define TPORT_TYPE_IPC false
-#define TPORT_PORT 6100
+#define TPORT_TYPE "ipc"
+#define TPORT_TYPE_IPC true
+#define TPORT_PORT ".ipc"
 
 #define MAX_TPORT_NAME 128
 #define MSG_SIZE 128 // in bytes
@@ -68,7 +70,7 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HSTORE, OCC, VLL
-#define CC_ALG OCC
+#define CC_ALG WAIT_DIE
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER					false
@@ -124,7 +126,7 @@
 // max number of rows touched per transaction
 #define MAX_ROW_PER_TXN				64
 #define QUERY_INTVL 				1UL
-#define MAX_TXN_PER_PART 10000
+#define MAX_TXN_PER_PART 100
 #define FIRST_PART_LOCAL 			true
 #define MAX_TUPLE_SIZE				1024 // in bytes
 // ==== [YCSB] ====
@@ -150,7 +152,7 @@
 #define WH_UPDATE					true
 #define NUM_WH 4
 // % of transactions that access multiple partitions
-#define MPR 50
+#define MPR 20
 #define MPR_NEWORDER			20 // In %
 // Smaller item selection to model contention
 #define CONTENTION false
