@@ -92,12 +92,13 @@ public:
 	TxnType 		vll_txn_type;
 	itemid_t *		index_read(INDEX * index, idx_key_t key, int part_id);
 	RC 		get_row(row_t * row, access_t type, row_t *& row_rtn);
-  RC get_row_again();
+  RC get_row_post_wait(row_t *& row_rtn);
 
   // For Waiting
   row_t * last_row;
   row_t * last_row_rtn;
   access_t last_type;
+  RC rc;
   
 private:
 	// insert rows

@@ -82,6 +82,7 @@ RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt
 			waiter_cnt ++;
             txn->lock_ready = false;
             rc = WAIT;
+            txn->rc = rc;
 		} else if (CC_ALG == WAIT_DIE) {
             ///////////////////////////////////////////////////////////
             //  - T is the txn currently running
@@ -116,13 +117,14 @@ RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt
 						waiters_head = entry;
 				} else 
 					LIST_PUT_TAIL(waiters_head, waiters_tail, entry);
-				waiter_cnt ++;
-                txn->lock_ready = false;
-                rc = WAIT;
-            }
-            else 
-                rc = Abort;
-        }
+
+			  waiter_cnt ++;
+        txn->lock_ready = false;
+        rc = WAIT;
+        txn->rc = rc;
+      } else 
+        rc = Abort;
+    }
 	} else {
 		LockEntry * entry = get_entry();
 		entry->type = type;
@@ -221,7 +223,9 @@ RC Row_lock::lock_release(txn_man * txn) {
 		owner_cnt ++;
 		waiter_cnt --;
 		ASSERT(entry->txn->lock_ready == false);
+    // TODO: Add txn back into work queue here
 		entry->txn->lock_ready = true;
+    txn_pool.restart_txn(entry->txn->get_txn_id());
 		lock_type = entry->type;
 	} 
 	ASSERT((owners == NULL) == (owner_cnt == 0));

@@ -60,6 +60,16 @@ Query_thd::get_next_query() {
 	return query;
 }
 
+void base_query::clear() { 
+  dest_id = UINT32_MAX;
+  return_id = UINT32_MAX;
+  txn_id = UINT64_MAX;
+  ts = UINT64_MAX;
+  rtype = (RemReqType)-1;
+  rc = RCOK;
+  pid = UINT64_MAX;
+} 
+
 void base_query::set_txn_id(uint64_t _txn_id) { txn_id = _txn_id; } 
 
 void base_query::remote_finish(base_query * query, int dest_id) {

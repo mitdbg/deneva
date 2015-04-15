@@ -28,7 +28,7 @@
 #define STATS_ENABLE				true
 #define TIME_ENABLE					true //STATS_ENABLE
 
-#define MAX_TXN_IN_FLIGHT   2
+#define MAX_TXN_IN_FLIGHT   10 
 
 /***********************************************/
 // Memory System

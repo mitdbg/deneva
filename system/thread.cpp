@@ -117,15 +117,17 @@ RC thread_t::run() {
 	base_query * m_query = NULL;
   base_query * next_query = NULL;
   uint64_t txn_cnt = 0;
+  uint64_t txn_st_cnt = 0;
 	uint64_t thd_txn_id = 0;
 	
   while(true) {
 
     // FIXME: Susceptible to race conditions, but will hopefully even out eventually...
     // Put here so first time through, threads will populate the work queue with new txns.
-    if(txn_pool.inflight_cnt < g_inflight_max && txn_cnt < MAX_TXN_PER_PART) {
+    if(txn_pool.inflight_cnt < g_inflight_max && txn_st_cnt < MAX_TXN_PER_PART && txn_cnt < MAX_TXN_PER_PART) {
         // Fetch new txn from query queue and add to work queue
-        txn_pool.inflight_cnt++;
+        ATOM_ADD(txn_st_cnt,1);
+        ATOM_ADD(txn_pool.inflight_cnt,1);
 			  m_query = query_queue.get_next_query( _thd_id );
         work_queue.add_query(m_query);
     }
@@ -162,32 +164,35 @@ RC thread_t::run() {
 #endif
 				case RQRY:
           // This transaction is from a remote node
-          assert(m_query->rtype == RQRY);
           assert(m_query->txn_id % g_node_cnt != g_node_id);
           INC_STATS(0,rqry,1);
 #if CC_ALG == MVCC
           //glob_manager.add_ts(m_query->return_id, 0, m_query->ts);
           glob_manager.add_ts(m_query->return_id, m_query->thd_id, m_query->ts);
 #endif
-          // FIXME: Theoretically, we could send multiple queries to one node.
+          // Theoretically, we could send multiple queries to one node.
           //    m_txn could already be in txn_pool
-	        rc = _wl->get_txn_man(m_txn, this);
-          assert(rc == RCOK);
-          m_txn->set_txn_id(m_query->txn_id);
+          m_txn = txn_pool.get_txn(m_query->return_id, m_query->txn_id);
+          if(m_txn == NULL) {
+	          rc = _wl->get_txn_man(m_txn, this);
+            assert(rc == RCOK);
+            m_txn->set_txn_id(m_query->txn_id);
+            txn_pool.add_txn(m_query->return_id,m_txn,m_query);
+          }
           m_txn->set_ts(m_query->ts);
 #if CC_ALG == OCC
           m_txn->set_start_ts(m_query->start_ts);
 #endif
 
-          m_txn->run_txn(m_query);
-          txn_pool.add_txn(m_query->return_id,m_txn,m_query);
-          rem_qry_man.remote_rsp(m_query,m_txn);
+          rc = m_txn->run_txn(m_query);
+
+          assert(rc != WAIT_REM);
+          if(rc != WAIT)
+            rem_qry_man.remote_rsp(m_query,m_txn);
 					break;
 				case RQRY_RSP:
           // This transaction originated from this node
           assert(m_query->txn_id % g_node_cnt == g_node_id);
-          assert(m_query->rtype == RQRY_RSP);
-          // TODO: This should start up txn where it left off, not rem_txn_rsp() which sends signal
           INC_STATS(0,rqry_rsp,1);
 		      m_txn = txn_pool.get_txn(g_node_id, m_query->txn_id);
           assert(m_txn != NULL);
@@ -199,13 +204,16 @@ RC thread_t::run() {
 #endif
           m_query = next_query;
           // Execute from original txn; Note: txn may finish
-          if(m_query->rc != RCOK) {
-            assert(m_query->rc == Abort);
+          /*
+          if(m_query->rc == Abort) {
             rc = m_txn->finish(m_query);
           }
           else {
+          */
+          
+            //assert(m_query->rc == RCOK || m_query->rc == WAIT_REM || m_query->rc == WAIT);
             rc = m_txn->run_txn(m_query);
-          }
+          //}
 					break;
         case RFIN:
           // This transaction is from a remote node
@@ -220,7 +228,6 @@ RC thread_t::run() {
             break;
           }
           m_txn->rem_fin_txn(m_query);
-          rem_qry_man.cleanup_remote(get_thd_id(), m_query->return_id, m_query->txn_id, true);
           txn_pool.delete_txn(m_query->return_id, m_query->txn_id);
           rem_qry_man.ack_response(m_query);
 #if WORKLOAD == TPCC
@@ -230,7 +237,6 @@ RC thread_t::run() {
           break;
         case RACK:
           // This transaction originated from this node
-          assert(m_query->rtype == RACK);
           assert(m_query->txn_id % g_node_cnt == g_node_id);
           INC_STATS(0,rack,1);
 		      m_txn = txn_pool.get_txn(g_node_id, m_query->txn_id);
@@ -268,14 +274,19 @@ RC thread_t::run() {
               m_query->thd_id = _thd_id;
             }
 
-		        if(m_query->part_num > 1)
-			        INC_STATS(get_thd_id(),mpq_cnt,1);
 
             // Only set new txn_id when txn first starts
 			      m_txn->set_txn_id( (get_thd_id() + get_node_id() * g_thread_cnt) + (g_thread_cnt * g_node_cnt * thd_txn_id));
 			      thd_txn_id ++;
             m_query->set_txn_id(m_txn->get_txn_id());
 
+		        if(m_query->part_num > 1) {
+			        INC_STATS(get_thd_id(),mpq_cnt,1);
+              // Get txn in txn_pool
+              //txn_pool.add_txn(g_node_id,m_txn,m_query);
+            }
+            // Put txn in txn_pool in case of WAIT
+            txn_pool.add_txn(g_node_id,m_txn,m_query);
           }
           else {
             // Re-executing transaction
@@ -319,7 +330,7 @@ RC thread_t::run() {
         
         txn_pool.delete_txn(g_node_id,m_query->txn_id);
         txn_cnt++;
-        txn_pool.inflight_cnt--;
+        ATOM_SUB(txn_pool.inflight_cnt,1);
         break;
       case Abort:
         // TODO: Add to abort list that includes txn_id and ts
@@ -339,12 +350,20 @@ RC thread_t::run() {
 
         break;
       case WAIT:
+        break;
       case WAIT_REM:
         // Save transaction information for later
         // FIXME: Race conditions between when WAIT was issued to txn saved
         //    When > 1 thread
         assert(m_txn != NULL);
         txn_pool.add_txn(g_node_id,m_txn,m_query);
+#if WORKLOAD == TPCC
+        // WAIT_REM from finish
+        if(m_query->rem_req_state == TPCC_FIN)
+          break;
+#endif
+        assert(m_query->dest_id != g_node_id);
+        rem_qry_man.remote_qry(m_query,m_query->rem_req_state,m_query->dest_id,m_txn);
         break;
       default:
         assert(false);

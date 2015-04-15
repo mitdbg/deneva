@@ -122,7 +122,7 @@ void row_t::free_row() {
 RC row_t::get_row(access_t type, txn_man * txn, row_t *& row) {
 	RC rc = RCOK;
 #if CC_ALG == WAIT_DIE || CC_ALG == NO_WAIT || CC_ALG == DL_DETECT
-	uint64_t thd_id = txn->get_thd_id();
+	//uint64_t thd_id = txn->get_thd_id();
 	lock_t lt = (type == RD || type == SCAN)? LOCK_SH : LOCK_EX;
 #if CC_ALG == DL_DETECT
 	uint64_t * txnids;
@@ -133,22 +133,23 @@ RC row_t::get_row(access_t type, txn_man * txn, row_t *& row) {
 #endif
 
 	if (rc == RCOK) {
+    txn->rc = rc; 
 		row = this;
 	} else if (rc == Abort) {} 
 	else if (rc == WAIT) {
 		ASSERT(CC_ALG == WAIT_DIE || CC_ALG == DL_DETECT);
-		uint64_t starttime = get_sys_clock();
 #if CC_ALG == DL_DETECT	
 		bool dep_added = false;
 #endif
-		uint64_t endtime;
-		txn->lock_abort = false;
+    // lock_abort only used by DL_DETECT
+		//txn->lock_abort = false;
 		INC_STATS(txn->get_thd_id(), wait_cnt, 1);
 
-    // TODO: package, add to txn_pool; watch out for race conditions where txn is released before we check for it
+    /*
 		//while (!txn->lock_ready && !txn->lock_abort) { }
+		uint64_t starttime = get_sys_clock();
+		uint64_t endtime;
     if(!txn->lock_ready && !txn->lock_abort) {
-      rc = WAIT;
       return rc;
     }
 
@@ -161,6 +162,7 @@ RC row_t::get_row(access_t type, txn_man * txn, row_t *& row) {
 		endtime = get_sys_clock();
 		INC_STATS(thd_id, time_wait, endtime - starttime);
 		row = this;
+    */
 	}
 	return rc;
 #elif CC_ALG == TIMESTAMP || CC_ALG == MVCC 
@@ -227,21 +229,16 @@ RC row_t::get_row(access_t type, txn_man * txn, row_t *& row) {
 }
 
 // Return call for get_row if waiting 
-RC row_t::get_row_rsp(access_t type, txn_man * txn, row_t *& row) {
+RC row_t::get_row_post_wait(access_t type, txn_man * txn, row_t *& row) {
 
   RC rc = RCOK;
   assert(CC_ALG == WAIT_DIE || CC_ALG == MVCC || CC_ALG == TIMESTAMP);
 #if CC_ALG == WAIT_DIE
-  assert(txn->lock_ready || txn->lock_abort);
-		if (txn->lock_ready) 
-			rc = RCOK;
-		else if (txn->lock_abort) { 
-			rc = Abort;
-			return_row(type, txn, NULL);
-		}
-		//ts_t endtime = get_sys_clock();
-		//INC_STATS(thd_id, time_wait, endtime - starttime);
-		row = this;
+  assert(txn->lock_ready);
+	rc = RCOK;
+	//ts_t endtime = get_sys_clock();
+	//INC_STATS(thd_id, time_wait, endtime - starttime);
+	row = this;
 
 #elif CC_ALG == MVCC || CC_ALG == TIMESTAMP
 			assert(txn->ts_ready);

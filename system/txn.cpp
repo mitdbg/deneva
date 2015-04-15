@@ -125,6 +125,7 @@ void txn_man::cleanup(RC rc) {
 	row_cnt = 0;
 	wr_cnt = 0;
 	insert_cnt = 0;
+  rsp_cnt = 0;
 #if CC_ALG == DL_DETECT
 	dl_detector.clear_dep(get_txn_id());
 #endif
@@ -144,12 +145,19 @@ RC txn_man::get_row(row_t * row, access_t type, row_t *& row_rtn) {
 			mem_allocator.alloc(sizeof(Access), part_id);
 		num_accesses_alloc ++;
 	}
+
+  this->last_row = row;
+  this->last_type = type;
+
 	rc = row->get_row(type, this, accesses[ row_cnt ]->data);
+
 	if (rc == Abort || rc == WAIT) {
+    /*
     if(rc == WAIT) {
       this->last_row = row;
       this->last_type = type;
     }
+    */
     row_rtn = NULL;
 		return rc;
 	}
@@ -172,13 +180,13 @@ RC txn_man::get_row(row_t * row, access_t type, row_t *& row_rtn) {
   return rc;
 }
 
-RC txn_man::get_row_again() {
+RC txn_man::get_row_post_wait(row_t *& row_rtn) {
   row_t * row = this->last_row;
   access_t type = this->last_type;
 	uint64_t part_id = row->get_part_id();
   assert(row != NULL);
 
-  row->get_row_rsp(type,this,accesses[ row_cnt ]->data);
+  row->get_row_post_wait(type,this,accesses[ row_cnt ]->data);
 
 	accesses[row_cnt]->type = type;
 	accesses[row_cnt]->orig_row = row;
@@ -196,6 +204,7 @@ RC txn_man::get_row_again() {
 	//uint64_t timespan = get_sys_clock() - starttime;
 	//INC_STATS(get_thd_id(), time_man, timespan);
 	this->last_row_rtn  = accesses[row_cnt - 1]->data;
+	row_rtn  = accesses[row_cnt - 1]->data;
   return RCOK;
 
 }

@@ -23,6 +23,7 @@ public:
 	uint32_t return_id;
 	txnid_t txn_id;
 	uint64_t ts;
+	int rem_req_state;
 
 	uint64_t part_cnt;
 	uint64_t * parts;
@@ -38,6 +39,8 @@ public:
   // MVCC
   uint64_t thd_id;
 
+
+  void clear();
   void set_txn_id(uint64_t _txn_id); 
   void remote_finish(base_query * query, int dest_id);
   void unpack_finish(base_query * query, void *d);

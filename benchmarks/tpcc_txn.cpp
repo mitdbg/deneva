@@ -16,14 +16,15 @@ void tpcc_txn_man::init(thread_t * h_thd, workload * h_wl, uint64_t thd_id) {
 	txn_man::init(h_thd, h_wl, thd_id);
 	_wl = (tpcc_wl *) h_wl;
 	_qry = new tpcc_query;
+  rc = RCOK;
 }
 
 void tpcc_txn_man::merge_txn_rsp(base_query * query1, base_query * query2) {
 	tpcc_query * m_query1 = (tpcc_query *) query1;
 	tpcc_query * m_query2 = (tpcc_query *) query2;
 
-  m_query2->rc = m_query1->rc;
-  if(m_query2->rc == Abort) {
+  if(m_query1->rc == Abort) {
+    m_query2->rc = m_query1->rc;
     m_query2->txn_rtype = TPCC_FIN;
   }
 
@@ -36,20 +37,25 @@ RC tpcc_txn_man::run_txn(base_query * query) {
   rem_done = false;
   fin = false;
 
-  do {
-    rc = run_txn_state(query);
-    next_tpcc_state(query);
-  } while(rc == RCOK && !fin && !rem_done);
-
-  // Prepare query to be resumed after hold
-  if(rc == WAIT_REM) {
+  // Resume query after hold
+  if(query->rc == WAIT_REM) {
     rtn_tpcc_state(query);
   }
-/*
-  if(rc == WAIT) {
+  if(this->rc == WAIT) {
+    assert(query->rc == WAIT || query->rc == RCOK);
+    get_row_post_wait(row);
     next_tpcc_state(query);
+    this->rc = RCOK;
   }
-  */
+
+  do {
+    rc = run_txn_state(query);
+    if(rc != RCOK)
+      break;
+    next_tpcc_state(query);
+  } while(!fin && !rem_done);
+
+  assert(rc != WAIT_REM || GET_NODE_ID(query->pid) == g_node_id);
 
   return rc;
 
@@ -273,7 +279,10 @@ RC tpcc_txn_man::run_txn_state(base_query * query) {
       if(w_loc)
 			  rc = new_order_0( w_id, d_id, c_id, remote, ol_cnt, o_entry_d, &m_query->o_id, row); 
       else {
-		    rem_qry_man.remote_qry(query,TPCC_NEWORDER0,GET_NODE_ID(part_id_w),this);
+		    //rem_qry_man.remote_qry(query,TPCC_NEWORDER0,GET_NODE_ID(part_id_w),this);
+        assert(GET_NODE_ID(m_query->pid) == g_node_id);
+        query->dest_id = GET_NODE_ID(part_id_w);
+        query->rem_req_state = TPCC_NEWORDER0;
         rc = WAIT_REM;
       }
 			break;
@@ -299,10 +308,14 @@ RC tpcc_txn_man::run_txn_state(base_query * query) {
 			rc = new_order_7(ol_i_id, row);
 			break;
 		case TPCC_NEWORDER8 :
-      if(ol_supply_w_loc)
+      if(ol_supply_w_loc) {
 			  rc = new_order_8( w_id, d_id, remote, ol_i_id, ol_supply_w_id, ol_quantity,  ol_number, o_id, row); 
+      }
       else {
-			  rem_qry_man.remote_qry(query,TPCC_NEWORDER8,GET_NODE_ID(part_id_ol_supply_w),this);
+			  //rem_qry_man.remote_qry(query,TPCC_NEWORDER8,GET_NODE_ID(part_id_ol_supply_w),this);
+        assert(GET_NODE_ID(m_query->pid) == g_node_id);
+        query->dest_id = GET_NODE_ID(part_id_ol_supply_w);
+        query->rem_req_state = TPCC_NEWORDER8;
         rc = WAIT_REM;
       }
 			break;
@@ -311,14 +324,18 @@ RC tpcc_txn_man::run_txn_state(base_query * query) {
       break;
     case TPCC_FIN :
       fin = true;
+      query->rem_req_state = TPCC_FIN;
       assert(GET_NODE_ID(m_query->pid) == g_node_id);
 		  return finish(m_query);
 		default:
 			assert(false);
 	}
 
+  if(rc == WAIT)
+    return rc;
 	m_query->rc = rc;
   if(rc == Abort && !fin && GET_NODE_ID(m_query->pid) == g_node_id) {
+    query->rem_req_state = TPCC_FIN;
     return finish(m_query);
   }
   return rc;
