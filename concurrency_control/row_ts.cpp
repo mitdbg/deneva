@@ -164,6 +164,7 @@ RC Row_ts::access(txn_man * txn, TsType type, row_t * row) {
 			buffer_req(R_REQ, txn, NULL);
 			txn->ts_ready = false;
 			rc = WAIT;
+      txn->rc = rc;
 		} else {
 			// return the value.
 			txn->cur_row->copy(_row);
@@ -258,6 +259,7 @@ void Row_ts::update_buffer() {
 				rts = req->ts;
       // TODO: Add req->txn to work queue
 			req->txn->ts_ready = true;
+      txn_pool.restart_txn(req->txn->get_txn_id());
 			req = req->next;
 		}
 		// return all the req_entry back to freelist

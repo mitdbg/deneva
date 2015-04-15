@@ -49,7 +49,6 @@ public:
   void remote_rsp(base_query * query, txn_man * txn);
 	void send_remote_rsp(uint64_t dest_id, void ** data, int * sizes, int num);
 	void unpack(base_query * query, void * d, int len);
-  void cleanup_remote(uint64_t thd_id, uint64_t node_id, uint64_t txn_id, bool free_txn);
   ts_t get_min_ts(ts_t min);
 	int q_idx;
 	/*

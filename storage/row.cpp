@@ -166,7 +166,7 @@ RC row_t::get_row(access_t type, txn_man * txn, row_t *& row) {
 	}
 	return rc;
 #elif CC_ALG == TIMESTAMP || CC_ALG == MVCC 
-	uint64_t thd_id = txn->get_thd_id();
+	//uint64_t thd_id = txn->get_thd_id();
 	// For TIMESTAMP RD, a new copy of the row will be returned.
 	// for MVCC RD, the version will be returned instead of a copy
 	// So for MVCC RD-WR, the version should be explicitly copied.
@@ -187,17 +187,17 @@ RC row_t::get_row(access_t type, txn_man * txn, row_t *& row) {
 		if (rc == RCOK ) {
 			row = txn->cur_row;
 		} else if (rc == WAIT) {
-			uint64_t t1 = get_sys_clock();
+			//uint64_t t1 = get_sys_clock();
       // TODO: divide into 2+ functions to restart after ts_ready 
 			//while (!txn->ts_ready) {}
-      if(!txn->ts_ready) {
-        rc = WAIT;
-        return rc;
-      }
+      rc = WAIT;
+      return rc;
 
+      /*
 			uint64_t t2 = get_sys_clock();
 			INC_STATS(thd_id, time_wait, t2 - t1);
 			row = txn->cur_row;
+      */
 		} else if (rc == Abort) { }
 		if (rc != Abort) {
 			assert(row->get_data() != NULL);
@@ -242,7 +242,7 @@ RC row_t::get_row_post_wait(access_t type, txn_man * txn, row_t *& row) {
 
 #elif CC_ALG == MVCC || CC_ALG == TIMESTAMP
 			assert(txn->ts_ready);
-			INC_STATS(thd_id, time_wait, t2 - t1);
+			//INC_STATS(thd_id, time_wait, t2 - t1);
 			row = txn->cur_row;
 
 			assert(row->get_data() != NULL);

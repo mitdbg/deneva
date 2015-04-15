@@ -178,6 +178,8 @@ RC thread_t::run() {
             assert(rc == RCOK);
             m_txn->set_txn_id(m_query->txn_id);
             txn_pool.add_txn(m_query->return_id,m_txn,m_query);
+          } else {
+            INC_STATS(get_thd_id(),time_wait_lock,get_sys_clock() - m_txn->wait_starttime);
           }
           m_txn->set_ts(m_query->ts);
 #if CC_ALG == OCC
@@ -196,6 +198,7 @@ RC thread_t::run() {
           INC_STATS(0,rqry_rsp,1);
 		      m_txn = txn_pool.get_txn(g_node_id, m_query->txn_id);
           assert(m_txn != NULL);
+          INC_STATS(get_thd_id(),time_wait_rem,get_sys_clock() - m_txn->wait_starttime);
 		      next_query = txn_pool.get_qry(g_node_id, m_query->txn_id);
 					m_txn->merge_txn_rsp(m_query,next_query);
           // free this m_query
@@ -242,9 +245,9 @@ RC thread_t::run() {
 		      m_txn = txn_pool.get_txn(g_node_id, m_query->txn_id);
           assert(m_txn != NULL);
           m_txn->decr_rsp(1);
-          rem_qry_man.cleanup_remote(get_thd_id(), m_query->return_id, m_query->txn_id, false);
           if(m_txn->get_rsp_cnt() == 0) {
             // TODO: Done waiting; 
+            INC_STATS(get_thd_id(),time_wait_rem,get_sys_clock() - m_txn->wait_starttime);
 		        next_query = txn_pool.get_qry(g_node_id, m_query->txn_id);
             rc = m_txn->finish(next_query->rc);
             //txn_pool.delete_txn(g_node_id, m_query->txn_id);
@@ -287,13 +290,17 @@ RC thread_t::run() {
             }
             // Put txn in txn_pool in case of WAIT
             txn_pool.add_txn(g_node_id,m_txn,m_query);
+
+            m_txn->starttime = get_sys_clock();
           }
           else {
             // Re-executing transaction
             m_txn = txn_pool.get_txn(g_node_id,m_query->txn_id);
+            // 
             assert(m_txn != NULL);
           }
 
+          if(m_query->rc != WAIT) {
 			    if ((CC_ALG == HSTORE && !HSTORE_LOCAL_TS)
 					  || CC_ALG == MVCC 
 					  || CC_ALG == TIMESTAMP) { 
@@ -308,6 +315,10 @@ RC thread_t::run() {
 			m_txn->start_ts = get_next_ts(); 
       m_query->start_ts = m_txn->get_start_ts();
 #endif
+          } else {
+            INC_STATS(get_thd_id(),time_wait_lock,get_sys_clock() - m_txn->wait_starttime);
+          }
+          
 
           rc = m_txn->run_txn(m_query);
 
@@ -318,7 +329,7 @@ RC thread_t::run() {
 			}
 
     if(GET_NODE_ID(m_query->pid) == g_node_id) {
-
+    ts_t timespan;
     switch(rc) {
       case RCOK:
         // Transaction is finished. Increment stats. Remove from txn pool
@@ -327,6 +338,9 @@ RC thread_t::run() {
 		    if(m_txn->abort_cnt > 0) 
 			    INC_STATS(get_thd_id(), txn_abort_cnt, 1);
 		    stats.add_abort_cnt(get_thd_id(), m_txn->abort_cnt);
+		    timespan = get_sys_clock() - m_txn->starttime;
+		    INC_STATS(get_thd_id(), run_time, timespan);
+		    INC_STATS(get_thd_id(), latency, timespan);
         
         txn_pool.delete_txn(g_node_id,m_query->txn_id);
         txn_cnt++;
@@ -344,19 +358,22 @@ RC thread_t::run() {
         txn_pool.add_txn(g_node_id,m_txn,m_query);
         m_query->rtype = RTXN;
         m_query->reset();
-        work_queue.add_query(m_query);
 				INC_STATS(get_thd_id(), abort_cnt, 1);
         m_txn->abort_cnt++;
 
+        work_queue.add_query(m_query);
         break;
       case WAIT:
+        assert(m_txn != NULL);
+        m_txn->wait_starttime = get_sys_clock();
         break;
       case WAIT_REM:
         // Save transaction information for later
         // FIXME: Race conditions between when WAIT was issued to txn saved
         //    When > 1 thread
         assert(m_txn != NULL);
-        txn_pool.add_txn(g_node_id,m_txn,m_query);
+        m_txn->wait_starttime = get_sys_clock();
+        //txn_pool.add_txn(g_node_id,m_txn,m_query);
 #if WORKLOAD == TPCC
         // WAIT_REM from finish
         if(m_query->rem_req_state == TPCC_FIN)
@@ -369,6 +386,10 @@ RC thread_t::run() {
         assert(false);
         break;
     }
+    } else {
+      if(rc == WAIT) {
+        m_txn->wait_starttime = get_sys_clock();
+      }
     }
 
 		if (!warmup_finish && txn_cnt >= WARMUP / g_thread_cnt) 

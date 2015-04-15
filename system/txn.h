@@ -99,6 +99,10 @@ public:
   row_t * last_row_rtn;
   access_t last_type;
   RC rc;
+
+  // For performance measurements
+  uint64_t starttime;
+  uint64_t wait_starttime;
   
 private:
 	// insert rows

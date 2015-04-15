@@ -181,9 +181,9 @@ RC txn_man::get_row(row_t * row, access_t type, row_t *& row_rtn) {
 }
 
 RC txn_man::get_row_post_wait(row_t *& row_rtn) {
+	uint64_t starttime = get_sys_clock();
   row_t * row = this->last_row;
   access_t type = this->last_type;
-	uint64_t part_id = row->get_part_id();
   assert(row != NULL);
 
   row->get_row_post_wait(type,this,accesses[ row_cnt ]->data);
@@ -192,6 +192,7 @@ RC txn_man::get_row_post_wait(row_t *& row_rtn) {
 	accesses[row_cnt]->orig_row = row;
 #if ROLL_BACK && (CC_ALG == DL_DETECT || CC_ALG == NO_WAIT || CC_ALG == WAIT_DIE)
 	if (type == WR) {
+	  uint64_t part_id = row->get_part_id();
 		accesses[row_cnt]->orig_data = (row_t *) 
 			mem_allocator.alloc(sizeof(row_t), part_id);
 		accesses[row_cnt]->orig_data->init(row->get_table(), part_id, 0);
@@ -201,8 +202,8 @@ RC txn_man::get_row_post_wait(row_t *& row_rtn) {
 	row_cnt ++;
 	if (type == WR)
 		wr_cnt ++;
-	//uint64_t timespan = get_sys_clock() - starttime;
-	//INC_STATS(get_thd_id(), time_man, timespan);
+	uint64_t timespan = get_sys_clock() - starttime;
+	INC_STATS(get_thd_id(), time_man, timespan);
 	this->last_row_rtn  = accesses[row_cnt - 1]->data;
 	row_rtn  = accesses[row_cnt - 1]->data;
   return RCOK;
@@ -243,7 +244,7 @@ RC txn_man::finish(RC rc) {
 	} else 
 		cleanup(rc);
 	uint64_t timespan = get_sys_clock() - starttime;
-	INC_STATS(get_thd_id(), time_man,  timespan);
+	//INC_STATS(get_thd_id(), time_man,  timespan);
 	INC_STATS(get_thd_id(), time_cleanup,  timespan);
 	return rc;
 }

@@ -122,10 +122,6 @@ void Remote_query::unpack(base_query * query, void * d, int len) {
 void Remote_query::add_txn_man(uint64_t thd_id, uint64_t node_id, uint64_t txn_id, txn_man *txn) {
 }
 
-void Remote_query::cleanup_remote(uint64_t thd_id, uint64_t node_id, uint64_t txn_id, bool free_txn) {
-
-}
-
 ts_t Remote_query::get_min_ts(ts_t min) {
   ts_t min_ts = UINT64_MAX;
   /*
