@@ -15,10 +15,10 @@ strnow=now.strftime("%Y%m%d-%H%M%S")
 machines_=[
 #GOOD
 "istc1", 
-#"istc3", #Eugene Wu is using this machine until April 1
-"istc4", 
-"istc6",
+"istc3", 
 "istc8",
+"istc6",
+"istc4", 
 #OK
 "istc7",
 "istc9",

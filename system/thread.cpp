@@ -124,7 +124,7 @@ RC thread_t::run() {
 
     // FIXME: Susceptible to race conditions, but will hopefully even out eventually...
     // Put here so first time through, threads will populate the work queue with new txns.
-    if(txn_pool.inflight_cnt < g_inflight_max && txn_st_cnt < MAX_TXN_PER_PART && txn_cnt < MAX_TXN_PER_PART) {
+     if(txn_pool.inflight_cnt < g_inflight_max && txn_st_cnt < MAX_TXN_PER_PART/g_thread_cnt) {
         // Fetch new txn from query queue and add to work queue
         ATOM_ADD(txn_st_cnt,1);
         ATOM_ADD(txn_pool.inflight_cnt,1);
@@ -132,7 +132,7 @@ RC thread_t::run() {
         work_queue.add_query(m_query);
     }
 
-    while(!work_queue.poll_next_query() && !(_wl->sim_done && _wl->sim_timeout)) {}
+    while(!work_queue.poll_next_query() && !(_wl->sim_done && _wl->sim_timeout)) { }
 
     // End conditions
 	  if (_wl->sim_done && _wl->sim_timeout) {
@@ -279,7 +279,8 @@ RC thread_t::run() {
 
 
             // Only set new txn_id when txn first starts
-			      m_txn->set_txn_id( (get_thd_id() + get_node_id() * g_thread_cnt) + (g_thread_cnt * g_node_cnt * thd_txn_id));
+			      m_txn->set_txn_id( ( get_node_id() + get_thd_id() * g_node_cnt) + (g_thread_cnt * g_node_cnt * thd_txn_id));
+			      //m_txn->set_txn_id( (get_thd_id() + get_node_id() * g_thread_cnt) + (g_thread_cnt * g_node_cnt * thd_txn_id));
 			      thd_txn_id ++;
             m_query->set_txn_id(m_txn->get_txn_id());
 
@@ -355,7 +356,7 @@ RC thread_t::run() {
         assert(m_txn != NULL);
         assert(m_query->txn_id != UINT64_MAX);
         //rc = m_txn->finish(rc);
-        txn_pool.add_txn(g_node_id,m_txn,m_query);
+        //txn_pool.add_txn(g_node_id,m_txn,m_query);
         m_query->rtype = RTXN;
         m_query->reset();
 				INC_STATS(get_thd_id(), abort_cnt, 1);
@@ -392,7 +393,7 @@ RC thread_t::run() {
       }
     }
 
-		if (!warmup_finish && txn_cnt >= WARMUP / g_thread_cnt) 
+		if (!warmup_finish && txn_st_cnt >= WARMUP / g_thread_cnt) 
 		{
 			stats.clear( get_thd_id() );
 #if !NOGRAPHITE
@@ -401,10 +402,11 @@ RC thread_t::run() {
 			return FINISH;
 		}
 
-		if (warmup_finish && txn_cnt >= MAX_TXN_PER_PART && txn_pool.empty(get_node_id()) && !work_queue.poll_next_query()) {
+		//if (warmup_finish && txn_st_cnt >= MAX_TXN_PER_PART) {
+		if (warmup_finish && txn_st_cnt >= MAX_TXN_PER_PART/g_thread_cnt && txn_pool.empty(get_node_id())) {
 			//assert(txn_cnt == MAX_TXN_PER_PART);
-	        if( !ATOM_CAS(_wl->sim_done, false, true) )
-				assert( _wl->sim_done);
+	      if( !ATOM_CAS(_wl->sim_done, false, true) )
+				  assert( _wl->sim_done);
 	    }
 
 

@@ -7,9 +7,11 @@ fmt1 = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR"]]
 fmt2 = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT"]]
 fmt3 = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","REM_THREAD_CNT"]]
 fmt4 = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","NUM_WH"]]
+fmt5 = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","NUM_WH","MAX_TXN_IN_FLIGHT"]]
 
 simple = [
-[]
+[2,10000,'TPCC','NO_WAIT',30,1,8,16]
+#[2,10000,'TPCC','NO_WAIT',30,2,8,16]
 ]
 
 experiments_100K = [
@@ -46,10 +48,10 @@ experiments_10K_occ = [
 experiments_10K_all = experiments_10K_2pl + experiments_10K_tso + experiments_10K_hstore + experiments_10K_mvcc + experiments_10K_occ
 
 experiments_10K_wait_die_mt = [
-    [n,10000,'TPCC',cc,m,t] for n,m,cc,t in itertools.product([2,4],[1]+range(0,51,10),['WAIT_DIE'],[1,2,4])
+    [n,10000,'TPCC',cc,m,t,wf*n,tif] for n,m,cc,t,wf,tif in itertools.product([1,2],[1]+range(0,51,10),['WAIT_DIE'],[1,2],[1,2,4],[1,2,4,8,32,64])
 ]
 experiments_10K_no_wait_mt = [
-    [n,10000,'TPCC',cc,m,t] for n,m,cc,t in itertools.product([2,4],[1]+range(0,51,10),['NO_WAIT'],[1,2,4])
+    [n,10000,'TPCC',cc,m,t,wf*n,tif] for n,m,cc,t,wf,tif in itertools.product([1,2],[1]+range(0,51,10),['NO_WAIT'],[1,2],[1,2,4],[1,2,4,8,32,64])
 ]
 experiments_10K_2pl_mt = experiments_10K_no_wait_mt + experiments_10K_wait_die_mt
 
@@ -111,14 +113,15 @@ configs = {
     "TPORT_TYPE":"\"ipc\"",
     "TPORT_TYPE_IPC":"true",
     "TPORT_PORT":"\"_.ipc\"",
-    "REM_THREAD_CNT": 2,
+    "REM_THREAD_CNT": 1,
     "THREAD_CNT": 1,
     "PART_CNT": 2,
-    "NUM_WH": 2
+    "NUM_WH": 2,
+    "MAX_TXN_IN_FLIGHT": 1
 }
 
 ##################
 # FIXME
 #################
-experiments = fmt4 + experiments_10K_1node
-config_names = fmt4[0]
+experiments = fmt5 + experiments_10K_2pl_mt
+config_names = fmt5[0]
