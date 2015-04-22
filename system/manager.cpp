@@ -7,7 +7,7 @@
 void Manager::init() {
 	timestamp = 1;
 	last_min_ts_time = 0;
-	min_ts = 0;
+	min_ts = 0; 
 	//all_ts = (ts_t *) malloc(sizeof(ts_t) * (g_thread_cnt + g_node_cnt));
 	all_ts = (ts_t *) malloc(sizeof(ts_t) * (g_thread_cnt * g_node_cnt));
 	_all_txns = new txn_man * [g_thread_cnt + g_rem_thread_cnt];
@@ -62,18 +62,8 @@ ts_t Manager::get_min_ts(uint64_t tid) {
 	uint64_t now = get_sys_clock();
 	if (now - last_min_ts_time > MIN_TS_INTVL) { 
 		last_min_ts_time = now;
-		ts_t min = UINT64_MAX;
-    //for (UInt32 i = 0; i < g_thread_cnt + g_node_cnt; i++) 
-    for (UInt32 i = 0; i < g_thread_cnt * g_node_cnt; i++) 
-	   	if (all_ts[i] < min)
-       	min = all_ts[i];
-    /*
-    ts_t rem_ts = rem_qry_man.get_min_ts(min_ts);
-    if(rem_ts < min)
-      min = rem_ts;
-      */
-		assert(min != UINT64_MAX);
-    // FIXME: w/ remote, it's possible we will see a txn w/ a smaller TS later
+    uint64_t min = txn_pool.get_min_ts();
+    assert(min != UINT64_MAX);
 		assert(min >= min_ts);
 		min_ts = min;
 	} 
@@ -84,9 +74,11 @@ ts_t Manager::get_min_ts(uint64_t tid) {
 
 void Manager::add_ts(uint64_t node_id, uint64_t thd_id, ts_t ts) {
   //uint64_t id = g_thread_cnt + node_id;
+  /*
   uint64_t id = g_thread_cnt * node_id + thd_id;
 	assert( ts >= all_ts[id]); 
 	all_ts[id] = ts;
+  */
 }
 
 void Manager::add_ts(uint64_t thd_id, ts_t ts) {
@@ -96,7 +88,7 @@ void Manager::add_ts(uint64_t thd_id, ts_t ts) {
 	//all_ts[thd_id] = ts;
 //uint64_t tt4 = get_sys_clock() - t4;
 //INC_STATS(thd_id, debug4, tt4);
-  add_ts(g_node_id,thd_id,ts);
+  //add_ts(g_node_id,thd_id,ts);
 }
 
 void Manager::set_txn_man(txn_man * txn) {
