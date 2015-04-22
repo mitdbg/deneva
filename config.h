@@ -5,7 +5,7 @@
 // Simulation + Hardware
 /***********************************************/
 #define NODE_CNT 2
-#define THREAD_CNT 1
+#define THREAD_CNT 2
 // REM_THREAD_CNT should be at least NODE_CNT*THREAD_CNT to avoid deadlock
 #define REM_THREAD_CNT 1
 // PART_CNT should be at least NODE_CNT
@@ -28,7 +28,7 @@
 #define STATS_ENABLE				true
 #define TIME_ENABLE					true //STATS_ENABLE
 
-#define MAX_TXN_IN_FLIGHT 1
+#define MAX_TXN_IN_FLIGHT 8
 
 /***********************************************/
 // Memory System
@@ -70,7 +70,7 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HSTORE, OCC, VLL
-#define CC_ALG NO_WAIT
+#define CC_ALG TIMESTAMP
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER					false
@@ -150,12 +150,12 @@
 // are not modeled.
 #define TPCC_ACCESS_ALL 			false 
 #define WH_UPDATE					true
-#define NUM_WH 8
+#define NUM_WH 2
 // % of transactions that access multiple partitions
 #define MPR 1
 #define MPR_NEWORDER			20 // In %
 // Smaller item selection to model contention
-#define CONTENTION false
+#define CONTENTION true
 #define STRICT_MPR true
 //
 enum TPCCTxnType {TPCC_ALL, 

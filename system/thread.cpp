@@ -149,17 +149,37 @@ RC thread_t::run() {
 		switch(m_query->rtype) {
 #if CC_ALG == HSTORE
 				case RLK:
+          // This transaction is from a remote node
+          assert(m_query->txn_id % g_node_cnt != g_node_id);
 					part_lock_man.rem_lock(m_query->pid,m_query->ts, m_query->parts, m_query->part_cnt);
 					break;
 				case RULK:
+          // This transaction is from a remote node
+          assert(m_query->txn_id % g_node_cnt != g_node_id);
 					part_lock_man.rem_unlock(m_query->pid, m_query->parts, m_query->part_cnt,m_query->ts);
-          // TODO: If this is last rulk we're waiting for, add waiting txn to query queue
+          txn_pool.delete_txn(m_query->return_id, m_query->txn_id);
 					break;
 				case RLK_RSP:
+          // This transaction originated from this node
+          assert(m_query->txn_id % g_node_cnt == g_node_id);
 					part_lock_man.rem_lock_rsp(m_query->pid,m_query->rc,m_query->ts);
+          if(part_lock_man.lks_done()) {
+            // TODO: restart txn
+          }
 					break;
 				case RULK_RSP:
+          // This transaction originated from this node
+          assert(m_query->txn_id % g_node_cnt == g_node_id);
 					part_lock_man.rem_unlock_rsp(m_query->pid,m_query->rc,m_query->ts);
+
+          // TODO: check if done waiting
+          if(part_lock_man.ulks_done()) {
+            // Done waiting 
+            INC_STATS(get_thd_id(),time_wait_rem,get_sys_clock() - m_txn->wait_starttime);
+		        next_query = txn_pool.get_qry(g_node_id, m_query->txn_id);
+            rc = m_txn->finish(next_query->rc);
+          }
+
 					break;
 #endif
 				case RQRY:
@@ -246,7 +266,7 @@ RC thread_t::run() {
           assert(m_txn != NULL);
           m_txn->decr_rsp(1);
           if(m_txn->get_rsp_cnt() == 0) {
-            // TODO: Done waiting; 
+            // Done waiting 
             INC_STATS(get_thd_id(),time_wait_rem,get_sys_clock() - m_txn->wait_starttime);
 		        next_query = txn_pool.get_qry(g_node_id, m_query->txn_id);
             rc = m_txn->finish(next_query->rc);
@@ -269,7 +289,8 @@ RC thread_t::run() {
             assert(rc == RCOK);
 
 		        m_txn->abort_cnt = 0;
-            if (CC_ALG == WAIT_DIE || CC_ALG == TIMESTAMP || CC_ALG == MVCC) {
+            //if (CC_ALG == WAIT_DIE || CC_ALG == TIMESTAMP || CC_ALG == MVCC) {
+            if (CC_ALG == WAIT_DIE) {
               m_txn->set_ts(get_next_ts());
               m_query->ts = m_txn->get_ts();
             }
@@ -301,7 +322,7 @@ RC thread_t::run() {
             assert(m_txn != NULL);
           }
 
-          if(m_query->rc != WAIT) {
+          if(m_txn->rc != WAIT) {
 			    if ((CC_ALG == HSTORE && !HSTORE_LOCAL_TS)
 					  || CC_ALG == MVCC 
 					  || CC_ALG == TIMESTAMP) { 
@@ -315,6 +336,8 @@ RC thread_t::run() {
 #elif CC_ALG == OCC
 			m_txn->start_ts = get_next_ts(); 
       m_query->start_ts = m_txn->get_start_ts();
+#elif CC_ALG == HSTORE
+		  rc = part_lock_man.lock(m_txn, m_query->part_to_access, m_query->part_num);
 #endif
           } else {
             INC_STATS(get_thd_id(),time_wait_lock,get_sys_clock() - m_txn->wait_starttime);
@@ -335,6 +358,13 @@ RC thread_t::run() {
       case RCOK:
         // Transaction is finished. Increment stats. Remove from txn pool
         //rc = m_txn->finish(rc);
+        /*
+#if CC_ALG == HSTORE
+				rc = part_lock_man.unlock(m_txn, m_query->part_to_access, m_query->part_num);
+        if(rc != RCOK)
+          break;
+#endif
+*/
         INC_STATS(get_thd_id(),txn_cnt,1);
 		    if(m_txn->abort_cnt > 0) 
 			    INC_STATS(get_thd_id(), txn_abort_cnt, 1);
@@ -353,6 +383,13 @@ RC thread_t::run() {
         //    This will be used to implement abort penalty
         // TODO: Increment abort stats 
         // For now, just re-add query to work queue.
+        /*
+#if CC_ALG == HSTORE
+				rc = part_lock_man.unlock(m_txn, m_query->part_to_access, m_query->part_num);
+        if(rc != RCOK)
+          break;
+#endif
+*/
         assert(m_txn != NULL);
         assert(m_query->txn_id != UINT64_MAX);
         //rc = m_txn->finish(rc);

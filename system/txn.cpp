@@ -11,6 +11,7 @@
 #include "index_btree.h"
 #include "index_hash.h"
 #include "remote_query.h"
+#include "plock.h"
 
 void txn_man::init(thread_t * h_thd, workload * h_wl, uint64_t thd_id) {
 	this->h_thd = h_thd;
@@ -260,7 +261,8 @@ RC txn_man::finish(base_query * query) {
     rem_qry_man.cleanup_remote(get_thd_id(), get_node_id(), get_txn_id(), false);
     */
 	if (CC_ALG == HSTORE) 
-		return RCOK;	
+    return part_lock_man.unlock(this, query->part_to_access, query->part_num);
+		//return RCOK;	
   // Send finish message to all participating transaction
   // FIXME
   assert(rsp_cnt == 0);
