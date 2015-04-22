@@ -238,6 +238,7 @@ RC Row_mvcc::access(txn_man * txn, TsType type, row_t * row) {
 		bool conf = conflict(type, ts);
 		if ( conf && rreq_len < MAX_READ_REQ) {
 			rc = WAIT;
+      txn->rc = rc;
 			buffer_req(R_REQ, txn);
 			txn->ts_ready = false;
 		} else if (conf) { 
@@ -329,6 +330,7 @@ void Row_mvcc::update_buffer(txn_man * txn) {
 
     // TODO: add req->txn to work queue
 		req->txn->ts_ready = true;
+    txn_pool.restart_txn(req->txn->get_txn_id());
 		tofree = req;
 		req = req->next;
 		// free ready_read
