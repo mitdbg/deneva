@@ -2,6 +2,7 @@ import os, sys, re, math, os.path, math
 from helper import *
 from experiments import experiments as experiments
 from experiments import configs
+from experiments import nnodes,nmpr,nalgos,nthreads,nwfs,ntifs
 from plot_helper import *
 import glob
 
@@ -56,11 +57,12 @@ for e in experiments[1:]:
 # Runtime contributions
 # Throughput vs. MPR for HStore, many node counts
 txn_cnt = 10000
-mpr = [0,1,10,20]#,30,40,50]
-nodes = [1]
-threads = [1,2,4]
-#warehouses = [2,4,6,8,10]
-algos = ['HSTORE','NO_WAIT','WAIT_DIE','TIMESTAMP','MVCC','OCC']
+mpr = nmpr #[0,1,10,20]#,30,40,50]
+nodes = nnodes #[1]
+threads = nthreads #[1,2,4]
+#warehouses = nnodes * [2,4,6,8,10]
+algos = nalgos #['HSTORE','NO_WAIT','WAIT_DIE','TIMESTAMP','MVCC','OCC']
+tifs = ntifs
 
 #for algo in algos:
 #    _cfg_fmt = ["NODE_CNT","CC_ALG","MAX_TXN_PER_PART","THREAD_CNT"]
@@ -70,22 +72,28 @@ algos = ['HSTORE','NO_WAIT','WAIT_DIE','TIMESTAMP','MVCC','OCC']
 
 for algo,thread in itertools.product(algos,threads):
     #tput_mpr(mpr,nodes,[algo], txn_cnt,summary)
-    tput(mpr,nodes,summary,cfg_fmt=["CC_ALG","MAX_TXN_PER_PART","THREAD_CNT"],cfg=[algo,txn_cnt,1],xname="MPR",vname="NODE_CNT",title="{} {} Threads".format(algo,thread))
+    _cfg_fmt = ["CC_ALG","MAX_TXN_PER_PART","THREAD_CNT"]
+    _cfg=[algo,txn_cnt,thread]
+    _title="{} {} Threads".format(algo,thread)
+    tput(mpr,nodes,summary,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="MPR",vname="NODE_CNT",title=_title)
         
 
-for node,thread in itertools.product(nodes,threads):
-    tput(mpr,algos,summary,cfg_fmt=["NODE_CNT","MAX_TXN_PER_PART","THREAD_CNT","NUM_WH"],cfg=[node,txn_cnt,thread,4],xname="MPR",vname="CC_ALG",title="{} Nodes {} Threads".format(node,thread))
+for node,thread,tif in itertools.product(nodes,threads,tifs):
+    _cfg_fmt = ["NODE_CNT","MAX_TXN_PER_PART","THREAD_CNT","NUM_WH","MAX_TXN_IN_FLIGHT"]
+    _cfg=[node,txn_cnt,thread,node * 1,tif]
+    _title="{} Nodes {} Threads {} TiF".format(node,thread,tif)
+    tput(mpr,algos,summary,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="MPR",vname="CC_ALG",title=_title)
 
-for node,algo in itertools.product(nodes,algos):
-    _cfg_fmt = ["NODE_CNT","CC_ALG","MAX_TXN_PER_PART"]
-    _cfg=[node,algo,txn_cnt]
-    _title="{} {} Nodes".format(algo,node)
+for node,algo,tif in itertools.product(nodes,algos,tifs):
+    _cfg_fmt = ["NODE_CNT","CC_ALG","MAX_TXN_PER_PART","MAX_TXN_IN_FLIGHT"]
+    _cfg=[node,algo,txn_cnt,tif]
+    _title="{} {} Nodes {} TiF".format(algo,node,tif)
     tput(mpr,threads,summary,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="MPR",vname="THREAD_CNT",title=_title)
 
-for node,algo,thread in itertools.product(nodes,algos,threads):
-    _cfg_fmt = ["NODE_CNT","CC_ALG","MAX_TXN_PER_PART","THREAD_CNT"]
-    _cfg=[node,algo,txn_cnt,thread]
-    _title="{} {} Nodes {} Threads".format(algo,node,thread)
+for node,algo,thread,tif in itertools.product(nodes,algos,threads,tifs):
+    _cfg_fmt = ["NODE_CNT","CC_ALG","MAX_TXN_PER_PART","THREAD_CNT","MAX_TXN_IN_FLIGHT"]
+    _cfg=[node,algo,txn_cnt,thread,tif]
+    _title="{} {} Nodes {} Threads {} TiF".format(algo,node,thread,tif)
     time_breakdown(mpr,summary,normalized=False,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="MPR",title=_title)
     time_breakdown(mpr,summary,normalized=True,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="MPR",title=_title)
 #    time_breakdown(mpr,node,algo,txn_cnt,summary,normalized=True)

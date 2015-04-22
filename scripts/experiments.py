@@ -10,8 +10,19 @@ fmt4 = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","N
 fmt5 = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","NUM_WH","MAX_TXN_IN_FLIGHT"]]
 
 simple = [
-[2,10000,'TPCC','NO_WAIT',30,1,8,16]
+[2,10000,'TPCC','NO_WAIT',30,1,2,8]
 #[2,10000,'TPCC','NO_WAIT',30,2,8,16]
+]
+
+nnodes=[2]
+nmpr=[1]+range(0,31,10)
+nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','MVCC']
+nthreads=[1,2]
+nwfs=[1]
+ntifs=[1,8]
+
+experiments = [
+    [n,10000,'TPCC',cc,m,t,wf*n,tif] for n,m,cc,t,wf,tif in itertools.product(nnodes,nmpr,nalgos,nthreads,nwfs,ntifs)
 ]
 
 experiments_100K = [
@@ -48,10 +59,10 @@ experiments_10K_occ = [
 experiments_10K_all = experiments_10K_2pl + experiments_10K_tso + experiments_10K_hstore + experiments_10K_mvcc + experiments_10K_occ
 
 experiments_10K_wait_die_mt = [
-    [n,10000,'TPCC',cc,m,t,wf*n,tif] for n,m,cc,t,wf,tif in itertools.product([1,2],[1]+range(0,51,10),['WAIT_DIE'],[1,2],[1,2,4],[1,2,4,8,32,64])
+    [n,10000,'TPCC',cc,m,t,wf*n,tif] for n,m,cc,t,wf,tif in itertools.product([1,2,4],[1]+range(0,51,10),['WAIT_DIE'],[1,2],[1,2,4],[1,2,4,8,32,64])
 ]
 experiments_10K_no_wait_mt = [
-    [n,10000,'TPCC',cc,m,t,wf*n,tif] for n,m,cc,t,wf,tif in itertools.product([1,2],[1]+range(0,51,10),['NO_WAIT'],[1,2],[1,2,4],[1,2,4,8,32,64])
+    [n,10000,'TPCC',cc,m,t,wf*n,tif] for n,m,cc,t,wf,tif in itertools.product([1,2,4],[1]+range(0,51,10),['NO_WAIT'],[1,2],[1,2,4],[1,2,4,8,32,64])
 ]
 experiments_10K_2pl_mt = experiments_10K_no_wait_mt + experiments_10K_wait_die_mt
 
@@ -60,18 +71,18 @@ experiments_10K_hstore_mt = [
 ]
 
 experiments_10K_tso_mt = [
-    [n,10000,'TPCC',cc,m,t] for n,m,cc,t in itertools.product([2,4],[1]+range(0,51,10),['TIMESTAMP'],[1,2,4])
+    [n,10000,'TPCC',cc,m,t,wf*n,tif] for n,m,cc,t,wf,tif in itertools.product([1,2,4],[1]+range(0,51,10),['TIMESTAMP'],[1,2],[1,2,4],[1,2,4,8,32,64])
 ]
 
 experiments_10K_mvcc_mt = [
-    [n,10000,'TPCC',cc,m,t] for n,m,cc,t in itertools.product([2,4],[1]+range(0,51,10),['MVCC'],[1,2,4])
+    [n,10000,'TPCC',cc,m,t,wf*n,tif] for n,m,cc,t,wf,tif in itertools.product([1,2,4],[1]+range(0,51,10),['MVCC'],[1,2],[1,2,4],[1,2,4,8,32,64])
 ]
 
 experiments_10K_occ_mt = [
     [n,10000,'TPCC',cc,m,t] for n,m,cc,t in itertools.product([2,4],[1]+range(0,51,10),['OCC'],[1,2,4])
 ]
 
-experiments_10K_all_mt = experiments_10K_2pl_mt + experiments_10K_tso_mt + experiments_10K_hstore_mt + experiments_10K_mvcc_mt + experiments_10K_occ_mt
+experiments_10K_all_mt = experiments_10K_2pl_mt + experiments_10K_tso_mt + experiments_10K_mvcc_mt #+ experiments_10K_hstore_mt + experiments_10K_occ_mt
 
 experiments_10K_wh = [
     [n,10000,'TPCC',cc,m,t,n*t*wh] for n,m,cc,t,wh in itertools.product([2],[1]+range(0,51,10),['HSTORE','NO_WAIT','WAIT_DIE','TIMESTAMP','MVCC','OCC'],[1],[1,2,3,4,5])
@@ -123,5 +134,5 @@ configs = {
 ##################
 # FIXME
 #################
-experiments = fmt5 + experiments_10K_2pl_mt
+experiments = fmt5 + experiments
 config_names = fmt5[0]
