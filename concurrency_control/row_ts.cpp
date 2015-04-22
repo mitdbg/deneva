@@ -209,6 +209,7 @@ RC Row_ts::access(txn_man * txn, TsType type, row_t * row) {
 		}
 #endif
 		if (ts > min_rts) {
+			row = txn->cur_row;
 			buffer_req(W_REQ, txn, row);
             goto final;
 		} else { 
@@ -242,6 +243,7 @@ final:
 }
 
 void Row_ts::update_buffer() {
+
 	while (true) {
 		ts_t new_min_pts = cal_min(P_REQ);
 		assert(new_min_pts >= min_pts);
@@ -290,6 +292,7 @@ void Row_ts::update_buffer() {
 		if (wts < young_req->ts)
 			wts = young_req->ts;
 		return_req_list(ready_write);
+
 	}
 }
 
