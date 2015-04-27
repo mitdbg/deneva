@@ -63,9 +63,12 @@ ts_t Manager::get_min_ts(uint64_t tid) {
 	if (now - last_min_ts_time > MIN_TS_INTVL) { 
 		last_min_ts_time = now;
     uint64_t min = txn_pool.get_min_ts();
+    /*
     assert(min != UINT64_MAX);
 		assert(min >= min_ts);
-		min_ts = min;
+    */
+    if(min > min_ts)
+		  min_ts = min;
 	} 
 //uint64_t tt4 = get_sys_clock() - now;
 //INC_STATS(tid, debug4, tt4);

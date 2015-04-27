@@ -48,6 +48,8 @@ public:
 	void 			set_txn_id(txnid_t txn_id);
 	txnid_t 		get_txn_id();
 
+  void      set_pid(uint64_t pid);
+  uint64_t get_pid();
 	void 			set_ts(ts_t timestamp);
 	ts_t 			get_ts();
 	void 			set_start_ts(uint64_t start_ts);
@@ -65,6 +67,7 @@ public:
 	bool volatile 	ts_ready; 
 	// [HSTORE]
 	int volatile 	ready_part;
+	int volatile 	ready_ulk;
 	RC 				finish(RC rc);
 	RC 				finish(base_query * query);
 	void 			cleanup(RC rc);
@@ -78,6 +81,8 @@ public:
 protected:	
 	void 			insert_row(row_t * row, table_t * table);
 public:
+  // Home partition id TODO: populate
+  uint64_t pid;
 	// For OCC
 	uint64_t 		start_ts;
 	uint64_t 		end_ts;

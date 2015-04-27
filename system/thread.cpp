@@ -145,35 +145,63 @@ RC thread_t::run() {
     if((m_query = work_queue.get_next_query()) == NULL)
       continue;
 
+    rc = RCOK;
 
 		switch(m_query->rtype) {
 #if CC_ALG == HSTORE
 				case RLK:
           // This transaction is from a remote node
           assert(m_query->txn_id % g_node_cnt != g_node_id);
-					part_lock_man.rem_lock(m_query->pid,m_query->ts, m_query->parts, m_query->part_cnt);
+          m_txn = txn_pool.get_txn(m_query->return_id, m_query->txn_id);
+          if(m_txn == NULL) {
+	          rc = _wl->get_txn_man(m_txn, this);
+            assert(rc == RCOK);
+            m_txn->set_txn_id(m_query->txn_id);
+            m_txn->set_ts(m_query->ts);
+            m_txn->set_pid(m_query->pid);
+            txn_pool.add_txn(m_query->return_id,m_txn,m_query);
+          } 
+					part_lock_man.rem_lock(m_query->parts, m_query->part_cnt, m_txn);
 					break;
 				case RULK:
           // This transaction is from a remote node
           assert(m_query->txn_id % g_node_cnt != g_node_id);
-					part_lock_man.rem_unlock(m_query->pid, m_query->parts, m_query->part_cnt,m_query->ts);
+          m_txn = txn_pool.get_txn(m_query->return_id, m_query->txn_id);
+          if(m_txn == NULL)
+            break;
+					part_lock_man.rem_unlock(m_query->parts, m_query->part_cnt, m_txn);
+
           txn_pool.delete_txn(m_query->return_id, m_query->txn_id);
 					break;
 				case RLK_RSP:
           // This transaction originated from this node
           assert(m_query->txn_id % g_node_cnt == g_node_id);
-					part_lock_man.rem_lock_rsp(m_query->pid,m_query->rc,m_query->ts);
-          if(part_lock_man.lks_done()) {
-            // TODO: restart txn
+          m_txn = txn_pool.get_txn(m_query->return_id, m_query->txn_id);
+          assert(m_txn != NULL);
+					part_lock_man.rem_lock_rsp(m_query->rc, m_txn);
+          if(m_txn->ready_part == 0) {
+            // Done waiting for responses; restart txn
+            if(m_txn->rc == Abort) {
+		          next_query = txn_pool.get_qry(g_node_id, m_query->txn_id);
+		          rc = part_lock_man.unlock(next_query->part_to_access, next_query->part_num, m_txn);
+              if(rc != WAIT)
+                rc = m_txn->rc;
+              break;
+            }
+            txn_pool.restart_txn(m_txn->get_txn_id());
           }
+          // FIXME: Hack
+          m_query = NULL;
 					break;
 				case RULK_RSP:
           // This transaction originated from this node
           assert(m_query->txn_id % g_node_cnt == g_node_id);
-					part_lock_man.rem_unlock_rsp(m_query->pid,m_query->rc,m_query->ts);
+          m_txn = txn_pool.get_txn(m_query->return_id, m_query->txn_id);
+          assert(m_txn != NULL);
+					part_lock_man.rem_unlock_rsp(m_txn);
 
           // TODO: check if done waiting
-          if(part_lock_man.ulks_done()) {
+          if(m_txn->ready_ulk == 0) {
             // Done waiting 
             INC_STATS(get_thd_id(),time_wait_rem,get_sys_clock() - m_txn->wait_starttime);
 		        next_query = txn_pool.get_qry(g_node_id, m_query->txn_id);
@@ -224,19 +252,18 @@ RC thread_t::run() {
           // free this m_query
 #if WORKLOAD == TPCC
           mem_allocator.free(m_query, sizeof(tpcc_query));
+          m_query = NULL;
 #endif
           m_query = next_query;
           // Execute from original txn; Note: txn may finish
-          /*
-          if(m_query->rc == Abort) {
-            rc = m_txn->finish(m_query);
+          rc = m_txn->run_txn(m_query);
+
+#if CC_ALG == HSTORE
+          if(rc == RCOK || rc == Abort) {
+            m_query->rc = rc;
+		        rc = part_lock_man.unlock(m_query->part_to_access, m_query->part_num, m_txn);
           }
-          else {
-          */
-          
-            //assert(m_query->rc == RCOK || m_query->rc == WAIT_REM || m_query->rc == WAIT);
-            rc = m_txn->run_txn(m_query);
-          //}
+#endif
 					break;
         case RFIN:
           // This transaction is from a remote node
@@ -247,6 +274,7 @@ RC thread_t::run() {
             rem_qry_man.ack_response(m_query);
 #if WORKLOAD == TPCC
             mem_allocator.free(m_query, sizeof(tpcc_query));
+            m_query = NULL;
 #endif
             break;
           }
@@ -255,6 +283,7 @@ RC thread_t::run() {
           rem_qry_man.ack_response(m_query);
 #if WORKLOAD == TPCC
           mem_allocator.free(m_query, sizeof(tpcc_query));
+          m_query = NULL;
 #endif
           // TODO: If a waiting txn was affected by this txn finishing, add waiting txn to queue.
           break;
@@ -275,6 +304,7 @@ RC thread_t::run() {
           // free this m_query
 #if WORKLOAD == TPCC
           mem_allocator.free(m_query, sizeof(tpcc_query));
+          m_query = NULL;
 #endif
           m_query = next_query;
           break;
@@ -337,14 +367,24 @@ RC thread_t::run() {
 			m_txn->start_ts = get_next_ts(); 
       m_query->start_ts = m_txn->get_start_ts();
 #elif CC_ALG == HSTORE
-		  rc = part_lock_man.lock(m_txn, m_query->part_to_access, m_query->part_num);
+		  rc = part_lock_man.lock(m_query->part_to_access, m_query->part_num, m_txn);
+      if(rc == WAIT) {
+        break;
+      }
 #endif
           } else {
             INC_STATS(get_thd_id(),time_wait_lock,get_sys_clock() - m_txn->wait_starttime);
           }
           
+          if(rc == RCOK)
+            rc = m_txn->run_txn(m_query);
 
-          rc = m_txn->run_txn(m_query);
+#if CC_ALG == HSTORE
+          if(rc == RCOK || rc == Abort) {
+            m_query->rc = rc;
+		        rc = part_lock_man.unlock(m_query->part_to_access, m_query->part_num, m_txn);
+          }
+#endif
 
           break;
 				default:
@@ -352,7 +392,8 @@ RC thread_t::run() {
 					break;
 			}
 
-    if(GET_NODE_ID(m_query->pid) == g_node_id) {
+    // If m_query was freed just before this, m_query is NULL
+    if(m_query != NULL && GET_NODE_ID(m_query->pid) == g_node_id) {
     ts_t timespan;
     switch(rc) {
       case RCOK:
@@ -381,7 +422,6 @@ RC thread_t::run() {
         // TODO: Add to abort list that includes txn_id and ts
         //    List will be checked periodically to restart transactions and put them back on the work queue
         //    This will be used to implement abort penalty
-        // TODO: Increment abort stats 
         // For now, just re-add query to work queue.
         /*
 #if CC_ALG == HSTORE
@@ -407,8 +447,6 @@ RC thread_t::run() {
         break;
       case WAIT_REM:
         // Save transaction information for later
-        // FIXME: Race conditions between when WAIT was issued to txn saved
-        //    When > 1 thread
         assert(m_txn != NULL);
         m_txn->wait_starttime = get_sys_clock();
         //txn_pool.add_txn(g_node_id,m_txn,m_query);
@@ -424,7 +462,7 @@ RC thread_t::run() {
         assert(false);
         break;
     }
-    } else {
+    } else if (m_query != NULL && GET_NODE_ID(m_query->pid) != g_node_id) {
       if(rc == WAIT) {
         m_txn->wait_starttime = get_sys_clock();
       }
@@ -520,11 +558,13 @@ RC thread_t::run_pool_txn() {
 				INC_TMP_STATS(_thd_id,mpq_cnt,1);
 
 #if CC_ALG == HSTORE
+      /*
 			if (WORKLOAD == TEST) {
 				uint64_t part_to_access[1] = {0};
 				rc = part_lock_man.lock(m_txn, &part_to_access[0], 1);
 			} else 
 				rc = part_lock_man.lock(m_txn, m_query->part_to_access, m_query->part_num);
+        */
 #elif CC_ALG == VLL
 			vll_man.vllMainLoop(m_txn, m_query);
 #elif CC_ALG == MVCC
@@ -546,11 +586,13 @@ RC thread_t::run_pool_txn() {
 					rc = m_txn->run_txn(m_query);
 #endif
 #if CC_ALG == HSTORE
+        /*
 			if (WORKLOAD == TEST) {
 				uint64_t part_to_access[1] = {0};
 				part_lock_man.unlock(m_txn, &part_to_access[0], 1);
 			} else 
 				part_lock_man.unlock(m_txn, m_query->part_to_access, m_query->part_num);
+        */
 #endif
 			}
 			if (rc == Abort) {

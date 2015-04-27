@@ -131,6 +131,7 @@ void TxnPool::delete_txn(uint64_t node_id, uint64_t txn_id){
   //assert(txn_id % g_node_cnt == node_id);
 
   pthread_mutex_lock(&mtx);
+  //printf("Delete: %ld\n",txn_id);
 
   txn_node_t t_node = txns[0];
   //txn_node_t t_node = txns[node_id];
@@ -148,6 +149,7 @@ void TxnPool::delete_txn(uint64_t node_id, uint64_t txn_id){
 
   //assert(node != NULL);
   if(node != NULL) {
+    // FIXME
     /*
     node->txn->release();
 #if WORKLOAD == TPCC

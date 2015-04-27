@@ -41,7 +41,8 @@ RC tpcc_txn_man::run_txn(base_query * query) {
   if(query->rc == WAIT_REM) {
     rtn_tpcc_state(query);
   }
-  if(this->rc == WAIT) {
+
+  if(CC_ALG != HSTORE && this->rc == WAIT) {
     assert(query->rc == WAIT || query->rc == RCOK);
     get_row_post_wait(row);
     next_tpcc_state(query);
@@ -251,7 +252,9 @@ RC tpcc_txn_man::run_txn_state(base_query * query) {
       if(w_loc)
 			  rc = run_payment_0(w_id, d_id, d_w_id, h_amount, row);
       else {
-		    rem_qry_man.remote_qry(query,TPCC_PAYMENT0,GET_NODE_ID(part_id_w),this);
+        assert(GET_NODE_ID(m_query->pid) == g_node_id);
+        query->dest_id = GET_NODE_ID(part_id_w);
+        query->rem_req_state = TPCC_PAYMENT0;
         rc = WAIT_REM;
       }
 			break;
@@ -268,7 +271,9 @@ RC tpcc_txn_man::run_txn_state(base_query * query) {
       if(c_w_loc)
 			  rc = run_payment_4( w_id,  d_id, c_id, c_w_id,  c_d_id, c_last, h_amount, by_last_name, row); 
       else {
-		    rem_qry_man.remote_qry(query,TPCC_PAYMENT4,GET_NODE_ID(part_id_c_w),this);
+        assert(GET_NODE_ID(m_query->pid) == g_node_id);
+        query->dest_id = GET_NODE_ID(part_id_c_w);
+        query->rem_req_state = TPCC_PAYMENT4;
         rc = WAIT_REM;
       }
 			break;

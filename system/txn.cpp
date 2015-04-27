@@ -50,6 +50,14 @@ uint64_t txn_man::get_node_id() {
 	return h_thd->get_node_id();
 }
 
+void txn_man::set_pid(uint64_t pid) {
+  this->pid = pid;
+}
+
+uint64_t txn_man::get_pid() {
+  return pid;
+}
+
 void txn_man::set_ts(ts_t timestamp) {
 	this->timestamp = timestamp;
 }
@@ -127,6 +135,7 @@ void txn_man::cleanup(RC rc) {
 	wr_cnt = 0;
 	insert_cnt = 0;
   rsp_cnt = 0;
+  //printf("Cleanup: %ld\n",get_txn_id());
 #if CC_ALG == DL_DETECT
 	dl_detector.clear_dep(get_txn_id());
 #endif
@@ -236,8 +245,9 @@ txn_man::index_read(INDEX * index, idx_key_t key, int part_id) {
 }
 
 RC txn_man::finish(RC rc) {
-	if (CC_ALG == HSTORE) 
+	if (CC_ALG == HSTORE) {
 		return RCOK;	
+  }
 	uint64_t starttime = get_sys_clock();
 	if (CC_ALG == OCC && rc == RCOK) {
 		// validation phase.
@@ -261,8 +271,7 @@ RC txn_man::finish(base_query * query) {
     rem_qry_man.cleanup_remote(get_thd_id(), get_node_id(), get_txn_id(), false);
     */
 	if (CC_ALG == HSTORE) 
-    return part_lock_man.unlock(this, query->part_to_access, query->part_num);
-		//return RCOK;	
+    return RCOK;
   // Send finish message to all participating transaction
   // FIXME
   assert(rsp_cnt == 0);
