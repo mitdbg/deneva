@@ -57,6 +57,7 @@ for e in experiments[1:]:
 # Runtime contributions
 # Throughput vs. MPR for HStore, many node counts
 txn_cnt = 10000
+nmpr.sort()
 mpr = nmpr #[0,1,10,20]#,30,40,50]
 nodes = nnodes #[1]
 threads = nthreads #[1,2,4]
@@ -72,27 +73,27 @@ tifs = ntifs
 
 for algo,thread in itertools.product(algos,threads):
     #tput_mpr(mpr,nodes,[algo], txn_cnt,summary)
-    _cfg_fmt = ["CC_ALG","MAX_TXN_PER_PART","THREAD_CNT"]
-    _cfg=[algo,txn_cnt,thread]
+    _cfg_fmt = ["CC_ALG","MAX_TXN_PER_PART","THREAD_CNT","NUM_WH"]
+    _cfg=[algo,txn_cnt,thread,64]
     _title="{} {} Threads".format(algo,thread)
     tput(mpr,nodes,summary,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="MPR",vname="NODE_CNT",title=_title)
         
 
 for node,thread,tif in itertools.product(nodes,threads,tifs):
     _cfg_fmt = ["NODE_CNT","MAX_TXN_PER_PART","THREAD_CNT","NUM_WH","MAX_TXN_IN_FLIGHT"]
-    _cfg=[node,txn_cnt,thread,node * 1,tif]
+    _cfg=[node,txn_cnt,thread,64,tif]
     _title="{} Nodes {} Threads {} TiF".format(node,thread,tif)
     tput(mpr,algos,summary,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="MPR",vname="CC_ALG",title=_title)
 
 for node,algo,tif in itertools.product(nodes,algos,tifs):
-    _cfg_fmt = ["NODE_CNT","CC_ALG","MAX_TXN_PER_PART","MAX_TXN_IN_FLIGHT"]
-    _cfg=[node,algo,txn_cnt,tif]
+    _cfg_fmt = ["NODE_CNT","CC_ALG","MAX_TXN_PER_PART","MAX_TXN_IN_FLIGHT","NUM_WH"]
+    _cfg=[node,algo,txn_cnt,tif,64]
     _title="{} {} Nodes {} TiF".format(algo,node,tif)
     tput(mpr,threads,summary,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="MPR",vname="THREAD_CNT",title=_title)
 
 for node,algo,thread,tif in itertools.product(nodes,algos,threads,tifs):
-    _cfg_fmt = ["NODE_CNT","CC_ALG","MAX_TXN_PER_PART","THREAD_CNT","MAX_TXN_IN_FLIGHT"]
-    _cfg=[node,algo,txn_cnt,thread,tif]
+    _cfg_fmt = ["NODE_CNT","CC_ALG","MAX_TXN_PER_PART","THREAD_CNT","MAX_TXN_IN_FLIGHT","NUM_WH"]
+    _cfg=[node,algo,txn_cnt,thread,tif,64]
     _title="{} {} Nodes {} Threads {} TiF".format(algo,node,thread,tif)
     time_breakdown(mpr,summary,normalized=False,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="MPR",title=_title)
     time_breakdown(mpr,summary,normalized=True,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="MPR",title=_title)

@@ -15,7 +15,7 @@ def tput(xval,vval,summary,
         ):
     tpt = {}
     name = 'tput_{}_{}_{}'.format(xname.lower(),vname.lower(),title.replace(" ","_").lower())
-    _title = 'Per Thread Throughput {}'.format(title)
+    _title = 'Per Node Throughput {}'.format(title)
 
     for v in vval:
         tpt[v] = [0] * len(xval)
@@ -27,13 +27,16 @@ def tput(xval,vval,summary,
                 print("Not in summary: {}".format(cfgs))
                 break
             try:
+                tot_run_time = sum(summary[cfgs]['run_time'])
+                tot_txn_cnt = sum(summary[cfgs]['txn_cnt'])
                 avg_run_time = avg(summary[cfgs]['run_time'])
                 avg_txn_cnt = avg(summary[cfgs]['txn_cnt'])
             except KeyError:
-                print("KeyError: {} {} {}".format(v,x,cfg))
+                print("KeyError: {} {} {} -- {}".format(v,x,cfg,cfgs))
                 tpt[v][xi] = 0
                 continue
-            tpt[v][xi] = (avg_txn_cnt/avg_run_time)
+            tpt[v][xi] = (tot_txn_cnt/tot_run_time)
+            #tpt[v][xi] = (avg_txn_cnt/avg_run_time)
 
     draw_line(name,tpt,xval,ylab='Throughput (Txn/sec)',xlab='Multi-Partition Rate',title=_title,bbox=[0.5,0.95]) 
 
@@ -52,17 +55,17 @@ def tput_mpr(mpr,nodes,algos,max_txn,summary):
     xs = []
     node,algo = None,None
     name = 'tput_mpr'
-    _title = 'Per Thread Throughput'
+    _title = 'Per Node Throughput'
     if len(nodes) > 1:
         xs = nodes
         algo = algos[0]
         name = 'tput_mpr_' + algo
-        _title = 'Per Thread Throughput ' + algo
+        _title = 'Per Node Throughput ' + algo
     else:
         xs = algos
         node = nodes[0]
         name = 'tput_mpr_n' + str(node)
-        _title = 'Per Thread Throughput ' + str(node) + ' Nodes'
+        _title = 'Per Node Throughput ' + str(node) + ' Nodes'
 
     for x in xs:
         tpt[x] = [0] * len(mpr)
@@ -327,6 +330,6 @@ def plot_avg(mpr,nodes,algos,max_txn,summary,value='run_time'):
                 continue
             avgs[x][i] = avg_
 
-    draw_line(name,avgs,mpr,ylab='average ' + value,xlab='Multi-Partition Rate',title='Per Thread Throughput',bbox=[0.5,0.95]) 
+    draw_line(name,avgs,mpr,ylab='average ' + value,xlab='Multi-Partition Rate',title='Per Node Throughput',bbox=[0.5,0.95]) 
 
 
