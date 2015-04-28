@@ -83,6 +83,7 @@ protected:
 public:
   // Home partition id TODO: populate
   uint64_t pid;
+  uint64_t parts_locked; 
 	// For OCC
 	uint64_t 		start_ts;
 	uint64_t 		end_ts;

@@ -45,6 +45,10 @@ public:
 	uint64_t debug4;
 	uint64_t debug5;
 
+	uint64_t rlk;
+	uint64_t rulk;
+	uint64_t rlk_rsp;
+	uint64_t rulk_rsp;
 	uint64_t rqry;
 	uint64_t rqry_rsp;
 	uint64_t rfin;

@@ -5,7 +5,7 @@
 // Simulation + Hardware
 /***********************************************/
 #define NODE_CNT 2
-#define THREAD_CNT 1
+#define THREAD_CNT 2
 // REM_THREAD_CNT should be at least NODE_CNT*THREAD_CNT to avoid deadlock
 #define REM_THREAD_CNT 1
 // PART_CNT should be at least NODE_CNT
@@ -28,7 +28,7 @@
 #define STATS_ENABLE				true
 #define TIME_ENABLE					true //STATS_ENABLE
 
-#define MAX_TXN_IN_FLIGHT 1
+#define MAX_TXN_IN_FLIGHT 2
 
 /***********************************************/
 // Memory System
@@ -152,7 +152,7 @@
 #define WH_UPDATE					true
 #define NUM_WH 2
 // % of transactions that access multiple partitions
-#define MPR 100
+#define MPR 20
 #define MPR_NEWORDER			20 // In %
 // Smaller item selection to model contention
 #define CONTENTION false

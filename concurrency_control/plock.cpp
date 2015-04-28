@@ -59,8 +59,9 @@ RC PartMan::lock(txn_man * txn) {
 void PartMan::unlock(txn_man * txn) {
   pthread_mutex_lock( &latch );
   if (txn == owner) {   
-    if (waiter_cnt == 0) 
+    if (waiter_cnt == 0) {
       owner = NULL;
+    }
     else {
       owner = waiters[0];     
       // TODO: Calculate plock wait time here
@@ -76,7 +77,7 @@ void PartMan::unlock(txn_man * txn) {
           txn_pool.restart_txn(owner->get_txn_id());
         }
       }
-			else {
+      else {
 				remote_rsp(true,RCOK,owner);
 			}
     } 
@@ -88,8 +89,10 @@ void PartMan::unlock(txn_man * txn) {
       if (find && i < waiter_cnt - 1) 
         waiters[i] = waiters[i + 1];
     }
+    /*
 		if(GET_NODE_ID(txn->get_pid()) == _node_id)
       ATOM_SUB(txn->ready_ulk, 1);
+      */
 		// We may not find a remote request among the waiters; ignore
     //assert(find);
 		if(find)
@@ -98,6 +101,9 @@ void PartMan::unlock(txn_man * txn) {
 	// Send response for rulk
   if(GET_NODE_ID(txn->get_pid()) != _node_id)
 	  remote_rsp(false,RCOK,txn);
+  // If local, decr ready_ulk
+	if(GET_NODE_ID(txn->get_pid()) == _node_id)
+    ATOM_SUB(txn->ready_ulk, 1);
 
   pthread_mutex_unlock( &latch );
 }
@@ -148,11 +154,13 @@ RC Plock::lock(uint64_t * parts, uint64_t part_cnt, txn_man * txn) {
   // Part ID is at home node
 	uint64_t nid = txn->get_node_id();
   txn->set_pid(GET_PART_ID(tid,nid));
+  txn->parts_locked = 0;
 	RC rc = RCOK;
 	ts_t starttime = get_sys_clock();
 	UInt32 i;
 	for (i = 0; i < part_cnt; i ++) {
 		uint64_t part_id = parts[i];
+    txn->parts_locked++;
 		if(GET_NODE_ID(part_id) == get_node_id())  {
 			rc = part_mans[part_id]->lock(txn);
 		}
@@ -189,10 +197,13 @@ RC Plock::unlock(uint64_t * parts, uint64_t part_cnt, txn_man * txn) {
 	ts_t starttime = get_sys_clock();
   // TODO: Store # parts locked or sent locks in qry
   // TODO: Only send to each node once, regardless of # of parts 
-	for (UInt32 i = 0; i < part_cnt; i ++) {
+	//for (UInt32 i = 0; i < part_cnt; i ++) {
+	for (UInt32 i = 0; i < txn->parts_locked; i ++) {
 		uint64_t part_id = parts[i];
-		if(GET_NODE_ID(part_id) == get_node_id()) 
+		if(GET_NODE_ID(part_id) == get_node_id()) {
+      ATOM_ADD(txn->ready_ulk,1);
 			part_mans[part_id]->unlock(txn);
+    }
 		else {
       ATOM_ADD(txn->ready_ulk,1);
 			remote_qry(false,part_id,txn);

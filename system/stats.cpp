@@ -26,6 +26,10 @@ void Stats_thd::clear() {
 	debug3 = 0;
 	debug4 = 0;
 	debug5 = 0;
+	rlk = 0;
+	rulk = 0;
+	rlk_rsp = 0;
+	rulk_rsp = 0;
 	rqry = 0;
 	rqry_rsp = 0;
 	rfin = 0;

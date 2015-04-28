@@ -152,6 +152,7 @@ RC thread_t::run() {
 				case RLK:
           // This transaction is from a remote node
           assert(m_query->txn_id % g_node_cnt != g_node_id);
+          INC_STATS(0,rlk,1);
           m_txn = txn_pool.get_txn(m_query->return_id, m_query->txn_id);
           if(m_txn == NULL) {
 	          rc = _wl->get_txn_man(m_txn, this);
@@ -166,9 +167,12 @@ RC thread_t::run() {
 				case RULK:
           // This transaction is from a remote node
           assert(m_query->txn_id % g_node_cnt != g_node_id);
+          INC_STATS(0,rulk,1);
           m_txn = txn_pool.get_txn(m_query->return_id, m_query->txn_id);
-          if(m_txn == NULL)
+          if(m_txn == NULL) {
+            assert(false);
             break;
+          }
 					part_lock_man.rem_unlock(m_query->parts, m_query->part_cnt, m_txn);
 
           txn_pool.delete_txn(m_query->return_id, m_query->txn_id);
@@ -176,6 +180,7 @@ RC thread_t::run() {
 				case RLK_RSP:
           // This transaction originated from this node
           assert(m_query->txn_id % g_node_cnt == g_node_id);
+          INC_STATS(0,rlk_rsp,1);
           m_txn = txn_pool.get_txn(m_query->return_id, m_query->txn_id);
           assert(m_txn != NULL);
 					part_lock_man.rem_lock_rsp(m_query->rc, m_txn);
@@ -196,6 +201,7 @@ RC thread_t::run() {
 				case RULK_RSP:
           // This transaction originated from this node
           assert(m_query->txn_id % g_node_cnt == g_node_id);
+          INC_STATS(0,rulk_rsp,1);
           m_txn = txn_pool.get_txn(m_query->return_id, m_query->txn_id);
           assert(m_txn != NULL);
 					part_lock_man.rem_unlock_rsp(m_txn);
