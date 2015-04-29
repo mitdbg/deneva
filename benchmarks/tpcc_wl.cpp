@@ -138,6 +138,7 @@ void tpcc_wl::init_tab_wh() {
 	if (WL_VERB)
 		printf("[init] workload table.\n");
 	for (UInt32 wid = 1; wid <= g_num_wh; wid ++) {
+    //if(GET_NODE_ID(wh_to_part(wid)) != g_node_id) continue;
 		row_t * row;
 		uint64_t row_id;
 		t_warehouse->get_new_row(row, 0, row_id);
@@ -452,40 +453,55 @@ void * tpcc_wl::threadInitWh(void * This) {
 }
 
 void * tpcc_wl::threadInitDist(void * This) {
-	for (uint64_t wid = 1; wid <= g_num_wh; wid ++)
+	for (uint64_t wid = 1; wid <= g_num_wh; wid ++) {
+    if(GET_NODE_ID(wh_to_part(wid)) != g_node_id) 
+      continue;
 		((tpcc_wl *)This)->init_tab_dist(wid);
+  }
 	printf("DISTRICT Done\n");
 	return NULL;
 }
 
 void * tpcc_wl::threadInitStock(void * This) {
-	for (uint64_t wid = 1; wid <= g_num_wh; wid ++)
+	for (uint64_t wid = 1; wid <= g_num_wh; wid ++) {
+    if(GET_NODE_ID(wh_to_part(wid)) != g_node_id) 
+      continue;
 		((tpcc_wl *)This)->init_tab_stock(wid);
+  }
 	printf("STOCK Done\n");
 	return NULL;
 }
 
 void * tpcc_wl::threadInitCust(void * This) {
-	for (uint64_t wid = 1; wid <= g_num_wh; wid ++)
+	for (uint64_t wid = 1; wid <= g_num_wh; wid ++) {
+    if(GET_NODE_ID(wh_to_part(wid)) != g_node_id) 
+      continue;
 		for (uint64_t did = 1; did <= DIST_PER_WARE; did++)
 			((tpcc_wl *)This)->init_tab_cust(did, wid);
+  }
 	printf("CUSTOMER Done\n");
 	return NULL;
 }
 	
 void * tpcc_wl::threadInitHist(void * This) {
-	for (uint64_t wid = 1; wid <= g_num_wh; wid ++)
+	for (uint64_t wid = 1; wid <= g_num_wh; wid ++) {
+    if(GET_NODE_ID(wh_to_part(wid)) != g_node_id) 
+      continue;
 		for (uint64_t did = 1; did <= DIST_PER_WARE; did++)
 			for (uint64_t cid = 1; cid <= g_cust_per_dist; cid++) 
 				((tpcc_wl *)This)->init_tab_hist(cid, did, wid);
+  }
 	printf("HISTORY Done\n");
 	return NULL;
 }
 
 void * tpcc_wl::threadInitOrder(void * This) {
-	for (uint64_t wid = 1; wid <= g_num_wh; wid ++)
+	for (uint64_t wid = 1; wid <= g_num_wh; wid ++) {
+    if(GET_NODE_ID(wh_to_part(wid)) != g_node_id) 
+      continue;
 		for (uint64_t did = 1; did <= DIST_PER_WARE; did++)
 			((tpcc_wl *)This)->init_tab_order(did, wid);
+  }
 	printf("ORDER Done\n");
 	return NULL;
 }
