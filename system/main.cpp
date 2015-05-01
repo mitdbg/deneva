@@ -46,6 +46,9 @@ int main(int argc, char* argv[])
 #endif
 
 
+	int64_t starttime;
+	int64_t endtime;
+  starttime = get_server_clock();
 	// per-partition malloc
 	mem_allocator.init(g_part_cnt, MEM_SIZE / g_part_cnt); 
 	stats.init();
@@ -102,6 +105,8 @@ int main(int argc, char* argv[])
 	for (uint32_t i = 0; i < thd_cnt + rthd_cnt; i++) 
 		m_thds[i].init(i, g_node_id, m_wl);
 
+  endtime = get_server_clock();
+  printf("Initialization Time = %ld\n", endtime - starttime);
 	if (WARMUP > 0){
 		printf("WARMUP start!\n");
 		for (uint32_t i = 0; i < thd_cnt - 1; i++) {
@@ -125,7 +130,7 @@ int main(int argc, char* argv[])
 
 	uint64_t cpu_cnt = 0;
 	// spawn and run txns again.
-	int64_t starttime = get_server_clock();
+	starttime = get_server_clock();
 
 	for (uint32_t i = 0; i < thd_cnt; i++) {
 		uint64_t vid = i;
@@ -178,7 +183,7 @@ int main(int argc, char* argv[])
 	for (uint32_t i = 0; i < thd_cnt + rthd_cnt; i++) 
 		pthread_join(p_thds[i], NULL);
     */
-	int64_t endtime = get_server_clock();
+	endtime = get_server_clock();
 	
 	if (WORKLOAD != TEST) {
 		printf("PASS! SimTime = %ld\n", endtime - starttime);
