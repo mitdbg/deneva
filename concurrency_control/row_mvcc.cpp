@@ -239,6 +239,7 @@ RC Row_mvcc::access(txn_man * txn, TsType type, row_t * row) {
 		if ( conf && rreq_len < MAX_READ_REQ) {
 			rc = WAIT;
       txn->rc = rc;
+      txn->wait_starttime = get_sys_clock();
 			buffer_req(R_REQ, txn);
 			txn->ts_ready = false;
 		} else if (conf) { 

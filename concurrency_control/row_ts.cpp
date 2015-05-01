@@ -165,6 +165,7 @@ RC Row_ts::access(txn_man * txn, TsType type, row_t * row) {
 			txn->ts_ready = false;
 			rc = WAIT;
       txn->rc = rc;
+      txn->wait_starttime = get_sys_clock();
 		} else {
 			// return the value.
 			txn->cur_row->copy(_row);

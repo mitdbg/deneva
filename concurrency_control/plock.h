@@ -12,6 +12,7 @@ class txn_man;
 class PartMan {
 public:
 	void init(uint64_t node_id);
+  void start_spec_ex(); 
 	RC lock(txn_man * txn);
 	void unlock(txn_man * txn);
 	void remote_rsp(bool l, RC rc, txn_man * txn);
@@ -60,6 +61,7 @@ private:
 class Plock {
 public:
 	void init(uint64_t node_id);
+  void start_spec_ex(uint64_t * parts, uint64_t part_cnt); 
 	// lock all partitions in parts
 	RC lock(uint64_t * parts, uint64_t part_cnt, txn_man * txn);
 	RC unlock(uint64_t * parts, uint64_t part_cnt, txn_man * txn);

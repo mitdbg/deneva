@@ -119,6 +119,10 @@ RC thread_t::run() {
   uint64_t txn_cnt = 0;
   uint64_t txn_st_cnt = 0;
 	uint64_t thd_txn_id = 0;
+  uint64_t starttime;
+  uint64_t timespan;
+
+  uint64_t run_starttime = get_sys_clock();
 	
   while(true) {
 
@@ -139,6 +143,7 @@ RC thread_t::run() {
 #if !NOGRAPHITE
    			CarbonDisableModelsBarrier(&enable_barrier);
 #endif
+        INC_STATS(get_thd_id(), tot_run_time, get_sys_clock() - run_starttime - MSG_TIMEOUT); 
    		    return FINISH;
    	}
 
@@ -146,6 +151,7 @@ RC thread_t::run() {
       continue;
 
     rc = RCOK;
+    starttime = get_sys_clock();
 
 		switch(m_query->rtype) {
 #if CC_ALG == HSTORE
@@ -186,6 +192,10 @@ RC thread_t::run() {
 					part_lock_man.rem_lock_rsp(m_query->rc, m_txn);
           if(m_txn->ready_part == 0) {
             // Done waiting for responses; restart txn
+
+            timespan = get_sys_clock() - m_txn->wait_starttime;
+            INC_STATS(get_thd_id(),time_wait_rem,timespan);
+
             if(m_txn->rc == Abort) {
 		          next_query = txn_pool.get_qry(g_node_id, m_query->txn_id);
 		          rc = part_lock_man.unlock(next_query->part_to_access, next_query->part_num, m_txn);
@@ -209,7 +219,8 @@ RC thread_t::run() {
           // TODO: check if done waiting
           if(m_txn->ready_ulk == 0) {
             // Done waiting 
-            INC_STATS(get_thd_id(),time_wait_rem,get_sys_clock() - m_txn->wait_starttime);
+            timespan = get_sys_clock() - m_txn->wait_starttime;
+            INC_STATS(get_thd_id(),time_wait_rem,timespan);
 		        next_query = txn_pool.get_qry(g_node_id, m_query->txn_id);
             rc = m_txn->finish(next_query->rc);
           }
@@ -233,7 +244,11 @@ RC thread_t::run() {
             m_txn->set_txn_id(m_query->txn_id);
             txn_pool.add_txn(m_query->return_id,m_txn,m_query);
           } else {
-            INC_STATS(get_thd_id(),time_wait_lock,get_sys_clock() - m_txn->wait_starttime);
+            if(CC_ALG != HSTORE) {
+              timespan = get_sys_clock() - m_txn->wait_starttime;
+              INC_STATS(get_thd_id(),time_wait_lock,timespan);
+              INC_STATS(get_thd_id(),rtime_wait_lock,timespan);
+            }
           }
           m_txn->set_ts(m_query->ts);
 #if CC_ALG == OCC
@@ -243,6 +258,8 @@ RC thread_t::run() {
           rc = m_txn->run_txn(m_query);
 
           assert(rc != WAIT_REM);
+          timespan = get_sys_clock() - starttime;
+          INC_STATS(get_thd_id(),time_rqry,timespan);
           if(rc != WAIT)
             rem_qry_man.remote_rsp(m_query,m_txn);
 					break;
@@ -347,6 +364,7 @@ RC thread_t::run() {
               //txn_pool.add_txn(g_node_id,m_txn,m_query);
             }
             // Put txn in txn_pool in case of WAIT
+            //assert(txn_pool.get_txn(g_node_id,m_txn->get_txn_id()) == NULL);
             txn_pool.add_txn(g_node_id,m_txn,m_query);
 
             m_txn->starttime = get_sys_clock();
@@ -379,7 +397,11 @@ RC thread_t::run() {
       }
 #endif
           } else {
-            INC_STATS(get_thd_id(),time_wait_lock,get_sys_clock() - m_txn->wait_starttime);
+            // HSTORE time_wait_lock counted twice?
+            if(CC_ALG != HSTORE) {
+              timespan = get_sys_clock() - m_txn->wait_starttime;
+              INC_STATS(get_thd_id(),time_wait_lock,timespan);
+            }
           }
           
           if(rc == RCOK)
@@ -389,6 +411,8 @@ RC thread_t::run() {
           if(rc == RCOK || rc == Abort) {
             m_query->rc = rc;
 		        rc = part_lock_man.unlock(m_query->part_to_access, m_query->part_num, m_txn);
+            if(rc != WAIT)
+              rc = m_query->rc;
           }
 #endif
 
@@ -400,7 +424,6 @@ RC thread_t::run() {
 
     // If m_query was freed just before this, m_query is NULL
     if(m_query != NULL && GET_NODE_ID(m_query->pid) == g_node_id) {
-    ts_t timespan;
     switch(rc) {
       case RCOK:
         // Transaction is finished. Increment stats. Remove from txn pool
@@ -413,9 +436,10 @@ RC thread_t::run() {
 #endif
 */
         INC_STATS(get_thd_id(),txn_cnt,1);
-		    if(m_txn->abort_cnt > 0) 
+		    if(m_txn->abort_cnt > 0) { 
 			    INC_STATS(get_thd_id(), txn_abort_cnt, 1);
-		    stats.add_abort_cnt(get_thd_id(), m_txn->abort_cnt);
+          INC_STATS_ARR(get_thd_id(), all_abort, m_txn->abort_cnt);
+        }
 		    timespan = get_sys_clock() - m_txn->starttime;
 		    INC_STATS(get_thd_id(), run_time, timespan);
 		    INC_STATS(get_thd_id(), latency, timespan);
@@ -449,7 +473,11 @@ RC thread_t::run() {
         break;
       case WAIT:
         assert(m_txn != NULL);
-        m_txn->wait_starttime = get_sys_clock();
+        //m_txn->wait_starttime = get_sys_clock();
+#if CC_ALG == HSTORE && SPEC_EX
+        // Speculatively execute local queries
+        part_lock_man.start_spec_ex(m_query->part_to_access, m_query->part_num);
+#endif
         break;
       case WAIT_REM:
         // Save transaction information for later
@@ -468,11 +496,14 @@ RC thread_t::run() {
         assert(false);
         break;
     }
-    } else if (m_query != NULL && GET_NODE_ID(m_query->pid) != g_node_id) {
+    } /*else if (m_query != NULL && GET_NODE_ID(m_query->pid) != g_node_id) {
       if(rc == WAIT) {
         m_txn->wait_starttime = get_sys_clock();
       }
     }
+    */
+    timespan = get_sys_clock() - starttime;
+    INC_STATS(get_thd_id(),time_work,timespan);
 
 		if (!warmup_finish && txn_st_cnt >= WARMUP / g_thread_cnt) 
 		{
@@ -626,11 +657,12 @@ RC thread_t::run_pool_txn() {
 		uint64_t timespan = endtime - starttime;
 		INC_STATS(get_thd_id(), run_time, timespan);
 		INC_STATS(get_thd_id(), latency, timespan);
-		if(m_txn->abort_cnt > 0) 
+		if(m_txn->abort_cnt > 0) {
 			INC_STATS(get_thd_id(), txn_abort_cnt, 1);
+      INC_STATS_ARR(get_thd_id(),all_abort,m_txn->abort_cnt);
+    }
 
 		stats.add_lat(get_thd_id(), timespan);
-		stats.add_abort_cnt(get_thd_id(), m_txn->abort_cnt);
 		if(m_query->part_num > 1)
 			INC_STATS(_thd_id,mpq_cnt,1);
 

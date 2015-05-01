@@ -18,6 +18,27 @@ void PartMan::init(uint64_t node_id) {
 	pthread_mutex_init( &latch, NULL );
 }
 
+void PartMan::start_spec_ex() {
+  pthread_mutex_lock( &latch );
+
+  base_query * owner_qry = txn_pool.get_qry(GET_NODE_ID(owner->get_pid()), owner->get_txn_id());
+  for (UInt32 i = 0; i < waiter_cnt - 1; i++) {
+    if(waiters[i]->spec)
+      continue;
+    if(waiters[i]->parts_locked > 1) 
+      continue;
+      //check for conflicts
+    // TODO: Check for conflicts with all waiters earlier in queue, not just the plock owner
+    base_query * waiter_qry = txn_pool.get_qry(GET_NODE_ID(waiters[i]->get_pid()), waiters[i]->get_txn_id());
+    if(waiters[i]->conflict(owner_qry,waiter_qry))
+      continue;
+    waiters[i]->spec = true;
+    txn_pool.restart_txn(waiters[i]->get_txn_id());
+  }
+  
+
+  pthread_mutex_unlock( &latch );
+}
 
 RC PartMan::lock(txn_man * txn) {
   RC rc;
@@ -46,6 +67,8 @@ RC PartMan::lock(txn_man * txn) {
 		if(GET_NODE_ID(txn->get_pid()) == _node_id)
       ATOM_ADD(txn->ready_part, 1);
     rc = WAIT;
+    txn->rc = rc;
+    txn->wait_starttime = get_sys_clock();
   } else {
     rc = Abort;
 		// if we abort, need to send abort to remote node
@@ -70,14 +93,20 @@ void PartMan::unlock(txn_man * txn) {
         waiters[i] = waiters[i + 1];
       }
       waiter_cnt --;
+      // FIXME: stat locality w/ thd_id
+      INC_STATS(0,time_wait_lock,get_sys_clock() - owner->wait_starttime);
 			if(GET_NODE_ID(owner->get_pid()) == _node_id) {
         ATOM_SUB(owner->ready_part, 1);
         // If local and ready_part is 0, restart txn
+#if !SPEC_EX
         if(owner->ready_part == 0) {
           txn_pool.restart_txn(owner->get_txn_id());
         }
+#endif
       }
       else {
+        // FIXME: stat locality w/ thd_id
+        INC_STATS(0,rtime_wait_lock,get_sys_clock() - owner->wait_starttime);
 				remote_rsp(true,RCOK,owner);
 			}
     } 
@@ -149,6 +178,15 @@ void Plock::init(uint64_t node_id) {
 		part_mans[i]->init(node_id);
 }
 
+void Plock::start_spec_ex(uint64_t * parts, uint64_t part_cnt) {
+	for (uint64_t i = 0; i < part_cnt; i ++) {
+		uint64_t part_id = parts[i];
+		if(GET_NODE_ID(part_id) == get_node_id())  {
+      part_mans[part_id]->start_spec_ex();
+    }
+  }
+}
+
 RC Plock::lock(uint64_t * parts, uint64_t part_cnt, txn_man * txn) {
 	uint64_t tid = txn->get_thd_id();
   // Part ID is at home node
@@ -156,6 +194,7 @@ RC Plock::lock(uint64_t * parts, uint64_t part_cnt, txn_man * txn) {
   txn->set_pid(GET_PART_ID(tid,nid));
   txn->parts_locked = 0;
 	RC rc = RCOK;
+  txn->rc = RCOK;
 	ts_t starttime = get_sys_clock();
 	UInt32 i;
 	for (i = 0; i < part_cnt; i ++) {
@@ -176,6 +215,7 @@ RC Plock::lock(uint64_t * parts, uint64_t part_cnt, txn_man * txn) {
 	if (txn->ready_part > 0 && !(rc == Abort || txn->rc == Abort)) {
     rc = WAIT;
     txn->rc = rc;
+    txn->wait_starttime = get_sys_clock();
     return rc;
 
 	}
@@ -210,6 +250,8 @@ RC Plock::unlock(uint64_t * parts, uint64_t part_cnt, txn_man * txn) {
     }
 	}
   if(txn->ready_ulk > 0) {
+    txn->wait_starttime = get_sys_clock();
+    txn->rc = WAIT;
     return WAIT;
 
   }

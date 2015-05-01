@@ -83,6 +83,7 @@ RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt
             txn->lock_ready = false;
             rc = WAIT;
             txn->rc = rc;
+            txn->wait_starttime = get_sys_clock();
 		} else if (CC_ALG == WAIT_DIE) {
             ///////////////////////////////////////////////////////////
             //  - T is the txn currently running
@@ -122,6 +123,7 @@ RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt
         txn->lock_ready = false;
         rc = WAIT;
         txn->rc = rc;
+        txn->wait_starttime = get_sys_clock();
       } else 
         rc = Abort;
     }

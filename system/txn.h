@@ -42,6 +42,7 @@ public:
 	virtual RC 		run_txn(base_query * m_query) = 0;
 	//virtual RC 		run_rem_txn(base_query * m_query) = 0;
 	virtual void 		merge_txn_rsp(base_query * m_query1, base_query *m_query2) = 0;
+  virtual bool  conflict(base_query * query1,base_query * query2) = 0;
 	uint64_t 		get_thd_id();
 	uint64_t 		get_node_id();
 	workload * 		get_wl();
@@ -105,6 +106,9 @@ public:
   row_t * last_row_rtn;
   access_t last_type;
   RC rc;
+
+  // For HStore
+  bool spec;
 
   // For performance measurements
   uint64_t starttime;
