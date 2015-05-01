@@ -5,7 +5,7 @@
 // Simulation + Hardware
 /***********************************************/
 #define NODE_CNT 2
-#define THREAD_CNT 2
+#define THREAD_CNT 1
 // REM_THREAD_CNT should be at least NODE_CNT*THREAD_CNT to avoid deadlock
 #define REM_THREAD_CNT 1
 // PART_CNT should be at least NODE_CNT
@@ -56,13 +56,14 @@
 /***********************************************/
 #define TPORT_TYPE "ipc"
 #define TPORT_TYPE_IPC true
-#define TPORT_PORT ".ipc"
+#define TPORT_PORT "_.ipc"
 
 #define MAX_TPORT_NAME 128
 #define MSG_SIZE 128 // in bytes
 #define HEADER_SIZE sizeof(uint32_t)*2 // in bits 
 #define MSG_TIMEOUT 5000000000UL // in ns
 #define NETWORK_TEST false
+#define NETWORK_DELAY 50000UL
 
 #define MAX_QUEUE_LEN NODE_CNT * 2
 
@@ -70,7 +71,9 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HSTORE, OCC, VLL
-#define CC_ALG OCC
+#define CC_ALG MVCC
+
+#define SPEC_EX false
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER					false
@@ -126,7 +129,7 @@
 // max number of rows touched per transaction
 #define MAX_ROW_PER_TXN				64
 #define QUERY_INTVL 				1UL
-#define MAX_TXN_PER_PART 100
+#define MAX_TXN_PER_PART 10000
 #define FIRST_PART_LOCAL 			true
 #define MAX_TUPLE_SIZE				1024 // in bytes
 // ==== [YCSB] ====
@@ -150,9 +153,9 @@
 // are not modeled.
 #define TPCC_ACCESS_ALL 			false 
 #define WH_UPDATE					true
-#define NUM_WH 2
+#define NUM_WH 16
 // % of transactions that access multiple partitions
-#define MPR 20
+#define MPR 10
 #define MPR_NEWORDER			20 // In %
 // Smaller item selection to model contention
 #define CONTENTION false
@@ -233,5 +236,6 @@ extern TestCases					g_test_case;
 
 // Stats and timeout
 #define BILLION 1000000000UL
+#define STAT_ARR_SIZE 32
 
 #endif

@@ -1,4 +1,5 @@
 import os, sys, re, math, os.path
+import operator
 from helper import *
 from draw import *
 #from experiments import experiments as experiments
@@ -18,7 +19,11 @@ def tput(xval,vval,summary,
     _title = 'Per Node Throughput {}'.format(title)
 
     for v in vval:
-        tpt[v] = [0] * len(xval)
+        if vname == "NETWORK_DELAY":
+            _v = (float(v.replace("UL","")))/1000000
+        else:
+            _v = v
+        tpt[_v] = [0] * len(xval)
 
         for x,xi in zip(xval,range(len(xval))):
             cfgs = get_cfgs(cfg_fmt + [xname] + [vname], cfg + [x] + [v] )
@@ -33,12 +38,15 @@ def tput(xval,vval,summary,
                 avg_txn_cnt = avg(summary[cfgs]['txn_cnt'])
             except KeyError:
                 print("KeyError: {} {} {} -- {}".format(v,x,cfg,cfgs))
-                tpt[v][xi] = 0
+                tpt[_v][xi] = 0
                 continue
-            tpt[v][xi] = (tot_txn_cnt/tot_run_time)
+            tpt[_v][xi] = (tot_txn_cnt/tot_run_time)
             #tpt[v][xi] = (avg_txn_cnt/avg_run_time)
 
-    draw_line(name,tpt,xval,ylab='Throughput (Txn/sec)',xlab='Multi-Partition Rate',title=_title,bbox=[0.5,0.95]) 
+    bbox = [0.5,0.95]
+    if vname == "NETWORK_DELAY":
+        bbox = [0.8,0.95]
+    draw_line(name,tpt,xval,ylab='Throughput (Txn/sec)',xlab='Multi-Partition Rate',title=_title,bbox=bbox,ncol=2) 
 
 
 
@@ -170,18 +178,20 @@ def time_breakdown(xval,summary,
             time_abort[i] = avg(summary[cfgs]['time_abort']) / run_time[i]
             time_ts_alloc[i] = avg(summary[cfgs]['time_ts_alloc']) / run_time[i]
             time_index[i] = avg(summary[cfgs]['time_index']) / run_time[i]
-            if _cfgs["CC_ALG"] == "HSTORE":
-                time_wait_lock[i] = avg(summary[cfgs]['time_wait_lock']) / run_time[i]
-            else:
-                time_wait_lock[i] = avg(summary[cfgs]['time_wait']) / run_time[i]
+            time_wait_lock[i] = avg(summary[cfgs]['time_wait_lock']) / run_time[i]
+            #if _cfgs["CC_ALG"] == "HSTORE":
+            #    time_wait_lock[i] = avg(summary[cfgs]['time_wait_lock']) / run_time[i]
+            #else:
+            #    time_wait_lock[i] = avg(summary[cfgs]['time_wait']) / run_time[i]
             time_wait_rem[i] = avg(summary[cfgs]['time_wait_rem']) / run_time[i]
-            time_man[i] = (avg(summary[cfgs]['time_lock_man']) - avg(summary[cfgs]['time_wait_lock'])) / run_time[i]
+            #time_man[i] = (avg(summary[cfgs]['time_lock_man']) - avg(summary[cfgs]['time_wait_lock'])) / run_time[i]
+            time_man[i] = (avg(summary[cfgs]['time_man'])) / run_time[i]
 
             if normalized:
-                assert(sum([time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]]) < 1.0)
+                #assert(sum([time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]]) < 1.0)
                 time_work[i] = 1.0 - sum([time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]])
             else:
-                assert(sum([time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]]) < avg(summary[cfgs]['run_time']))
+                #assert(sum([time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]]) < avg(summary[cfgs]['run_time']))
                 time_work[i] = avg(summary[cfgs]['run_time']) - sum([time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]])
             _ymax = max(_ymax, sum([time_work[i],time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]])) 
         except KeyError:
@@ -198,52 +208,116 @@ def time_breakdown(xval,summary,
 
     draw_stack(data,xval,stack_names,figname=name,title=_title,ymax=_ymax)
 
+
+# Stack graph of time breakdowns
+# mpr: list of MPR values to plot along the x-axis
+# nodes: node count to plot
+# algos: CC algo to plot
+# max_txn: MAX_TXN_PER_PART
+# summary: dictionary loaded with results
+# normalized: if true, normalize the results
+def time_breakdown_basic(xval,summary,
+        normalized=False,
+        xname="MPR",
+        cfg_fmt=[],
+        cfg=[],
+        title=''
+        ):
+    stack_names = ['Work','Lock Wait','Rem Wait']
+    _title = ''
+    _ymax=1.0
+    if normalized:
+        _title = 'Basic Time Breakdown Normalized {}'.format(title)
+    else:
+        _title = 'Basic Time Breakdown {}'.format(title)
+    name = '{}'.format(_title.replace(" ","_").lower())
+
+    run_time = [0] * len(xval)
+    time_work = [0] * len(xval)
+    time_wait_lock = [0] * len(xval)
+    time_wait = [0] * len(xval)
+
+    for x,i in zip(xval,range(len(xval))):
+        _cfgs = get_cfgs(cfg_fmt + [xname],cfg + [x])
+        cfgs = get_outfile_name(_cfgs)
+        if cfgs not in summary.keys(): break
+        try:
+            if normalized:
+                run_time[i] = avg(summary[cfgs]['run_time'])
+            else:
+                run_time[i] = 1.0
+            time_work[i] = avg(summary[cfgs]['time_work']) / run_time[i]
+            time_wait_lock[i] = avg(summary[cfgs]['time_wait_lock']) / run_time[i]
+
+            if normalized:
+                if sum([time_work[i],time_wait_lock[i]]) > 1.0:
+                    print("Sum error: {} + {} = {}; {} {}".format(time_work[i],time_wait_lock[i],sum([time_work[i],time_wait_lock[i]]),x,cfg))
+                #assert(sum([time_work[i],time_wait_lock[i]]) <= 1.0)
+                time_wait[i] = 1.0 - sum([time_work[i],time_wait_lock[i]])
+            else:
+                time_wait[i] = avg(summary[cfgs]['run_time']) - sum([time_work[i],time_wait_lock[i]])
+            _ymax = max(_ymax, sum([time_wait[i],time_wait_lock[i],time_work[i]]))
+        except KeyError:
+            print("KeyError: {} {}".format(x,cfg))
+            run_time[i] = 1.0
+            time_work[i] = 0.0
+            time_wait[i] = 0.0
+    data = [time_wait,time_wait_lock,time_work]
+
+    draw_stack(data,xval,stack_names,figname=name,title=_title,ymax=_ymax)
+
+
 # Cumulative density function of total number of aborts per transaction
 # mpr: list of MPR values to plot along the x-axis
 # nodes: node count to plot
 # algos: CC algo to plot
 # max_txn: MAX_TXN_PER_PART
 # summary: dictionary loaded with results
-def cdf_aborts_mpr(mpr,node,algo,max_txn,summary):
+def cdf(vval,summary,
+        cfg_fmt=[],
+        cfg=[],
+        xname="Abort Count",
+        vname="CC_ALG",
+        xlabel="all_abort",
+        title=""
+        ):
 
-    name = 'cdf_aborts_mpr_n{}_{}'.format(node,algo)
-    _title = 'CDF of Aborts {} {} Nodes'.format(algo,node)
-    ys_mpr = {}
+    name = 'cdf_{}_{}'.format(vname.lower(),title.replace(" ","_").lower())
+    _title = 'CDF {}'.format(title)
+    ys = {}
     # find max abort
     max_abort = 0
-    for i in range(len(mpr)):
-        m = mpr[i]
-        cfgs = get_cfgs([node,max_txn,'TPCC',algo,m])
+    for v in vval:
+        cfgs = get_cfgs(cfg_fmt + [vname], cfg + [v] )
         cfgs = get_outfile_name(cfgs)
         if cfgs not in summary.keys(): break
         try:
-            if len(summary[cfgs]['all_abort_cnts']) == 0: continue
-            max_abort = max(max_abort, max(summary[cfgs]['all_abort_cnts'].keys()))
+            if len(summary[cfgs][xlabel]) == 0: continue
+            max_abort = max(max_abort, max(summary[cfgs][xlabel].keys()))
         except KeyError:
             print("KeyError: {} {} {} {}".format(algo,node,max_txn,m))
             max_abort = max_abort
 
-    xs_mpr = range(max_abort + 1)
-    for i in range(len(mpr)):
-        m = mpr[i]
-        ys_mpr[m] = [0] * (max_abort + 1)
-        cfgs = get_cfgs([node,max_txn,'TPCC',algo,m])
+    xs = range(max_abort + 1)
+    for v in vval:
+        ys[v] = [0] * (max_abort + 1)
+        cfgs = get_cfgs(cfg_fmt + [vname], cfg + [v] )
         cfgs = get_outfile_name(cfgs)
         if cfgs not in summary.keys(): break
         y = 0
-        for x in xs_mpr:
+        for x in xs:
             try:
-                if x in summary[cfgs]['all_abort_cnts'].keys():
-                    ys_mpr[m][x] = y + (summary[cfgs]['all_abort_cnts'][x] / sum(summary[cfgs]['txn_abort_cnt']))
-                    y = ys_mpr[m][x]
+                if x in summary[cfgs][xlabel].keys():
+                    ys[v][x] = y + (float(summary[cfgs][xlabel][x]) / float(summary[cfgs][xlabel+"_cnt"]))
+                    y = ys[v][x]
                 else:
-                    ys_mpr[m][x] = y
+                    ys[v][x] = y
             except KeyError:
-                print("KeyError: {} {} {} {}".format(algo,node,max_txn,m))
-                ys_mpr[m][x] = y
+                print("KeyError: {} {} {}".format(cfgs,xlabel,x))
+                ys[v][x] = y
 
 
-    draw_line(name,ys_mpr,xs_mpr,ylab='% Transactions',xlab='# Aborts',title=_title,bbox=[0.8,0.6],ylimit=1.0) 
+    draw_line(name,ys,xs,ylab='Percent',xlab=xname,title=_title,bbox=[0.8,0.6],ylimit=1.0) 
 
 
 # Bar graph of total number of aborts per transaction
@@ -286,6 +360,36 @@ def bar_aborts_mpr(mpr,node,algo,max_txn,summary):
                 ys_mpr[m][x] = 0
 
     draw_bars(ys_mpr,xs_mpr,ylab='# Transactions',xlab='# Aborts',title=_title,figname=name) 
+
+def bar_keys(
+        summary,
+        rank=0,
+        cfg_fmt=[],
+        cfg=[],
+        title=''
+        ):
+
+    _cfgs = get_cfgs(cfg_fmt,cfg)
+    cfgs = get_outfile_name(_cfgs)
+    if cfgs not in summary.keys(): return
+
+    keys = ["d_cflt","d_abrt","s_cflt","s_abrt"]
+
+    for k in keys:
+        _title = 'Bar Keys {} {}'.format(k,title)
+        name = '{}'.format(_title.replace(" ","_").lower())
+
+        xs = [i[0] for i in sorted(summary[cfgs][k].items(),key=operator.itemgetter(1),reverse=True)];
+        if rank > 0:
+            xs = xs[:rank]
+        ys = [0] * len(xs)
+        for x,n in zip(xs,range(len(xs))):
+            try:
+                ys[n] = summary[cfgs][k][x]
+            except KeyError:
+                ys[n] = 0
+
+        draw_bars_single(ys,xs,ylab='# Transactions',xlab='Key',title=_title,figname=name) 
 
 
 # Plots Average of a result vs. MPR 

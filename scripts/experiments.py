@@ -8,25 +8,34 @@ fmt2 = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT"]]
 fmt3 = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","REM_THREAD_CNT"]]
 fmt4 = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","NUM_WH"]]
 fmt5 = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","NUM_WH","MAX_TXN_IN_FLIGHT"]]
+fmt6 = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","NUM_WH","MAX_TXN_IN_FLIGHT","NETWORK_DELAY"]]
 
 simple = [
 
-[2,10000,'TPCC','NO_WAIT',1,1,64,1],
-[2,10000,'TPCC','NO_WAIT',20,1,64,1],
-[2,10000,'TPCC','WAIT_DIE',20,1,64,1],
+[2,10000,'TPCC','MVCC',5,1,7,4,'0UL'],
 
 
 #[2,10000,'TPCC','NO_WAIT',30,2,8,16]
 ]
 
-nnodes=[1,2]
-#nmpr=range(0,31,10)
-nmpr=[1]+range(0,51,10)
+#nnodes=[1]
+nnodes=[2]
+#nmpr= [5,10]
+nmpr=[1] + range(0,11,5)
 #nalgos=['MVCC']
-nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','MVCC']
-nthreads=[1,2]
-nwfs=[64]
-ntifs=[1,8]
+nalgos=['MVCC']
+#nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE']
+nthreads=[1]
+#nthreads=[1,2]
+nwfs=[16]
+ntifs=[4]
+#ntifs=[1,2,4,8]
+#nnet_delay=['0UL','50000UL']
+nnet_delay=['0UL','50000UL','100000UL','500000UL','1000000UL','5000000UL']
+
+experiments_nd = [
+    [n,10000,'TPCC',cc,m,t,wf,tif,nd] for n,m,cc,t,wf,tif,nd in itertools.product(nnodes,nmpr,nalgos,nthreads,nwfs,ntifs,nnet_delay)
+]
 
 experiments = [
     [n,10000,'TPCC',cc,m,t,wf,tif] for n,m,cc,t,wf,tif in itertools.product(nnodes,nmpr,nalgos,nthreads,nwfs,ntifs)
@@ -135,11 +144,12 @@ configs = {
     "THREAD_CNT": 1,
     "PART_CNT": 2,
     "NUM_WH": 2,
-    "MAX_TXN_IN_FLIGHT": 1
+    "MAX_TXN_IN_FLIGHT": 1,
+    "NETWORK_DELAY": '0UL'
 }
 
 ##################
 # FIXME
 #################
-experiments = fmt5 + experiments
-config_names = fmt5[0]
+experiments = fmt6 + experiments_nd
+config_names = fmt6[0]

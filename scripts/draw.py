@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import os, sys, re, math,itertools
 from pylab import *
 from helper import *
+from textwrap import wrap
 
 rename = {
     "average": "   avg   "
@@ -143,7 +144,7 @@ def draw_line(fname, data, xticks,
         fig.legend(lines, linenames, bbox_to_anchor = bbox, prop={'size':9}, ncol=ncol)
     subplots_adjust(left=0.18, bottom=0.15, right=0.9, top=None)
     if title:
-        ax.set_title(title)
+        ax.set_title("\n".join(wrap(title)))
 
     axes = ax.get_axes()
     axes.yaxis.grid(True,
@@ -155,6 +156,70 @@ def draw_line(fname, data, xticks,
 
     savefig('../figs/' + fname +'.pdf', bbox_inches='tight')
     plt.close()
+
+def draw_bars_single(data, xlabels, 
+        figname='stack', 
+        figsize=(8, 3),
+        ylab = 'Throughput',
+        xlab = 'Time',
+        title = None,
+        bbox=[0.95,0.95]):
+
+    fig = figure(figsize=figsize)
+    ind = range(0, len(xlabels))
+
+    plots = ()
+
+    #xlabels = [str(x) for x in xlabels]
+
+    xticks( ind,  xlabels, rotation=30, ha='center')
+    clr = itertools.cycle(['#DECF3F','#5DA5DA','#60BD68','#FAA43A','#DECF3F','#F15854','#4d4d4d'])
+    htch = itertools.cycle(['','//','\\','-','\\\\','/'])
+
+    w = 0.8 
+    k = 0
+    p = plt.bar([i+(w*k) for i in ind], data, color=clr.next(), hatch=htch.next(),width=w)
+    plots = plots + (p,)
+    k = k+1
+
+    ax = plt.axes()
+    ylabel(ylab)
+    xlabel(xlab)
+    if title:
+        ax.set_title(title)
+    legend(plots, xlabels, bbox_to_anchor = bbox, prop={'size':11})
+    subplots_adjust(bottom=0.25, right=0.7, top=None)
+    savefig('../figs/' + figname + '.pdf', bbox_inches='tight')
+    plt.close()
+
+
+
+def draw_stack(data, xlabels, slabels, figname='stack', title=None, figsize=(8, 3),ymin=0, ymax=1) :
+    fig = figure(figsize=figsize)
+    ind = range(0, len(xlabels))
+
+    plots = ()
+    bottom = [0] * len(xlabels)
+
+    ylim([ymin, ymax])
+    #xlabels = [str(x) for x in xlabels]
+
+    xticks( ind,  xlabels, rotation=30, ha='center')
+    clr = itertools.cycle(['#DECF3F','#5DA5DA','#60BD68','#FAA43A','#DECF3F','#F15854','#4d4d4d'])
+    htch = itertools.cycle(['','//','\\','-','\\\\','/'])
+
+    for s in range(len(slabels)):
+        p = plt.bar(ind, data[s], color=clr.next(), hatch=htch.next(), bottom=bottom)
+        plots = plots + (p,)
+        bottom = [a + b for a,b in zip(bottom, data[s])]
+
+    if title:
+        plt.title(title)
+    legend(reversed(plots), tuple(slabels), bbox_to_anchor = (0.38, -0.2, 1, 1), prop={'size':11})
+    subplots_adjust(bottom=0.25, right=0.7, top=None)
+    savefig('../figs/' + figname + '.pdf', bbox_inches='tight')
+    plt.close()
+
 
 def draw_bars(data, xlabels, 
         figname='stack', 

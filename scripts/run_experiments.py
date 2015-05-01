@@ -17,7 +17,7 @@ machines_=[
 "istc1", 
 "istc3", 
 "istc8",
-#"istc6",
+"istc6",
 "istc4", 
 #OK
 "istc7",

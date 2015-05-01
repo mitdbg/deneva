@@ -2,7 +2,7 @@ import os, sys, re, math, os.path, math
 from helper import *
 from experiments import experiments as experiments
 from experiments import configs
-from experiments import nnodes,nmpr,nalgos,nthreads,nwfs,ntifs
+from experiments import nnodes,nmpr,nalgos,nthreads,nwfs,ntifs,nnet_delay
 from plot_helper import *
 import glob
 
@@ -64,6 +64,17 @@ threads = nthreads #[1,2,4]
 #warehouses = nnodes * [2,4,6,8,10]
 algos = nalgos #['HSTORE','NO_WAIT','WAIT_DIE','TIMESTAMP','MVCC','OCC']
 tifs = ntifs
+net_delay = nnet_delay
+whs = nwfs
+
+#artificial network delay
+for algo,thread,wh,node in itertools.product(algos,threads,whs,nodes):
+    _cfg_fmt = ["CC_ALG","MAX_TXN_PER_PART","THREAD_CNT","NUM_WH","NODE_CNT"]
+    _cfg=[algo,txn_cnt,thread,wh,node]
+    _title="Network Delay {} {} Nodes {} Threads {} Warehouses".format(algo,node,thread,wh)
+    tput(mpr,net_delay,summary,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="MPR",vname="NETWORK_DELAY",title=_title)
+ 
+exit()
 
 #for algo in algos:
 #    _cfg_fmt = ["NODE_CNT","CC_ALG","MAX_TXN_PER_PART","THREAD_CNT"]
@@ -97,7 +108,16 @@ for node,algo,thread,tif in itertools.product(nodes,algos,threads,tifs):
     _title="{} {} Nodes {} Threads {} TiF".format(algo,node,thread,tif)
     time_breakdown(mpr,summary,normalized=False,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="MPR",title=_title)
     time_breakdown(mpr,summary,normalized=True,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="MPR",title=_title)
+    time_breakdown_basic(mpr,summary,normalized=True,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="MPR",title=_title)
+    time_breakdown_basic(mpr,summary,normalized=False,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="MPR",title=_title)
 #    time_breakdown(mpr,node,algo,txn_cnt,summary,normalized=True)
-#    cdf_aborts_mpr(mpr,node,algo,txn_cnt,summary)
+    cdf(mpr,summary,cfg_fmt=_cfg_fmt,cfg=_cfg,vname="MPR",title="Aborts " + _title)
+    for k in ["d_cflt","d_abrt","s_cflt","s_abrt"]:
+        cdf(mpr,summary,cfg_fmt=_cfg_fmt,cfg=_cfg,vname="MPR",title=k + " " +  _title)
+    for m in mpr:
+        _cfg_fmt = ["NODE_CNT","CC_ALG","MAX_TXN_PER_PART","THREAD_CNT","MAX_TXN_IN_FLIGHT","NUM_WH","MPR"]
+        _cfg=[node,algo,txn_cnt,thread,tif,64,m]
+        _title="{} {} Nodes {} Threads {} TiF {} MPR".format(algo,node,thread,tif,m)
+        bar_keys(summary,rank=10,cfg_fmt=_cfg_fmt,cfg=_cfg,title=_title)
 #    bar_aborts_mpr(mpr,node,algo,txn_cnt,summary)
 

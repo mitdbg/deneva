@@ -213,9 +213,17 @@ base_query * Transport::recv_msg() {
 	// Queue request for thread to execute
 	// Unpack request
 
+
 	// Calculate time of message delay
 	ts_t time;
 	memcpy(&time,&((char*)buf)[bytes-sizeof(ts_t)],sizeof(ts_t));
+
+  // Insert artificial network delay
+#if NETWORK_DELAY > 0 && TPORT_TYPE_IPC
+  ts_t starttime = time;
+  //ts_t starttime = get_sys_clock();
+  while( (get_sys_clock() - starttime) < NETWORK_DELAY) {}
+#endif
 	ts_t time2 = get_sys_clock();
 	INC_STATS(1,tport_lat,time2 - time);
 
