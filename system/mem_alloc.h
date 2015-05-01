@@ -32,6 +32,7 @@ public:
     void register_thread(int thd_id);
     void unregister();
     void * alloc(uint64_t size, uint64_t part_id);
+    void * realloc(void * ptr, uint64_t size, uint64_t part_id);
     void free(void * block, uint64_t size);
 	int get_arena_id();
 private:

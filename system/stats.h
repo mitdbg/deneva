@@ -1,6 +1,18 @@
 #ifndef _STATS_H_
 #define _STATS_H_
 
+class StatsArr {
+    public:
+      void init();
+      void resize();
+      void insert(uint64_t item);
+      void print(FILE * f);
+
+      uint64_t * arr;
+      uint64_t size;
+      uint64_t cnt;
+};
+
 class Stats_thd {
 public:
 	void init(uint64_t thd_id);
@@ -10,14 +22,17 @@ public:
 	uint64_t txn_cnt;
 	uint64_t abort_cnt;
 	uint64_t txn_abort_cnt;
+	double tot_run_time;
 	double run_time;
+  double time_work;
 	double time_man;
+	double time_rqry;
 	double time_lock_man;
 	double rtime_lock_man;
 	double time_index;
 	double rtime_index;
 	double time_wait;
-	double rtime_wait_plock;
+	double rtime_wait_lock;
 	double time_wait_lock;
 	double time_wait_rem;
 	double time_abort;
@@ -53,10 +68,24 @@ public:
 	uint64_t rqry_rsp;
 	uint64_t rfin;
 	uint64_t rack;
-	
+
+  StatsArr all_abort;
+  StatsArr w_cflt;
+  StatsArr d_cflt;
+  StatsArr cnp_cflt;
+  StatsArr c_cflt;
+  StatsArr ol_cflt;
+  StatsArr s_cflt;
+  StatsArr w_abrt;
+  StatsArr d_abrt;
+  StatsArr cnp_abrt;
+  StatsArr c_abrt;
+  StatsArr ol_abrt;
+  StatsArr s_abrt;
+
 	uint64_t latency;
 	uint64_t * all_lat;
-	uint64_t * all_abort_cnt;
+
 	char _pad[CL_SIZE];
 };
 
@@ -93,7 +122,6 @@ public:
 	void init(uint64_t thread_id);
 	void clear(uint64_t tid);
 	void add_lat(uint64_t thd_id, uint64_t latency);
-	void add_abort_cnt(uint64_t thd_id, uint64_t abort_cnt);
 	void commit(uint64_t thd_id);
 	void abort(uint64_t thd_id);
 	void print();

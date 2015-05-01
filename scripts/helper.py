@@ -2,6 +2,8 @@ import os,re,sys,math
 from experiments import configs
 from experiments import config_names
 
+cnts = ["all_abort","w_cflt","d_cflt","cnp_cflt","c_cflt","ol_cflt","s_cflt","w_abrt","d_abrt","cnp_abrt","c_abrt","ol_abrt","s_abrt"]
+
 def avg(l):
     return float(sum(l) / float(len(l)))
 
@@ -13,11 +15,11 @@ def get_summary(sfile,summary={}):
                 line = line[10:] #remove '[summary] ' from start of line 
                 results = re.split(',',line)
                 process_results(summary,results)
-            if re.search("all_abort_cnt",line):
-                line = line.rstrip('\n')
-                line = line[22:] #remove '[all_abort_cnt thd=0] ' from start of line 
-                results = re.split(',',line)
-                process_abort_cnts(summary,results)
+            for c in cnts:
+                if re.search(c,line):
+                    line = line.rstrip('\n')
+                    process_cnts(summary,line,c)
+
     return summary
 
 def process_results(summary,results):
@@ -29,11 +31,21 @@ def process_results(summary,results):
 		else:
 		    summary[name].append(val)
 
-def process_abort_cnts(summary,results):
+def process_cnts(summary,line,name):
     
-    name = 'all_abort_cnts'
     if name not in summary.keys():
         summary[name] = {}
+    name_cnt = name + "_cnt"
+
+    line = re.split(' |] |,',line)
+    results = line[2:] 
+
+    if name_cnt not in summary.keys():
+        summary[name_cnt] = int(line[1]) 
+    else:
+        summary[name_cnt] =summary[name_cnt] + int(line[1]) 
+
+
     for r in results:
         if r == '': continue
         r = int(r)

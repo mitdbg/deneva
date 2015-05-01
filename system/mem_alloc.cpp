@@ -156,4 +156,9 @@ void * mem_alloc::alloc(uint64_t size, uint64_t part_id) {
 	return ptr;
 }
 
+void * mem_alloc::realloc(void * ptr, uint64_t size, uint64_t part_id) {
+  void * _ptr = std::realloc(ptr,size);
+	return _ptr;
+}
+
 
