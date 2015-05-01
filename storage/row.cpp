@@ -143,26 +143,8 @@ RC row_t::get_row(access_t type, txn_man * txn, row_t *& row) {
 #endif
     // lock_abort only used by DL_DETECT
 		//txn->lock_abort = false;
-		INC_STATS(txn->get_thd_id(), wait_cnt, 1);
+		INC_STATS(0, wait_cnt, 1);
 
-    /*
-		//while (!txn->lock_ready && !txn->lock_abort) { }
-		uint64_t starttime = get_sys_clock();
-		uint64_t endtime;
-    if(!txn->lock_ready && !txn->lock_abort) {
-      return rc;
-    }
-
-		if (txn->lock_ready) 
-			rc = RCOK;
-		else if (txn->lock_abort) { 
-			rc = Abort;
-			return_row(type, txn, NULL);
-		}
-		endtime = get_sys_clock();
-		INC_STATS(thd_id, time_wait, endtime - starttime);
-		row = this;
-    */
 	}
 	return rc;
 #elif CC_ALG == TIMESTAMP || CC_ALG == MVCC 
@@ -190,6 +172,7 @@ RC row_t::get_row(access_t type, txn_man * txn, row_t *& row) {
 			//uint64_t t1 = get_sys_clock();
       // TODO: divide into 2+ functions to restart after ts_ready 
 			//while (!txn->ts_ready) {}
+		  INC_STATS(0, wait_cnt, 1);
       rc = WAIT;
       return rc;
 
