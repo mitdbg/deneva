@@ -373,7 +373,7 @@ RC tpcc_txn_man::run_txn_state(base_query * query) {
       fin = true;
       query->rem_req_state = TPCC_FIN;
       assert(GET_NODE_ID(m_query->pid) == g_node_id);
-		  return finish(m_query);
+		  return finish(m_query,false);
 		default:
 			assert(false);
 	}
@@ -383,7 +383,7 @@ RC tpcc_txn_man::run_txn_state(base_query * query) {
 	m_query->rc = rc;
   if(rc == Abort && !fin && GET_NODE_ID(m_query->pid) == g_node_id) {
     query->rem_req_state = TPCC_FIN;
-    return finish(m_query);
+    return finish(m_query,false);
   }
   return rc;
 }

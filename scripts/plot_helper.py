@@ -46,6 +46,7 @@ def tput(xval,vval,summary,
     bbox = [0.5,0.95]
     if vname == "NETWORK_DELAY":
         bbox = [0.8,0.95]
+    print("Created plot {}".format(name))
     draw_line(name,tpt,xval,ylab='Throughput (Txn/sec)',xlab='Multi-Partition Rate',title=_title,bbox=bbox,ncol=2) 
 
 
@@ -295,7 +296,7 @@ def cdf(vval,summary,
             if len(summary[cfgs][xlabel]) == 0: continue
             max_abort = max(max_abort, max(summary[cfgs][xlabel].keys()))
         except KeyError:
-            print("KeyError: {} {} {} {}".format(algo,node,max_txn,m))
+            print("KeyError: {} {}".format(xlabel,cfgs))
             max_abort = max_abort
 
     xs = range(max_abort + 1)
@@ -379,7 +380,11 @@ def bar_keys(
         _title = 'Bar Keys {} {}'.format(k,title)
         name = '{}'.format(_title.replace(" ","_").lower())
 
-        xs = [i[0] for i in sorted(summary[cfgs][k].items(),key=operator.itemgetter(1),reverse=True)];
+        try:
+            xs = [i[0] for i in sorted(summary[cfgs][k].items(),key=operator.itemgetter(1),reverse=True)];
+        except KeyError:
+            print("KeyError bar keys {} {}".format(k,cfgs))
+            continue
         if rank > 0:
             xs = xs[:rank]
         ys = [0] * len(xs)

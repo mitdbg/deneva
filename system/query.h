@@ -8,7 +8,7 @@ class workload;
 class ycsb_query;
 class tpcc_query;
 
-enum RemReqType {RLK, RULK, RQRY, RFIN, RLK_RSP, RULK_RSP, RQRY_RSP, RACK, RTXN};
+enum RemReqType {RLK, RULK, RQRY, RFIN, RLK_RSP, RULK_RSP, RQRY_RSP, RACK, RTXN, RINIT, RPREPARE};
 
 class base_query {
 public:
@@ -41,7 +41,9 @@ public:
 
 
   void clear();
+  void update_rc(RC rc);
   void set_txn_id(uint64_t _txn_id); 
+  void remote_prepare(base_query * query, int dest_id);
   void remote_finish(base_query * query, int dest_id);
   void unpack_finish(base_query * query, void *d);
 };

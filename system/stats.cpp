@@ -17,9 +17,11 @@ void StatsArr::resize() {
 }
 
 void StatsArr::insert(uint64_t item) {
+  /*
   if(cnt == size)
     resize();
   arr[cnt++] = item;
+  */
 }
 
 void StatsArr::print(FILE * f) {
@@ -76,6 +78,9 @@ void Stats_thd::clear() {
 	rqry_rsp = 0;
 	rfin = 0;
 	rack = 0;
+	rprep = 0;
+	rinit = 0;
+	rtxn = 0;
 	time_index = 0;
 	rtime_index = 0;
 	time_abort = 0;

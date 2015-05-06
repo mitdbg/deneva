@@ -44,12 +44,13 @@ public:
 	txn_man * get_txn_man(uint64_t thd_id, uint64_t node_id, uint64_t txn_id);
 	txn_man * save_txn_man(uint64_t thd_id, uint64_t node_id, uint64_t txn_id, txn_man * txn_to_save);
 	void remote_qry(base_query * query, int type, int dest_id, txn_man * txn);
+  void ack_response(RC rc, txn_man * txn);
   void ack_response(base_query * query);
+	void send_init(base_query * query, uint64_t dest_part_id);
 	void send_remote_query(uint64_t dest_id, void ** data, int * sizes, int num);
   void remote_rsp(base_query * query, txn_man * txn);
 	void send_remote_rsp(uint64_t dest_id, void ** data, int * sizes, int num);
 	void unpack(base_query * query, void * d, int len);
-  ts_t get_min_ts(ts_t min);
 	int q_idx;
 	/*
 #if WORKLOAD == TPCC
@@ -64,6 +65,5 @@ private:
 	workload * _wl;
   //txn_node_t **txns;
 
-  void add_txn_man(uint64_t thd_id, uint64_t node_id, uint64_t txn_id, txn_man * txn);
 };
 #endif

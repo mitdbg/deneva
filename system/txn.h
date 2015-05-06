@@ -19,6 +19,8 @@ class INDEX;
 //For VLL
 enum TxnType {VLL_Blocked, VLL_Free};
 
+enum TxnState {START,INIT,EXEC,PREP,FIN,DONE};
+
 class Access {
 public:
 	access_t 	type;
@@ -69,8 +71,9 @@ public:
 	// [HSTORE]
 	int volatile 	ready_part;
 	int volatile 	ready_ulk;
-	RC 				finish(RC rc);
-	RC 				finish(base_query * query);
+  RC        validate();
+	RC 				finish(RC rc, uint64_t * parts, uint64_t part_cnt);
+	RC 				finish(base_query * query,bool fin);
 	void 			cleanup(RC rc);
     RC              rem_fin_txn(base_query * query);
 
@@ -94,6 +97,9 @@ public:
 //	int * 			row_cnts;
 	Access **		accesses;
 	int 			num_accesses_alloc;
+  
+  // Internal state
+  TxnState state;
 
 	// For VLL
 	TxnType 		vll_txn_type;

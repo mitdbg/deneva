@@ -10,35 +10,44 @@ fmt4 = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","N
 fmt5 = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","NUM_WH","MAX_TXN_IN_FLIGHT"]]
 fmt6 = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","NUM_WH","MAX_TXN_IN_FLIGHT","NETWORK_DELAY"]]
 
+
+
+#nnodes=[1]
+nnodes=[2]
+#nmpr= [1,5,10]
+nmpr=[1] + range(0,11,5)
+#nalgos=['MVCC']
+nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE']
+nthreads=[1]
+#nthreads=[1,2]
+nwfs=[64]
+ntifs=[1,4]
+#ntifs=[1,2,4,8]
+#nnet_delay=['0UL','50000UL']
+nnet_delay=['50000UL','100000UL','500000UL']
+ntxn=1000000
+#nnet_delay=['0UL','50000UL','100000UL','500000UL','1000000UL','5000000UL']
+
 simple = [
 
-[2,10000,'TPCC','MVCC',5,1,7,4,'0UL'],
+[2,ntxn,'TPCC','TIMESTAMP',5,1,64,4],
+[2,ntxn,'TPCC','TIMESTAMP',10,1,64,4],
+[2,ntxn,'TPCC','MVCC',5,1,64,4],
+[2,ntxn,'TPCC','MVCC',10,1,64,4],
+[2,ntxn,'TPCC','OCC',1,1,64,1],
+[2,ntxn,'TPCC','OCC',10,1,64,1],
+[2,ntxn,'TPCC','HSTORE',10,1,64,4],
 
 
 #[2,10000,'TPCC','NO_WAIT',30,2,8,16]
 ]
-
-#nnodes=[1]
-nnodes=[2]
-#nmpr= [5,10]
-nmpr=[1] + range(0,11,5)
-#nalgos=['MVCC']
-nalgos=['MVCC']
-#nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE']
-nthreads=[1]
-#nthreads=[1,2]
-nwfs=[16]
-ntifs=[4]
-#ntifs=[1,2,4,8]
-#nnet_delay=['0UL','50000UL']
-nnet_delay=['0UL','50000UL','100000UL','500000UL','1000000UL','5000000UL']
 
 experiments_nd = [
     [n,10000,'TPCC',cc,m,t,wf,tif,nd] for n,m,cc,t,wf,tif,nd in itertools.product(nnodes,nmpr,nalgos,nthreads,nwfs,ntifs,nnet_delay)
 ]
 
 experiments = [
-    [n,10000,'TPCC',cc,m,t,wf,tif] for n,m,cc,t,wf,tif in itertools.product(nnodes,nmpr,nalgos,nthreads,nwfs,ntifs)
+    [n,ntxn,'TPCC',cc,m,t,wf,tif] for n,m,cc,t,wf,tif in itertools.product(nnodes,nmpr,nalgos,nthreads,nwfs,ntifs)
 ]
 
 experiments_100K = [
@@ -151,5 +160,5 @@ configs = {
 ##################
 # FIXME
 #################
-experiments = fmt6 + experiments_nd
-config_names = fmt6[0]
+experiments = fmt5 + experiments
+config_names = fmt5[0]

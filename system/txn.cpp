@@ -1,3 +1,6 @@
+#include "global.h"
+#include "manager.h"
+#include "helper.h"
 #include "txn.h"
 #include "row.h"
 #include "wl.h"
@@ -6,6 +9,7 @@
 #include "thread.h"
 #include "mem_alloc.h"
 #include "occ.h"
+#include "row_occ.h"
 #include "table.h"
 #include "catalog.h"
 #include "index_btree.h"
@@ -22,7 +26,8 @@ void txn_man::init(thread_t * h_thd, workload * h_wl, uint64_t thd_id) {
 	row_cnt = 0;
 	wr_cnt = 0;
 	insert_cnt = 0;
-    ack_cnt = 0;
+  ack_cnt = 0;
+  state = START;
 	//accesses = (Access **) mem_allocator.alloc(sizeof(Access **), 0);
 	accesses = new Access * [MAX_ROW_PER_TXN];
 	for (int i = 0; i < MAX_ROW_PER_TXN; i++)
@@ -87,6 +92,12 @@ void txn_man::decr_rsp(int i) {
 }
 
 void txn_man::cleanup(RC rc) {
+#if CC_ALG == OCC
+  if(rc == RCOK) {
+		// advance the global timestamp and get the end_ts
+		end_ts = glob_manager.get_ts( get_thd_id() );
+  }
+#endif
 	for (int rid = row_cnt - 1; rid >= 0; rid --) {
 #if !NOGRAPHITE
 		part_id = accesses[rid]->orig_row->get_part_id();
@@ -116,6 +127,9 @@ void txn_man::cleanup(RC rc) {
 		}
 #endif
 		accesses[rid]->data = NULL;
+#if CC_ALG == OCC
+		accesses[rid]->orig_row->manager->release();
+#endif
 	}
 
 	if (rc == Abort) {
@@ -191,6 +205,10 @@ RC txn_man::get_row(row_t * row, access_t type, row_t *& row_rtn) {
 }
 
 RC txn_man::get_row_post_wait(row_t *& row_rtn) {
+  uint64_t timespan = get_sys_clock() - this->wait_starttime;
+  INC_STATS(get_thd_id(),time_wait_lock,timespan);
+  INC_STATS(get_thd_id(),rtime_wait_lock,timespan);
+
 	uint64_t starttime = get_sys_clock();
   row_t * row = this->last_row;
   access_t type = this->last_type;
@@ -212,7 +230,7 @@ RC txn_man::get_row_post_wait(row_t *& row_rtn) {
 	row_cnt ++;
 	if (type == WR)
 		wr_cnt ++;
-	uint64_t timespan = get_sys_clock() - starttime;
+	timespan = get_sys_clock() - starttime;
 	INC_STATS(get_thd_id(), time_man, timespan);
 	this->last_row_rtn  = accesses[row_cnt - 1]->data;
 	row_rtn  = accesses[row_cnt - 1]->data;
@@ -244,10 +262,27 @@ txn_man::index_read(INDEX * index, idx_key_t key, int part_id) {
 	return item;
 }
 
-RC txn_man::finish(RC rc) {
+RC txn_man::validate() {
+  if(rc == WAIT) {
+    rc = Abort;
+    return rc;
+  }
+  assert(rc == Abort || rc == RCOK);
+  if(CC_ALG == OCC && rc == RCOK)
+    rc = occ_man.validate(this);
+  return rc;
+}
+
+RC txn_man::finish(RC rc, uint64_t * parts, uint64_t part_cnt) {
 	if (CC_ALG == HSTORE) {
+		part_lock_man.rem_unlock(parts, part_cnt, this);
 		return RCOK;	
   }
+	uint64_t starttime = get_sys_clock();
+  cleanup(rc);
+	uint64_t timespan = get_sys_clock() - starttime;
+	INC_STATS(get_thd_id(), time_cleanup,  timespan);
+  /*
 	uint64_t starttime = get_sys_clock();
 	if (CC_ALG == OCC && rc == RCOK) {
 		// validation phase.
@@ -257,57 +292,55 @@ RC txn_man::finish(RC rc) {
 	uint64_t timespan = get_sys_clock() - starttime;
 	//INC_STATS(get_thd_id(), time_man,  timespan);
 	INC_STATS(get_thd_id(), time_cleanup,  timespan);
+  */
 	return rc;
 }
 
 RC txn_man::rem_fin_txn(base_query * query) {
-  return finish(query->rc);
+  assert(query->rc == Abort || query->rc == RCOK);
+  return finish(query->rc,query->parts,query->part_cnt);
 }
 
-RC txn_man::finish(base_query * query) {
-  //if (query->part_cnt > 0)
-  /*
-  if (query->part_num > 1)
-    rem_qry_man.cleanup_remote(get_thd_id(), get_node_id(), get_txn_id(), false);
-    */
-	if (CC_ALG == HSTORE) 
-    return RCOK;
-  // Send finish message to all participating transaction
-  // FIXME
+RC txn_man::finish(base_query * query, bool fin) {
+  // Only home node should execute
+  assert(query->txn_id % g_node_cnt == g_node_id);
+  if(query->part_num == 1)
+    return query->rc;
+
+  if(!fin) {
+    this->state = PREP;
+  }
+
+  // Send prepare message to all participating transaction
   assert(rsp_cnt == 0);
-  uint64_t part_node_ids[g_node_cnt]; 
-  uint64_t node_num = 0;
   for (uint64_t i = 0; i < query->part_num; ++i) {
     uint64_t part_node_id = GET_NODE_ID(query->part_to_access[i]);
     //if(query->part_to_access[i] == get_node_id()) {
     if(part_node_id == get_node_id()) {
       continue;
     }
-    // Check if we have already sent this node an RFIN message
-    bool sent_rfin = false;
-    for (uint64_t j = 0; j < node_num; ++j) {
-      if (part_node_ids[j] == part_node_id) {
-        sent_rfin = true;
+    // Check if we have already sent this node an RPREPARE message
+    bool sent = false;
+    for (uint64_t j = 0; j < i; j++) {
+      if (part_node_id == GET_NODE_ID(query->part_to_access[j])) {
+        sent = true;
         break;
       }
     }
-    if (sent_rfin) {
+    if (sent) 
       continue;
-    }
-    part_node_ids[node_num++] = part_node_id;
+
     incr_rsp(1);
-    query->remote_finish(query, part_node_id);    
-    //query->remote_finish(query, query->part_to_access[i]);    
+    if(fin)
+      query->remote_finish(query, part_node_id);    
+    else
+      query->remote_prepare(query, part_node_id);    
   }
 
-  if(rsp_cnt >0) {
+  if(rsp_cnt >0) 
     return WAIT_REM;
-    //ts_t t = get_sys_clock();
-    //while(rsp_cnt > 0) { }
-    //INC_STATS(get_thd_id(),time_wait_rem,get_sys_clock()-t);
-  }
   else
-    return finish(query->rc);
+    return RCOK; //finish(query->rc);
 
 }
 

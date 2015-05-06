@@ -70,7 +70,7 @@ public:
 	void unpack(base_query * query, char * data);
 	void remote_qry(bool l, uint64_t lid, txn_man * txn);
 	uint64_t get_node_id() {return _node_id;};
-	void rem_lock(uint64_t * parts, uint64_t part_cnt, txn_man * txn); 
+	RC rem_lock(uint64_t * parts, uint64_t part_cnt, txn_man * txn); 
 	void rem_unlock(uint64_t * parts, uint64_t part_cnt, txn_man * txn);
 	void rem_lock_rsp(RC rc, txn_man * txn);
   void rem_unlock_rsp(txn_man * txn);

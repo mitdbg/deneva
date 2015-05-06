@@ -2,7 +2,7 @@ import os, sys, re, math, os.path, math
 from helper import *
 from experiments import experiments as experiments
 from experiments import configs
-from experiments import nnodes,nmpr,nalgos,nthreads,nwfs,ntifs,nnet_delay
+from experiments import nnodes,nmpr,nalgos,nthreads,nwfs,ntifs,nnet_delay,ntxn
 from plot_helper import *
 import glob
 
@@ -56,7 +56,7 @@ for e in experiments[1:]:
 
 # Runtime contributions
 # Throughput vs. MPR for HStore, many node counts
-txn_cnt = 10000
+txn_cnt = ntxn
 nmpr.sort()
 mpr = nmpr #[0,1,10,20]#,30,40,50]
 nodes = nnodes #[1]
@@ -68,13 +68,13 @@ net_delay = nnet_delay
 whs = nwfs
 
 #artificial network delay
-for algo,thread,wh,node in itertools.product(algos,threads,whs,nodes):
-    _cfg_fmt = ["CC_ALG","MAX_TXN_PER_PART","THREAD_CNT","NUM_WH","NODE_CNT"]
-    _cfg=[algo,txn_cnt,thread,wh,node]
-    _title="Network Delay {} {} Nodes {} Threads {} Warehouses".format(algo,node,thread,wh)
-    tput(mpr,net_delay,summary,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="MPR",vname="NETWORK_DELAY",title=_title)
+#for algo,thread,wh,node in itertools.product(algos,threads,whs,nodes):
+#    _cfg_fmt = ["CC_ALG","MAX_TXN_PER_PART","THREAD_CNT","NUM_WH","NODE_CNT"]
+#    _cfg=[algo,txn_cnt,thread,wh,node]
+#    _title="Network Delay {} {} Nodes {} Threads {} Warehouses".format(algo,node,thread,wh)
+#    tput(mpr,net_delay,summary,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="MPR",vname="NETWORK_DELAY",title=_title)
  
-exit()
+#exit()
 
 #for algo in algos:
 #    _cfg_fmt = ["NODE_CNT","CC_ALG","MAX_TXN_PER_PART","THREAD_CNT"]
@@ -112,12 +112,12 @@ for node,algo,thread,tif in itertools.product(nodes,algos,threads,tifs):
     time_breakdown_basic(mpr,summary,normalized=False,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="MPR",title=_title)
 #    time_breakdown(mpr,node,algo,txn_cnt,summary,normalized=True)
     cdf(mpr,summary,cfg_fmt=_cfg_fmt,cfg=_cfg,vname="MPR",title="Aborts " + _title)
-    for k in ["d_cflt","d_abrt","s_cflt","s_abrt"]:
-        cdf(mpr,summary,cfg_fmt=_cfg_fmt,cfg=_cfg,vname="MPR",title=k + " " +  _title)
-    for m in mpr:
-        _cfg_fmt = ["NODE_CNT","CC_ALG","MAX_TXN_PER_PART","THREAD_CNT","MAX_TXN_IN_FLIGHT","NUM_WH","MPR"]
-        _cfg=[node,algo,txn_cnt,thread,tif,64,m]
-        _title="{} {} Nodes {} Threads {} TiF {} MPR".format(algo,node,thread,tif,m)
-        bar_keys(summary,rank=10,cfg_fmt=_cfg_fmt,cfg=_cfg,title=_title)
+    #for k in ["d_cflt","d_abrt","s_cflt","s_abrt"]:
+    #    cdf(mpr,summary,cfg_fmt=_cfg_fmt,cfg=_cfg,vname="MPR",title=k + " " +  _title)
+    #for m in mpr:
+        #_cfg_fmt = ["NODE_CNT","CC_ALG","MAX_TXN_PER_PART","THREAD_CNT","MAX_TXN_IN_FLIGHT","NUM_WH","MPR"]
+        #_cfg=[node,algo,txn_cnt,thread,tif,64,m]
+        #_title="{} {} Nodes {} Threads {} TiF {} MPR".format(algo,node,thread,tif,m)
+        #bar_keys(summary,rank=10,cfg_fmt=_cfg_fmt,cfg=_cfg,title=_title)
 #    bar_aborts_mpr(mpr,node,algo,txn_cnt,summary)
 

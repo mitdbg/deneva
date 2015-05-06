@@ -66,6 +66,8 @@ OptCC::per_row_validate(txn_man * txn) {
 		txn->accesses[i]->orig_row->manager->latch();
 		ok = txn->accesses[i]->orig_row->manager->validate( txn->start_ts );
 	}
+  rc = ok ? RCOK : Abort;
+  /*
 	if (ok) {
 		// Validation passed.
 		// advance the global timestamp and get the end_ts
@@ -80,6 +82,7 @@ OptCC::per_row_validate(txn_man * txn) {
 
 	for (int i = 0; i < lock_cnt; i++) 
 		txn->accesses[i]->orig_row->manager->release();
+    */
 #endif
 	return rc;
 }

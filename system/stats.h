@@ -68,6 +68,9 @@ public:
 	uint64_t rqry_rsp;
 	uint64_t rfin;
 	uint64_t rack;
+	uint64_t rprep;
+	uint64_t rinit;
+	uint64_t rtxn;
 
   StatsArr all_abort;
   StatsArr w_cflt;
