@@ -80,6 +80,7 @@ void base_query::set_txn_id(uint64_t _txn_id) { txn_id = _txn_id; }
 void base_query::remote_prepare(base_query * query, int dest_id) {
   int total = 5;
 
+  printf("Sending RPREPARE %ld\n",query->txn_id);
   void ** data = new void *[total];
   int * sizes = new int [total];
   int num = 0;
@@ -105,6 +106,7 @@ void base_query::remote_prepare(base_query * query, int dest_id) {
 void base_query::remote_finish(base_query * query, int dest_id) {
   int total = 5;
 
+  printf("Sending RFIN %ld\n",query->txn_id);
   void ** data = new void *[total];
   int * sizes = new int [total];
   int num = 0;

@@ -230,11 +230,7 @@ base_query * Transport::recv_msg() {
 	ts_t start = get_sys_clock();
 	INC_STATS(1,msg_rcv_cnt,1);
   
-#if WORKLOAD == TPCC
-	query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), 0);
-#endif
-  query->clear();
-	rem_qry_man.unpack(query,buf,bytes);
+	query = rem_qry_man.unpack(buf,bytes);
 #if DEBUG_DISTR
 	printf("Msg delay: %d->%d, %d bytes, %f s\n",query->return_id,query->dest_id,bytes,((float)(time2-time))/BILLION);
 #endif

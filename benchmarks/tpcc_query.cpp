@@ -35,6 +35,7 @@ void tpcc_query::reset() {
 // Note: If you ever change the number of parameters sent, change "total"
 void tpcc_query::remote_qry(base_query * query, int type, int dest_id) {
 
+  printf("Sending RQRY %ld\n",query->txn_id);
 	tpcc_query * m_query = (tpcc_query *) query;
 	TPCCRemTxnType t = (TPCCRemTxnType) type;
 
@@ -160,6 +161,7 @@ void tpcc_query::remote_rsp(base_query * query) {
 
 	// Maximum number of parameters
 	// NOTE: Adjust if parameters sent is changed
+  printf("Sending RQRY_RSP %ld\n",query->txn_id);
 	int total = 7;
 
 	void ** data = new void *[total];
@@ -191,11 +193,13 @@ void tpcc_query::remote_rsp(base_query * query) {
 
 void tpcc_query::unpack_rsp(base_query * query, void * d) {
 	char * data = (char *) d;
+  RC rc;
+
 	tpcc_query * m_query = (tpcc_query *) query;
 	uint64_t ptr = HEADER_SIZE + sizeof(txnid_t) + sizeof(RemReqType);
 	memcpy(&m_query->txn_rtype,&data[ptr],sizeof(TPCCRemTxnType));
 	ptr += sizeof(TPCCRemTxnType);
-	memcpy(&m_query->rc,&data[ptr],sizeof(RC));
+	memcpy(&rc,&data[ptr],sizeof(RC));
 	ptr += sizeof(RC);
 	memcpy(&m_query->pid,&data[ptr],sizeof(uint64_t));
 	ptr += sizeof(uint64_t);
@@ -203,6 +207,11 @@ void tpcc_query::unpack_rsp(base_query * query, void * d) {
   ptr += sizeof(txnid_t);
 	memcpy(&m_query->o_id,&data[ptr],sizeof(m_query->o_id));
 	ptr += sizeof(m_query->o_id);
+
+  if(rc == Abort) {
+    m_query->rc = rc;
+    m_query->txn_rtype = TPCC_FIN;
+  }
 }
 
 void tpcc_query::unpack(base_query * query, void * d) {

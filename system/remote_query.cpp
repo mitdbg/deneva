@@ -31,6 +31,7 @@ void Remote_query::ack_response(RC rc, txn_man * txn) {
 
 	// Maximum number of parameters
 	// NOTE: Adjust if parameters sent is changed
+  printf("Sending RACK-1 %ld\n",txn->get_txn_id());
   uint64_t total = 3;
 	void ** data = new void *[total];
 	int * sizes = new int [total];
@@ -55,6 +56,7 @@ void Remote_query::ack_response(base_query * query) {
 
 	// Maximum number of parameters
 	// NOTE: Adjust if parameters sent is changed
+  printf("Sending RACK-2 %ld\n",query->txn_id);
   uint64_t total = 3;
 	void ** data = new void *[total];
 	int * sizes = new int [total];
@@ -80,6 +82,7 @@ void Remote_query::send_init(base_query * query,uint64_t dest_part_id) {
 
 	// Maximum number of parameters
 	// NOTE: Adjust if parameters sent is changed
+  printf("Sending RINIT %ld\n",query->txn_id);
   uint64_t total = 3;
 #if CC_ALG == HSTORE
   total += 3;
@@ -132,21 +135,53 @@ void Remote_query::send_remote_rsp(uint64_t dest_id, void ** data, int * sizes, 
 	tport_man.send_msg(dest_id, data, sizes, num);
 }
 
-void Remote_query::unpack(base_query * query, void * d, int len) {
+base_query * Remote_query::unpack(void * d, int len) {
+  base_query * query;
 	char * data = (char *) d;
 	uint64_t ptr = 0;
+  
+  uint32_t dest_id;
+  uint32_t return_id;
+  txnid_t txn_id;
+	RemReqType rtype;
+  RC rc;
+
+	memcpy(&dest_id,&data[ptr],sizeof(uint32_t));
+	ptr += sizeof(uint32_t);
+	memcpy(&return_id,&data[ptr],sizeof(uint32_t));
+	ptr += sizeof(uint32_t);
+	memcpy(&txn_id,&data[ptr],sizeof(txnid_t));
+	ptr += sizeof(txnid_t);
+	memcpy(&rtype,&data[ptr],sizeof(query->rtype));
+	ptr += sizeof(query->rtype);
+
+  if(rtype == RINIT) {
+#if WORKLOAD == TPCC
+	  query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), 0);
+    query->clear();
+#endif
+  } else {
+    query = txn_pool.get_qry(g_node_id,txn_id);
+  }
+
+  query->dest_id = dest_id;
+  query->return_id = return_id;
+  query->txn_id = txn_id;
+  query->rtype = rtype;
+
+  /*
 	memcpy(&query->dest_id,&data[ptr],sizeof(uint32_t));
 	ptr += sizeof(uint32_t);
-
 	memcpy(&query->return_id,&data[ptr],sizeof(uint32_t));
 	ptr += sizeof(uint32_t);
 	memcpy(&query->txn_id,&data[ptr],sizeof(txnid_t));
 	ptr += sizeof(txnid_t);
 	memcpy(&query->rtype,&data[ptr],sizeof(query->rtype));
 	ptr += sizeof(query->rtype);
+  */
 
 	if(query->dest_id != _node_id)
-		return;
+		return NULL;
 
 	switch(query->rtype) {
     case RINIT:
@@ -196,11 +231,15 @@ void Remote_query::unpack(base_query * query, void * d, int len) {
       query->unpack_finish(query, data);
       break;
     case RACK:
-	    memcpy(&query->rc,&data[ptr],sizeof(RC));
+	    memcpy(&rc,&data[ptr],sizeof(RC));
 	    ptr += sizeof(RC);
+      if(rc == Abort) {
+        query->rc = rc;
+      }
       break;
 		default:
 			assert(false);
 	}
+  return query;
 }
 

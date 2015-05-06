@@ -93,6 +93,10 @@ void TxnPool::restart_txn(uint64_t txn_id){
   while (t_node->next != NULL) {
     t_node = t_node->next;
     if (t_node->txn->get_txn_id() == txn_id) {
+      if(txn_id % g_node_cnt == g_node_id)
+        t_node->qry->rtype = RTXN;
+      else
+        t_node->qry->rtype = RQRY;
       work_queue.add_query(t_node->qry);
       break;
     }

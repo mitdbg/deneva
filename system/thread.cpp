@@ -118,7 +118,7 @@ RC thread_t::run() {
 #endif
 
 	base_query * m_query = NULL;
-  base_query * next_query = NULL;
+  //base_query * next_query = NULL;
   uint64_t txn_cnt = 0;
   uint64_t txn_st_cnt = 0;
 	uint64_t thd_txn_id = 0;
@@ -159,6 +159,7 @@ RC thread_t::run() {
 		switch(m_query->rtype) {
         case RINIT:
           // This transaction is from a remote node
+          printf("Received RINIT %ld\n",m_query->txn_id);
           assert(m_query->txn_id % g_node_cnt != g_node_id);
           INC_STATS(0,rinit,1);
 
@@ -186,6 +187,7 @@ RC thread_t::run() {
 
           break;
         case RPREPARE:
+          printf("Received RPREPARE %ld\n",m_query->txn_id);
           // This transaction is from a remote node
           assert(m_query->txn_id % g_node_cnt != g_node_id);
           INC_STATS(0,rprep,1);
@@ -198,82 +200,8 @@ RC thread_t::run() {
           // Send ACK w/ commit/abort
           rem_qry_man.ack_response(m_query);
           break;
-          /*
-#if CC_ALG == HSTORE
-				case RLK:
-          // This transaction is from a remote node
-          assert(m_query->txn_id % g_node_cnt != g_node_id);
-          INC_STATS(0,rlk,1);
-          m_txn = txn_pool.get_txn(m_query->return_id, m_query->txn_id);
-          if(m_txn == NULL) {
-	          rc = _wl->get_txn_man(m_txn, this);
-            assert(rc == RCOK);
-            m_txn->set_txn_id(m_query->txn_id);
-            m_txn->set_ts(m_query->ts);
-            m_txn->set_pid(m_query->pid);
-            txn_pool.add_txn(m_query->return_id,m_txn,m_query);
-          } 
-					part_lock_man.rem_lock(m_query->parts, m_query->part_cnt, m_txn);
-					break;
-				case RULK:
-          // This transaction is from a remote node
-          assert(m_query->txn_id % g_node_cnt != g_node_id);
-          INC_STATS(0,rulk,1);
-          m_txn = txn_pool.get_txn(m_query->return_id, m_query->txn_id);
-          if(m_txn == NULL) {
-            assert(false);
-            break;
-          }
-					part_lock_man.rem_unlock(m_query->parts, m_query->part_cnt, m_txn);
-
-          txn_pool.delete_txn(m_query->return_id, m_query->txn_id);
-					break;
-				case RLK_RSP:
-          // This transaction originated from this node
-          assert(m_query->txn_id % g_node_cnt == g_node_id);
-          INC_STATS(0,rlk_rsp,1);
-          m_txn = txn_pool.get_txn(m_query->return_id, m_query->txn_id);
-          assert(m_txn != NULL);
-					part_lock_man.rem_lock_rsp(m_query->rc, m_txn);
-          if(m_txn->ready_part == 0) {
-            // Done waiting for responses; restart txn
-
-            timespan = get_sys_clock() - m_txn->wait_starttime;
-            INC_STATS(get_thd_id(),time_wait_rem,timespan);
-
-            if(m_txn->rc == Abort) {
-		          next_query = txn_pool.get_qry(g_node_id, m_query->txn_id);
-		          rc = part_lock_man.unlock(next_query->part_to_access, next_query->part_num, m_txn);
-              if(rc != WAIT)
-                rc = m_txn->rc;
-              break;
-            }
-            txn_pool.restart_txn(m_txn->get_txn_id());
-          }
-          // FIXME: Hack
-          m_query = NULL;
-					break;
-				case RULK_RSP:
-          // This transaction originated from this node
-          assert(m_query->txn_id % g_node_cnt == g_node_id);
-          INC_STATS(0,rulk_rsp,1);
-          m_txn = txn_pool.get_txn(m_query->return_id, m_query->txn_id);
-          assert(m_txn != NULL);
-					part_lock_man.rem_unlock_rsp(m_txn);
-
-          // TODO: check if done waiting
-          if(m_txn->ready_ulk == 0) {
-            // Done waiting 
-            timespan = get_sys_clock() - m_txn->wait_starttime;
-            INC_STATS(get_thd_id(),time_wait_rem,timespan);
-		        next_query = txn_pool.get_qry(g_node_id, m_query->txn_id);
-            rc = m_txn->finish(next_query->rc);
-          }
-
-					break;
-#endif
-          */
 				case RQRY:
+
           // This transaction is from a remote node
           assert(m_query->txn_id % g_node_cnt != g_node_id);
           INC_STATS(0,rqry,1);
@@ -282,26 +210,24 @@ RC thread_t::run() {
           //    m_txn could already be in txn_pool
           m_txn = txn_pool.get_txn(m_query->return_id, m_query->txn_id);
           assert(m_txn != NULL);
-            /*
-          if(m_txn == NULL) {
-	          rc = _wl->get_txn_man(m_txn, this);
-            assert(rc == RCOK);
-            m_txn->set_txn_id(m_query->txn_id);
-            txn_pool.add_txn(m_query->return_id,m_txn,m_query);
-          } else {
-            if(CC_ALG != HSTORE) {
-              timespan = get_sys_clock() - m_txn->wait_starttime;
-              INC_STATS(get_thd_id(),time_wait_lock,timespan);
-              INC_STATS(get_thd_id(),rtime_wait_lock,timespan);
-            }
-          }
-            */
+          if(m_txn->state != EXEC)
+            printf("Received RQRY %ld\n",m_query->txn_id);
+
+
           m_txn->set_ts(m_query->ts);
 #if CC_ALG == OCC
           m_txn->set_start_ts(m_query->start_ts);
 #endif
 
-          m_txn->state = EXEC;
+          if(m_txn->state != EXEC) {
+            m_txn->state = EXEC;
+            // In case of restart
+            /*
+            next_query = txn_pool.get_qry(m_query->return_id, m_query->txn_id);
+            m_txn->merge
+            next_query->rtype = RQRY; 
+            */
+          }
           
           rc = m_txn->run_txn(m_query);
 
@@ -312,12 +238,14 @@ RC thread_t::run() {
             rem_qry_man.remote_rsp(m_query,m_txn);
 					break;
 				case RQRY_RSP:
+          printf("Received RQRY_RSP %ld\n",m_query->txn_id);
           // This transaction originated from this node
           assert(m_query->txn_id % g_node_cnt == g_node_id);
           INC_STATS(0,rqry_rsp,1);
 		      m_txn = txn_pool.get_txn(g_node_id, m_query->txn_id);
           assert(m_txn != NULL);
           INC_STATS(get_thd_id(),time_wait_rem,get_sys_clock() - m_txn->wait_starttime);
+          /*
 		      next_query = txn_pool.get_qry(g_node_id, m_query->txn_id);
 					m_txn->merge_txn_rsp(m_query,next_query);
           // free this m_query
@@ -326,6 +254,7 @@ RC thread_t::run() {
           m_query = NULL;
 #endif
           m_query = next_query;
+          */
           // Execute from original txn; Note: txn may finish
           assert(m_txn->get_rsp_cnt() == 0);
           rc = m_txn->run_txn(m_query);
@@ -340,42 +269,35 @@ RC thread_t::run() {
 */
 					break;
         case RFIN:
+          printf("Received RFIN %ld\n",m_query->txn_id);
           // This transaction is from a remote node
           assert(m_query->txn_id % g_node_cnt != g_node_id);
           INC_STATS(0,rfin,1);
 		      m_txn = txn_pool.get_txn(m_query->return_id, m_query->txn_id);
           // Transaction should ALWAYS be in the pool until node receives RFIN
-          /*
-          if(m_txn == NULL) {
-            rem_qry_man.ack_response(m_query);
-#if WORKLOAD == TPCC
-            mem_allocator.free(m_query, sizeof(tpcc_query));
-            m_query = NULL;
-#endif
-            break;
-          }
-          */
           assert(m_txn != NULL);
           m_txn->state = DONE;
-		      next_query = txn_pool.get_qry(m_query->return_id, m_query->txn_id);
-					m_txn->merge_txn_rsp(m_query,next_query);
-          m_txn->rem_fin_txn(next_query);
+
+          m_txn->rem_fin_txn(m_query);
           txn_pool.delete_txn(m_query->return_id, m_query->txn_id);
           rem_qry_man.ack_response(m_query);
 #if WORKLOAD == TPCC
-          mem_allocator.free(m_query, sizeof(tpcc_query));
+          //mem_allocator.free(m_query, sizeof(tpcc_query));
           m_query = NULL;
 #endif
           break;
         case RACK:
+          printf("Received RACK %ld\n",m_query->txn_id);
           // This transaction originated from this node
           assert(m_query->txn_id % g_node_cnt == g_node_id);
           INC_STATS(0,rack,1);
 		      m_txn = txn_pool.get_txn(g_node_id, m_query->txn_id);
           assert(m_txn != NULL);
+          /*
 		      next_query = txn_pool.get_qry(g_node_id, m_query->txn_id);
           // If after RPREPARE or RINIT, update next_query->rc
           next_query->update_rc(m_query->rc);
+          */
 
           m_txn->decr_rsp(1);
           // TODO: May be waiting for different things: RINIT, RPREPARE, RFIN
@@ -397,14 +319,14 @@ RC thread_t::run() {
               case PREP:
                 m_txn->state = FIN;
                 // After RPREPARE, send rfin messages
-                m_txn->finish(next_query,true);
+                m_txn->finish(m_query,true);
                 break;
               case FIN:
                 // After RFIN
                 m_txn->state = DONE;
                 uint64_t part_arr[1];
-                part_arr[0] = next_query->part_to_access[0];
-                rc = m_txn->finish(next_query->rc,part_arr,1);
+                part_arr[0] = m_query->part_to_access[0];
+                rc = m_txn->finish(m_query->rc,part_arr,1);
                 break;
               default:
                 assert(false);
@@ -413,12 +335,14 @@ RC thread_t::run() {
 
           }
           // free this m_query
+          /*
 #if WORKLOAD == TPCC
           mem_allocator.free(m_query, sizeof(tpcc_query));
           m_query = NULL;
 #endif
-          if(m_txn->state == DONE)
-            m_query = next_query;
+            */
+          if(m_txn->state != DONE)
+            m_query = NULL;
           break;
         case RTXN:
           // This transaction is originating at this node
