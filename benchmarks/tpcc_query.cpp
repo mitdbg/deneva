@@ -35,7 +35,9 @@ void tpcc_query::reset() {
 // Note: If you ever change the number of parameters sent, change "total"
 void tpcc_query::remote_qry(base_query * query, int type, int dest_id) {
 
+#if DEBUG_DISTR
   printf("Sending RQRY %ld\n",query->txn_id);
+#endif
 	tpcc_query * m_query = (tpcc_query *) query;
 	TPCCRemTxnType t = (TPCCRemTxnType) type;
 
@@ -161,7 +163,9 @@ void tpcc_query::remote_rsp(base_query * query) {
 
 	// Maximum number of parameters
 	// NOTE: Adjust if parameters sent is changed
+#if DEBUG_DISTR
   printf("Sending RQRY_RSP %ld\n",query->txn_id);
+#endif
 	int total = 7;
 
 	void ** data = new void *[total];

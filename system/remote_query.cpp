@@ -31,7 +31,9 @@ void Remote_query::ack_response(RC rc, txn_man * txn) {
 
 	// Maximum number of parameters
 	// NOTE: Adjust if parameters sent is changed
+#if DEBUG_DISTR
   printf("Sending RACK-1 %ld\n",txn->get_txn_id());
+#endif
   uint64_t total = 3;
 	void ** data = new void *[total];
 	int * sizes = new int [total];
@@ -56,7 +58,9 @@ void Remote_query::ack_response(base_query * query) {
 
 	// Maximum number of parameters
 	// NOTE: Adjust if parameters sent is changed
+#if DEBUG_DISTR
   printf("Sending RACK-2 %ld\n",query->txn_id);
+#endif
   uint64_t total = 3;
 	void ** data = new void *[total];
 	int * sizes = new int [total];
@@ -82,7 +86,9 @@ void Remote_query::send_init(base_query * query,uint64_t dest_part_id) {
 
 	// Maximum number of parameters
 	// NOTE: Adjust if parameters sent is changed
+#if DEBUG_DISTR
   printf("Sending RINIT %ld\n",query->txn_id);
+#endif
   uint64_t total = 3;
 #if CC_ALG == HSTORE
   total += 3;

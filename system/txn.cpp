@@ -127,9 +127,6 @@ void txn_man::cleanup(RC rc) {
 		}
 #endif
 		accesses[rid]->data = NULL;
-#if CC_ALG == OCC
-		accesses[rid]->orig_row->manager->release();
-#endif
 	}
 
 	if (rc == Abort) {

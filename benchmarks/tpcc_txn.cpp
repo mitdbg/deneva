@@ -378,8 +378,10 @@ RC tpcc_txn_man::run_txn_state(base_query * query) {
 			assert(false);
 	}
 
-  if(rc == WAIT)
+  if(rc == WAIT) {
+    assert(CC_ALG != HSTORE);
     return rc;
+  }
 	m_query->rc = rc;
   if(rc == Abort && !fin && GET_NODE_ID(m_query->pid) == g_node_id) {
     query->rem_req_state = TPCC_FIN;

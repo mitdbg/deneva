@@ -159,7 +159,9 @@ RC thread_t::run() {
 		switch(m_query->rtype) {
         case RINIT:
           // This transaction is from a remote node
+#if DEBUG_DISTR
           printf("Received RINIT %ld\n",m_query->txn_id);
+#endif
           assert(m_query->txn_id % g_node_cnt != g_node_id);
           INC_STATS(0,rinit,1);
 
@@ -187,7 +189,9 @@ RC thread_t::run() {
 
           break;
         case RPREPARE:
+#if DEBUG_DISTR
           printf("Received RPREPARE %ld\n",m_query->txn_id);
+#endif
           // This transaction is from a remote node
           assert(m_query->txn_id % g_node_cnt != g_node_id);
           INC_STATS(0,rprep,1);
@@ -210,8 +214,10 @@ RC thread_t::run() {
           //    m_txn could already be in txn_pool
           m_txn = txn_pool.get_txn(m_query->return_id, m_query->txn_id);
           assert(m_txn != NULL);
+#if DEBUG_DISTR
           if(m_txn->state != EXEC)
             printf("Received RQRY %ld\n",m_query->txn_id);
+#endif
 
 
           m_txn->set_ts(m_query->ts);
@@ -238,7 +244,9 @@ RC thread_t::run() {
             rem_qry_man.remote_rsp(m_query,m_txn);
 					break;
 				case RQRY_RSP:
+#if DEBUG_DISTR
           printf("Received RQRY_RSP %ld\n",m_query->txn_id);
+#endif
           // This transaction originated from this node
           assert(m_query->txn_id % g_node_cnt == g_node_id);
           INC_STATS(0,rqry_rsp,1);
@@ -269,7 +277,9 @@ RC thread_t::run() {
 */
 					break;
         case RFIN:
+#if DEBUG_DISTR
           printf("Received RFIN %ld\n",m_query->txn_id);
+#endif
           // This transaction is from a remote node
           assert(m_query->txn_id % g_node_cnt != g_node_id);
           INC_STATS(0,rfin,1);
@@ -287,7 +297,9 @@ RC thread_t::run() {
 #endif
           break;
         case RACK:
+#if DEBUG_DISTR
           printf("Received RACK %ld\n",m_query->txn_id);
+#endif
           // This transaction originated from this node
           assert(m_query->txn_id % g_node_cnt == g_node_id);
           INC_STATS(0,rack,1);

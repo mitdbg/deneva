@@ -30,13 +30,9 @@ ntxn=1000000
 
 simple = [
 
-[2,ntxn,'TPCC','TIMESTAMP',5,1,64,4],
-[2,ntxn,'TPCC','TIMESTAMP',10,1,64,4],
-[2,ntxn,'TPCC','MVCC',5,1,64,4],
-[2,ntxn,'TPCC','MVCC',10,1,64,4],
-[2,ntxn,'TPCC','OCC',1,1,64,1],
-[2,ntxn,'TPCC','OCC',10,1,64,1],
-[2,ntxn,'TPCC','HSTORE',10,1,64,4],
+[2,ntxn,'TPCC','OCC',1,1,4,1],
+#[2,ntxn,'TPCC','OCC',10,1,64,1],
+#[2,ntxn,'TPCC','HSTORE',10,1,64,4],
 
 
 #[2,10000,'TPCC','NO_WAIT',30,2,8,16]
@@ -160,5 +156,5 @@ configs = {
 ##################
 # FIXME
 #################
-experiments = fmt5 + experiments
+experiments = fmt5 + simple #experiments
 config_names = fmt5[0]

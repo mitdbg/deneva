@@ -80,9 +80,9 @@ OptCC::per_row_validate(txn_man * txn) {
 		rc = Abort;
 	}
 
+    */
 	for (int i = 0; i < lock_cnt; i++) 
 		txn->accesses[i]->orig_row->manager->release();
-    */
 #endif
 	return rc;
 }
