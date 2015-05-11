@@ -36,8 +36,24 @@ RC thread_t::run_remote() {
 	if (warmup_finish) {
 		mem_allocator.register_thread(_thd_id);
 	}
+
+	base_query * m_query = NULL;
+
 	pthread_barrier_wait( &warmup_bar );
 	stats.init(get_thd_id());
+  // Send start msg to all nodes; wait for rsp from all nodes before continuing.
+  for(uint64_t i = 0; i < g_node_cnt; i++) {
+    if(i != g_node_id)
+      rem_qry_man.send_init_done(i);
+  }
+  int rsp_cnt = g_node_cnt - 1;
+  while(rsp_cnt > 0) {
+		m_query = tport_man.recv_msg();
+    if(m_query != NULL && m_query->rtype == INIT_DONE)
+      rsp_cnt --;
+    else if(m_query != NULL)
+      work_queue.add_query(m_query);
+  }
 	pthread_barrier_wait( &warmup_bar );
 	printf("Run_remote %ld:%ld\n",_node_id, _thd_id);
 	
@@ -53,7 +69,6 @@ RC thread_t::run_remote() {
 #endif
 	
 
-	base_query * m_query = NULL;
 
   /*
 #if WORKLOAD == TPCC
@@ -124,6 +139,7 @@ RC thread_t::run() {
 	uint64_t thd_txn_id = 0;
   uint64_t starttime;
   uint64_t timespan;
+  uint64_t prog_time = get_sys_clock();
 
   uint64_t run_starttime = get_sys_clock();
 	
@@ -137,6 +153,11 @@ RC thread_t::run() {
         ATOM_ADD(txn_pool.inflight_cnt,1);
 			  m_query = query_queue.get_next_query( _thd_id );
         work_queue.add_query(m_query);
+    }
+
+    if(get_sys_clock() - prog_time >= PROG_TIMER) {
+      stats.print_prog(_thd_id);
+      prog_time = get_sys_clock();
     }
 
     while(!work_queue.poll_next_query() && !(_wl->sim_done && _wl->sim_timeout)) { }
@@ -329,6 +350,11 @@ RC thread_t::run() {
                 txn_pool.restart_txn(m_txn->get_txn_id());
                 break;
               case PREP:
+                // Validate
+                rc  = m_txn->validate();
+                if(rc == Abort)
+                  m_query->rc = rc;
+
                 m_txn->state = FIN;
                 // After RPREPARE, send rfin messages
                 m_txn->finish(m_query,true);
@@ -546,10 +572,6 @@ RC thread_t::run() {
       case WAIT:
         assert(m_txn != NULL);
         //m_txn->wait_starttime = get_sys_clock();
-#if CC_ALG == HSTORE && SPEC_EX
-        // Speculatively execute local queries
-        part_lock_man.start_spec_ex(m_query->part_to_access, m_query->part_num);
-#endif
         break;
       case WAIT_REM:
         // Save transaction information for later
