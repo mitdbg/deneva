@@ -46,6 +46,7 @@ public:
 	void remote_qry(base_query * query, int type, int dest_id, txn_man * txn);
   void ack_response(RC rc, txn_man * txn);
   void ack_response(base_query * query);
+	void send_init_done(uint64_t dest_part_id);
 	void send_init(base_query * query, uint64_t dest_part_id);
 	void send_remote_query(uint64_t dest_id, void ** data, int * sizes, int num);
   void remote_rsp(base_query * query, txn_man * txn);

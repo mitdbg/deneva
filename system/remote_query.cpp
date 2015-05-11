@@ -81,6 +81,22 @@ void Remote_query::ack_response(base_query * query) {
   send_remote_query(query->return_id,data,sizes,num);
 }
 
+void Remote_query::send_init_done(uint64_t dest_id) {
+  uint64_t total = 2;
+	void ** data = new void *[total];
+	int * sizes = new int [total];
+  int num = 0;
+
+  txnid_t txn_id = 0;
+	RemReqType rtype = INIT_DONE;
+
+	data[num] = &txn_id;
+	sizes[num++] = sizeof(txnid_t);
+	data[num] = &rtype;
+	sizes[num++] = sizeof(RemReqType);
+  send_remote_query(dest_id,data,sizes,num);
+}
+
 // FIXME: What if in HStore we want to lock multiple partitions at same node?
 void Remote_query::send_init(base_query * query,uint64_t dest_part_id) {
 
@@ -160,8 +176,9 @@ base_query * Remote_query::unpack(void * d, int len) {
 	ptr += sizeof(txnid_t);
 	memcpy(&rtype,&data[ptr],sizeof(query->rtype));
 	ptr += sizeof(query->rtype);
+  
 
-  if(rtype == RINIT) {
+  if(rtype == RINIT || rtype == INIT_DONE) {
 #if WORKLOAD == TPCC
 	  query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), 0);
     query->clear();
@@ -242,6 +259,8 @@ base_query * Remote_query::unpack(void * d, int len) {
       if(rc == Abort) {
         query->rc = rc;
       }
+      break;
+    case INIT_DONE:
       break;
 		default:
 			assert(false);
