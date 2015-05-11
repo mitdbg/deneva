@@ -6,6 +6,7 @@
 #include "query.h"
 #include "plock.h"
 #include "occ.h"
+#include "specex.h"
 #include "vll.h"
 #include "transport.h"
 #include "query_work_queue.h"
@@ -19,6 +20,7 @@ Manager glob_manager;
 Query_queue query_queue;
 Plock part_lock_man;
 OptCC occ_man;
+SpecEx spec_man;
 #if CC_ALG == VLL
 VLLMan vll_man;
 #endif 

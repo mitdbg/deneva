@@ -185,3 +185,26 @@ uint64_t TxnPool::get_min_ts() {
   return min;
 }
 
+void TxnPool::start_spec_ex() {
+  assert(SPEC_EX);
+
+  pthread_mutex_lock(&mtx);
+
+  txn_node_t t_node = txns[0];
+
+  while (t_node->next != NULL) {
+    t_node = t_node->next;
+    if (t_node->txn->get_txn_id() % g_node_cnt != g_node_id || t_node->qry->part_num > 1) 
+      continue;
+    t_node->txn->spec = true;
+    t_node->txn->state = EXEC;
+    work_queue.add_query(t_node->qry);
+  }
+
+  pthread_mutex_unlock(&mtx);
+
+}
+
+void TxnPool::commit_spec_ex() {
+  assert(SPEC_EX);
+}

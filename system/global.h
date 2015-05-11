@@ -40,6 +40,7 @@ class Manager;
 class Query_queue;
 class Plock;
 class OptCC;
+class SpecEx;
 class VLLMan;
 class Transport;
 class Remote_query;
@@ -63,6 +64,7 @@ extern Manager glob_manager;
 extern Query_queue query_queue;
 extern Plock part_lock_man;
 extern OptCC occ_man;
+extern SpecEx spec_man;
 #if CC_ALG == VLL
 extern VLLMan vll_man;
 #endif

@@ -98,12 +98,10 @@ void PartMan::unlock(txn_man * txn) {
 			if(GET_NODE_ID(owner->get_pid()) == _node_id) {
         ATOM_SUB(owner->ready_part, 1);
         // If local and ready_part is 0, restart txn
-#if !SPEC_EX
         if(owner->ready_part == 0 && owner->get_rsp_cnt() == 0) {
           owner->state = EXEC; 
           txn_pool.restart_txn(owner->get_txn_id());
         }
-#endif
       }
       else {
         // FIXME: stat locality w/ thd_id

@@ -9,7 +9,9 @@
 #include "thread.h"
 #include "mem_alloc.h"
 #include "occ.h"
+#include "specex.h"
 #include "row_occ.h"
+#include "row_specex.h"
 #include "table.h"
 #include "catalog.h"
 #include "index_btree.h"
@@ -153,7 +155,7 @@ void txn_man::cleanup(RC rc) {
 }
 
 RC txn_man::get_row(row_t * row, access_t type, row_t *& row_rtn) {
-	if (CC_ALG == HSTORE) {
+	if (CC_ALG == HSTORE && !SPEC_EX) {
     row_rtn = row;
 		return RCOK;
   }
@@ -173,12 +175,6 @@ RC txn_man::get_row(row_t * row, access_t type, row_t *& row_rtn) {
 	rc = row->get_row(type, this, accesses[ row_cnt ]->data);
 
 	if (rc == Abort || rc == WAIT) {
-    /*
-    if(rc == WAIT) {
-      this->last_row = row;
-      this->last_type = type;
-    }
-    */
     row_rtn = NULL;
 		return rc;
 	}
@@ -198,6 +194,8 @@ RC txn_man::get_row(row_t * row, access_t type, row_t *& row_rtn) {
 	uint64_t timespan = get_sys_clock() - starttime;
 	INC_STATS(get_thd_id(), time_man, timespan);
 	row_rtn  = accesses[row_cnt - 1]->data;
+  if(CC_ALG == HSTORE)
+    assert(rc == RCOK);
   return rc;
 }
 
@@ -267,6 +265,8 @@ RC txn_man::validate() {
   assert(rc == Abort || rc == RCOK);
   if(CC_ALG == OCC && rc == RCOK)
     rc = occ_man.validate(this);
+  else if(CC_ALG == HSTORE && SPEC_EX && spec)
+    rc = spec_man.validate(this);
   return rc;
 }
 
@@ -279,17 +279,6 @@ RC txn_man::finish(RC rc, uint64_t * parts, uint64_t part_cnt) {
   cleanup(rc);
 	uint64_t timespan = get_sys_clock() - starttime;
 	INC_STATS(get_thd_id(), time_cleanup,  timespan);
-  /*
-	uint64_t starttime = get_sys_clock();
-	if (CC_ALG == OCC && rc == RCOK) {
-		// validation phase.
-		rc = occ_man.validate(this);
-	} else 
-		cleanup(rc);
-	uint64_t timespan = get_sys_clock() - starttime;
-	//INC_STATS(get_thd_id(), time_man,  timespan);
-	INC_STATS(get_thd_id(), time_cleanup,  timespan);
-  */
 	return rc;
 }
 
@@ -328,10 +317,12 @@ RC txn_man::finish(base_query * query, bool fin) {
       continue;
 
     incr_rsp(1);
-    if(fin)
+    if(fin) {
       query->remote_finish(query, part_node_id);    
-    else
+    } else {
+      query->rc = RCOK;
       query->remote_prepare(query, part_node_id);    
+    }
   }
 
   if(rsp_cnt >0) 

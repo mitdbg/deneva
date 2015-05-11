@@ -149,7 +149,8 @@ def time_breakdown(xval,summary,
         cfg=[],
         title=''
         ):
-    stack_names = ['Useful Work','Abort','Timestamp','Index','Lock Wait','Remote Wait','Manager']
+    stack_names = ['Useful Work','Abort','Timestamp','Index','Manager']
+#stack_names = ['Useful Work','Abort','Timestamp','Index','Lock Wait','Remote Wait','Manager']
     _title = ''
     _ymax=1.0
     if normalized:
@@ -173,28 +174,32 @@ def time_breakdown(xval,summary,
         if cfgs not in summary.keys(): break
         try:
             if normalized:
-                run_time[i] = avg(summary[cfgs]['run_time'])
+                run_time[i] = avg(summary[cfgs]['time_work'])
+#run_time[i] = avg(summary[cfgs]['run_time'])
             else:
                 run_time[i] = 1.0
             time_abort[i] = avg(summary[cfgs]['time_abort']) / run_time[i]
             time_ts_alloc[i] = avg(summary[cfgs]['time_ts_alloc']) / run_time[i]
             time_index[i] = avg(summary[cfgs]['time_index']) / run_time[i]
-            time_wait_lock[i] = avg(summary[cfgs]['time_wait_lock']) / run_time[i]
+#            time_wait_lock[i] = avg(summary[cfgs]['time_wait_lock']) / run_time[i]
             #if _cfgs["CC_ALG"] == "HSTORE":
             #    time_wait_lock[i] = avg(summary[cfgs]['time_wait_lock']) / run_time[i]
             #else:
             #    time_wait_lock[i] = avg(summary[cfgs]['time_wait']) / run_time[i]
-            time_wait_rem[i] = avg(summary[cfgs]['time_wait_rem']) / run_time[i]
+#            time_wait_rem[i] = avg(summary[cfgs]['time_wait_rem']) / run_time[i]
             #time_man[i] = (avg(summary[cfgs]['time_lock_man']) - avg(summary[cfgs]['time_wait_lock'])) / run_time[i]
             time_man[i] = (avg(summary[cfgs]['time_man'])) / run_time[i]
 
             if normalized:
                 #assert(sum([time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]]) < 1.0)
-                time_work[i] = 1.0 - sum([time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]])
+                time_work[i] = 1.0 - sum([time_man[i],time_index[i],time_ts_alloc[i],time_abort[i]])
+#time_work[i] = 1.0 - sum([time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]])
             else:
                 #assert(sum([time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]]) < avg(summary[cfgs]['run_time']))
-                time_work[i] = avg(summary[cfgs]['run_time']) - sum([time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]])
-            _ymax = max(_ymax, sum([time_work[i],time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]])) 
+                time_work[i] = avg(summary[cfgs]['run_time']) - sum([time_man[i],time_index[i],time_ts_alloc[i],time_abort[i]])
+#time_work[i] = avg(summary[cfgs]['run_time']) - sum([time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]])
+            _ymax = max(_ymax, sum([time_work[i],time_man[i],time_index[i],time_ts_alloc[i],time_abort[i]])) 
+#_ymax = max(_ymax, sum([time_work[i],time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]])) 
         except KeyError:
             print("KeyError: {} {}".format(x,cfg))
             run_time[i] = 1.0
@@ -205,7 +210,8 @@ def time_breakdown(xval,summary,
             time_wait_rem[i] = 0.0
             time_man[i] = 0.0
             time_work[i] = 0.0
-    data = [time_man,time_wait_rem,time_wait_lock,time_index,time_ts_alloc,time_abort,time_work]
+    data = [time_man,time_index,time_ts_alloc,time_abort,time_work]
+#data = [time_man,time_wait_rem,time_wait_lock,time_index,time_ts_alloc,time_abort,time_work]
 
     draw_stack(data,xval,stack_names,figname=name,title=_title,ymax=_ymax)
 

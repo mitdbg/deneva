@@ -29,6 +29,9 @@ public:
   void delete_txn(uint64_t node_id, uint64_t txn_id);
   uint64_t get_min_ts(); 
 
+  void start_spec_ex();
+  void commit_spec_ex();
+
   uint64_t inflight_cnt;
 
 private:

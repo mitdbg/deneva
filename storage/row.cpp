@@ -40,9 +40,13 @@ void row_t::init_manager(row_t * row) {
     manager = (Row_occ *) mem_allocator.alloc(sizeof(Row_occ), _part_id);
 #elif CC_ALG == VLL
     manager = (Row_vll *) mem_allocator.alloc(sizeof(Row_vll), _part_id);
+#elif CC_ALG == HSTORE
+#if SPEC_EX
+    manager = (Row_specex *) mem_allocator.alloc(sizeof(Row_specex), _part_id);
+#endif
 #endif
 
-#if CC_ALG != HSTORE
+#if CC_ALG != HSTORE || SPEC_EX
 	manager->init(this);
 #endif
 }
@@ -204,6 +208,15 @@ RC row_t::get_row(access_t type, txn_man * txn, row_t *& row) {
 	row = txn->cur_row;
 	return rc;
 #elif CC_ALG == HSTORE || CC_ALG == VLL
+#if SPEC_EX
+  if(spec) {
+	  txn->cur_row = (row_t *) mem_allocator.alloc(sizeof(row_t), get_part_id());
+	  txn->cur_row->init(get_table(), get_part_id());
+	  rc = this->manager->access(txn, R_REQ);
+	  row = txn->cur_row;
+	  return rc;
+  }
+#endif
 	row = this;
 	return rc;
 #else
