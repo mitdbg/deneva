@@ -26,6 +26,7 @@ private:
   wq_entry_t head;
   wq_entry_t tail;
   uint64_t cnt;
+  uint64_t last_add_time;
 
 };
 

@@ -45,6 +45,7 @@ public:
 	uint64_t wait_cnt;
 	double tport_lat;
 	double lock_diff;
+  double qq_full;
 
 	uint64_t mpq_cnt; // multi-partition queries
 	uint64_t msg_bytes;

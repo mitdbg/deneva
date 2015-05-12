@@ -30,7 +30,7 @@ nnet_delay=['0UL','50000UL','100000UL','500000UL','1000000UL','5000000UL']
 
 simple = [
 
-[2,1000,'TPCC','HSTORE',5,1,64,1],
+[4,1000,'TPCC','HSTORE',5,1,64,1],
 
 
 #[2,10000,'TPCC','NO_WAIT',30,2,8,16]
@@ -154,5 +154,5 @@ configs = {
 ##################
 # FIXME
 #################
-experiments = fmt5 + experiments
+experiments = fmt5 + simple #experiments
 config_names = fmt5[0]
