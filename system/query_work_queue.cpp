@@ -6,6 +6,7 @@ void QWorkQueue::init() {
   cnt = 0;
   head = NULL;
   tail = NULL;
+  last_add_time = 0;
   pthread_mutex_init(&mtx,NULL);
 }
 
@@ -31,6 +32,9 @@ void QWorkQueue::add_query(base_query * qry) {
   tail = entry;
   cnt++;
 
+  if(last_add_time == 0)
+    last_add_time = get_sys_clock();
+
   pthread_mutex_unlock(&mtx);
 }
 
@@ -49,6 +53,11 @@ base_query * QWorkQueue::get_next_query() {
     if(cnt == 0) {
       tail = NULL;
     }
+  }
+
+  if(cnt == 0) {
+    INC_STATS(0,qq_full,get_sys_clock() - last_add_time);
+    last_add_time = 0;
   }
 
   pthread_mutex_unlock(&mtx);

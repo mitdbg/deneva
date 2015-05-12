@@ -97,6 +97,7 @@ void Stats_thd::clear() {
 	rtime_unpack = 0;
 	rtime_unpack_ndest = 0;
 	lock_diff = 0;
+  qq_full = 0;
 
 	mpq_cnt = 0;
 	msg_bytes = 0;
@@ -198,7 +199,7 @@ void Stats::print_prog(uint64_t tid) {
 			",deadlock_cnt=%ld,cycle_detect=%ld,dl_detect_time=%f,dl_wait_time=%f"
 			",time_query=%f,rtime_proc=%f,rtime_unpack=%f,rtime_unpack_ndest=%f"
 			",mpq_cnt=%ld,msg_bytes=%ld,msg_sent=%ld,msg_rcv=%ld"
-			",time_msg_wait=%f,time_req_req=%f,time_rem=%f,lock_diff=%f"
+			",time_msg_wait=%f,time_req_req=%f,time_rem=%f,lock_diff=%f,qq_full=%f"
 			",debug1=%f,debug2=%f,debug3=%f,debug4=%f,debug5=%f\n",
       tid,
 			_stats[tid]->txn_cnt, 
@@ -238,6 +239,7 @@ void Stats::print_prog(uint64_t tid) {
 			_stats[tid]->time_rem_req / BILLION,
 			_stats[tid]->time_rem / BILLION, 
 			_stats[tid]->lock_diff / BILLION,
+			_stats[tid]->qq_full / BILLION,
 			((float)_stats[tid]->debug1) / BILLION,
 			((float)_stats[tid]->debug2) / BILLION,
 			((float)_stats[tid]->debug3) / BILLION,
@@ -254,7 +256,7 @@ void Stats::print_prog(uint64_t tid) {
 		",deadlock_cnt=%ld,cycle_detect=%ld,dl_detect_time=%f,dl_wait_time=%f"
 		",time_query=%f,rtime_proc=%f,rtime_unpack=%f,rtime_unpack_ndest=%f"
 		",mpq_cnt=%ld,msg_bytes=%ld,msg_sent=%ld,msg_rcv=%ld"
-		",time_msg_wait=%f,time_req_req=%f,time_rem=%f,lock_diff=%f"
+		",time_msg_wait=%f,time_req_req=%f,time_rem=%f,lock_diff=%f,qq_full=%f"
 		",debug1=%f,debug2=%f,debug3=%f,debug4=%f,debug5=%f\n",
        tid,
 			_stats[tid]->txn_cnt, 
@@ -294,6 +296,7 @@ void Stats::print_prog(uint64_t tid) {
 			_stats[tid]->time_rem_req / BILLION,
 			_stats[tid]->time_rem / BILLION, 
 			_stats[tid]->lock_diff / BILLION,
+			_stats[tid]->qq_full / BILLION,
 			((float)_stats[tid]->debug1) / BILLION,
 			((float)_stats[tid]->debug2) / BILLION,
 			((float)_stats[tid]->debug3) / BILLION,
@@ -319,6 +322,7 @@ void Stats::print() {
 	double total_debug4 = 0;
 	double total_debug5 = 0;
 	double total_lock_diff = 0;
+	double total_qq_full = 0;
 	double total_time_index = 0;
 	double total_rtime_index = 0;
 	double total_time_abort = 0;
@@ -358,6 +362,7 @@ void Stats::print() {
 		total_debug4 += _stats[tid]->debug4;
 		total_debug5 += _stats[tid]->debug5;
 		total_lock_diff += _stats[tid]->lock_diff;
+		total_qq_full += _stats[tid]->qq_full;
 		total_time_index += _stats[tid]->time_index;
 		total_rtime_index += _stats[tid]->rtime_index;
 		total_time_abort += _stats[tid]->time_abort;
@@ -399,7 +404,7 @@ void Stats::print() {
 			",deadlock_cnt=%ld,cycle_detect=%ld,dl_detect_time=%f,dl_wait_time=%f"
 			",time_query=%f,rtime_proc=%f,rtime_unpack=%f,rtime_unpack_ndest=%f"
 			",mpq_cnt=%ld,msg_bytes=%ld,msg_sent=%ld,msg_rcv=%ld"
-			",time_msg_wait=%f,time_req_req=%f,time_rem=%f,lock_diff=%f"
+			",time_msg_wait=%f,time_req_req=%f,time_rem=%f,lock_diff=%f,qq_full=%f"
 			",debug1=%f,debug2=%f,debug3=%f,debug4=%f,debug5=%f\n",
 			total_txn_cnt, 
 			total_abort_cnt,
@@ -439,6 +444,7 @@ void Stats::print() {
 			total_time_rem_req / BILLION,
 			total_time_rem / BILLION, 
 			total_lock_diff / BILLION,
+			total_qq_full / BILLION,
 			total_debug1 / BILLION,
 			total_debug2 / BILLION,
 			total_debug3 / BILLION,
@@ -455,7 +461,7 @@ void Stats::print() {
 		",deadlock_cnt=%ld,cycle_detect=%ld,dl_detect_time=%f,dl_wait_time=%f"
 		",time_query=%f,rtime_proc=%f,rtime_unpack=%f,rtime_unpack_ndest=%f"
 		",mpq_cnt=%ld,msg_bytes=%ld,msg_sent=%ld,msg_rcv=%ld"
-		",time_msg_wait=%f,time_req_req=%f,time_rem=%f,lock_diff=%f"
+		",time_msg_wait=%f,time_req_req=%f,time_rem=%f,lock_diff=%f,qq_full=%f"
 		",debug1=%f,debug2=%f,debug3=%f,debug4=%f,debug5=%f\n",
 		total_txn_cnt, 
 		total_abort_cnt,
@@ -494,6 +500,7 @@ void Stats::print() {
 		total_time_rem_req / BILLION,
 		total_time_rem / BILLION, 
 		total_lock_diff / BILLION,
+		total_qq_full / BILLION,
 		total_debug1 / BILLION,
 		total_debug2 / BILLION,
 		total_debug3 / BILLION,
