@@ -64,7 +64,7 @@ fmt = experiments[0]
 for e in experiments[1:]:
     cfgs = get_cfgs(fmt,e)
     if remote:
-        cfgs["TPORT_TYPE"],cfgs["TPORT_TYPE_IPC"],cfgs["TPORT_PORT"]="\"tcp\"","false",6100
+        cfgs["TPORT_TYPE"],cfgs["TPORT_TYPE_IPC"],cfgs["TPORT_PORT"]="\"tcp\"","false",7000
 
     output_f = get_outfile_name(cfgs)
     output_dir = output_f + "/"

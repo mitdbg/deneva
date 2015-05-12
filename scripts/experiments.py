@@ -13,7 +13,7 @@ fmt6 = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","N
 
 
 #nnodes=[1]
-nnodes=[4,9,13]
+nnodes=[9,13]
 #nmpr= [1,5,10]
 nmpr=[1] + range(0,11,5)
 #nalgos=['TIMESTAMP']
