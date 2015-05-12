@@ -14,10 +14,10 @@ strnow=now.strftime("%Y%m%d-%H%M%S")
 # ISTC Machines ranked by clock skew
 machines_=[
 #GOOD
-"istc1", 
-"istc3", 
 "istc8",
 "istc6",
+"istc1", 
+"istc3", 
 "istc4", 
 #OK
 "istc7",
@@ -95,7 +95,7 @@ for e in experiments[1:]:
         os.system(cmd)
 
         if remote:
-            machines = machines_[:cfgs["NODE_CNT"]]
+            machines = sorted(machines_[:cfgs["NODE_CNT"]])
             # create ifconfig file
             # TODO: ensure that machine order and node order is the same for ifconfig
             f = open("istc_ifconfig.txt",'r');
