@@ -79,16 +79,23 @@ RC tpcc_wl::init_table() {
 //		- order line
 /**********************************/
 
-	pthread_t * p_thds = new pthread_t[3];
+  UInt32 cust_thr_cnt = DIST_PER_WARE/2;
+  thr_args * tt = new thr_args[cust_thr_cnt];
+	pthread_t * p_thds = new pthread_t[2+cust_thr_cnt];
 	pthread_create(&p_thds[0], NULL, threadInitStock, this);
 	pthread_create(&p_thds[1], NULL, threadInitHist, this);
-	pthread_create(&p_thds[2], NULL, threadInitCust, this);
+  for(UInt32 i=0;i<cust_thr_cnt;i++) {
+    tt[i].wl = this;
+    tt[i].id = i;
+    tt[i].tot = cust_thr_cnt;
+	  pthread_create(&p_thds[2+i], NULL, threadInitCust, &tt[i]);
+  }
 	threadInitOrder(this);
 	threadInitItem(this);
 	threadInitWh(this);
 	threadInitDist(this);
 
-	for (uint32_t i = 0; i < 3; i++) {
+	for (uint32_t i = 0; i < 2 + cust_thr_cnt; i++) {
 		int rc = pthread_join(p_thds[i], NULL);
 		printf("thread %d complete\n", i);
 		if (rc) {
@@ -476,10 +483,13 @@ void * tpcc_wl::threadInitCust(void * This) {
 	for (uint64_t wid = 1; wid <= g_num_wh; wid ++) {
     if(GET_NODE_ID(wh_to_part(wid)) != g_node_id) 
       continue;
-		for (uint64_t did = 1; did <= DIST_PER_WARE; did++)
-			((tpcc_wl *)This)->init_tab_cust(did, wid);
+		for (uint64_t did = 1; did <= DIST_PER_WARE; did++) {
+      if( did % ((thr_args *)This)->tot != ((thr_args *)This)->id)
+        continue;
+			((thr_args *)This)->wl->init_tab_cust(did, wid);
+    }
   }
-	printf("CUSTOMER Done\n");
+	printf("CUSTOMER %d Done\n",((thr_args *)This)->id);
 	return NULL;
 }
 	

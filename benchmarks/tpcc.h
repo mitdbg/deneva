@@ -70,6 +70,12 @@ private:
 	static void * threadInitOrder(void * This);
 };
 
+  struct thr_args{
+    tpcc_wl * wl;
+    UInt32 id;
+    UInt32 tot;
+  };
+
 class tpcc_txn_man : public txn_man
 {
 public:

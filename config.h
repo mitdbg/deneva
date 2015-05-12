@@ -153,7 +153,7 @@
 // are not modeled.
 #define TPCC_ACCESS_ALL 			false 
 #define WH_UPDATE					true
-#define NUM_WH 16
+#define NUM_WH 128
 // % of transactions that access multiple partitions
 #define MPR 5
 #define MPR_NEWORDER			20 // In %
