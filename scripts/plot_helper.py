@@ -16,7 +16,7 @@ def tput(xval,vval,summary,
         ):
     tpt = {}
     name = 'tput_{}_{}_{}'.format(xname.lower(),vname.lower(),title.replace(" ","_").lower())
-    _title = 'Per Node Throughput {}'.format(title)
+    _title = 'System Throughput {}'.format(title)
 
     for v in vval:
         if vname == "NETWORK_DELAY":
@@ -32,15 +32,20 @@ def tput(xval,vval,summary,
                 print("Not in summary: {}".format(cfgs))
                 break
             try:
-                tot_run_time = sum(summary[cfgs]['run_time'])
+                tot_run_time = sum(summary[cfgs]['tot_run_time'])
                 tot_txn_cnt = sum(summary[cfgs]['txn_cnt'])
-                avg_run_time = avg(summary[cfgs]['run_time'])
+                avg_run_time = avg(summary[cfgs]['tot_run_time'])
                 avg_txn_cnt = avg(summary[cfgs]['txn_cnt'])
+                if avg_run_time > (30.0*60):
+                    avg_run_time = avg_run_time / 4
             except KeyError:
                 print("KeyError: {} {} {} -- {}".format(v,x,cfg,cfgs))
                 tpt[_v][xi] = 0
                 continue
-            tpt[_v][xi] = (tot_txn_cnt/tot_run_time)
+            # System Throughput: total txn count / average of all node's run time
+            # Per Node Throughput: avg txn count / average of all node's run time
+            # Per txn latency: total of all node's run time / total txn count
+            tpt[_v][xi] = (tot_txn_cnt/avg_run_time)
             #tpt[v][xi] = (avg_txn_cnt/avg_run_time)
 
     bbox = [0.5,0.95]

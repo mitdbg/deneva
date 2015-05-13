@@ -25,7 +25,7 @@ machines_=[
 "istc10", 
 "istc13", 
 #BAD
-"istc11"
+"istc11",
 "istc12", 
 "istc2",
 "istc5",

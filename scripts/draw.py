@@ -137,7 +137,8 @@ def draw_line(fname, data, xticks,
     ylabel(ylab)
     xlabel(xlab)
     if not logscale:
-        ticklabel_format(axis='y', style='sci', scilimits=(-3,5))
+        ticklabel_format(axis='y', style='plain')
+        #ticklabel_format(axis='y', style='sci', scilimits=(-3,5))
 #if logscalex:
 #ax.get_xaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
     if legend :

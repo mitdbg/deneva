@@ -106,12 +106,12 @@ for node,algo,thread,tif in itertools.product(nodes,algos,threads,tifs):
     _cfg_fmt = ["NODE_CNT","CC_ALG","MAX_TXN_PER_PART","THREAD_CNT","MAX_TXN_IN_FLIGHT","NUM_WH"]
     _cfg=[node,algo,txn_cnt,thread,tif,64]
     _title="{} {} Nodes {} Threads {} TiF".format(algo,node,thread,tif)
-    time_breakdown(mpr,summary,normalized=False,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="MPR",title=_title)
+#    time_breakdown(mpr,summary,normalized=False,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="MPR",title=_title)
     time_breakdown(mpr,summary,normalized=True,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="MPR",title=_title)
     time_breakdown_basic(mpr,summary,normalized=True,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="MPR",title=_title)
-    time_breakdown_basic(mpr,summary,normalized=False,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="MPR",title=_title)
+#    time_breakdown_basic(mpr,summary,normalized=False,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="MPR",title=_title)
 #    time_breakdown(mpr,node,algo,txn_cnt,summary,normalized=True)
-    cdf(mpr,summary,cfg_fmt=_cfg_fmt,cfg=_cfg,vname="MPR",title="Aborts " + _title)
+#    cdf(mpr,summary,cfg_fmt=_cfg_fmt,cfg=_cfg,vname="MPR",title="Aborts " + _title)
     #for k in ["d_cflt","d_abrt","s_cflt","s_abrt"]:
     #    cdf(mpr,summary,cfg_fmt=_cfg_fmt,cfg=_cfg,vname="MPR",title=k + " " +  _title)
     #for m in mpr:

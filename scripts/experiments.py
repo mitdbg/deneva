@@ -12,11 +12,11 @@ fmt6 = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","N
 
 
 
-#nnodes=[1]
-nnodes=[9,13]
-#nmpr= [1,5,10]
-nmpr=[1] + range(0,11,5)
-#nalgos=['TIMESTAMP']
+nnodes=[1]
+#nnodes=[4,9]
+nmpr= [0]
+#nmpr= range(0,11,5)
+#nmpr=[1] + range(0,11,5)
 nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE']
 nthreads=[1]
 #nthreads=[1,2]
@@ -154,5 +154,5 @@ configs = {
 ##################
 # FIXME
 #################
-experiments = fmt5 + simple #experiments
+experiments = fmt5 + experiments
 config_names = fmt5[0]
