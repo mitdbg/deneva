@@ -128,8 +128,6 @@ for e in experiments[1:]:
         else:
             nnodes = cfgs["NODE_CNT"]
             pids = []
-#FIXME!
-            nnodes = 1
             for n in range(nnodes):
                 cmd = "./rundb -nid{}".format(n)
                 print(cmd)
