@@ -140,9 +140,9 @@ RC thread_t::run() {
 	uint64_t thd_txn_id = 0;
   uint64_t starttime;
   uint64_t timespan;
-  uint64_t prog_time = get_sys_clock();
 
   uint64_t run_starttime = get_sys_clock();
+  uint64_t prog_time = run_starttime;
 	
   while(true) {
 
