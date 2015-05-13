@@ -303,6 +303,7 @@ void Stats::print_prog(uint64_t tid) {
 			((float)_stats[tid]->debug4) / BILLION,
 			((float)_stats[tid]->debug5) / BILLION
     );
+  fflush(stdout);
 }
 void Stats::print() {
 	

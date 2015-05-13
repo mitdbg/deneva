@@ -9,8 +9,11 @@ def avg(l):
 
 def get_summary(sfile,summary={}):
     with open(sfile,'r') as f:
+        found = False
+        last_line = ""
         for line in f:
             if re.search("summary",line):
+                found = True
                 line = line.rstrip('\n')
                 line = line[10:] #remove '[summary] ' from start of line 
                 results = re.split(',',line)
@@ -19,6 +22,13 @@ def get_summary(sfile,summary={}):
                 if re.search(c,line):
                     line = line.rstrip('\n')
                     process_cnts(summary,line,c)
+            last_line = line
+        if not found:
+            if re.search("prog",line):
+                line = last_line.rstrip('\n')
+                line = line[9:] #remove '[prog 0] ' from start of line 
+                results = re.split(',',line)
+                process_results(summary,results)
 
     return summary
 
