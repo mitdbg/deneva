@@ -42,6 +42,7 @@ RC thread_t::run_remote() {
 	pthread_barrier_wait( &warmup_bar );
 	stats.init(get_thd_id());
   // Send start msg to all nodes; wait for rsp from all nodes before continuing.
+#if !TPORT_TYPE_IPC
   int rsp_cnt = g_node_cnt - 1;
   while(rsp_cnt > 0) {
 		m_query = tport_man.recv_msg();
@@ -50,6 +51,7 @@ RC thread_t::run_remote() {
     else if(m_query != NULL)
       work_queue.add_query(m_query);
   }
+#endif
 	pthread_barrier_wait( &warmup_bar );
 	printf("Run_remote %ld:%ld\n",_node_id, _thd_id);
 	
@@ -108,10 +110,12 @@ RC thread_t::run() {
 	pthread_barrier_wait( &warmup_bar );
 	stats.init(get_thd_id());
 
+#if !TPORT_TYPE_IPC
   for(uint64_t i = 0; i < g_node_cnt; i++) {
     if(i != g_node_id)
       rem_qry_man.send_init_done(i);
   }
+#endif
 	pthread_barrier_wait( &warmup_bar );
 	//sleep(4);
 	printf("Run %ld:%ld\n",_node_id, _thd_id);
