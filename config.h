@@ -54,9 +54,9 @@
 /***********************************************/
 // Message Passing
 /***********************************************/
-#define TPORT_TYPE "tcp"
-#define TPORT_TYPE_IPC false
-#define TPORT_PORT 7000
+#define TPORT_TYPE "ipc"
+#define TPORT_TYPE_IPC true
+#define TPORT_PORT ".ipc"
 
 #define MAX_TPORT_NAME 128
 #define MSG_SIZE 128 // in bytes
