@@ -4,7 +4,8 @@
 	
 RC IndexHash::init(uint64_t bucket_cnt) {
 	_bucket_cnt = bucket_cnt;
-	_bucket_cnt_per_part = bucket_cnt / g_part_cnt;
+	_bucket_cnt_per_part = bucket_cnt;
+	//_bucket_cnt_per_part = bucket_cnt / g_part_cnt;
 	_buckets = new BucketHeader * [g_part_cnt];
 	for (UInt32 i = 0; i < g_part_cnt; i++) {
 		_buckets[i] = (BucketHeader *) mem_allocator.alloc(sizeof(BucketHeader) * _bucket_cnt_per_part, i);
