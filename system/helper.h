@@ -81,6 +81,10 @@
 /************************************************/
 // STATS helper
 /************************************************/
+#define SET_STATS(tid, name, value) \
+	if (STATS_ENABLE) \
+		stats._stats[tid]->name = value;
+
 #define INC_STATS(tid, name, value) \
 	if (STATS_ENABLE) \
 		stats._stats[tid]->name += value;

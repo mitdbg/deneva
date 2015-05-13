@@ -157,8 +157,10 @@ RC thread_t::run() {
     }
 
     if(get_sys_clock() - prog_time >= PROG_TIMER) {
-      stats.print_prog(_thd_id);
       prog_time = get_sys_clock();
+      SET_STATS(get_thd_id(), tot_run_time, prog_time - run_starttime); 
+
+      stats.print_prog(_thd_id);
     }
 
     while(!work_queue.poll_next_query() && !(_wl->sim_done && _wl->sim_timeout)) { }
@@ -168,7 +170,7 @@ RC thread_t::run() {
 #if !NOGRAPHITE
    			CarbonDisableModelsBarrier(&enable_barrier);
 #endif
-        INC_STATS(get_thd_id(), tot_run_time, get_sys_clock() - run_starttime - MSG_TIMEOUT); 
+        SET_STATS(get_thd_id(), tot_run_time, get_sys_clock() - run_starttime - MSG_TIMEOUT); 
    		    return FINISH;
    	}
 
