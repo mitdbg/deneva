@@ -14,6 +14,7 @@
 #include "transport.h"
 #include "remote_query.h"
 #include "math.h"
+#include "specex.h"
 
 void thread_t::init(uint64_t thd_id, uint64_t node_id, workload * workload) {
 	_thd_id = thd_id;
@@ -185,6 +186,10 @@ RC thread_t::run() {
     starttime = get_sys_clock();
 
 		switch(m_query->rtype) {
+        case RPASS:
+          m_txn = txn_pool.get_txn(m_query->return_id, m_query->txn_id);
+          assert(m_txn != NULL);
+          break;
         case RINIT:
           // This transaction is from a remote node
 #if DEBUG_DISTR
@@ -349,26 +354,41 @@ RC thread_t::run() {
             // After RINIT
             switch(m_txn->state) {
               case INIT:
-                m_txn->state = EXEC; 
 #if CC_ALG == HSTORE
                 if(m_txn->ready_part > 0)
                   break;
 #endif
+                m_txn->state = EXEC; 
                 txn_pool.restart_txn(m_txn->get_txn_id());
                 break;
               case PREP:
                 // Validate
+                m_txn->spec = true;
                 rc  = m_txn->validate();
+                m_txn->spec = false;
                 if(rc == Abort)
                   m_query->rc = rc;
+#if CC_ALG == HSTORE && SPEC_EX
+                if(m_query->rc != Abort) {
+                // allow speculative execution to start
+                txn_pool.start_spec_ex();
+                }
+#endif
 
                 m_txn->state = FIN;
                 // After RPREPARE, send rfin messages
                 m_txn->finish(m_query,true);
+
+
                 break;
               case FIN:
                 // After RFIN
                 m_txn->state = DONE;
+#if CC_ALG == HSTORE && SPEC_EX
+                // allow speculative execution to start
+                txn_pool.commit_spec_ex(m_query->rc);
+                spec_man.clear();
+#endif
                 uint64_t part_arr[1];
                 part_arr[0] = m_query->part_to_access[0];
                 rc = m_txn->finish(m_query->rc,part_arr,1);
@@ -528,9 +548,13 @@ RC thread_t::run() {
     if(m_query != NULL && GET_NODE_ID(m_query->pid) == g_node_id) {
     switch(rc) {
       case RCOK:
+#if SPEC_EX
+        if(m_txn->spec && m_txn->state != DONE)
+          break;
+#endif
         // Transaction is finished. Increment stats. Remove from txn pool
         assert(m_txn->get_rsp_cnt() == 0);
-        if(m_query->part_num == 1)
+        if(m_query->part_num == 1 && !m_txn->spec)
           rc = m_txn->finish(rc,m_query->part_to_access,m_query->part_num);
         else
           assert(m_txn->state == DONE);
@@ -559,8 +583,13 @@ RC thread_t::run() {
           break;
 #endif
 */
+#if SPEC_EX
+        if(m_txn->spec && m_txn->state != DONE)
+          break;
+#endif
+
         assert(m_txn->get_rsp_cnt() == 0);
-        if(m_query->part_num == 1)
+        if(m_query->part_num == 1 && !m_txn->spec)
           rc = m_txn->finish(rc,m_query->part_to_access,m_query->part_num);
         else
           assert(m_txn->state == DONE);
@@ -569,10 +598,12 @@ RC thread_t::run() {
         //rc = m_txn->finish(rc);
         //txn_pool.add_txn(g_node_id,m_txn,m_query);
         m_query->rtype = RTXN;
+        m_query->rc = RCOK;
         m_query->reset();
 				INC_STATS(get_thd_id(), abort_cnt, 1);
         m_txn->abort_cnt++;
         m_txn->state = START;
+        m_txn->spec = false;
 
         work_queue.add_query(m_query);
         break;

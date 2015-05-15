@@ -238,14 +238,14 @@ base_query * Remote_query::unpack(void * d, int len) {
 #endif
 		case RQRY: {
 #if WORKLOAD == TPCC
-			tpcc_query * m_query = new tpcc_query;
+      tpcc_query * m_query = new tpcc_query;
 #endif
 			m_query->unpack(query,data);
 			break;
 							 }
 		case RQRY_RSP: {
 #if WORKLOAD == TPCC
-			tpcc_query * m_query = new tpcc_query;
+      tpcc_query * m_query = new tpcc_query;
 #endif
 			m_query->unpack_rsp(query,data);
 			break;
@@ -256,7 +256,7 @@ base_query * Remote_query::unpack(void * d, int len) {
     case RACK:
 	    memcpy(&rc,&data[ptr],sizeof(RC));
 	    ptr += sizeof(RC);
-      if(rc == Abort) {
+      if(rc == Abort || query->rc == WAIT || query->rc == WAIT_REM) {
         query->rc = rc;
       }
       break;

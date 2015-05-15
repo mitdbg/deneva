@@ -71,6 +71,7 @@ RC PartMan::lock(txn_man * txn) {
     txn->wait_starttime = get_sys_clock();
   } else {
     rc = Abort;
+    txn->rc = rc;
 		// if we abort, need to send abort to remote node
 		if(GET_NODE_ID(txn->get_pid()) != _node_id)
 			remote_rsp(true,rc,txn);
@@ -106,6 +107,7 @@ void PartMan::unlock(txn_man * txn) {
       else {
         // FIXME: stat locality w/ thd_id
         INC_STATS(0,rtime_wait_lock,get_sys_clock() - owner->wait_starttime);
+        owner->rc = RCOK;
 				remote_rsp(true,RCOK,owner);
 			}
     } 

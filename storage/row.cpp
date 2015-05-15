@@ -7,6 +7,7 @@
 #include "row_ts.h"
 #include "row_mvcc.h"
 #include "row_occ.h"
+#include "row_specex.h"
 #include "row_vll.h"
 #include "mem_alloc.h"
 #include "manager.h"
@@ -209,7 +210,7 @@ RC row_t::get_row(access_t type, txn_man * txn, row_t *& row) {
 	return rc;
 #elif CC_ALG == HSTORE || CC_ALG == VLL
 #if SPEC_EX
-  if(spec) {
+  if(txn_pool.spec_mode) {
 	  txn->cur_row = (row_t *) mem_allocator.alloc(sizeof(row_t), get_part_id());
 	  txn->cur_row->init(get_table(), get_part_id());
 	  rc = this->manager->access(txn, R_REQ);

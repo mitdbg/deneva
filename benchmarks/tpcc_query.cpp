@@ -212,7 +212,7 @@ void tpcc_query::unpack_rsp(base_query * query, void * d) {
 	memcpy(&m_query->o_id,&data[ptr],sizeof(m_query->o_id));
 	ptr += sizeof(m_query->o_id);
 
-  if(rc == Abort) {
+  if(rc == Abort || m_query->rc == WAIT || m_query->rc == WAIT_REM) {
     m_query->rc = rc;
     m_query->txn_rtype = TPCC_FIN;
   }

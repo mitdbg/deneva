@@ -19,7 +19,7 @@ void QWorkQueue::add_query(base_query * qry) {
   wq_entry_t entry = (wq_entry_t) mem_allocator.alloc(sizeof(struct wq_entry), 0);
   entry->qry = qry;
   entry->next  = NULL;
-  assert(qry->rtype <= RPREPARE);
+  assert(qry->rtype <= RPASS);
 
   pthread_mutex_lock(&mtx);
 

@@ -1,4 +1,3 @@
-#include "global.h"
 #include "manager.h"
 #include "helper.h"
 #include "txn.h"
@@ -258,14 +257,14 @@ txn_man::index_read(INDEX * index, idx_key_t key, int part_id) {
 }
 
 RC txn_man::validate() {
-  if(rc == WAIT) {
+  if(rc == WAIT && !this->spec) {
     rc = Abort;
     return rc;
   }
-  assert(rc == Abort || rc == RCOK);
+  assert(rc == Abort || rc == RCOK || this->spec);
   if(CC_ALG == OCC && rc == RCOK)
     rc = occ_man.validate(this);
-  else if(CC_ALG == HSTORE && SPEC_EX && spec)
+  else if(CC_ALG == HSTORE && SPEC_EX && this->spec)
     rc = spec_man.validate(this);
   return rc;
 }
@@ -273,7 +272,8 @@ RC txn_man::validate() {
 RC txn_man::finish(RC rc, uint64_t * parts, uint64_t part_cnt) {
 	if (CC_ALG == HSTORE) {
 		part_lock_man.rem_unlock(parts, part_cnt, this);
-		return RCOK;	
+    if(!SPEC_EX)
+		  return rc;	
   }
 	uint64_t starttime = get_sys_clock();
   cleanup(rc);
@@ -290,8 +290,11 @@ RC txn_man::rem_fin_txn(base_query * query) {
 RC txn_man::finish(base_query * query, bool fin) {
   // Only home node should execute
   assert(query->txn_id % g_node_cnt == g_node_id);
-  if(query->part_num == 1)
+  if(query->part_num == 1) {
+    if(SPEC_EX && txn_pool.spec_mode && this->spec)
+      this->state = PREP;
     return query->rc;
+  }
 
   if(!fin) {
     this->state = PREP;

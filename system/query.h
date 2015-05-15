@@ -8,12 +8,14 @@ class workload;
 class ycsb_query;
 class tpcc_query;
 
-enum RemReqType {INIT_DONE,RLK, RULK, RQRY, RFIN, RLK_RSP, RULK_RSP, RQRY_RSP, RACK, RTXN, RINIT, RPREPARE};
+enum RemReqType {INIT_DONE,RLK, RULK, RQRY, RFIN, RLK_RSP, RULK_RSP, RQRY_RSP, RACK, RTXN, RINIT, RPREPARE,RPASS};
 
 class base_query {
 public:
 	virtual void init(uint64_t thd_id, workload * h_wl) = 0;
   virtual void reset() = 0;
+  virtual void unpack_rsp(base_query * query, void * d) = 0;
+  virtual void unpack(base_query * query, void * d) = 0;
 	uint64_t waiting_time;
 	uint64_t part_num;
 	uint64_t * part_to_access;

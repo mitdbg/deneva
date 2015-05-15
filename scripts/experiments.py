@@ -12,26 +12,16 @@ fmt6 = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","N
 
 
 
-<<<<<<< HEAD
-#nnodes=[1]
-nnodes=[9]
-nmpr= [0]
-#nmpr=[1] + range(0,11,5)
-nalgos=['HSTORE']
-#nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE']
-=======
-nnodes=[1]
+nnodes=[1,2,4,9]
 #nnodes=[4,9]
-nmpr= [0]
+nmpr= [0,1,5,10]
 #nmpr= range(0,11,5)
 #nmpr=[1] + range(0,11,5)
 nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE']
->>>>>>> bdf31dfb44a19f2bf7de1241a89a470b41da3e9a
 nthreads=[1]
 #nthreads=[1,2]
 nwfs=[64]
-#ntifs=[1,4]
-ntifs=[1]
+ntifs=[1,4]
 #nnet_delay=['0UL','50000UL']
 #nnet_delay=['0UL','50000UL','100000UL','500000UL']
 ntxn=1000000
