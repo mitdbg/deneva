@@ -188,7 +188,7 @@ uint64_t TxnPool::get_min_ts() {
 }
 
 void TxnPool::start_spec_ex() {
-  assert(SPEC_EX);
+  assert(CC_ALG == HSTORE_SPEC);
 
   pthread_mutex_lock(&mtx);
 
@@ -210,7 +210,7 @@ void TxnPool::start_spec_ex() {
 }
 
 void TxnPool::commit_spec_ex(int r) {
-  assert(SPEC_EX);
+  assert(CC_ALG == HSTORE_SPEC);
   RC rc = (RC) r;
 
   pthread_mutex_lock(&mtx);
@@ -224,8 +224,12 @@ void TxnPool::commit_spec_ex(int r) {
     if (t_node->txn->get_txn_id() % g_node_cnt == g_node_id && t_node->qry->part_num == 1 && t_node->txn->state == PREP && t_node->txn->spec) {
       if(rc != Abort)
         rc = t_node->txn->validate();
-      //if(rc == Abort)
-      //  INC_STATS(0,spec_abort_cnt,1);
+      if(rc == Abort) {
+        INC_STATS(0,spec_abort_cnt,1);
+      }
+      else {
+        INC_STATS(0,spec_commit_cnt,1);
+      }
       t_node->txn->finish(rc,t_node->qry->part_to_access,t_node->qry->part_num);
       t_node->txn->state = DONE;
       t_node->qry->rtype = RPASS;

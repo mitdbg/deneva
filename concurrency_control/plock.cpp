@@ -68,6 +68,7 @@ RC PartMan::lock(txn_man * txn) {
       ATOM_ADD(txn->ready_part, 1);
     rc = WAIT;
     txn->rc = rc;
+    INC_STATS(0, cflt_cnt, 1);
     txn->wait_starttime = get_sys_clock();
   } else {
     rc = Abort;
@@ -106,7 +107,7 @@ void PartMan::unlock(txn_man * txn) {
       }
       else {
         // FIXME: stat locality w/ thd_id
-        INC_STATS(0,rtime_wait_lock,get_sys_clock() - owner->wait_starttime);
+        INC_STATS(0,time_wait_lock_rem,get_sys_clock() - owner->wait_starttime);
         owner->rc = RCOK;
 				remote_rsp(true,RCOK,owner);
 			}
@@ -334,7 +335,7 @@ RC Plock::rem_lock(uint64_t * parts, uint64_t part_cnt, txn_man * txn) {
 		assert(GET_NODE_ID(part_id) == get_node_id());
 		rc = part_mans[part_id]->lock(txn);
 	}
-	INC_STATS(1, rtime_lock_man, get_sys_clock() - starttime);
+	INC_STATS(0, time_lock_man, get_sys_clock() - starttime);
   return rc;
 }
 
@@ -345,7 +346,7 @@ void Plock::rem_unlock(uint64_t * parts, uint64_t part_cnt, txn_man * txn) {
 		assert(GET_NODE_ID(part_id) == get_node_id());
 		part_mans[part_id]->unlock(txn);
 	}
-	INC_STATS(1, rtime_lock_man, get_sys_clock() - starttime);
+  INC_STATS(0, time_lock_man, get_sys_clock() - starttime);
 }
 
 void Plock::rem_lock_rsp(RC rc, txn_man * txn) {

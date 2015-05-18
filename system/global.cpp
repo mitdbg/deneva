@@ -76,9 +76,9 @@ bool g_wh_update = WH_UPDATE;
 char * output_file = NULL;
 
 #if TPCC_SMALL
-UInt32 g_max_items = 10000;
-UInt32 g_cust_per_dist = 2000;
+UInt32 g_max_items = MAX_ITEMS_SMALL;
+UInt32 g_cust_per_dist = CUST_PER_DIST_SMALL;
 #else 
-UInt32 g_max_items = 100000;
-UInt32 g_cust_per_dist = 3000;
+UInt32 g_max_items = MAX_ITEMS_NORM;
+UInt32 g_cust_per_dist = CUST_PER_DIST_NORM;
 #endif

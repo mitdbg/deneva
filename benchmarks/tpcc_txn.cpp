@@ -84,7 +84,7 @@ RC tpcc_txn_man::run_txn(base_query * query) {
     rtn_tpcc_state(query);
   }
 
-  if(CC_ALG != HSTORE && this->rc == WAIT) {
+  if((CC_ALG != HSTORE && CC_ALG != HSTORE_SPEC) && this->rc == WAIT) {
     assert(query->rc == WAIT || query->rc == RCOK);
     get_row_post_wait(row);
     next_tpcc_state(query);
@@ -379,7 +379,7 @@ RC tpcc_txn_man::run_txn_state(base_query * query) {
 	}
 
   if(rc == WAIT) {
-    assert(CC_ALG != HSTORE);
+    assert(CC_ALG != HSTORE && CC_ALG != HSTORE_SPEC);
     return rc;
   }
 	m_query->rc = rc;

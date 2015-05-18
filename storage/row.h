@@ -92,10 +92,8 @@ public:
   	Row_occ * manager;
   #elif CC_ALG == VLL
   	Row_vll * manager;
-  #elif CC_ALG == HSTORE
-  #if SPEC_EX
+  #elif CC_ALG == HSTORE_SPEC
   	Row_specex * manager;
-  #endif
   #endif
 	char * data;
 	table_t * table;

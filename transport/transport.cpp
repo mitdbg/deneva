@@ -100,25 +100,6 @@ void Transport::init(uint64_t node_id) {
 
 	}
 	fflush(stdout);
-	/*
-#if !TPORT_TYPE_IPC
-	for(uint64_t i=0;i<g_node_cnt;i++) {
-			int port = TPORT_PORT + (i * g_node_cnt) + j;
-			if(i == g_node_id) {
-				sprintf(socket_name,"%s://eth0:%d",TPORT_TYPE,port);
-				printf("Binding to %s",socket_name);
-				rc = s[i].sock.bind(socket_name);
-			}
-			else {
-				sprintf(socket_name,"%s://eth0;%s:%d",TPORT_TYPE,ifaddr[j],port);
-				printf("Connecting to %s",socket_name);
-				rc = s[i].sock.connect(socket_name);
-			}
-	}
-
-#endif
-*/
-
 
 	if(rc < 0) {
 		printf("Bind Error: %d %s\n",errno,strerror(errno));
@@ -130,6 +111,8 @@ uint64_t Transport::get_node_id() {
 }
 
 void Transport::send_msg(uint64_t dest_id, void ** data, int * sizes, int num) {
+
+  uint64_t starttime = get_sys_clock();
 
 	// 1: Scrape data pointers for actual data
 	// Profile data for size
@@ -179,6 +162,7 @@ void Transport::send_msg(uint64_t dest_id, void ** data, int * sizes, int num) {
 		assert(false);
 	}
 
+  INC_STATS(1,time_tport,get_sys_clock() - starttime);
 	INC_STATS(1,msg_sent_cnt,1);
 	INC_STATS(1,msg_bytes,size);
 
@@ -189,6 +173,7 @@ base_query * Transport::recv_msg() {
 	int bytes = 0;
 	void * buf;
   base_query * query = NULL;
+  uint64_t starttime = get_sys_clock();
 	
 	// FIXME: Currently unfair round robin; prioritizes nodes with low node_id
 	for(uint64_t i=0;i<g_node_cnt;i++) {
@@ -218,14 +203,16 @@ base_query * Transport::recv_msg() {
 	ts_t time;
 	memcpy(&time,&((char*)buf)[bytes-sizeof(ts_t)],sizeof(ts_t));
 
-  // Insert artificial network delay
 #if NETWORK_DELAY > 0 && TPORT_TYPE_IPC
-  ts_t starttime = time;
-  //ts_t starttime = get_sys_clock();
-  while( (get_sys_clock() - starttime) < NETWORK_DELAY) {}
+  // Insert artificial network delay
+  ts_t nd_starttime = time;
+  while( (get_sys_clock() - nd_starttime) < NETWORK_DELAY) {}
 #endif
+
 	ts_t time2 = get_sys_clock();
 	INC_STATS(1,tport_lat,time2 - time);
+
+  INC_STATS(1,time_tport, time2 - starttime);
 
 	ts_t start = get_sys_clock();
 	INC_STATS(1,msg_rcv_cnt,1);
@@ -237,7 +224,7 @@ base_query * Transport::recv_msg() {
 	nn::freemsg(buf);	
   assert(query->dest_id == get_node_id());
 
-	INC_STATS(1,rtime_unpack,get_sys_clock()-start);
+	INC_STATS(1,time_unpack,get_sys_clock()-start);
 	return query;
 
 }

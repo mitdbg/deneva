@@ -124,7 +124,7 @@ RC thread_t::run() {
 	myrand rdm;
 	rdm.init(get_thd_id());
 	RC rc = RCOK;
-#if CC_ALG == HSTORE
+#if CC_ALG == HSTORE|| CC_ALG == HSTORE_SPEC
 	RC rc2 = RCOK;
 #endif
 	txn_man * m_txn;
@@ -145,6 +145,11 @@ RC thread_t::run() {
 	uint64_t thd_txn_id = 0;
   uint64_t starttime;
   uint64_t timespan;
+  uint64_t ttime;
+  uint64_t last_waittime = 0;
+  uint64_t last_rwaittime = 0;
+  uint64_t outstanding_waits = 0;
+  uint64_t outstanding_rwaits = 0;
   uint64_t prog_time = get_sys_clock();
 
   uint64_t run_starttime = get_sys_clock();
@@ -212,7 +217,7 @@ RC thread_t::run() {
           glob_manager.add_ts(m_query->return_id, m_query->thd_id, m_query->ts);
 #endif
           // HStore: lock partitions at this node
-#if CC_ALG == HSTORE
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
 					part_lock_man.rem_lock(m_query->parts, m_query->part_cnt, m_txn);
 #else
           // Send back ACK
@@ -266,6 +271,11 @@ RC thread_t::run() {
             m_txn->merge
             next_query->rtype = RQRY; 
             */
+          } else {
+            outstanding_waits--;
+            if(outstanding_waits == 0) {
+              INC_STATS(get_thd_id(),time_clock_wait,get_sys_clock() - last_waittime);
+            }
           }
           
           rc = m_txn->run_txn(m_query);
@@ -286,28 +296,16 @@ RC thread_t::run() {
 		      m_txn = txn_pool.get_txn(g_node_id, m_query->txn_id);
           assert(m_txn != NULL);
           INC_STATS(get_thd_id(),time_wait_rem,get_sys_clock() - m_txn->wait_starttime);
-          /*
-		      next_query = txn_pool.get_qry(g_node_id, m_query->txn_id);
-					m_txn->merge_txn_rsp(m_query,next_query);
-          // free this m_query
-#if WORKLOAD == TPCC
-          mem_allocator.free(m_query, sizeof(tpcc_query));
-          m_query = NULL;
-#endif
-          m_query = next_query;
-          */
+
+          outstanding_rwaits--;
+          if(outstanding_rwaits == 0) {
+            INC_STATS(get_thd_id(),time_clock_rwait,get_sys_clock() - last_rwaittime);
+          }
+
           // Execute from original txn; Note: txn may finish
           assert(m_txn->get_rsp_cnt() == 0);
           rc = m_txn->run_txn(m_query);
 
-          /*
-#if CC_ALG == HSTORE
-          if(rc == RCOK || rc == Abort) {
-            m_query->rc = rc;
-		        rc = part_lock_man.unlock(m_query->part_to_access, m_query->part_num, m_txn);
-          }
-#endif
-*/
 					break;
         case RFIN:
 #if DEBUG_DISTR
@@ -354,7 +352,7 @@ RC thread_t::run() {
             // After RINIT
             switch(m_txn->state) {
               case INIT:
-#if CC_ALG == HSTORE
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
                 if(m_txn->ready_part > 0)
                   break;
 #endif
@@ -368,7 +366,7 @@ RC thread_t::run() {
                 m_txn->spec = false;
                 if(rc == Abort)
                   m_query->rc = rc;
-#if CC_ALG == HSTORE && SPEC_EX
+#if CC_ALG == HSTORE_SPEC
                 if(m_query->rc != Abort) {
                 // allow speculative execution to start
                 txn_pool.start_spec_ex();
@@ -384,7 +382,7 @@ RC thread_t::run() {
               case FIN:
                 // After RFIN
                 m_txn->state = DONE;
-#if CC_ALG == HSTORE && SPEC_EX
+#if CC_ALG == HSTORE_SPEC
                 // allow speculative execution to start
                 txn_pool.commit_spec_ex(m_query->rc);
                 spec_man.clear();
@@ -458,6 +456,7 @@ RC thread_t::run() {
           if(m_txn->rc != WAIT && m_txn->state == START) {
 
 			      if ((CC_ALG == HSTORE && !HSTORE_LOCAL_TS)
+			        || (CC_ALG == HSTORE_SPEC && !HSTORE_LOCAL_TS)
 					    || CC_ALG == MVCC 
 					    || CC_ALG == TIMESTAMP) { 
 				      m_txn->set_ts(get_next_ts());
@@ -471,6 +470,7 @@ RC thread_t::run() {
             m_query->start_ts = m_txn->get_start_ts();
 #endif
 
+            ttime = get_sys_clock();
             m_txn->state = INIT;
             for(uint64_t i = 0; i < m_query->part_num; i++) {
               uint64_t part_id = m_query->part_to_access[i];
@@ -512,7 +512,7 @@ RC thread_t::run() {
                 m_txn->wait_starttime = get_sys_clock();
               } else {
                 // local init
-#if CC_ALG == HSTORE
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
                 uint64_t part_arr[1];
                 part_arr[0] = part_id;
 					      rc2 = part_lock_man.rem_lock(part_arr, 1, m_txn);
@@ -526,6 +526,8 @@ RC thread_t::run() {
               }
             } // for(uint64_t i = 0; i < m_query->part_num; i++) 
 
+            INC_STATS(get_thd_id(),time_msg_sent,get_sys_clock() - ttime);
+
           } //if(m_txn->rc != WAIT) 
 
           if(m_query->rc == Abort && rc == WAIT) {
@@ -535,6 +537,14 @@ RC thread_t::run() {
 
           if(rc == RCOK) {
             assert(m_txn->get_rsp_cnt() == 0);
+            if(m_txn->state != EXEC) {
+              m_txn->state = EXEC;
+            } else {
+              outstanding_waits--;
+              if(outstanding_waits == 0) {
+              INC_STATS(get_thd_id(),time_clock_wait,get_sys_clock() - last_waittime);
+              }
+            }
             rc = m_txn->run_txn(m_query);
           }
 
@@ -548,7 +558,7 @@ RC thread_t::run() {
     if(m_query != NULL && GET_NODE_ID(m_query->pid) == g_node_id) {
     switch(rc) {
       case RCOK:
-#if SPEC_EX
+#if CC_ALG == HSTORE_SPEC
         if(m_txn->spec && m_txn->state != DONE)
           break;
 #endif
@@ -583,7 +593,7 @@ RC thread_t::run() {
           break;
 #endif
 */
-#if SPEC_EX
+#if CC_ALG == HSTORE_SPEC
         if(m_txn->spec && m_txn->state != DONE)
           break;
 #endif
@@ -609,12 +619,18 @@ RC thread_t::run() {
         break;
       case WAIT:
         assert(m_txn != NULL);
+        if(m_txn->state != INIT) { 
+          last_waittime = get_sys_clock();
+          outstanding_waits++;
+        }
         //m_txn->wait_starttime = get_sys_clock();
         break;
       case WAIT_REM:
         // Save transaction information for later
         assert(m_txn != NULL);
         m_txn->wait_starttime = get_sys_clock();
+        last_rwaittime = get_sys_clock();
+        outstanding_rwaits++;
         //txn_pool.add_txn(g_node_id,m_txn,m_query);
 #if WORKLOAD == TPCC
         // WAIT_REM from finish

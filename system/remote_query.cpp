@@ -106,7 +106,7 @@ void Remote_query::send_init(base_query * query,uint64_t dest_part_id) {
   printf("Sending RINIT %ld\n",query->txn_id);
 #endif
   uint64_t total = 3;
-#if CC_ALG == HSTORE
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
   total += 3;
 #endif
 	void ** data = new void *[total];
@@ -125,7 +125,7 @@ void Remote_query::send_init(base_query * query,uint64_t dest_part_id) {
 	data[num] = &query->ts;
 	sizes[num++] = sizeof(ts_t);
 
-#if CC_ALG == HSTORE
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
   uint64_t _dest_part_id = dest_part_id;
   uint64_t _part_id = GET_PART_ID(0,g_node_id);
   uint64_t _part_cnt = 1; // FIXME
@@ -210,7 +210,7 @@ base_query * Remote_query::unpack(void * d, int len) {
     case RINIT:
 	    memcpy(&query->ts,&data[ptr],sizeof(ts_t));
 	    ptr += sizeof(ts_t);
-#if CC_ALG == HSTORE
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
 	memcpy(&query->pid,&data[ptr],sizeof(query->pid));
 	ptr += sizeof(query->pid);
 	memcpy(&query->part_cnt,&data[ptr],sizeof(query->part_cnt));
@@ -226,16 +226,6 @@ base_query * Remote_query::unpack(void * d, int len) {
       break;
     case RPREPARE:
       break;
-#if CC_ALG == HSTORE
-		case RLK:
-		case RULK:
-			part_lock_man.unpack(query,data);
-			break;
-		case RLK_RSP:
-		case RULK_RSP: 
-			part_lock_man.unpack_rsp(query,data);
-			break;
-#endif
 		case RQRY: {
 #if WORKLOAD == TPCC
       tpcc_query * m_query = new tpcc_query;

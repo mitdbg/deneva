@@ -135,7 +135,7 @@ void txn_man::cleanup(RC rc) {
 		for (UInt32 i = 0; i < insert_cnt; i ++) {
 			row_t * row = insert_rows[i];
 			assert(g_part_alloc == false);
-#if CC_ALG != HSTORE && CC_ALG != OCC
+#if CC_ALG != HSTORE && CC_ALG != HSTORE_SPEC && CC_ALG != OCC
 			mem_allocator.free(row->manager, 0);
 #endif
 			row->free_row();
@@ -154,11 +154,12 @@ void txn_man::cleanup(RC rc) {
 }
 
 RC txn_man::get_row(row_t * row, access_t type, row_t *& row_rtn) {
-	if (CC_ALG == HSTORE && !SPEC_EX) {
+	if (CC_ALG == HSTORE) {
     row_rtn = row;
 		return RCOK;
   }
 	uint64_t starttime = get_sys_clock();
+  uint64_t timespan;
 	RC rc = RCOK;
 //	assert(row_cnt < MAX_ROW_PER_TXN);
 	uint64_t part_id = row->get_part_id();
@@ -175,6 +176,9 @@ RC txn_man::get_row(row_t * row, access_t type, row_t *& row_rtn) {
 
 	if (rc == Abort || rc == WAIT) {
     row_rtn = NULL;
+	  timespan = get_sys_clock() - starttime;
+	  INC_STATS(get_thd_id(), time_man, timespan);
+    INC_STATS(get_thd_id(), cflt_cnt, 1);
 		return rc;
 	}
 	accesses[row_cnt]->type = type;
@@ -190,18 +194,22 @@ RC txn_man::get_row(row_t * row, access_t type, row_t *& row_rtn) {
 	row_cnt ++;
 	if (type == WR)
 		wr_cnt ++;
-	uint64_t timespan = get_sys_clock() - starttime;
+	timespan = get_sys_clock() - starttime;
 	INC_STATS(get_thd_id(), time_man, timespan);
 	row_rtn  = accesses[row_cnt - 1]->data;
-  if(CC_ALG == HSTORE)
+  if(CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC)
     assert(rc == RCOK);
   return rc;
 }
 
 RC txn_man::get_row_post_wait(row_t *& row_rtn) {
   uint64_t timespan = get_sys_clock() - this->wait_starttime;
-  INC_STATS(get_thd_id(),time_wait_lock,timespan);
-  INC_STATS(get_thd_id(),rtime_wait_lock,timespan);
+  if(get_txn_id() % g_node_cnt == g_node_id) {
+    INC_STATS(get_thd_id(),time_wait_lock,timespan);
+  }
+  else {
+    INC_STATS(get_thd_id(),time_wait_lock_rem,timespan);
+  }
 
 	uint64_t starttime = get_sys_clock();
   row_t * row = this->last_row;
@@ -233,7 +241,7 @@ RC txn_man::get_row_post_wait(row_t *& row_rtn) {
 }
 
 void txn_man::insert_row(row_t * row, table_t * table) {
-	if (CC_ALG == HSTORE)
+	if (CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC)
 		return;
 	assert(insert_cnt < MAX_ROW_PER_TXN);
 	insert_rows[insert_cnt ++] = row;
@@ -243,15 +251,10 @@ itemid_t *
 txn_man::index_read(INDEX * index, idx_key_t key, int part_id) {
 	uint64_t starttime = get_sys_clock();
 
-		itemid_t * item;
-		index->index_read(key, item, part_id, get_thd_id());
+	itemid_t * item;
+	index->index_read(key, item, part_id, get_thd_id());
 
-	if(get_thd_id() < g_thread_cnt) {
-		INC_STATS(get_thd_id(), time_index, get_sys_clock() - starttime);
-	}
-	else {
-		INC_STATS(get_thd_id(), rtime_index, get_sys_clock() - starttime);
-	}
+  INC_STATS(get_thd_id(), time_index, get_sys_clock() - starttime);
 
 	return item;
 }
@@ -264,19 +267,18 @@ RC txn_man::validate() {
   assert(rc == Abort || rc == RCOK || this->spec);
   if(CC_ALG == OCC && rc == RCOK)
     rc = occ_man.validate(this);
-  else if(CC_ALG == HSTORE && SPEC_EX && this->spec)
+  else if(CC_ALG == HSTORE_SPEC && this->spec)
     rc = spec_man.validate(this);
   return rc;
 }
 
 RC txn_man::finish(RC rc, uint64_t * parts, uint64_t part_cnt) {
-	if (CC_ALG == HSTORE) {
-		part_lock_man.rem_unlock(parts, part_cnt, this);
-    if(!SPEC_EX)
-		  return rc;	
-  }
 	uint64_t starttime = get_sys_clock();
-  cleanup(rc);
+	if (CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC) {
+		part_lock_man.rem_unlock(parts, part_cnt, this);
+  }
+  if(CC_ALG != HSTORE)
+    cleanup(rc);
 	uint64_t timespan = get_sys_clock() - starttime;
 	INC_STATS(get_thd_id(), time_cleanup,  timespan);
 	return rc;
@@ -291,10 +293,12 @@ RC txn_man::finish(base_query * query, bool fin) {
   // Only home node should execute
   assert(query->txn_id % g_node_cnt == g_node_id);
   if(query->part_num == 1) {
-    if(SPEC_EX && txn_pool.spec_mode && this->spec)
+    if(CC_ALG == HSTORE_SPEC && txn_pool.spec_mode && this->spec)
       this->state = PREP;
     return query->rc;
   }
+
+  uint64_t starttime = get_sys_clock();
 
   if(!fin) {
     this->state = PREP;
@@ -327,6 +331,9 @@ RC txn_man::finish(base_query * query, bool fin) {
       query->remote_prepare(query, part_node_id);    
     }
   }
+
+  uint64_t timespan = get_sys_clock() - starttime;
+  INC_STATS(get_thd_id(),time_msg_sent,timespan);
 
   if(rsp_cnt >0) 
     return WAIT_REM;
