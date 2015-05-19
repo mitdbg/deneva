@@ -451,6 +451,13 @@ RC thread_t::run() {
             m_txn = txn_pool.get_txn(g_node_id,m_query->txn_id);
             // 
             assert(m_txn != NULL);
+            if(m_txn->state == START && (get_sys_clock() - m_txn->penalty_start) < g_abort_penalty) {
+              work_queue.add_query(m_query);
+              m_query = NULL;
+              break;
+
+            }
+            
           }
 
           if(m_txn->rc != WAIT && m_txn->state == START) {
@@ -614,6 +621,8 @@ RC thread_t::run() {
         m_txn->abort_cnt++;
         m_txn->state = START;
         m_txn->spec = false;
+
+        m_txn->penalty_start = get_sys_clock();
 
         work_queue.add_query(m_query);
         break;

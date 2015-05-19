@@ -100,8 +100,6 @@ public:
   
   // Internal state
   TxnState state;
-
-  // For 2PL
   uint64_t penalty_start;
 
 	// For VLL
