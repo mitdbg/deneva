@@ -29,8 +29,11 @@ int main(int argc, char* argv[])
 {
 	// 0. initialize global data structure
 	parser(argc, argv);
-
+#if SEED != 0
+  uint64_t seed = SEED + g_node_id;
+#else
 	uint64_t seed = get_sys_clock();
+#endif
 	srand(seed);
 	printf("Random seed: %ld\n",seed);
 

@@ -3,10 +3,11 @@
 #include "stats.h"
 #include "mem_alloc.h"
 
-void StatsArr::init() {
+void StatsArr::init(uint64_t size,StatsArrType type) {
 	arr = (uint64_t *)
-		mem_allocator.alloc(sizeof(uint64_t) * STAT_ARR_SIZE, 0);
-  size = STAT_ARR_SIZE;
+		mem_allocator.alloc(sizeof(uint64_t) * (size+1), 0);
+  this->size = size+1;
+  this->type = type;
   cnt = 0;
 }
 
@@ -17,17 +18,29 @@ void StatsArr::resize() {
 }
 
 void StatsArr::insert(uint64_t item) {
-  /*
-  if(cnt == size)
-    resize();
-  arr[cnt++] = item;
-  */
+  if(type == ArrIncr) {
+    if(cnt == size)
+      resize();
+    arr[cnt++] = item;
+  }
+  else if(type == ArrInsert) {
+    arr[item]++;
+    cnt++;
+  }
 }
 
 void StatsArr::print(FILE * f) {
-	for (UInt32 i = 0; i < cnt; i ++) {
-	  fprintf(f,"%ld,", arr[i]);
-	}
+  if(type == ArrIncr) {
+	  for (UInt32 i = 0; i < cnt; i ++) {
+	    fprintf(f,"%ld,", arr[i]);
+	  }
+  }
+  else if(type == ArrInsert) {
+	  for (UInt64 i = 0; i < size; i ++) {
+      if(arr[i] > 0)
+	      fprintf(f,"%ld=%ld,", i,arr[i]);
+	  }
+  }
 }
 
 void Stats_thd::init(uint64_t thd_id) {
@@ -38,19 +51,19 @@ void Stats_thd::init(uint64_t thd_id) {
 		mem_allocator.alloc(sizeof(uint64_t) * MAX_TXN_PER_PART, thd_id);
 #endif
 
-  all_abort.init();
-  w_cflt.init();
-  d_cflt.init();
-  cnp_cflt.init();
-  c_cflt.init();
-  ol_cflt.init();
-  s_cflt.init();
-  w_abrt.init();
-  d_abrt.init();
-  cnp_abrt.init();
-  c_abrt.init();
-  ol_abrt.init();
-  s_abrt.init();
+  all_abort.init(STAT_ARR_SIZE,ArrIncr);
+  w_cflt.init(WH_TAB_SIZE,ArrInsert);
+  d_cflt.init(DIST_TAB_SIZE,ArrInsert);
+  cnp_cflt.init(CUST_TAB_SIZE,ArrInsert);
+  c_cflt.init(CUST_TAB_SIZE,ArrInsert);
+  ol_cflt.init(ITEM_TAB_SIZE,ArrInsert);
+  s_cflt.init(STOC_TAB_SIZE,ArrInsert);
+  w_abrt.init(WH_TAB_SIZE,ArrInsert);
+  d_abrt.init(DIST_TAB_SIZE,ArrInsert);
+  cnp_abrt.init(CUST_TAB_SIZE,ArrInsert);
+  c_abrt.init(CUST_TAB_SIZE,ArrInsert);
+  ol_abrt.init(ITEM_TAB_SIZE,ArrInsert);
+  s_abrt.init(STOC_TAB_SIZE,ArrInsert);
 
 }
 
@@ -493,6 +506,7 @@ void Stats::print() {
 			total_time_rqry / BILLION,
 			total_tport_lat / BILLION / total_msg_rcv_cnt
 		);
+	if (output_file != NULL) 
 		fclose(outf);
 
   uint64_t all_abort_cnt = 0;

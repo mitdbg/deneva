@@ -1,9 +1,10 @@
 #ifndef _STATS_H_
 #define _STATS_H_
 
+enum StatsArrType {ArrInsert, ArrIncr};
 class StatsArr {
     public:
-      void init();
+      void init(uint64_t size,StatsArrType type);
       void resize();
       void insert(uint64_t item);
       void print(FILE * f);
@@ -11,6 +12,7 @@ class StatsArr {
       uint64_t * arr;
       uint64_t size;
       uint64_t cnt;
+      StatsArrType type;
 };
 
 class Stats_thd {

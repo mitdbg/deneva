@@ -63,7 +63,7 @@
 #define HEADER_SIZE sizeof(uint32_t)*2 // in bits 
 #define MSG_TIMEOUT 5000000000UL // in ns
 #define NETWORK_TEST false
-#define NETWORK_DELAY 100000UL
+#define NETWORK_DELAY 0UL
 
 #define MAX_QUEUE_LEN NODE_CNT * 2
 
@@ -71,7 +71,7 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, OCC, VLL
-#define CC_ALG HSTORE_SPEC
+#define CC_ALG NO_WAIT
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER					false
@@ -249,5 +249,7 @@ extern TestCases					g_test_case;
 #define BILLION 1000000000UL
 #define STAT_ARR_SIZE 32
 #define PROG_TIMER 10000000000UL // in ns
+
+#define SEED 0
 
 #endif
