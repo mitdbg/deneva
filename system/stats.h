@@ -39,7 +39,9 @@ public:
 	double time_wait_rem;
 	double time_abort;
 	double time_cleanup;
-	double time_tport;
+	double time_tport_rcv;
+	double time_tport_send;
+	double time_validate;
 	uint64_t time_ts_alloc;
 	double time_query;
 	double rtime_proc;

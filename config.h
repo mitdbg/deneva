@@ -28,7 +28,7 @@
 #define STATS_ENABLE				true
 #define TIME_ENABLE					true //STATS_ENABLE
 
-#define MAX_TXN_IN_FLIGHT 1
+#define MAX_TXN_IN_FLIGHT 4
 
 /***********************************************/
 // Memory System
@@ -63,7 +63,7 @@
 #define HEADER_SIZE sizeof(uint32_t)*2 // in bits 
 #define MSG_TIMEOUT 5000000000UL // in ns
 #define NETWORK_TEST false
-#define NETWORK_DELAY 0UL
+#define NETWORK_DELAY 100000UL
 
 #define MAX_QUEUE_LEN NODE_CNT * 2
 
@@ -71,7 +71,7 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, OCC, VLL
-#define CC_ALG HSTORE
+#define CC_ALG HSTORE_SPEC
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER					false
@@ -127,7 +127,7 @@
 // max number of rows touched per transaction
 #define MAX_ROW_PER_TXN				64
 #define QUERY_INTVL 				1UL
-#define MAX_TXN_PER_PART 1000000
+#define MAX_TXN_PER_PART 1000
 #define FIRST_PART_LOCAL 			true
 #define MAX_TUPLE_SIZE				1024 // in bytes
 // ==== [YCSB] ====
@@ -155,7 +155,7 @@
 // are not modeled.
 #define TPCC_ACCESS_ALL 			false 
 #define WH_UPDATE					true
-#define NUM_WH 8
+#define NUM_WH 64
 // % of transactions that access multiple partitions
 #define MPR 5
 #define MPR_NEWORDER			20 // In %
@@ -217,6 +217,7 @@ extern TestCases					g_test_case;
 #define DEBUG_SYNTH					false
 #define DEBUG_ASSERT				false
 #define DEBUG_DISTR				false
+#define DEBUG_TIMELINE				true
 
 /***********************************************/
 // Constant

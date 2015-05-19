@@ -43,7 +43,7 @@ RC thread_t::run_remote() {
 	pthread_barrier_wait( &warmup_bar );
 	stats.init(get_thd_id());
   // Send start msg to all nodes; wait for rsp from all nodes before continuing.
-#if !TPORT_TYPE_IPC
+//#if !TPORT_TYPE_IPC
   int rsp_cnt = g_node_cnt - 1;
   while(rsp_cnt > 0) {
 		m_query = tport_man.recv_msg();
@@ -52,7 +52,7 @@ RC thread_t::run_remote() {
     else if(m_query != NULL)
       work_queue.add_query(m_query);
   }
-#endif
+//#endif
 	pthread_barrier_wait( &warmup_bar );
 	printf("Run_remote %ld:%ld\n",_node_id, _thd_id);
 	
@@ -111,12 +111,12 @@ RC thread_t::run() {
 	pthread_barrier_wait( &warmup_bar );
 	stats.init(get_thd_id());
 
-#if !TPORT_TYPE_IPC
+//#if !TPORT_TYPE_IPC
   for(uint64_t i = 0; i < g_node_cnt; i++) {
     if(i != g_node_id)
       rem_qry_man.send_init_done(i);
   }
-#endif
+//#endif
 	pthread_barrier_wait( &warmup_bar );
 	//sleep(4);
 	printf("Run %ld:%ld\n",_node_id, _thd_id);
@@ -145,15 +145,11 @@ RC thread_t::run() {
 	uint64_t thd_txn_id = 0;
   uint64_t starttime;
   uint64_t timespan;
-<<<<<<< HEAD
   uint64_t ttime;
   uint64_t last_waittime = 0;
   uint64_t last_rwaittime = 0;
   uint64_t outstanding_waits = 0;
   uint64_t outstanding_rwaits = 0;
-  uint64_t prog_time = get_sys_clock();
-=======
->>>>>>> 4c1f335b468a360a66ff64050e2418e94ecb0110
 
   uint64_t run_starttime = get_sys_clock();
   uint64_t prog_time = run_starttime;
@@ -449,6 +445,10 @@ RC thread_t::run() {
             txn_pool.add_txn(g_node_id,m_txn,m_query);
 
             m_txn->starttime = get_sys_clock();
+#if DEBUG_TIMELINE
+            printf("START %ld %ld\n",m_txn->get_txn_id(),m_txn->starttime);
+            //printf("START %ld %ld\n",m_txn->get_txn_id(),m_txn->starttime - run_starttime);
+#endif
           }
           else {
             // Re-executing transaction
@@ -588,6 +588,10 @@ RC thread_t::run() {
 		    INC_STATS(get_thd_id(), run_time, timespan);
 		    INC_STATS(get_thd_id(), latency, timespan);
         
+#if DEBUG_TIMELINE
+            printf("COMMIT %ld %ld\n",m_txn->get_txn_id(),get_sys_clock());
+            //printf("COMMIT %ld %ld\n",m_txn->get_txn_id(),get_sys_clock() - run_starttime);
+#endif
         txn_pool.delete_txn(g_node_id,m_query->txn_id);
         txn_cnt++;
         ATOM_SUB(txn_pool.inflight_cnt,1);
@@ -626,6 +630,10 @@ RC thread_t::run() {
         m_txn->state = START;
         m_txn->spec = false;
 
+#if DEBUG_TIMELINE
+            printf("ABORT %ld %ld\n",m_txn->get_txn_id(),get_sys_clock());
+            //printf("ABORT %ld %ld\n",m_txn->get_txn_id(),get_sys_clock() - run_starttime);
+#endif
         m_txn->penalty_start = get_sys_clock();
 
         work_queue.add_query(m_query);

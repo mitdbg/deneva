@@ -46,6 +46,9 @@ RC PartMan::lock(txn_man * txn) {
   pthread_mutex_lock( &latch );
   if (owner == NULL) {
     owner = txn;
+#if DEBUG_TIMELINE
+      printf("LOCK %ld %ld\n",owner->get_txn_id(),get_sys_clock());
+#endif
 		// If not local, send remote response
 		if(GET_NODE_ID(owner->get_pid()) != _node_id)
 			remote_rsp(true,RCOK,owner);
@@ -84,11 +87,17 @@ RC PartMan::lock(txn_man * txn) {
 void PartMan::unlock(txn_man * txn) {
   pthread_mutex_lock( &latch );
   if (txn == owner) {   
+#if DEBUG_TIMELINE
+      printf("UNLOCK %ld %ld\n",owner->get_txn_id(),get_sys_clock());
+#endif
     if (waiter_cnt == 0) {
       owner = NULL;
     }
     else {
       owner = waiters[0];     
+#if DEBUG_TIMELINE
+      printf("LOCK %ld %ld\n",owner->get_txn_id(),get_sys_clock());
+#endif
       // TODO: Calculate plock wait time here
       for (UInt32 i = 0; i < waiter_cnt - 1; i++) {
         assert( waiters[i]->get_ts() < waiters[i + 1]->get_ts() );

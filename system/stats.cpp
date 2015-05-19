@@ -92,7 +92,9 @@ void Stats_thd::clear() {
 	time_wait_lock_rem = 0;
 	time_wait_lock = 0;
 	time_wait_rem = 0;
-  time_tport = 0;
+  time_tport_send = 0;
+  time_tport_rcv = 0;
+  time_validate = 0;
 	time_ts_alloc = 0;
 	latency = 0;
 	tport_lat = 0;
@@ -191,6 +193,7 @@ void Stats::print_prog(uint64_t tid) {
 		outf = fopen(output_file, "w");
   else 
     outf = stdout;
+  uint64_t qry_cnt = _stats[tid]->rtxn +_stats[tid]->rqry_rsp +_stats[tid]->rack +_stats[tid]->rinit +_stats[tid]->rqry +_stats[tid]->rprep +_stats[tid]->rfin;
 	fprintf(outf, "[prog %ld] "
       "txn_cnt=%ld"
 			",clock_time=%f"
@@ -204,6 +207,14 @@ void Stats::print_prog(uint64_t tid) {
       ",msg_rcv=%ld"
       ",msg_sent=%ld"
       ",qq_full=%f"
+      ",qry_cnt=%ld"
+      ",qry_rtxn=%ld"
+      ",qry_rqry_rsp=%ld"
+      ",qry_rack=%ld"
+      ",qry_rinit=%ld"
+      ",qry_rqry=%ld"
+      ",qry_rprep=%ld"
+      ",qry_rfin=%ld"
       ",spec_abort_cnt=%ld"
       ",spec_commit_cnt=%ld"
       ",time_abort=%f"
@@ -212,10 +223,12 @@ void Stats::print_prog(uint64_t tid) {
       ",time_lock_man=%f"
 			",time_man=%f"
 			",time_msg_sent=%f"
-      ",time_tport=%f"
+      ",time_tport_send=%f"
+      ",time_tport_rcv=%f"
       ",time_ts_alloc=%f"
       ",time_clock_wait=%f"
       ",time_clock_rwait=%f"
+      ",time_validate=%f"
       ",time_wait=%f"
       ",time_wait_lock=%f"
       ",time_wait_lock_rem=%f"
@@ -237,6 +250,14 @@ void Stats::print_prog(uint64_t tid) {
 			_stats[tid]->msg_rcv_cnt, 
 			_stats[tid]->msg_sent_cnt, 
 			_stats[tid]->qq_full / BILLION,
+			qry_cnt,
+			_stats[tid]->rtxn,
+			_stats[tid]->rqry_rsp,
+			_stats[tid]->rack,
+			_stats[tid]->rinit,
+			_stats[tid]->rqry,
+			_stats[tid]->rprep,
+			_stats[tid]->rfin,
 			_stats[tid]->spec_abort_cnt, 
 			_stats[tid]->spec_commit_cnt, 
 			_stats[tid]->time_abort / BILLION,
@@ -245,10 +266,12 @@ void Stats::print_prog(uint64_t tid) {
 			_stats[tid]->time_lock_man / BILLION,
 			_stats[tid]->time_man / BILLION,
 			_stats[tid]->time_msg_sent / BILLION,
-			_stats[tid]->time_tport / BILLION,
+			_stats[tid]->time_tport_send / BILLION,
+			_stats[tid]->time_tport_rcv / BILLION,
 			((float)_stats[tid]->time_ts_alloc) / BILLION,
 			_stats[tid]->time_clock_wait / BILLION,
 			_stats[tid]->time_clock_rwait / BILLION,
+			_stats[tid]->time_validate / BILLION,
 			_stats[tid]->time_wait / BILLION,
 			_stats[tid]->time_wait_lock / BILLION,
 			_stats[tid]->time_wait_lock_rem / BILLION,
@@ -264,6 +287,8 @@ void Stats::print_prog(uint64_t tid) {
 }
 
 void Stats::print() {
+
+  fflush(stdout);
 	
 	uint64_t total_txn_cnt = 0;
 	uint64_t total_abort_cnt = 0;
@@ -290,7 +315,9 @@ void Stats::print() {
 	double total_time_wait_lock_rem = 0;
 	double total_time_wait_lock = 0;
 	double total_time_wait_rem = 0;
-	double total_time_tport = 0;
+	double total_time_tport_send = 0;
+	double total_time_tport_rcv = 0;
+	double total_time_validate = 0;
 	double total_time_ts_alloc = 0;
 	double total_latency = 0;
 	double total_tport_lat = 0;
@@ -305,6 +332,17 @@ void Stats::print() {
 	uint64_t total_msg_sent_cnt = 0;
 	uint64_t total_msg_rcv_cnt = 0;
 	double total_time_msg_sent = 0;
+
+
+  uint64_t total_rqry = 0;
+  uint64_t total_rqry_rsp = 0;
+  uint64_t total_rtxn = 0;
+  uint64_t total_rinit = 0;
+  uint64_t total_rprep = 0;
+  uint64_t total_rfin = 0;
+  uint64_t total_rack = 0;
+  uint64_t total_qry_cnt = 0;
+
 	for (uint64_t tid = 0; tid < g_thread_cnt + g_rem_thread_cnt; tid ++) {
 		total_txn_cnt += _stats[tid]->txn_cnt;
 		total_abort_cnt += _stats[tid]->abort_cnt;
@@ -323,6 +361,13 @@ void Stats::print() {
 		total_debug4 += _stats[tid]->debug4;
 		total_debug5 += _stats[tid]->debug5;
 		total_qq_full += _stats[tid]->qq_full;
+		total_rtxn += _stats[tid]->rtxn;
+		total_rqry_rsp += _stats[tid]->rqry_rsp;
+		total_rack += _stats[tid]->rack;
+		total_rinit += _stats[tid]->rinit;
+		total_rqry += _stats[tid]->rqry;
+		total_rprep += _stats[tid]->rprep;
+		total_rfin += _stats[tid]->rfin;
 		total_time_index += _stats[tid]->time_index;
 		total_rtime_index += _stats[tid]->rtime_index;
 		total_time_abort += _stats[tid]->time_abort;
@@ -331,7 +376,9 @@ void Stats::print() {
 		total_time_wait_lock_rem += _stats[tid]->time_wait_lock_rem;
 		total_time_wait_lock += _stats[tid]->time_wait_lock;
 		total_time_wait_rem += _stats[tid]->time_wait_rem;
-		total_time_tport += _stats[tid]->time_tport;
+		total_time_tport_send += _stats[tid]->time_tport_send;
+		total_time_tport_rcv += _stats[tid]->time_tport_rcv;
+		total_time_validate += _stats[tid]->time_validate;
 		total_time_ts_alloc += _stats[tid]->time_ts_alloc;
 		total_latency += _stats[tid]->latency;
 		total_tport_lat += _stats[tid]->tport_lat;
@@ -348,6 +395,8 @@ void Stats::print() {
 		total_msg_rcv_cnt += _stats[tid]->msg_rcv_cnt;
 		total_time_msg_sent += _stats[tid]->time_msg_sent;
 		
+  total_qry_cnt += _stats[tid]->rtxn +_stats[tid]->rqry_rsp +_stats[tid]->rack +_stats[tid]->rinit +_stats[tid]->rqry +_stats[tid]->rprep +_stats[tid]->rfin;
+
 		printf("[tid=%ld] txn_cnt=%ld,abort_cnt=%ld\n", 
 			tid,
 			_stats[tid]->txn_cnt,
@@ -372,6 +421,14 @@ void Stats::print() {
       ",msg_rcv=%ld"
       ",msg_sent=%ld"
       ",qq_full=%f"
+      ",qry_cnt=%ld"
+      ",qry_rtxn=%ld"
+      ",qry_rqry_rsp=%ld"
+      ",qry_rack=%ld"
+      ",qry_rinit=%ld"
+      ",qry_rqry=%ld"
+      ",qry_rprep=%ld"
+      ",qry_rfin=%ld"
       ",spec_abort_cnt=%ld"
       ",spec_commit_cnt=%ld"
       ",time_abort=%f"
@@ -380,10 +437,12 @@ void Stats::print() {
       ",time_lock_man=%f"
 			",time_man=%f"
 			",time_msg_sent=%f"
-      ",time_tport=%f"
+      ",time_tport_send=%f"
+      ",time_tport_rcv=%f"
       ",time_ts_alloc=%f"
       ",time_clock_wait=%f"
       ",time_clock_rwait=%f"
+      ",time_validate=%f"
       ",time_wait=%f"
       ",time_wait_lock=%f"
       ",time_wait_lock_rem=%f"
@@ -404,6 +463,14 @@ void Stats::print() {
 			total_msg_rcv_cnt, 
 			total_msg_sent_cnt, 
 			total_qq_full / BILLION,
+			total_qry_cnt,
+			total_rtxn,
+			total_rqry_rsp ,
+			total_rack,
+			total_rinit,
+			total_rqry ,
+			total_rprep,
+			total_rfin ,
       total_spec_abort_cnt,
       total_spec_commit_cnt,
 			total_time_abort / BILLION,
@@ -412,10 +479,12 @@ void Stats::print() {
 			total_time_lock_man / BILLION,
 			total_time_man / BILLION,
       total_time_msg_sent / BILLION,
-			total_time_tport / BILLION,
+			total_time_tport_send / BILLION,
+			total_time_tport_rcv / BILLION,
 			total_time_ts_alloc / BILLION,
       total_time_clock_wait / BILLION,
       total_time_clock_rwait / BILLION,
+			total_time_validate / BILLION,
 			total_time_wait / BILLION,
 			total_time_wait_lock / BILLION,
 			total_time_wait_lock_rem / BILLION,

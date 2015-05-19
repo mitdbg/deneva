@@ -179,21 +179,17 @@ def time_breakdown(xval,summary,
         if cfgs not in summary.keys(): break
         try:
             if normalized:
-                run_time[i] = avg(summary[cfgs]['time_work'])
+                run_time[i] = avg(summary[cfgs]['clock_time'])
 #run_time[i] = avg(summary[cfgs]['run_time'])
             else:
                 run_time[i] = 1.0
             time_abort[i] = avg(summary[cfgs]['time_abort']) / run_time[i]
             time_ts_alloc[i] = avg(summary[cfgs]['time_ts_alloc']) / run_time[i]
             time_index[i] = avg(summary[cfgs]['time_index']) / run_time[i]
-#            time_wait_lock[i] = avg(summary[cfgs]['time_wait_lock']) / run_time[i]
-            #if _cfgs["CC_ALG"] == "HSTORE":
-            #    time_wait_lock[i] = avg(summary[cfgs]['time_wait_lock']) / run_time[i]
-            #else:
-            #    time_wait_lock[i] = avg(summary[cfgs]['time_wait']) / run_time[i]
-#            time_wait_rem[i] = avg(summary[cfgs]['time_wait_rem']) / run_time[i]
-            #time_man[i] = (avg(summary[cfgs]['time_lock_man']) - avg(summary[cfgs]['time_wait_lock'])) / run_time[i]
+            time_cleanup[i] = (avg(summary[cfgs]['time_cleanup']) - avg(summary[cfgs]['time_abort'])) / run_time[i]
             time_man[i] = (avg(summary[cfgs]['time_man'])) / run_time[i]
+            time_msg[i] = avg(summary[cfgs]['time_msg_sent']) / run_time[i]
+            time_wait[i] = (avg(summary[cfgs]['clock_time']) - avg(summary[cfgs]['time_work'])) / run_time[i]
 
             if normalized:
                 #assert(sum([time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]]) < 1.0)

@@ -179,6 +179,9 @@ RC txn_man::get_row(row_t * row, access_t type, row_t *& row_rtn) {
 	  timespan = get_sys_clock() - starttime;
 	  INC_STATS(get_thd_id(), time_man, timespan);
     INC_STATS(get_thd_id(), cflt_cnt, 1);
+#if DEBUG_TIMELINE
+    printf("CONFLICT %ld %ld\n",get_txn_id(),get_sys_clock());
+#endif
 		return rc;
 	}
 	accesses[row_cnt]->type = type;
@@ -264,11 +267,13 @@ RC txn_man::validate() {
     rc = Abort;
     return rc;
   }
+  uint64_t starttime = get_sys_clock();
   assert(rc == Abort || rc == RCOK || this->spec);
   if(CC_ALG == OCC && rc == RCOK)
     rc = occ_man.validate(this);
   else if(CC_ALG == HSTORE_SPEC && this->spec)
     rc = spec_man.validate(this);
+  INC_STATS(0,time_validate,get_sys_clock() - starttime);
   return rc;
 }
 

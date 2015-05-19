@@ -129,6 +129,7 @@ for e in experiments[1:]:
         else:
             nnodes = cfgs["NODE_CNT"]
             pids = []
+            print("Deploying: {}".format(output_f))
             for n in range(nnodes):
                 cmd = "./rundb -nid{}".format(n)
                 print(cmd)

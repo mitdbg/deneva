@@ -162,7 +162,7 @@ void Transport::send_msg(uint64_t dest_id, void ** data, int * sizes, int num) {
 		assert(false);
 	}
 
-  INC_STATS(1,time_tport,get_sys_clock() - starttime);
+  INC_STATS(1,time_tport_send,get_sys_clock() - starttime);
 	INC_STATS(1,msg_sent_cnt,1);
 	INC_STATS(1,msg_bytes,size);
 
@@ -212,7 +212,7 @@ base_query * Transport::recv_msg() {
 	ts_t time2 = get_sys_clock();
 	INC_STATS(1,tport_lat,time2 - time);
 
-  INC_STATS(1,time_tport, time2 - starttime);
+  INC_STATS(1,time_tport_rcv, time2 - starttime);
 
 	ts_t start = get_sys_clock();
 	INC_STATS(1,msg_rcv_cnt,1);
