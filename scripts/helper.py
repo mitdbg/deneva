@@ -7,29 +7,25 @@ cnts = ["all_abort","w_cflt","d_cflt","cnp_cflt","c_cflt","ol_cflt","s_cflt","w_
 def avg(l):
     return float(sum(l) / float(len(l)))
 
-def find_in_line(key,line,add,summary):
+def find_in_line(key,line,summary,low_lim,up_lim):
     if re.search(key,line):
         line = [int(s) for s in line.split() if s.isdigit()]
         tid = line[0]
         time = line[1]
-        if add:
+        if tid >= low_lim and tid < up_lim:
             summary[key]["time"].append(time)
             summary[key]["tid"].append(tid)
-        return True,summary
-    return False,summary
+    return summary
 
 def get_timeline(sfile,summary={},low_lim=0,up_lim=sys.maxint):
     keys = ["START","ABORT","COMMIT","LOCK","UNLOCK"]
     for k in keys:
         if k not in summary.keys():
             summary[k] = {"time":[],"tid":[]}
-    n = 0
     with open(sfile,'r') as f:
         for line in f:
-            if n > up_lim: break
             for k in keys:
-                found,summary = find_in_line(k,line,n>low_lim,summary)
-                if found: n = n+1
+                summary = find_in_line(k,line,summary,low_lim,up_lim)
     return summary
 
 def get_summary(sfile,summary={}):

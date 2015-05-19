@@ -73,7 +73,9 @@ whs = nwfs
 #    _cfg=[algo,txn_cnt,thread,wh,node]
 #    _title="Network Delay {} {} Nodes {} Threads {} Warehouses".format(algo,node,thread,wh)
 #    tput(mpr,net_delay,summary,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="MPR",vname="NETWORK_DELAY",title=_title)
- 
+#    time_breakdown(mpr,summary,normalized=True,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="MPR",title=_title)
+#    time_breakdown_basic(mpr,summary,normalized=True,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="MPR",title=_title)
+
 #exit()
 
 #for algo in algos:
