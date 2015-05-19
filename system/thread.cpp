@@ -145,14 +145,18 @@ RC thread_t::run() {
 	uint64_t thd_txn_id = 0;
   uint64_t starttime;
   uint64_t timespan;
+<<<<<<< HEAD
   uint64_t ttime;
   uint64_t last_waittime = 0;
   uint64_t last_rwaittime = 0;
   uint64_t outstanding_waits = 0;
   uint64_t outstanding_rwaits = 0;
   uint64_t prog_time = get_sys_clock();
+=======
+>>>>>>> 4c1f335b468a360a66ff64050e2418e94ecb0110
 
   uint64_t run_starttime = get_sys_clock();
+  uint64_t prog_time = run_starttime;
 	
   while(true) {
 
