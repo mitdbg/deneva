@@ -2,7 +2,8 @@ import os,re,sys,math
 from experiments import configs
 from experiments import config_names
 
-cnts = ["all_abort","w_cflt","d_cflt","cnp_cflt","c_cflt","ol_cflt","s_cflt","w_abrt","d_abrt","cnp_abrt","c_abrt","ol_abrt","s_abrt"]
+cnts = ["all_abort"]
+cflts = ["w_cflt","d_cflt","cnp_cflt","c_cflt","ol_cflt","s_cflt","w_abrt","d_abrt","cnp_abrt","c_abrt","ol_abrt","s_abrt"]
 
 def avg(l):
     return float(sum(l) / float(len(l)))
@@ -43,6 +44,10 @@ def get_summary(sfile,summary={}):
                 if re.search(c,line):
                     line = line.rstrip('\n')
                     process_cnts(summary,line,c)
+            for c in cflts:
+                if re.search(c,line):
+                    line = line.rstrip('\n')
+                    process_cflts(summary,line,c)
             last_line = line
         if not found:
             if re.search("prog",line):
@@ -84,6 +89,29 @@ def process_cnts(summary,line,name):
             summary[name][r] = 1
         else:
             summary[name][r] = summary[name][r] + 1
+
+def process_cflts(summary,line,name):
+    
+    if name not in summary.keys():
+        summary[name] = {}
+    name_cnt = name + "_cnt"
+
+    line = re.split(' |] |,',line)
+    results = line[2:] 
+
+    if name_cnt not in summary.keys():
+        summary[name_cnt] = int(line[1]) 
+    else:
+        summary[name_cnt] =summary[name_cnt] + int(line[1]) 
+
+
+    for r in results:
+        if r == '': continue
+        r = re.split('=',r)
+        k = int(r[0])
+        c = int(r[1])
+        summary[name][k] = c
+
 
 def get_outfile_name(cfgs):
     output_f = ""

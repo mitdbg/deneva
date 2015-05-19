@@ -116,10 +116,10 @@ for node,algo,thread,tif in itertools.product(nodes,algos,threads,tifs):
 #    cdf(mpr,summary,cfg_fmt=_cfg_fmt,cfg=_cfg,vname="MPR",title="Aborts " + _title)
     #for k in ["d_cflt","d_abrt","s_cflt","s_abrt"]:
     #    cdf(mpr,summary,cfg_fmt=_cfg_fmt,cfg=_cfg,vname="MPR",title=k + " " +  _title)
-    #for m in mpr:
-        #_cfg_fmt = ["NODE_CNT","CC_ALG","MAX_TXN_PER_PART","THREAD_CNT","MAX_TXN_IN_FLIGHT","NUM_WH","MPR"]
-        #_cfg=[node,algo,txn_cnt,thread,tif,64,m]
-        #_title="{} {} Nodes {} Threads {} TiF {} MPR".format(algo,node,thread,tif,m)
-        #bar_keys(summary,rank=10,cfg_fmt=_cfg_fmt,cfg=_cfg,title=_title)
+    for m in mpr:
+        _cfg_fmt = ["NODE_CNT","CC_ALG","MAX_TXN_PER_PART","THREAD_CNT","MAX_TXN_IN_FLIGHT","NUM_WH","MPR"]
+        _cfg=[node,algo,txn_cnt,thread,tif,64,m]
+        _title="{} {} Nodes {} Threads {} TiF {} MPR".format(algo,node,thread,tif,m)
+        bar_keys(summary,rank=10,cfg_fmt=_cfg_fmt,cfg=_cfg,title=_title)
 #    bar_aborts_mpr(mpr,node,algo,txn_cnt,summary)
 

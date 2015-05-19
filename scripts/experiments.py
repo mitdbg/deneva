@@ -17,7 +17,7 @@ nnodes=[2]
 nmpr= [5]
 #nmpr= range(0,6,1)
 #nmpr=[1] + range(0,11,5)
-nalgos=['HSTORE_SPEC','HSTORE']
+nalgos=['NO_WAIT']#'HSTORE_SPEC','HSTORE']
 #nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE','HSTORE_SPEC']
 nthreads=[1]
 #nthreads=[1,2]
@@ -155,5 +155,5 @@ configs = {
 ##################
 # FIXME
 #################
-experiments = fmt6 + experiments_nd
-config_names = fmt6[0]
+experiments = fmt5 + experiments
+config_names = fmt5[0]
