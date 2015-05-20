@@ -130,6 +130,7 @@ public:
 	void abort(uint64_t thd_id);
 	void print_prog(uint64_t tid);
 	void print();
+	void print_cnts();
 	void print_lat_distr();
 	void print_abort_distr();
 };

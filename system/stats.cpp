@@ -24,6 +24,9 @@ void StatsArr::insert(uint64_t item) {
     arr[cnt++] = item;
   }
   else if(type == ArrInsert) {
+    while(cnt >= size) {
+      resize();
+    }
     arr[item]++;
     cnt++;
   }
@@ -51,7 +54,7 @@ void Stats_thd::init(uint64_t thd_id) {
 		mem_allocator.alloc(sizeof(uint64_t) * MAX_TXN_PER_PART, thd_id);
 #endif
 
-  all_abort.init(STAT_ARR_SIZE,ArrIncr);
+  all_abort.init(STAT_ARR_SIZE,ArrInsert);
   w_cflt.init(WH_TAB_SIZE,ArrInsert);
   d_cflt.init(DIST_TAB_SIZE,ArrInsert);
   cnp_cflt.init(CUST_TAB_SIZE,ArrInsert);
@@ -293,6 +296,7 @@ void Stats::print_prog(uint64_t tid) {
 			_stats[tid]->time_rqry / BILLION,
 			_stats[tid]->tport_lat / BILLION / _stats[tid]->msg_rcv_cnt
 		);
+  print_cnts();
 	if (output_file != NULL) 
 		fclose(outf);
   else
@@ -509,6 +513,12 @@ void Stats::print() {
 	if (output_file != NULL) 
 		fclose(outf);
 
+  print_cnts();
+	if (g_prt_lat_distr)
+		print_lat_distr();
+}
+
+void Stats::print_cnts() {
   uint64_t all_abort_cnt = 0;
   uint64_t w_cflt_cnt = 0;
   uint64_t d_cflt_cnt = 0;
@@ -540,12 +550,15 @@ void Stats::print() {
   printf("\n[all_abort %ld] ",all_abort_cnt);
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) 
     _stats[tid]->all_abort.print(stdout);
+  /*
   printf("\n[w_cflt %ld] ",w_cflt_cnt);
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) 
     _stats[tid]->w_cflt.print(stdout);
+    */
   printf("\n[d_cflt %ld] ",d_cflt_cnt);
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) 
     _stats[tid]->d_cflt.print(stdout);
+  /*
   printf("\n[cnp_cflt %ld] ",cnp_cflt_cnt);
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) 
     _stats[tid]->cnp_cflt.print(stdout);
@@ -555,15 +568,19 @@ void Stats::print() {
   printf("\n[ol_cflt %ld] ",ol_cflt_cnt);
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) 
     _stats[tid]->ol_cflt.print(stdout);
+    */
   printf("\n[s_cflt %ld] ",s_cflt_cnt);
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) 
     _stats[tid]->s_cflt.print(stdout);
+  /*
   printf("\n[w_abrt %ld] ",w_abrt_cnt);
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) 
     _stats[tid]->w_abrt.print(stdout);
+    */
   printf("\n[d_abrt %ld] ",d_abrt_cnt);
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) 
     _stats[tid]->d_abrt.print(stdout);
+  /*
   printf("\n[cnp_abrt %ld] ",cnp_abrt_cnt);
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) 
     _stats[tid]->cnp_abrt.print(stdout);
@@ -573,12 +590,13 @@ void Stats::print() {
   printf("\n[ol_abrt %ld] ",ol_abrt_cnt);
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) 
     _stats[tid]->ol_abrt.print(stdout);
+    */
   printf("\n[s_abrt %ld] ",s_abrt_cnt);
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) 
     _stats[tid]->s_abrt.print(stdout);
 
-	if (g_prt_lat_distr)
-		print_lat_distr();
+  printf("\n");
+
 }
 
 void Stats::print_lat_distr() {
