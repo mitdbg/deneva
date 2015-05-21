@@ -9,6 +9,7 @@ def avg(l):
     return float(sum(l) / float(len(l)))
 
 def find_in_line(key,line,summary,low_lim,up_lim):
+    done = False
     if re.search(key,line):
         line = [int(s) for s in line.split() if s.isdigit()]
         tid = line[0]
@@ -16,7 +17,9 @@ def find_in_line(key,line,summary,low_lim,up_lim):
         if tid >= low_lim and tid < up_lim:
             summary[key]["time"].append(time)
             summary[key]["tid"].append(tid)
-    return summary
+        if tid > up_lim:
+            done = True
+    return done,summary
 
 def get_timeline(sfile,summary={},low_lim=0,up_lim=sys.maxint):
     keys = ["START","ABORT","COMMIT","LOCK","UNLOCK"]
@@ -26,7 +29,10 @@ def get_timeline(sfile,summary={},low_lim=0,up_lim=sys.maxint):
     with open(sfile,'r') as f:
         for line in f:
             for k in keys:
-                summary = find_in_line(k,line,summary,low_lim,up_lim)
+                done,summary = find_in_line(k,line,summary,low_lim,up_lim)
+                if done:
+                    return summary
+                
     return summary
 
 def get_summary(sfile,summary={}):
@@ -34,23 +40,25 @@ def get_summary(sfile,summary={}):
         found = False
         last_line = ""
         for line in f:
+            if re.search("prog",line):
+                last_line = line
             if re.search("summary",line):
                 found = True
                 line = line.rstrip('\n')
                 line = line[10:] #remove '[summary] ' from start of line 
                 results = re.split(',',line)
                 process_results(summary,results)
-            for c in cnts:
-                if re.search(c,line):
-                    line = line.rstrip('\n')
-                    process_cnts(summary,line,c)
-            for c in cflts:
-                if re.search(c,line):
-                    line = line.rstrip('\n')
-                    process_cflts(summary,line,c)
-            last_line = line
+            if found:
+                for c in cnts:
+                    if re.search(c,line):
+                        line = line.rstrip('\n')
+                        process_cflts(summary,line,c)
+                for c in cflts:
+                    if re.search(c,line):
+                        line = line.rstrip('\n')
+                        process_cflts(summary,line,c)
         if not found:
-            if re.search("prog",line):
+            if re.search("prog",last_line):
                 line = last_line.rstrip('\n')
                 line = line[9:] #remove '[prog 0] ' from start of line 
                 results = re.split(',',line)

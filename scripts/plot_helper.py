@@ -32,9 +32,9 @@ def tput(xval,vval,summary,
                 print("Not in summary: {}".format(cfgs))
                 break
             try:
-                tot_run_time = sum(summary[cfgs]['tot_run_time'])
+                tot_run_time = sum(summary[cfgs]['clock_time'])
                 tot_txn_cnt = sum(summary[cfgs]['txn_cnt'])
-                avg_run_time = avg(summary[cfgs]['tot_run_time'])
+                avg_run_time = avg(summary[cfgs]['clock_time'])
                 avg_txn_cnt = avg(summary[cfgs]['txn_cnt'])
                 if avg_run_time > (30.0*60):
                     avg_run_time = avg_run_time / 4

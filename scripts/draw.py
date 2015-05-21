@@ -373,7 +373,7 @@ def draw_scatter(fname, data, xticks,
 #ax.get_xaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
 
     start,end=ax.get_xlim()
-    ax.xaxis.set_ticks(np.arange(start,end,10000000))
+    ax.xaxis.set_ticks(np.arange(start,end,100000))
 
     if legend :
         fig.legend(lines, linenames, bbox_to_anchor = bbox, prop={'size':9}, ncol=ncol)
