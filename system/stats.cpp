@@ -30,10 +30,17 @@ void StatsArr::insert(uint64_t item) {
     arr[cnt++] = item;
   }
   else if(type == ArrInsert) {
+    /*
     while(item >= size) {
       resize();
     }
-    arr[item]++;
+    */
+    if(item >= size) {
+      arr[size-1]++;
+    }
+    else {
+      arr[item]++;
+    }
     cnt++;
   }
 }
