@@ -10,18 +10,20 @@ import glob
 PATH=os.getcwd()
 result_dir = PATH + "/../results/"
 
-llim = 50 
-ulim = 100
+llim = 0 
+ulim = 500000 
 for e in experiments[1:]:
     r = {}
     cfgs = get_cfgs(experiments[0],e)
     output_f = get_outfile_name(cfgs)
+    min_time=0
     for n in range(cfgs["NODE_CNT"]):
         ofile = "{}{}_{}*.out".format(result_dir,n,output_f)
         res_list = sorted(glob.glob(ofile),key=os.path.getmtime,reverse=True)
         if res_list:
             print(res_list[0])
-            r = get_timeline(res_list[0],r,low_lim=llim,up_lim=ulim)
+            r,min_time = get_timeline(res_list[0],r,low_lim=llim,up_lim=ulim,min_time=min_time)
+    print(r)
     tids = []
     times = []
     types = ["START","ABORT","LOCK","UNLOCK","COMMIT"]

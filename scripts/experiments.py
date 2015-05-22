@@ -15,16 +15,16 @@ fmt6 = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","N
 nnodes=[2]
 #nnodes=[1,2,4,9]
 #nmpr= [5]
-nmpr= range(0,6,1)
+nmpr= range(0,6,2)
 #nmpr=[1] + range(0,11,5)
-nalgos=['NO_WAIT']#'HSTORE_SPEC','HSTORE']
+nalgos=['HSTORE','HSTORE_SPEC']
 #nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE','HSTORE_SPEC']
 nthreads=[1]
 #nthreads=[1,2]
 nwfs=[64]
-ntifs=[1,4,8,32]
+ntifs=[4]
 #ntifs=[1,4,8,16,32]
-ntxn=1000000
+ntxn=100000
 nnet_delay=['100000UL']
 #nnet_delay=['0UL','50000UL','100000UL','500000UL']
 #nnet_delay=['0UL','50000UL','100000UL','500000UL','1000000UL','5000000UL']
@@ -42,7 +42,7 @@ experiments_nd = [
 ]
 
 experiments = [
-    [n,ntxn,'TPCC',cc,m,t,wf,tif] for wf,n,tif,cc,m,t in itertools.product(nwfs,nnodes,ntifs,nalgos,nmpr,nthreads)
+    [n,ntxn,'TPCC',cc,m,t,wf,tif] for n,m,cc,t,wf,tif in itertools.product(nnodes,nmpr,nalgos,nthreads,nwfs,ntifs)
 ]
 
 experiments_100K = [

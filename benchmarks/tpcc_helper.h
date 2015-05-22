@@ -12,6 +12,12 @@ uint64_t orderPrimaryKey(uint64_t w_id, uint64_t d_id, uint64_t o_id);
 uint64_t custNPKey(char * c_last, uint64_t c_d_id, uint64_t c_w_id);
 uint64_t stockKey(uint64_t s_i_id, uint64_t s_w_id);
 
+uint64_t w_from_distKey(uint64_t d_key); 
+uint64_t w_from_custKey(uint64_t c_key);
+uint64_t w_from_orderlineKey(uint64_t s_key); 
+uint64_t w_from_orderPrimaryKey(uint64_t s_key); 
+uint64_t w_from_custNPKey(uint64_t cnp_key); 
+uint64_t w_from_stockKey(uint64_t s_key); 
 //uint64_t orderKey(uint64_t o_id, uint64_t o_d_id, uint64_t o_w_id); 
 // the max of ol_number is 15. That's why there is a 15 here	
 //uint64_t olKey(uint64_t ol_o_id, uint64_t ol_d_id, 

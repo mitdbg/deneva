@@ -112,9 +112,11 @@ RC thread_t::run() {
 	stats.init(get_thd_id());
 
 //#if !TPORT_TYPE_IPC
+  if( _thd_id == 0) {
   for(uint64_t i = 0; i < g_node_cnt; i++) {
     if(i != g_node_id)
       rem_qry_man.send_init_done(i);
+  }
   }
 //#endif
 	pthread_barrier_wait( &warmup_bar );
@@ -144,6 +146,7 @@ RC thread_t::run() {
   uint64_t txn_st_cnt = 0;
 	uint64_t thd_txn_id = 0;
   uint64_t starttime;
+  uint64_t stoptime;
   uint64_t timespan;
   uint64_t ttime;
   uint64_t last_waittime = 0;
@@ -180,7 +183,13 @@ RC thread_t::run() {
 #if !NOGRAPHITE
    			CarbonDisableModelsBarrier(&enable_barrier);
 #endif
-        SET_STATS(get_thd_id(), tot_run_time, get_sys_clock() - run_starttime - MSG_TIMEOUT); 
+        uint64_t currtime = get_sys_clock();
+        if(currtime - stoptime > MSG_TIMEOUT) {
+          SET_STATS(get_thd_id(), tot_run_time, currtime - run_starttime - MSG_TIMEOUT); 
+        }
+        else {
+          SET_STATS(get_thd_id(), tot_run_time, stoptime - run_starttime); 
+        }
    		    return FINISH;
    	}
 
@@ -215,6 +224,9 @@ RC thread_t::run() {
 #if CC_ALG == MVCC
           //glob_manager.add_ts(m_query->return_id, 0, m_query->ts);
           glob_manager.add_ts(m_query->return_id, m_query->thd_id, m_query->ts);
+#endif
+#if CC_ALG == AVOID
+          m_txn->read_keys(m_query);
 #endif
           // HStore: lock partitions at this node
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
@@ -277,6 +289,11 @@ RC thread_t::run() {
               INC_STATS(get_thd_id(),time_clock_wait,get_sys_clock() - last_waittime);
             }
           }
+#if CC_ALG == AVOID
+          // RQRY sent because the read we sent during the init phase was outdated
+          // Return the updated read value
+          m_txn->read_keys_again(m_query);
+#endif
           
           rc = m_txn->run_txn(m_query);
 
@@ -682,6 +699,7 @@ RC thread_t::run() {
 			//assert(txn_cnt == MAX_TXN_PER_PART);
 	      if( !ATOM_CAS(_wl->sim_done, false, true) )
 				  assert( _wl->sim_done);
+          stoptime = get_sys_clock();
 	    }
 
 

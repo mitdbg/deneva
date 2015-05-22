@@ -6,6 +6,9 @@
 void StatsArr::init(uint64_t size,StatsArrType type) {
 	arr = (uint64_t *)
 		mem_allocator.alloc(sizeof(uint64_t) * (size+1), 0);
+  for(uint64_t i=0;i<size+1;i++) {
+    arr[i] = 0;
+  }
   this->size = size+1;
   this->type = type;
   cnt = 0;
@@ -15,6 +18,9 @@ void StatsArr::resize() {
   size = size * 2;
 	arr = (uint64_t *)
 		mem_allocator.realloc(arr,sizeof(uint64_t) * size, 0);
+  for(uint64_t i=size/2;i<size;i++) {
+    arr[i] = 0;
+  }
 }
 
 void StatsArr::insert(uint64_t item) {
@@ -24,10 +30,17 @@ void StatsArr::insert(uint64_t item) {
     arr[cnt++] = item;
   }
   else if(type == ArrInsert) {
-    while(cnt >= size) {
+    /*
+    while(item >= size) {
       resize();
     }
-    arr[item]++;
+    */
+    if(item >= size) {
+      arr[size-1]++;
+    }
+    else {
+      arr[item]++;
+    }
     cnt++;
   }
 }

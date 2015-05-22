@@ -94,6 +94,8 @@ public:
   	Row_vll * manager;
   #elif CC_ALG == HSTORE_SPEC
   	Row_specex * manager;
+  #elif CC_ALG == AVOID
+    Row_avoid * manager;
   #endif
 	char * data;
 	table_t * table;

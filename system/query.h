@@ -34,6 +34,11 @@ public:
 	RC rc;
 	uint64_t pid;
 
+  // Coordination Avoid
+  uint64_t * keys;
+  uint64_t num_keys;
+  uint64_t t_type; // txn_type
+
   // OCC
 	uint64_t start_ts;
 	uint64_t end_ts;

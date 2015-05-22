@@ -99,6 +99,7 @@ void txn_man::cleanup(RC rc) {
 		end_ts = glob_manager.get_ts( get_thd_id() );
   }
 #endif
+	ts_t starttime = get_sys_clock();
 	for (int rid = row_cnt - 1; rid >= 0; rid --) {
 #if !NOGRAPHITE
 		part_id = accesses[rid]->orig_row->get_part_id();
@@ -115,13 +116,16 @@ void txn_man::cleanup(RC rc) {
 		if (ROLL_BACK && type == XP &&
 					(CC_ALG == DL_DETECT || 
 					CC_ALG == NO_WAIT || 
-					CC_ALG == WAIT_DIE)) 
+					CC_ALG == WAIT_DIE ||
+          CC_ALG == HSTORE ||
+          CC_ALG == HSTORE_SPEC 
+          )) 
 		{
 			orig_r->return_row(type, this, accesses[rid]->orig_data);
 		} else {
 			orig_r->return_row(type, this, accesses[rid]->data);
 		}
-#if ROLL_BACK && (CC_ALG == DL_DETECT || CC_ALG == NO_WAIT || CC_ALG == WAIT_DIE)
+#if ROLL_BACK && (CC_ALG == DL_DETECT || CC_ALG == NO_WAIT || CC_ALG == WAIT_DIE || CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC)
 		if (type == WR) {
 			accesses[rid]->orig_data->free_row();
 			mem_allocator.free(accesses[rid]->orig_data, sizeof(row_t));
@@ -131,7 +135,6 @@ void txn_man::cleanup(RC rc) {
 	}
 
 	if (rc == Abort) {
-		ts_t t = get_sys_clock();
 		for (UInt32 i = 0; i < insert_cnt; i ++) {
 			row_t * row = insert_rows[i];
 			assert(g_part_alloc == false);
@@ -141,7 +144,7 @@ void txn_man::cleanup(RC rc) {
 			row->free_row();
 			mem_allocator.free(row, sizeof(row));
 		}
-		INC_STATS(get_thd_id(), time_abort, get_sys_clock() - t);
+		INC_STATS(get_thd_id(), time_abort, get_sys_clock() - starttime);
 	}
 	row_cnt = 0;
 	wr_cnt = 0;
@@ -154,10 +157,12 @@ void txn_man::cleanup(RC rc) {
 }
 
 RC txn_man::get_row(row_t * row, access_t type, row_t *& row_rtn) {
+  /*
 	if (CC_ALG == HSTORE) {
     row_rtn = row;
 		return RCOK;
   }
+  */
 	uint64_t starttime = get_sys_clock();
   uint64_t timespan;
 	RC rc = RCOK;
@@ -172,7 +177,13 @@ RC txn_man::get_row(row_t * row, access_t type, row_t *& row_rtn) {
   this->last_row = row;
   this->last_type = type;
 
-	rc = row->get_row(type, this, accesses[ row_cnt ]->data);
+  if ( CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC) {
+    accesses[ row_cnt ]->data = row;
+    rc = RCOK;
+  }
+  else {
+	  rc = row->get_row(type, this, accesses[ row_cnt ]->data);
+  }
 
 	if (rc == Abort || rc == WAIT) {
     row_rtn = NULL;
@@ -186,7 +197,7 @@ RC txn_man::get_row(row_t * row, access_t type, row_t *& row_rtn) {
 	}
 	accesses[row_cnt]->type = type;
 	accesses[row_cnt]->orig_row = row;
-#if ROLL_BACK && (CC_ALG == DL_DETECT || CC_ALG == NO_WAIT || CC_ALG == WAIT_DIE)
+#if ROLL_BACK && (CC_ALG == DL_DETECT || CC_ALG == NO_WAIT || CC_ALG == WAIT_DIE || CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC)
 	if (type == WR) {
 		accesses[row_cnt]->orig_data = (row_t *) 
 			mem_allocator.alloc(sizeof(row_t), part_id);
@@ -206,6 +217,7 @@ RC txn_man::get_row(row_t * row, access_t type, row_t *& row_rtn) {
 }
 
 RC txn_man::get_row_post_wait(row_t *& row_rtn) {
+  assert(CC_ALG != HSTORE && CC_ALG != HSTORE_SPEC);
   uint64_t timespan = get_sys_clock() - this->wait_starttime;
   if(get_txn_id() % g_node_cnt == g_node_id) {
     INC_STATS(get_thd_id(),time_wait_lock,timespan);
@@ -282,8 +294,8 @@ RC txn_man::finish(RC rc, uint64_t * parts, uint64_t part_cnt) {
 	if (CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC) {
 		part_lock_man.rem_unlock(parts, part_cnt, this);
   }
-  if(CC_ALG != HSTORE)
-    cleanup(rc);
+  //if(CC_ALG != HSTORE)
+  cleanup(rc);
 	uint64_t timespan = get_sys_clock() - starttime;
 	INC_STATS(get_thd_id(), time_cleanup,  timespan);
 	return rc;

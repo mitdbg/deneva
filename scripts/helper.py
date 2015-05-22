@@ -37,23 +37,25 @@ def get_summary(sfile,summary={}):
         found = False
         last_line = ""
         for line in f:
+            if re.search("prog",line):
+                last_line = line
             if re.search("summary",line):
                 found = True
                 line = line.rstrip('\n')
                 line = line[10:] #remove '[summary] ' from start of line 
                 results = re.split(',',line)
                 process_results(summary,results)
-            for c in cnts:
-                if re.search(c,line):
-                    line = line.rstrip('\n')
-                    process_cnts(summary,line,c)
-            for c in cflts:
-                if re.search(c,line):
-                    line = line.rstrip('\n')
-                    process_cflts(summary,line,c)
-            last_line = line
+            if found:
+                for c in cnts:
+                    if re.search(c,line):
+                        line = line.rstrip('\n')
+                        process_cflts(summary,line,c)
+                for c in cflts:
+                    if re.search(c,line):
+                        line = line.rstrip('\n')
+                        process_cflts(summary,line,c)
         if not found:
-            if re.search("prog",line):
+            if re.search("prog",last_line):
                 line = last_line.rstrip('\n')
                 line = line[9:] #remove '[prog 0] ' from start of line 
                 results = re.split(',',line)
