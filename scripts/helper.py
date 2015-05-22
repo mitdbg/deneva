@@ -8,17 +8,20 @@ cflts = ["w_cflt","d_cflt","cnp_cflt","c_cflt","ol_cflt","s_cflt","w_abrt","d_ab
 def avg(l):
     return float(sum(l) / float(len(l)))
 
-def find_in_line(key,line,summary,low_lim,up_lim):
+def find_in_line(key,line,summary,min_time,low_lim,up_lim):
     if re.search(key,line):
         line = [int(s) for s in line.split() if s.isdigit()]
         tid = line[0]
-        time = line[1]
-        if tid >= low_lim and tid < up_lim:
+        if min_time == 0:
+            min_time = line[1]
+        time = line[1] - min_time
+#if tid >= low_lim and tid < up_lim:
+        if time >= low_lim and time < up_lim:
             summary[key]["time"].append(time)
             summary[key]["tid"].append(tid)
-    return summary
+    return summary,min_time
 
-def get_timeline(sfile,summary={},low_lim=0,up_lim=sys.maxint):
+def get_timeline(sfile,summary={},low_lim=0,up_lim=sys.maxint,min_time=0):
     keys = ["START","ABORT","COMMIT","LOCK","UNLOCK"]
     for k in keys:
         if k not in summary.keys():
@@ -26,8 +29,8 @@ def get_timeline(sfile,summary={},low_lim=0,up_lim=sys.maxint):
     with open(sfile,'r') as f:
         for line in f:
             for k in keys:
-                summary = find_in_line(k,line,summary,low_lim,up_lim)
-    return summary
+                summary,min_time = find_in_line(k,line,summary,min_time,low_lim,up_lim)
+    return summary,min_time
 
 def get_summary(sfile,summary={}):
     with open(sfile,'r') as f:
