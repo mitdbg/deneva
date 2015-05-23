@@ -7,6 +7,8 @@
 #include "tpcc_query.h"
 #include "query.h"
 
+#define MAX_IFADDR_LEN 20
+
 /*
 	 HEADER FORMAT:
 	 32b destination ID
@@ -34,7 +36,8 @@ void Transport::read_ifconfig(const char * ifaddr_file) {
 	ifstream fin(ifaddr_file);
 	string line;
   while (getline(fin, line)) {
-		memcpy(ifaddr[cnt],&line[0],12);
+		//memcpy(ifaddr[cnt],&line[0],12);
+        strcpy(ifaddr[cnt],&line[0]);
 		cnt++;
 	}
 	for(uint64_t i=0;i<g_node_cnt;i++) {
@@ -50,7 +53,7 @@ void Transport::init(uint64_t node_id) {
 	// Read ifconfig file
 	ifaddr = new char *[g_node_cnt];
 	for(uint64_t i=0;i<g_node_cnt;i++) {
-		ifaddr[i] = new char[12];
+		ifaddr[i] = new char[MAX_IFADDR_LEN];
 	}
 	char * cpath = getenv("SCHEMA_PATH");
 	string path;
