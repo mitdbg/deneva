@@ -13,12 +13,13 @@ strnow=now.strftime("%Y%m%d-%H%M%S")
 
 # ISTC Machines ranked by clock skew
 machines_=[
+
 #GOOD
-"istc8",
-"istc6",
 "istc1", 
 "istc3", 
 "istc4", 
+"istc6",
+"istc8",
 #OK
 "istc7",
 "istc9",
@@ -128,6 +129,7 @@ for e in experiments[1:]:
         else:
             nnodes = cfgs["NODE_CNT"]
             pids = []
+            print("Deploying: {}".format(output_f))
             for n in range(nnodes):
                 cmd = "./rundb -nid{}".format(n)
                 print(cmd)

@@ -30,9 +30,11 @@ public:
   uint64_t get_min_ts(); 
 
   void start_spec_ex();
-  void commit_spec_ex();
+  void end_spec_ex();
+  void commit_spec_ex(int r);
 
   uint64_t inflight_cnt;
+  bool spec_mode;
 
 private:
 	uint64_t _node_id;

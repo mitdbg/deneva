@@ -1,9 +1,10 @@
 #ifndef _STATS_H_
 #define _STATS_H_
 
+enum StatsArrType {ArrInsert, ArrIncr};
 class StatsArr {
     public:
-      void init();
+      void init(uint64_t size,StatsArrType type);
       void resize();
       void insert(uint64_t item);
       void print(FILE * f);
@@ -11,6 +12,7 @@ class StatsArr {
       uint64_t * arr;
       uint64_t size;
       uint64_t cnt;
+      StatsArrType type;
 };
 
 class Stats_thd {
@@ -24,6 +26,8 @@ public:
 	uint64_t txn_abort_cnt;
 	double tot_run_time;
 	double run_time;
+  double time_clock_rwait;
+  double time_clock_wait;
   double time_work;
 	double time_man;
 	double time_rqry;
@@ -32,28 +36,31 @@ public:
 	double time_index;
 	double rtime_index;
 	double time_wait;
-	double rtime_wait_lock;
+	double time_wait_lock_rem;
 	double time_wait_lock;
 	double time_wait_rem;
 	double time_abort;
 	double time_cleanup;
+	double time_tport_rcv;
+	double time_tport_send;
+	double time_validate;
 	uint64_t time_ts_alloc;
 	double time_query;
 	double rtime_proc;
-	double rtime_unpack;
-	double rtime_unpack_ndest;
+	double time_unpack;
 	uint64_t wait_cnt;
 	double tport_lat;
 	double lock_diff;
   double qq_full;
 
+  uint64_t cflt_cnt;
 	uint64_t mpq_cnt; // multi-partition queries
 	uint64_t msg_bytes;
 	uint64_t msg_sent_cnt;
 	uint64_t msg_rcv_cnt;
-	double time_msg_wait; // time blocking for remote response
-	double time_rem_req; // time preparing msg for remote request
-	double time_rem; // time preparing msg for remote request
+	double time_msg_sent; 
+  uint64_t spec_abort_cnt;
+  uint64_t spec_commit_cnt;
 
 	uint64_t debug1;
 	uint64_t debug2;
@@ -97,13 +104,6 @@ class Stats_tmp {
 public:
 	void init();
 	void clear();
-	/*
-	double time_man;
-	double time_index;
-	double time_wait;
-	double time_wait_lock;
-	double time_wait_rem;
-	*/
 	uint64_t mpq_cnt;
 	char _pad[CL_SIZE - sizeof(double)*3];
 };
@@ -130,6 +130,7 @@ public:
 	void abort(uint64_t thd_id);
 	void print_prog(uint64_t tid);
 	void print();
+	void print_cnts();
 	void print_lat_distr();
 	void print_abort_distr();
 };

@@ -8,7 +8,7 @@
 
 class txn_man;
 
-// Parition manager for HSTORE
+// Parition manager for HSTORE / HSTORE_SPEC
 class PartMan {
 public:
 	void init(uint64_t node_id);

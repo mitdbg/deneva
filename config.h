@@ -4,12 +4,12 @@
 /***********************************************/
 // Simulation + Hardware
 /***********************************************/
-#define NODE_CNT 9
+#define NODE_CNT 2
 #define THREAD_CNT 1
 // REM_THREAD_CNT should be at least NODE_CNT*THREAD_CNT to avoid deadlock
 #define REM_THREAD_CNT 1
 // PART_CNT should be at least NODE_CNT
-#define PART_CNT 9
+#define PART_CNT 2
 
 // each transaction only accesses only 1 virtual partition. But the lock/ts manager and index are not aware of such partitioning. VIRTUAL_PART_CNT describes the request distribution and is only used to generate queries. For HSTORE, VIRTUAL_PART_CNT should be the same as PART_CNT.
 #define VIRTUAL_PART_CNT			1
@@ -56,13 +56,13 @@
 /***********************************************/
 #define TPORT_TYPE "ipc"
 #define TPORT_TYPE_IPC true
-#define TPORT_PORT ".ipc"
+#define TPORT_PORT "_.ipc"
 
 #define MAX_TPORT_NAME 128
 #define MSG_SIZE 128 // in bytes
 #define HEADER_SIZE sizeof(uint32_t)*2 // in bits 
 #define MSG_TIMEOUT 5000000000UL // in ns
-#define NETWORK_TEST false
+#define NETWORK_TEST false 
 #define NETWORK_DELAY 0UL
 
 #define MAX_QUEUE_LEN NODE_CNT * 2
@@ -70,10 +70,8 @@
 /***********************************************/
 // Concurrency Control
 /***********************************************/
-// WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HSTORE, OCC, VLL
-#define CC_ALG HSTORE
-
-#define SPEC_EX false
+// WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, OCC, VLL
+#define CC_ALG HSTORE_SPEC
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER					false
@@ -82,7 +80,7 @@
 // per-row lock/ts management or central lock/ts management
 #define CENTRAL_MAN					false
 #define BUCKET_CNT					31
-#define ABORT_PENALTY				10000000UL    //1000000UL    // in ns.
+#define ABORT_PENALTY				1000000UL   // in ns.
 // [ INDEX ]
 #define ENABLE_LATCH				false
 #define CENTRAL_INDEX				false
@@ -129,7 +127,7 @@
 // max number of rows touched per transaction
 #define MAX_ROW_PER_TXN				64
 #define QUERY_INTVL 				1UL
-#define MAX_TXN_PER_PART 1000000
+#define MAX_TXN_PER_PART 100000
 #define FIRST_PART_LOCAL 			true
 #define MAX_TUPLE_SIZE				1024 // in bytes
 // ==== [YCSB] ====
@@ -148,6 +146,10 @@
 // For large warehouse count, the tables do not fit in memory
 // small tpcc schemas shrink the table size.
 #define TPCC_SMALL					true
+#define MAX_ITEMS_SMALL 10000
+#define CUST_PER_DIST_SMALL 2000
+#define MAX_ITEMS_NORM 100000
+#define CUST_PER_DIST_NORM 3000
 // Some of the transactions read the data but never use them. 
 // If TPCC_ACCESS_ALL == fales, then these parts of the transactions
 // are not modeled.
@@ -155,7 +157,7 @@
 #define WH_UPDATE					true
 #define NUM_WH 64
 // % of transactions that access multiple partitions
-#define MPR 0
+#define MPR 4
 #define MPR_NEWORDER			20 // In %
 // Smaller item selection to model contention
 #define CONTENTION false
@@ -176,6 +178,13 @@ extern TPCCTxnType 					g_tpcc_txn_type;
 #define LASTNAME_LEN 				16
 
 #define DIST_PER_WARE				10
+#define WH_TAB_SIZE NUM_WH
+#define ITEM_TAB_SIZE MAX_ITEMS_SMALL
+#define DIST_TAB_SIZE NUM_WH * DIST_PER_WARE
+#define STOC_TAB_SIZE NUM_WH * MAX_ITEMS_SMALL
+#define CUST_TAB_SIZE NUM_WH * DIST_PER_WARE * CUST_PER_DIST_SMALL
+#define HIST_TAB_SIZE NUM_WH * DIST_PER_WARE * CUST_PER_DIST_SMALL
+#define ORDE_TAB_SIZE NUM_WH * DIST_PER_WARE * CUST_PER_DIST_SMALL
 
 /***********************************************/
 // TODO centralized CC management. 
@@ -207,7 +216,8 @@ extern TestCases					g_test_case;
 #define DEBUG_TIMESTAMP				false
 #define DEBUG_SYNTH					false
 #define DEBUG_ASSERT				false
-#define DEBUG_DISTR				false
+#define DEBUG_DISTR				    false
+#define DEBUG_TIMELINE				false
 
 /***********************************************/
 // Constant
@@ -226,8 +236,9 @@ extern TestCases					g_test_case;
 #define TIMESTAMP					4
 #define MVCC						5
 #define HSTORE						6
-#define OCC							7
-#define VLL							8
+#define HSTORE_SPEC						7
+#define OCC							8
+#define VLL							9
 // TIMESTAMP allocation method.
 #define TS_MUTEX					1
 #define TS_CAS						2
@@ -236,7 +247,9 @@ extern TestCases					g_test_case;
 
 // Stats and timeout
 #define BILLION 1000000000UL
-#define STAT_ARR_SIZE 32
+#define STAT_ARR_SIZE 1024
 #define PROG_TIMER 10000000000UL // in ns
+
+#define SEED 0
 
 #endif

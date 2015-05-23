@@ -96,7 +96,7 @@ RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt
 			bool canwait = true;
 			LockEntry * en = owners;
 			while (en != NULL) {
-                if (en->txn->get_ts() < txn->get_ts()) {
+        if (en->txn->get_ts() < txn->get_ts()) {
 					canwait = false;
 					break;
 				}

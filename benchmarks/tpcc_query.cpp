@@ -32,6 +32,36 @@ void tpcc_query::reset() {
   }
 }
 
+/*
+uint64_t tpcc_query::get_keys(uint64_t *& arr) {
+  uint64_t num_keys = txn_type == TPCC_PAYMENT ? 4 : 3 + ol_cnt;
+  uint64_t keys[num_keys];
+  uint64_t n = 0;
+
+  uint64_t w_key = w_id;
+  keys[n++] = w_key;
+  uint64_t d_key = txn_type == TPCC_PAYMENT ? distKey(d_id, d_w_id) : distKey(d_id, w_id);
+  keys[n++] = d_key;
+  uint64_t cnp_key = txn_type == TPCC_PAYMENT ? custNPKey(c_last, c_d_id, c_w_id) : UINT64_MAX;
+  if(txn_type == TPCC_PAYMENT)
+    keys[n++] = cnp_key;
+  uint64_t c_key =  txn_type == TPCC_PAYMENT ? custKey(c_id, c_d_id, c_w_id) : custKey(c_id, d_id, w_id);
+  keys[n++] = c_key;
+
+  if(txn_type == TPCC_NEWORDER) {
+    for(uint64_t i = 0; i < ol_cnt; i++) {
+      // item table is replicated at every node
+      //uint64_t ol_key = items[i].ol_i_id;
+      uint64_t s_key = stockKey(items[i].ol_i_id, items[i].ol_supply_w_id);
+      keys[n++] = s_key;
+    }
+  }
+
+  arr = keys;
+  return size;
+}
+*/
+
 // Note: If you ever change the number of parameters sent, change "total"
 void tpcc_query::remote_qry(base_query * query, int type, int dest_id) {
 
@@ -212,7 +242,7 @@ void tpcc_query::unpack_rsp(base_query * query, void * d) {
 	memcpy(&m_query->o_id,&data[ptr],sizeof(m_query->o_id));
 	ptr += sizeof(m_query->o_id);
 
-  if(rc == Abort) {
+  if(rc == Abort || m_query->rc == WAIT || m_query->rc == WAIT_REM) {
     m_query->rc = rc;
     m_query->txn_rtype = TPCC_FIN;
   }

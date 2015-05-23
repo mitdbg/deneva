@@ -7,6 +7,7 @@
 #include "row_ts.h"
 #include "row_mvcc.h"
 #include "row_occ.h"
+#include "row_specex.h"
 #include "row_vll.h"
 #include "mem_alloc.h"
 #include "manager.h"
@@ -40,13 +41,11 @@ void row_t::init_manager(row_t * row) {
     manager = (Row_occ *) mem_allocator.alloc(sizeof(Row_occ), _part_id);
 #elif CC_ALG == VLL
     manager = (Row_vll *) mem_allocator.alloc(sizeof(Row_vll), _part_id);
-#elif CC_ALG == HSTORE
-#if SPEC_EX
+#elif CC_ALG == HSTORE_SPEC
     manager = (Row_specex *) mem_allocator.alloc(sizeof(Row_specex), _part_id);
 #endif
-#endif
 
-#if CC_ALG != HSTORE || SPEC_EX
+#if CC_ALG != HSTORE 
 	manager->init(this);
 #endif
 }
@@ -207,9 +206,9 @@ RC row_t::get_row(access_t type, txn_man * txn, row_t *& row) {
 	rc = this->manager->access(txn, R_REQ);
 	row = txn->cur_row;
 	return rc;
-#elif CC_ALG == HSTORE || CC_ALG == VLL
-#if SPEC_EX
-  if(spec) {
+#elif CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || CC_ALG == VLL
+#if CC_ALG == HSTORE_SPEC
+  if(txn_pool.spec_mode) {
 	  txn->cur_row = (row_t *) mem_allocator.alloc(sizeof(row_t), get_part_id());
 	  txn->cur_row->init(get_table(), get_part_id());
 	  rc = this->manager->access(txn, R_REQ);
@@ -295,7 +294,11 @@ void row_t::return_row(access_t type, txn_man * txn, row_t * row) {
 	row->free_row();
 	mem_allocator.free(row, sizeof(row_t));
 	return;
-#elif CC_ALG == HSTORE || CC_ALG == VLL
+#elif CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || CC_ALG == VLL
+	assert (row != NULL);
+	if (ROLL_BACK && type == XP) {// recover from previous writes.
+		this->copy(row);
+	}
 	return;
 #else 
 	assert(false);

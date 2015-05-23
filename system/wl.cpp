@@ -88,8 +88,30 @@ RC workload::init_schema(const char * schema_file) {
 				fields[i] = atoi(items[i + 1].c_str());
 			INDEX * index = new INDEX;
 			int part_cnt = (CENTRAL_INDEX)? 1 : g_part_cnt;
+
+      uint64_t table_size = g_synth_table_size;
+#if WORKLOAD == TPCC
+      if ( !tname.compare(1, 9, "WAREHOUSE") ) {
+        table_size = WH_TAB_SIZE;
+      } else if ( !tname.compare(1, 8, "DISTRICT") ) {
+        table_size = DIST_TAB_SIZE;
+      } else if ( !tname.compare(1, 8, "CUSTOMER") ) {
+        table_size = CUST_TAB_SIZE;
+      } else if ( !tname.compare(1, 7, "HISTORY") ) {
+        table_size = HIST_TAB_SIZE;
+      } else if ( !tname.compare(1, 5, "ORDER") ) {
+        table_size = ORDE_TAB_SIZE;
+      } else if ( !tname.compare(1, 4, "ITEM") ) {
+        table_size = ITEM_TAB_SIZE;
+      } else if ( !tname.compare(1, 5, "STOCK") ) {
+        table_size = STOC_TAB_SIZE;
+      }
+#else
+      table_size = g_synth_table_size;
+#endif
+
 #if INDEX_STRUCT == IDX_HASH
-			index->init(part_cnt, tables[tname], g_synth_table_size);
+			index->init(part_cnt, tables[tname], table_size);
 #else
 			index->init(part_cnt, tables[tname]);
 #endif

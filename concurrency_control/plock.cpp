@@ -46,6 +46,9 @@ RC PartMan::lock(txn_man * txn) {
   pthread_mutex_lock( &latch );
   if (owner == NULL) {
     owner = txn;
+#if DEBUG_TIMELINE
+      printf("LOCK %ld %ld\n",owner->get_txn_id(),get_sys_clock());
+#endif
 		// If not local, send remote response
 		if(GET_NODE_ID(owner->get_pid()) != _node_id)
 			remote_rsp(true,RCOK,owner);
@@ -68,9 +71,11 @@ RC PartMan::lock(txn_man * txn) {
       ATOM_ADD(txn->ready_part, 1);
     rc = WAIT;
     txn->rc = rc;
+    INC_STATS(0, cflt_cnt, 1);
     txn->wait_starttime = get_sys_clock();
   } else {
     rc = Abort;
+    txn->rc = rc;
 		// if we abort, need to send abort to remote node
 		if(GET_NODE_ID(txn->get_pid()) != _node_id)
 			remote_rsp(true,rc,txn);
@@ -82,11 +87,17 @@ RC PartMan::lock(txn_man * txn) {
 void PartMan::unlock(txn_man * txn) {
   pthread_mutex_lock( &latch );
   if (txn == owner) {   
+#if DEBUG_TIMELINE
+      printf("UNLOCK %ld %ld\n",owner->get_txn_id(),get_sys_clock());
+#endif
     if (waiter_cnt == 0) {
       owner = NULL;
     }
     else {
       owner = waiters[0];     
+#if DEBUG_TIMELINE
+      printf("LOCK %ld %ld\n",owner->get_txn_id(),get_sys_clock());
+#endif
       // TODO: Calculate plock wait time here
       for (UInt32 i = 0; i < waiter_cnt - 1; i++) {
         assert( waiters[i]->get_ts() < waiters[i + 1]->get_ts() );
@@ -105,7 +116,8 @@ void PartMan::unlock(txn_man * txn) {
       }
       else {
         // FIXME: stat locality w/ thd_id
-        INC_STATS(0,rtime_wait_lock,get_sys_clock() - owner->wait_starttime);
+        INC_STATS(0,time_wait_lock_rem,get_sys_clock() - owner->wait_starttime);
+        owner->rc = RCOK;
 				remote_rsp(true,RCOK,owner);
 			}
     } 
@@ -332,7 +344,7 @@ RC Plock::rem_lock(uint64_t * parts, uint64_t part_cnt, txn_man * txn) {
 		assert(GET_NODE_ID(part_id) == get_node_id());
 		rc = part_mans[part_id]->lock(txn);
 	}
-	INC_STATS(1, rtime_lock_man, get_sys_clock() - starttime);
+	INC_STATS(0, time_lock_man, get_sys_clock() - starttime);
   return rc;
 }
 
@@ -343,7 +355,7 @@ void Plock::rem_unlock(uint64_t * parts, uint64_t part_cnt, txn_man * txn) {
 		assert(GET_NODE_ID(part_id) == get_node_id());
 		part_mans[part_id]->unlock(txn);
 	}
-	INC_STATS(1, rtime_lock_man, get_sys_clock() - starttime);
+  INC_STATS(0, time_lock_man, get_sys_clock() - starttime);
 }
 
 void Plock::rem_lock_rsp(RC rc, txn_man * txn) {

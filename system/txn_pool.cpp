@@ -1,3 +1,4 @@
+#include "global.h"
 #include "txn_pool.h"
 #include "tpcc_query.h"
 #include "tpcc.h"
@@ -7,6 +8,7 @@
 #include "row.h"
 
 void TxnPool::init() {
+  spec_mode = false;
   inflight_cnt = 0;
   pthread_mutex_init(&mtx,NULL);
   txns = (txn_node_t *) mem_allocator.alloc(
@@ -186,25 +188,56 @@ uint64_t TxnPool::get_min_ts() {
 }
 
 void TxnPool::start_spec_ex() {
-  assert(SPEC_EX);
+  assert(CC_ALG == HSTORE_SPEC);
 
   pthread_mutex_lock(&mtx);
+
+  spec_mode = true;
 
   txn_node_t t_node = txns[0];
 
   while (t_node->next != NULL) {
     t_node = t_node->next;
-    if (t_node->txn->get_txn_id() % g_node_cnt != g_node_id || t_node->qry->part_num > 1) 
-      continue;
-    t_node->txn->spec = true;
-    t_node->txn->state = EXEC;
-    work_queue.add_query(t_node->qry);
+    if (t_node->txn->get_txn_id() % g_node_cnt == g_node_id && t_node->qry->part_num == 1 && t_node->txn->state == INIT) {
+      t_node->txn->spec = true;
+      t_node->txn->state = EXEC;
+      work_queue.add_query(t_node->qry);
+    }
   }
 
   pthread_mutex_unlock(&mtx);
 
 }
 
-void TxnPool::commit_spec_ex() {
-  assert(SPEC_EX);
+void TxnPool::commit_spec_ex(int r) {
+  assert(CC_ALG == HSTORE_SPEC);
+  RC rc = (RC) r;
+
+  pthread_mutex_lock(&mtx);
+
+  spec_mode = false;
+
+  txn_node_t t_node = txns[0];
+
+  while (t_node->next != NULL) {
+    t_node = t_node->next;
+    if (t_node->txn->get_txn_id() % g_node_cnt == g_node_id && t_node->qry->part_num == 1 && t_node->txn->state == PREP && t_node->txn->spec) {
+      if(rc != Abort)
+        rc = t_node->txn->validate();
+      if(rc == Abort) {
+        INC_STATS(0,spec_abort_cnt,1);
+      }
+      else {
+        INC_STATS(0,spec_commit_cnt,1);
+      }
+      t_node->txn->finish(rc,t_node->qry->part_to_access,t_node->qry->part_num);
+      t_node->txn->state = DONE;
+      t_node->qry->rtype = RPASS;
+      work_queue.add_query(t_node->qry);
+    }
+  }
+
+  pthread_mutex_unlock(&mtx);
+
+
 }

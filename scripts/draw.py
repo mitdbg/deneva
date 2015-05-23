@@ -10,6 +10,14 @@ rename = {
     "average": "   avg   "
 }
 
+scatterconfig = {
+    'START': {'color':'g', 'marker':'o','alpha':0.5},
+    'ABORT': {'color':'r', 'marker':'x','alpha':1.0},
+    'COMMIT': {'color':'b', 'marker':'o','alpha':0.5},
+    'LOCK': {'color':'y', 'marker':'+','alpha':1.0},
+    'UNLOCK': {'color':'c', 'marker':'s','alpha':1.0},
+}
+
 lineconfig = {
 # CC Algos
     'DL_DETECT'     : "ls='-', lw=2, color='#f15854', marker='o', ms=4",
@@ -322,4 +330,67 @@ def draw_2line(x, y1, y2, figname="noname", ylimit=None):
 
     savefig('../figs/' + figname + '.pdf', bbox_inches='tight')
     plt.close()
+
+def draw_scatter(fname, data, xticks, 
+        title = None,
+        xlabels = None,
+        bbox=(0.9,0.95), ncol=1, 
+        ylab='Txn IDs', logscale=False, 
+        logscalex = False,
+        ylimit=0, xlimit=None, xlab='Time',
+        legend=True, linenames = None, figsize=(23/3, 10/3), styles=None) :
+    fig = figure(figsize=figsize)
+    thr = [0] * len(xticks)
+    lines = [0] * len(data)
+    ax = plt.axes()
+    if logscale :
+        ax.set_yscale('log')
+    if logscalex:
+        ax.set_xscale('log')
+    n = 0
+    if xlabels != None :
+        ax.set_xticklabels(xlabels) 
+
+#exec "lines[n], = plot(intlab, data[key], %s)" % style
+    for i in range(0,len(linenames)):
+#exec "lines[n], = scatter(xticks[i], data[i], c=colors[i])"
+        c = scatterconfig[linenames[i]]['color']
+        m = scatterconfig[linenames[i]]['marker']
+        a = scatterconfig[linenames[i]]['alpha']
+        lines[i] = plt.scatter(xticks[i],data[i],color=c,marker=m,alpha=a)
+
+    if ylimit != 0:
+        ylim(ylimit)
+    if xlimit != None:
+        xlim(xlimit)
+    plt.gca().set_ylim(bottom=0)
+    ylabel(ylab)
+    xlabel(xlab)
+    if not logscale:
+        ticklabel_format(axis='y', style='plain')
+        #ticklabel_format(axis='y', style='sci', scilimits=(-3,5))
+#if logscalex:
+#ax.get_xaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
+
+    start,end=ax.get_xlim()
+    ax.xaxis.set_ticks(np.arange(start,end,100000))
+
+    if legend :
+        fig.legend(lines, linenames, bbox_to_anchor = bbox, prop={'size':9}, ncol=ncol)
+
+    subplots_adjust(left=0.18, bottom=0.15, right=0.9, top=None)
+    if title:
+        ax.set_title("\n".join(wrap(title)))
+
+    axes = ax.get_axes()
+    axes.yaxis.grid(True,
+        linestyle='-',
+        which='major',
+        color='0.75'
+    )
+    ax.set_axisbelow(True)
+
+    savefig('../figs/' + fname +'.pdf', bbox_inches='tight')
+    plt.close()
+
 

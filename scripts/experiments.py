@@ -12,21 +12,22 @@ fmt6 = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","N
 
 
 
-nnodes=[1]
-#nnodes=[4,9]
-nmpr= [0]
-#nmpr= range(0,11,5)
+nnodes=[2]
+#nnodes=[1,2,4,9]
+#nmpr= [5]
+nmpr= range(0,6,2)
 #nmpr=[1] + range(0,11,5)
-nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE']
+nalgos=['HSTORE','HSTORE_SPEC']
+#nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE','HSTORE_SPEC']
 nthreads=[1]
 #nthreads=[1,2]
 nwfs=[64]
-#ntifs=[1,4]
-ntifs=[1]
-#nnet_delay=['0UL','50000UL']
+ntifs=[4]
+#ntifs=[1,4,8,16,32]
+ntxn=100000
+nnet_delay=['100000UL']
 #nnet_delay=['0UL','50000UL','100000UL','500000UL']
-ntxn=1000000
-nnet_delay=['0UL','50000UL','100000UL','500000UL','1000000UL','5000000UL']
+#nnet_delay=['0UL','50000UL','100000UL','500000UL','1000000UL','5000000UL']
 
 simple = [
 

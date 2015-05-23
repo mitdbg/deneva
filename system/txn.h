@@ -68,7 +68,7 @@ public:
 	bool volatile 	lock_abort; // forces another waiting txn to abort.
 	// [TIMESTAMP, MVCC]
 	bool volatile 	ts_ready; 
-	// [HSTORE]
+	// [HSTORE, HSTORE_SPEC]
 	int volatile 	ready_part;
 	int volatile 	ready_ulk;
   RC        validate();
@@ -100,6 +100,7 @@ public:
   
   // Internal state
   TxnState state;
+  uint64_t penalty_start;
 
 	// For VLL
 	TxnType 		vll_txn_type;

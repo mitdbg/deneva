@@ -106,8 +106,14 @@ void Remote_query::send_init(base_query * query,uint64_t dest_part_id) {
   printf("Sending RINIT %ld\n",query->txn_id);
 #endif
   uint64_t total = 3;
-#if CC_ALG == HSTORE
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
   total += 3;
+#endif
+#if CC_ALG == AVOID
+  uint64_t * keys;
+  tpcc_query * m_query = (tpcc_query *)query;
+  uint64_t k = m_query->get_keys(&keys,&k);
+  total += k + 2;
 #endif
 	void ** data = new void *[total];
 	int * sizes = new int [total];
@@ -125,7 +131,7 @@ void Remote_query::send_init(base_query * query,uint64_t dest_part_id) {
 	data[num] = &query->ts;
 	sizes[num++] = sizeof(ts_t);
 
-#if CC_ALG == HSTORE
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
   uint64_t _dest_part_id = dest_part_id;
   uint64_t _part_id = GET_PART_ID(0,g_node_id);
   uint64_t _part_cnt = 1; // FIXME
@@ -135,6 +141,18 @@ void Remote_query::send_init(base_query * query,uint64_t dest_part_id) {
 	sizes[num++] = sizeof(uint64_t);
 	data[num] = &_dest_part_id;
 	sizes[num++] = sizeof(uint64_t);
+#endif
+
+#if CC_ALG == AVOID
+  TPCCTxnType type = m_query->txn_type;
+  data[num] = &type;
+  sizes[num++] = sizeof(TPCCTxnType);
+  data[num] = &k;
+  sizes[num++] = sizeof(uint64_t);
+  for(int i;i<k; i++) {
+    data[num] = keys[i];
+    sizes[num++] = sizeof(uint64_t);
+  }
 #endif
 
   send_remote_query(GET_NODE_ID(dest_part_id),data,sizes,num);
@@ -210,7 +228,7 @@ base_query * Remote_query::unpack(void * d, int len) {
     case RINIT:
 	    memcpy(&query->ts,&data[ptr],sizeof(ts_t));
 	    ptr += sizeof(ts_t);
-#if CC_ALG == HSTORE
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
 	memcpy(&query->pid,&data[ptr],sizeof(query->pid));
 	ptr += sizeof(query->pid);
 	memcpy(&query->part_cnt,&data[ptr],sizeof(query->part_cnt));
@@ -223,29 +241,31 @@ base_query * Remote_query::unpack(void * d, int len) {
 	}
 
 #endif
+#if CC_ALG == AVOID
+	memcpy(&query->t_type,&data[ptr],sizeof(query->txn_type));
+	ptr += sizeof(query->txn_type);
+  uint64_t k;
+	memcpy(&query->num_keys,&data[ptr],sizeof(uint64_t));
+	ptr += sizeof(uint64_t);
+  query->keys = mem_allocator.alloc(sizeof(uint64_t) * query->num_keys, 0);;
+  for(uint64_t i; i < query->num_keys; i++) {
+	  memcpy(&query->keys[i],&data[ptr],sizeof(uint64_t));
+	  ptr += sizeof(uint64_t);
+  }
+#endif
       break;
     case RPREPARE:
       break;
-#if CC_ALG == HSTORE
-		case RLK:
-		case RULK:
-			part_lock_man.unpack(query,data);
-			break;
-		case RLK_RSP:
-		case RULK_RSP: 
-			part_lock_man.unpack_rsp(query,data);
-			break;
-#endif
 		case RQRY: {
 #if WORKLOAD == TPCC
-			tpcc_query * m_query = new tpcc_query;
+      tpcc_query * m_query = new tpcc_query;
 #endif
 			m_query->unpack(query,data);
 			break;
 							 }
 		case RQRY_RSP: {
 #if WORKLOAD == TPCC
-			tpcc_query * m_query = new tpcc_query;
+      tpcc_query * m_query = new tpcc_query;
 #endif
 			m_query->unpack_rsp(query,data);
 			break;
@@ -256,7 +276,7 @@ base_query * Remote_query::unpack(void * d, int len) {
     case RACK:
 	    memcpy(&rc,&data[ptr],sizeof(RC));
 	    ptr += sizeof(RC);
-      if(rc == Abort) {
+      if(rc == Abort || query->rc == WAIT || query->rc == WAIT_REM) {
         query->rc = rc;
       }
       break;

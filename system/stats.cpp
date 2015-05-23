@@ -3,10 +3,14 @@
 #include "stats.h"
 #include "mem_alloc.h"
 
-void StatsArr::init() {
+void StatsArr::init(uint64_t size,StatsArrType type) {
 	arr = (uint64_t *)
-		mem_allocator.alloc(sizeof(uint64_t) * STAT_ARR_SIZE, 0);
-  size = STAT_ARR_SIZE;
+		mem_allocator.alloc(sizeof(uint64_t) * (size+1), 0);
+  for(uint64_t i=0;i<size+1;i++) {
+    arr[i] = 0;
+  }
+  this->size = size+1;
+  this->type = type;
   cnt = 0;
 }
 
@@ -14,20 +18,45 @@ void StatsArr::resize() {
   size = size * 2;
 	arr = (uint64_t *)
 		mem_allocator.realloc(arr,sizeof(uint64_t) * size, 0);
+  for(uint64_t i=size/2;i<size;i++) {
+    arr[i] = 0;
+  }
 }
 
 void StatsArr::insert(uint64_t item) {
-  /*
-  if(cnt == size)
-    resize();
-  arr[cnt++] = item;
-  */
+  if(type == ArrIncr) {
+    if(cnt == size)
+      resize();
+    arr[cnt++] = item;
+  }
+  else if(type == ArrInsert) {
+    /*
+    while(item >= size) {
+      resize();
+    }
+    */
+    if(item >= size) {
+      arr[size-1]++;
+    }
+    else {
+      arr[item]++;
+    }
+    cnt++;
+  }
 }
 
 void StatsArr::print(FILE * f) {
-	for (UInt32 i = 0; i < cnt; i ++) {
-	  fprintf(f,"%ld,", arr[i]);
-	}
+  if(type == ArrIncr) {
+	  for (UInt32 i = 0; i < cnt; i ++) {
+	    fprintf(f,"%ld,", arr[i]);
+	  }
+  }
+  else if(type == ArrInsert) {
+	  for (UInt64 i = 0; i < size; i ++) {
+      if(arr[i] > 0)
+	      fprintf(f,"%ld=%ld,", i,arr[i]);
+	  }
+  }
 }
 
 void Stats_thd::init(uint64_t thd_id) {
@@ -38,19 +67,19 @@ void Stats_thd::init(uint64_t thd_id) {
 		mem_allocator.alloc(sizeof(uint64_t) * MAX_TXN_PER_PART, thd_id);
 #endif
 
-  all_abort.init();
-  w_cflt.init();
-  d_cflt.init();
-  cnp_cflt.init();
-  c_cflt.init();
-  ol_cflt.init();
-  s_cflt.init();
-  w_abrt.init();
-  d_abrt.init();
-  cnp_abrt.init();
-  c_abrt.init();
-  ol_abrt.init();
-  s_abrt.init();
+  all_abort.init(STAT_ARR_SIZE,ArrInsert);
+  w_cflt.init(WH_TAB_SIZE,ArrInsert);
+  d_cflt.init(DIST_TAB_SIZE,ArrInsert);
+  cnp_cflt.init(CUST_TAB_SIZE,ArrInsert);
+  c_cflt.init(CUST_TAB_SIZE,ArrInsert);
+  ol_cflt.init(ITEM_TAB_SIZE,ArrInsert);
+  s_cflt.init(STOC_TAB_SIZE,ArrInsert);
+  w_abrt.init(WH_TAB_SIZE,ArrInsert);
+  d_abrt.init(DIST_TAB_SIZE,ArrInsert);
+  cnp_abrt.init(CUST_TAB_SIZE,ArrInsert);
+  c_abrt.init(CUST_TAB_SIZE,ArrInsert);
+  ol_abrt.init(ITEM_TAB_SIZE,ArrInsert);
+  s_abrt.init(STOC_TAB_SIZE,ArrInsert);
 
 }
 
@@ -60,11 +89,14 @@ void Stats_thd::clear() {
 	txn_abort_cnt = 0;
 	tot_run_time = 0;
 	run_time = 0;
+	time_clock_wait = 0;
+	time_clock_rwait = 0;
 	time_work = 0;
 	time_man = 0;
 	time_rqry = 0;
 	time_lock_man = 0;
-	rtime_lock_man = 0;
+	time_clock_wait = 0;
+	time_clock_rwait = 0;
 	debug1 = 0;
 	debug2 = 0;
 	debug3 = 0;
@@ -86,26 +118,30 @@ void Stats_thd::clear() {
 	time_abort = 0;
 	time_cleanup = 0;
 	time_wait = 0;
-	rtime_wait_lock = 0;
+	time_wait_lock_rem = 0;
 	time_wait_lock = 0;
 	time_wait_rem = 0;
+  time_tport_send = 0;
+  time_tport_rcv = 0;
+  time_validate = 0;
 	time_ts_alloc = 0;
 	latency = 0;
 	tport_lat = 0;
 	time_query = 0;
 	rtime_proc = 0;
-	rtime_unpack = 0;
-	rtime_unpack_ndest = 0;
+	time_unpack = 0;
 	lock_diff = 0;
   qq_full = 0;
 
+  cflt_cnt = 0;
 	mpq_cnt = 0;
 	msg_bytes = 0;
 	msg_sent_cnt = 0;
 	msg_rcv_cnt = 0;
-	time_msg_wait = 0;
-	time_rem_req = 0;
-	time_rem = 0;
+	time_msg_sent = 0;
+
+  spec_abort_cnt = 0;
+  spec_commit_cnt = 0;
 
 }
 
@@ -170,13 +206,6 @@ void Stats::add_lat(uint64_t thd_id, uint64_t latency) {
 
 void Stats::commit(uint64_t thd_id) {
 	if (STATS_ENABLE) {
-		/*
-		_stats[thd_id]->time_man += tmp_stats[thd_id]->time_man;
-		_stats[thd_id]->time_index += tmp_stats[thd_id]->time_index;
-		_stats[thd_id]->time_wait += tmp_stats[thd_id]->time_wait;
-		_stats[thd_id]->time_wait_lock += tmp_stats[thd_id]->time_wait_lock;
-		_stats[thd_id]->time_wait_rem += tmp_stats[thd_id]->time_wait_rem;
-		*/
 		_stats[thd_id]->mpq_cnt += tmp_stats[thd_id]->mpq_cnt;
 		tmp_stats[thd_id]->init();
 	}
@@ -189,123 +218,107 @@ void Stats::abort(uint64_t thd_id) {
 
 void Stats::print_prog(uint64_t tid) {
 	FILE * outf;
-	if (output_file != NULL) {
+	if (output_file != NULL) 
 		outf = fopen(output_file, "w");
-		fprintf(outf, "[prog %ld] txn_cnt=%ld,abort_cnt=%ld,txn_abort_cnt=%ld"
-			",tot_run_time=%f,run_time=%f,time_wait=%f,time_wait_lock=%f,rtime_wait_lock=%f,time_wait_rem=%f,time_ts_alloc=%f"
+  else 
+    outf = stdout;
+  uint64_t qry_cnt = _stats[tid]->rtxn +_stats[tid]->rqry_rsp +_stats[tid]->rack +_stats[tid]->rinit +_stats[tid]->rqry +_stats[tid]->rprep +_stats[tid]->rfin;
+	fprintf(outf, "[prog %ld] "
+      "txn_cnt=%ld"
+			",clock_time=%f"
+      ",abort_cnt=%ld"
+      ",txn_abort_cnt=%ld"
+      ",latency=%f"
+      ",run_time=%f"
+      ",cflt_cnt=%ld"
+			",mpq_cnt=%ld"
+      ",msg_bytes=%ld"
+      ",msg_rcv=%ld"
+      ",msg_sent=%ld"
+      ",qq_full=%f"
+      ",qry_cnt=%ld"
+      ",qry_rtxn=%ld"
+      ",qry_rqry_rsp=%ld"
+      ",qry_rack=%ld"
+      ",qry_rinit=%ld"
+      ",qry_rqry=%ld"
+      ",qry_rprep=%ld"
+      ",qry_rfin=%ld"
+      ",spec_abort_cnt=%ld"
+      ",spec_commit_cnt=%ld"
+      ",time_abort=%f"
+      ",time_cleanup=%f"
+			",time_index=%f"
+      ",time_lock_man=%f"
+			",time_man=%f"
+			",time_msg_sent=%f"
+      ",time_tport_send=%f"
+      ",time_tport_rcv=%f"
+      ",time_ts_alloc=%f"
+      ",time_clock_wait=%f"
+      ",time_clock_rwait=%f"
+      ",time_validate=%f"
+      ",time_wait=%f"
+      ",time_wait_lock=%f"
+      ",time_wait_lock_rem=%f"
+      ",time_wait_rem=%f"
       ",time_work=%f"
-			",time_man=%f,time_rqry=%f,time_lock_man=%f,rtime_lock_man=%f"
-			",time_index=%f,rtime_index=%f,time_abort=%f,time_cleanup=%f,latency=%f,tport_lat=%f"
-			",deadlock_cnt=%ld,cycle_detect=%ld,dl_detect_time=%f,dl_wait_time=%f"
-			",time_query=%f,rtime_proc=%f,rtime_unpack=%f,rtime_unpack_ndest=%f"
-			",mpq_cnt=%ld,msg_bytes=%ld,msg_sent=%ld,msg_rcv=%ld"
-			",time_msg_wait=%f,time_req_req=%f,time_rem=%f,lock_diff=%f,qq_full=%f"
-			",debug1=%f,debug2=%f,debug3=%f,debug4=%f,debug5=%f\n",
+      ",time_rqry=%f"
+      ",tport_lat=%f"
+			"\n",
       tid,
 			_stats[tid]->txn_cnt, 
+			(_stats[tid]->tot_run_time ) / BILLION,
 			_stats[tid]->abort_cnt,
 			_stats[tid]->txn_abort_cnt,
-			(_stats[tid]->tot_run_time ) / BILLION,
-			_stats[tid]->run_time / BILLION,
-			_stats[tid]->time_wait / BILLION,
-			_stats[tid]->time_wait_lock / BILLION,
-			_stats[tid]->rtime_wait_lock / BILLION,
-			_stats[tid]->time_wait_rem / BILLION,
-			((float)_stats[tid]->time_ts_alloc) / BILLION,
-			_stats[tid]->time_work / BILLION,
-			_stats[tid]->time_man / BILLION,
-			_stats[tid]->time_rqry / BILLION,
-			_stats[tid]->time_lock_man / BILLION,
-			_stats[tid]->rtime_lock_man / BILLION,
-			_stats[tid]->time_index / BILLION,
-			_stats[tid]->rtime_index / BILLION,
-			_stats[tid]->time_abort / BILLION,
-			_stats[tid]->time_cleanup / BILLION,
 			((float)_stats[tid]->latency) / BILLION / _stats[tid]->txn_cnt,
-			_stats[tid]->tport_lat / BILLION / _stats[tid]->msg_rcv_cnt,
-			deadlock,
-			cycle_detect,
-			dl_detect_time / BILLION,
-			dl_wait_time / BILLION,
-			_stats[tid]->time_query / BILLION,
-			_stats[tid]->rtime_proc / BILLION,
-			_stats[tid]->rtime_unpack / BILLION,
-			_stats[tid]->rtime_unpack_ndest / BILLION,
+			_stats[tid]->run_time / BILLION,
+			_stats[tid]->cflt_cnt, 
 			_stats[tid]->mpq_cnt, 
 			_stats[tid]->msg_bytes, 
-			_stats[tid]->msg_sent_cnt, 
 			_stats[tid]->msg_rcv_cnt, 
-			_stats[tid]->time_msg_wait / BILLION,
-			_stats[tid]->time_rem_req / BILLION,
-			_stats[tid]->time_rem / BILLION, 
-			_stats[tid]->lock_diff / BILLION,
+			_stats[tid]->msg_sent_cnt, 
 			_stats[tid]->qq_full / BILLION,
-			((float)_stats[tid]->debug1) / BILLION,
-			((float)_stats[tid]->debug2) / BILLION,
-			((float)_stats[tid]->debug3) / BILLION,
-			((float)_stats[tid]->debug4) / BILLION,
-			((float)_stats[tid]->debug5) / BILLION
+			qry_cnt,
+			_stats[tid]->rtxn,
+			_stats[tid]->rqry_rsp,
+			_stats[tid]->rack,
+			_stats[tid]->rinit,
+			_stats[tid]->rqry,
+			_stats[tid]->rprep,
+			_stats[tid]->rfin,
+			_stats[tid]->spec_abort_cnt, 
+			_stats[tid]->spec_commit_cnt, 
+			_stats[tid]->time_abort / BILLION,
+			_stats[tid]->time_cleanup / BILLION,
+			_stats[tid]->time_index / BILLION,
+			_stats[tid]->time_lock_man / BILLION,
+			_stats[tid]->time_man / BILLION,
+			_stats[tid]->time_msg_sent / BILLION,
+			_stats[tid]->time_tport_send / BILLION,
+			_stats[tid]->time_tport_rcv / BILLION,
+			((float)_stats[tid]->time_ts_alloc) / BILLION,
+			_stats[tid]->time_clock_wait / BILLION,
+			_stats[tid]->time_clock_rwait / BILLION,
+			_stats[tid]->time_validate / BILLION,
+			_stats[tid]->time_wait / BILLION,
+			_stats[tid]->time_wait_lock / BILLION,
+			_stats[tid]->time_wait_lock_rem / BILLION,
+			_stats[tid]->time_wait_rem / BILLION,
+			_stats[tid]->time_work / BILLION,
+			_stats[tid]->time_rqry / BILLION,
+			_stats[tid]->tport_lat / BILLION / _stats[tid]->msg_rcv_cnt
 		);
+  print_cnts();
+	if (output_file != NULL) 
 		fclose(outf);
-	}
-	printf("[prog %ld] txn_cnt=%ld,abort_cnt=%ld,txn_abort_cnt=%ld"
-		",tot_run_time=%f,run_time=%f,time_wait=%f,time_wait_lock=%f,rtime_wait_lock=%f,time_wait_rem=%f,time_ts_alloc=%f"
-    ",time_work=%f"
-		",time_man=%f,time_rqry=%f,time_lock_man=%f,rtime_lock_man=%f"
-		",time_index=%f,rtime_index=%f,time_abort=%f,time_cleanup=%f,latency=%f,tport_lat=%f"
-		",deadlock_cnt=%ld,cycle_detect=%ld,dl_detect_time=%f,dl_wait_time=%f"
-		",time_query=%f,rtime_proc=%f,rtime_unpack=%f,rtime_unpack_ndest=%f"
-		",mpq_cnt=%ld,msg_bytes=%ld,msg_sent=%ld,msg_rcv=%ld"
-		",time_msg_wait=%f,time_req_req=%f,time_rem=%f,lock_diff=%f,qq_full=%f"
-		",debug1=%f,debug2=%f,debug3=%f,debug4=%f,debug5=%f\n",
-       tid,
-			_stats[tid]->txn_cnt, 
-			_stats[tid]->abort_cnt,
-			_stats[tid]->txn_abort_cnt,
-			(_stats[tid]->tot_run_time ) / BILLION,
-			_stats[tid]->run_time / BILLION,
-			_stats[tid]->time_wait / BILLION,
-			_stats[tid]->time_wait_lock / BILLION,
-			_stats[tid]->rtime_wait_lock / BILLION,
-			_stats[tid]->time_wait_rem / BILLION,
-			((float)_stats[tid]->time_ts_alloc) / BILLION,
-			_stats[tid]->time_work / BILLION,
-			_stats[tid]->time_man / BILLION,
-			_stats[tid]->time_rqry / BILLION,
-			_stats[tid]->time_lock_man / BILLION,
-			_stats[tid]->rtime_lock_man / BILLION,
-			_stats[tid]->time_index / BILLION,
-			_stats[tid]->rtime_index / BILLION,
-			_stats[tid]->time_abort / BILLION,
-			_stats[tid]->time_cleanup / BILLION,
-			((float)_stats[tid]->latency) / BILLION / _stats[tid]->txn_cnt,
-			_stats[tid]->tport_lat / BILLION / _stats[tid]->msg_rcv_cnt,
-			deadlock,
-			cycle_detect,
-			dl_detect_time / BILLION,
-			dl_wait_time / BILLION,
-			_stats[tid]->time_query / BILLION,
-			_stats[tid]->rtime_proc / BILLION,
-			_stats[tid]->rtime_unpack / BILLION,
-			_stats[tid]->rtime_unpack_ndest / BILLION,
-			_stats[tid]->mpq_cnt, 
-			_stats[tid]->msg_bytes, 
-			_stats[tid]->msg_sent_cnt, 
-			_stats[tid]->msg_rcv_cnt, 
-			_stats[tid]->time_msg_wait / BILLION,
-			_stats[tid]->time_rem_req / BILLION,
-			_stats[tid]->time_rem / BILLION, 
-			_stats[tid]->lock_diff / BILLION,
-			_stats[tid]->qq_full / BILLION,
-			((float)_stats[tid]->debug1) / BILLION,
-			((float)_stats[tid]->debug2) / BILLION,
-			((float)_stats[tid]->debug3) / BILLION,
-			((float)_stats[tid]->debug4) / BILLION,
-			((float)_stats[tid]->debug5) / BILLION
-    );
-  fflush(stdout);
+  else
+    fflush(stdout);
 }
+
 void Stats::print() {
+
+  fflush(stdout);
 	
 	uint64_t total_txn_cnt = 0;
 	uint64_t total_abort_cnt = 0;
@@ -316,36 +329,50 @@ void Stats::print() {
 	double total_time_man = 0;
 	double total_time_rqry = 0;
 	double total_time_lock_man = 0;
-	double total_rtime_lock_man = 0;
+	double total_time_clock_wait = 0;
+	double total_time_clock_rwait = 0;
 	double total_debug1 = 0;
 	double total_debug2 = 0;
 	double total_debug3 = 0;
 	double total_debug4 = 0;
 	double total_debug5 = 0;
-	double total_lock_diff = 0;
 	double total_qq_full = 0;
 	double total_time_index = 0;
 	double total_rtime_index = 0;
 	double total_time_abort = 0;
 	double total_time_cleanup = 0;
 	double total_time_wait = 0;
-	double total_rtime_wait_lock = 0;
+	double total_time_wait_lock_rem = 0;
 	double total_time_wait_lock = 0;
 	double total_time_wait_rem = 0;
+	double total_time_tport_send = 0;
+	double total_time_tport_rcv = 0;
+	double total_time_validate = 0;
 	double total_time_ts_alloc = 0;
 	double total_latency = 0;
 	double total_tport_lat = 0;
 	double total_time_query = 0;
 	double total_rtime_proc = 0;
-	double total_rtime_unpack = 0;
-	double total_rtime_unpack_ndest = 0;
+	double total_time_unpack = 0;
+	uint64_t total_cflt_cnt = 0;
+	uint64_t total_spec_commit_cnt = 0;
+	uint64_t total_spec_abort_cnt = 0;
 	uint64_t total_mpq_cnt = 0;
 	uint64_t total_msg_bytes = 0;
 	uint64_t total_msg_sent_cnt = 0;
 	uint64_t total_msg_rcv_cnt = 0;
-	double total_time_msg_wait = 0;
-	double total_time_rem_req = 0;
-	double total_time_rem = 0;
+	double total_time_msg_sent = 0;
+
+
+  uint64_t total_rqry = 0;
+  uint64_t total_rqry_rsp = 0;
+  uint64_t total_rtxn = 0;
+  uint64_t total_rinit = 0;
+  uint64_t total_rprep = 0;
+  uint64_t total_rfin = 0;
+  uint64_t total_rack = 0;
+  uint64_t total_qry_cnt = 0;
+
 	for (uint64_t tid = 0; tid < g_thread_cnt + g_rem_thread_cnt; tid ++) {
 		total_txn_cnt += _stats[tid]->txn_cnt;
 		total_abort_cnt += _stats[tid]->abort_cnt;
@@ -356,38 +383,50 @@ void Stats::print() {
 		total_time_man += _stats[tid]->time_man;
 		total_time_rqry += _stats[tid]->time_rqry;
 		total_time_lock_man += _stats[tid]->time_lock_man;
-		total_rtime_lock_man += _stats[tid]->rtime_lock_man;
+		total_time_clock_wait += _stats[tid]->time_clock_wait;
+		total_time_clock_rwait += _stats[tid]->time_clock_rwait;
 		total_debug1 += _stats[tid]->debug1;
 		total_debug2 += _stats[tid]->debug2;
 		total_debug3 += _stats[tid]->debug3;
 		total_debug4 += _stats[tid]->debug4;
 		total_debug5 += _stats[tid]->debug5;
-		total_lock_diff += _stats[tid]->lock_diff;
 		total_qq_full += _stats[tid]->qq_full;
+		total_rtxn += _stats[tid]->rtxn;
+		total_rqry_rsp += _stats[tid]->rqry_rsp;
+		total_rack += _stats[tid]->rack;
+		total_rinit += _stats[tid]->rinit;
+		total_rqry += _stats[tid]->rqry;
+		total_rprep += _stats[tid]->rprep;
+		total_rfin += _stats[tid]->rfin;
 		total_time_index += _stats[tid]->time_index;
 		total_rtime_index += _stats[tid]->rtime_index;
 		total_time_abort += _stats[tid]->time_abort;
 		total_time_cleanup += _stats[tid]->time_cleanup;
 		total_time_wait += _stats[tid]->time_wait;
-		total_rtime_wait_lock += _stats[tid]->rtime_wait_lock;
+		total_time_wait_lock_rem += _stats[tid]->time_wait_lock_rem;
 		total_time_wait_lock += _stats[tid]->time_wait_lock;
 		total_time_wait_rem += _stats[tid]->time_wait_rem;
+		total_time_tport_send += _stats[tid]->time_tport_send;
+		total_time_tport_rcv += _stats[tid]->time_tport_rcv;
+		total_time_validate += _stats[tid]->time_validate;
 		total_time_ts_alloc += _stats[tid]->time_ts_alloc;
 		total_latency += _stats[tid]->latency;
 		total_tport_lat += _stats[tid]->tport_lat;
 		total_time_query += _stats[tid]->time_query;
 		total_rtime_proc += _stats[tid]->rtime_proc;
-		total_rtime_unpack += _stats[tid]->rtime_unpack;
-		total_rtime_unpack_ndest += _stats[tid]->rtime_unpack_ndest;
+		total_time_unpack += _stats[tid]->time_unpack;
 
+		total_cflt_cnt += _stats[tid]->cflt_cnt;
+		total_spec_commit_cnt += _stats[tid]->spec_commit_cnt;
+		total_spec_abort_cnt += _stats[tid]->spec_abort_cnt;
 		total_mpq_cnt += _stats[tid]->mpq_cnt;
 		total_msg_bytes += _stats[tid]->msg_bytes;
 		total_msg_sent_cnt += _stats[tid]->msg_sent_cnt;
 		total_msg_rcv_cnt += _stats[tid]->msg_rcv_cnt;
-		total_time_msg_wait += _stats[tid]->time_msg_wait;
-		total_time_rem_req += _stats[tid]->time_rem_req;
-		total_time_rem += _stats[tid]->time_rem;
+		total_time_msg_sent += _stats[tid]->time_msg_sent;
 		
+  total_qry_cnt += _stats[tid]->rtxn +_stats[tid]->rqry_rsp +_stats[tid]->rack +_stats[tid]->rinit +_stats[tid]->rqry +_stats[tid]->rprep +_stats[tid]->rfin;
+
 		printf("[tid=%ld] txn_cnt=%ld,abort_cnt=%ld\n", 
 			tid,
 			_stats[tid]->txn_cnt,
@@ -395,120 +434,104 @@ void Stats::print() {
 		);
 	}
 	FILE * outf;
-	if (output_file != NULL) {
+	if (output_file != NULL) 
 		outf = fopen(output_file, "w");
-		fprintf(outf, "[summary] txn_cnt=%ld,abort_cnt=%ld,txn_abort_cnt=%ld"
-			",tot_run_time=%f,run_time=%f,time_wait=%f,time_wait_lock=%f,rtime_wait_lock=%f,time_wait_rem=%f,time_ts_alloc=%f"
+  else
+    outf = stdout;
+	fprintf(outf, "[summary] "
+      "txn_cnt=%ld"
+			",clock_time=%f"
+      ",abort_cnt=%ld"
+      ",txn_abort_cnt=%ld"
+      ",latency=%f"
+      ",run_time=%f"
+      ",cflt_cnt=%ld"
+			",mpq_cnt=%ld"
+      ",msg_bytes=%ld"
+      ",msg_rcv=%ld"
+      ",msg_sent=%ld"
+      ",qq_full=%f"
+      ",qry_cnt=%ld"
+      ",qry_rtxn=%ld"
+      ",qry_rqry_rsp=%ld"
+      ",qry_rack=%ld"
+      ",qry_rinit=%ld"
+      ",qry_rqry=%ld"
+      ",qry_rprep=%ld"
+      ",qry_rfin=%ld"
+      ",spec_abort_cnt=%ld"
+      ",spec_commit_cnt=%ld"
+      ",time_abort=%f"
+      ",time_cleanup=%f"
+			",time_index=%f"
+      ",time_lock_man=%f"
+			",time_man=%f"
+			",time_msg_sent=%f"
+      ",time_tport_send=%f"
+      ",time_tport_rcv=%f"
+      ",time_ts_alloc=%f"
+      ",time_clock_wait=%f"
+      ",time_clock_rwait=%f"
+      ",time_validate=%f"
+      ",time_wait=%f"
+      ",time_wait_lock=%f"
+      ",time_wait_lock_rem=%f"
+      ",time_wait_rem=%f"
       ",time_work=%f"
-			",time_man=%f,time_rqry=%f,time_lock_man=%f,rtime_lock_man=%f"
-			",time_index=%f,rtime_index=%f,time_abort=%f,time_cleanup=%f,latency=%f,tport_lat=%f"
-			",deadlock_cnt=%ld,cycle_detect=%ld,dl_detect_time=%f,dl_wait_time=%f"
-			",time_query=%f,rtime_proc=%f,rtime_unpack=%f,rtime_unpack_ndest=%f"
-			",mpq_cnt=%ld,msg_bytes=%ld,msg_sent=%ld,msg_rcv=%ld"
-			",time_msg_wait=%f,time_req_req=%f,time_rem=%f,lock_diff=%f,qq_full=%f"
-			",debug1=%f,debug2=%f,debug3=%f,debug4=%f,debug5=%f\n",
+      ",time_rqry=%f"
+      ",tport_lat=%f"
+			"\n",
 			total_txn_cnt, 
+			(total_tot_run_time / g_thread_cnt) / BILLION,
 			total_abort_cnt,
 			total_txn_abort_cnt,
-			(total_tot_run_time / g_thread_cnt) / BILLION,
-			total_run_time / BILLION,
-			total_time_wait / BILLION,
-			total_time_wait_lock / BILLION,
-			total_rtime_wait_lock / BILLION,
-			total_time_wait_rem / BILLION,
-			total_time_ts_alloc / BILLION,
-			total_time_work / BILLION,
-			total_time_man / BILLION,
-			total_time_rqry / BILLION,
-			total_time_lock_man / BILLION,
-			total_rtime_lock_man / BILLION,
-			//(total_time_man - total_time_wait - total_time_wait_lock) / BILLION,
-			total_time_index / BILLION,
-			total_rtime_index / BILLION,
-			total_time_abort / BILLION,
-			total_time_cleanup / BILLION,
 			total_latency / BILLION / total_txn_cnt,
-			total_tport_lat / BILLION / total_msg_rcv_cnt,
-			deadlock,
-			cycle_detect,
-			dl_detect_time / BILLION,
-			dl_wait_time / BILLION,
-			total_time_query / BILLION,
-			total_rtime_proc / BILLION,
-			total_rtime_unpack / BILLION,
-			total_rtime_unpack_ndest / BILLION,
+			total_run_time / BILLION,
+      total_cflt_cnt,
 			total_mpq_cnt, 
 			total_msg_bytes, 
-			total_msg_sent_cnt, 
 			total_msg_rcv_cnt, 
-			total_time_msg_wait / BILLION,
-			total_time_rem_req / BILLION,
-			total_time_rem / BILLION, 
-			total_lock_diff / BILLION,
+			total_msg_sent_cnt, 
 			total_qq_full / BILLION,
-			total_debug1 / BILLION,
-			total_debug2 / BILLION,
-			total_debug3 / BILLION,
-			total_debug4 / BILLION,
-			total_debug5 / BILLION
+			total_qry_cnt,
+			total_rtxn,
+			total_rqry_rsp ,
+			total_rack,
+			total_rinit,
+			total_rqry ,
+			total_rprep,
+			total_rfin ,
+      total_spec_abort_cnt,
+      total_spec_commit_cnt,
+			total_time_abort / BILLION,
+			total_time_cleanup / BILLION,
+			total_time_index / BILLION,
+			total_time_lock_man / BILLION,
+			total_time_man / BILLION,
+      total_time_msg_sent / BILLION,
+			total_time_tport_send / BILLION,
+			total_time_tport_rcv / BILLION,
+			total_time_ts_alloc / BILLION,
+      total_time_clock_wait / BILLION,
+      total_time_clock_rwait / BILLION,
+			total_time_validate / BILLION,
+			total_time_wait / BILLION,
+			total_time_wait_lock / BILLION,
+			total_time_wait_lock_rem / BILLION,
+			total_time_wait_rem / BILLION,
+			total_time_work / BILLION,
+			total_time_rqry / BILLION,
+			total_tport_lat / BILLION / total_msg_rcv_cnt
 		);
+	if (output_file != NULL) 
 		fclose(outf);
-	}
-	printf("[summary] txn_cnt=%ld,abort_cnt=%ld,txn_abort_cnt=%ld"
-		",tot_run_time=%f,run_time=%f,time_wait=%f,time_wait_lock=%f,rtime_wait_lock=%f,time_wait_rem=%f,time_ts_alloc=%f"
-    ",time_work=%f"
-		",time_man=%f,time_rqry=%f,time_lock_man=%f,rtime_lock_man=%f"
-		",time_index=%f,rtime_index=%f,time_abort=%f,time_cleanup=%f,latency=%f,tport_lat=%f"
-		",deadlock_cnt=%ld,cycle_detect=%ld,dl_detect_time=%f,dl_wait_time=%f"
-		",time_query=%f,rtime_proc=%f,rtime_unpack=%f,rtime_unpack_ndest=%f"
-		",mpq_cnt=%ld,msg_bytes=%ld,msg_sent=%ld,msg_rcv=%ld"
-		",time_msg_wait=%f,time_req_req=%f,time_rem=%f,lock_diff=%f,qq_full=%f"
-		",debug1=%f,debug2=%f,debug3=%f,debug4=%f,debug5=%f\n",
-		total_txn_cnt, 
-		total_abort_cnt,
-		total_txn_abort_cnt,
-		(total_tot_run_time / g_thread_cnt) / BILLION,
-		total_run_time / BILLION,
-		total_time_wait / BILLION,
-		total_time_wait_lock / BILLION,
-		total_rtime_wait_lock / BILLION,
-		total_time_wait_rem / BILLION,
-		total_time_ts_alloc / BILLION,
-		total_time_work / BILLION,
-		total_time_man / BILLION,
-		total_time_rqry / BILLION,
-		total_time_lock_man / BILLION,
-		total_rtime_lock_man / BILLION,
-		total_time_index / BILLION,
-		total_rtime_index / BILLION,
-		total_time_abort / BILLION,
-		total_time_cleanup / BILLION,
-		total_latency / BILLION / total_txn_cnt,
-		total_tport_lat / BILLION / total_msg_rcv_cnt,
-		deadlock,
-		cycle_detect,
-		dl_detect_time / BILLION,
-		dl_wait_time / BILLION,
-		total_time_query / BILLION,
-		total_rtime_proc / BILLION,
-		total_rtime_unpack / BILLION,
-		total_rtime_unpack_ndest / BILLION,
-		total_mpq_cnt, 
-		total_msg_bytes, 
-		total_msg_sent_cnt, 
-		total_msg_rcv_cnt, 
-		total_time_msg_wait / BILLION,
-		total_time_rem_req / BILLION,
-		total_time_rem / BILLION, 
-		total_lock_diff / BILLION,
-		total_qq_full / BILLION,
-		total_debug1 / BILLION,
-		total_debug2 / BILLION,
-		total_debug3 / BILLION,
-		total_debug4 / BILLION,
-		total_debug5 / BILLION 
-	);
 
+  print_cnts();
+	if (g_prt_lat_distr)
+		print_lat_distr();
+}
+
+void Stats::print_cnts() {
   uint64_t all_abort_cnt = 0;
   uint64_t w_cflt_cnt = 0;
   uint64_t d_cflt_cnt = 0;
@@ -540,12 +563,15 @@ void Stats::print() {
   printf("\n[all_abort %ld] ",all_abort_cnt);
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) 
     _stats[tid]->all_abort.print(stdout);
+  /*
   printf("\n[w_cflt %ld] ",w_cflt_cnt);
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) 
     _stats[tid]->w_cflt.print(stdout);
+    */
   printf("\n[d_cflt %ld] ",d_cflt_cnt);
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) 
     _stats[tid]->d_cflt.print(stdout);
+  /*
   printf("\n[cnp_cflt %ld] ",cnp_cflt_cnt);
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) 
     _stats[tid]->cnp_cflt.print(stdout);
@@ -555,15 +581,19 @@ void Stats::print() {
   printf("\n[ol_cflt %ld] ",ol_cflt_cnt);
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) 
     _stats[tid]->ol_cflt.print(stdout);
+    */
   printf("\n[s_cflt %ld] ",s_cflt_cnt);
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) 
     _stats[tid]->s_cflt.print(stdout);
+  /*
   printf("\n[w_abrt %ld] ",w_abrt_cnt);
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) 
     _stats[tid]->w_abrt.print(stdout);
+    */
   printf("\n[d_abrt %ld] ",d_abrt_cnt);
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) 
     _stats[tid]->d_abrt.print(stdout);
+  /*
   printf("\n[cnp_abrt %ld] ",cnp_abrt_cnt);
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) 
     _stats[tid]->cnp_abrt.print(stdout);
@@ -573,12 +603,13 @@ void Stats::print() {
   printf("\n[ol_abrt %ld] ",ol_abrt_cnt);
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) 
     _stats[tid]->ol_abrt.print(stdout);
+    */
   printf("\n[s_abrt %ld] ",s_abrt_cnt);
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) 
     _stats[tid]->s_abrt.print(stdout);
 
-	if (g_prt_lat_distr)
-		print_lat_distr();
+  printf("\n");
+
 }
 
 void Stats::print_lat_distr() {

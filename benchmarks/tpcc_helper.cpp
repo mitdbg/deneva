@@ -29,6 +29,30 @@ uint64_t custNPKey(char * c_last, uint64_t c_d_id, uint64_t c_w_id) {
 uint64_t stockKey(uint64_t s_i_id, uint64_t s_w_id) {
 	return s_w_id * g_max_items + s_i_id;
 }
+
+uint64_t w_from_distKey(uint64_t d_key) {
+  return d_key / DIST_PER_WARE;
+}
+
+uint64_t w_from_custKey(uint64_t c_key) {
+  return w_from_distKey(c_key / g_cust_per_dist);
+}
+
+uint64_t w_from_orderlineKey(uint64_t s_key) {
+  return w_from_distKey(s_key / g_cust_per_dist);
+}
+
+uint64_t w_from_orderPrimaryKey(uint64_t s_key) {
+  return w_from_orderlineKey(s_key);
+}
+
+uint64_t w_from_custNPKey(uint64_t cnp_key) {
+  return (cnp_key / DIST_PER_WARE) & 0x3ff;
+}
+
+uint64_t w_from_stockKey(uint64_t s_key) {
+  return s_key / g_max_items;
+}
 /*
 uint64_t orderKey(uint64_t o_id, uint64_t o_d_id, uint64_t o_w_id) {
 	return ((o_w_id * DIST_PER_WARE + o_d_id) * ORD_PER_DIST + o_id);
