@@ -70,10 +70,10 @@ void Transport::init(uint64_t node_id) {
 		s[i].sock.setsockopt(NN_SOL_SOCKET,NN_RCVTIMEO,&timeo,sizeof(timeo));
 	}
 
-	printf("Node ID: %d/%d\n",g_node_id,g_node_cnt);
+	printf("Node ID: %d/%d\n",g_node_id,g_node_cnt+g_client_node_cnt);
 
-	for(uint64_t i=0;i<g_node_cnt-1;i++) {
-		for(uint64_t j=i+1;j<g_node_cnt;j++) {
+	for(uint64_t i=0;i<g_node_cnt+g_client_node_cnt-1;i++) {
+		for(uint64_t j=i+1;j<g_node_cnt+g_client_node_cnt;j++) {
 			if(i != g_node_id && j != g_node_id) {
 				continue;
 			}
