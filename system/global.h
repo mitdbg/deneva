@@ -81,6 +81,13 @@ extern carbon_barrier_t enable_barrier;
 #endif
 
 /******************************************/
+// Client Global Data Structures/Params 
+/******************************************/
+extern UInt32 g_client_thread_cnt;
+extern UInt32 g_client_rem_thread_cnt;
+extern UInt32 g_client_node_cnt;
+
+/******************************************/
 // Global Parameter
 /******************************************/
 extern bool g_part_alloc;
@@ -102,7 +109,6 @@ extern ts_t g_dl_loop_detect;
 extern bool g_ts_batch_alloc;
 extern UInt32 g_ts_batch_num;
 extern UInt32 g_inflight_max;
-extern UInt32 g_client_node_cnt;
 
 extern bool g_hw_migrate;
 

@@ -44,13 +44,14 @@ RC thread_t::run_remote() {
 	stats.init(get_thd_id());
   // Send start msg to all nodes; wait for rsp from all nodes before continuing.
 //#if !TPORT_TYPE_IPC
-  int rsp_cnt = g_node_cnt - 1;
+  int rsp_cnt = g_node_cnt + g_client_node_cnt - 1;
   while(rsp_cnt > 0) {
 		m_query = tport_man.recv_msg();
-    if(m_query != NULL && m_query->rtype == INIT_DONE)
+    if(m_query != NULL && m_query->rtype == INIT_DONE) {
       rsp_cnt --;
-    else if(m_query != NULL)
+    } else if(m_query != NULL) {
       work_queue.add_query(m_query);
+    }
   }
 //#endif
 	pthread_barrier_wait( &warmup_bar );
@@ -113,10 +114,11 @@ RC thread_t::run() {
 
 //#if !TPORT_TYPE_IPC
   if( _thd_id == 0) {
-  for(uint64_t i = 0; i < g_node_cnt; i++) {
-    if(i != g_node_id)
-      rem_qry_man.send_init_done(i);
-  }
+    for(uint64_t i = 0; i < g_node_cnt+g_client_node_cnt; i++) {
+        if(i != g_node_id) {
+            rem_qry_man.send_init_done(i);
+        }
+    }
   }
 //#endif
 	pthread_barrier_wait( &warmup_bar );
@@ -144,7 +146,7 @@ RC thread_t::run() {
   //base_query * next_query = NULL;
   uint64_t txn_cnt = 0;
   uint64_t txn_st_cnt = 0;
-	uint64_t thd_txn_id = 0;
+  uint64_t thd_txn_id = 0;
   uint64_t starttime;
   uint64_t stoptime;
   uint64_t timespan;

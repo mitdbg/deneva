@@ -70,6 +70,8 @@ UInt32 g_req_per_query = REQ_PER_QUERY;
 UInt32 g_field_per_tuple = FIELD_PER_TUPLE;
 UInt32 g_init_parallelism = INIT_PARALLELISM;
 UInt32 g_client_node_cnt = CLIENT_NODE_CNT;
+UInt32 g_client_thread_cnt = CLIENT_THREAD_CNT;
+UInt32 g_client_rem_thread_cnt = CLIENT_REM_THREAD_CNT;
 
 UInt32 g_num_wh = NUM_WH;
 double g_perc_payment = PERC_PAYMENT;
