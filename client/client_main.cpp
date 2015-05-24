@@ -5,7 +5,7 @@
 #include "client_thread.h"
 #include "manager.h"
 #include "mem_alloc.h"
-#include "query.h"
+#include "client_query.h"
 #include "plock.h"
 #include "occ.h"
 #include "vll.h"
@@ -94,7 +94,7 @@ int main(int argc, char* argv[])
 	//// query_queue should be the last one to be initialized!!!
 	// because it collects txn latency
 	if (WORKLOAD != TEST) {
-		query_queue.init(m_wl);
+		client_query_queue.init(m_wl);
 	}
 	printf("Client query_queue initialized!\n");
     fflush(stdout);

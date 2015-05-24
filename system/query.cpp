@@ -68,6 +68,7 @@ void base_query::clear() {
   rtype = (RemReqType)-1;
   rc = RCOK;
   pid = UINT64_MAX;
+  client_id = UINT32_MAX;
 } 
 
 void base_query::update_rc(RC rc) {
@@ -144,4 +145,3 @@ void base_query::unpack_finish(base_query * query, void * d) {
     memcpy(&query->txn_id, &data[ptr], sizeof(uint64_t));
     ptr += sizeof(uint64_t);
 }
-

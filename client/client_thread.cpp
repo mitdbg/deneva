@@ -4,6 +4,7 @@
 #include "txn.h"
 #include "wl.h"
 #include "query.h"
+#include "client_query.h"
 #include "plock.h"
 #include "occ.h"
 #include "vll.h"
@@ -67,6 +68,10 @@ RC Client_thread_t::run_remote() {
 	rdm.init(get_thd_id());
 	RC rc = RCOK;
 	assert (rc == RCOK);
+
+    while (true) {
+        break;    
+    }
 //#if !NOGRAPHITE
 //	if (warmup_finish) {
 //   		CarbonEnableModelsBarrier(&enable_barrier);
@@ -139,6 +144,11 @@ RC Client_thread_t::run() {
 
 	myrand rdm;
 	rdm.init(get_thd_id());
+    base_query * m_query = NULL;
+    m_query = client_query_queue.get_next_query(_thd_id);
+    printf("Client sending query to node: %lu\n", GET_NODE_ID(m_query->pid));
+    m_query->client_query(m_query, GET_NODE_ID(m_query->pid));
+
 	//RC rc = RCOK;
 //#if CC_ALG == HSTORE|| CC_ALG == HSTORE_SPEC
 //	RC rc2 = RCOK;

@@ -13,9 +13,11 @@ enum RemReqType {INIT_DONE,RLK, RULK, RQRY, RFIN, RLK_RSP, RULK_RSP, RQRY_RSP, R
 class base_query {
 public:
 	virtual void init(uint64_t thd_id, workload * h_wl) = 0;
-  virtual void reset() = 0;
-  virtual void unpack_rsp(base_query * query, void * d) = 0;
-  virtual void unpack(base_query * query, void * d) = 0;
+    virtual void reset() = 0;
+    virtual void unpack_rsp(base_query * query, void * d) = 0;
+    virtual void unpack(base_query * query, void * d) = 0;
+    virtual void client_query(base_query * query, uint64_t dest_id) = 0; 
+    virtual void unpack_client(base_query * query, void * d) = 0; 
 	uint64_t waiting_time;
 	uint64_t part_num;
 	uint64_t * part_to_access;
@@ -33,6 +35,10 @@ public:
 	RemReqType rtype;
 	RC rc;
 	uint64_t pid;
+
+    // Client components
+    //uint32_t client_node;
+    uint32_t client_id;
 
   // Coordination Avoid
   uint64_t * keys;

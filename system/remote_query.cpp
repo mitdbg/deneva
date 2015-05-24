@@ -176,15 +176,15 @@ void Remote_query::send_remote_rsp(uint64_t dest_id, void ** data, int * sizes, 
 }
 
 base_query * Remote_query::unpack(void * d, int len) {
-  base_query * query;
+    base_query * query;
 	char * data = (char *) d;
 	uint64_t ptr = 0;
   
-  uint32_t dest_id;
-  uint32_t return_id;
-  txnid_t txn_id;
+    uint32_t dest_id;
+    uint32_t return_id;
+    txnid_t txn_id;
 	RemReqType rtype;
-  RC rc;
+    RC rc;
 
 	memcpy(&dest_id,&data[ptr],sizeof(uint32_t));
 	ptr += sizeof(uint32_t);
@@ -196,19 +196,19 @@ base_query * Remote_query::unpack(void * d, int len) {
 	ptr += sizeof(query->rtype);
   
 
-  if(rtype == RINIT || rtype == INIT_DONE) {
+    if(rtype == RINIT || rtype == INIT_DONE || rtype == RTXN) {
 #if WORKLOAD == TPCC
-	  query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), 0);
-    query->clear();
+	    query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), 0);
+        query->clear();
 #endif
-  } else {
-    query = txn_pool.get_qry(g_node_id,txn_id);
-  }
+    } else {
+        query = txn_pool.get_qry(g_node_id,txn_id);
+    }
 
-  query->dest_id = dest_id;
-  query->return_id = return_id;
-  query->txn_id = txn_id;
-  query->rtype = rtype;
+    query->dest_id = dest_id;
+    query->return_id = return_id;
+    query->txn_id = txn_id;
+    query->rtype = rtype;
 
   /*
 	memcpy(&query->dest_id,&data[ptr],sizeof(uint32_t));
@@ -225,66 +225,79 @@ base_query * Remote_query::unpack(void * d, int len) {
 		return NULL;
 
 	switch(query->rtype) {
-    case RINIT:
-	    memcpy(&query->ts,&data[ptr],sizeof(ts_t));
-	    ptr += sizeof(ts_t);
+        case RINIT:
+	        memcpy(&query->ts,&data[ptr],sizeof(ts_t));
+	        ptr += sizeof(ts_t);
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
-	memcpy(&query->pid,&data[ptr],sizeof(query->pid));
-	ptr += sizeof(query->pid);
-	memcpy(&query->part_cnt,&data[ptr],sizeof(query->part_cnt));
-	ptr += sizeof(query->part_cnt);
-  assert(query->part_cnt == 1);
-	query->parts = new uint64_t[query->part_cnt];
-	for (uint64_t i = 0; i < query->part_cnt; i++) {
-		memcpy(&query->parts[i],&data[ptr],sizeof(query->parts[i]));
-		ptr += sizeof(query->parts[i]);
-	}
-
+	        memcpy(&query->pid,&data[ptr],sizeof(query->pid));
+	        ptr += sizeof(query->pid);
+	        memcpy(&query->part_cnt,&data[ptr],sizeof(query->part_cnt));
+	        ptr += sizeof(query->part_cnt);
+            assert(query->part_cnt == 1);
+	        query->parts = new uint64_t[query->part_cnt];
+	        for (uint64_t i = 0; i < query->part_cnt; i++) {
+		        memcpy(&query->parts[i],&data[ptr],sizeof(query->parts[i]));
+		        ptr += sizeof(query->parts[i]);
+	        }
 #endif
 #if CC_ALG == AVOID
-	memcpy(&query->t_type,&data[ptr],sizeof(query->txn_type));
-	ptr += sizeof(query->txn_type);
-  uint64_t k;
-	memcpy(&query->num_keys,&data[ptr],sizeof(uint64_t));
-	ptr += sizeof(uint64_t);
-  query->keys = mem_allocator.alloc(sizeof(uint64_t) * query->num_keys, 0);;
-  for(uint64_t i; i < query->num_keys; i++) {
-	  memcpy(&query->keys[i],&data[ptr],sizeof(uint64_t));
-	  ptr += sizeof(uint64_t);
-  }
+	        memcpy(&query->t_type,&data[ptr],sizeof(query->txn_type));
+	        ptr += sizeof(query->txn_type);
+            uint64_t k;
+	        memcpy(&query->num_keys,&data[ptr],sizeof(uint64_t));
+	        ptr += sizeof(uint64_t);
+            query->keys = mem_allocator.alloc(sizeof(uint64_t) * query->num_keys, 0);;
+            for(uint64_t i; i < query->num_keys; i++) {
+	            memcpy(&query->keys[i],&data[ptr],sizeof(uint64_t));
+	            ptr += sizeof(uint64_t);
+            }
 #endif
-      break;
-    case RPREPARE:
-      break;
+            break;
+        case RPREPARE:
+            break;
 		case RQRY: {
 #if WORKLOAD == TPCC
-      tpcc_query * m_query = new tpcc_query;
+            tpcc_query * m_query = new tpcc_query;
 #endif
 			m_query->unpack(query,data);
 			break;
-							 }
+		}
 		case RQRY_RSP: {
 #if WORKLOAD == TPCC
-      tpcc_query * m_query = new tpcc_query;
+            tpcc_query * m_query = new tpcc_query;
 #endif
-			m_query->unpack_rsp(query,data);
+		    m_query->unpack_rsp(query,data);
 			break;
-									 }
-    case RFIN:
-      query->unpack_finish(query, data);
-      break;
-    case RACK:
-	    memcpy(&rc,&data[ptr],sizeof(RC));
-	    ptr += sizeof(RC);
-      if(rc == Abort || query->rc == WAIT || query->rc == WAIT_REM) {
-        query->rc = rc;
-      }
-      break;
-    case INIT_DONE:
-      break;
-		default:
-			assert(false);
+		}
+        case RFIN:
+            query->unpack_finish(query, data);
+            break;
+        case RACK:
+	        memcpy(&rc,&data[ptr],sizeof(RC));
+	        ptr += sizeof(RC);
+            if(rc == Abort || query->rc == WAIT || query->rc == WAIT_REM) {
+                query->rc = rc;
+            }
+            break;
+        case INIT_DONE:
+            break;
+        case RTXN: {
+#if WORKLOAD == TPCC
+            tpcc_query * m_query = new tpcc_query;
+#endif
+            m_query->unpack_client(query, data);
+            //printf("RECIEVED RTXN\n");
+            //printf("dest id: %u\n", query->dest_id);
+            //printf("return id: %u\n", query->return_id);
+            //printf("txn id: %lu\n", (uint64_t)query->txn_id);
+            //printf("client id: %u\n", query->client_id);
+            break;
+        }
+	    default:
+		    assert(false);
 	}
-  return query;
+    return query;
 }
+
+
 

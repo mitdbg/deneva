@@ -38,6 +38,7 @@ class Stats;
 class DL_detect;
 class Manager;
 class Query_queue;
+class Client_query_queue;
 class Plock;
 class OptCC;
 class SpecEx;
@@ -62,6 +63,7 @@ extern Stats stats;
 extern DL_detect dl_detector;
 extern Manager glob_manager;
 extern Query_queue query_queue;
+extern Client_query_queue client_query_queue;
 extern Plock part_lock_man;
 extern OptCC occ_man;
 extern SpecEx spec_man;
@@ -81,11 +83,12 @@ extern carbon_barrier_t enable_barrier;
 #endif
 
 /******************************************/
-// Client Global Data Structures/Params 
+// Client Global Params 
 /******************************************/
 extern UInt32 g_client_thread_cnt;
 extern UInt32 g_client_rem_thread_cnt;
 extern UInt32 g_client_node_cnt;
+extern UInt32 g_client_inflight_max;
 
 /******************************************/
 // Global Parameter

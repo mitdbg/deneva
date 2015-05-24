@@ -4,6 +4,7 @@
 #include "dl_detect.h"
 #include "manager.h"
 #include "query.h"
+#include "client_query.h"
 #include "plock.h"
 #include "occ.h"
 #include "specex.h"
@@ -18,6 +19,7 @@ Stats stats;
 DL_detect dl_detector;
 Manager glob_manager;
 Query_queue query_queue;
+Client_query_queue client_query_queue;
 Plock part_lock_man;
 OptCC occ_man;
 SpecEx spec_man;
@@ -72,6 +74,7 @@ UInt32 g_init_parallelism = INIT_PARALLELISM;
 UInt32 g_client_node_cnt = CLIENT_NODE_CNT;
 UInt32 g_client_thread_cnt = CLIENT_THREAD_CNT;
 UInt32 g_client_rem_thread_cnt = CLIENT_REM_THREAD_CNT;
+UInt32 g_client_inflight_max = CLIENT_MAX_TXN_IN_FLIGHT;
 
 UInt32 g_num_wh = NUM_WH;
 double g_perc_payment = PERC_PAYMENT;

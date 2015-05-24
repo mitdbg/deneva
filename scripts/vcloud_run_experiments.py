@@ -146,10 +146,15 @@ for e in experiments[1:]:
 
         else:
             nnodes = cfgs["NODE_CNT"]
+            clnodes = cfgs["CLIENT_NODE_CNT"]
             pids = []
             print("Deploying: {}".format(output_f))
-            for n in range(nnodes):
-                cmd = "./rundb -nid{}".format(n)
+            for n in range(nnodes + clnodes):
+                #for n in range(nnodes):
+                if n < nnodes:
+                    cmd = "./rundb -nid{}".format(n)
+                else:
+                    cmd = "./runcl -nid{}".format(n)
                 print(cmd)
                 cmd = shlex.split(cmd)
                 ofile_n = "{}{}_{}.out".format(result_dir,n,output_f)
@@ -157,7 +162,7 @@ for e in experiments[1:]:
                 #cmd = "./rundb -nid{} >> {}{}_{}.out &".format(n,result_dir,n,output_f)
                 p = subprocess.Popen(cmd,stdout=ofile,stderr=ofile)
                 pids.insert(0,p)
-            for n in range(nnodes):
+            for n in range(nnodes + clnodes):
                 pids[n].wait()
     #else:
     #    cmd = "mkdir {}/{}".format(test_dir,output_dir)
