@@ -150,11 +150,11 @@ def draw_line(fname, data, xticks,
 #if logscalex:
 #ax.get_xaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
     if legend :
-        fig.legend(lines, linenames, bbox_to_anchor = bbox, prop={'size':9}, ncol=ncol)
+        #fig.legend(lines, linenames, loc='upper right',bbox_to_anchor = (1,1), prop={'size':9}, ncol=ncol)
+        fig.legend(lines, linenames, loc='upper right',bbox_to_anchor = (0.85,0.9), prop={'size':8},ncol=ncol)
     subplots_adjust(left=0.18, bottom=0.15, right=0.9, top=None)
     if title:
         ax.set_title("\n".join(wrap(title)))
-
     axes = ax.get_axes()
     axes.yaxis.grid(True,
         linestyle='-',
