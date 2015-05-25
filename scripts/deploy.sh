@@ -4,7 +4,7 @@ HOSTS="$1"
 count=0
 
 for HOSTNAME in ${HOSTS}; do
-	SCRIPT="env SCHEMA_PATH=\"$2\" timeout -k 30m 30m ./rundb -nid${count} > results.out"
+	SCRIPT="env SCHEMA_PATH=\"$2\" timeout -k 10m 10m ./rundb -nid${count} > results.out"
 	ssh -n -o BatchMode=yes -o StrictHostKeyChecking=no -l ${USERNAME} ${HOSTNAME}.csail.mit.edu "${SCRIPT}" &
 	count=`expr $count + 1`
 done
