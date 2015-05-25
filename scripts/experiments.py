@@ -9,7 +9,7 @@ fmt3 = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","R
 fmt4 = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","NUM_WH"]]
 fmt5 = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","NUM_WH","MAX_TXN_IN_FLIGHT"]]
 fmt6 = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","NUM_WH","MAX_TXN_IN_FLIGHT","NETWORK_DELAY"]]
-fmt7 = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","NUM_WH","MAX_TXN_IN_FLIGHT","NETWORK_DELAY","ZIPF_THETA","READ_PERC","WRITE_PERC"]]
+fmt7 = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","NUM_WH","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC"]]
 
 
 
@@ -48,7 +48,7 @@ experiments = [
 ]
 
 experiments_ycsb = [
-    [n,ntxn,'YCSB',cc,m,t,wf,tif,z,1.0-wp,wp] for n,m,cc,t,wf,tifz,wp in itertools.product(nnodes,nmpr,nalgos,nthreads,nwfs,ntifs,zipf,wr_perc)
+    [n,ntxn,'YCSB',cc,m,t,wf,tif,z,1.0-wp,wp] for n,m,cc,t,wf,tif,z,wp in itertools.product(nnodes,nmpr,nalgos,nthreads,nwfs,ntifs,zipf,wr_perc)
 ]
 
 experiments_100K = [

@@ -20,13 +20,14 @@ int ycsb_wl::next_tid;
 RC ycsb_wl::init() {
 	workload::init();
 	next_tid = 0;
-	char * cpath = getenv("GRAPHITE_HOME");
+	char * cpath = getenv("SCHEMA_PATH");
 	string path;
 	if (cpath == NULL) 
 		path = "./benchmarks/YCSB_schema.txt";
 	else { 
 		path = string(cpath);
-		path += "/tests/apps/dbms/YCSB_schema.txt";
+		path += "YCSB_schema.txt";
+		//path += "/tests/apps/dbms/YCSB_schema.txt";
 	}
 	init_schema( path.c_str() );
 	
