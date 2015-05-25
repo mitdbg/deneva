@@ -28,7 +28,7 @@
 #define STATS_ENABLE				true
 #define TIME_ENABLE					true //STATS_ENABLE
 
-#define MAX_TXN_IN_FLIGHT 1
+#define MAX_TXN_IN_FLIGHT 8
 
 /***********************************************/
 // Memory System
@@ -134,8 +134,8 @@
 #define INIT_PARALLELISM			16
 #define SYNTH_TABLE_SIZE 			(NODE_CNT*1024)
 #define ZIPF_THETA 0.0
-#define READ_PERC 1.0
-#define WRITE_PERC 0.0
+#define READ_PERC 0.5
+#define WRITE_PERC 0.5
 #define SCAN_PERC 					0
 #define SCAN_LEN					20
 #define PART_PER_TXN 			  PART_CNT	
@@ -157,7 +157,7 @@
 #define WH_UPDATE					true
 #define NUM_WH 64
 // % of transactions that access multiple partitions
-#define MPR 0
+#define MPR 2
 #define MPR_NEWORDER			20 // In %
 // Smaller item selection to model contention
 #define CONTENTION false

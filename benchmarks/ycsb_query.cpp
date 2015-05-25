@@ -196,7 +196,8 @@ void ycsb_query::gen_requests(uint64_t thd_id, workload * h_wl) {
 	access_cnt = 0;
 	set<uint64_t> all_keys;
 	part_num = 0;
-	double r = (double)(rand() % 100) / 100;
+	//double r = (double)(rand() % 100) / 100;
+	UInt32 r = rand() % 100;
 	if (r < g_perc_multi_part) {
 		for (UInt32 i = 0; i < g_part_per_txn; i++) {
 			if (i == 0 && FIRST_PART_LOCAL)
