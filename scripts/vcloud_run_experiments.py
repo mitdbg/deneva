@@ -124,7 +124,10 @@ for e in experiments[1:]:
                     if line in machines:
                         f_ifcfg.write("172.19.153." + line + "\n")
 
-            files = ["rundb","ifconfig.txt","./benchmarks/TPCC_short_schema.txt"]
+            if cfgs["WORKLOAD"] == "TPCC":
+                files = ["rundb","ifconfig.txt","./benchmarks/TPCC_short_schema.txt"]
+            elif cfgs["WORKLOAD"] == "YCSB":
+                files = ["rundb","ifconfig.txt","./benchmarks/YCSB_schema.txt"]
             for m,f in itertools.product(machines,files):
                 cmd = 'scp -i {} {}/{} root@172.19.153.{}:/{}/'.format(identity,PATH,f,m,uname)
                 print(cmd)

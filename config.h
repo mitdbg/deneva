@@ -28,7 +28,7 @@
 #define STATS_ENABLE				true
 #define TIME_ENABLE					true //STATS_ENABLE
 
-#define MAX_TXN_IN_FLIGHT 8
+#define MAX_TXN_IN_FLIGHT 1
 
 /***********************************************/
 // Memory System
@@ -54,9 +54,9 @@
 /***********************************************/
 // Message Passing
 /***********************************************/
-#define TPORT_TYPE "ipc"
-#define TPORT_TYPE_IPC true
-#define TPORT_PORT ".ipc"
+#define TPORT_TYPE "tcp"
+#define TPORT_TYPE_IPC false
+#define TPORT_PORT 7000
 
 #define MAX_TPORT_NAME 128
 #define MSG_SIZE 128 // in bytes
@@ -133,7 +133,7 @@
 // ==== [YCSB] ====
 #define INIT_PARALLELISM			16
 #define SYNTH_TABLE_SIZE 			(NODE_CNT*1024)
-#define ZIPF_THETA 0.0
+#define ZIPF_THETA 0.6
 #define READ_PERC 0.5
 #define WRITE_PERC 0.5
 #define SCAN_PERC 					0
@@ -155,7 +155,7 @@
 // are not modeled.
 #define TPCC_ACCESS_ALL 			false 
 #define WH_UPDATE					true
-#define NUM_WH 4
+#define NUM_WH 64
 // % of transactions that access multiple partitions
 #define MPR 1
 #define MPR_NEWORDER			20 // In %
