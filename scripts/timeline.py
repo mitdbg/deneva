@@ -11,7 +11,7 @@ PATH=os.getcwd()
 result_dir = PATH + "/../results/"
 
 llim = 0 
-ulim = 500000 
+ulim = sys.maxint
 for e in experiments[1:]:
     r = {}
     cfgs = get_cfgs(experiments[0],e)
@@ -23,7 +23,6 @@ for e in experiments[1:]:
         if res_list:
             print(res_list[0])
             r,min_time = get_timeline(res_list[0],r,low_lim=llim,up_lim=ulim,min_time=min_time)
-    print(r)
     tids = []
     times = []
     types = ["START","ABORT","LOCK","UNLOCK","COMMIT"]

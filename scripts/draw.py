@@ -338,7 +338,7 @@ def draw_scatter(fname, data, xticks,
         ylab='Txn IDs', logscale=False, 
         logscalex = False,
         ylimit=0, xlimit=None, xlab='Time',
-        legend=True, linenames = None, figsize=(23/3, 10/3), styles=None) :
+        legend=True, linenames = None, figsize=(100,50), styles=None) :
     fig = figure(figsize=figsize)
     thr = [0] * len(xticks)
     lines = [0] * len(data)

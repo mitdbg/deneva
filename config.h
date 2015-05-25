@@ -12,7 +12,7 @@
 #define PART_CNT 2
 
 // each transaction only accesses only 1 virtual partition. But the lock/ts manager and index are not aware of such partitioning. VIRTUAL_PART_CNT describes the request distribution and is only used to generate queries. For HSTORE, VIRTUAL_PART_CNT should be the same as PART_CNT.
-#define VIRTUAL_PART_CNT			1
+#define VIRTUAL_PART_CNT		PART_CNT	
 #define PAGE_SIZE					4096 
 #define CL_SIZE						64
 #define CPU_FREQ 					2.6
@@ -22,13 +22,13 @@
 // # of transactions to run for warmup
 #define WARMUP						0
 // YCSB or TPCC
-#define WORKLOAD TPCC
+#define WORKLOAD YCSB
 // print the transaction latency distribution
 #define PRT_LAT_DISTR				false
 #define STATS_ENABLE				true
 #define TIME_ENABLE					true //STATS_ENABLE
 
-#define MAX_TXN_IN_FLIGHT 4
+#define MAX_TXN_IN_FLIGHT 1
 
 /***********************************************/
 // Memory System
@@ -127,7 +127,7 @@
 // max number of rows touched per transaction
 #define MAX_ROW_PER_TXN				64
 #define QUERY_INTVL 				1UL
-#define MAX_TXN_PER_PART 100000
+#define MAX_TXN_PER_PART 100
 #define FIRST_PART_LOCAL 			true
 #define MAX_TUPLE_SIZE				1024 // in bytes
 // ==== [YCSB] ====
@@ -138,8 +138,8 @@
 #define WRITE_PERC 					0.5
 #define SCAN_PERC 					0
 #define SCAN_LEN					20
-#define PART_PER_TXN 				1
-#define PERC_MULTI_PART				1
+#define PART_PER_TXN 			  PART_CNT	
+#define PERC_MULTI_PART			MPR	
 #define REQ_PER_QUERY				16
 #define FIELD_PER_TUPLE				10
 // ==== [TPCC] ====
@@ -250,6 +250,6 @@ extern TestCases					g_test_case;
 #define STAT_ARR_SIZE 1024
 #define PROG_TIMER 10000000000UL // in ns
 
-#define SEED 0
+#define SEED 0 
 
 #endif

@@ -66,14 +66,7 @@ RC thread_t::run_remote() {
    		CarbonEnableModelsBarrier(&enable_barrier);
 	}
 #endif
-	
 
-
-  /*
-#if WORKLOAD == TPCC
-	m_query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), get_thd_id());
-#endif
-*/
 	ts_t rq_time = get_sys_clock();
 
 	while (true) {
@@ -339,10 +332,9 @@ RC thread_t::run() {
           m_txn->rem_fin_txn(m_query);
           txn_pool.delete_txn(m_query->return_id, m_query->txn_id);
           rem_qry_man.ack_response(m_query);
-#if WORKLOAD == TPCC
-          //mem_allocator.free(m_query, sizeof(tpcc_query));
+
           m_query = NULL;
-#endif
+
           break;
         case RACK:
 #if DEBUG_DISTR
@@ -414,13 +406,6 @@ RC thread_t::run() {
 
 
           }
-          // free this m_query
-          /*
-#if WORKLOAD == TPCC
-          mem_allocator.free(m_query, sizeof(tpcc_query));
-          m_query = NULL;
-#endif
-            */
           if(m_txn->state != DONE)
             m_query = NULL;
           break;
@@ -483,6 +468,7 @@ RC thread_t::run() {
 
           if(m_txn->rc != WAIT && m_txn->state == START) {
 
+            m_query->reset();
 			      if ((CC_ALG == HSTORE && !HSTORE_LOCAL_TS)
 			        || (CC_ALG == HSTORE_SPEC && !HSTORE_LOCAL_TS)
 					    || CC_ALG == MVCC 
@@ -637,13 +623,28 @@ RC thread_t::run() {
           assert(m_txn->state == DONE);
         assert(m_txn != NULL);
         assert(m_query->txn_id != UINT64_MAX);
+				INC_STATS(get_thd_id(), abort_cnt, 1);
+        m_txn->abort_cnt++;
+
+#if WORKLOAD == TPCC
+        if(m_query->rbk && m_query->rem_req_state == TPCC_FIN) {
+          INC_STATS(get_thd_id(),txn_cnt,1);
+		      if(m_txn->abort_cnt > 0) { 
+			      INC_STATS(get_thd_id(), txn_abort_cnt, 1);
+            INC_STATS_ARR(get_thd_id(), all_abort, m_txn->abort_cnt);
+          }
+		      timespan = get_sys_clock() - m_txn->starttime;
+		      INC_STATS(get_thd_id(), run_time, timespan);
+		      INC_STATS(get_thd_id(), latency, timespan);
+          break;
+        
+        }
+#endif
         //rc = m_txn->finish(rc);
         //txn_pool.add_txn(g_node_id,m_txn,m_query);
         m_query->rtype = RTXN;
         m_query->rc = RCOK;
         m_query->reset();
-				INC_STATS(get_thd_id(), abort_cnt, 1);
-        m_txn->abort_cnt++;
         m_txn->state = START;
         m_txn->spec = false;
 
@@ -673,6 +674,9 @@ RC thread_t::run() {
 #if WORKLOAD == TPCC
         // WAIT_REM from finish
         if(m_query->rem_req_state == TPCC_FIN)
+          break;
+#elif WORKLOAD == YCSB
+        if(m_query->rem_req_state == YCSB_FIN)
           break;
 #endif
         assert(m_query->dest_id != g_node_id);

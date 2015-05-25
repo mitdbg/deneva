@@ -1,7 +1,9 @@
 #include "remote_query.h"
 #include "mem_alloc.h"
 #include "tpcc.h"
+#include "ycsb.h"
 #include "tpcc_query.h"
+#include "ycsb_query.h"
 #include "query.h"
 #include "transport.h"
 #include "plock.h"
@@ -23,6 +25,9 @@ txn_man * Remote_query::get_txn_man(uint64_t thd_id, uint64_t node_id, uint64_t 
 void Remote_query::remote_qry(base_query * query, int type, int dest_id, txn_man * txn) {
 #if WORKLOAD == TPCC
 	tpcc_query * m_query = (tpcc_query *) query;
+	m_query->remote_qry(query,type,dest_id);
+#elif WORKLOAD == YCSB
+	ycsb_query * m_query = (ycsb_query *) query;
 	m_query->remote_qry(query,type,dest_id);
 #endif
 }
@@ -111,7 +116,11 @@ void Remote_query::send_init(base_query * query,uint64_t dest_part_id) {
 #endif
 #if CC_ALG == AVOID
   uint64_t * keys;
+#if WORKLOAD == TPCC
   tpcc_query * m_query = (tpcc_query *)query;
+#elif WORKLOAD == YCSB
+  ycsb_query * m_query = (ycsb_query *)query;
+#endif
   uint64_t k = m_query->get_keys(&keys,&k);
   total += k + 2;
 #endif
@@ -144,9 +153,15 @@ void Remote_query::send_init(base_query * query,uint64_t dest_part_id) {
 #endif
 
 #if CC_ALG == AVOID
+#if WORKLOAD == TPCC
   TPCCTxnType type = m_query->txn_type;
   data[num] = &type;
   sizes[num++] = sizeof(TPCCTxnType);
+#elif WORKLOAD == YCSB
+  YCSBTxnType type = m_query->txn_type;
+  data[num] = &type;
+  sizes[num++] = sizeof(YCSBTxnType);
+#endif
   data[num] = &k;
   sizes[num++] = sizeof(uint64_t);
   for(int i;i<k; i++) {
@@ -166,6 +181,9 @@ void Remote_query::remote_rsp(base_query * query, txn_man * txn) {
 
 #if WORKLOAD == TPCC
     tpcc_query * m_query = (tpcc_query *) query;
+    m_query->remote_rsp(query);
+#elif WORKLOAD == YCSB
+    ycsb_query * m_query = (ycsb_query *) query;
     m_query->remote_rsp(query);
 #endif
 
@@ -199,8 +217,10 @@ base_query * Remote_query::unpack(void * d, int len) {
   if(rtype == RINIT || rtype == INIT_DONE) {
 #if WORKLOAD == TPCC
 	  query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), 0);
-    query->clear();
+#elif WORKLOAD == YCSB
+	  query = (ycsb_query *) mem_allocator.alloc(sizeof(ycsb_query), 0);
 #endif
+    query->clear();
   } else {
     query = txn_pool.get_qry(g_node_id,txn_id);
   }
@@ -259,6 +279,8 @@ base_query * Remote_query::unpack(void * d, int len) {
 		case RQRY: {
 #if WORKLOAD == TPCC
       tpcc_query * m_query = new tpcc_query;
+#elif WORKLOAD == YCSB
+      ycsb_query * m_query = new ycsb_query;
 #endif
 			m_query->unpack(query,data);
 			break;
@@ -266,6 +288,8 @@ base_query * Remote_query::unpack(void * d, int len) {
 		case RQRY_RSP: {
 #if WORKLOAD == TPCC
       tpcc_query * m_query = new tpcc_query;
+#elif WORKLOAD == YCSB
+      ycsb_query * m_query = new ycsb_query;
 #endif
 			m_query->unpack_rsp(query,data);
 			break;
