@@ -1,7 +1,8 @@
 #ifndef _GLOBAL_H_
 #define _GLOBAL_H_
 
-#include "stdint.h"
+#define __STDC_LIMIT_MACROS
+#include <stdint.h>
 #include <unistd.h>
 #include <cstddef>
 #include <cstdlib>
