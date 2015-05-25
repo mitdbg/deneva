@@ -46,6 +46,10 @@ void ycsb_query::unpack_rsp(base_query * query, void * d) {
 	memcpy(&m_query->pid,&data[ptr],sizeof(uint64_t));
 	ptr += sizeof(uint64_t);
 
+  if(rc == Abort || m_query->rc == WAIT || m_query->rc == WAIT_REM) {
+    m_query->rc = rc;
+    m_query->txn_rtype = YCSB_FIN;
+  }
 }
 
 void ycsb_query::unpack(base_query * query, void * d) {

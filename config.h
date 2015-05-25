@@ -54,9 +54,9 @@
 /***********************************************/
 // Message Passing
 /***********************************************/
-#define TPORT_TYPE "tcp"
-#define TPORT_TYPE_IPC false
-#define TPORT_PORT 7000
+#define TPORT_TYPE "ipc"
+#define TPORT_TYPE_IPC true
+#define TPORT_PORT ".ipc"
 
 #define MAX_TPORT_NAME 128
 #define MSG_SIZE 128 // in bytes
@@ -71,7 +71,7 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, OCC, VLL
-#define CC_ALG NO_WAIT
+#define CC_ALG WAIT_DIE
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER					false
@@ -155,9 +155,9 @@
 // are not modeled.
 #define TPCC_ACCESS_ALL 			false 
 #define WH_UPDATE					true
-#define NUM_WH 64
+#define NUM_WH 4
 // % of transactions that access multiple partitions
-#define MPR 2
+#define MPR 1
 #define MPR_NEWORDER			20 // In %
 // Smaller item selection to model contention
 #define CONTENTION false

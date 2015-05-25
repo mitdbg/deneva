@@ -13,9 +13,9 @@ fmt7 = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","N
 
 
 
-nnodes=[2,9]
-#nnodes=[1,2,4,9]
-nmpr= range(0,3,1)
+nnodes=[2]
+nmpr=[1,2]
+#nmpr= range(0,3,1)
 #nmpr=[1] + range(0,11,5)
 #nalgos=['HSTORE','HSTORE_SPEC']
 nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE','HSTORE_SPEC']
