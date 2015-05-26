@@ -24,6 +24,7 @@ public:
 	uint64_t txn_cnt;
 	uint64_t abort_cnt;
 	uint64_t txn_abort_cnt;
+	uint64_t rbk_abort_cnt;
 	double tot_run_time;
 	double run_time;
   double time_clock_rwait;

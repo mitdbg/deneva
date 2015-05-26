@@ -623,16 +623,11 @@ RC thread_t::run() {
           assert(m_txn->state == DONE);
         assert(m_txn != NULL);
         assert(m_query->txn_id != UINT64_MAX);
-				INC_STATS(get_thd_id(), abort_cnt, 1);
-        m_txn->abort_cnt++;
 
 #if WORKLOAD == TPCC
         if(((tpcc_query*)m_query)->rbk && m_query->rem_req_state == TPCC_FIN) {
           INC_STATS(get_thd_id(),txn_cnt,1);
-		      if(m_txn->abort_cnt > 0) { 
-			      INC_STATS(get_thd_id(), txn_abort_cnt, 1);
-            INC_STATS_ARR(get_thd_id(), all_abort, m_txn->abort_cnt);
-          }
+			    INC_STATS(get_thd_id(), rbk_abort_cnt, 1);
 		      timespan = get_sys_clock() - m_txn->starttime;
 		      INC_STATS(get_thd_id(), run_time, timespan);
 		      INC_STATS(get_thd_id(), latency, timespan);
@@ -645,6 +640,8 @@ RC thread_t::run() {
 #endif
         //rc = m_txn->finish(rc);
         //txn_pool.add_txn(g_node_id,m_txn,m_query);
+				INC_STATS(get_thd_id(), abort_cnt, 1);
+        m_txn->abort_cnt++;
         m_query->rtype = RTXN;
         m_query->rc = RCOK;
         m_query->reset();
