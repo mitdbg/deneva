@@ -27,6 +27,7 @@
 #include "dl_detect.h"
 #include "query_work_queue.h"
 #include "txn_pool.h"
+//#include "client_txn.h"
 #ifndef NOGRAPHITE
 #include "carbon_user.h"
 #endif
@@ -38,7 +39,6 @@ class Stats;
 class DL_detect;
 class Manager;
 class Query_queue;
-class Client_query_queue;
 class Plock;
 class OptCC;
 class SpecEx;
@@ -47,6 +47,8 @@ class Transport;
 class Remote_query;
 class TxnPool;
 class QWorkQueue;
+class Client_query_queue;
+class Client_txn;
 
 typedef uint32_t UInt32;
 typedef int32_t SInt32;
@@ -74,6 +76,7 @@ extern Transport tport_man;
 extern Remote_query rem_qry_man;
 extern TxnPool txn_pool;
 extern QWorkQueue work_queue;
+extern Client_txn client_man;
 
 extern bool volatile warmup_finish;
 extern bool volatile enable_thread_mem_pool;
@@ -88,7 +91,6 @@ extern carbon_barrier_t enable_barrier;
 extern UInt32 g_client_thread_cnt;
 extern UInt32 g_client_rem_thread_cnt;
 extern UInt32 g_client_node_cnt;
-extern UInt32 g_client_inflight_max;
 
 /******************************************/
 // Global Parameter

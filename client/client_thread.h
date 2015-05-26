@@ -33,7 +33,7 @@ private:
 	uint64_t 	_host_cid;
 	uint64_t 	_cur_cid;
 	ts_t 		_curr_ts;
-	ts_t 		get_next_ts();
+	//ts_t 		get_next_ts();
 
 	RC	 		runTest(txn_man * txn);
 };

@@ -9,7 +9,7 @@
 
 void TxnPool::init() {
   spec_mode = false;
-  inflight_cnt = 0;
+  //inflight_cnt = 0;
   pthread_mutex_init(&mtx,NULL);
   txns = (txn_node_t *) mem_allocator.alloc(
             sizeof(txn_node_t *) * g_node_cnt, 0);

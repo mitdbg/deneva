@@ -81,6 +81,34 @@ void Remote_query::ack_response(base_query * query) {
   send_remote_query(query->return_id,data,sizes,num);
 }
 
+void Remote_query::send_client_rsp(base_query * query) {
+	// Maximum number of parameters
+	// NOTE: Adjust if parameters sent is changed
+#if DEBUG_DISTR
+    printf("Sending client response (CL_RSP %lu)\n",query->txn_id);
+#endif
+    query->return_id = query->client_id;
+    query->dest_id = g_node_id;
+    uint64_t total = 3;
+	void ** data = new void *[total];
+	int * sizes = new int [total];
+	int num = 0;
+
+    txnid_t txn_id = query->txn_id;
+	RemReqType rtype = CL_RSP;
+
+	data[num] = &txn_id;
+	sizes[num++] = sizeof(txnid_t);
+
+	data[num] = &rtype;
+	sizes[num++] = sizeof(RemReqType);
+
+    data[num] = &query->rc;
+	sizes[num++] = sizeof(RC);
+
+    send_remote_query(query->return_id,data,sizes,num);
+}
+
 void Remote_query::send_init_done(uint64_t dest_id) {
   uint64_t total = 2;
 	void ** data = new void *[total];
@@ -196,9 +224,10 @@ base_query * Remote_query::unpack(void * d, int len) {
 	ptr += sizeof(query->rtype);
   
 
-    if(rtype == RINIT || rtype == INIT_DONE || rtype == RTXN) {
+    if(rtype == RINIT || rtype == INIT_DONE || rtype == RTXN || rtype == CL_RSP) {
 #if WORKLOAD == TPCC
-	    query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), 0);
+	    //query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), 0);
+        query = new tpcc_query();
         query->clear();
 #endif
     } else {
@@ -293,6 +322,8 @@ base_query * Remote_query::unpack(void * d, int len) {
             //printf("client id: %u\n", query->client_id);
             break;
         }
+        case CL_RSP:
+            break;
 	    default:
 		    assert(false);
 	}

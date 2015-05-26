@@ -33,7 +33,7 @@ public:
   void end_spec_ex();
   void commit_spec_ex(int r);
 
-  uint64_t inflight_cnt;
+  //uint64_t inflight_cnt;
   bool spec_mode;
 
 private:

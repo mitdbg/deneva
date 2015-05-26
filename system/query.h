@@ -8,7 +8,7 @@ class workload;
 class ycsb_query;
 class tpcc_query;
 
-enum RemReqType {INIT_DONE,RLK, RULK, RQRY, RFIN, RLK_RSP, RULK_RSP, RQRY_RSP, RACK, RTXN, RINIT, RPREPARE,RPASS};
+enum RemReqType {INIT_DONE,RLK, RULK, RQRY, RFIN, RLK_RSP, RULK_RSP, RQRY_RSP, RACK, RTXN, RINIT, RPREPARE,RPASS,CL_RSP};
 
 class base_query {
 public:

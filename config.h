@@ -10,6 +10,9 @@
 #define REM_THREAD_CNT 1
 // PART_CNT should be at least NODE_CNT
 #define PART_CNT 2
+#define CLIENT_NODE_CNT 1
+#define CLIENT_THREAD_CNT 1
+#define CLIENT_REM_THREAD_CNT 1
 
 // each transaction only accesses only 1 virtual partition. But the lock/ts manager and index are not aware of such partitioning. VIRTUAL_PART_CNT describes the request distribution and is only used to generate queries. For HSTORE, VIRTUAL_PART_CNT should be the same as PART_CNT.
 #define VIRTUAL_PART_CNT			1

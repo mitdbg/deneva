@@ -589,9 +589,9 @@ m_query = NULL;
 #endif
                     // Transaction is finished. Increment stats. Remove from txn pool
                     assert(m_txn->get_rsp_cnt() == 0);
-                    if(m_query->part_num == 1 && !m_txn->spec)
+                    if(m_query->part_num == 1 && !m_txn->spec) {
                         rc = m_txn->finish(rc,m_query->part_to_access,m_query->part_num);
-                    else
+                    } else
                         assert(m_txn->state == DONE);
                     INC_STATS(get_thd_id(),txn_cnt,1);
                     if(m_txn->abort_cnt > 0) { 
@@ -606,9 +606,13 @@ m_query = NULL;
                     printf("COMMIT %ld %ld\n",m_txn->get_txn_id(),get_sys_clock());
                     //printf("COMMIT %ld %ld\n",m_txn->get_txn_id(),get_sys_clock() - run_starttime);
 #endif
+                    // Send "result" back to client
+                    if (m_query->rc != Abort) {
+                        rem_qry_man.send_client_rsp(m_query);
+                    }
                     txn_pool.delete_txn(g_node_id,m_query->txn_id);
                     txn_cnt++;
-                    ATOM_SUB(txn_pool.inflight_cnt,1);
+                    //ATOM_SUB(txn_pool.inflight_cnt,1);
                     break;
                 case Abort:
                     // TODO: Add to abort list that includes txn_id and ts

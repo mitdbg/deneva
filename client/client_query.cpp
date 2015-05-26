@@ -11,9 +11,9 @@
 
 void 
 Client_query_queue::init(workload * h_wl) {
-	all_queries = new Client_query_thd * [g_thread_cnt];
+	all_queries = new Client_query_thd * [g_node_cnt];
 	_wl = h_wl;
-	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++)
+	for (UInt32 tid = 0; tid < g_node_cnt; tid ++)
 		init(tid);
 }
 
@@ -34,8 +34,8 @@ void
 Client_query_thd::init(workload * h_wl, int thread_id) {
 	uint64_t request_cnt;
 	q_idx = 0;
-	request_cnt = g_node_cnt * (WARMUP / g_thread_cnt + MAX_TXN_PER_PART + 4) 
-            / g_client_thread_cnt;
+	//request_cnt = WARMUP / g_client_thread_cnt + MAX_TXN_PER_PART + 4;
+	request_cnt = MAX_TXN_PER_PART + 4;
     printf("request count = %lu\n", request_cnt);
 #if WORKLOAD == YCSB	
 	queries = (ycsb_query *) 
@@ -50,16 +50,19 @@ Client_query_thd::init(workload * h_wl, int thread_id) {
 #elif WORKLOAD == TPCC
 		new(&queries[qid]) tpcc_query();
 #endif
-		queries[qid].init(thread_id, h_wl, qid % g_node_cnt);
+		//queries[qid].init(thread_id, h_wl, qid % g_node_cnt);
+		queries[qid].init(thread_id, h_wl, thread_id);
         // Setup
         queries[qid].txn_id = UINT64_MAX;
         queries[qid].rtype = RTXN;
-        queries[qid].client_id = g_node_id;
+        //queries[qid].client_id = g_node_id;
 	}
 }
 
 base_query * 
 Client_query_thd::get_next_query() {
+    if (q_idx >= MAX_TXN_PER_PART)
+        return NULL;
 	base_query * query = &queries[q_idx++];
 	return query;
 }

@@ -13,6 +13,7 @@
 #include "query_work_queue.h"
 #include "remote_query.h"
 #include "txn_pool.h"
+#include "client_txn.h"
 
 mem_alloc mem_allocator;
 Stats stats;
@@ -30,6 +31,7 @@ Transport tport_man;
 Remote_query rem_qry_man;
 TxnPool txn_pool;
 QWorkQueue work_queue;
+Client_txn client_man;
 
 bool volatile warmup_finish = false;
 bool volatile enable_thread_mem_pool = false;
@@ -74,7 +76,6 @@ UInt32 g_init_parallelism = INIT_PARALLELISM;
 UInt32 g_client_node_cnt = CLIENT_NODE_CNT;
 UInt32 g_client_thread_cnt = CLIENT_THREAD_CNT;
 UInt32 g_client_rem_thread_cnt = CLIENT_REM_THREAD_CNT;
-UInt32 g_client_inflight_max = CLIENT_MAX_TXN_IN_FLIGHT;
 
 UInt32 g_num_wh = NUM_WH;
 double g_perc_payment = PERC_PAYMENT;

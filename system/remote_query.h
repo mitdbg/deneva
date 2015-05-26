@@ -51,6 +51,7 @@ public:
 	void send_remote_query(uint64_t dest_id, void ** data, int * sizes, int num);
   void remote_rsp(base_query * query, txn_man * txn);
 	void send_remote_rsp(uint64_t dest_id, void ** data, int * sizes, int num);
+    void send_client_rsp(base_query * query);
 	base_query * unpack(void * d, int len);
 	int q_idx;
 	/*

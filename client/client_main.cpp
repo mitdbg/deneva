@@ -3,13 +3,10 @@
 #include "tpcc.h"
 #include "test.h"
 #include "client_thread.h"
-#include "manager.h"
 #include "mem_alloc.h"
 #include "client_query.h"
-#include "plock.h"
-#include "occ.h"
-#include "vll.h"
 #include "transport.h"
+#include "client_txn.h"
 
 void * f(void *);
 void * g(void *);
@@ -30,6 +27,7 @@ int main(int argc, char* argv[])
     printf("Running client...\n\n");
 	// 0. initialize global data structure
 	parser(argc, argv);
+    assert(g_node_id >= g_node_cnt);
 
 	uint64_t seed = get_sys_clock();
 	srand(seed);
@@ -47,15 +45,12 @@ int main(int argc, char* argv[])
 #endif
 
 
-	//int64_t starttime;
-	//int64_t endtime;
-    //starttime = get_server_clock();
+	int64_t starttime;
+	int64_t endtime;
+    starttime = get_server_clock();
 	// per-partition malloc
 	mem_allocator.init(g_part_cnt, MEM_SIZE / g_part_cnt); 
 	stats.init();
-	glob_manager.init();
-	if (g_cc_alg == DL_DETECT) 
-		dl_detector.init();
 	printf("mem_allocator initialized!\n");
 	workload * m_wl;
 	switch (WORKLOAD) {
@@ -73,18 +68,14 @@ int main(int argc, char* argv[])
 	m_wl->init();
 	printf("workload initialized!\n");
 
-	//rem_qry_man_cl.init(g_node_id,m_wl);
 	rem_qry_man.init(g_node_id,m_wl);
-    printf("Client remote query manager initialized!\n");
 	tport_man.init(g_node_id);
-    printf("Client transport manager initialized!\n");
-    //work_queue.init();
-    //txn_pool.init();
+    client_man.init();
 
 	// 2. spawn multiple threads
 	uint64_t thd_cnt = g_client_thread_cnt;
 	uint64_t rthd_cnt = g_client_rem_thread_cnt;
-	//
+
 	pthread_t * p_thds = 
 		(pthread_t *) malloc(sizeof(pthread_t) * (thd_cnt + rthd_cnt));
 	pthread_attr_t attr;
@@ -96,23 +87,11 @@ int main(int argc, char* argv[])
 	if (WORKLOAD != TEST) {
 		client_query_queue.init(m_wl);
 	}
-	printf("Client query_queue initialized!\n");
-    fflush(stdout);
 	pthread_barrier_init( &warmup_bar, NULL, thd_cnt );
-//#if CC_ALG == HSTORE
-//	part_lock_man.init(g_node_id);
-//#elif CC_ALG == OCC
-//	occ_man.init();
-//#elif CC_ALG == VLL
-//	vll_man.init();
-//#endif
-//
 	for (uint32_t i = 0; i < thd_cnt + rthd_cnt; i++) 
 		m_thds[i].init(i, g_node_id, m_wl);
-    printf("Done initializing client m_thds\n");
-//
-//  endtime = get_server_clock();
-//  printf("Initialization Time = %ld\n", endtime - starttime);
+    endtime = get_server_clock();
+    printf("Initialization Time = %ld\n", endtime - starttime);
 	warmup_finish = true;
 	pthread_barrier_init( &warmup_bar, NULL, thd_cnt + rthd_cnt);
 #ifndef NOGRAPHITE
@@ -122,7 +101,7 @@ int main(int argc, char* argv[])
 
 	uint64_t cpu_cnt = 0;
 	// spawn and run txns again.
-	//starttime = get_server_clock();
+	starttime = get_server_clock();
 
 	for (uint32_t i = 0; i < thd_cnt; i++) {
 		uint64_t vid = i;
@@ -142,17 +121,15 @@ int main(int argc, char* argv[])
 	for (uint32_t i = 0; i < thd_cnt; i++) 
 		pthread_join(p_thds[i], NULL);
 
-	//endtime = get_server_clock();
+	endtime = get_server_clock();
 	
-	//if (WORKLOAD != TEST) {
-	//	printf("PASS! SimTime = %ld\n", endtime - starttime);
-	//	if (STATS_ENABLE)
-	//		stats.print();
-	//} else {
-	//	((TestWorkload *)m_wl)->summarize();
-	//}
-    printf("Client finished!!\n");
-    fflush(stdout);
+	if (WORKLOAD != TEST) {
+		printf("CLIENT PASS! SimTime = %ld\n", endtime - starttime);
+		if (STATS_ENABLE)
+			stats.print();
+	} else {
+		((TestWorkload *)m_wl)->summarize();
+	}
 	return 0;
 }
 
@@ -171,8 +148,6 @@ void * nn_worker(void * id) {
 	m_thds[tid].run_remote();
 	return NULL;
 }
-
-
 
 void network_test() {
 
