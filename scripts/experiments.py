@@ -9,22 +9,22 @@ fmt3 = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","R
 fmt4 = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","NUM_WH"]]
 fmt5 = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","NUM_WH","MAX_TXN_IN_FLIGHT"]]
 fmt6 = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","NUM_WH","MAX_TXN_IN_FLIGHT","NETWORK_DELAY"]]
-fmt7 = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","NUM_WH","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC"]]
+fmt7 = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC"]]
 
 
-
-nnodes=[2]
-nmpr=[1,2]
-#nmpr= range(0,3,1)
+#nnodes=[1,2,4,8,16,32]
+nnodes=[2,32]
+#nmpr=[1,2]
+nmpr= range(0,6,1)
 #nmpr=[1] + range(0,11,5)
 #nalgos=['HSTORE','HSTORE_SPEC']
 nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE','HSTORE_SPEC']
 nthreads=[1]
 #nthreads=[1,2]
 nwfs=[64]
-ntifs=[1,8]
-zipf=[0.0,0.6]
-wr_perc=[0.0,0.5]
+ntifs=[8]
+nzipf=[0.6,0.8]
+nwr_perc=[0.5]
 #ntifs=[1,4,8,16,32]
 ntxn=1000000
 nnet_delay=['100000UL']
@@ -33,7 +33,7 @@ nnet_delay=['100000UL']
 
 simple = [
 
-[4,1000,'TPCC','HSTORE',5,1,64,1],
+[2,10000,'YCSB','HSTORE',0.1,1,1,0.6,0.5,0.5],
 
 
 #[2,10000,'TPCC','NO_WAIT',30,2,8,16]
@@ -48,7 +48,7 @@ experiments = [
 ]
 
 experiments_ycsb = [
-    [n,ntxn,'YCSB',cc,m,t,wf,tif,z,1.0-wp,wp] for n,m,cc,t,wf,tif,z,wp in itertools.product(nnodes,nmpr,nalgos,nthreads,nwfs,ntifs,zipf,wr_perc)
+    [n,ntxn,'YCSB',cc,m,t,wf,tif,z,1.0-wp,wp] for n,m,cc,t,wf,tif,z,wp in itertools.product(nnodes,nmpr,nalgos,nthreads,nwfs,ntifs,nzipf,nwr_perc)
 ]
 
 experiments_100K = [
@@ -146,7 +146,7 @@ configs = {
     "MAX_TXN_PER_PART" : 100,
     "WORKLOAD" : "TPCC",
     "CC_ALG" : "HSTORE",
-    "MPR" : 0,
+    "MPR" : 0.0,
     "TPORT_TYPE":"\"ipc\"",
     "TPORT_TYPE_IPC":"true",
     "TPORT_PORT":"\"_.ipc\"",
@@ -165,5 +165,5 @@ configs = {
 ##################
 # FIXME
 #################
-experiments = fmt7 + experiments_ycsb
+experiments = fmt7 + simple
 config_names = fmt7[0]

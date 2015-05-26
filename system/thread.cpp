@@ -627,7 +627,7 @@ RC thread_t::run() {
         m_txn->abort_cnt++;
 
 #if WORKLOAD == TPCC
-        if(m_query->rbk && m_query->rem_req_state == TPCC_FIN) {
+        if(((tpcc_query*)m_query)->rbk && m_query->rem_req_state == TPCC_FIN) {
           INC_STATS(get_thd_id(),txn_cnt,1);
 		      if(m_txn->abort_cnt > 0) { 
 			      INC_STATS(get_thd_id(), txn_abort_cnt, 1);
@@ -636,6 +636,9 @@ RC thread_t::run() {
 		      timespan = get_sys_clock() - m_txn->starttime;
 		      INC_STATS(get_thd_id(), run_time, timespan);
 		      INC_STATS(get_thd_id(), latency, timespan);
+        txn_pool.delete_txn(g_node_id,m_query->txn_id);
+        txn_cnt++;
+        ATOM_SUB(txn_pool.inflight_cnt,1);
           break;
         
         }

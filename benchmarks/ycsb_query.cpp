@@ -200,15 +200,23 @@ void ycsb_query::gen_requests(uint64_t thd_id, workload * h_wl) {
 	access_cnt = 0;
 	set<uint64_t> all_keys;
 	part_num = 0;
-	//double r = (double)(rand() % 100) / 100;
-	UInt32 r = rand() % 100;
-	if (r < g_perc_multi_part) {
+	double r = (double)(rand() % 1000000) / 10000;
+	//UInt32 r = rand() % 100;
+	//if (r < g_perc_multi_part) {
+	if (r < g_mpr) {
+    bool rem = false;
 		for (UInt32 i = 0; i < g_part_per_txn; i++) {
 			if (i == 0 && FIRST_PART_LOCAL)
 				part_to_access[part_num] = thd_id % g_part_cnt;
 				//part_to_access[part_num] = thd_id % g_virtual_part_cnt;
-			else
-				part_to_access[part_num] = rand() % g_part_cnt;
+			else {
+        if(!rem) {
+				  while((part_to_access[part_num] = rand() % g_part_cnt) == thd_id % g_part_cnt) {}
+          rem = true;
+        }
+        else
+				  part_to_access[part_num] = rand() % g_part_cnt;
+      }
 			UInt32 j;
 			for (j = 0; j < part_num; j++) 
 				if ( part_to_access[part_num] == part_to_access[j] )

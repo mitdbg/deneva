@@ -351,11 +351,13 @@ void tpcc_query::gen_payment(uint64_t thd_id) {
 
 	d_id = URand(1, DIST_PER_WARE);
 	h_amount = URand(1, 5000);
-	int x = URand(1, 100);
+  rbk = false;
+	//int x = URand(1, 100);
+	double x = (double)(rand() % 1000000) / 10000;
 	int y = URand(1, 100);
 
 
-	if(x > MPR) { 
+	if(x > g_mpr) { 
 		// home warehouse
 		c_d_id = d_id;
 		c_w_id = w_id;
@@ -391,15 +393,17 @@ void tpcc_query::gen_new_order(uint64_t thd_id) {
 		w_id = URand(1, g_num_wh);
 	d_id = URand(1, DIST_PER_WARE);
 	c_id = NURand(1023, 1, g_cust_per_dist);
-	rbk = URand(1, 100);
+	rbk = URand(1, 100) == 1 ? true : false;
 	ol_cnt = URand(5, 15);
 	o_entry_d = 2013;
 	items = (Item_no *) mem_allocator.alloc(sizeof(Item_no) * ol_cnt, thd_id);
-	remote = false;
 	part_to_access[0] = wh_to_part(w_id);
 	part_num = 1;
 
-	UInt32 y = URand(1, 100);
+	bool str_remote = false;
+	bool remote = false;
+	double y = (double)(rand() % 1000000) / 10000;
+
 	for (UInt32 oid = 0; oid < ol_cnt; oid ++) {
 
 		while(1) {
@@ -420,15 +424,21 @@ void tpcc_query::gen_new_order(uint64_t thd_id) {
 
 		//UInt32 x = URand(1, 100);
 
-		if (y > MPR || remote || g_num_wh == 1) {
+		if (y > g_mpr || str_remote || g_num_wh == 1) {
 			// home warehouse
 			items[oid].ol_supply_w_id = w_id;
 		}
 		else  {
 			// remote warehouse
-			while((items[oid].ol_supply_w_id = URand(1, g_num_wh)) == w_id) {}
+      if(!remote) {
+			  while((items[oid].ol_supply_w_id = URand(1, g_num_wh)) == w_id) {}
+      }
+      else {
+        items[oid].ol_supply_w_id = URand(1, g_num_wh);
+      }
+      remote = true;
 #if STRICT_MPR
-			remote = true;
+			str_remote = true;
 #endif
 		}
 		items[oid].ol_quantity = URand(1, 10);
