@@ -3,7 +3,6 @@
 #include "txn.h"
 #include "row.h"
 #include "wl.h"
-#include "ycsb.h"
 #include "query.h"
 #include "thread.h"
 #include "mem_alloc.h"

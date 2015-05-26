@@ -7,6 +7,8 @@
 #include "txn_pool.h"
 
 #define MAX_DATA_SIZE 100 
+class ycsb_query;
+class ycsb_txn_man;
 class tpcc_query;
 class tpcc_txn_man;
 class txn_man;

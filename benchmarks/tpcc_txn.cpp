@@ -522,6 +522,8 @@ RC tpcc_txn_man::run_txn_state(base_query * query) {
       fin = true;
       query->rem_req_state = TPCC_FIN;
       assert(GET_NODE_ID(m_query->pid) == g_node_id);
+      if(m_query->rbk)
+        query->rc = Abort;
 		  return finish(m_query,false);
 		default:
 			assert(false);

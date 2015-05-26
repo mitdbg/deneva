@@ -15,19 +15,19 @@
 #include "mem_alloc.h"
 #include "query.h"
 
-/*
 int ycsb_wl::next_tid;
 
 RC ycsb_wl::init() {
 	workload::init();
 	next_tid = 0;
-	char * cpath = getenv("GRAPHITE_HOME");
+	char * cpath = getenv("SCHEMA_PATH");
 	string path;
 	if (cpath == NULL) 
 		path = "./benchmarks/YCSB_schema.txt";
 	else { 
 		path = string(cpath);
-		path += "/tests/apps/dbms/YCSB_schema.txt";
+		path += "YCSB_schema.txt";
+		//path += "/tests/apps/dbms/YCSB_schema.txt";
 	}
 	init_schema( path.c_str() );
 	
@@ -45,8 +45,9 @@ RC ycsb_wl::init_schema(const char * schema_file) {
 	
 int 
 ycsb_wl::key_to_part(uint64_t key) {
-	uint64_t rows_per_part = g_synth_table_size / g_part_cnt;
-	return key / rows_per_part;
+	//uint64_t rows_per_part = g_synth_table_size / g_part_cnt;
+	//return key / rows_per_part;
+  return key % g_part_cnt;
 }
 
 RC ycsb_wl::init_table() {
@@ -170,4 +171,3 @@ RC ycsb_wl::get_txn_man(txn_man *& txn_manager, thread_t * h_thd){
 	return RCOK;
 }
 
-*/

@@ -2,6 +2,8 @@
 #include "txn_pool.h"
 #include "tpcc_query.h"
 #include "tpcc.h"
+#include "ycsb_query.h"
+#include "ycsb.h"
 #include "query.h"
 #include "txn.h"
 #include "mem_alloc.h"
@@ -155,16 +157,18 @@ void TxnPool::delete_txn(uint64_t node_id, uint64_t txn_id){
 
   //assert(node != NULL);
   if(node != NULL) {
-    // FIXME
-    /*
     node->txn->release();
 #if WORKLOAD == TPCC
     mem_allocator.free(node->txn, sizeof(tpcc_txn_man));
-if(node->qry->txn_id % g_node_cnt != node_id) {
-    mem_allocator.free(node->qry, sizeof(tpcc_query));
-}
+    if(node->qry->txn_id % g_node_cnt != node_id) {
+      mem_allocator.free(node->qry, sizeof(tpcc_query));
+    }
+#elif WORKLOAD == YCSB
+    mem_allocator.free(node->txn, sizeof(ycsb_txn_man));
+    if(node->qry->txn_id % g_node_cnt != node_id) {
+      mem_allocator.free(node->qry, sizeof(ycsb_query));
+    }
 #endif
-    */
     mem_allocator.free(node, sizeof(struct txn_node));
   }
 

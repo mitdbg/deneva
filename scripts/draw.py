@@ -150,11 +150,11 @@ def draw_line(fname, data, xticks,
 #if logscalex:
 #ax.get_xaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
     if legend :
-        fig.legend(lines, linenames, bbox_to_anchor = bbox, prop={'size':9}, ncol=ncol)
+        #fig.legend(lines, linenames, loc='upper right',bbox_to_anchor = (1,1), prop={'size':9}, ncol=ncol)
+        fig.legend(lines, linenames, loc='upper right',bbox_to_anchor = (0.85,0.9), prop={'size':8},ncol=ncol)
     subplots_adjust(left=0.18, bottom=0.15, right=0.9, top=None)
     if title:
         ax.set_title("\n".join(wrap(title)))
-
     axes = ax.get_axes()
     axes.yaxis.grid(True,
         linestyle='-',
@@ -338,7 +338,7 @@ def draw_scatter(fname, data, xticks,
         ylab='Txn IDs', logscale=False, 
         logscalex = False,
         ylimit=0, xlimit=None, xlab='Time',
-        legend=True, linenames = None, figsize=(23/3, 10/3), styles=None) :
+        legend=True, linenames = None, figsize=(100,50), styles=None) :
     fig = figure(figsize=figsize)
     thr = [0] * len(xticks)
     lines = [0] * len(data)

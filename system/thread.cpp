@@ -56,6 +56,7 @@ RC thread_t::run_remote() {
     //#endif
     pthread_barrier_wait( &warmup_bar );
     printf("Run_remote %ld:%ld\n",_node_id, _thd_id);
+    fflush(stdout);
 
     myrand rdm;
     rdm.init(get_thd_id());
@@ -68,14 +69,7 @@ RC thread_t::run_remote() {
     }
 #endif
 
-
-
-    /*
-#if WORKLOAD == TPCC
-m_query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), get_thd_id());
-#endif
-*/
-    ts_t rq_time = get_sys_clock();
+	ts_t rq_time = get_sys_clock();
 
     while (true) {
         m_query = tport_man.recv_msg();
@@ -124,6 +118,7 @@ RC thread_t::run() {
     pthread_barrier_wait( &warmup_bar );
     //sleep(4);
     printf("Run %ld:%ld\n",_node_id, _thd_id);
+    fflush(stdout);
 
     myrand rdm;
     rdm.init(get_thd_id());
@@ -339,10 +334,7 @@ RC thread_t::run() {
                 m_txn->rem_fin_txn(m_query);
                 txn_pool.delete_txn(m_query->return_id, m_query->txn_id);
                 rem_qry_man.ack_response(m_query);
-#if WORKLOAD == TPCC
-                //mem_allocator.free(m_query, sizeof(tpcc_query));
                 m_query = NULL;
-#endif
                 break;
             case RACK:
 #if DEBUG_DISTR
@@ -420,11 +412,12 @@ m_query = NULL;
                 if(m_txn->state != DONE)
                     m_query = NULL;
                 break;
+//<<<<<<< HEAD
             case RTXN:
                 // This transaction is originating at this node
                 assert(m_query->txn_id == UINT64_MAX || (m_query->txn_id % g_node_cnt == g_node_id));
                 INC_STATS(0,rtxn,1);
-                ATOM_ADD(txn_st_cnt,1);
+                //ATOM_ADD(txn_st_cnt,1);
 
                 if(m_query->txn_id == UINT64_MAX) {
                     // New transaction
@@ -459,6 +452,55 @@ m_query = NULL;
                     txn_pool.add_txn(g_node_id,m_txn,m_query);
 
                     m_txn->starttime = get_sys_clock();
+//=======
+//              default:
+//                assert(false);
+//            }
+//
+//
+//          }
+//          if(m_txn->state != DONE)
+//            m_query = NULL;
+//          break;
+//        case RTXN:
+//          // This transaction is originating at this node
+//          assert(m_query->txn_id == UINT64_MAX || (m_query->txn_id % g_node_cnt == g_node_id));
+//          INC_STATS(0,rtxn,1);
+//
+//          if(m_query->txn_id == UINT64_MAX) {
+//            // New transaction
+//
+//	          rc = _wl->get_txn_man(m_txn, this);
+//            assert(rc == RCOK);
+//
+//		        m_txn->abort_cnt = 0;
+//            if (CC_ALG == WAIT_DIE) {
+//              m_txn->set_ts(get_next_ts());
+//              m_query->ts = m_txn->get_ts();
+//            }
+//            if (CC_ALG == MVCC) {
+//              m_query->thd_id = _thd_id;
+//            }
+//
+//            m_txn->set_pid(m_query->pid);
+//
+//            // Only set new txn_id when txn first starts
+//			      m_txn->set_txn_id( ( get_node_id() + get_thd_id() * g_node_cnt) + (g_thread_cnt * g_node_cnt * thd_txn_id));
+//			      //m_txn->set_txn_id( (get_thd_id() + get_node_id() * g_thread_cnt) + (g_thread_cnt * g_node_cnt * thd_txn_id));
+//			      thd_txn_id ++;
+//            m_query->set_txn_id(m_txn->get_txn_id());
+//
+//		        if(m_query->part_num > 1) {
+//			        INC_STATS(get_thd_id(),mpq_cnt,1);
+//              // Get txn in txn_pool
+//              //txn_pool.add_txn(g_node_id,m_txn,m_query);
+//            }
+//            // Put txn in txn_pool in case of WAIT
+//            //assert(txn_pool.get_txn(g_node_id,m_txn->get_txn_id()) == NULL);
+//            txn_pool.add_txn(g_node_id,m_txn,m_query);
+//
+//            m_txn->starttime = get_sys_clock();
+//>>>>>>> 6962f43dafcda57c7d72e65660866ea0c8f585ae
 #if DEBUG_TIMELINE
                     printf("START %ld %ld\n",m_txn->get_txn_id(),m_txn->starttime);
                     //printf("START %ld %ld\n",m_txn->get_txn_id(),m_txn->starttime - run_starttime);
@@ -479,6 +521,7 @@ m_query = NULL;
 
                 if(m_txn->rc != WAIT && m_txn->state == START) {
 
+//<<<<<<< HEAD
                     if ((CC_ALG == HSTORE && !HSTORE_LOCAL_TS)
                             || (CC_ALG == HSTORE_SPEC && !HSTORE_LOCAL_TS)
                             || CC_ALG == MVCC 
@@ -486,6 +529,16 @@ m_query = NULL;
                         m_txn->set_ts(get_next_ts());
                         m_query->ts = m_txn->get_ts();
                     }
+//=======
+//            m_query->reset();
+//			      if ((CC_ALG == HSTORE && !HSTORE_LOCAL_TS)
+//			        || (CC_ALG == HSTORE_SPEC && !HSTORE_LOCAL_TS)
+//					    || CC_ALG == MVCC 
+//					    || CC_ALG == TIMESTAMP) { 
+//				      m_txn->set_ts(get_next_ts());
+//				      m_query->ts = m_txn->get_ts();
+//			      }
+//>>>>>>> 6962f43dafcda57c7d72e65660866ea0c8f585ae
 
 #if CC_ALG == MVCC
                     glob_manager.add_ts(get_thd_id(), m_txn->get_ts());
@@ -627,6 +680,7 @@ break;
 #endif
 */
 #if CC_ALG == HSTORE_SPEC
+//<<<<<<< HEAD
                     if(m_txn->spec && m_txn->state != DONE)
                         break;
 #endif
@@ -640,13 +694,72 @@ break;
                     assert(m_query->txn_id != UINT64_MAX);
                     //rc = m_txn->finish(rc);
                     //txn_pool.add_txn(g_node_id,m_txn,m_query);
+//                    m_query->rtype = RTXN;
+//                    m_query->rc = RCOK;
+//                    m_query->reset();
+                    INC_STATS(get_thd_id(), abort_cnt, 1);
+                    m_txn->abort_cnt++;
+
+#if WORKLOAD == TPCC
+                    if(m_query->rbk && m_query->rem_req_state == TPCC_FIN) {
+                        INC_STATS(get_thd_id(),txn_cnt,1);
+		                if(m_txn->abort_cnt > 0) { 
+			                INC_STATS(get_thd_id(), txn_abort_cnt, 1);
+                            INC_STATS_ARR(get_thd_id(), all_abort, m_txn->abort_cnt);
+                        }
+		                timespan = get_sys_clock() - m_txn->starttime;
+		                INC_STATS(get_thd_id(), run_time, timespan);
+		                INC_STATS(get_thd_id(), latency, timespan);
+                        break;
+                    }
+#endif
+        //rc = m_txn->finish(rc);
+        //txn_pool.add_txn(g_node_id,m_txn,m_query);
                     m_query->rtype = RTXN;
                     m_query->rc = RCOK;
                     m_query->reset();
-                    INC_STATS(get_thd_id(), abort_cnt, 1);
-                    m_txn->abort_cnt++;
                     m_txn->state = START;
                     m_txn->spec = false;
+//                    m_txn->state = START;
+//                    m_txn->spec = false;
+//=======
+//        if(m_txn->spec && m_txn->state != DONE)
+//          break;
+//#endif
+//
+//        assert(m_txn->get_rsp_cnt() == 0);
+//        if(m_query->part_num == 1 && !m_txn->spec)
+//          rc = m_txn->finish(rc,m_query->part_to_access,m_query->part_num);
+//        else
+//          assert(m_txn->state == DONE);
+//        assert(m_txn != NULL);
+//        assert(m_query->txn_id != UINT64_MAX);
+//				INC_STATS(get_thd_id(), abort_cnt, 1);
+//
+//        m_txn->abort_cnt++;
+//
+//#if WORKLOAD == TPCC
+//        if(m_query->rbk && m_query->rem_req_state == TPCC_FIN) {
+//          INC_STATS(get_thd_id(),txn_cnt,1);
+//		      if(m_txn->abort_cnt > 0) { 
+//			      INC_STATS(get_thd_id(), txn_abort_cnt, 1);
+//            INC_STATS_ARR(get_thd_id(), all_abort, m_txn->abort_cnt);
+//          }
+//		      timespan = get_sys_clock() - m_txn->starttime;
+//		      INC_STATS(get_thd_id(), run_time, timespan);
+//		      INC_STATS(get_thd_id(), latency, timespan);
+//          break;
+//        
+//        }
+//#endif
+//        //rc = m_txn->finish(rc);
+//        //txn_pool.add_txn(g_node_id,m_txn,m_query);
+//        m_query->rtype = RTXN;
+//        m_query->rc = RCOK;
+//        m_query->reset();
+//        m_txn->state = START;
+//        m_txn->spec = false;
+//>>>>>>> 6962f43dafcda57c7d72e65660866ea0c8f585ae
 
 #if DEBUG_TIMELINE
                     printf("ABORT %ld %ld\n",m_txn->get_txn_id(),get_sys_clock());
@@ -672,8 +785,12 @@ break;
                     outstanding_rwaits++;
                     //txn_pool.add_txn(g_node_id,m_txn,m_query);
 #if WORKLOAD == TPCC
+//<<<<<<< HEAD
                     // WAIT_REM from finish
                     if(m_query->rem_req_state == TPCC_FIN)
+                        break;
+#elif WORKLOAD == YCSB
+                    if(m_query->rem_req_state == YCSB_FIN)
                         break;
 #endif
                     assert(m_query->dest_id != g_node_id);
@@ -686,6 +803,25 @@ break;
         } 
         timespan = get_sys_clock() - starttime;
         INC_STATS(get_thd_id(),time_work,timespan);
+//=======
+//        // WAIT_REM from finish
+//        if(m_query->rem_req_state == TPCC_FIN)
+//          break;
+//#elif WORKLOAD == YCSB
+//        if(m_query->rem_req_state == YCSB_FIN)
+//          break;
+//#endif
+//        assert(m_query->dest_id != g_node_id);
+//        rem_qry_man.remote_qry(m_query,m_query->rem_req_state,m_query->dest_id,m_txn);
+//        break;
+//      default:
+//        assert(false);
+//        break;
+//    }
+//    } 
+//    timespan = get_sys_clock() - starttime;
+//    INC_STATS(get_thd_id(),time_work,timespan);
+//>>>>>>> 6962f43dafcda57c7d72e65660866ea0c8f585ae
 
         if (!warmup_finish && txn_st_cnt >= WARMUP / g_thread_cnt) 
         {
