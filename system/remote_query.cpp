@@ -90,16 +90,16 @@ void Remote_query::send_client_rsp(base_query * query) {
 	// Maximum number of parameters
 	// NOTE: Adjust if parameters sent is changed
 #if DEBUG_DISTR
-    printf("Sending client response (CL_RSP %lu)\n",query->txn_id);
+    	printf("Sending client response (CL_RSP %lu)\n",query->txn_id);
 #endif
-    query->return_id = query->client_id;
-    query->dest_id = g_node_id;
-    uint64_t total = 3;
+    	query->return_id = query->client_id;
+    	query->dest_id = g_node_id;
+    	uint64_t total = 3;
 	void ** data = new void *[total];
 	int * sizes = new int [total];
 	int num = 0;
 
-    txnid_t txn_id = query->txn_id;
+    	txnid_t txn_id = query->txn_id;
 	RemReqType rtype = CL_RSP;
 
 	data[num] = &txn_id;
@@ -108,10 +108,10 @@ void Remote_query::send_client_rsp(base_query * query) {
 	data[num] = &rtype;
 	sizes[num++] = sizeof(RemReqType);
 
-    data[num] = &query->rc;
+    	data[num] = &query->rc;
 	sizes[num++] = sizeof(RC);
 
-    send_remote_query(query->return_id,data,sizes,num);
+    	send_remote_query(query->return_id,data,sizes,num);
 }
 
 void Remote_query::send_init_done(uint64_t dest_id) {
@@ -245,7 +245,7 @@ base_query * Remote_query::unpack(void * d, int len) {
     if(rtype == RINIT || rtype == INIT_DONE || rtype == RTXN || rtype == CL_RSP) {
 #if WORKLOAD == TPCC
 	    //query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), 0);
-        query = new tpcc_query();
+	query = new tpcc_query();
 #elif WORKLOAD == YCSB
 	    //query = (ycsb_query *) mem_allocator.alloc(sizeof(ycsb_query), 0);
         query = new ycsb_query();
@@ -337,15 +337,18 @@ base_query * Remote_query::unpack(void * d, int len) {
             break;
         case RTXN: {
 #if WORKLOAD == TPCC
-            tpcc_query * m_query = new tpcc_query;
+            	tpcc_query * m_query = new tpcc_query;
+#elif WORKLOAD == YCSB
+            	ycsb_query *m_query = new ycsb_query;
 #endif
-            m_query->unpack_client(query, data);
-            break;
+            	m_query->unpack_client(query, data);
+	    	assert(GET_NODE_ID(query->pid) == g_node_id);
+            	break;
         }
         case CL_RSP:
-            break;
-	    default:
-		    assert(false);
+            	break;
+	    	default:
+		assert(false);
 	}
     return query;
 }

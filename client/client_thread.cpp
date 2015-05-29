@@ -30,30 +30,33 @@ RC Client_thread_t::run_remote() {
 	}
 
 	base_query * m_query = NULL;
-    
+
 	pthread_barrier_wait( &warmup_bar );
 	stats.init(get_thd_id());
-    // Send start msg to all nodes; wait for rsp from all nodes before continuing.
-    int rsp_cnt = g_node_cnt + g_client_node_cnt - 1;
-    int32_t inf;
-    while(rsp_cnt > 0) {
+	// Send start msg to all nodes; wait for rsp from all nodes before continuing.
+	int rsp_cnt = g_node_cnt + g_client_node_cnt - 1;
+	int32_t inf;
+	int rsp_cnts[g_node_cnt];
+	memset(rsp_cnts, 0, g_node_cnt * sizeof(int));
+	while(rsp_cnt > 0) {
 		m_query = tport_man.recv_msg();
-        if (m_query != NULL) {
-            switch(m_query->rtype) {
-                case INIT_DONE:
-                    rsp_cnt--;
-                    break;
-                case CL_RSP:
-                    inf = client_man.dec_inflight(m_query->return_id);
-                    break;
-                default:
-                    assert(false);
-            }
-        }
-    }
+		if (m_query != NULL) {
+			switch(m_query->rtype) {
+				case INIT_DONE:
+					rsp_cnt--;
+					break;
+				case CL_RSP:
+					rsp_cnts[m_query->return_id]++;
+					inf = client_man.dec_inflight(m_query->return_id);
+					break;
+				default:
+					assert(false);
+			}
+		}
+	}
 	pthread_barrier_wait( &warmup_bar );
 	printf("Run_remote %ld:%ld\n",_node_id, _thd_id);
-	
+
 	myrand rdm;
 	rdm.init(get_thd_id());
 	ts_t rq_time = get_sys_clock();
@@ -62,48 +65,50 @@ RC Client_thread_t::run_remote() {
 		m_query = tport_man.recv_msg();
 		if( m_query != NULL ) { 
 			rq_time = get_sys_clock();
-            assert(m_query->rtype == CL_RSP);
-            assert(m_query->dest_id == g_node_id);
-            assert(m_query->return_id < g_node_id);
+			assert(m_query->rtype == CL_RSP);
+			assert(m_query->dest_id == g_node_id);
+			assert(m_query->return_id < g_node_id);
+			rsp_cnts[m_query->return_id]++;
 #if DEBUG_DISTR
-            printf("Received query response from %u\n", m_query->return_id);
+			printf("Received query response from %u\n", m_query->return_id);
 #endif
-            switch (m_query->rtype) {
-                case CL_RSP:
-                    inf = client_man.dec_inflight(m_query->return_id);
-                    break;
-                default:
-                    assert(false);
-            }
-        }
-        //printf("total responses: 0=%u, 1=%u\n", resp_from_0, resp_from_1);
-        ts_t tend = get_sys_clock(); 
+			//for (uint64_t l = 0; l < g_node_cnt; ++l)
+			//    printf("Response count for %lu: %d\n", l, rsp_cnts[l]);
+			switch (m_query->rtype) {
+				case CL_RSP:
+					inf = client_man.dec_inflight(m_query->return_id);
+					break;
+				default:
+					assert(false);
+			}
+		}
+		ts_t tend = get_sys_clock(); 
 		if (warmup_finish && _wl->sim_done && ((tend - rq_time) > MSG_TIMEOUT)) {
-	        if( !ATOM_CAS(_wl->sim_timeout, false, true) )
+			if( !ATOM_CAS(_wl->sim_timeout, false, true) )
 				assert( _wl->sim_timeout);
-	    }
+		}
 
-	    if (_wl->sim_done && _wl->sim_timeout) {
-            bool done = true;
-            for (uint32_t i = 0; i < g_node_cnt; ++i) {
-                // Check if we're still waiting on any txns to finish
-                inf = client_man.get_inflight(i);
+		if (_wl->sim_done && _wl->sim_timeout) {
+			bool done = true;
+			for (uint32_t i = 0; i < g_node_cnt; ++i) {
+				// Check if we're still waiting on any txns to finish
+				inf = client_man.get_inflight(i);
 #if DEBUG_DISTR
-                printf("Wrapping up... Node %u: inflight txns left: %d\n",i,inf);
+				//printf("Wrapping up... Node %u: inflight txns left: %d\n",i,inf);
 #endif
-                if (inf > 0) {
-                    done = false;
-                    break;
-                }
-            }
-            if (!done)
-                continue;
+				if (inf > 0) {
+					done = false;
+					break;
+				}
+			}
+			if (!done)
+				continue;
 #if !NOGRAPHITE
-   	        CarbonDisableModelsBarrier(&enable_barrier);
+			CarbonDisableModelsBarrier(&enable_barrier);
 #endif
-   	        return FINISH;
-   	    }
-    }
+			return FINISH;
+		}
+	}
 }
 
 RC Client_thread_t::run() {
@@ -117,47 +122,53 @@ RC Client_thread_t::run() {
 	pthread_barrier_wait( &warmup_bar );
 	stats.init(get_thd_id());
 
-    if( _thd_id == 0) {
-        for(uint64_t i = 0; i < g_node_cnt+g_client_node_cnt; i++) {
-            if(i != g_node_id) {
-                rem_qry_man.send_init_done(i);
-            }
-        }
-    }
+	if( _thd_id == 0) {
+		for(uint64_t i = 0; i < g_node_cnt+g_client_node_cnt; i++) {
+			if(i != g_node_id) {
+				rem_qry_man.send_init_done(i);
+			}
+		}
+	}
 	pthread_barrier_wait( &warmup_bar );
 	printf("Run %ld:%ld\n",_node_id, _thd_id);
 
 	myrand rdm;
 	rdm.init(get_thd_id());
-    base_query * m_query = NULL;
-    uint64_t iters = 0;
-    uint32_t num_txns_sent = 0;
-    while (num_txns_sent < g_node_cnt * MAX_TXN_PER_PART) {
-        uint32_t next_node = iters++ % g_node_cnt;
-        // Just in case...
-        if (iters == UINT64_MAX)
-            iters = 0;
-        if (client_man.inc_inflight(next_node) < 0)
-            continue;
-        // TODO: the query queue is not thread safe right now!!!
-        m_query = client_query_queue.get_next_query(next_node);
-        if (m_query == NULL) {
-            client_man.dec_inflight(next_node);
-            continue;
-        }
+	base_query * m_query = NULL;
+	uint64_t iters = 0;
+	uint32_t num_txns_sent = 0;
+	int txns_sent[g_node_cnt];
+	memset(txns_sent, 0, g_node_cnt * sizeof(int));
+	while (num_txns_sent < g_node_cnt * MAX_TXN_PER_PART) {
+		uint32_t next_node = iters++ % g_node_cnt;
+		// Just in case...
+		if (iters == UINT64_MAX)
+			iters = 0;
+		if (client_man.inc_inflight(next_node) < 0)
+			continue;
+		// TODO: the query queue is not thread safe right now!!!
+		m_query = client_query_queue.get_next_query(next_node);
+		if (m_query == NULL) {
+			client_man.dec_inflight(next_node);
+			continue;
+		}
 #if DEBUG_DISTR
-        printf("Client: thread %lu sending query to node: %lu\n",
-                _thd_id, GET_NODE_ID(m_query->pid));
-        for (uint32_t k = 0; k < g_node_id; ++k) {
-            printf("Node %u: txns in flight: %d\n", k, client_man.get_inflight(k));
-        }
+		printf("Client: thread %lu sending query to node: %lu\n",
+				_thd_id, GET_NODE_ID(m_query->pid));
+		for (uint32_t k = 0; k < g_node_id; ++k) {
+			printf("Node %u: txns in flight: %d\n", k, client_man.get_inflight(k));
+		}
 #endif
-        m_query->client_query(m_query, GET_NODE_ID(m_query->pid));
-        num_txns_sent++;
-    }
+		m_query->client_query(m_query, GET_NODE_ID(m_query->pid));
+		num_txns_sent++;
+		txns_sent[GET_NODE_ID(m_query->pid)]++;
+	}
+#if DEBUG_DISTR
+	for (uint64_t l = 0; l < g_node_cnt; ++l)
+		printf("Txns sent to node %lu: %d\n", l, txns_sent[l]);
 	if( !ATOM_CAS(_wl->sim_done, false, true) )
-	    assert( _wl->sim_done);
+		assert( _wl->sim_done);
+#endif
 
-    return FINISH;
-
+	return FINISH;
 }

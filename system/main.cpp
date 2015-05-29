@@ -92,9 +92,9 @@ int main(int argc, char* argv[])
 	m_thds = new thread_t[thd_cnt + rthd_cnt];
 	// query_queue should be the last one to be initialized!!!
 	// because it collects txn latency
-	if (WORKLOAD != TEST) {
-		query_queue.init(m_wl);
-	}
+	//if (WORKLOAD != TEST) {
+	//	query_queue.init(m_wl);
+	//}
 	pthread_barrier_init( &warmup_bar, NULL, g_thread_cnt );
 	printf("query_queue initialized!\n");
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC

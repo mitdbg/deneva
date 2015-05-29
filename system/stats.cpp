@@ -87,6 +87,7 @@ void Stats_thd::clear() {
 	txn_cnt = 0;
 	abort_cnt = 0;
 	txn_abort_cnt = 0;
+	rbk_abort_cnt = 0;
 	tot_run_time = 0;
 	run_time = 0;
 	time_clock_wait = 0;
@@ -228,6 +229,7 @@ void Stats::print_prog(uint64_t tid) {
 			",clock_time=%f"
       ",abort_cnt=%ld"
       ",txn_abort_cnt=%ld"
+      ",rbk_abort_cnt=%ld"
       ",latency=%f"
       ",run_time=%f"
       ",cflt_cnt=%ld"
@@ -271,6 +273,7 @@ void Stats::print_prog(uint64_t tid) {
 			(_stats[tid]->tot_run_time ) / BILLION,
 			_stats[tid]->abort_cnt,
 			_stats[tid]->txn_abort_cnt,
+			_stats[tid]->rbk_abort_cnt,
 			((float)_stats[tid]->latency) / BILLION / _stats[tid]->txn_cnt,
 			_stats[tid]->run_time / BILLION,
 			_stats[tid]->cflt_cnt, 
@@ -323,6 +326,7 @@ void Stats::print() {
 	uint64_t total_txn_cnt = 0;
 	uint64_t total_abort_cnt = 0;
 	uint64_t total_txn_abort_cnt = 0;
+	uint64_t total_rbk_abort_cnt = 0;
 	double total_tot_run_time = 0;
 	double total_run_time = 0;
 	double total_time_work = 0;
@@ -377,6 +381,7 @@ void Stats::print() {
 		total_txn_cnt += _stats[tid]->txn_cnt;
 		total_abort_cnt += _stats[tid]->abort_cnt;
 		total_txn_abort_cnt += _stats[tid]->txn_abort_cnt;
+		total_rbk_abort_cnt += _stats[tid]->rbk_abort_cnt;
 		total_tot_run_time += _stats[tid]->tot_run_time;
 		total_run_time += _stats[tid]->run_time;
 		total_time_work += _stats[tid]->time_work;
@@ -443,6 +448,7 @@ void Stats::print() {
 			",clock_time=%f"
       ",abort_cnt=%ld"
       ",txn_abort_cnt=%ld"
+      ",rbk_abort_cnt=%ld"
       ",latency=%f"
       ",run_time=%f"
       ",cflt_cnt=%ld"
@@ -485,6 +491,7 @@ void Stats::print() {
 			(total_tot_run_time / g_thread_cnt) / BILLION,
 			total_abort_cnt,
 			total_txn_abort_cnt,
+			total_rbk_abort_cnt,
 			total_latency / BILLION / total_txn_cnt,
 			total_run_time / BILLION,
       total_cflt_cnt,
