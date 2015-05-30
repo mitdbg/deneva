@@ -93,10 +93,7 @@ void txn_man::decr_rsp(int i) {
 
 void txn_man::cleanup(RC rc) {
 #if CC_ALG == OCC
-  if(rc == RCOK) {
-		// advance the global timestamp and get the end_ts
-		end_ts = glob_manager.get_ts( get_thd_id() );
-  }
+  occ_man.finish(rc,this);
 #endif
 	ts_t starttime = get_sys_clock();
 	for (int rid = row_cnt - 1; rid >= 0; rid --) {
@@ -311,6 +308,9 @@ RC txn_man::finish(base_query * query, bool fin) {
   if(query->part_num == 1) {
     if(CC_ALG == HSTORE_SPEC && txn_pool.spec_mode && this->spec)
       this->state = PREP;
+    RC rc = validate();
+    if(rc != RCOK)
+      return rc;
     return query->rc;
   }
 

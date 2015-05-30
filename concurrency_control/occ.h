@@ -27,6 +27,7 @@ class OptCC {
 public:
 	void init();
 	RC validate(txn_man * txn);
+	void finish(RC rc, txn_man * txn);
 	volatile bool lock_all;
 	uint64_t lock_txn_id;
 private:
@@ -36,6 +37,8 @@ private:
 
 	// parallel validation in the original OCC paper.
 	RC central_validate(txn_man * txn);
+	void per_row_finish(RC rc, txn_man * txn);
+	void central_finish(RC rc, txn_man * txn);
 	bool test_valid(set_ent * set1, set_ent * set2);
 	RC get_rw_set(txn_man * txni, set_ent * &rset, set_ent *& wset);
 	

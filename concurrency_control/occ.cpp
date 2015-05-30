@@ -32,6 +32,14 @@ RC OptCC::validate(txn_man * txn) {
 	return rc;
 }
 
+void OptCC::finish(RC rc, txn_man * txn) {
+#if PER_ROW_VALID
+  per_row_finish(rc,txn);
+#else
+	central_finish(rc,txn);
+#endif
+}
+
 RC 
 OptCC::per_row_validate(txn_man * txn) {
 	RC rc = RCOK;
@@ -81,8 +89,10 @@ OptCC::per_row_validate(txn_man * txn) {
 	}
 
     */
+  /*
 	for (int i = 0; i < lock_cnt; i++) 
 		txn->accesses[i]->orig_row->manager->release();
+    */
 #endif
 	return rc;
 }
@@ -138,10 +148,13 @@ RC OptCC::central_validate(txn_man * txn) {
 			goto final;
 	}
 final:
+  /*
 	if (valid) 
 		txn->cleanup(RCOK);
+    */
 	mem_allocator.free(rset, sizeof(set_ent));
 
+  /*
 	if (!readonly) {
 		// only update active & tnc for non-readonly transactions
 		pthread_mutex_lock( &latch );
@@ -168,13 +181,60 @@ final:
 		}
 		pthread_mutex_unlock( &latch );
 	}
+  */
 	if (valid) {
 		rc = RCOK;
 	} else {
-		txn->cleanup(Abort);
+		//txn->cleanup(Abort);
 		rc = Abort;
 	}
 	return rc;
+}
+
+void OptCC::per_row_finish(RC rc, txn_man * txn) {
+  if(rc == RCOK) {
+		// advance the global timestamp and get the end_ts
+		txn->end_ts = glob_manager.get_ts( txn->get_thd_id() );
+  }
+}
+
+void OptCC::central_finish(RC rc, txn_man * txn) {
+	set_ent * wset;
+	set_ent * rset;
+	get_rw_set(txn, rset, wset);
+	bool readonly = (wset->set_size == 0);
+
+	if (!readonly) {
+		// only update active & tnc for non-readonly transactions
+		pthread_mutex_lock( &latch );
+		set_ent * act = active;
+		set_ent * prev = NULL;
+		while (act != NULL && act->txn != txn) {
+			prev = act;
+			act = act->next;
+		}
+    if(act == NULL) {
+      assert(rc == Abort);
+		  pthread_mutex_unlock( &latch );
+      return;
+    }
+		assert(act->txn == txn);
+		if (prev != NULL)
+			prev->next = act->next;
+		else
+			active = act->next;
+		active_len --;
+		if (rc == RCOK) {
+			// TODO remove the assert for performance
+			if (history)
+				assert(history->tn == tnc);
+			tnc ++;
+			wset->tn = tnc;
+			STACK_PUSH(history, wset);
+			his_len ++;
+		}
+		pthread_mutex_unlock( &latch );
+	}
 }
 
 RC OptCC::get_rw_set(txn_man * txn, set_ent * &rset, set_ent *& wset) {

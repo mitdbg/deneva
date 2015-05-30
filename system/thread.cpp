@@ -646,6 +646,7 @@ RC thread_t::run() {
         m_query->rc = RCOK;
         m_query->reset();
         m_txn->state = START;
+        m_txn->rc = RCOK;
         m_txn->spec = false;
 
 #if DEBUG_TIMELINE

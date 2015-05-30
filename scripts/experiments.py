@@ -3,27 +3,23 @@ import itertools
 # Go to end of file to fill in experiments 
 
 # Format: [#Nodes,#Txns,Workload,CC_ALG,MPR]
-fmt1 = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR"]]
-fmt2 = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT"]]
-fmt3 = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","REM_THREAD_CNT"]]
-fmt4 = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","NUM_WH"]]
-fmt5 = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","NUM_WH","MAX_TXN_IN_FLIGHT"]]
-fmt6 = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","NUM_WH","MAX_TXN_IN_FLIGHT","NETWORK_DELAY"]]
-fmt7 = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC"]]
+fmt_tpcc = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","NUM_WH","MAX_TXN_IN_FLIGHT"]]
+fmt_nd = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","NUM_WH","MAX_TXN_IN_FLIGHT","NETWORK_DELAY"]]
+fmt_ycsb = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC"]]
 
 
 #nnodes=[1,2,4,8,16,32]
-nnodes=[2,32]
-#nmpr=[1,2]
-nmpr= range(0,6,1)
+nnodes=[2,4,8]
+nmpr=[0,0.001,0.01,0.1]
+#nmpr= range(0,6,1)
 #nmpr=[1] + range(0,11,5)
-#nalgos=['HSTORE','HSTORE_SPEC']
-nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE','HSTORE_SPEC']
+nalgos=['MVCC','OCC']
+#nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE','HSTORE_SPEC']
 nthreads=[1]
 #nthreads=[1,2]
 nwfs=[64]
 ntifs=[8]
-nzipf=[0.6,0.8]
+nzipf=[0.6]
 nwr_perc=[0.5]
 #ntifs=[1,4,8,16,32]
 ntxn=1000000
@@ -33,7 +29,8 @@ nnet_delay=['100000UL']
 
 simple = [
 
-[2,10000,'YCSB','HSTORE',0.1,1,1,0.6,0.5,0.5],
+[2,10000,'YCSB','OCC',1.0,1,1,0.6,0.5,0.5],
+[2,10000,'YCSB','MVCC',1.0,1,1,0.6,0.5,0.5],
 
 
 #[2,10000,'TPCC','NO_WAIT',30,2,8,16]
@@ -48,97 +45,68 @@ experiments = [
 ]
 
 experiments_ycsb = [
-    [n,ntxn,'YCSB',cc,m,t,wf,tif,z,1.0-wp,wp] for n,m,cc,t,wf,tif,z,wp in itertools.product(nnodes,nmpr,nalgos,nthreads,nwfs,ntifs,nzipf,nwr_perc)
+    [n,ntxn,'YCSB',cc,m,t,tif,z,1.0-wp,wp] for n,m,cc,t,tif,z,wp in itertools.product(nnodes,nmpr,nalgos,nthreads,ntifs,nzipf,nwr_perc)
 ]
 
-experiments_100K = [
-    [n,100000,'TPCC','HSTORE',m] for n,m in itertools.product([2,4,8,16],[1]+range(0,101,10))
-]
+def test():
+    fmt = fmt_ycsb
+    exp = [[2,10000,'YCSB','OCC',1.0,1,1,0.6,0.5,0.5],
+    [2,10000,'YCSB','MVCC',1.0,1,1,0.6,0.5,0.5],
+    ]
+    return fmt[0],exp
 
-experiments_10K_1node = [
-    [n,10000,'TPCC',cc,m,t,wh] for n,m,cc,t,wh in itertools.product([1],[1]+range(0,21,10),['HSTORE','NO_WAIT','WAIT_DIE','TIMESTAMP','MVCC','OCC'],[1,2,4],[4])
-]
-experiments_10K_wait_die = [
-    [n,10000,'TPCC',cc,m] for n,m,cc in itertools.product([2,4],[1]+range(0,51,10),['WAIT_DIE'])
-]
-experiments_10K_no_wait = [
-    [n,10000,'TPCC',cc,m] for n,m,cc in itertools.product([2,4],[1]+range(0,51,10),['NO_WAIT'])
-]
-experiments_10K_2pl = experiments_10K_no_wait + experiments_10K_wait_die
+# Performance: throughput vs. node count
+# Vary: Node count, % writes
+def experiment_1():
+    fmt = fmt_ycsb
+    nnodes = [1,2,4,8,16,32]
+    nmpr=[0.01]
+    nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE','HSTORE_SPEC']
+    nthreads=[1]
+    ntifs=[8]
+    nzipf=[0.6]
+    nwr_perc=[0.0,0.25,0.5]
+    ntxn=1000000
+    exp = [[n,ntxn,'YCSB',cc,m,t,tif,z,1.0-wp,wp] for n,m,cc,t,tif,z,wp in itertools.product(nnodes,nmpr,nalgos,nthreads,ntifs,nzipf,nwr_perc)]
+    return fmt[0],exp
 
-experiments_10K_hstore = [
-    [n,10000,'TPCC',cc,m] for n,m,cc in itertools.product([2,4],[1]+range(0,51,10),['HSTORE'])
-]
+# Performance: throughput vs. node count
+# Vary: Node count, Contention
+def experiment_2():
+    fmt = fmt_ycsb
+    nnodes = [1,2,4,8,16,32]
+    nmpr=[0.01]
+    nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE','HSTORE_SPEC']
+    nthreads=[1]
+    ntifs=[8]
+    nzipf=[0.0,0.2,0.4,0.6,0.8]
+    nwr_perc=[0.5]
+    ntxn=1000000
+    exp = [[n,ntxn,'YCSB',cc,m,t,tif,z,1.0-wp,wp] for n,m,cc,t,tif,z,wp in itertools.product(nnodes,nmpr,nalgos,nthreads,ntifs,nzipf,nwr_perc)]
+    return fmt[0],exp
 
-experiments_10K_tso = [
-    [n,10000,'TPCC',cc,m] for n,m,cc in itertools.product([2,4],[1]+range(0,51,10),['TIMESTAMP'])
-]
+# Performance: throughput vs. node count
+# Vary: Node count, parts touched per txn
+def experiment_3():
+    fmt = fmt_ycsb
+    nnodes = [1,2,4,8,16,32]
+    nmpr=[0.01]
+    nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE','HSTORE_SPEC']
+    nthreads=[1]
+    ntifs=[8]
+    nzipf=[0.6]
+    nwr_perc=[0.5]
+    ntxn=1000000
+    exp = [[n,ntxn,'YCSB',cc,m,t,tif,z,1.0-wp,wp] for n,m,cc,t,tif,z,wp in itertools.product(nnodes,nmpr,nalgos,nthreads,ntifs,nzipf,nwr_perc)]
+    return fmt[0],exp
 
-experiments_10K_mvcc = [
-    [n,10000,'TPCC',cc,m] for n,m,cc in itertools.product([2,4],[1]+range(0,51,10),['MVCC'])
-]
+experiment_map = {
+    'test': test,
+    'experiment_1': experiment_1,
+    'experiment_2': experiment_2,
+    'experiment_3': experiment_3,
+}
 
-experiments_10K_occ = [
-    [n,10000,'TPCC',cc,m] for n,m,cc in itertools.product([2,4],[1]+range(0,51,10),['OCC'])
-]
-
-experiments_10K_all = experiments_10K_2pl + experiments_10K_tso + experiments_10K_hstore + experiments_10K_mvcc + experiments_10K_occ
-
-experiments_10K_wait_die_mt = [
-    [n,10000,'TPCC',cc,m,t,wf*n,tif] for n,m,cc,t,wf,tif in itertools.product([1,2,4],[1]+range(0,51,10),['WAIT_DIE'],[1,2],[1,2,4],[1,2,4,8,32,64])
-]
-experiments_10K_no_wait_mt = [
-    [n,10000,'TPCC',cc,m,t,wf*n,tif] for n,m,cc,t,wf,tif in itertools.product([1,2,4],[1]+range(0,51,10),['NO_WAIT'],[1,2],[1,2,4],[1,2,4,8,32,64])
-]
-experiments_10K_2pl_mt = experiments_10K_no_wait_mt + experiments_10K_wait_die_mt
-
-experiments_10K_hstore_mt = [
-    [n,10000,'TPCC',cc,m,t] for n,m,cc,t in itertools.product([2,4],[1]+range(0,51,10),['HSTORE'],[1,2,4])
-]
-
-experiments_10K_tso_mt = [
-    [n,10000,'TPCC',cc,m,t,wf*n,tif] for n,m,cc,t,wf,tif in itertools.product([1,2,4],[1]+range(0,51,10),['TIMESTAMP'],[1,2],[1,2,4],[1,2,4,8,32,64])
-]
-
-experiments_10K_mvcc_mt = [
-    [n,10000,'TPCC',cc,m,t,wf*n,tif] for n,m,cc,t,wf,tif in itertools.product([1,2,4],[1]+range(0,51,10),['MVCC'],[1,2],[1,2,4],[1,2,4,8,32,64])
-]
-
-experiments_10K_occ_mt = [
-    [n,10000,'TPCC',cc,m,t] for n,m,cc,t in itertools.product([2,4],[1]+range(0,51,10),['OCC'],[1,2,4])
-]
-
-experiments_10K_all_mt = experiments_10K_2pl_mt + experiments_10K_tso_mt + experiments_10K_mvcc_mt #+ experiments_10K_hstore_mt + experiments_10K_occ_mt
-
-experiments_10K_wh = [
-    [n,10000,'TPCC',cc,m,t,n*t*wh] for n,m,cc,t,wh in itertools.product([2],[1]+range(0,51,10),['HSTORE','NO_WAIT','WAIT_DIE','TIMESTAMP','MVCC','OCC'],[1],[1,2,3,4,5])
-]
-
-experiments_1K = [
-    [n,1000,'TPCC',cc,m] for n,m,cc in itertools.product([2,4,8],[1]+range(0,51,10),['HSTORE','NO_WAIT','WAIT_DIE'])
-]
-
-experiments_1K_2pl = [
-    [n,1000,'TPCC',cc,m] for n,m,cc in itertools.product([2,4,8],[1]+range(0,51,10),['NO_WAIT','WAIT_DIE'])
-]
-
-experiments_1K_hstore = [
-    [n,1000,'TPCC',cc,m] for n,m,cc in itertools.product([2,4,8],[1]+range(0,51,10),['HSTORE'])
-]
-
-experiments_1K_tso = [
-    [n,1000,'TPCC',cc,m] for n,m,cc in itertools.product([2],[30],['TIMESTAMP'])
-]
-
-experiments_n2 = [
-    [2,10000,'TPCC','HSTORE',m] for m in [1] + range(0,101,10)
-]
-experiments_n4 = [
-    [4,10000,'TPCC','HSTORE',m] for m in [1] + range(0,101,10)
-]
-
-# Configs used in output file names
-#config_names=["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR"]#,"THREAD_CNT","REM_THREAD_CNT","PART_CNT"]
 
 # Default values for variable configurations
 configs = {
@@ -165,5 +133,5 @@ configs = {
 ##################
 # FIXME
 #################
-experiments = fmt7 + simple
-config_names = fmt7[0]
+experiments = fmt_ycsb + experiments_ycsb
+config_names = fmt_ycsb[0]
