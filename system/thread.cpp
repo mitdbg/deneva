@@ -599,7 +599,6 @@ RC thread_t::run() {
 					assert(m_query->txn_id != UINT64_MAX);
 
 #if WORKLOAD == TPCC
-<<<<<<< HEAD
         if(((tpcc_query*)m_query)->rbk && m_query->rem_req_state == TPCC_FIN) {
           INC_STATS(get_thd_id(),txn_cnt,1);
 			    INC_STATS(get_thd_id(), rbk_abort_cnt, 1);
@@ -623,31 +622,6 @@ RC thread_t::run() {
         m_txn->state = START;
         m_txn->rc = RCOK;
         m_txn->spec = false;
-=======
-					if(((tpcc_query*)m_query)->rbk && m_query->rem_req_state == TPCC_FIN) {
-						INC_STATS(get_thd_id(),txn_cnt,1);
-						INC_STATS(get_thd_id(), rbk_abort_cnt, 1);
-						timespan = get_sys_clock() - m_txn->starttime;
-						INC_STATS(get_thd_id(), run_time, timespan);
-						INC_STATS(get_thd_id(), latency, timespan);
-						txn_pool.delete_txn(g_node_id,m_query->txn_id);
-						txn_cnt++;
-						// Send "result" back to client
-						rem_qry_man.send_client_rsp(m_query);
-						//ATOM_SUB(txn_pool.inflight_cnt,1);
-						break;
-					}
-#endif
-					//rc = m_txn->finish(rc);
-					//txn_pool.add_txn(g_node_id,m_txn,m_query);
-					INC_STATS(get_thd_id(), abort_cnt, 1);
-					m_txn->abort_cnt++;
-					m_query->rtype = RTXN;
-					m_query->rc = RCOK;
-					m_query->reset();
-					m_txn->state = START;
-					m_txn->spec = false;
->>>>>>> e03114df488e9ead4b27a701163e89032a0a0bed
 
 #if DEBUG_TIMELINE
 					printf("ABORT %ld %ld\n",m_txn->get_txn_id(),get_sys_clock());
