@@ -103,10 +103,10 @@ for exp in exps:
                     assert(False)
                 machines = sorted(machines_[:cfgs["NODE_CNT"]])
                 # TODO: ensure that machine order and node order is the same for ifconfig
-                f = open("istc_ifconfig.txt",'r');
+                f = open(cfg_fname,'r');
                 lines = f.readlines()
                 f.close()
-                with open(cfg_fname,'w') as f_ifcfg:
+                with open("ifconfig.txt",'w') as f_ifcfg:
                     for line in lines:
                         line = line.rstrip('\n')
                         if cluster == 'istc':

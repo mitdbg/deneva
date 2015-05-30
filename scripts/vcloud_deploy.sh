@@ -3,7 +3,7 @@ LOCAL_UNAME=benchpress
 USERNAME=root
 HOSTS="$1"
 IDENTITY="/usr0/home/${LOCAL_UNAME}/.ssh/id_rsa_vcloud"
-NODE_CNT=$3
+NODE_CNT="$3"
 count=0
 
 for HOSTNAME in ${HOSTS}; do
