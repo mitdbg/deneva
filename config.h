@@ -31,7 +31,7 @@
 #define STATS_ENABLE				true
 #define TIME_ENABLE					true //STATS_ENABLE
 
-#define MAX_TXN_IN_FLIGHT 1000 
+#define MAX_TXN_IN_FLIGHT 1
 
 /***********************************************/
 // Memory System
@@ -57,9 +57,9 @@
 /***********************************************/
 // Message Passing
 /***********************************************/
-#define TPORT_TYPE "ipc"
-#define TPORT_TYPE_IPC true
-#define TPORT_PORT "_.ipc"
+#define TPORT_TYPE "tcp"
+#define TPORT_TYPE_IPC false
+#define TPORT_PORT 7000
 
 #define MAX_TPORT_NAME 128
 #define MSG_SIZE 128 // in bytes
@@ -74,7 +74,7 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, OCC, VLL
-#define CC_ALG OCC
+#define CC_ALG MVCC
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER					false
@@ -130,7 +130,7 @@
 // max number of rows touched per transaction
 #define MAX_ROW_PER_TXN				64
 #define QUERY_INTVL 				1UL
-#define MAX_TXN_PER_PART 1000000
+#define MAX_TXN_PER_PART 10000
 #define FIRST_PART_LOCAL 			true
 #define MAX_TUPLE_SIZE				1024 // in bytes
 // ==== [YCSB] ====

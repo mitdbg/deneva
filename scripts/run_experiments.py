@@ -118,9 +118,9 @@ for exp in exps:
                                 f_ifcfg.write("172.19.153." + line + "\n")
 
                 if cfgs["WORKLOAD"] == "TPCC":
-                    files = ["rundb","ifconfig.txt","./benchmarks/TPCC_short_schema.txt"]
+                    files = ["rundb","runcl","ifconfig.txt","./benchmarks/TPCC_short_schema.txt"]
                 elif cfgs["WORKLOAD"] == "YCSB":
-                    files = ["rundb","ifconfig.txt","./benchmarks/YCSB_schema.txt"]
+                    files = ["rundb","runcl","ifconfig.txt","./benchmarks/YCSB_schema.txt"]
                 for m,f in itertools.product(machines,files):
                     if cluster == 'istc':
                         cmd = 'scp {}/{} {}.csail.mit.edu:/home/{}/'.format(PATH,f,m,uname)
@@ -131,7 +131,7 @@ for exp in exps:
 
                 print("Deploying: {}".format(output_f))
                 if cluster == 'istc':
-                    cmd = './scripts/deploy.sh \'{}\' /home/{}/ {}'.format(' '.join(machines),uname),cfgs["NODE_CNT"]
+                    cmd = './scripts/deploy.sh \'{}\' /home/{}/ {}'.format(' '.join(machines),uname,cfgs["NODE_CNT"])
                 elif cluster == 'vcloud':
                     cmd = './scripts/vcloud_deploy.sh \'{}\' /{}/ {}'.format(' '.join(machines),uname,cfgs["NODE_CNT"])
                 print(cmd)
