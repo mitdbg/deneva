@@ -1,7 +1,8 @@
 #!/bin/bash
+LOCAL_UNAME=benchpress
 USERNAME=root
 HOSTS="$1"
-IDENTITY="/usr0/home/dvanaken/.ssh/id_rsa_vcloud"
+IDENTITY="/usr0/home/${LOCAL_UNAME}/.ssh/id_rsa_vcloud"
 count=0
 
 for HOSTNAME in ${HOSTS}; do

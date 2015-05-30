@@ -8,7 +8,8 @@ from experiments import *
 from helper import *
 
 uname = "root"
-identity = "/usr0/home/dvanaken/.ssh/id_rsa_vcloud"
+local_uname = "benchpress"
+identity = "/usr0/home/" + local_uname + "/.ssh/id_rsa_vcloud"
 
 now = datetime.datetime.now()
 strnow=now.strftime("%Y%m%d-%H%M%S")

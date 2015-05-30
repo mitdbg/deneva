@@ -1,8 +1,9 @@
 #!/bin/bash
 USERNAME=root
+LOCAL_UNAME=benchpress
 HOSTS="$1"
 SCRIPT="$2"
-IDENTITY="/usr0/home/dvanaken/.ssh/id_rsa_vcloud"
+IDENTITY="/usr0/home/${LOCAL_UNAME}/.ssh/id_rsa_vcloud"
 count=0
 date --rfc-3339=ns
 for HOSTNAME in ${HOSTS}; do
