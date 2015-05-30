@@ -295,6 +295,7 @@ void row_t::return_row(access_t type, txn_man * txn, row_t * row) {
 		manager->write( row, txn->end_ts );
 	row->free_row();
 	mem_allocator.free(row, sizeof(row_t));
+  manager->release();
 	return;
 #elif CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || CC_ALG == VLL
 	assert (row != NULL);

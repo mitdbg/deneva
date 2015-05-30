@@ -28,6 +28,7 @@
 #include "dl_detect.h"
 #include "query_work_queue.h"
 #include "txn_pool.h"
+//#include "client_txn.h"
 #ifndef NOGRAPHITE
 #include "carbon_user.h"
 #endif
@@ -47,6 +48,8 @@ class Transport;
 class Remote_query;
 class TxnPool;
 class QWorkQueue;
+class Client_query_queue;
+class Client_txn;
 
 typedef uint32_t UInt32;
 typedef int32_t SInt32;
@@ -63,6 +66,7 @@ extern Stats stats;
 extern DL_detect dl_detector;
 extern Manager glob_manager;
 extern Query_queue query_queue;
+extern Client_query_queue client_query_queue;
 extern Plock part_lock_man;
 extern OptCC occ_man;
 extern SpecEx spec_man;
@@ -73,6 +77,7 @@ extern Transport tport_man;
 extern Remote_query rem_qry_man;
 extern TxnPool txn_pool;
 extern QWorkQueue work_queue;
+extern Client_txn client_man;
 
 extern bool volatile warmup_finish;
 extern bool volatile enable_thread_mem_pool;
@@ -80,6 +85,13 @@ extern pthread_barrier_t warmup_bar;
 #ifndef NOGRAPHITE
 extern carbon_barrier_t enable_barrier;
 #endif
+
+/******************************************/
+// Client Global Params 
+/******************************************/
+extern UInt32 g_client_thread_cnt;
+extern UInt32 g_client_rem_thread_cnt;
+extern UInt32 g_client_node_cnt;
 
 /******************************************/
 // Global Parameter
@@ -104,7 +116,6 @@ extern bool g_ts_batch_alloc;
 extern UInt32 g_ts_batch_num;
 extern UInt32 g_inflight_max;
 
-
 extern bool g_hw_migrate;
 
 // YCSB
@@ -119,6 +130,7 @@ extern UInt64 g_synth_table_size;
 extern UInt32 g_req_per_query;
 extern UInt32 g_field_per_tuple;
 extern UInt32 g_init_parallelism;
+extern double g_mpr;
 
 // TPCC
 extern UInt32 g_num_wh;

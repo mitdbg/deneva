@@ -4,6 +4,7 @@
 #include "dl_detect.h"
 #include "manager.h"
 #include "query.h"
+#include "client_query.h"
 #include "plock.h"
 #include "occ.h"
 #include "specex.h"
@@ -12,12 +13,14 @@
 #include "query_work_queue.h"
 #include "remote_query.h"
 #include "txn_pool.h"
+#include "client_txn.h"
 
 mem_alloc mem_allocator;
 Stats stats;
 DL_detect dl_detector;
 Manager glob_manager;
 Query_queue query_queue;
+Client_query_queue client_query_queue;
 Plock part_lock_man;
 OptCC occ_man;
 SpecEx spec_man;
@@ -28,6 +31,7 @@ Transport tport_man;
 Remote_query rem_qry_man;
 TxnPool txn_pool;
 QWorkQueue work_queue;
+Client_txn client_man;
 
 bool volatile warmup_finish = false;
 bool volatile enable_thread_mem_pool = false;
@@ -69,6 +73,11 @@ UInt64 g_synth_table_size = SYNTH_TABLE_SIZE;
 UInt32 g_req_per_query = REQ_PER_QUERY;
 UInt32 g_field_per_tuple = FIELD_PER_TUPLE;
 UInt32 g_init_parallelism = INIT_PARALLELISM;
+UInt32 g_client_node_cnt = CLIENT_NODE_CNT;
+UInt32 g_client_thread_cnt = CLIENT_THREAD_CNT;
+UInt32 g_client_rem_thread_cnt = CLIENT_REM_THREAD_CNT;
+
+double g_mpr = MPR;
 
 UInt32 g_num_wh = NUM_WH;
 double g_perc_payment = PERC_PAYMENT;

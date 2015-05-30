@@ -52,7 +52,7 @@ def tput(xval,vval,summary,
     if vname == "NETWORK_DELAY":
         bbox = [0.8,0.95]
     print("Created plot {}".format(name))
-    draw_line(name,tpt,xval,ylab='Throughput (Txn/sec)',xlab='Multi-Partition Rate',title=_title,bbox=bbox,ncol=2) 
+    draw_line(name,tpt,xval,ylab='Throughput (Txn/sec)',xlab=xname,title=_title,bbox=bbox,ncol=2) 
 
 
 

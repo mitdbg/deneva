@@ -2,7 +2,7 @@ import os, sys, re, math, os.path, math
 from helper import *
 from experiments import experiments as experiments
 from experiments import configs
-from experiments import nnodes,nmpr,nalgos,nthreads,nwfs,ntifs,nnet_delay,ntxn
+from experiments import nnodes,nmpr,nalgos,nthreads,nwfs,ntifs,nnet_delay,ntxn,nzipf,nwr_perc
 from plot_helper import *
 import glob
 
@@ -66,6 +66,9 @@ algos = nalgos #['HSTORE','NO_WAIT','WAIT_DIE','TIMESTAMP','MVCC','OCC']
 tifs = ntifs
 net_delay = nnet_delay
 whs = nwfs
+zipf = nzipf
+wr_perc = nwr_perc
+
 
 #artificial network delay
 #for algo,thread,wh,node in itertools.product(algos,threads,whs,nodes):
@@ -83,7 +86,33 @@ whs = nwfs
 #    _cfg=[nodes[0],algo,txn_cnt,threads[0]]
 #    _title="{}".format(algo)
 #    tput(mpr,warehouses,summary,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="MPR",vname="NUM_WH",title=_title)
+#for n,t,wh,tif in itertools.product(nodes,threads,whs,tifs):
+    #tput_mpr(mpr,nodes,[algo], txn_cnt,summary)
+#    _cfg_fmt = ["MAX_TXN_PER_PART","WORKLOAD","NODE_CNT","THREAD_CNT","NUM_WH","MAX_TXN_IN_FLIGHT"]
+#    _cfg=[txn_cnt,'TPCC',n,t,wh,tif]
+#    _title="{} {} Nodes".format('TPCC',n)
+#    tput(mpr,algos,summary,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="MPR",vname="CC_ALG",title=_title)
 
+#exit()
+
+for n,z,wr,t,tif in itertools.product(nodes,zipf,wr_perc,threads,tifs):
+    #tput_mpr(mpr,nodes,[algo], txn_cnt,summary)
+    _cfg_fmt = ["MAX_TXN_PER_PART","WORKLOAD","NODE_CNT","THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC"]
+    _cfg=[txn_cnt,'YCSB',n,t,tif,z,1.0-wr,wr]
+    _title="{} {} Nodes {}% Writes".format('YCSB',n,wr*100)
+    tput(mpr,algos,summary,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="MPR",vname="CC_ALG",title=_title)
+
+exit()
+ 
+for m,z,wr,t,wh,tif in itertools.product(mpr,zipf,wr_perc,threads,whs,tifs):
+    #tput_mpr(mpr,nodes,[algo], txn_cnt,summary)
+    _cfg_fmt = ["MAX_TXN_PER_PART","WORKLOAD","MPR","THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC"]
+    _cfg=[txn_cnt,'YCSB',m,t,tif,z,1.0-wr,wr]
+    _title="{} {} MPR {}% Writes".format('YCSB',m,wr*100)
+    tput(nodes,algos,summary,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="NODE_CNT",vname="CC_ALG",title=_title)
+
+exit()
+ 
 for algo,thread in itertools.product(algos,threads):
     #tput_mpr(mpr,nodes,[algo], txn_cnt,summary)
     _cfg_fmt = ["CC_ALG","MAX_TXN_PER_PART","THREAD_CNT","NUM_WH"]
