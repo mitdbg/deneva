@@ -131,7 +131,7 @@ for exp in exps:
 
                 print("Deploying: {}".format(output_f))
                 if cluster == 'istc':
-                    cmd = './scripts/deploy.sh \'{}\' /home/{}/'.format(' '.join(machines),uname)
+                    cmd = './scripts/deploy.sh \'{}\' /home/{}/ {}'.format(' '.join(machines),uname),cfgs["NODE_CNT"]
                 elif cluster == 'vcloud':
                     cmd = './scripts/vcloud_deploy.sh \'{}\' /{}/ {}'.format(' '.join(machines),uname,cfgs["NODE_CNT"])
                 print(cmd)
@@ -153,16 +153,20 @@ for exp in exps:
 
             else:
                 nnodes = cfgs["NODE_CNT"]
+                nclnodes = cfgs["CLIENT_NODE_CNT"]
                 pids = []
                 print("Deploying: {}".format(output_f))
-                for n in range(nnodes):
-                    cmd = "./rundb -nid{}".format(n)
+                for n in range(nnodes+nclnodes):
+                    if n < nnodes:
+                        cmd = "./rundb -nid{}".format(n)
+                    else:
+                        cmd = "./runcl -nid{}".format(n)
                     print(cmd)
                     cmd = shlex.split(cmd)
                     ofile_n = "{}{}_{}.out".format(result_dir,n,output_f)
                     ofile = open(ofile_n,'w')
                     p = subprocess.Popen(cmd,stdout=ofile,stderr=ofile)
                     pids.insert(0,p)
-                for n in range(nnodes):
+                for n in range(nnodes + nclnodes):
                     pids[n].wait()
 

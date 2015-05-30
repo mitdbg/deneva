@@ -348,7 +348,7 @@ void ycsb_query::gen_requests(uint64_t thd_id, workload * h_wl) {
 		assert(row_id < table_size);
 		uint64_t primary_key = row_id * g_part_cnt + part_id;
 		//uint64_t primary_key = row_id * g_virtual_part_cnt + part_id;
-		assert(primary_key % g_part_cnt == thd_id);
+		assert(primary_key % g_part_cnt == part_id);
 		req->key = primary_key;
 		req->value = rand() % (1<<8);
 		// Make sure a single row is not accessed twice
