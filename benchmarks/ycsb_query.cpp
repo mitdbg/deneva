@@ -12,7 +12,24 @@ void ycsb_query::init(uint64_t thd_id, workload * h_wl) {
 //	mrand = (myrand *) mem_allocator.alloc(sizeof(myrand), thd_id);
 //	mrand->init(thd_id);
 //	cout << g_req_per_query << endl;
-	pid = GET_PART_ID(0,g_node_id);
+	//pid = GET_PART_ID(0,g_node_id);
+	//requests = (ycsb_request *) 
+	//	mem_allocator.alloc(sizeof(ycsb_request) * g_req_per_query, thd_id);
+	//part_to_access = (uint64_t *) 
+	//	mem_allocator.alloc(sizeof(uint64_t) * g_part_per_txn, thd_id);
+	//zeta_2_theta = zeta(2, g_zipf_theta);
+	//if (the_n == 0) {
+	//	//uint64_t table_size = g_synth_table_size / g_part_cnt;
+	//	uint64_t table_size = g_synth_table_size / g_virtual_part_cnt;
+	//	the_n = table_size - 1;
+	//	denom = zeta(the_n, g_zipf_theta);
+	//}
+	//gen_requests(pid, h_wl);
+    init(thd_id, h_wl, g_node_id);
+}
+
+void ycsb_query::init(uint64_t thd_id, workload * h_wl, uint64_t node_id) {
+	pid = GET_PART_ID(0,node_id);
 	requests = (ycsb_request *) 
 		mem_allocator.alloc(sizeof(ycsb_request) * g_req_per_query, thd_id);
 	part_to_access = (uint64_t *) 
@@ -193,6 +210,81 @@ uint64_t ycsb_query::zipf(uint64_t n, double theta) {
 	return 1 + (uint64_t)(n * pow(eta*u -eta + 1, alpha));
 }
 
+void ycsb_query::client_query(base_query * query, uint64_t dest_id) {
+#if DEBUG_DISTR
+    	printf("Sending RTXN %ld\n",query->txn_id);
+#endif
+	ycsb_query * m_query = (ycsb_query *) query;
+
+	// Maximum number of parameters
+	// NOTE: Adjust if parameters sent is changed
+	int total = 6 + m_query->part_num + m_query->request_cnt;
+
+	void ** data = new void *[total];
+	int * sizes = new int [total];
+	int num = 0;
+	RemReqType rtype = RTXN;
+	uint64_t _pid = m_query->pid;
+
+	data[num] = &m_query->txn_id;
+	sizes[num++] = sizeof(txnid_t);
+	data[num] = &rtype;
+	sizes[num++] = sizeof(RemReqType);
+
+	data[num] = &_pid;
+	sizes[num++] = sizeof(uint64_t);
+
+    	data[num] = &m_query->part_num;
+    	sizes[num++] = sizeof(uint64_t);
+    	for (uint64_t i = 0; i < m_query->part_num; ++i) {
+        	data[num] = &m_query->part_to_access[i];
+        	sizes[num++] = sizeof(uint64_t);
+    	}
+    	data[num] = &m_query->access_cnt;
+    	sizes[num++] = sizeof(uint64_t);
+    	data[num] = &m_query->request_cnt;
+    	sizes[num++] = sizeof(uint64_t);
+
+    	for (uint64_t i = 0; i < m_query->request_cnt; ++i) {
+        	data[num] = &m_query->requests[i];
+        	sizes[num++] = sizeof(ycsb_request);
+    	}
+	rem_qry_man.send_remote_query(GET_NODE_ID(m_query->pid), data, sizes, num);
+}
+
+void ycsb_query::unpack_client(base_query * query, void * d) {
+	ycsb_query * m_query = (ycsb_query *) query;
+	char * data = (char *) d;
+	uint64_t ptr = HEADER_SIZE + sizeof(txnid_t) + sizeof(RemReqType);
+    	m_query->part_to_access = (uint64_t *)
+            	mem_allocator.alloc(sizeof(uint64_t) * g_part_cnt, thd_id);
+	m_query->requests = (ycsb_request *) 
+		mem_allocator.alloc(sizeof(ycsb_request) * g_req_per_query, thd_id);
+    	m_query->reset();
+    	m_query->client_id = m_query->return_id;
+    	memcpy(&m_query->pid, &data[ptr], sizeof(uint64_t));
+    	ptr += sizeof(uint64_t);
+
+    	memcpy(&m_query->part_num, &data[ptr], sizeof(uint64_t));
+    	ptr += sizeof(uint64_t);
+    	for (uint64_t i = 0; i < m_query->part_num; ++i) {
+        	memcpy(&m_query->part_to_access[i], &data[ptr], sizeof(uint64_t));
+        	ptr += sizeof(uint64_t);
+    	}
+
+    	memcpy(&m_query->access_cnt, &data[ptr], sizeof(uint64_t));
+    	ptr += sizeof(uint64_t);
+    	memcpy(&m_query->request_cnt, &data[ptr], sizeof(uint64_t));
+    	ptr += sizeof(uint64_t);
+
+    	for (uint64_t i = 0; i < m_query->request_cnt; ++i) {
+        	memcpy(&m_query->requests[i], &data[ptr], sizeof(ycsb_request));
+        	ptr += sizeof(ycsb_request);
+    	}
+	m_query->req = m_query->requests[0];
+
+}
+
 void ycsb_query::gen_requests(uint64_t thd_id, workload * h_wl) {
 #if CC_ALG == HSTORE
 	assert(g_virtual_part_cnt == g_part_cnt);
@@ -204,18 +296,18 @@ void ycsb_query::gen_requests(uint64_t thd_id, workload * h_wl) {
 	//UInt32 r = rand() % 100;
 	//if (r < g_perc_multi_part) {
 	if (r < g_mpr) {
-    bool rem = false;
+    	bool rem = false;
 		for (UInt32 i = 0; i < g_part_per_txn; i++) {
 			if (i == 0 && FIRST_PART_LOCAL)
 				part_to_access[part_num] = thd_id % g_part_cnt;
 				//part_to_access[part_num] = thd_id % g_virtual_part_cnt;
 			else {
-        if(!rem) {
-				  while((part_to_access[part_num] = rand() % g_part_cnt) == thd_id % g_part_cnt) {}
-          rem = true;
-        }
-        else
-				  part_to_access[part_num] = rand() % g_part_cnt;
+        			if(!rem) {
+				  	while((part_to_access[part_num] = rand() % g_part_cnt) == thd_id % g_part_cnt) {}
+          				rem = true;
+        			}
+        			else
+				  	part_to_access[part_num] = rand() % g_part_cnt;
       }
 			UInt32 j;
 			for (j = 0; j < part_num; j++) 
@@ -256,6 +348,7 @@ void ycsb_query::gen_requests(uint64_t thd_id, workload * h_wl) {
 		assert(row_id < table_size);
 		uint64_t primary_key = row_id * g_part_cnt + part_id;
 		//uint64_t primary_key = row_id * g_virtual_part_cnt + part_id;
+		assert(primary_key % g_part_cnt == thd_id);
 		req->key = primary_key;
 		req->value = rand() % (1<<8);
 		// Make sure a single row is not accessed twice

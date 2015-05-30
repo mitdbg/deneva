@@ -2,14 +2,11 @@
 #include "ycsb.h"
 #include "tpcc.h"
 #include "test.h"
-#include "thread.h"
-#include "manager.h"
+#include "client_thread.h"
 #include "mem_alloc.h"
-#include "query.h"
-#include "plock.h"
-#include "occ.h"
-#include "vll.h"
+#include "client_query.h"
 #include "transport.h"
+#include "client_txn.h"
 
 void * f(void *);
 void * g(void *);
@@ -20,20 +17,19 @@ void network_test_recv();
 
 
 // TODO the following global variables are HACK
-thread_t * m_thds;
+Client_thread_t * m_thds;
 
 // defined in parser.cpp
 void parser(int argc, char * argv[]);
 
 int main(int argc, char* argv[])
 {
+    printf("Running client...\n\n");
 	// 0. initialize global data structure
 	parser(argc, argv);
-#if SEED != 0
-  uint64_t seed = SEED + g_node_id;
-#else
+    assert(g_node_id >= g_node_cnt);
+
 	uint64_t seed = get_sys_clock();
-#endif
 	srand(seed);
 	printf("Random seed: %ld\n",seed);
 
@@ -51,13 +47,10 @@ int main(int argc, char* argv[])
 
 	int64_t starttime;
 	int64_t endtime;
-  starttime = get_server_clock();
+    starttime = get_server_clock();
 	// per-partition malloc
 	mem_allocator.init(g_part_cnt, MEM_SIZE / g_part_cnt); 
 	stats.init();
-	glob_manager.init();
-	if (g_cc_alg == DL_DETECT) 
-		dl_detector.init();
 	printf("mem_allocator initialized!\n");
 	workload * m_wl;
 	switch (WORKLOAD) {
@@ -77,53 +70,28 @@ int main(int argc, char* argv[])
 
 	rem_qry_man.init(g_node_id,m_wl);
 	tport_man.init(g_node_id);
-  work_queue.init();
-  txn_pool.init();
+    client_man.init();
 
 	// 2. spawn multiple threads
-	uint64_t thd_cnt = g_thread_cnt;
-	uint64_t rthd_cnt = g_rem_thread_cnt;
-	
+	uint64_t thd_cnt = g_client_thread_cnt;
+	uint64_t rthd_cnt = g_client_rem_thread_cnt;
+
 	pthread_t * p_thds = 
 		(pthread_t *) malloc(sizeof(pthread_t) * (thd_cnt + rthd_cnt));
 	pthread_attr_t attr;
 	pthread_attr_init(&attr);
 	cpu_set_t cpus;
-	m_thds = new thread_t[thd_cnt + rthd_cnt];
-	// query_queue should be the last one to be initialized!!!
+	m_thds = new Client_thread_t[thd_cnt + rthd_cnt];
+	//// query_queue should be the last one to be initialized!!!
 	// because it collects txn latency
-	//if (WORKLOAD != TEST) {
-	//	query_queue.init(m_wl);
-	//}
-	pthread_barrier_init( &warmup_bar, NULL, g_thread_cnt );
-	printf("query_queue initialized!\n");
-#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
-	part_lock_man.init(g_node_id);
-#elif CC_ALG == OCC
-	occ_man.init();
-#elif CC_ALG == VLL
-	vll_man.init();
-#endif
-
+	if (WORKLOAD != TEST) {
+		client_query_queue.init(m_wl);
+	}
+	pthread_barrier_init( &warmup_bar, NULL, thd_cnt );
 	for (uint32_t i = 0; i < thd_cnt + rthd_cnt; i++) 
 		m_thds[i].init(i, g_node_id, m_wl);
-
-  endtime = get_server_clock();
-  printf("Initialization Time = %ld\n", endtime - starttime);
-	if (WARMUP > 0){
-		printf("WARMUP start!\n");
-		for (uint32_t i = 0; i < thd_cnt - 1; i++) {
-			uint64_t vid = i;
-			CPU_ZERO(&cpus);
-      CPU_SET(i, &cpus);
-      pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
-			pthread_create(&p_thds[i], &attr, f, (void *)vid);
-		}
-		f((void *)(thd_cnt - 1));
-		for (uint32_t i = 0; i < thd_cnt - 1; i++)
-			pthread_join(p_thds[i], NULL);
-		printf("WARMUP finished!\n");
-	}
+    endtime = get_server_clock();
+    printf("Initialization Time = %ld\n", endtime - starttime);
 	warmup_finish = true;
 	pthread_barrier_init( &warmup_bar, NULL, thd_cnt + rthd_cnt);
 #ifndef NOGRAPHITE
@@ -139,57 +107,24 @@ int main(int argc, char* argv[])
 		uint64_t vid = i;
 		CPU_ZERO(&cpus);
 #if TPORT_TYPE_IPC
-    CPU_SET(g_node_id * (g_thread_cnt) + cpu_cnt, &cpus);
+        CPU_SET(g_node_id * thd_cnt + cpu_cnt, &cpus);
 #else
-    CPU_SET(cpu_cnt, &cpus);
+        CPU_SET(cpu_cnt, &cpus);
 #endif
 		cpu_cnt++;
-    pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
+        pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
 		pthread_create(&p_thds[i], &attr, worker, (void *)vid);
-  }
+    }
 
-  nn_worker((void *)(thd_cnt));
+    nn_worker((void *)(thd_cnt));
 
 	for (uint32_t i = 0; i < thd_cnt; i++) 
 		pthread_join(p_thds[i], NULL);
 
-    /*
-	for (uint32_t i = 0; i < thd_cnt; i++) {
-		uint64_t vid = i;
-		CPU_ZERO(&cpus);
-#if TPORT_TYPE_IPC
-    CPU_SET(g_node_id * (g_thread_cnt) + cpu_cnt, &cpus);
-    //CPU_SET(g_node_id * (g_thread_cnt + g_rem_thread_cnt) + cpu_cnt, &cpus);
-#else
-    CPU_SET(cpu_cnt, &cpus);
-#endif
-		cpu_cnt++;
-    pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
-		pthread_create(&p_thds[i], &attr, f, (void *)vid);
-	}
-
-
-	for (uint32_t i = 0; i < rthd_cnt; i++) {
-		CPU_ZERO(&cpus);
-#if TPORT_TYPE_IPC
-    //CPU_SET(g_node_id * (g_thread_cnt + g_rem_thread_cnt) + cpu_cnt, &cpus);
-#else
-    CPU_SET(cpu_cnt, &cpus);
-  	pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
-#endif
-		cpu_cnt++;
-		pthread_create(&p_thds[thd_cnt+i], &attr, g, (void *)(thd_cnt + i));
-	//g((void *)(thd_cnt));
-	}
-
-
-	for (uint32_t i = 0; i < thd_cnt + rthd_cnt; i++) 
-		pthread_join(p_thds[i], NULL);
-    */
 	endtime = get_server_clock();
 	
 	if (WORKLOAD != TEST) {
-		printf("PASS! SimTime = %ld\n", endtime - starttime);
+		printf("CLIENT PASS! SimTime = %ld\n", endtime - starttime);
 		if (STATS_ENABLE)
 			stats.print();
 	} else {
@@ -200,17 +135,19 @@ int main(int argc, char* argv[])
 
 void * worker(void * id) {
 	uint64_t tid = (uint64_t)id;
+    printf("Starting client worker: %lu\n", tid);
+    fflush(stdout);
 	m_thds[tid].run();
 	return NULL;
 }
 
 void * nn_worker(void * id) {
 	uint64_t tid = (uint64_t)id;
+    printf("Starting client nn_worker: %lu\n", tid);
+    fflush(stdout);
 	m_thds[tid].run_remote();
 	return NULL;
 }
-
-
 
 void network_test() {
 
@@ -230,6 +167,7 @@ void network_test() {
 		}
 		time = time/1000;
 		printf("Network Bytes: %d, s: %f\n",i,time/BILLION);
+        fflush(stdout);
 	}
 }
 

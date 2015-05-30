@@ -115,7 +115,7 @@ for e in experiments[1:]:
         os.system(cmd)
 
         if remote:
-            machines = sorted(machines_[:cfgs["NODE_CNT"]])
+            machines = sorted(machines_[:(cfgs["NODE_CNT"] + cfgs["CLIENT_NODE_CNT"])])
             # create ifconfig file
             # TODO: ensure that machine order and node order is the same for ifconfig
             f = open("vcloud_ifconfig.txt",'r');
@@ -129,16 +129,16 @@ for e in experiments[1:]:
                         f_ifcfg.write("172.19.153." + line + "\n")
 
             if cfgs["WORKLOAD"] == "TPCC":
-                files = ["rundb","ifconfig.txt","./benchmarks/TPCC_short_schema.txt"]
+                files = ["rundb","runcl","ifconfig.txt","./benchmarks/TPCC_short_schema.txt"]
             elif cfgs["WORKLOAD"] == "YCSB":
-                files = ["rundb","ifconfig.txt","./benchmarks/YCSB_schema.txt"]
+                files = ["rundb","runcl","ifconfig.txt","./benchmarks/YCSB_schema.txt"]
             for m,f in itertools.product(machines,files):
                 cmd = 'scp -i {} {}/{} root@172.19.153.{}:/{}/'.format(identity,PATH,f,m,uname)
                 print(cmd)
                 os.system(cmd)
 
             print("Deploying: {}".format(output_f))
-            cmd = './scripts/vcloud_deploy.sh \'{}\' /{}/'.format(' '.join(machines),uname)
+            cmd = './scripts/vcloud_deploy.sh \'{}\' /{}/ {}'.format(' '.join(machines),uname,cfgs["NODE_CNT"])
             print(cmd)
             os.system(cmd)
 
@@ -153,10 +153,15 @@ for e in experiments[1:]:
 
         else:
             nnodes = cfgs["NODE_CNT"]
+            clnodes = cfgs["CLIENT_NODE_CNT"]
             pids = []
             print("Deploying: {}".format(output_f))
-            for n in range(nnodes):
-                cmd = "./rundb -nid{}".format(n)
+            for n in range(nnodes + clnodes):
+                #for n in range(nnodes):
+                if n < nnodes:
+                    cmd = "./rundb -nid{}".format(n)
+                else:
+                    cmd = "./runcl -nid{}".format(n)
                 print(cmd)
                 cmd = shlex.split(cmd)
                 ofile_n = "{}{}_{}.out".format(result_dir,n,output_f)
@@ -164,7 +169,7 @@ for e in experiments[1:]:
                 #cmd = "./rundb -nid{} >> {}{}_{}.out &".format(n,result_dir,n,output_f)
                 p = subprocess.Popen(cmd,stdout=ofile,stderr=ofile)
                 pids.insert(0,p)
-            for n in range(nnodes):
+            for n in range(nnodes + clnodes):
                 pids[n].wait()
     #else:
     #    cmd = "mkdir {}/{}".format(test_dir,output_dir)

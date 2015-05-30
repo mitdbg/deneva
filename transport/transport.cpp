@@ -19,13 +19,14 @@
 
 	 */
 Transport::Transport() {
-	s = new Socket[g_node_cnt];
+    _node_cnt = g_node_cnt + g_client_node_cnt;
+	s = new Socket[_node_cnt];
 }
 
 
 Transport::~Transport() {
 	/*
-	for(uint64_t i=0;i<g_node_cnt;i++) {
+	for(uint64_t i=0;i<_node_cnt;i++) {
 		delete &s[i];
 	}
 	*/
@@ -35,12 +36,12 @@ void Transport::read_ifconfig(const char * ifaddr_file) {
 	uint64_t cnt = 0;
 	ifstream fin(ifaddr_file);
 	string line;
-  while (getline(fin, line)) {
+    while (getline(fin, line)) {
 		//memcpy(ifaddr[cnt],&line[0],12);
         strcpy(ifaddr[cnt],&line[0]);
 		cnt++;
 	}
-	for(uint64_t i=0;i<g_node_cnt;i++) {
+	for(uint64_t i=0;i<_node_cnt;i++) {
 		printf("%ld: %s\n",i,ifaddr[i]);
 	}
 }
@@ -51,8 +52,8 @@ void Transport::init(uint64_t node_id) {
 
 #if !TPORT_TYPE_IPC
 	// Read ifconfig file
-	ifaddr = new char *[g_node_cnt];
-	for(uint64_t i=0;i<g_node_cnt;i++) {
+	ifaddr = new char *[_node_cnt];
+	for(uint64_t i=0;i<_node_cnt;i++) {
 		ifaddr[i] = new char[MAX_IFADDR_LEN];
 	}
 	char * cpath = getenv("SCHEMA_PATH");
@@ -69,14 +70,14 @@ void Transport::init(uint64_t node_id) {
 	int rc;
 
 	int timeo = 1000; // timeout in ms
-	for(uint64_t i=0;i<g_node_cnt;i++) {
+	for(uint64_t i=0;i<_node_cnt;i++) {
 		s[i].sock.setsockopt(NN_SOL_SOCKET,NN_RCVTIMEO,&timeo,sizeof(timeo));
 	}
 
-	printf("Node ID: %d/%d\n",g_node_id,g_node_cnt);
+	printf("Node ID: %d/%lu\n",g_node_id,_node_cnt);
 
-	for(uint64_t i=0;i<g_node_cnt-1;i++) {
-		for(uint64_t j=i+1;j<g_node_cnt;j++) {
+	for(uint64_t i=0;i<_node_cnt-1;i++) {
+		for(uint64_t j=i+1;j<_node_cnt;j++) {
 			if(i != g_node_id && j != g_node_id) {
 				continue;
 			}
@@ -85,7 +86,7 @@ void Transport::init(uint64_t node_id) {
 #if TPORT_TYPE_IPC
 			sprintf(socket_name,"%s://node_%ld_%ld_%s",TPORT_TYPE,i,j,TPORT_PORT);
 #else
-			int port = TPORT_PORT + (i * g_node_cnt) + j;
+			int port = TPORT_PORT + (i * _node_cnt) + j;
 			if(i == g_node_id)
 				sprintf(socket_name,"%s://eth0:%d",TPORT_TYPE,port);
 			else
@@ -94,8 +95,7 @@ void Transport::init(uint64_t node_id) {
 			if(i == g_node_id) {
 				printf("Binding to %s\n",socket_name);
 				rc = s[j].sock.bind(socket_name);
-			}
-			else {
+			} else {
 				printf("Connecting to %s\n",socket_name);
 				rc = s[i].sock.connect(socket_name);
 			}
@@ -114,8 +114,7 @@ uint64_t Transport::get_node_id() {
 }
 
 void Transport::send_msg(uint64_t dest_id, void ** data, int * sizes, int num) {
-
-  uint64_t starttime = get_sys_clock();
+    uint64_t starttime = get_sys_clock();
 
 	// 1: Scrape data pointers for actual data
 	// Profile data for size
@@ -165,21 +164,20 @@ void Transport::send_msg(uint64_t dest_id, void ** data, int * sizes, int num) {
 		assert(false);
 	}
 
-  INC_STATS(1,time_tport_send,get_sys_clock() - starttime);
+    INC_STATS(1,time_tport_send,get_sys_clock() - starttime);
 	INC_STATS(1,msg_sent_cnt,1);
 	INC_STATS(1,msg_bytes,size);
-
 }
 
 // Listens to socket for messages from other nodes
 base_query * Transport::recv_msg() {
 	int bytes = 0;
 	void * buf;
-  base_query * query = NULL;
-  uint64_t starttime = get_sys_clock();
+    base_query * query = NULL;
+    uint64_t starttime = get_sys_clock();
 	
 	// FIXME: Currently unfair round robin; prioritizes nodes with low node_id
-	for(uint64_t i=0;i<g_node_cnt;i++) {
+	for(uint64_t i=0;i<_node_cnt;i++) {
 		bytes = s[i].sock.recv(&buf, NN_MSG, NN_DONTWAIT);
 
 		if(bytes <= 0 && errno != 11) {
@@ -207,29 +205,29 @@ base_query * Transport::recv_msg() {
 	memcpy(&time,&((char*)buf)[bytes-sizeof(ts_t)],sizeof(ts_t));
 
 #if NETWORK_DELAY > 0 && TPORT_TYPE_IPC
-  // Insert artificial network delay
-  ts_t nd_starttime = time;
-  while( (get_sys_clock() - nd_starttime) < NETWORK_DELAY) {}
+    // Insert artificial network delay
+    ts_t nd_starttime = time;
+    while( (get_sys_clock() - nd_starttime) < NETWORK_DELAY) {}
 #endif
 
 	ts_t time2 = get_sys_clock();
 	INC_STATS(1,tport_lat,time2 - time);
 
-  INC_STATS(1,time_tport_rcv, time2 - starttime);
+    INC_STATS(1,time_tport_rcv, time2 - starttime);
 
 	ts_t start = get_sys_clock();
 	INC_STATS(1,msg_rcv_cnt,1);
   
 	query = rem_qry_man.unpack(buf,bytes);
 #if DEBUG_DISTR
-	printf("Msg delay: %d->%d, %d bytes, %f s\n",query->return_id,query->dest_id,bytes,((float)(time2-time))/BILLION);
+	printf("Msg delay: %d->%d, %d bytes, %f s\n",query->return_id,
+            query->dest_id,bytes,((float)(time2-time))/BILLION);
 #endif
 	nn::freemsg(buf);	
-  assert(query->dest_id == get_node_id());
+    assert(query->dest_id == get_node_id());
 
 	INC_STATS(1,time_unpack,get_sys_clock()-start);
 	return query;
-
 }
 
 void Transport::simple_send_msg(int size) {
@@ -238,7 +236,7 @@ void Transport::simple_send_msg(int size) {
 	ts_t time = get_sys_clock();
 	memcpy(&((char*)sbuf)[0],&time,sizeof(ts_t));
 
-	int rc = s[(g_node_id + 1) % g_node_cnt].sock.send(&sbuf,NN_MSG,0);
+	int rc = s[(g_node_id + 1) % _node_cnt].sock.send(&sbuf,NN_MSG,0);
 	if(rc < 0) {
 		printf("send Error: %d %s\n",errno,strerror(errno));
 		assert(false);
@@ -248,7 +246,7 @@ void Transport::simple_send_msg(int size) {
 uint64_t Transport::simple_recv_msg() {
 	int bytes;
 	void * buf;
-	bytes = s[(g_node_id + 1) % g_node_cnt].sock.recv(&buf, NN_MSG, NN_DONTWAIT);
+	bytes = s[(g_node_id + 1) % _node_cnt].sock.recv(&buf, NN_MSG, NN_DONTWAIT);
 	if(bytes <= 0 ) {
 		if(errno != 11)
 			nn::freemsg(buf);	

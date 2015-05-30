@@ -4,12 +4,15 @@
 /***********************************************/
 // Simulation + Hardware
 /***********************************************/
-#define NODE_CNT 2
+#define NODE_CNT 3
 #define THREAD_CNT 1
 // REM_THREAD_CNT should be at least NODE_CNT*THREAD_CNT to avoid deadlock
 #define REM_THREAD_CNT 1
 // PART_CNT should be at least NODE_CNT
-#define PART_CNT 2
+#define PART_CNT 3
+#define CLIENT_NODE_CNT 1
+#define CLIENT_THREAD_CNT 1
+#define CLIENT_REM_THREAD_CNT 1
 
 // each transaction only accesses only 1 virtual partition. But the lock/ts manager and index are not aware of such partitioning. VIRTUAL_PART_CNT describes the request distribution and is only used to generate queries. For HSTORE, VIRTUAL_PART_CNT should be the same as PART_CNT.
 #define VIRTUAL_PART_CNT		PART_CNT	
@@ -28,7 +31,7 @@
 #define STATS_ENABLE				true
 #define TIME_ENABLE					true //STATS_ENABLE
 
-#define MAX_TXN_IN_FLIGHT 1
+#define MAX_TXN_IN_FLIGHT 32
 
 /***********************************************/
 // Memory System
@@ -155,7 +158,7 @@
 // are not modeled.
 #define TPCC_ACCESS_ALL 			false 
 #define WH_UPDATE					true
-#define NUM_WH 2
+#define NUM_WH 64
 // % of transactions that access multiple partitions
 #define MPR 1.0
 #define MPR_NEWORDER			20 // In %
@@ -216,7 +219,7 @@ extern TestCases					g_test_case;
 #define DEBUG_TIMESTAMP				false
 #define DEBUG_SYNTH					false
 #define DEBUG_ASSERT				false
-#define DEBUG_DISTR				    false
+#define DEBUG_DISTR				   true 
 #define DEBUG_TIMELINE				false
 
 /***********************************************/
