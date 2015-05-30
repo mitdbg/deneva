@@ -101,7 +101,7 @@ for exp in exps:
                     cfg_fname = "vcloud_ifconfig.txt"
                 else:
                     assert(False)
-                machines = sorted(machines_[:cfgs["NODE_CNT"]])
+                machines = sorted(machines_[:(cfgs["NODE_CNT"] + cfgs["CLIENT_NODE_CNT"])])
                 # TODO: ensure that machine order and node order is the same for ifconfig
                 f = open(cfg_fname,'r');
                 lines = f.readlines()
@@ -133,7 +133,7 @@ for exp in exps:
                 if cluster == 'istc':
                     cmd = './scripts/deploy.sh \'{}\' /home/{}/'.format(' '.join(machines),uname)
                 elif cluster == 'vcloud':
-                    cmd = './scripts/vcloud_deploy.sh \'{}\' /{}/'.format(' '.join(machines),uname)
+                    cmd = './scripts/vcloud_deploy.sh \'{}\' /{}/ {}'.format(' '.join(machines),uname,cfgs["NODE_CNT"])
                 print(cmd)
                 os.system(cmd)
 
