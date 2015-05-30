@@ -111,6 +111,9 @@ experiment_map = {
 # Default values for variable configurations
 configs = {
     "NODE_CNT" : 2,
+    "CLIENT_NODE_CNT" : 1,
+    "CLIENT_THREAD_CNT" : 1,
+    "CLIENT_REM_THREAD_CNT" : 1,
     "MAX_TXN_PER_PART" : 100,
     "WORKLOAD" : "TPCC",
     "CC_ALG" : "HSTORE",
