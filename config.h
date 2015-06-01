@@ -64,7 +64,7 @@
 #define MAX_TPORT_NAME 128
 #define MSG_SIZE 128 // in bytes
 #define HEADER_SIZE sizeof(uint32_t)*2 // in bits 
-#define MSG_TIMEOUT 60000000000UL // in ns
+#define MSG_TIMEOUT 10000000000UL // in ns
 #define NETWORK_TEST false 
 #define NETWORK_DELAY 10000000UL
 
@@ -74,7 +74,7 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, OCC, VLL
-#define CC_ALG MVCC
+#define CC_ALG HSTORE_SPEC
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER         false
@@ -215,12 +215,12 @@ extern TestCases          g_test_case;
 #define IDX_VERB          false
 #define VERB_ALLOC          true
 
-#define DEBUG_LOCK          false
-#define DEBUG_TIMESTAMP       false
-#define DEBUG_SYNTH         false
-#define DEBUG_ASSERT        false
-#define DEBUG_DISTR          false 
-#define DEBUG_TIMELINE        false
+#define DEBUG_LOCK					false
+#define DEBUG_TIMESTAMP				false
+#define DEBUG_SYNTH					false
+#define DEBUG_ASSERT				false
+#define DEBUG_DISTR				   false 
+#define DEBUG_TIMELINE				false
 
 /***********************************************/
 // Constant

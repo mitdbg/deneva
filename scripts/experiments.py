@@ -59,7 +59,8 @@ def test():
 # Vary: Node count, % writes
 def experiment_1():
     fmt = fmt_ycsb
-    nnodes = [1,2,4,8,16,32]
+    nnodes = [32]
+    #nnodes = [1,2,4,8,16,32]
     nmpr=[0.01]
     nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE','HSTORE_SPEC']
     nthreads=[1]
@@ -93,7 +94,8 @@ def experiment_1_plot(summary):
 # Vary: Node count, Contention
 def experiment_2():
     fmt = fmt_ycsb
-    nnodes = [1,2,4,8,16,32]
+    nnodes = [32]
+    #nnodes = [1,2,4,8,16,32]
     nmpr=[0.01]
     nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE','HSTORE_SPEC']
     nthreads=[1]
