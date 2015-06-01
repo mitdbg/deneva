@@ -74,7 +74,7 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, OCC, VLL
-#define CC_ALG NO_WAIT
+#define CC_ALG HSTORE_SPEC
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER					false
@@ -136,9 +136,9 @@
 // ==== [YCSB] ====
 #define INIT_PARALLELISM			16
 #define SYNTH_TABLE_SIZE 			(NODE_CNT*1024)
-#define ZIPF_THETA 0.6
-#define READ_PERC 1.0
-#define WRITE_PERC 0.0
+#define ZIPF_THETA 0.0
+#define READ_PERC 0.5
+#define WRITE_PERC 0.5
 #define SCAN_PERC 					0
 #define SCAN_LEN					20
 #define PART_PER_TXN 			  PART_CNT	

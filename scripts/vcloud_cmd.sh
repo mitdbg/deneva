@@ -7,7 +7,8 @@ IDENTITY="/usr0/home/${LOCAL_UNAME}/.ssh/id_rsa_vcloud"
 count=0
 date --rfc-3339=ns
 for HOSTNAME in ${HOSTS}; do
-	ssh -i ${IDENTITY} -n -o BatchMode=yes -o StrictHostKeyChecking=no -l ${USERNAME} 172.19.153.${HOSTNAME} "${SCRIPT}"; echo ${HOSTNAME} &
+	ssh -i ${IDENTITY} -n -o BatchMode=yes -o StrictHostKeyChecking=no -l ${USERNAME} 172.19.153.${HOSTNAME} "${SCRIPT}" &
+    #; echo ${HOSTNAME} &
 	count=`expr $count + 1`
 done
 

@@ -57,15 +57,16 @@ for exp in exps:
             cfgs["TPORT_TYPE"],cfgs["TPORT_TYPE_IPC"],cfgs["TPORT_PORT"]="\"tcp\"","false",7000
 
         output_f = get_outfile_name(cfgs)
+
+        # Check whether experiment has been already been run in this batch
+        if len(glob.glob('{}*{}*.out'.format(result_dir,output_f))) > 0:
+            print "Experiment exists in results folder... skipping"
+            continue
+
         output_dir = output_f + "/"
         output_f = output_f + strnow 
         print output_f
 
-        # Check whether experiment has been already been run in this batch
-        if len(glob.glob('{}*{}.out'.format(result_dir,output_f))) > 0:
-            print "Experiment exists in results folder... skipping"
-            continue
-        
         f = open("config.h",'r');
         lines = f.readlines()
         f.close()
@@ -129,6 +130,12 @@ for exp in exps:
                     print(cmd)
                     os.system(cmd)
 
+# Sync clocks before each experiment
+                if cluster == 'vcloud':
+                    print("Syncing Clocks...")
+                    cmd = './scripts/vcloud_cmd.sh \'{}\' \'ntpdate -b clock-1.cs.cmu.edu\''.format(' '.join(machines))
+                    print(cmd)
+                    os.system(cmd)
                 print("Deploying: {}".format(output_f))
                 if cluster == 'istc':
                     cmd = './scripts/deploy.sh \'{}\' /home/{}/ {}'.format(' '.join(machines),uname,cfgs["NODE_CNT"])
