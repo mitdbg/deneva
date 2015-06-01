@@ -1,10 +1,9 @@
 import os, sys, re, math, os.path, math
-from helper import *
-from experiments import experiments as experiments
-from experiments import configs
-from experiments import nnodes,nmpr,nalgos,nthreads,nwfs,ntifs,nnet_delay,ntxn,nzipf,nwr_perc
+from helper import get_cfgs 
+from experiments import *
 from plot_helper import *
 import glob
+import types
 
 PATH=os.getcwd()
 
@@ -19,35 +18,45 @@ result_dir = PATH + "/../results/"
 #result_dir = PATH + "/../results/results_201503pt2/"
 test_dir = ""
 
-# Unpack results from remote machine
-if rem:
-    tests_ = result_dir + "tests-*.tgz"
-    test_tgz = sorted(glob.glob(tests_),key=os.path.getmtime,reverse=True)
-    print(test_tgz[0])
-    test_dir = test_tgz[0][:-4] + "/"
-    cmd = "tar -xf {} -C {}".format(test_tgz[0],result_dir)
-    os.system(cmd)
+###########################################
+# Get experiments from command line
+###########################################
+exps = []
+for arg in sys.argv[1:]:
+    if arg == "-help" or arg == "-h":
+        sys.exit("Usage: %s experiments \
+                " % sys.argv[0])
+    else:
+        exps.append(arg)
 
 
 ############################################
 # Compile results into single dictionary
 ############################################
-summary = {}
-for e in experiments[1:]:
-    r = {}
-    cfgs = get_cfgs(experiments[0],e)
-    output_f = get_outfile_name(cfgs)
-    for n in range(cfgs["NODE_CNT"]):
-        if rem:
-            ofile = "{}{}/{}_{}.out".format(test_dir,output_f,n,output_f)
-        else:
-            ofile = "{}{}_{}*.out".format(result_dir,n,output_f)
-        res_list = sorted(glob.glob(ofile),key=os.path.getmtime,reverse=True)
-        if res_list:
-            print(res_list[0])
-            r = get_summary(res_list[0],r)
-    summary[output_f] = r
+
+for exp in exps:
+    summary = {}
+    fmt,experiments = experiment_map[exp]()
+
+    for e in experiments:
+        r = {}
+        cfgs = get_cfgs(fmt,e)
+        output_f = get_outfile_name(cfgs)
+        for n in range(cfgs["NODE_CNT"]):
+            if rem:
+                ofile = "{}{}/{}_{}.out".format(test_dir,output_f,n,output_f)
+            else:
+                ofile = "{}{}_{}*.out".format(result_dir,n,output_f)
+            res_list = sorted(glob.glob(ofile),key=os.path.getmtime,reverse=True)
+            if res_list:
+                print(res_list[0])
+                r = get_summary(res_list[0],r)
+        summary[output_f] = r
  
+    exp_plot = exp + '_plot'
+    experiment_map[exp_plot](summary)
+
+exit()
 ############
 # Plotting
 ############

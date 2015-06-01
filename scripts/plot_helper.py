@@ -1,7 +1,8 @@
 import os, sys, re, math, os.path
 import operator
-from helper import *
+from helper import get_cfgs 
 from draw import *
+import types
 #from experiments import experiments as experiments
 #from experiments import configs
 
@@ -36,8 +37,6 @@ def tput(xval,vval,summary,
                 tot_txn_cnt = sum(summary[cfgs]['txn_cnt'])
                 avg_run_time = avg(summary[cfgs]['clock_time'])
                 avg_txn_cnt = avg(summary[cfgs]['txn_cnt'])
-                if avg_run_time > (30.0*60):
-                    avg_run_time = avg_run_time / 4
             except KeyError:
                 print("KeyError: {} {} {} -- {}".format(v,x,cfg,cfgs))
                 tpt[_v][xi] = 0
@@ -53,6 +52,53 @@ def tput(xval,vval,summary,
         bbox = [0.8,0.95]
     print("Created plot {}".format(name))
     draw_line(name,tpt,xval,ylab='Throughput (Txn/sec)',xlab=xname,title=_title,bbox=bbox,ncol=2) 
+
+
+def abort_rate(xval,vval,summary,
+        cfg_fmt=[],
+        cfg=[],
+        xname="MPR",
+        vname="CC_ALG",
+        title=""
+        ):
+    tpt = {}
+    name = 'abortrate_{}_{}_{}'.format(xname.lower(),vname.lower(),title.replace(" ","_").lower())
+    _title = 'Abort Rate {}'.format(title)
+
+    for v in vval:
+        if vname == "NETWORK_DELAY":
+            _v = (float(v.replace("UL","")))/1000000
+        else:
+            _v = v
+        tpt[_v] = [0] * len(xval)
+
+        for x,xi in zip(xval,range(len(xval))):
+            cfgs = get_cfgs(cfg_fmt + [xname] + [vname], cfg + [x] + [v] )
+            cfgs = get_outfile_name(cfgs)
+            if cfgs not in summary.keys(): 
+                print("Not in summary: {}".format(cfgs))
+                break
+            try:
+                tot_txn_cnt = sum(summary[cfgs]['txn_cnt'])
+                avg_txn_cnt = avg(summary[cfgs]['txn_cnt'])
+                tot_abrt_cnt = sum(summary[cfgs]['abort_cnt'])
+                avg_abrt_cnt = avg(summary[cfgs]['abort_cnt'])
+            except KeyError:
+                print("KeyError: {} {} {} -- {}".format(v,x,cfg,cfgs))
+                tpt[_v][xi] = 0
+                continue
+            # System Throughput: total txn count / average of all node's run time
+            # Per Node Throughput: avg txn count / average of all node's run time
+            # Per txn latency: total of all node's run time / total txn count
+            print("Aborts:: {} / {} = {} -- {}".format(tot_abrt_cnt, tot_txn_cnt,(float(tot_abrt_cnt) / float(tot_txn_cnt)),cfgs))
+            tpt[_v][xi] = (float(tot_abrt_cnt) / float(tot_txn_cnt))
+            #tpt[v][xi] = (avg_txn_cnt/avg_run_time)
+
+    bbox = [0.5,0.95]
+    if vname == "NETWORK_DELAY":
+        bbox = [0.8,0.95]
+    print("Created plot {}".format(name))
+    draw_line(name,tpt,xval,ylab='Average Aborts / Txn',xlab=xname,title=_title,bbox=bbox,ncol=2) 
 
 
 

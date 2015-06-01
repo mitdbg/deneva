@@ -70,6 +70,25 @@ def experiment_1():
     exp = [[n,ntxn,'YCSB',cc,m,t,tif,z,1.0-wp,wp] for n,m,cc,t,tif,z,wp in itertools.product(nnodes,nmpr,nalgos,nthreads,ntifs,nzipf,nwr_perc)]
     return fmt[0],exp
 
+def experiment_1_plot(summary):
+    from plot_helper import tput,abort_rate
+    fmt = fmt_ycsb
+    nnodes = [1,2,4,8,16,32]
+    nmpr=[0.01]
+    nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE','HSTORE_SPEC']
+    nthreads=[1]
+    ntifs=[8]
+    nzipf=[0.6]
+    nwr_perc=[0.0,0.25,0.5]
+    ntxn=1000000
+    # x-axis: nodes; one plot for each wr %
+    for wr in nwr_perc:
+        _cfg_fmt = ["MPR","MAX_TXN_PER_PART","WORKLOAD","THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC"]
+        _cfg=[nmpr[0],ntxn,'YCSB',nthreads[0],ntifs[0],nzipf[0],1.0-wr,wr]
+        _title="{} {}% Writes {} MPR".format('YCSB',wr*100,nmpr[0])
+        tput(nnodes,nalgos,summary,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="NODE_CNT",vname="CC_ALG",title=_title)
+        abort_rate(nnodes,nalgos,summary,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="NODE_CNT",vname="CC_ALG",title=_title)
+
 # Performance: throughput vs. node count
 # Vary: Node count, Contention
 def experiment_2():
@@ -105,6 +124,7 @@ experiment_map = {
     'experiment_1': experiment_1,
     'experiment_2': experiment_2,
     'experiment_3': experiment_3,
+    'experiment_1_plot': experiment_1_plot,
 }
 
 
