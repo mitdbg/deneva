@@ -163,12 +163,12 @@ RC Client_thread_t::run() {
 		num_txns_sent++;
 		txns_sent[GET_NODE_ID(m_query->pid)]++;
 	}
-#if DEBUG_DISTR
+//#if DEBUG_DISTR
 	for (uint64_t l = 0; l < g_node_cnt; ++l)
 		printf("Txns sent to node %lu: %d\n", l, txns_sent[l]);
+//#endif
 	if( !ATOM_CAS(_wl->sim_done, false, true) )
 		assert( _wl->sim_done);
-#endif
 
 	return FINISH;
 }
