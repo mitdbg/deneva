@@ -59,10 +59,10 @@ def test():
 # Vary: Node count, % writes
 def experiment_1():
     fmt = fmt_ycsb
-    nnodes = [32]
-    #nnodes = [1,2,4,8,16,32]
+    nnodes = [1,2,4,8,16,32]
     nmpr=[0.01]
-    nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE','HSTORE_SPEC']
+    nalgos=['TIMESTAMP','MVCC','HSTORE']
+    #nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE','HSTORE_SPEC']
     nthreads=[1]
     ntifs=[8]
     nzipf=[0.6]
@@ -94,10 +94,11 @@ def experiment_1_plot(summary):
 # Vary: Node count, Contention
 def experiment_2():
     fmt = fmt_ycsb
-    nnodes = [32]
-    #nnodes = [1,2,4,8,16,32]
+    #nnodes = [32]
+    nnodes = [1,2,4,8,16,32]
     nmpr=[0.01]
-    nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE','HSTORE_SPEC']
+    nalgos=['TIMESTAMP','MVCC','HSTORE']
+    #nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE','HSTORE_SPEC']
     nthreads=[1]
     ntifs=[8]
     nzipf=[0.0,0.2,0.4,0.6,0.8]
@@ -107,25 +108,42 @@ def experiment_2():
     return fmt[0],exp
 
 # Performance: throughput vs. node count
-# Vary: Node count, parts touched per txn
+# Vary: Node count, % writes, mpr
 def experiment_3():
     fmt = fmt_ycsb
     nnodes = [1,2,4,8,16,32]
-    nmpr=[0.01]
+    nmpr=[0,0.1,1]
     nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE','HSTORE_SPEC']
     nthreads=[1]
     ntifs=[8]
+    nzipf=[0.6]
+    nwr_perc=[0.0,0.25,0.5]
+    ntxn=1000000
+    exp = [[n,ntxn,'YCSB',cc,m,t,tif,z,1.0-wp,wp] for n,m,cc,t,tif,z,wp in itertools.product(nnodes,nmpr,nalgos,nthreads,ntifs,nzipf,nwr_perc)]
+    return fmt[0],exp
+
+# Performance: throughput vs. node count
+# Vary: Node count, txn in flight
+def experiment_4():
+    fmt = fmt_ycsb
+    nnodes = [1,2,4,8,16,32]
+    nmpr=[0.1]
+    nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE','HSTORE_SPEC']
+    nthreads=[1]
+    ntifs=[50,100,500,1000]
     nzipf=[0.6]
     nwr_perc=[0.5]
     ntxn=1000000
     exp = [[n,ntxn,'YCSB',cc,m,t,tif,z,1.0-wp,wp] for n,m,cc,t,tif,z,wp in itertools.product(nnodes,nmpr,nalgos,nthreads,ntifs,nzipf,nwr_perc)]
     return fmt[0],exp
 
+
 experiment_map = {
     'test': test,
     'experiment_1': experiment_1,
     'experiment_2': experiment_2,
     'experiment_3': experiment_3,
+    'experiment_4': experiment_4,
     'experiment_1_plot': experiment_1_plot,
 }
 
