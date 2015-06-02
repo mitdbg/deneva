@@ -59,8 +59,7 @@ def test():
 # Vary: Node count, % writes
 def experiment_1():
     fmt = fmt_ycsb
-    nnodes = [32]
-    #nnodes = [1,2,4,8,16,32]
+    nnodes = [1,2,4,8,16,32]
     nmpr=[0.01]
     nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE','HSTORE_SPEC']
     nthreads=[1]
@@ -94,8 +93,7 @@ def experiment_1_plot(summary):
 # Vary: Node count, Contention
 def experiment_2():
     fmt = fmt_ycsb
-    nnodes = [32]
-    #nnodes = [1,2,4,8,16,32]
+    nnodes = [1,2,4,8,16,32]
     nmpr=[0.01]
     nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE','HSTORE_SPEC']
     nthreads=[1]
@@ -105,6 +103,26 @@ def experiment_2():
     ntxn=1000000
     exp = [[n,ntxn,'YCSB',cc,m,t,tif,z,1.0-wp,wp] for n,m,cc,t,tif,z,wp in itertools.product(nnodes,nmpr,nalgos,nthreads,ntifs,nzipf,nwr_perc)]
     return fmt[0],exp
+
+def experiment_2_plot(summary):
+    from plot_helper import tput,abort_rate
+    fmt = fmt_ycsb
+    nnodes = [1,2,4,8,16,32]
+    nmpr=[0.01]
+    nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE','HSTORE_SPEC']
+    nthreads=[1]
+    ntifs=[8]
+    nzipf=[0.0,0.2,0.4,0.6,0.8]
+    nwr_perc=[0.5]
+    ntxn=1000000
+    # x-axis: nodes; one plot for each wr %
+    for z in nzipf:
+        _cfg_fmt = ["MPR","MAX_TXN_PER_PART","WORKLOAD","THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC"]
+        _cfg=[nmpr[0],ntxn,'YCSB',nthreads[0],ntifs[0],z,1.0-nwr_perc[0],nwr_perc[0]]
+        _title="{} {}% Writes {} MPR {} zipf".format('YCSB',nwr_perc[0]*100,nmpr[0],z)
+        tput(nnodes,nalgos,summary,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="NODE_CNT",vname="CC_ALG",title=_title)
+        abort_rate(nnodes,nalgos,summary,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="NODE_CNT",vname="CC_ALG",title=_title)
+
 
 # Performance: throughput vs. node count
 # Vary: Node count, parts touched per txn
