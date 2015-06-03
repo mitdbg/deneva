@@ -20,9 +20,10 @@ VLLMan::init() {
 void
 VLLMan::vllMainLoop(txn_man * txn, base_query * query) {
 	
+  /*
 	ycsb_query * m_query = (ycsb_query *) query;
 	// access the indexes. This is not in the critical section
-	for (int rid = 0; rid < m_query->request_cnt; rid ++) {
+	for (uint32_t rid = 0; rid < m_query->request_cnt; rid ++) {
 		ycsb_request * req = &m_query->requests[rid];
 		ycsb_wl * wl = (ycsb_wl *) txn->get_wl();
 		int part_id = wl->key_to_part( req->key );
@@ -40,7 +41,7 @@ VLLMan::vllMainLoop(txn_man * txn, base_query * query) {
 	while (!done) {
 		txn_man * front_txn = NULL;
 uint64_t t5 = get_sys_clock();
-		pthread_mutex_lock(&_mutex);
+		//pthread_mutex_lock(&_mutex);
 uint64_t tt5 = get_sys_clock() - t5;
 INC_STATS(txn->get_thd_id(), debug5, tt5);
 
@@ -51,7 +52,7 @@ INC_STATS(txn->get_thd_id(), debug5, tt5);
 		// only one worker thread can execute the txn.
 		if (front_txn && front_txn->vll_txn_type == VLL_Blocked) {
 			front_txn->vll_txn_type = VLL_Free;
-			pthread_mutex_unlock(&_mutex);
+			//pthread_mutex_unlock(&_mutex);
 			execute(front_txn, query);
 			finishTxn( front_txn, front);
 		} else {
@@ -67,75 +68,130 @@ INC_STATS(txn->get_thd_id(), debug5, tt5);
 		}
 	}
 	return;
+  */
 }
 
-int
-VLLMan::beginTxn(txn_man * txn, base_query * query, TxnQEntry *& entry) {
+void
+VLLMan::restartQFront() {
+  pthread_mutex_lock(&_mutex);
+  TxnQEntry * front = _txn_queue;
+  txn_man * front_txn = NULL;
+	if (front)
+		front_txn = front->txn;
+	if (front_txn && front_txn->vll_txn_type == VLL_Blocked) {
+		front_txn->vll_txn_type = VLL_Free;
+    if(front_txn->get_txn_id() % g_node_cnt != g_node_id) {
+      base_query * qry = txn_pool.get_qry(g_node_id,front_txn->get_txn_id());
+  		rem_qry_man.ack_response(qry);
+    }
+    else {
+      txn_pool.restart_txn(front_txn->get_txn_id());
+    }
+  }
+  pthread_mutex_unlock(&_mutex);
 
-	int ret = -1;	
+}
+
+RC
+VLLMan::beginTxn(txn_man * txn, base_query * query) {
+
+  txn->read_keys(query);
+
+  pthread_mutex_lock(&_mutex);
+
+	TxnQEntry * entry = NULL;
+	TxnQEntry * prev_entry = NULL;
+  RC ret = RCOK;
+  /*
 	if (_txn_queue_size >= TXN_QUEUE_SIZE_LIMIT)
 		ret = 3;
+    */
 
 	txn->vll_txn_type = VLL_Free;
 	assert(WORKLOAD == YCSB);
 	
+	TxnQEntry * front = _txn_queue;
+	if (front) {
+    if(txn->get_ts() < front->txn->get_ts()) {
+      ret = Abort;
+      txn->rc = Abort;
+      query->rc = Abort;
+      ycsb_query * m_query = (ycsb_query*) query;
+      m_query->txn_rtype = YCSB_FIN;
+      goto final;
+  }
+  }
+
+
 	for (int rid = 0; rid < txn->row_cnt; rid ++ ) {
 		access_t type = txn->accesses[rid]->type;
 		if (txn->accesses[rid]->orig_row->manager->insert_access(type))
 			txn->vll_txn_type = VLL_Blocked;
 	}
-	
+
 	entry = getQEntry();
-	LIST_PUT_TAIL(_txn_queue, _txn_queue_tail, entry);
+  entry->txn = txn;
+	prev_entry = _txn_queue;
+	//LIST_PUT_TAIL(_txn_queue, _txn_queue_tail, entry);
+  // Insert into queue in TS order
+  while(prev_entry && prev_entry->txn->get_ts() < txn->get_ts()) {
+    prev_entry = prev_entry->next;
+  }
+  if(prev_entry) {
+    entry->prev = prev_entry;
+    entry->next = prev_entry->next;
+    prev_entry->next = entry;
+    if(!entry->next)
+      _txn_queue_tail = entry;
+  }
+  else {
+    if(_txn_queue) {
+      // Reached end of queue
+      entry->prev = _txn_queue_tail;
+      _txn_queue_tail->next = entry;
+      _txn_queue_tail = entry;
+    }
+    else {
+      // Head of queue
+      _txn_queue = entry;
+      _txn_queue_tail = entry;
+    }
+  }
+  txn->vll_entry = entry;
 	if (txn->vll_txn_type == VLL_Blocked)
-		ret = 1;
+		ret = WAIT;
 	else 
-		ret = 2;
+		ret = RCOK;
+
+final:
 	pthread_mutex_unlock(&_mutex);
+  assert(!_txn_queue || _txn_queue->txn->vll_txn_type == VLL_Free);
+  assert(entry || ret == Abort);
 	return ret;
 }
 
 void 
-VLLMan::execute(txn_man * txn, base_query * query) {
-	RC rc;
-uint64_t t3 = get_sys_clock();
-	ycsb_query * m_query = (ycsb_query *) query;
-	ycsb_wl * wl = (ycsb_wl *) txn->get_wl();
-	Catalog * schema = wl->the_table->get_schema();
-	uint64_t average;
-	for (int rid = 0; rid < txn->row_cnt; rid ++) {
-		row_t * row = txn->accesses[rid]->orig_row;
-		access_t type = txn->accesses[rid]->type;
-		if (type == RD) {
-			for (int fid = 0; fid < schema->get_field_cnt(); fid++) {
-				char * data = row->get_data();
-				uint64_t fval = *(uint64_t *)(&data[fid * 100]);
-				INC_STATS(txn->get_thd_id(), debug1, fval);
-           	}
-		} else {
-			assert(type == WR);
-			for (int fid = 0; fid < schema->get_field_cnt(); fid++) {
-				char * data = row->get_data();
-				*(uint64_t *)(&data[fid * 100]) = 0;
-			}
-		} 
-	}
-uint64_t tt3 = get_sys_clock() - t3;
-INC_STATS(txn->get_thd_id(), debug3, tt3);
-}
-
-void 
-VLLMan::finishTxn(txn_man * txn, TxnQEntry * entry) {
+VLLMan::finishTxn(txn_man * txn) {
 	pthread_mutex_lock(&_mutex);
-	
+	TxnQEntry * entry = txn->vll_entry;
+  if(entry){
+
 	for (int rid = 0; rid < txn->row_cnt; rid ++ ) {
 		access_t type = txn->accesses[rid]->type;
 		txn->accesses[rid]->orig_row->manager->remove_access(type);
 	}
-	LIST_REMOVE_HT(entry, _txn_queue, _txn_queue_tail);
+	  LIST_REMOVE_HT(entry, _txn_queue, _txn_queue_tail);
+  }
+
 	pthread_mutex_unlock(&_mutex);
-	txn->release();
-	mem_allocator.free(txn, 0);
+
+  if(entry)
+    returnQEntry(entry);
+
+  restartQFront(); 
+  assert(!_txn_queue || _txn_queue->txn->vll_txn_type == VLL_Free);
+	//txn->release();
+	//mem_allocator.free(txn, 0);
 }
 
 

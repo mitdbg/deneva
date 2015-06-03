@@ -28,6 +28,13 @@ cluster = None
 exps=[]
 
 arg_cluster = False
+if len(sys.argv) < 2:
+     sys.exit("Usage: %s [-exec/-e/-noexec/-ne] [-c cluster] experiments\n \
+            -exec/-e: compile and execute locally (default)\n \
+            -noexec/-ne: compile first target only \
+            -c: run remote on cluster; possible values: istc, vcloud\n \
+            " % sys.argv[0])
+
 for arg in sys.argv[1:]:
     if arg == "-help" or arg == "-h":
         sys.exit("Usage: %s [-exec/-e/-noexec/-ne] [-c cluster] experiments\n \

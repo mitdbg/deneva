@@ -36,6 +36,25 @@ void ycsb_txn_man::merge_txn_rsp(base_query * query1, base_query *query2) {
 
 }
 
+void ycsb_txn_man::read_keys(base_query * query) {
+  assert(CC_ALG == VLL);
+	ycsb_query * m_query = (ycsb_query *) query;
+	// access the indexes. This is not in the critical section
+	for (uint32_t rid = 0; rid < m_query->request_cnt; rid ++) {
+		ycsb_request * req = &m_query->requests[rid];
+		uint64_t part_id = _wl->key_to_part( req->key );
+    if(GET_NODE_ID(part_id) != g_node_id)
+      continue;
+		INDEX * index = _wl->the_index;
+		itemid_t * item;
+		item = index_read(index, req->key, part_id);
+		row_t * row = ((row_t *)item->location);
+    row_t * row_local;
+		// the following line adds the read/write sets to txn->accesses
+		get_row(row, req->acctype, row_local);
+	}
+}
+
 RC ycsb_txn_man::run_txn(base_query * query) {
   RC rc = RCOK;
   rem_done = false;
@@ -167,6 +186,9 @@ RC ycsb_txn_man::run_ycsb_0(ycsb_request * req,row_t *& row_local) {
 	  itemid_t * m_item;
 		m_item = index_read(_wl->the_index, req->key, part_id);
 
+#if CC_ALG == VLL
+    return RCOK;
+#endif
 		row_t * row = ((row_t *)m_item->location);
 		access_t type = req->acctype;
 			
@@ -180,7 +202,8 @@ RC ycsb_txn_man::run_ycsb_1(access_t acctype, row_t * row_local) {
     int fid = 0;
 		char * data = row_local->get_data();
 		uint64_t fval = *(uint64_t *)(&data[fid * 100]);
-	  INC_STATS(get_thd_id(), debug1, fval);
+    INC_STATS(get_thd_id(), debug1, fval);
+
   } else {
     assert(acctype == WR);
 		int fid = 0;

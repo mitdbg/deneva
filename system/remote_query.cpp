@@ -138,17 +138,26 @@ void Remote_query::send_init(base_query * query,uint64_t dest_part_id) {
 #if DEBUG_DISTR
   printf("Sending RINIT %ld\n",query->txn_id);
 #endif
-  uint64_t total = 3;
-#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
-  total += 3;
-#endif
-#if CC_ALG == AVOID
-  uint64_t * keys;
+
 #if WORKLOAD == TPCC
   tpcc_query * m_query = (tpcc_query *)query;
 #elif WORKLOAD == YCSB
   ycsb_query * m_query = (ycsb_query *)query;
 #endif
+
+
+  uint64_t total = 3;
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
+  total += 3;
+#endif
+#if CC_ALG == VLL
+  total++; // m_query->request_cnt
+  total++; // m_query->requests
+#endif
+
+
+#if CC_ALG == AVOID
+  uint64_t * keys;
   uint64_t k = m_query->get_keys(&keys,&k);
   total += k + 2;
 #endif
@@ -178,6 +187,18 @@ void Remote_query::send_init(base_query * query,uint64_t dest_part_id) {
 	sizes[num++] = sizeof(uint64_t);
 	data[num] = &_dest_part_id;
 	sizes[num++] = sizeof(uint64_t);
+#endif
+
+#if CC_ALG == VLL
+#if WORKLOAD == YCSB
+
+  data[num] = &m_query->request_cnt;
+  sizes[num++] = sizeof(uint64_t);
+
+  data[num] = m_query->requests;
+  sizes[num++] = sizeof(ycsb_request) * m_query->request_cnt;
+
+#endif
 #endif
 
 #if CC_ALG == AVOID
@@ -275,7 +296,7 @@ base_query * Remote_query::unpack(void * d, int len) {
 		return NULL;
 
 	switch(query->rtype) {
-        case RINIT:
+        case RINIT: {
 	        memcpy(&query->ts,&data[ptr],sizeof(ts_t));
 	        ptr += sizeof(ts_t);
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
@@ -302,6 +323,18 @@ base_query * Remote_query::unpack(void * d, int len) {
 	            ptr += sizeof(uint64_t);
             }
 #endif
+#if CC_ALG == VLL
+#if WORKLOAD == YCSB
+            ycsb_query * m_query = (ycsb_query*) query;
+	        memcpy(&m_query->request_cnt,&data[ptr],sizeof(uint64_t));
+	        ptr += sizeof(uint64_t);
+	        m_query->requests = (ycsb_request *) 
+		        mem_allocator.alloc(sizeof(ycsb_request) * m_query->request_cnt, 0);
+          memcpy(m_query->requests,&data[ptr],sizeof(ycsb_request)*m_query->request_cnt);
+          ptr += sizeof(ycsb_request)*m_query->request_cnt;
+#endif
+#endif
+                    }
             break;
         case RPREPARE:
             break;

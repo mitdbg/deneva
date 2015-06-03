@@ -145,7 +145,7 @@ def experiment_3():
 # Vary: Node count, txn in flight
 def experiment_4():
     fmt = fmt_ycsb
-    nnodes = [1,2,4,8,16,32]
+    nnodes = [1,2,4,8]
     nmpr=[0.1]
     nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE','HSTORE_SPEC']
     nthreads=[1]
@@ -156,6 +156,40 @@ def experiment_4():
     exp = [[n,ntxn,'YCSB',cc,m,t,tif,z,1.0-wp,wp] for n,m,cc,t,tif,z,wp in itertools.product(nnodes,nmpr,nalgos,nthreads,ntifs,nzipf,nwr_perc)]
     return fmt[0],exp
 
+def experiment_4_plot(summary):
+    from plot_helper import tput,abort_rate,time_breakdown
+    fmt = fmt_ycsb
+    nnodes = [2]
+#nnodes = [1,2,4,8]
+    nmpr=[0.1]
+    nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE','HSTORE_SPEC']
+    nthreads=[1]
+    ntifs=[50,100,500,1000]
+    nzipf=[0.6]
+    nwr_perc=[0.5]
+    ntxn=1000000    
+    # x-axis: nodes; one plot for each wr %
+    for tif in ntifs:
+        _cfg_fmt = ["MPR","MAX_TXN_PER_PART","WORKLOAD","THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC"]
+        _cfg=[nmpr[0],ntxn,'YCSB',nthreads[0],tif,nzipf[0],1.0-nwr_perc[0],nwr_perc[0]]
+        _title="{} {}% Writes {} MPR {} zipf {} TIF".format('YCSB',nwr_perc[0]*100,nmpr[0],nzipf[0],tif)
+        tput(nnodes,nalgos,summary,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="NODE_CNT",vname="CC_ALG",title=_title)
+        abort_rate(nnodes,nalgos,summary,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="NODE_CNT",vname="CC_ALG",title=_title)
+
+    for n in nnodes:
+        _cfg_fmt = ["MPR","MAX_TXN_PER_PART","WORKLOAD","THREAD_CNT","NODE_CNT","ZIPF_THETA","READ_PERC","WRITE_PERC"]
+        _cfg=[nmpr[0],ntxn,'YCSB',nthreads[0],n,nzipf[0],1.0-nwr_perc[0],nwr_perc[0]]
+        _title="{} {}% Writes {} MPR {} zipf {} Nodes".format('YCSB',nwr_perc[0]*100,nmpr[0],nzipf[0],n)
+        tput(ntifs,nalgos,summary,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="MAX_TXN_IN_FLIGHT",vname="CC_ALG",title=_title)
+        abort_rate(ntifs,nalgos,summary,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="MAX_TXN_IN_FLIGHT",vname="CC_ALG",title=_title)
+
+    for tif,n in itertools.product(ntifs,nnodes):
+        _cfg_fmt = ["MPR","MAX_TXN_PER_PART","WORKLOAD","THREAD_CNT","NODE_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC"]
+        _cfg=[nmpr[0],ntxn,'YCSB',nthreads[0],n,tif,nzipf[0],1.0-nwr_perc[0],nwr_perc[0]]
+        _title="{} {}% Writes {} MPR {} zipf {} Nodes {} TIF".format('YCSB',nwr_perc[0]*100,nmpr[0],nzipf[0],n,tif)
+        time_breakdown(nalgos,summary,normalized=True,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="CC_ALG",title=_title)
+
+
 
 experiment_map = {
     'test': test,
@@ -164,6 +198,7 @@ experiment_map = {
     'experiment_3': experiment_3,
     'experiment_4': experiment_4,
     'experiment_1_plot': experiment_1_plot,
+    'experiment_4_plot': experiment_4_plot,
 }
 
 

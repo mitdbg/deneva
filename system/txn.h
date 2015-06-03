@@ -11,6 +11,7 @@ class row_t;
 class table_t;
 class base_query;
 class INDEX;
+class TxnQEntry; 
 //class r_query;
 
 // each thread has a txn_man. 
@@ -45,6 +46,7 @@ public:
 	//virtual RC 		run_rem_txn(base_query * m_query) = 0;
 	virtual void 		merge_txn_rsp(base_query * m_query1, base_query *m_query2) = 0;
   virtual bool  conflict(base_query * query1,base_query * query2) = 0;
+  virtual void read_keys(base_query * query) = 0; 
 	uint64_t 		get_thd_id();
 	uint64_t 		get_node_id();
 	workload * 		get_wl();
@@ -104,6 +106,8 @@ public:
 
 	// For VLL
 	TxnType 		vll_txn_type;
+  TxnQEntry * vll_entry;
+
 	itemid_t *		index_read(INDEX * index, idx_key_t key, int part_id);
 	RC 		get_row(row_t * row, access_t type, row_t *& row_rtn);
   RC get_row_post_wait(row_t *& row_rtn);

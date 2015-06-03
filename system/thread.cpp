@@ -222,6 +222,11 @@ RC thread_t::run() {
 #if CC_ALG == AVOID
 				m_txn->read_keys(m_query);
 #endif
+#if CC_ALG == VLL
+        rc = vll_man.beginTxn(m_txn,m_query);
+        if(rc == WAIT)
+          break;
+#endif
 				// HStore: lock partitions at this node
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
 				part_lock_man.rem_lock(m_query->parts, m_query->part_cnt, m_txn);
@@ -348,8 +353,28 @@ RC thread_t::run() {
 					switch(m_txn->state) {
 						case INIT:
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
+							uint64_t part_arr_s[1];
+							part_arr_s[0] = m_query->part_to_access[0];
+							rc = part_lock_man.rem_lock(part_arr_s, 1, m_txn);
+							m_query->update_rc(rc);
+							if(rc == WAIT) {
+								m_txn->rc = rc;
+							}
+
 							if(m_txn->ready_part > 0)
 								break;
+#endif
+#if CC_ALG == VLL
+              // This may return an Abort
+        rc = vll_man.beginTxn(m_txn,m_query);
+        if(rc == WAIT)
+          break;
+        if(rc == Abort) {
+							m_txn->state = FIN;
+							// send rfin messages w/ abort
+							m_txn->finish(m_query,true);
+              break;
+        }
 #endif
 							m_txn->state = EXEC; 
 							txn_pool.restart_txn(m_txn->get_txn_id());
@@ -483,7 +508,7 @@ RC thread_t::run() {
 					}
 
 
-					// Send init message to all involved nodes
+					// Send RINIT message to all involved nodes
 					for(uint64_t i = 0; i < m_query->part_num; i++) {
 						uint64_t part_id = m_query->part_to_access[i];
 						// Check for duplicate partitions so we don't send init twice
@@ -504,7 +529,8 @@ RC thread_t::run() {
 							rem_qry_man.send_init(m_query,part_id);
 							m_txn->wait_starttime = get_sys_clock();
 						} else {
-							// local init
+							// local init: MPQ Moved to after RINITs return
+              if(m_query->part_num == 1) {
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
 							uint64_t part_arr[1];
 							part_arr[0] = part_id;
@@ -514,8 +540,14 @@ RC thread_t::run() {
 								rc = WAIT;
 								m_txn->rc = rc;
 							}
-							//rc = part_lock_man.lock(m_query->part_to_access, m_query->part_num, m_txn);
 #endif
+#if CC_ALG == VLL
+        rc = vll_man.beginTxn(m_txn,m_query);
+        if(rc == WAIT) {
+          m_txn->rc = rc;
+        }
+#endif
+              }
 						}
 					} // for(uint64_t i = 0; i < m_query->part_num; i++) 
 
@@ -580,6 +612,11 @@ RC thread_t::run() {
 					// Send "result" back to client
 					rem_qry_man.send_client_rsp(m_query);
 					//ATOM_SUB(txn_pool.inflight_cnt,1);
+          /*
+#if CC_ALG == VLL
+          vll_man.restartQFront();
+#endif
+*/
 					break;
 				case Abort:
 					// TODO: Add to abort list that includes txn_id and ts
@@ -630,6 +667,11 @@ RC thread_t::run() {
 					m_txn->penalty_start = get_sys_clock();
 
 					work_queue.add_query(m_query);
+          /*
+#if CC_ALG == VLL
+          vll_man.restartQFront();
+#endif
+*/
 					break;
 				case WAIT:
 					assert(m_txn != NULL);

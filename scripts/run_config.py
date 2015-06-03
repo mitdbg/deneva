@@ -10,7 +10,7 @@ istc_machines=[
 #GOOD
 "istc1", 
 "istc3", 
-"istc4", 
+#"istc4", 
 "istc6",
 "istc8",
 #OK

@@ -16,6 +16,7 @@
 #include "index_hash.h"
 #include "remote_query.h"
 #include "plock.h"
+#include "vll.h"
 
 void txn_man::init(thread_t * h_thd, workload * h_wl, uint64_t thd_id) {
 	this->h_thd = h_thd;
@@ -129,6 +130,11 @@ void txn_man::cleanup(RC rc) {
 #endif
 		accesses[rid]->data = NULL;
 	}
+
+#if CC_ALG == VLL
+  vll_man.finishTxn(this);
+  //vll_man.restartQFront();
+#endif
 
 	if (rc == Abort) {
 		for (UInt32 i = 0; i < insert_cnt; i ++) {

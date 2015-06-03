@@ -297,6 +297,7 @@ void row_t::return_row(access_t type, txn_man * txn, row_t * row) {
 	mem_allocator.free(row, sizeof(row_t));
   manager->release();
 	return;
+  // FIXME: VLL?
 #elif CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || CC_ALG == VLL
 	assert (row != NULL);
 	if (ROLL_BACK && type == XP) {// recover from previous writes.
