@@ -80,6 +80,8 @@ VLLMan::restartQFront() {
 		front_txn = front->txn;
 	if (front_txn && front_txn->vll_txn_type == VLL_Blocked) {
 		front_txn->vll_txn_type = VLL_Free;
+    front_txn->rc = RCOK;
+    //if(WORKLOAD != YCSB && front_txn->get_txn_id() % g_node_cnt != g_node_id) {
     if(front_txn->get_txn_id() % g_node_cnt != g_node_id) {
       base_query * qry = txn_pool.get_qry(g_node_id,front_txn->get_txn_id());
   		rem_qry_man.ack_response(qry);
@@ -143,6 +145,8 @@ VLLMan::beginTxn(txn_man * txn, base_query * query) {
     prev_entry->next = entry;
     if(!entry->next)
       _txn_queue_tail = entry;
+    else
+      entry->next->prev = entry;
   }
   else {
     if(_txn_queue) {
@@ -165,6 +169,7 @@ VLLMan::beginTxn(txn_man * txn, base_query * query) {
 
 final:
 	pthread_mutex_unlock(&_mutex);
+  assert((!_txn_queue || _txn_queue->prev == NULL) && (!_txn_queue_tail || _txn_queue_tail->next == NULL));
   assert(!_txn_queue || _txn_queue->txn->vll_txn_type == VLL_Free);
   assert(entry || ret == Abort);
 	return ret;
@@ -189,6 +194,7 @@ VLLMan::finishTxn(txn_man * txn) {
     returnQEntry(entry);
 
   restartQFront(); 
+  assert((!_txn_queue || _txn_queue->prev == NULL) && (!_txn_queue_tail || _txn_queue_tail->next == NULL));
   assert(!_txn_queue || _txn_queue->txn->vll_txn_type == VLL_Free);
 	//txn->release();
 	//mem_allocator.free(txn, 0);

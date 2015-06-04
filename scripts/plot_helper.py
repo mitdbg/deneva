@@ -90,7 +90,7 @@ def abort_rate(xval,vval,summary,
             # System Throughput: total txn count / average of all node's run time
             # Per Node Throughput: avg txn count / average of all node's run time
             # Per txn latency: total of all node's run time / total txn count
-            print("Aborts:: {} / {} = {} -- {}".format(tot_abrt_cnt, tot_txn_cnt,(float(tot_abrt_cnt) / float(tot_txn_cnt)),cfgs))
+#print("Aborts:: {} / {} = {} -- {}".format(tot_abrt_cnt, tot_txn_cnt,(float(tot_abrt_cnt) / float(tot_txn_cnt)),cfgs))
             tpt[_v][xi] = (float(tot_abrt_cnt) / float(tot_txn_cnt))
             #tpt[v][xi] = (avg_txn_cnt/avg_run_time)
 
