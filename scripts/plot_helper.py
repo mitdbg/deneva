@@ -47,9 +47,9 @@ def tput(xval,vval,summary,
             tpt[_v][xi] = (tot_txn_cnt/avg_run_time)
             #tpt[v][xi] = (avg_txn_cnt/avg_run_time)
 
-    bbox = [0.5,0.95]
+    bbox = [0.85,0.5]
     if vname == "NETWORK_DELAY":
-        bbox = [0.8,0.95]
+        bbox = [0.8,0.2]
     print("Created plot {}".format(name))
     draw_line(name,tpt,xval,ylab='Throughput (Txn/sec)',xlab=xname,title=_title,bbox=bbox,ncol=2) 
 

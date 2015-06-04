@@ -8,6 +8,11 @@ cflts = ["w_cflt","d_cflt","cnp_cflt","c_cflt","ol_cflt","s_cflt","w_abrt","d_ab
 def avg(l):
     return float(sum(l) / float(len(l)))
 
+def stdev(l):
+    c = avg(l)
+    ss = sum((x-c)**2 for x in l) / len(l)
+    return ss**0.5
+
 def find_in_line(key,line,summary,min_time,low_lim,up_lim):
     if re.search(key,line):
         line = [int(s) for s in line.split() if s.isdigit()]
@@ -63,6 +68,18 @@ def get_summary(sfile,summary={}):
 
     return summary
 
+def merge_results(summary,cnt):
+    
+    for k in summary.keys():
+        if type(summary[k]) is not list:
+            continue
+        l = []
+        for c in range(cnt):
+            l.append(summary[k].pop())
+        summary[k].append(avg(l))
+        if k == "txn_cnt" or k == "clock_time":
+            print("{}: {} {}".format(k,avg(l),stdev(l)))
+            
 def process_results(summary,results):
 	for r in results:
 		(name,val) = re.split('=',r)
@@ -138,5 +155,3 @@ def get_cfgs(fmt,e):
         cfgs["NUM_WH"] = cfgs["PART_CNT"]
     return cfgs
 
-def avg(l):
-    return float(sum(l) / float(len(l)))

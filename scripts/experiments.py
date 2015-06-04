@@ -73,19 +73,20 @@ def experiment_1():
 def experiment_1_plot(summary):
     from plot_helper import tput,abort_rate
     fmt = fmt_ycsb
-    nnodes = [1,2,4,8]
-    nmpr=[0.01]
-    nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL']
+    nnodes = [1,2,4,8,16]
+    nmpr=[0.01,0.1]
+    nalgos=['WAIT_DIE']
+    #nalgos=['NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','WAIT_DIE','TIMESTAMP']
     nthreads=[1]
-    ntifs=[8]
+    ntifs=[100]
     nzipf=[0.6]
-    nwr_perc=[0.0,0.25,0.5]
+    nwr_perc=[0.0]
     ntxn=1000000
     # x-axis: nodes; one plot for each wr %
-    for wr in nwr_perc:
+    for wr,mpr,tif in itertools.product(nwr_perc,nmpr,ntifs):
         _cfg_fmt = ["MPR","MAX_TXN_PER_PART","WORKLOAD","THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC"]
-        _cfg=[nmpr[0],ntxn,'YCSB',nthreads[0],ntifs[0],nzipf[0],1.0-wr,wr]
-        _title="{} {}% Writes {} MPR".format('YCSB',wr*100,nmpr[0])
+        _cfg=[mpr,ntxn,'YCSB',nthreads[0],tif,nzipf[0],1.0-wr,wr]
+        _title="{} {}% Writes {} MPR {} TIF".format('YCSB',wr*100,mpr,tif)
         tput(nnodes,nalgos,summary,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="NODE_CNT",vname="CC_ALG",title=_title)
         abort_rate(nnodes,nalgos,summary,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="NODE_CNT",vname="CC_ALG",title=_title)
 
