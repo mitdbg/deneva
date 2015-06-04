@@ -23,6 +23,7 @@ cfgs = configs
 execute = True
 remote = False
 cluster = None
+skip = False
 
 
 exps=[]
@@ -37,15 +38,18 @@ if len(sys.argv) < 2:
 
 for arg in sys.argv[1:]:
     if arg == "-help" or arg == "-h":
-        sys.exit("Usage: %s [-exec/-e/-noexec/-ne] [-c cluster] experiments\n \
+        sys.exit("Usage: %s [-exec/-e/-noexec/-ne] [-skip] [-c cluster] experiments\n \
                 -exec/-e: compile and execute locally (default)\n \
                 -noexec/-ne: compile first target only \
+                -skip: skip any experiments already in results folder\n \
                 -c: run remote on cluster; possible values: istc, vcloud\n \
                 " % sys.argv[0])
     if arg == "-exec" or arg == "-e":
         execute = True
     elif arg == "-noexec" or arg == "-ne":
         execute = False
+    elif arg == "-skip":
+        skip = True
     elif arg == "-c":
         remote = True
         arg_cluster = True
@@ -66,9 +70,10 @@ for exp in exps:
         output_f = get_outfile_name(cfgs)
 
         # Check whether experiment has been already been run in this batch
-        if len(glob.glob('{}*{}*.out'.format(result_dir,output_f))) > 0:
-            print "Experiment exists in results folder... skipping"
-            continue
+        if skip:
+            if len(glob.glob('{}*{}*.out'.format(result_dir,output_f))) > 0:
+                print "Experiment exists in results folder... skipping"
+                continue
 
         output_dir = output_f + "/"
         output_f = output_f + strnow 
