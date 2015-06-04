@@ -152,7 +152,15 @@ void PartMan::unlock(txn_man * txn) {
 
 
 void PartMan::remote_rsp(bool l, RC rc, txn_man * txn) {
+/*
+           //TODO: Add me for parallel YCSB!
+#if WORKLOAD == YCSB
+    // Start executing txn
+    txn_pool.restart_txn(txn->get_txn_id());
+#else
+*/
   rem_qry_man.ack_response(rc,txn);
+//#endif
   /*
   uint64_t pid = txn->get_pid();
   uint64_t node_id = GET_NODE_ID(pid);

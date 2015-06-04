@@ -46,6 +46,7 @@ void next_ycsb_state(base_query * query);
 RC run_txn_state(base_query * query);
 RC run_ycsb_0(ycsb_request * req,row_t *& row_local);
 RC run_ycsb_1(access_t acctype, row_t * row_local);
+RC run_ycsb(base_query * query);
 	uint64_t row_cnt;
   bool fin;
   bool rem_done;

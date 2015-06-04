@@ -60,6 +60,12 @@ RC ycsb_txn_man::run_txn(base_query * query) {
   rem_done = false;
   fin = false;
 
+  /*
+  //TODO: Add me for parallel YCSB!
+  rc = run_ycsb(query);
+  return rc;
+  */
+
   // Resume query after hold
   if(query->rc == WAIT_REM) {
     rtn_ycsb_state(query);
@@ -178,21 +184,23 @@ RC ycsb_txn_man::run_txn_state(base_query * query) {
 }
 
 RC ycsb_txn_man::run_ycsb_0(ycsb_request * req,row_t *& row_local) {
+    RC rc = RCOK;
 		int part_id = _wl->key_to_part( req->key );
 #if !NOGRAPHITE
 		if (g_hw_migrate && part_id != CarbonGetHostTileId()) 
 			CarbonMigrateThread(part_id);
 #endif  
+    // TODO: remove for parallel YCSB!
+#if CC_ALG == VLL
+    return rc;
+#endif
 	  itemid_t * m_item;
 		m_item = index_read(_wl->the_index, req->key, part_id);
 
-#if CC_ALG == VLL
-    return RCOK;
-#endif
 		row_t * row = ((row_t *)m_item->location);
 		access_t type = req->acctype;
 			
-		RC rc = get_row(row, type,row_local);
+		rc = get_row(row, type,row_local);
     return rc;
 
 }
@@ -213,6 +221,48 @@ RC ycsb_txn_man::run_ycsb_1(access_t acctype, row_t * row_local) {
   } 
   return RCOK;
 }
+
+RC ycsb_txn_man::run_ycsb(base_query * query) {
+  RC rc = RCOK;
+	ycsb_query * m_query = (ycsb_query *) query;
+  
+  if((CC_ALG != HSTORE && CC_ALG != HSTORE_SPEC) && this->rc == WAIT) {
+    assert(query->rc == WAIT || query->rc == RCOK);
+    get_row_post_wait(row);
+  }
+
+#if CC_ALG == VLL
+  for (uint64_t i = 0; i < row_cnt; i++) {
+    row = accesses[i]->orig_row;
+    rc = run_ycsb_1(accesses[i]->type,row);
+  }
+  goto final;
+#endif
+  for (uint64_t i = m_query->req_i; i < m_query->request_cnt; i++) {
+    m_query->req_i = i;
+	  ycsb_request * req = &m_query->requests[i];
+		uint64_t part_id = _wl->key_to_part( req->key );
+    bool loc = GET_NODE_ID(part_id) == get_node_id();
+    if(!loc)
+      continue;
+
+    rc = run_ycsb_0(req,row);
+    if(rc != RCOK)
+      break;
+    rc = run_ycsb_1(req->acctype,row);
+  }
+final:
+  if(rc == WAIT)
+    return rc;
+  // What if we're still waiting on nodes from rinit?
+  // Soln 1: Only do run_ycsb AFTER getting all rinit replies
+  // Soln 2: Wait for rsp cnt == 0; avoid activating finish twice
+	m_query->rc = rc;
+  if(GET_NODE_ID(m_query->pid) == g_node_id)
+    return finish(m_query,false);
+  return rc;
+}
+
 
 /*
 RC ycsb_txn_man::run_txn(base_query * query) {

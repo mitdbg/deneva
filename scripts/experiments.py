@@ -50,8 +50,7 @@ experiments_ycsb = [
 
 def test():
     fmt = fmt_ycsb
-    exp = [[2,10000,'YCSB','OCC',1.0,1,1,0.6,0.5,0.5],
-    [2,10000,'YCSB','MVCC',1.0,1,1,0.6,0.5,0.5],
+    exp = [[2,100000,'YCSB','VLL',1.0,1,1,0.6,0.5,0.5],
     ]
     return fmt[0],exp
 
@@ -73,7 +72,7 @@ def experiment_1():
 def experiment_1_plot(summary):
     from plot_helper import tput,abort_rate
     fmt = fmt_ycsb
-    nnodes = [1,2,4,8,16,32]
+    nnodes = [1,2,4,8]
     nmpr=[0.01]
     nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL']
     nthreads=[1]
@@ -93,7 +92,7 @@ def experiment_1_plot(summary):
 # Vary: Node count, Contention
 def experiment_2():
     fmt = fmt_ycsb
-    nnodes = [1,2,4,8,16,32]
+    nnodes = [1,2,4,8]
     nmpr=[0.01]
     nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL']
     nthreads=[1]
@@ -109,7 +108,7 @@ def experiment_2_plot(summary):
     fmt = fmt_ycsb
     nnodes = [1,2,4,8,16,32]
     nmpr=[0.01]
-    nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE','HSTORE_SPEC']
+    nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL']
     nthreads=[1]
     ntifs=[8]
     nzipf=[0.0,0.2,0.4,0.6,0.8]
@@ -128,7 +127,7 @@ def experiment_2_plot(summary):
 # Vary: Node count, % writes, mpr
 def experiment_3():
     fmt = fmt_ycsb
-    nnodes = [1,2,4,8,16,32]
+    nnodes = [1,2,4,8]
     nmpr=[0,0.1,1]
     nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL']
     nthreads=[1]

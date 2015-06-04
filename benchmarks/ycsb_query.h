@@ -48,6 +48,7 @@ public:
 //	uint64_t waiting_time;
 	YCSBRemTxnType txn_rtype;
   uint64_t rid;
+	uint64_t req_i;
   ycsb_request req;
 
 private:

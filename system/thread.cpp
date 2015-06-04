@@ -222,6 +222,14 @@ RC thread_t::run() {
 #if CC_ALG == AVOID
 				m_txn->read_keys(m_query);
 #endif
+
+        /*
+           //TODO: Add me for parallel YCSB!
+#if WORKLOAD == YCSB
+        // For when we start executing txn
+        m_query->rtype = RQRY;
+#endif
+*/
 #if CC_ALG == VLL
         rc = vll_man.beginTxn(m_txn,m_query);
         if(rc == WAIT)
@@ -231,8 +239,19 @@ RC thread_t::run() {
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
 				part_lock_man.rem_lock(m_query->parts, m_query->part_cnt, m_txn);
 #else
+
+        /*
+           //TODO: Add me for parallel YCSB!
+#if WORKLOAD == YCSB
+        // Start executing txn
+        txn_pool.restart_txn(m_txn->get_txn_id());
+#else
+*/
+
 				// Send back ACK
 				rem_qry_man.ack_response(m_query);
+//#endif
+
 #endif
 
 
@@ -292,8 +311,16 @@ RC thread_t::run() {
 				assert(rc != WAIT_REM);
 				timespan = get_sys_clock() - starttime;
 				INC_STATS(get_thd_id(),time_rqry,timespan);
+        /*
+           //TODO: Add me for parallel YCSB!
+#if WORKLOAD == YCSB
+				if(rc != WAIT)
+				  rem_qry_man.ack_response(m_query);
+#else
+*/
 				if(rc != WAIT)
 					rem_qry_man.remote_rsp(m_query,m_txn);
+//#endif
 				break;
 			case RQRY_RSP:
 #if DEBUG_DISTR
@@ -366,9 +393,11 @@ RC thread_t::run() {
 #endif
 #if CC_ALG == VLL
               // This may return an Abort
+              /*
         rc = vll_man.beginTxn(m_txn,m_query);
         if(rc == WAIT)
           break;
+          */
         if(rc == Abort) {
 							m_txn->state = FIN;
 							// send rfin messages w/ abort
