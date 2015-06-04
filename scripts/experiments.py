@@ -60,13 +60,12 @@ def test():
 def experiment_1():
     fmt = fmt_ycsb
     nnodes = [1,2,4,8,16,32]
-    nmpr=[0.01]
-    nalgos=['TIMESTAMP','MVCC','HSTORE']
-    #nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE','HSTORE_SPEC']
+    nmpr=[0.01,0.1]
+    nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL']
     nthreads=[1]
-    ntifs=[8]
+    ntifs=[100,500]
     nzipf=[0.6]
-    nwr_perc=[0.0,0.25,0.5]
+    nwr_perc=[0.0,0.5]
     ntxn=1000000
     exp = [[n,ntxn,'YCSB',cc,m,t,tif,z,1.0-wp,wp] for n,m,cc,t,tif,z,wp in itertools.product(nnodes,nmpr,nalgos,nthreads,ntifs,nzipf,nwr_perc)]
     return fmt[0],exp
@@ -76,7 +75,7 @@ def experiment_1_plot(summary):
     fmt = fmt_ycsb
     nnodes = [1,2,4,8,16,32]
     nmpr=[0.01]
-    nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE','HSTORE_SPEC']
+    nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL']
     nthreads=[1]
     ntifs=[8]
     nzipf=[0.6]
@@ -96,8 +95,7 @@ def experiment_2():
     fmt = fmt_ycsb
     nnodes = [1,2,4,8,16,32]
     nmpr=[0.01]
-    nalgos=['TIMESTAMP','MVCC','HSTORE']
-    #nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE','HSTORE_SPEC']
+    nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL']
     nthreads=[1]
     ntifs=[8]
     nzipf=[0.0,0.2,0.4,0.6,0.8]
@@ -132,7 +130,7 @@ def experiment_3():
     fmt = fmt_ycsb
     nnodes = [1,2,4,8,16,32]
     nmpr=[0,0.1,1]
-    nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE','HSTORE_SPEC']
+    nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL']
     nthreads=[1]
     ntifs=[8]
     nzipf=[0.6]
@@ -147,7 +145,7 @@ def experiment_4():
     fmt = fmt_ycsb
     nnodes = [1,2,4,8]
     nmpr=[0.1]
-    nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE','HSTORE_SPEC']
+    nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL']
     nthreads=[1]
     ntifs=[50,100,500,1000]
     nzipf=[0.6]

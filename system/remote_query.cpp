@@ -139,12 +139,13 @@ void Remote_query::send_init(base_query * query,uint64_t dest_part_id) {
   printf("Sending RINIT %ld\n",query->txn_id);
 #endif
 
+#if CC_ALG == VLL || CC_ALG == AVOID
 #if WORKLOAD == TPCC
   tpcc_query * m_query = (tpcc_query *)query;
 #elif WORKLOAD == YCSB
   ycsb_query * m_query = (ycsb_query *)query;
 #endif
-
+#endif
 
   uint64_t total = 3;
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC

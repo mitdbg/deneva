@@ -57,9 +57,9 @@
 /***********************************************/
 // Message Passing
 /***********************************************/
-#define TPORT_TYPE "ipc"
-#define TPORT_TYPE_IPC true
-#define TPORT_PORT ".ipc"
+#define TPORT_TYPE "tcp"
+#define TPORT_TYPE_IPC false
+#define TPORT_PORT 7000
 
 #define MAX_TPORT_NAME 128
 #define MSG_SIZE 128 // in bytes
@@ -74,7 +74,7 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, OCC, VLL
-#define CC_ALG VLL
+#define CC_ALG TIMESTAMP
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER         false
