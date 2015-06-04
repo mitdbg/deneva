@@ -62,6 +62,8 @@ public:
 	void init(workload * h_wl, int thread_id);
 	base_query * get_next_query(); 
 	int q_idx;
+  uint64_t thread_id;
+  workload * h_wl;
 #if WORKLOAD == YCSB
 	ycsb_query * queries;
 #else 

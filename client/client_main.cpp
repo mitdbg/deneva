@@ -90,8 +90,8 @@ int main(int argc, char* argv[])
 	pthread_barrier_init( &warmup_bar, NULL, thd_cnt );
 	for (uint32_t i = 0; i < thd_cnt + rthd_cnt; i++) 
 		m_thds[i].init(i, g_node_id, m_wl);
-    endtime = get_server_clock();
-    printf("Initialization Time = %ld\n", endtime - starttime);
+  endtime = get_server_clock();
+  printf("Initialization Time = %ld\n", endtime - starttime);
 	warmup_finish = true;
 	pthread_barrier_init( &warmup_bar, NULL, thd_cnt + rthd_cnt);
 #ifndef NOGRAPHITE
