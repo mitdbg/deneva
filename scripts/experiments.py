@@ -60,13 +60,13 @@ def experiment_1():
     fmt = fmt_ycsb
     nnodes = [1,2,4,8,16,32]
     nmpr=[0.01,0.1]
-    nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL']
+    nalgos=['NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','WAIT_DIE','TIMESTAMP']
     nthreads=[1]
-    ntifs=[100,500]
+    ntifs=[100,200]
     nzipf=[0.6]
     nwr_perc=[0.0,0.5]
     ntxn=1000000
-    exp = [[n,ntxn,'YCSB',cc,m,t,tif,z,1.0-wp,wp] for n,m,cc,t,tif,z,wp in itertools.product(nnodes,nmpr,nalgos,nthreads,ntifs,nzipf,nwr_perc)]
+    exp = [[n,ntxn,'YCSB',cc,m,t,tif,z,1.0-wp,wp] for t,tif,z,wp,m,cc,n in itertools.product(nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nnodes)]
     return fmt[0],exp
 
 def experiment_1_plot(summary):

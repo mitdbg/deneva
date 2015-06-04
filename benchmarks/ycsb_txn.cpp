@@ -236,8 +236,7 @@ RC ycsb_txn_man::run_ycsb(base_query * query) {
     row = accesses[i]->orig_row;
     rc = run_ycsb_1(accesses[i]->type,row);
   }
-  goto final;
-#endif
+#else
   for (uint64_t i = m_query->req_i; i < m_query->request_cnt; i++) {
     m_query->req_i = i;
 	  ycsb_request * req = &m_query->requests[i];
@@ -251,7 +250,7 @@ RC ycsb_txn_man::run_ycsb(base_query * query) {
       break;
     rc = run_ycsb_1(req->acctype,row);
   }
-final:
+#endif
   if(rc == WAIT)
     return rc;
   // What if we're still waiting on nodes from rinit?

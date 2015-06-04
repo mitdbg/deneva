@@ -4,12 +4,12 @@
 /***********************************************/
 // Simulation + Hardware
 /***********************************************/
-#define NODE_CNT 2
+#define NODE_CNT 8
 #define THREAD_CNT 1
 // REM_THREAD_CNT should be at least NODE_CNT*THREAD_CNT to avoid deadlock
 #define REM_THREAD_CNT 1
 // PART_CNT should be at least NODE_CNT
-#define PART_CNT 2
+#define PART_CNT 8
 #define CLIENT_NODE_CNT 1
 #define CLIENT_THREAD_CNT 1
 #define CLIENT_REM_THREAD_CNT 1
@@ -31,7 +31,7 @@
 #define STATS_ENABLE        true
 #define TIME_ENABLE         true //STATS_ENABLE
 
-#define MAX_TXN_IN_FLIGHT 4 
+#define MAX_TXN_IN_FLIGHT 100
 
 /***********************************************/
 // Memory System
@@ -74,7 +74,7 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, OCC, VLL
-#define CC_ALG TIMESTAMP
+#define CC_ALG HSTORE_SPEC
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER         false
@@ -130,7 +130,7 @@
 // max number of rows touched per transaction
 #define MAX_ROW_PER_TXN       64
 #define QUERY_INTVL         1UL
-#define MAX_TXN_PER_PART 10000
+#define MAX_TXN_PER_PART 1000000
 #define FIRST_PART_LOCAL      true
 #define MAX_TUPLE_SIZE        1024 // in bytes
 // ==== [YCSB] ====
@@ -160,7 +160,7 @@
 #define WH_UPDATE         true
 #define NUM_WH 8
 // % of transactions that access multiple partitions
-#define MPR 1
+#define MPR 0.01
 #define MPR_NEWORDER      20 // In %
 // Smaller item selection to model contention
 #define CONTENTION false
