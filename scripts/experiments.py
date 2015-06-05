@@ -58,22 +58,24 @@ def test():
 # Vary: Node count, % writes
 def experiment_1():
     fmt = fmt_ycsb
-    nnodes = [1,2,4,8,16]
-    nmpr=[0.01,0.1]
+    nnodes = [1]
+    #nnodes = [1,2,4,8,16,32]
+    nmpr=[0.01]
+    #nmpr=[0.01,0.1]
     nalgos=['WAIT_DIE']
     #nalgos=['NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','WAIT_DIE','TIMESTAMP']
     nthreads=[1]
     ntifs=[100]
     nzipf=[0.6]
     nwr_perc=[0.0]
-    ntxn=1000000
+    ntxn=100000000
     exp = [[n,ntxn,'YCSB',cc,m,t,tif,z,1.0-wp,wp] for t,tif,z,wp,m,cc,n in itertools.product(nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nnodes)]
     return fmt[0],exp
 
 def experiment_1_plot(summary):
     from plot_helper import tput,abort_rate
     fmt = fmt_ycsb
-    nnodes = [1,2,4,8,16]
+    nnodes = [1,2,4,8,16,32]
     nmpr=[0.01,0.1]
     nalgos=['WAIT_DIE']
     #nalgos=['NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','WAIT_DIE','TIMESTAMP']
@@ -81,7 +83,7 @@ def experiment_1_plot(summary):
     ntifs=[100]
     nzipf=[0.6]
     nwr_perc=[0.0]
-    ntxn=1000000
+    ntxn=100000000
     # x-axis: nodes; one plot for each wr %
     for wr,mpr,tif in itertools.product(nwr_perc,nmpr,ntifs):
         _cfg_fmt = ["MPR","MAX_TXN_PER_PART","WORKLOAD","THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC"]
