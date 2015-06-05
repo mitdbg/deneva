@@ -111,6 +111,7 @@ void PartMan::unlock(txn_man * txn) {
         // If local and ready_part is 0, restart txn
         if(owner->ready_part == 0 && owner->get_rsp_cnt() == 0) {
           owner->state = EXEC; 
+          owner->rc = RCOK;
           txn_pool.restart_txn(owner->get_txn_id());
         }
       }
