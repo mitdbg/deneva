@@ -58,10 +58,8 @@ def test():
 # Vary: Node count, % writes
 def experiment_1():
     fmt = fmt_ycsb
-    nnodes = [1]
-    #nnodes = [1,2,4,8,16,32]
-    nmpr=[0.01]
-    #nmpr=[0.01,0.1]
+    nnodes = [1,2,4,8,16,32]
+    nmpr=[0,0.01,0.1]
     nalgos=['WAIT_DIE']
     #nalgos=['NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','WAIT_DIE','TIMESTAMP']
     nthreads=[1]
@@ -76,7 +74,7 @@ def experiment_1_plot(summary):
     from plot_helper import tput,abort_rate
     fmt = fmt_ycsb
     nnodes = [1,2,4,8,16,32]
-    nmpr=[0.01,0.1]
+    nmpr=[0,0.01,0.1]
     nalgos=['WAIT_DIE']
     #nalgos=['NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','WAIT_DIE','TIMESTAMP']
     nthreads=[1]
@@ -84,6 +82,14 @@ def experiment_1_plot(summary):
     nzipf=[0.6]
     nwr_perc=[0.0]
     ntxn=100000000
+    for wr,tif in itertools.product(nwr_perc,ntifs):
+        _cfg_fmt = ["CC_ALG","MAX_TXN_PER_PART","WORKLOAD","THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC"]
+        _cfg=["WAIT_DIE",ntxn,'YCSB',nthreads[0],tif,nzipf[0],1.0-wr,wr]
+        _title="{} {} {}% Writes {} TIF".format("WAIT_DIE",'YCSB',wr*100,tif)
+        tput(nnodes,nmpr,summary,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="NODE_CNT",vname="MPR",title=_title)
+    return
+
+
     # x-axis: nodes; one plot for each wr %
     for wr,mpr,tif in itertools.product(nwr_perc,nmpr,ntifs):
         _cfg_fmt = ["MPR","MAX_TXN_PER_PART","WORKLOAD","THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC"]

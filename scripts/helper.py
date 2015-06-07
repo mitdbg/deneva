@@ -68,7 +68,7 @@ def get_summary(sfile,summary={}):
 
     return summary
 
-def merge_results(summary,cnt):
+def merge_results(summary,cnt,drop):
     
     for k in summary.keys():
         if type(summary[k]) is not list:
@@ -76,6 +76,9 @@ def merge_results(summary,cnt):
         l = []
         for c in range(cnt):
             l.append(summary[k].pop())
+        if drop:
+            l.remove(max(l))
+            l.remove(min(l))
         summary[k].append(avg(l))
         if k == "txn_cnt" or k == "clock_time":
             print("{}: {} {}".format(k,avg(l),stdev(l)))

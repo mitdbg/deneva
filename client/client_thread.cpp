@@ -139,6 +139,10 @@ RC Client_thread_t::run() {
 	uint32_t num_txns_sent = 0;
 	int txns_sent[g_node_cnt];
 	memset(txns_sent, 0, g_node_cnt * sizeof(int));
+
+	uint64_t run_starttime = get_sys_clock();
+	uint64_t prog_time = run_starttime;
+
 	while (num_txns_sent < g_node_cnt * MAX_TXN_PER_PART) {
 		uint32_t next_node = iters++ % g_node_cnt;
 		// Just in case...
@@ -159,9 +163,28 @@ RC Client_thread_t::run() {
 			printf("Node %u: txns in flight: %d\n", k, client_man.get_inflight(k));
 		}
 #endif
+
 		m_query->client_query(m_query, GET_NODE_ID(m_query->pid));
 		num_txns_sent++;
 		txns_sent[GET_NODE_ID(m_query->pid)]++;
+
+		if(get_sys_clock() - prog_time >= PROG_TIMER) {
+			prog_time = get_sys_clock();
+      printf("[prog %ld] "
+          "clock_time=%f"
+          ",txns_sent=%d"
+          ,_thd_id
+          ,(float)(prog_time - run_starttime) / BILLION
+          ,num_txns_sent
+          );
+		  for (uint32_t k = 0; k < g_node_id; ++k) {
+        printf(",tif_node%u=%d"
+            ,k,client_man.get_inflight(k)
+            );
+      }
+      printf("\n");
+      fflush(stdout);
+    }
 	}
 //#if DEBUG_DISTR
 	for (uint64_t l = 0; l < g_node_cnt; ++l)

@@ -7,6 +7,7 @@ import types
 
 PATH=os.getcwd()
 
+drop = False
 rem = False
 exp_cnt = 1
 for arg in sys.argv:
@@ -30,11 +31,15 @@ exps = []
 for arg in sys.argv[1:]:
     if arg == "-help" or arg == "-h":
         sys.exit("Usage: %s experiments \
+                -n Number of experiments to average\
+                -d Drop max and min of each individual stat\
                 " % sys.argv[0])
     elif exp_cnt == sys.maxint:
         exp_cnt = int(arg)
     elif arg == "-n":
         exp_cnt = sys.maxint
+    elif arg == "-d":
+        drop = True
     else:
         exps.append(arg)
 
@@ -61,7 +66,7 @@ for exp in exps:
                 for x in range(exp_cnt):
                     print(res_list[x])
                     r = get_summary(res_list[x],r)
-                merge_results(r,exp_cnt)
+                merge_results(r,exp_cnt,drop)
         summary[output_f] = r
  
     exp_plot = exp + '_plot'
