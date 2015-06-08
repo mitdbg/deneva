@@ -151,7 +151,7 @@ RC Client_thread_t::run() {
 		if (client_man.inc_inflight(next_node) < 0)
 			continue;
 		// TODO: the query queue is not thread safe right now!!!
-		m_query = client_query_queue.get_next_query(next_node);
+		m_query = client_query_queue.get_next_query(next_node,_thd_id);
 		if (m_query == NULL) {
 			client_man.dec_inflight(next_node);
 			continue;

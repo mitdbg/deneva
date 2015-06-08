@@ -25,8 +25,8 @@ Client_query_queue::init(int thread_id) {
 }
 
 base_query * 
-Client_query_queue::get_next_query(uint64_t thd_id) { 	
-	base_query * query = all_queries[thd_id]->get_next_query();
+Client_query_queue::get_next_query(uint64_t nid, uint64_t tid) { 	
+	base_query * query = all_queries[nid]->get_next_query(tid);
 	return query;
 }
 
@@ -38,12 +38,14 @@ Client_query_thd::init(workload * h_wl, int thread_id) {
 #if CLIENT_RUNTIME
 #if WORKLOAD == YCSB	
 	queries = (ycsb_query *) 
-		mem_allocator.alloc(sizeof(ycsb_query) * 1, thread_id);
-	new(&queries[0]) ycsb_query();
+		mem_allocator.alloc(sizeof(ycsb_query) * g_client_thread_cnt, thread_id);
+  for(uint64_t i=0;i<g_client_thread_cnt;i++)
+	  new(&queries[i]) ycsb_query();
 #elif WORKLOAD == TPCC
 	queries = (tpcc_query *) 
-		mem_allocator.alloc(sizeof(tpcc_query) * 1, thread_id);
-  new(&queries[0]) tpcc_query();
+		mem_allocator.alloc(sizeof(tpcc_query) * g_client_thread_cnt, thread_id);
+  for(uint64_t i=0;i<g_client_thrad_cnt;i++)
+    new(&queries[i]) tpcc_query();
 #endif
 
 #else
@@ -76,12 +78,10 @@ Client_query_thd::init(workload * h_wl, int thread_id) {
 }
 
 base_query * 
-Client_query_thd::get_next_query() {
+Client_query_thd::get_next_query(uint64_t tid) {
 	if (q_idx >= MAX_TXN_PER_PART)
 		return NULL;
 #if CLIENT_RUNTIME
-  // FIXME: Hack will NOT work for multi-threaded client server
-  q_idx = 0;
   /*
 #if WORKLOAD == YCSB	
 		new(&queries[q_idx]) ycsb_query();
@@ -89,11 +89,11 @@ Client_query_thd::get_next_query() {
 		new(&queries[q_idx]) tpcc_query();
 #endif
 */
-		queries[q_idx].init(thread_id, h_wl, thread_id);
+		queries[tid].init(thread_id, h_wl, thread_id);
 		// Setup
-		queries[q_idx].txn_id = UINT64_MAX;
-		queries[q_idx].rtype = RTXN;
-	base_query * query = &queries[q_idx];
+		queries[tid].txn_id = UINT64_MAX;
+		queries[tid].rtype = RTXN;
+	base_query * query = &queries[tid];
 #else
 	base_query * query = &queries[q_idx++];
 

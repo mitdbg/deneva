@@ -60,7 +60,7 @@ class tpcc_query;
 class Client_query_thd {
 public:
 	void init(workload * h_wl, int thread_id);
-	base_query * get_next_query(); 
+	base_query * get_next_query(uint64_t tid); 
 	int q_idx;
   uint64_t thread_id;
   workload * h_wl;
@@ -79,7 +79,7 @@ class Client_query_queue {
 public:
 	void init(workload * h_wl);
 	void init(int thread_id);
-	base_query * get_next_query(uint64_t thd_id); 
+	base_query * get_next_query(uint64_t nid, uint64_t tid); 
 	
 private:
 	Client_query_thd ** all_queries;

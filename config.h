@@ -11,7 +11,7 @@
 // PART_CNT should be at least NODE_CNT
 #define PART_CNT 2
 #define CLIENT_NODE_CNT 1
-#define CLIENT_THREAD_CNT 1
+#define CLIENT_THREAD_CNT 2
 #define CLIENT_REM_THREAD_CNT 1
 #define CLIENT_RUNTIME true
 
@@ -131,7 +131,7 @@
 // max number of rows touched per transaction
 #define MAX_ROW_PER_TXN       64
 #define QUERY_INTVL         1UL
-#define MAX_TXN_PER_PART 1000000
+#define MAX_TXN_PER_PART 1000
 #define FIRST_PART_LOCAL      true
 #define MAX_TUPLE_SIZE        1024 // in bytes
 // ==== [YCSB] ====
@@ -220,7 +220,7 @@ extern TestCases          g_test_case;
 #define DEBUG_TIMESTAMP				false
 #define DEBUG_SYNTH					false
 #define DEBUG_ASSERT				false
-#define DEBUG_DISTR				   false 
+#define DEBUG_DISTR				   true 
 #define DEBUG_TIMELINE				false
 
 /***********************************************/
