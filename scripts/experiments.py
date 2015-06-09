@@ -5,7 +5,7 @@ import itertools
 # Format: [#Nodes,#Txns,Workload,CC_ALG,MPR]
 fmt_tpcc = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","NUM_WH","MAX_TXN_IN_FLIGHT"]]
 fmt_nd = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","NUM_WH","MAX_TXN_IN_FLIGHT","NETWORK_DELAY"]]
-fmt_ycsb = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC"]]
+fmt_ycsb = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","CLIENT_THREAD_CNT","THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC"]]
 
 
 #nnodes=[1,2,4,8,16,32]
@@ -58,16 +58,17 @@ def test():
 # Vary: Node count, % writes
 def experiment_1():
     fmt = fmt_ycsb
-    nnodes = [1,2,4,8,16,32]
+    nnodes = [1,2,4,8,16]
     nmpr=[0,0.01,0.1]
     nalgos=['WAIT_DIE']
     #nalgos=['NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','WAIT_DIE','TIMESTAMP']
     nthreads=[1]
-    ntifs=[100]
+    ncthreads=[4]
+    ntifs=[10000]
     nzipf=[0.6]
     nwr_perc=[0.0]
-    ntxn=100000000
-    exp = [[n,ntxn,'YCSB',cc,m,t,tif,z,1.0-wp,wp] for t,tif,z,wp,m,cc,n in itertools.product(nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nnodes)]
+    ntxn=1000000
+    exp = [[n,ntxn,'YCSB',cc,m,ct,t,tif,z,1.0-wp,wp] for ct,t,tif,z,wp,m,cc,n in itertools.product(ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nnodes)]
     return fmt[0],exp
 
 def experiment_1_plot(summary):
@@ -81,7 +82,7 @@ def experiment_1_plot(summary):
     ntifs=[100]
     nzipf=[0.6]
     nwr_perc=[0.0]
-    ntxn=100000000
+    ntxn=1000000
     for wr,tif in itertools.product(nwr_perc,ntifs):
         _cfg_fmt = ["CC_ALG","MAX_TXN_PER_PART","WORKLOAD","THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC"]
         _cfg=["WAIT_DIE",ntxn,'YCSB',nthreads[0],tif,nzipf[0],1.0-wr,wr]
@@ -213,7 +214,7 @@ experiment_map = {
 configs = {
     "NODE_CNT" : 2,
     "CLIENT_NODE_CNT" : 1,
-    "CLIENT_THREAD_CNT" : 1,
+    "CLIENT_THREAD_CNT" : 2,
     "CLIENT_REM_THREAD_CNT" : 1,
     "MAX_TXN_PER_PART" : 100,
     "WORKLOAD" : "TPCC",
