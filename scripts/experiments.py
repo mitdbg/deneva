@@ -5,7 +5,7 @@ import itertools
 # Format: [#Nodes,#Txns,Workload,CC_ALG,MPR]
 fmt_tpcc = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","NUM_WH","MAX_TXN_IN_FLIGHT"]]
 fmt_nd = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","NUM_WH","MAX_TXN_IN_FLIGHT","NETWORK_DELAY"]]
-fmt_ycsb = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC"]]
+fmt_ycsb = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","CLIENT_THREAD_CNT","THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC"]]
 
 
 #nnodes=[1,2,4,8,16,32]
@@ -58,16 +58,17 @@ def test():
 # Vary: Node count, % writes
 def experiment_1():
     fmt = fmt_ycsb
-    nnodes = [1,2,4,8,16,32]
-    nmpr=[0,0.01,0.1]
+    nnodes = [1,2]
+    nmpr=[0]
     nalgos=['WAIT_DIE']
     #nalgos=['NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','WAIT_DIE','TIMESTAMP']
     nthreads=[1]
+    ncthreads=[4]
     ntifs=[100]
     nzipf=[0.6]
     nwr_perc=[0.0]
     ntxn=100000000
-    exp = [[n,ntxn,'YCSB',cc,m,t,tif,z,1.0-wp,wp] for t,tif,z,wp,m,cc,n in itertools.product(nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nnodes)]
+    exp = [[n,ntxn,'YCSB',cc,m,ct,t,tif,z,1.0-wp,wp] for ct,t,tif,z,wp,m,cc,n in itertools.product(ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nnodes)]
     return fmt[0],exp
 
 def experiment_1_plot(summary):
@@ -213,7 +214,7 @@ experiment_map = {
 configs = {
     "NODE_CNT" : 2,
     "CLIENT_NODE_CNT" : 1,
-    "CLIENT_THREAD_CNT" : 1,
+    "CLIENT_THREAD_CNT" : 2,
     "CLIENT_REM_THREAD_CNT" : 1,
     "MAX_TXN_PER_PART" : 100,
     "WORKLOAD" : "TPCC",
