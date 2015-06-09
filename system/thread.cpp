@@ -673,7 +673,7 @@ RC thread_t::run() {
 		      INC_STATS(get_thd_id(), latency, timespan);
         txn_pool.delete_txn(g_node_id,m_query->txn_id);
         txn_cnt++;
-        ATOM_SUB(txn_pool.inflight_cnt,1);
+        //ATOM_SUB(txn_pool.inflight_cnt,1);
           break;
         
         }

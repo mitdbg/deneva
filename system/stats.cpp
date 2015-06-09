@@ -237,8 +237,9 @@ void Stats::print_prog_client(uint64_t tid) {
 			_stats[tid]->time_getqry / BILLION
 		);
     if(tid == 0) {
-		  for (uint32_t k = 0; k < g_node_id; ++k) {
-        printf("tif_node%u=%d"
+		  //for (uint32_t k = 0; k < g_node_id; ++k) {
+		  for (uint32_t k = 0; k < g_servers_per_client; ++k) {
+        printf("tif_node%u=%d, "
             ,k,client_man.get_inflight(k)
             );
       }

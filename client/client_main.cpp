@@ -28,6 +28,7 @@ int main(int argc, char* argv[])
 	// 0. initialize global data structure
 	parser(argc, argv);
     assert(g_node_id >= g_node_cnt);
+    assert(g_client_node_cnt <= g_node_cnt);
 
 	uint64_t seed = get_sys_clock();
 	srand(seed);
