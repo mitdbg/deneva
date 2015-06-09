@@ -58,8 +58,8 @@ def test():
 # Vary: Node count, % writes
 def experiment_1():
     fmt = fmt_ycsb
-    nnodes = [16]
-    nmpr=[0]
+    nnodes = [1,2,4,8,16]
+    nmpr=[0,0.01,0.1]
     nalgos=['WAIT_DIE']
     #nalgos=['NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','WAIT_DIE','TIMESTAMP']
     nthreads=[1]
