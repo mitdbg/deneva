@@ -135,7 +135,7 @@
 #define FIRST_PART_LOCAL      true
 #define MAX_TUPLE_SIZE        1024 // in bytes
 // ==== [YCSB] ====
-#define INIT_PARALLELISM      1 
+#define INIT_PARALLELISM      8 
 #define SYNTH_TABLE_SIZE      (NODE_CNT*1024)
 #define ZIPF_THETA 0.6
 #define READ_PERC 1.0

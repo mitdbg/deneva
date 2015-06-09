@@ -29,6 +29,8 @@ void ycsb_query::init(uint64_t thd_id, workload * h_wl) {
 }
 
 void ycsb_query::init(uint64_t thd_id, workload * h_wl, uint64_t node_id) {
+	mrand = (myrand *) mem_allocator.alloc(sizeof(myrand), thd_id);
+	mrand->init(get_sys_clock());
 	pid = GET_PART_ID(0,node_id);
 	requests = (ycsb_request *) 
 		mem_allocator.alloc(sizeof(ycsb_request) * g_req_per_query, thd_id);
@@ -203,7 +205,7 @@ uint64_t ycsb_query::zipf(uint64_t n, double theta) {
 	double zetan = denom;
 	double eta = (1 - pow(2.0 / n, 1 - theta)) / 
 		(1 - zeta_2_theta / zetan);
-	double u = (double)(rand() % 10000000) / 10000000;
+	double u = (double)(mrand->next() % 10000000) / 10000000;
 	double uz = u * zetan;
 	if (uz < 1) return 1;
 	if (uz < 1 + pow(0.5, theta)) return 2;
@@ -292,8 +294,8 @@ void ycsb_query::gen_requests(uint64_t thd_id, workload * h_wl) {
 	access_cnt = 0;
 	set<uint64_t> all_keys;
 	part_num = 0;
-	double r = (double)(rand() % 1000000) / 10000;
-	//UInt32 r = rand() % 100;
+	double r = (double)(mrand->next() % 1000000) / 10000;
+	//UInt32 r = mrand->next() % 100;
 	//if (r < g_perc_multi_part) {
 	if (r < g_mpr) {
     	bool rem = false;
@@ -303,11 +305,11 @@ void ycsb_query::gen_requests(uint64_t thd_id, workload * h_wl) {
 				//part_to_access[part_num] = thd_id % g_virtual_part_cnt;
 			else {
         			if(!rem) {
-				  	while((part_to_access[part_num] = rand() % g_part_cnt) == thd_id % g_part_cnt) {}
+				  	while((part_to_access[part_num] = mrand->next() % g_part_cnt) == thd_id % g_part_cnt) {}
           				rem = true;
         			}
         			else
-				  	part_to_access[part_num] = rand() % g_part_cnt;
+				  	part_to_access[part_num] = mrand->next() % g_part_cnt;
       }
 			UInt32 j;
 			for (j = 0; j < part_num; j++) 
@@ -321,12 +323,12 @@ void ycsb_query::gen_requests(uint64_t thd_id, workload * h_wl) {
 		if (FIRST_PART_LOCAL)
 			part_to_access[0] = thd_id % g_part_cnt;
 		else
-			part_to_access[0] = rand() % g_part_cnt;
+			part_to_access[0] = mrand->next() % g_part_cnt;
 	}
 
 	int rid = 0;
 	for (UInt32 tmp = 0; tmp < g_req_per_query; tmp ++) {		
-		double r = (double)(rand() % 10000) / 10000;		
+		double r = (double)(mrand->next() % 10000) / 10000;		
 		ycsb_request * req = &requests[rid];
 		//req->table_name = "SYNTH_TABLE";
 		if (r < g_read_perc) {
@@ -350,7 +352,7 @@ void ycsb_query::gen_requests(uint64_t thd_id, workload * h_wl) {
 		//uint64_t primary_key = row_id * g_virtual_part_cnt + part_id;
 		assert(primary_key % g_part_cnt == part_id);
 		req->key = primary_key;
-		req->value = rand() % (1<<8);
+		req->value = mrand->next() % (1<<8);
 		// Make sure a single row is not accessed twice
 		if (req->acctype == RD || req->acctype == WR) {
 			if (all_keys.find(req->key) == all_keys.end()) {
