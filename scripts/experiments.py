@@ -58,7 +58,7 @@ def test():
 # Vary: Node count, % writes
 def experiment_1():
     fmt = fmt_ycsb
-    nnodes = [1,2]
+    nnodes = [4]
     nmpr=[0]
     nalgos=['WAIT_DIE']
     #nalgos=['NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','WAIT_DIE','TIMESTAMP']
@@ -82,7 +82,7 @@ def experiment_1_plot(summary):
     ntifs=[100]
     nzipf=[0.6]
     nwr_perc=[0.0]
-    ntxn=100000000
+    ntxn=1000000
     for wr,tif in itertools.product(nwr_perc,ntifs):
         _cfg_fmt = ["CC_ALG","MAX_TXN_PER_PART","WORKLOAD","THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC"]
         _cfg=["WAIT_DIE",ntxn,'YCSB',nthreads[0],tif,nzipf[0],1.0-wr,wr]
