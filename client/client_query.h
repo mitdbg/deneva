@@ -61,7 +61,7 @@ class Client_query_thd {
 public:
 	void init(workload * h_wl, int thread_id);
 	base_query * get_next_query(uint64_t tid); 
-	int q_idx;
+  volatile int q_idx;
   uint64_t thread_id;
   workload * h_wl;
 #if WORKLOAD == YCSB

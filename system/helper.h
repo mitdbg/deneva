@@ -174,6 +174,8 @@ uint64_t merge_idx_key(uint64_t key_cnt, uint64_t * keys);
 uint64_t merge_idx_key(uint64_t key1, uint64_t key2);
 uint64_t merge_idx_key(uint64_t key1, uint64_t key2, uint64_t key3);
 
+void init_client_globals(); 
+
 extern timespec * res;
 uint64_t get_server_clock();
 uint64_t get_sys_clock(); // return: in ns
