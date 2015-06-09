@@ -36,6 +36,7 @@ void
 Client_query_thd::init(workload * h_wl, int thread_id) {
   this->thread_id = thread_id;
   this->h_wl = h_wl;
+  next_tid = 0;
 	q_idx = 0;
 #if CLIENT_RUNTIME
 #if WORKLOAD == YCSB	
@@ -63,19 +64,21 @@ Client_query_thd::init(workload * h_wl, int thread_id) {
 		mem_allocator.alloc(sizeof(tpcc_query) * request_cnt, thread_id);
 #endif
 
-	for (UInt32 qid = 0; qid < request_cnt; qid ++) {
-#if WORKLOAD == YCSB	
-		new(&queries[qid]) ycsb_query();
-#elif WORKLOAD == TPCC
-		new(&queries[qid]) tpcc_query();
-#endif
-		//queries[qid].init(thread_id, h_wl, qid % g_node_cnt);
-		queries[qid].init(thread_id, h_wl, thread_id);
-		// Setup
-		queries[qid].txn_id = UINT64_MAX;
-		queries[qid].rtype = RTXN;
-		//queries[qid].client_id = g_node_id;
+	pthread_t * p_thds = new pthread_t[g_init_parallelism - 1];
+	for (UInt32 i = 0; i < g_init_parallelism - 1; i++) {
+		pthread_create(&p_thds[i], NULL, threadInitQuery, this);
+  }
+  threadInitQuery(this);
+
+	for (uint32_t i = 0; i < g_init_parallelism - 1; i++) {
+		int rc = pthread_join(p_thds[i], NULL);
+		printf("thread %d complete\n", i);
+		if (rc) {
+			printf("ERROR; return code from pthread_join() is %d\n", rc);
+			exit(-1);
+		}
 	}
+
 #endif
 }
 
@@ -104,88 +107,27 @@ Client_query_thd::get_next_query(uint64_t tid) {
 	return query;
 }
 
-//void base_query::clear() { 
-//  dest_id = UINT32_MAX;
-//  return_id = UINT32_MAX;
-//  txn_id = UINT64_MAX;
-//  ts = UINT64_MAX;
-//  rtype = (RemReqType)-1;
-//  rc = RCOK;
-//  pid = UINT64_MAX;
-//} 
+void * Client_query_thd::threadInitQuery(void * This) {
+	((Client_query_thd *)This)->init_query();
+  return NULL;
+}
 
-//void base_query::update_rc(RC rc) {
-//  if(rc == Abort)
-//    this->rc = rc;
-//}
-//
-//void base_query::set_txn_id(uint64_t _txn_id) { txn_id = _txn_id; } 
-//
-//void base_query::remote_prepare(base_query * query, int dest_id) {
-//  int total = 5;
-//
-//#if DEBUG_DISTR
-//  printf("Sending RPREPARE %ld\n",query->txn_id);
-//#endif
-//  void ** data = new void *[total];
-//  int * sizes = new int [total];
-//  int num = 0;
-//  RemReqType rtype = RPREPARE;
-//  uint64_t _pid = query->pid;
-//  RC rc = query->rc;
-//  uint64_t _txn_id = query->txn_id; 
-//
-//	data[num] = &_txn_id;
-//	sizes[num++] = sizeof(txnid_t);
-//
-//  data[num] = &rtype;
-//  sizes[num++] = sizeof(RemReqType);
-//  data[num] = &_pid;
-//  sizes[num++] = sizeof(uint64_t);
-//  data[num] = &rc;
-//  sizes[num++] = sizeof(RC);
-//  data[num] = &_txn_id;
-//  sizes[num++] = sizeof(uint64_t);
-//
-//  rem_qry_man.send_remote_query(dest_id, data, sizes, num);
-//}
-//void base_query::remote_finish(base_query * query, int dest_id) {
-//  int total = 5;
-//
-//#if DEBUG_DISTR
-//  printf("Sending RFIN %ld\n",query->txn_id);
-//#endif
-//  void ** data = new void *[total];
-//  int * sizes = new int [total];
-//  int num = 0;
-//  RemReqType rtype = RFIN;
-//  uint64_t _pid = query->pid;
-//  RC rc = query->rc;
-//  uint64_t _txn_id = query->txn_id; 
-//
-//	data[num] = &_txn_id;
-//	sizes[num++] = sizeof(txnid_t);
-//
-//  data[num] = &rtype;
-//  sizes[num++] = sizeof(RemReqType);
-//  data[num] = &_pid;
-//  sizes[num++] = sizeof(uint64_t);
-//  data[num] = &rc;
-//  sizes[num++] = sizeof(RC);
-//  data[num] = &_txn_id;
-//  sizes[num++] = sizeof(uint64_t);
-//
-//  rem_qry_man.send_remote_query(dest_id, data, sizes, num);
-//}
-//
-//void base_query::unpack_finish(base_query * query, void * d) {
-//    char * data = (char *) d;
-//    uint64_t ptr = HEADER_SIZE + sizeof(txnid_t) + sizeof(RemReqType);
-//    memcpy(&query->pid, &data[ptr], sizeof(uint64_t));
-//    ptr += sizeof(uint64_t);
-//    memcpy(&query->rc, &data[ptr], sizeof(RC));
-//    ptr += sizeof(RC);
-//    memcpy(&query->txn_id, &data[ptr], sizeof(uint64_t));
-//    ptr += sizeof(uint64_t);
-//}
-//
+void Client_query_thd::init_query() {
+	UInt32 tid = ATOM_FETCH_ADD(next_tid, 1);
+  uint64_t request_cnt;
+	request_cnt = MAX_TXN_PER_PART + 4;
+	
+	for (UInt32 qid = request_cnt / g_init_parallelism * tid; qid < request_cnt / g_init_parallelism * (tid+1); qid ++) {
+#if WORKLOAD == YCSB	
+		new(&queries[qid]) ycsb_query();
+#elif WORKLOAD == TPCC
+		new(&queries[qid]) tpcc_query();
+#endif
+		//queries[qid].init(thread_id, h_wl, qid % g_node_cnt);
+		queries[qid].init(thread_id, h_wl, thread_id);
+		// Setup
+		queries[qid].txn_id = UINT64_MAX;
+		queries[qid].rtype = RTXN;
+		//queries[qid].client_id = g_node_id;
+	}
+}
