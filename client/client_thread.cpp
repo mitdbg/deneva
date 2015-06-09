@@ -36,8 +36,11 @@ RC Client_thread_t::run_remote() {
 	// Send start msg to all nodes; wait for rsp from all nodes before continuing.
 	int rsp_cnt = g_node_cnt + g_client_node_cnt - 1;
 	int32_t inf;
-	int rsp_cnts[g_node_cnt];
-	memset(rsp_cnts, 0, g_node_cnt * sizeof(int));
+    uint32_t return_node_offset;
+	//int rsp_cnts[g_node_cnt];
+	//memset(rsp_cnts, 0, g_node_cnt * sizeof(int));
+	int rsp_cnts[g_servers_per_client];
+	memset(rsp_cnts, 0, g_servers_per_client * sizeof(int));
 	while(rsp_cnt > 0) {
 		m_query = tport_man.recv_msg();
 		if (m_query != NULL) {
@@ -46,8 +49,10 @@ RC Client_thread_t::run_remote() {
 					rsp_cnt--;
 					break;
 				case CL_RSP:
-					rsp_cnts[m_query->return_id]++;
-					inf = client_man.dec_inflight(m_query->return_id);
+                    return_node_offset = m_query->return_id - g_server_start_node;
+                    assert(return_node_offset < g_servers_per_client);
+					rsp_cnts[return_node_offset]++;
+					inf = client_man.dec_inflight(return_node_offset);
 					break;
 				default:
 					assert(false);
@@ -68,7 +73,6 @@ RC Client_thread_t::run_remote() {
 			assert(m_query->rtype == CL_RSP);
 			assert(m_query->dest_id == g_node_id);
 			assert(m_query->return_id < g_node_id);
-			rsp_cnts[m_query->return_id]++;
 #if DEBUG_DISTR
 			printf("Received query response from %u\n", m_query->return_id);
 #endif
@@ -76,7 +80,10 @@ RC Client_thread_t::run_remote() {
 			//    printf("Response count for %lu: %d\n", l, rsp_cnts[l]);
 			switch (m_query->rtype) {
 				case CL_RSP:
-					inf = client_man.dec_inflight(m_query->return_id);
+                    return_node_offset = m_query->return_id - g_server_start_node;
+                    assert(return_node_offset < g_servers_per_client);
+			        rsp_cnts[return_node_offset]++;
+					inf = client_man.dec_inflight(return_node_offset);
 					break;
 				default:
 					assert(false);
@@ -90,7 +97,8 @@ RC Client_thread_t::run_remote() {
 
 		if (_wl->sim_done && _wl->sim_timeout) {
 			bool done = true;
-			for (uint32_t i = 0; i < g_node_cnt; ++i) {
+			//for (uint32_t i = 0; i < g_node_cnt; ++i) {
+			for (uint32_t i = 0; i < g_servers_per_client; ++i) {
 				// Check if we're still waiting on any txns to finish
 				inf = client_man.get_inflight(i);
 #if DEBUG_DISTR
@@ -135,22 +143,28 @@ RC Client_thread_t::run() {
 	myrand rdm;
 	rdm.init(get_thd_id());
 	base_query * m_query = NULL;
+
 	uint64_t iters = 0;
 	uint32_t num_txns_sent = 0;
-	int txns_sent[g_node_cnt];
-	memset(txns_sent, 0, g_node_cnt * sizeof(int));
+	//int txns_sent[g_node_cnt];
+	int txns_sent[g_servers_per_client];
+    for (uint32_t i = 0; i < g_servers_per_client; ++i)
+        txns_sent[i] = 0;
+	//memset(txns_sent, 0, g_node_cnt * sizeof(int));
 
 	uint64_t run_starttime = get_sys_clock();
 	uint64_t prog_time = run_starttime;
 
-	while (num_txns_sent < g_node_cnt * MAX_TXN_PER_PART) {
-		uint32_t next_node = iters++ % g_node_cnt;
+	//while (num_txns_sent < g_node_cnt * MAX_TXN_PER_PART) {
+	while (num_txns_sent < g_servers_per_client * MAX_TXN_PER_PART) {
+		//uint32_t next_node = iters++ % g_node_cnt;
+		uint32_t next_node = iters++ % g_servers_per_client;
 		// Just in case...
 		if (iters == UINT64_MAX)
 			iters = 0;
 		if (client_man.inc_inflight(next_node) < 0)
 			continue;
-		// TODO: the query queue is not thread safe right now!!!
+
 		m_query = client_query_queue.get_next_query(next_node,_thd_id);
 		if (m_query == NULL) {
 			client_man.dec_inflight(next_node);
@@ -159,14 +173,15 @@ RC Client_thread_t::run() {
 #if DEBUG_DISTR
 		printf("Client: thread %lu sending query to node: %lu\n",
 				_thd_id, GET_NODE_ID(m_query->pid));
-		for (uint32_t k = 0; k < g_node_id; ++k) {
-			printf("Node %u: txns in flight: %d\n", k, client_man.get_inflight(k));
+		for (uint32_t k = 0; k < g_servers_per_client; ++k) {
+			printf("Node %u: txns in flight: %d\n", 
+                    k + g_server_start_node, client_man.get_inflight(k));
 		}
 #endif
 
 		m_query->client_query(m_query, GET_NODE_ID(m_query->pid));
 		num_txns_sent++;
-		txns_sent[GET_NODE_ID(m_query->pid)]++;
+		txns_sent[GET_NODE_ID(m_query->pid)-g_server_start_node]++;
     INC_STATS(get_thd_id(),txn_cnt,1);
 
 		if(get_sys_clock() - prog_time >= PROG_TIMER) {
@@ -176,8 +191,8 @@ RC Client_thread_t::run() {
     }
 	}
 //#if DEBUG_DISTR
-	for (uint64_t l = 0; l < g_node_cnt; ++l)
-		printf("Txns sent to node %lu: %d\n", l, txns_sent[l]);
+	for (uint64_t l = 0; l < g_servers_per_client; ++l)
+		printf("Txns sent to node %lu: %d\n", l+g_server_start_node, txns_sent[l]);
 //#endif
 	if( !ATOM_CAS(_wl->sim_done, false, true) )
 		assert( _wl->sim_done);

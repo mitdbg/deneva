@@ -11,10 +11,22 @@
 
 void 
 Client_query_queue::init(workload * h_wl) {
-	all_queries = new Client_query_thd * [g_node_cnt];
+    //server_node_cnt = g_node_cnt / g_client_node_cnt;
+    //uint32_t client_node_id = g_node_id - g_node_cnt;
+    //server_node_start = client_node_id * server_node_cnt; 
+    //if (g_node_cnt % server_node_cnt != 0 && client_node_id == g_node_cnt) {
+    //    // Have first client pick up any leftover servers if the number of
+    //    // servers cannot be evenly divided between client nodes
+    //    // TODO: fix the remainder to be equally distributed among clients
+    //    server_node_cnt += g_node_cnt % g_client_node_cnt;
+    //}
+	//all_queries = new Client_query_thd * [g_node_cnt];
+	all_queries = new Client_query_thd * [g_servers_per_client];
 	_wl = h_wl;
-	for (UInt32 tid = 0; tid < g_node_cnt; tid ++)
+	//for (UInt32 tid = 0; tid < g_node_cnt; tid ++)
+	for (UInt32 tid = 0; tid < g_servers_per_client; tid ++) {
 		init(tid);
+    }
 }
 
 void 
@@ -47,7 +59,7 @@ Client_query_thd::init(workload * h_wl, int thread_id) {
 #elif WORKLOAD == TPCC
 	queries = (tpcc_query *) 
 		mem_allocator.alloc(sizeof(tpcc_query) * g_client_thread_cnt, thread_id);
-  for(uint64_t i=0;i<g_client_thrad_cnt;i++)
+  for(uint64_t i=0;i<g_client_thread_cnt;i++)
     new(&queries[i]) tpcc_query();
 #endif
 
@@ -64,6 +76,18 @@ Client_query_thd::init(workload * h_wl, int thread_id) {
 		mem_allocator.alloc(sizeof(tpcc_query) * request_cnt, thread_id);
 #endif
 
+//	for (UInt32 qid = 0; qid < request_cnt; qid ++) {
+//#if WORKLOAD == YCSB	
+//		new(&queries[qid]) ycsb_query();
+//#elif WORKLOAD == TPCC
+//		new(&queries[qid]) tpcc_query();
+//#endif
+//		//queries[qid].init(thread_id, h_wl, qid % g_node_cnt);
+//		queries[qid].init(thread_id, h_wl, thread_id+g_server_start_node);
+//		// Setup
+//		queries[qid].txn_id = UINT64_MAX;
+//		queries[qid].rtype = RTXN;
+//		//queries[qid].client_id = g_node_id;
 	pthread_t * p_thds = new pthread_t[g_init_parallelism - 1];
 	for (UInt32 i = 0; i < g_init_parallelism - 1; i++) {
 		pthread_create(&p_thds[i], NULL, threadInitQuery, this);
@@ -100,7 +124,11 @@ Client_query_thd::get_next_query(uint64_t tid) {
 		queries[tid].rtype = RTXN;
 	base_query * query = &queries[tid];
 #else
-	base_query * query = &queries[q_idx++];
+    int cur_q_idx = ATOM_FETCH_ADD(q_idx, 1);
+    printf("returning query %d\n", cur_q_idx);
+    fflush(stdout);
+	//base_query * query = &queries[q_idx++];
+	base_query * query = &queries[cur_q_idx];
 
 #endif
 
@@ -117,14 +145,21 @@ void Client_query_thd::init_query() {
   uint64_t request_cnt;
 	request_cnt = MAX_TXN_PER_PART + 4;
 	
-	for (UInt32 qid = request_cnt / g_init_parallelism * tid; qid < request_cnt / g_init_parallelism * (tid+1); qid ++) {
+    uint32_t final_request;
+    if (tid == g_init_parallelism-1) {
+        final_request = MAX_TXN_PER_PART+4;
+    } else {
+        final_request = request_cnt / g_init_parallelism * (tid+1);
+    }
+	//for (UInt32 qid = request_cnt / g_init_parallelism * tid; qid < request_cnt / g_init_parallelism * (tid+1); qid ++) {
+	for (UInt32 qid = request_cnt / g_init_parallelism * tid; qid < final_request; qid ++) {
 #if WORKLOAD == YCSB	
 		new(&queries[qid]) ycsb_query();
 #elif WORKLOAD == TPCC
 		new(&queries[qid]) tpcc_query();
 #endif
 		//queries[qid].init(thread_id, h_wl, qid % g_node_cnt);
-		queries[qid].init(thread_id, h_wl, thread_id);
+		queries[qid].init(thread_id, h_wl, thread_id+g_server_start_node);
 		// Setup
 		queries[qid].txn_id = UINT64_MAX;
 		queries[qid].rtype = RTXN;

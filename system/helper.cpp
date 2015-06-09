@@ -60,6 +60,18 @@ uint64_t merge_idx_key(uint64_t key1, uint64_t key2, uint64_t key3) {
 	return key1 << 42 | key2 << 21 | key3;
 }
 
+void init_client_globals() {
+    g_servers_per_client = g_node_cnt / g_client_node_cnt;
+    uint32_t client_node_id = g_node_id - g_node_cnt;
+    g_server_start_node = client_node_id * g_servers_per_client; 
+    if (g_node_cnt % g_client_node_cnt != 0 && g_node_id == (g_node_cnt + g_client_node_cnt -1)) {
+        // Have last client pick up any leftover servers if the number of
+        // servers cannot be evenly divided between client nodes
+        // TODO: fix the remainder to be equally distributed among clients
+        g_servers_per_client += g_node_cnt % g_client_node_cnt;
+    }
+}
+
 /****************************************************/
 // Global Clock!
 /****************************************************/

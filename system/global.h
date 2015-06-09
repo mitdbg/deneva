@@ -92,6 +92,8 @@ extern carbon_barrier_t enable_barrier;
 extern UInt32 g_client_thread_cnt;
 extern UInt32 g_client_rem_thread_cnt;
 extern UInt32 g_client_node_cnt;
+extern UInt32 g_servers_per_client;
+extern UInt32 g_server_start_node;
 
 /******************************************/
 // Global Parameter

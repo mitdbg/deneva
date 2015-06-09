@@ -130,4 +130,8 @@ void parser(int argc, char * argv[]) {
 	if (g_thread_cnt < g_init_parallelism)
 		g_init_parallelism = g_thread_cnt;
     */
+
+    // Initialize client-specific globals
+    if (g_node_id >= g_node_cnt)
+        init_client_globals();
 }

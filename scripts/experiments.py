@@ -58,16 +58,16 @@ def test():
 # Vary: Node count, % writes
 def experiment_1():
     fmt = fmt_ycsb
-    nnodes = [4]
+    nnodes = [16]
     nmpr=[0]
     nalgos=['WAIT_DIE']
     #nalgos=['NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','WAIT_DIE','TIMESTAMP']
     nthreads=[1]
     ncthreads=[4]
-    ntifs=[100]
+    ntifs=[10000]
     nzipf=[0.6]
     nwr_perc=[0.0]
-    ntxn=100000000
+    ntxn=1000000
     exp = [[n,ntxn,'YCSB',cc,m,ct,t,tif,z,1.0-wp,wp] for ct,t,tif,z,wp,m,cc,n in itertools.product(ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nnodes)]
     return fmt[0],exp
 

@@ -76,6 +76,8 @@ UInt32 g_init_parallelism = INIT_PARALLELISM;
 UInt32 g_client_node_cnt = CLIENT_NODE_CNT;
 UInt32 g_client_thread_cnt = CLIENT_THREAD_CNT;
 UInt32 g_client_rem_thread_cnt = CLIENT_REM_THREAD_CNT;
+UInt32 g_servers_per_client = 0;
+UInt32 g_server_start_node = 0;
 
 double g_mpr = MPR;
 
