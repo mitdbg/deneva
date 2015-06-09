@@ -238,7 +238,7 @@ void Stats::print_prog_client(uint64_t tid) {
 		);
     if(tid == 0) {
 		  for (uint32_t k = 0; k < g_node_id; ++k) {
-        printf("tif_node%u=%d"
+        printf("tif_node%u=%d, "
             ,k,client_man.get_inflight(k)
             );
       }
