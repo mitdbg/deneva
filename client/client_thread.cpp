@@ -172,7 +172,7 @@ RC Client_thread_t::run() {
 		if(get_sys_clock() - prog_time >= PROG_TIMER) {
 			prog_time = get_sys_clock();
 			SET_STATS(get_thd_id(), tot_run_time, prog_time - run_starttime); 
-      stats.print_prog(get_thd_id());
+      stats.print_prog_client(get_thd_id());
     }
 	}
 //#if DEBUG_DISTR
