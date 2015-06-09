@@ -2,6 +2,7 @@
 #include "helper.h"
 #include "stats.h"
 #include "mem_alloc.h"
+#include "client_txn.h"
 
 void StatsArr::init(uint64_t size,StatsArrType type) {
 	arr = (uint64_t *)
@@ -134,6 +135,8 @@ void Stats_thd::clear() {
 	lock_diff = 0;
   qq_full = 0;
 
+  time_getqry = 0;
+
   cflt_cnt = 0;
 	mpq_cnt = 0;
 	msg_bytes = 0;
@@ -217,6 +220,37 @@ void Stats::abort(uint64_t thd_id) {
 		tmp_stats[thd_id]->init();
 }
 
+void Stats::print_prog_client(uint64_t tid) {
+	FILE * outf;
+	if (output_file != NULL) 
+		outf = fopen(output_file, "w");
+  else 
+    outf = stdout;
+	fprintf(outf, "[prog %ld] "
+      "clock_time=%f"
+      ",txns_sent=%ld"
+      ",time_getqry=%f"
+			"\n",
+      tid,
+			(_stats[tid]->tot_run_time ) / BILLION,
+			_stats[tid]->txn_cnt,
+			_stats[tid]->time_getqry / BILLION
+		);
+    if(tid == 0) {
+		  for (uint32_t k = 0; k < g_node_id; ++k) {
+        printf("tif_node%u=%d"
+            ,k,client_man.get_inflight(k)
+            );
+      }
+      printf("\n");
+    }
+
+	if (output_file != NULL) 
+		fclose(outf);
+  else
+    fflush(stdout);
+}
+ 
 void Stats::print_prog(uint64_t tid) {
 	FILE * outf;
 	if (output_file != NULL) 

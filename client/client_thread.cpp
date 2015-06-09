@@ -167,23 +167,12 @@ RC Client_thread_t::run() {
 		m_query->client_query(m_query, GET_NODE_ID(m_query->pid));
 		num_txns_sent++;
 		txns_sent[GET_NODE_ID(m_query->pid)]++;
+    INC_STATS(get_thd_id(),txn_cnt,1);
 
 		if(get_sys_clock() - prog_time >= PROG_TIMER) {
 			prog_time = get_sys_clock();
-      printf("[prog %ld] "
-          "clock_time=%f"
-          ",txns_sent=%d"
-          ,_thd_id
-          ,(float)(prog_time - run_starttime) / BILLION
-          ,num_txns_sent
-          );
-		  for (uint32_t k = 0; k < g_node_id; ++k) {
-        printf(",tif_node%u=%d"
-            ,k,client_man.get_inflight(k)
-            );
-      }
-      printf("\n");
-      fflush(stdout);
+			SET_STATS(get_thd_id(), tot_run_time, prog_time - run_starttime); 
+      stats.print_prog(get_thd_id());
     }
 	}
 //#if DEBUG_DISTR

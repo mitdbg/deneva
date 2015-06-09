@@ -54,6 +54,8 @@ public:
 	double lock_diff;
   double qq_full;
 
+  double time_getqry;
+
   uint64_t cflt_cnt;
 	uint64_t mpq_cnt; // multi-partition queries
 	uint64_t msg_bytes;
@@ -129,6 +131,7 @@ public:
 	void add_lat(uint64_t thd_id, uint64_t latency);
 	void commit(uint64_t thd_id);
 	void abort(uint64_t thd_id);
+  void print_prog_client(uint64_t tid); 
 	void print_prog(uint64_t tid);
 	void print();
 	void print_cnts();

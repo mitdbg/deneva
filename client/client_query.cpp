@@ -26,7 +26,9 @@ Client_query_queue::init(int thread_id) {
 
 base_query * 
 Client_query_queue::get_next_query(uint64_t nid, uint64_t tid) { 	
+  uint64_t starttime = get_sys_clock();
 	base_query * query = all_queries[nid]->get_next_query(tid);
+  INC_STATS(tid,time_getqry,get_sys_clock() - starttime);
 	return query;
 }
 
