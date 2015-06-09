@@ -26,7 +26,7 @@
 // # of transactions to run for warmup
 #define WARMUP            0
 // YCSB or TPCC
-#define WORKLOAD YCSB
+#define WORKLOAD TPCC
 // print the transaction latency distribution
 #define PRT_LAT_DISTR       false
 #define STATS_ENABLE        true
@@ -159,7 +159,7 @@
 // are not modeled.
 #define TPCC_ACCESS_ALL       false 
 #define WH_UPDATE         true
-#define NUM_WH 1
+#define NUM_WH 64 
 // % of transactions that access multiple partitions
 #define MPR 0.01
 #define MPR_NEWORDER      20 // In %
