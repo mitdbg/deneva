@@ -223,8 +223,8 @@ extern TestCases          g_test_case;
 #define DEBUG_DISTR				   false 
 #define DEBUG_TIMELINE				false
 
-#define QRY_ONLY true
-#define TWOPC_ONLY false
+#define QRY_ONLY false
+#define TWOPC_ONLY true
 
 /***********************************************/
 // Constant
