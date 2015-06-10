@@ -264,10 +264,10 @@ base_query * Remote_query::unpack(void * d, int len) {
 	ptr += sizeof(query->rtype);
   
 
-    if(rtype == RINIT || rtype == INIT_DONE || rtype == RTXN || rtype == CL_RSP) {
+    if(rtype == RINIT || rtype == INIT_DONE || rtype == RTXN || rtype == CL_RSP || (QRY_ONLY && rtype == RQRY)) {
 #if WORKLOAD == TPCC
 	    //query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), 0);
-	query = new tpcc_query();
+	      query = new tpcc_query();
 #elif WORKLOAD == YCSB
 	    //query = (ycsb_query *) mem_allocator.alloc(sizeof(ycsb_query), 0);
         query = new ycsb_query();

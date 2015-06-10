@@ -75,7 +75,11 @@ def merge_results(summary,cnt,drop):
             continue
         l = []
         for c in range(cnt):
-            l.append(summary[k].pop())
+            try:
+                l.append(summary[k].pop())
+            except IndexError:
+                print("IndexError {} {}/{}".format(k,c,cnt))
+                continue
         if drop:
             l.remove(max(l))
             l.remove(min(l))
