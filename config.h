@@ -142,7 +142,7 @@
 #define WRITE_PERC 0.0
 #define SCAN_PERC           0
 #define SCAN_LEN          20
-#define PART_PER_TXN        PART_CNT  
+#define PART_PER_TXN        2//PART_CNT  
 #define PERC_MULTI_PART     MPR 
 #define REQ_PER_QUERY       16
 #define FIELD_PER_TUPLE       10
