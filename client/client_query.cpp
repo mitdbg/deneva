@@ -125,8 +125,6 @@ Client_query_thd::get_next_query(uint64_t tid) {
 	base_query * query = &queries[tid];
 #else
     int cur_q_idx = ATOM_FETCH_ADD(q_idx, 1);
-    printf("returning query %d\n", cur_q_idx);
-    fflush(stdout);
 	//base_query * query = &queries[q_idx++];
 	base_query * query = &queries[cur_q_idx];
 

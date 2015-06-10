@@ -30,7 +30,7 @@ vcloud_uname = 'root'
 identity = "/usr0/home/benchpress/.ssh/id_rsa_vcloud"
 vcloud_machines = [
  "100",
-# "101",
+ "101",
  "102",
  "103",
  "104",
@@ -51,7 +51,7 @@ vcloud_machines = [
  "80",
  "87",
  "89",
- "90",
+# "90",
  "91",
  "92",
  "93",
@@ -60,7 +60,7 @@ vcloud_machines = [
  "96",
  "97",
  "98",
-# "99",
+ "99",
  "139",
  "140",
  "141",
