@@ -144,10 +144,13 @@ for exp in exps:
 
 # Be sure all rundb/runcl are killed
                 if cluster == 'vcloud':
-                    cmd = './scripts/killall.sh'
+                    cmd = './scripts/vcloud_cmd.sh \"{}\" \"pkill -f \'rundb\'\"'.format(' '.join(machines))
                     print(cmd)
                     os.system(cmd)
-                    
+                    cmd = './scripts/vcloud_cmd.sh \"{}\" \"pkill -f \'runcl\'\"'.format(' '.join(machines))
+                    print(cmd)
+                    os.system(cmd)
+
 # Sync clocks before each experiment
                 if cluster == 'vcloud':
                     print("Syncing Clocks...")

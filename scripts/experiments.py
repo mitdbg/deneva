@@ -59,6 +59,7 @@ def test():
 # Vary: Node count, % writes
 def experiment_1():
     fmt = fmt_ycsb
+    #nnodes = [4]
     nnodes = [1,2,4,8,16]
     nmpr=[0,0.01,0.1,1]
     nalgos=['WAIT_DIE']
@@ -66,17 +67,17 @@ def experiment_1():
     #nalgos=['NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','WAIT_DIE','TIMESTAMP']
     nthreads=[1]
     ncthreads=[1]
-    ntifs=[1000]
+    ntifs=[2000]
     nzipf=[0.6]
     nwr_perc=[0.0]
-    ntxn=10000000
-    exp = [[int(math.ceil(n/2)),n,ntxn,'YCSB',cc,m,ct,t,tif,z,1.0-wp,wp] for ct,t,tif,z,wp,m,cc,n in itertools.product(ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nnodes)]
+    ntxn=2000000
+    exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t,tif,z,1.0-wp,wp] for ct,t,tif,z,wp,m,cc,n in itertools.product(ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nnodes)]
     return fmt[0],exp
 
 def experiment_1_plot(summary):
     from plot_helper import tput,abort_rate
     fmt = fmt_ycsb
-    nnodes = [1,2,4,8,16,32]
+    nnodes = [2,4,8,16,32]
     nmpr=[0,0.01,0.1]
     nalgos=['WAIT_DIE']
     #nalgos=['NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','WAIT_DIE','TIMESTAMP']
