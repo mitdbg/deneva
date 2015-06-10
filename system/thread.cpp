@@ -279,6 +279,16 @@ RC thread_t::run() {
 
 				// Theoretically, we could send multiple queries to one node.
 				//    m_txn could already be in txn_pool
+
+#if QRY_ONLY
+				rc = _wl->get_txn_man(m_txn, this);
+				assert(rc == RCOK);
+				m_txn->set_txn_id(m_query->txn_id);
+				m_txn->set_ts(m_query->ts);
+				m_txn->set_pid(m_query->pid);
+				m_txn->state = INIT;
+				txn_pool.add_txn(m_query->return_id,m_txn,m_query);
+#endif
 				m_txn = txn_pool.get_txn(m_query->return_id, m_query->txn_id);
 				assert(m_txn != NULL);
 #if DEBUG_DISTR
@@ -320,6 +330,9 @@ RC thread_t::run() {
 */
 				if(rc != WAIT)
 					rem_qry_man.remote_rsp(m_query,m_txn);
+#if QRY_ONLY
+				txn_pool.delete_txn(m_query->return_id, m_query->txn_id);
+#endif
 //#endif
 				break;
 			case RQRY_RSP:
@@ -341,6 +354,10 @@ RC thread_t::run() {
 				// Execute from original txn; Note: txn may finish
 				assert(m_txn->get_rsp_cnt() == 0);
 				rc = m_txn->run_txn(m_query);
+#if QRY_ONLY
+        m_query->client_id =txn_pool.get_qry(g_node_id, m_query->txn_id)->client_id; 
+        //m_query =txn_pool.get_qry(g_node_id, m_query->txn_id); 
+#endif
 				break;
 			case RFIN:
 #if DEBUG_DISTR
@@ -518,6 +535,7 @@ RC thread_t::run() {
 #endif
 
 					ttime = get_sys_clock();
+#if !QRY_ONLY
 					m_txn->state = INIT;
 					for(uint64_t i = 0; i < m_query->part_num; i++) {
 						uint64_t part_id = m_query->part_to_access[i];
@@ -580,8 +598,8 @@ RC thread_t::run() {
 						}
 					} // for(uint64_t i = 0; i < m_query->part_num; i++) 
 
+#endif // !QRY_ONLY
 					INC_STATS(get_thd_id(),time_msg_sent,get_sys_clock() - ttime);
-
 				} //if(m_txn->rc != WAIT) 
 
 				if(m_query->rc == Abort && rc == WAIT) {
@@ -622,7 +640,7 @@ RC thread_t::run() {
 					if(m_query->part_num == 1 && !m_txn->spec) {
 						rc = m_txn->finish(rc,m_query->part_to_access,m_query->part_num);
 					} else
-						assert(m_txn->state == DONE);
+						assert(m_txn->state == DONE || QRY_ONLY || TWOPC_ONLY);
 					INC_STATS(get_thd_id(),txn_cnt,1);
 					if(m_txn->abort_cnt > 0) { 
 						INC_STATS(get_thd_id(), txn_abort_cnt, 1);
@@ -674,6 +692,7 @@ RC thread_t::run() {
         txn_pool.delete_txn(g_node_id,m_query->txn_id);
         txn_cnt++;
         //ATOM_SUB(txn_pool.inflight_cnt,1);
+					rem_qry_man.send_client_rsp(m_query);
           break;
         
         }

@@ -64,6 +64,8 @@ for exp in exps:
             res_list = sorted(glob.glob(ofile),key=os.path.getmtime,reverse=True)
             if res_list:
                 for x in range(exp_cnt):
+                    if x >= len(res_list):
+                        continue
                     print(res_list[x])
                     r = get_summary(res_list[x],r)
                 merge_results(r,exp_cnt,drop)

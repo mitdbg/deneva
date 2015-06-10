@@ -60,14 +60,14 @@ def test():
 def experiment_1():
     fmt = fmt_ycsb
     #nnodes = [4]
-    nnodes = [1,2,4,8,16]
-    nmpr=[0,0.01,0.1,1]
+    nnodes = [2,4,8,16]
+    nmpr=[0.01,0.1,1]
     nalgos=['WAIT_DIE']
     #nalgos=['WAIT_DIE','HSTORE','HSTORE_SPEC']
     #nalgos=['NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','WAIT_DIE','TIMESTAMP']
     nthreads=[1]
     ncthreads=[1]
-    ntifs=[2000]
+    ntifs=[1000]
     nzipf=[0.6]
     nwr_perc=[0.0]
     ntxn=2000000
@@ -77,15 +77,16 @@ def experiment_1():
 def experiment_1_plot(summary):
     from plot_helper import tput,abort_rate
     fmt = fmt_ycsb
-    nnodes = [2,4,8,16,32]
-    nmpr=[0,0.01,0.1]
+    nnodes = [1,2,4,8,16]
+    nmpr=[0,0.01,0.1,1]
     nalgos=['WAIT_DIE']
     #nalgos=['NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','WAIT_DIE','TIMESTAMP']
     nthreads=[1]
-    ntifs=[100]
+    ncthreads=[1]
+    ntifs=[2000]
     nzipf=[0.6]
     nwr_perc=[0.0]
-    ntxn=1000000
+    ntxn=2000000
     for wr,tif in itertools.product(nwr_perc,ntifs):
         _cfg_fmt = ["CC_ALG","MAX_TXN_PER_PART","WORKLOAD","THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC"]
         _cfg=["WAIT_DIE",ntxn,'YCSB',nthreads[0],tif,nzipf[0],1.0-wr,wr]

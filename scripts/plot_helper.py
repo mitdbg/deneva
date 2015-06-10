@@ -27,7 +27,10 @@ def tput(xval,vval,summary,
         tpt[_v] = [0] * len(xval)
 
         for x,xi in zip(xval,range(len(xval))):
-            cfgs = get_cfgs(cfg_fmt + [xname] + [vname], cfg + [x] + [v] )
+            if xname == "NODE_CNT":
+                cfgs = get_cfgs(cfg_fmt + [xname] + [vname] + ["CLIENT_NODE_CNT"], cfg + [x] + [v] + [int(math.ceil(x/2)) if x > 1 else 1])
+            else:
+                cfgs = get_cfgs(cfg_fmt + [xname] + [vname], cfg + [x] + [v] )
             cfgs = get_outfile_name(cfgs)
             if cfgs not in summary.keys(): 
                 print("Not in summary: {}".format(cfgs))

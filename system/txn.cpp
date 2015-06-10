@@ -320,6 +320,9 @@ RC txn_man::finish(base_query * query, bool fin) {
     return query->rc;
   }
 
+#if QRY_ONLY
+  return RCOK;
+#endif
   uint64_t starttime = get_sys_clock();
 
   if(!fin) {

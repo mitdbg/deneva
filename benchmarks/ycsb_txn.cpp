@@ -153,6 +153,10 @@ RC ycsb_txn_man::run_txn_state(base_query * query) {
       if(loc) {
         rc = run_ycsb_0(req,row);
       } else {
+#if TWOPC_ONLY
+        rc = RCOK;
+        break;
+#endif
         assert(GET_NODE_ID(m_query->pid) == g_node_id);
         query->dest_id = GET_NODE_ID(part_id);
         query->rem_req_state = YCSB_0;
@@ -160,6 +164,12 @@ RC ycsb_txn_man::run_txn_state(base_query * query) {
       }
       break;
 		case YCSB_1 :
+#if TWOPC_ONLY
+      if(!loc) {
+        rc = RCOK;
+        break;
+      }
+#endif
       rc = run_ycsb_1(req->acctype,row);
       break;
     case YCSB_FIN :

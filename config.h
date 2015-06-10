@@ -32,7 +32,7 @@
 #define STATS_ENABLE        true
 #define TIME_ENABLE         true //STATS_ENABLE
 
-#define MAX_TXN_IN_FLIGHT 2000
+#define MAX_TXN_IN_FLIGHT 1000
 
 /***********************************************/
 // Memory System
@@ -142,7 +142,7 @@
 #define WRITE_PERC 0.0
 #define SCAN_PERC           0
 #define SCAN_LEN          20
-#define PART_PER_TXN        PART_CNT  
+#define PART_PER_TXN        2//PART_CNT  
 #define PERC_MULTI_PART     MPR 
 #define REQ_PER_QUERY       16
 #define FIELD_PER_TUPLE       10
@@ -222,6 +222,9 @@ extern TestCases          g_test_case;
 #define DEBUG_ASSERT				false
 #define DEBUG_DISTR				   false 
 #define DEBUG_TIMELINE				false
+
+#define QRY_ONLY false
+#define TWOPC_ONLY true
 
 /***********************************************/
 // Constant
