@@ -55,6 +55,7 @@ public:
   double qq_full;
 
   double time_getqry;
+  double client_latency;
 
   uint64_t cflt_cnt;
 	uint64_t mpq_cnt; // multi-partition queries

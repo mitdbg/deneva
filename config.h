@@ -138,8 +138,8 @@
 #define INIT_PARALLELISM      16 
 #define SYNTH_TABLE_SIZE      (NODE_CNT*1024)
 #define ZIPF_THETA 0.6
-#define READ_PERC 1.0
-#define WRITE_PERC 0.0
+#define READ_PERC 0
+#define WRITE_PERC 0
 #define SCAN_PERC           0
 #define SCAN_LEN          20
 #define PART_PER_TXN        2//PART_CNT  
@@ -159,9 +159,9 @@
 // are not modeled.
 #define TPCC_ACCESS_ALL       false 
 #define WH_UPDATE         true
-#define NUM_WH 16
+#define NUM_WH 2
 // % of transactions that access multiple partitions
-#define MPR 1
+#define MPR 1.0
 #define MPR_NEWORDER      20 // In %
 // Smaller item selection to model contention
 #define CONTENTION false
@@ -224,7 +224,7 @@ extern TestCases          g_test_case;
 #define DEBUG_TIMELINE				false
 
 #define QRY_ONLY false
-#define TWOPC_ONLY true
+#define TWOPC_ONLY false
 
 /***********************************************/
 // Constant

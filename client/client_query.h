@@ -7,6 +7,7 @@
 
 class workload;
 class ycsb_query;
+class ycsb_client_query;
 class tpcc_query;
 
 //enum RemReqType {INIT_DONE,RLK, RULK, RQRY, RFIN, RLK_RSP, RULK_RSP, RQRY_RSP, RACK, RTXN, RINIT, RPREPARE,RPASS};
@@ -60,7 +61,8 @@ class tpcc_query;
 class Client_query_thd {
 public:
 	void init(workload * h_wl, int thread_id);
-	base_query * get_next_query(uint64_t tid); 
+	base_client_query * get_next_query(uint64_t tid); 
+	//base_query * get_next_query(uint64_t tid); 
   volatile int q_idx;
   static void * threadInitQuery(void * id);
   void init_query();
@@ -68,7 +70,8 @@ public:
   uint64_t thread_id;
   workload * h_wl;
 #if WORKLOAD == YCSB
-	ycsb_query * queries;
+	ycsb_client_query * queries;
+	//ycsb_query * queries;
 #else 
 	tpcc_query * queries;
 #endif
@@ -82,7 +85,8 @@ class Client_query_queue {
 public:
 	void init(workload * h_wl);
 	void init(int thread_id);
-	base_query * get_next_query(uint64_t nid, uint64_t tid); 
+	base_client_query * get_next_query(uint64_t nid, uint64_t tid); 
+	//base_query * get_next_query(uint64_t nid, uint64_t tid); 
 	
 private:
 	Client_query_thd ** all_queries;

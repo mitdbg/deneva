@@ -136,6 +136,7 @@ void Stats_thd::clear() {
   qq_full = 0;
 
   time_getqry = 0;
+  client_latency = 0;
 
   cflt_cnt = 0;
 	mpq_cnt = 0;
@@ -230,11 +231,13 @@ void Stats::print_prog_client(uint64_t tid) {
       "clock_time=%f"
       ",txns_sent=%ld"
       ",time_getqry=%f"
+      ",latency=%f"
 			"\n",
       tid,
 			(_stats[tid]->tot_run_time ) / BILLION,
 			_stats[tid]->txn_cnt,
-			_stats[tid]->time_getqry / BILLION
+			_stats[tid]->time_getqry / BILLION,
+			_stats[tid]->client_latency / BILLION / _stats[tid]->txn_cnt
 		);
     if(tid == 0) {
 		  //for (uint32_t k = 0; k < g_node_id; ++k) {
@@ -376,6 +379,7 @@ void Stats::print() {
 	double total_debug4 = 0;
 	double total_debug5 = 0;
 	double total_qq_full = 0;
+	double total_client_latency = 0;
 	double total_time_index = 0;
 	double total_rtime_index = 0;
 	double total_time_abort = 0;
@@ -431,6 +435,7 @@ void Stats::print() {
 		total_debug4 += _stats[tid]->debug4;
 		total_debug5 += _stats[tid]->debug5;
 		total_qq_full += _stats[tid]->qq_full;
+		total_client_latency += _stats[tid]->client_latency;
 		total_rtxn += _stats[tid]->rtxn;
 		total_rqry_rsp += _stats[tid]->rqry_rsp;
 		total_rack += _stats[tid]->rack;
@@ -487,6 +492,7 @@ void Stats::print() {
       ",latency=%f"
       ",run_time=%f"
       ",cflt_cnt=%ld"
+      ",client_latency=%f"
 			",mpq_cnt=%ld"
       ",msg_bytes=%ld"
       ",msg_rcv=%ld"
@@ -530,6 +536,7 @@ void Stats::print() {
 			total_latency / BILLION / total_txn_cnt,
 			total_run_time / BILLION,
       total_cflt_cnt,
+			total_client_latency / BILLION / total_txn_cnt,
 			total_mpq_cnt, 
 			total_msg_bytes, 
 			total_msg_rcv_cnt, 
