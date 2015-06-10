@@ -1,6 +1,8 @@
 #include "global.h"
 #include "client_thread.h"
 #include "query.h"
+#include "ycsb_query.h"
+#include "tpcc_query.h"
 #include "client_query.h"
 #include "mem_alloc.h"
 #include "test.h"
@@ -142,7 +144,8 @@ RC Client_thread_t::run() {
 
 	myrand rdm;
 	rdm.init(get_thd_id());
-	base_query * m_query = NULL;
+	base_client_query * m_query = NULL;
+	//base_query * m_query = NULL;
 
 	uint64_t iters = 0;
 	uint32_t num_txns_sent = 0;

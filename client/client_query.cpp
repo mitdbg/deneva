@@ -36,10 +36,10 @@ Client_query_queue::init(int thread_id) {
 	all_queries[thread_id]->init(_wl, thread_id);
 }
 
-base_query * 
+base_client_query * 
 Client_query_queue::get_next_query(uint64_t nid, uint64_t tid) { 	
   uint64_t starttime = get_sys_clock();
-	base_query * query = all_queries[nid]->get_next_query(tid);
+	base_client_query * query = all_queries[nid]->get_next_query(tid);
   INC_STATS(tid,time_getqry,get_sys_clock() - starttime);
 	return query;
 }
@@ -52,10 +52,16 @@ Client_query_thd::init(workload * h_wl, int thread_id) {
 	q_idx = 0;
 #if CLIENT_RUNTIME
 #if WORKLOAD == YCSB	
+	queries = (ycsb_client_query *) 
+		mem_allocator.alloc(sizeof(ycsb_client_query) * g_client_thread_cnt, thread_id);
+  for(uint64_t i=0;i<g_client_thread_cnt;i++)
+	  new(&queries[i]) ycsb_client_query();
+  /*
 	queries = (ycsb_query *) 
 		mem_allocator.alloc(sizeof(ycsb_query) * g_client_thread_cnt, thread_id);
   for(uint64_t i=0;i<g_client_thread_cnt;i++)
 	  new(&queries[i]) ycsb_query();
+    */
 #elif WORKLOAD == TPCC
 	queries = (tpcc_query *) 
 		mem_allocator.alloc(sizeof(tpcc_query) * g_client_thread_cnt, thread_id);
@@ -69,8 +75,12 @@ Client_query_thd::init(workload * h_wl, int thread_id) {
 	request_cnt = MAX_TXN_PER_PART + 4;
 
 #if WORKLOAD == YCSB	
+	queries = (ycsb_client_query *) 
+		mem_allocator.alloc(sizeof(ycsb_client_query) * request_cnt, thread_id);
+  /*
 	queries = (ycsb_query *) 
 		mem_allocator.alloc(sizeof(ycsb_query) * request_cnt, thread_id);
+    */
 #elif WORKLOAD == TPCC
 	queries = (tpcc_query *) 
 		mem_allocator.alloc(sizeof(tpcc_query) * request_cnt, thread_id);
@@ -106,7 +116,7 @@ Client_query_thd::init(workload * h_wl, int thread_id) {
 #endif
 }
 
-base_query * 
+base_client_query * 
 Client_query_thd::get_next_query(uint64_t tid) {
 	if (q_idx >= MAX_TXN_PER_PART)
 		return NULL;
@@ -122,11 +132,11 @@ Client_query_thd::get_next_query(uint64_t tid) {
 		// Setup
 		queries[tid].txn_id = UINT64_MAX;
 		queries[tid].rtype = RTXN;
-	base_query * query = &queries[tid];
+	base_client_query * query = &queries[tid];
 #else
     int cur_q_idx = ATOM_FETCH_ADD(q_idx, 1);
 	//base_query * query = &queries[q_idx++];
-	base_query * query = &queries[cur_q_idx];
+	base_client_query * query = &queries[cur_q_idx];
 
 #endif
 
@@ -152,15 +162,18 @@ void Client_query_thd::init_query() {
 	//for (UInt32 qid = request_cnt / g_init_parallelism * tid; qid < request_cnt / g_init_parallelism * (tid+1); qid ++) {
 	for (UInt32 qid = request_cnt / g_init_parallelism * tid; qid < final_request; qid ++) {
 #if WORKLOAD == YCSB	
-		new(&queries[qid]) ycsb_query();
+		new(&queries[qid]) ycsb_client_query();
+		//new(&queries[qid]) ycsb_query();
 #elif WORKLOAD == TPCC
 		new(&queries[qid]) tpcc_query();
 #endif
 		//queries[qid].init(thread_id, h_wl, qid % g_node_cnt);
 		queries[qid].init(thread_id, h_wl, thread_id+g_server_start_node);
 		// Setup
+    /*
 		queries[qid].txn_id = UINT64_MAX;
 		queries[qid].rtype = RTXN;
+    */
 		//queries[qid].client_id = g_node_id;
 	}
 }

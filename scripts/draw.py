@@ -18,6 +18,16 @@ scatterconfig = {
     'UNLOCK': {'color':'c', 'marker':'s','alpha':1.0},
 }
 
+lineconfig_nopreset = [
+    "ls='-', lw=2, color='#f15854', marker='o', ms=4",
+    "ls='-', lw=2, color='#faa43a', marker='D', ms=4",
+    "ls='-', lw=2, color='#DECF3F', marker='s', ms=4",
+    "ls='-', lw=2, color='#60BD68', marker='^', ms=4",
+    "ls='--', lw=2, color='#5DA5DA', marker='o', ms=4", #, marker='+', ms=10",
+    "ls='--', lw=2, color='#B276B2', marker='+', ms=6",
+    "ls='-', lw=2, color='#4d4d4d', marker='x', ms=6"
+]
+
 lineconfig = {
 # CC Algos
     'DL_DETECT'     : "ls='-', lw=2, color='#f15854', marker='o', ms=4",
@@ -134,7 +144,7 @@ def draw_line(fname, data, xticks,
         elif key in lineconfig.keys():
             style = lineconfig[key]
         else :
-            style = lineconfig.values()[i]
+            style = lineconfig_nopreset[i]
         exec "lines[n], = plot(intlab, data[key], %s)" % style
         n += 1
     if ylimit != 0:

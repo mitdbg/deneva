@@ -30,8 +30,7 @@ nnet_delay=['100000UL']
 
 simple = [
 
-[2,10000,'YCSB','OCC',1.0,1,1,0.6,0.5,0.5],
-[2,10000,'YCSB','MVCC',1.0,1,1,0.6,0.5,0.5],
+[1,2,10000,'YCSB','WAIT_DIE',1.0,1,1,10,0.6,0,0],
 
 
 #[2,10000,'TPCC','NO_WAIT',30,2,8,16]
@@ -51,7 +50,8 @@ experiments_ycsb = [
 
 def test():
     fmt = fmt_ycsb
-    exp = [[2,100000,'YCSB','VLL',1.0,1,1,0.6,0.5,0.5],
+    exp = [
+    [1,2,10000,'YCSB','WAIT_DIE',1.0,1,1,10,0.6,0,0],
     ]
     return fmt[0],exp
 
@@ -66,7 +66,7 @@ def experiment_1():
     #nalgos=['NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','WAIT_DIE','TIMESTAMP']
     nthreads=[1]
     ncthreads=[1]
-    ntifs=[2000]
+    ntifs=[1000]
     nzipf=[0.6]
     nwr_perc=[0.0]
     ntxn=2000000
@@ -77,12 +77,12 @@ def experiment_1_plot(summary):
     from plot_helper import tput,abort_rate
     fmt = fmt_ycsb
     nnodes = [1,2,4,8,16]
-    nmpr=[0,0.01,0.1,1]
+    nmpr=[0,0.01,0.1]
     nalgos=['WAIT_DIE']
     #nalgos=['NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','WAIT_DIE','TIMESTAMP']
     nthreads=[1]
     ncthreads=[1]
-    ntifs=[2000]
+    ntifs=[1000]
     nzipf=[0.6]
     nwr_perc=[0.0]
     ntxn=2000000

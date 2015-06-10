@@ -10,6 +10,12 @@ class tpcc_query;
 
 enum RemReqType {INIT_DONE,RLK, RULK, RQRY, RFIN, RLK_RSP, RULK_RSP, RQRY_RSP, RACK, RTXN, RINIT, RPREPARE,RPASS,CL_RSP};
 
+class base_client_query {
+  public:
+    uint64_t pid;
+    virtual void client_query(base_client_query * query, uint64_t dest_id) = 0; 
+};
+
 class base_query {
 public:
 	virtual void init(uint64_t thd_id, workload * h_wl) = 0;
