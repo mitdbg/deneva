@@ -228,7 +228,7 @@ void ycsb_client_query::client_query(base_client_query * query, uint64_t dest_id
 
 	// Maximum number of parameters
 	// NOTE: Adjust if parameters sent is changed
-	int total = 6 + m_query->part_num + m_query->request_cnt;
+	int total = 7 + m_query->part_num + m_query->request_cnt;
 
 	void ** data = new void *[total];
 	int * sizes = new int [total];
@@ -236,6 +236,7 @@ void ycsb_client_query::client_query(base_client_query * query, uint64_t dest_id
   txnid_t tid = UINT64_MAX;
 	RemReqType rtype = RTXN;
 	uint64_t _pid = m_query->pid;
+  uint64_t ts = get_sys_clock();
 
 	data[num] = &tid;
 	sizes[num++] = sizeof(txnid_t);
@@ -243,6 +244,9 @@ void ycsb_client_query::client_query(base_client_query * query, uint64_t dest_id
 	sizes[num++] = sizeof(RemReqType);
 
 	data[num] = &_pid;
+	sizes[num++] = sizeof(uint64_t);
+
+	data[num] = &ts;
 	sizes[num++] = sizeof(uint64_t);
 
     	data[num] = &m_query->part_num;
@@ -276,6 +280,9 @@ void ycsb_query::unpack_client(base_query * query, void * d) {
     	m_query->reset();
     	m_query->client_id = m_query->return_id;
     	memcpy(&m_query->pid, &data[ptr], sizeof(uint64_t));
+    	ptr += sizeof(uint64_t);
+
+    	memcpy(&m_query->client_startts, &data[ptr], sizeof(uint64_t));
     	ptr += sizeof(uint64_t);
 
     	memcpy(&m_query->part_num, &data[ptr], sizeof(uint64_t));

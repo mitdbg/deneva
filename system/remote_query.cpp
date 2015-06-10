@@ -94,7 +94,7 @@ void Remote_query::send_client_rsp(base_query * query) {
 #endif
     	query->return_id = query->client_id;
     	query->dest_id = g_node_id;
-    	uint64_t total = 3;
+    	uint64_t total = 5;
 	void ** data = new void *[total];
 	int * sizes = new int [total];
 	int num = 0;
@@ -110,6 +110,9 @@ void Remote_query::send_client_rsp(base_query * query) {
 
     	data[num] = &query->rc;
 	sizes[num++] = sizeof(RC);
+
+    	data[num] = &query->client_startts;
+	sizes[num++] = sizeof(uint64_t);
 
     	send_remote_query(query->return_id,data,sizes,num);
 }
@@ -380,6 +383,13 @@ base_query * Remote_query::unpack(void * d, int len) {
             	break;
         }
         case CL_RSP:
+          RC rc_tmp;
+	        memcpy(&rc_tmp,&data[ptr],sizeof(RC));
+	        ptr += sizeof(RC);
+          uint64_t client_startts;
+	        memcpy(&client_startts,&data[ptr],sizeof(uint64_t));
+	        ptr += sizeof(uint64_t);
+          INC_STATS(0,client_latency,get_sys_clock() - client_startts);
             	break;
 	    	default:
 		assert(false);

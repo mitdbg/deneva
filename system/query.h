@@ -58,6 +58,7 @@ public:
   // MVCC
   uint64_t thd_id;
 
+  uint64_t client_startts;
 
   void clear();
   void update_rc(RC rc);
