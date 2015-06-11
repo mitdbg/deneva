@@ -265,9 +265,19 @@ base_query * Remote_query::unpack(void * d, int len) {
 	ptr += sizeof(txnid_t);
 	memcpy(&rtype,&data[ptr],sizeof(query->rtype));
 	ptr += sizeof(query->rtype);
-  
 
-    if(rtype == RINIT || rtype == INIT_DONE || rtype == RTXN || rtype == CL_RSP || (QRY_ONLY && rtype == RQRY)) {
+	bool handle_init = false;
+#if CC_ALG != HSTORE && CC_ALG != HSTORE_SPEC && CC_ALG != VLL
+	// The remaining algos do not use 2PC init so we must check if we've seen
+	// this query before if the remote type is RPREPARE or RQRY 
+	if (rtype == RQRY || rtype == RPREPARE || rtype == RFIN) {
+		query = txn_pool.get_qry(g_node_id,txn_id);
+		if (query == NULL)
+			handle_init = true;
+	}
+#endif
+
+    if(rtype == RINIT || rtype == INIT_DONE || rtype == RTXN || rtype == CL_RSP || (QRY_ONLY && rtype == RQRY) || handle_init) {
 #if WORKLOAD == TPCC
 	    //query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), 0);
 	      query = new tpcc_query();
@@ -279,6 +289,7 @@ base_query * Remote_query::unpack(void * d, int len) {
     } else {
         query = txn_pool.get_qry(g_node_id,txn_id);
     }
+	assert(query != NULL);
 
     query->dest_id = dest_id;
     query->return_id = return_id;
@@ -341,6 +352,11 @@ base_query * Remote_query::unpack(void * d, int len) {
                     }
             break;
         case RPREPARE:
+#if CC_ALG != HSTORE && CC_ALG != HSTORE_SPEC && CC_ALG != VLL
+			if (handle_init) {
+				query->rc = Abort;
+			}
+#endif
             break;
 		case RQRY: {
 #if WORKLOAD == TPCC

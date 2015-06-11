@@ -222,7 +222,7 @@ uint64_t ycsb_client_query::zipf(uint64_t n, double theta) {
 
 void ycsb_client_query::client_query(base_client_query * query, uint64_t dest_id) {
 #if DEBUG_DISTR
-    	printf("Sending RTXN %ld\n",query->txn_id);
+    	printf("Client: sending RTXN\n");
 #endif
 	ycsb_client_query * m_query = (ycsb_client_query *) query;
 
