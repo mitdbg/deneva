@@ -430,7 +430,7 @@ void ycsb_client_query::gen_requests(uint64_t thd_id, workload * h_wl) {
 	double r = (double)(mrand->next() % 1000000) / 10000;
 	//UInt32 r = mrand->next() % 100;
 	//if (r < g_perc_multi_part) {
-	if (r < g_mpr) {
+	if (r < g_mpr && g_part_cnt > 1) {
     	//bool rem = false;
 		//for (UInt32 i = 0; i < g_part_per_txn; i++) {
 		while (part_num < g_part_per_txn) {

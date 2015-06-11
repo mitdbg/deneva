@@ -55,7 +55,7 @@ base_query * QWorkQueue::get_next_query() {
     }
   }
 
-  if(cnt == 0) {
+  if(cnt == 0 && last_add_time != 0) {
     INC_STATS(0,qq_full,get_sys_clock() - last_add_time);
     last_add_time = 0;
   }
