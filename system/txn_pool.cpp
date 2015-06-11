@@ -127,7 +127,7 @@ base_query * TxnPool::get_qry(uint64_t node_id, uint64_t txn_id){
       break;
     }
   }
-  assert(next_qry != NULL);
+  //assert(next_qry != NULL);
 
   pthread_mutex_unlock(&mtx);
 

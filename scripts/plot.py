@@ -50,13 +50,15 @@ for arg in sys.argv[1:]:
 
 for exp in exps:
     summary = {}
+    summary_client = {}
     fmt,experiments = experiment_map[exp]()
 
     for e in experiments:
         r = {}
+        r2 = {}
         cfgs = get_cfgs(fmt,e)
         output_f = get_outfile_name(cfgs)
-        for n in range(cfgs["NODE_CNT"]):
+        for n in range(cfgs["NODE_CNT"]+cfgs["CLIENT_NODE_CNT"]):
             if rem:
                 ofile = "{}{}/{}_{}.out".format(test_dir,output_f,n,output_f)
             else:
@@ -67,11 +69,16 @@ for exp in exps:
                     if x >= len(res_list):
                         continue
                     print(res_list[x])
-                    r = get_summary(res_list[x],r)
+                    if n < cfgs["NODE_CNT"]:
+                        r = get_summary(res_list[x],r)
+                    else:
+                        r2 = get_summary(res_list[x],r2)
                 merge_results(r,exp_cnt,drop)
+                merge_results(r2,exp_cnt,drop)
         summary[output_f] = r
+        summary_client[output_f] = r2
  
     exp_plot = exp + '_plot'
-    experiment_map[exp_plot](summary)
+    experiment_map[exp_plot](summary,summary_client)
 
 exit()

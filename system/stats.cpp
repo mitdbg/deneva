@@ -416,7 +416,12 @@ void Stats::print() {
   uint64_t total_rack = 0;
   uint64_t total_qry_cnt = 0;
 
-	for (uint64_t tid = 0; tid < g_thread_cnt + g_rem_thread_cnt; tid ++) {
+  uint64_t limit;
+  if(g_node_id < g_node_cnt)
+    limit =  g_thread_cnt + g_rem_thread_cnt;
+  else
+    limit =  g_client_thread_cnt + g_client_rem_thread_cnt;
+	for (uint64_t tid = 0; tid < limit; tid ++) {
 		total_txn_cnt += _stats[tid]->txn_cnt;
 		total_abort_cnt += _stats[tid]->abort_cnt;
 		total_txn_abort_cnt += _stats[tid]->txn_abort_cnt;
@@ -581,6 +586,8 @@ void Stats::print() {
 }
 
 void Stats::print_cnts() {
+  if(g_node_id >= g_node_cnt)
+    return;
   uint64_t all_abort_cnt = 0;
   uint64_t w_cflt_cnt = 0;
   uint64_t d_cflt_cnt = 0;

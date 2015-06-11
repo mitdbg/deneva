@@ -73,24 +73,31 @@ def experiment_1():
     exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t,tif,z,1.0-wp,wp] for ct,t,tif,z,wp,m,cc,n in itertools.product(ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nnodes)]
     return fmt[0],exp
 
-def experiment_1_plot(summary):
-    from plot_helper import tput,abort_rate
+def experiment_1_plot(summary,summary_client):
+    from plot_helper import tput,abort_rate,lat
     fmt = fmt_ycsb
     nnodes = [1,2,4,8,16]
     nmpr=[0,0.01,0.1]
-    nalgos=['WAIT_DIE']
-    #nalgos=['NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','WAIT_DIE','TIMESTAMP']
+    #nalgos=['WAIT_DIE']
+    nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
     nthreads=[1]
     ncthreads=[1]
-    ntifs=[1000]
+    ntifs=[1000,2000]
     nzipf=[0.6]
     nwr_perc=[0.0]
     ntxn=2000000
-    for wr,tif in itertools.product(nwr_perc,ntifs):
+    for wr,tif,cc in itertools.product(nwr_perc,ntifs,nalgos):
         _cfg_fmt = ["CC_ALG","MAX_TXN_PER_PART","WORKLOAD","THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC"]
-        _cfg=["WAIT_DIE",ntxn,'YCSB',nthreads[0],tif,nzipf[0],1.0-wr,wr]
-        _title="{} {} {}% Writes {} TIF".format("WAIT_DIE",'YCSB',wr*100,tif)
+        _cfg=[cc,ntxn,'YCSB',nthreads[0],tif,nzipf[0],1.0-wr,wr]
+        _title="{} {} {}% Writes {} TIF".format(cc,'YCSB',wr*100,tif)
         tput(nnodes,nmpr,summary,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="NODE_CNT",vname="MPR",title=_title)
+
+    # x-axis: nodes, y-axis: latency
+    for wr,tif,cc in itertools.product(nwr_perc,ntifs,nalgos):
+        _cfg_fmt = ["CC_ALG","MAX_TXN_PER_PART","WORKLOAD","THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC"]
+        _cfg=[cc,ntxn,'YCSB',nthreads[0],tif,nzipf[0],1.0-wr,wr]
+        _title="{} {} {}% Writes {} TIF".format(cc,'YCSB',wr*100,tif)
+        lat(nnodes,nmpr,summary_client,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="NODE_CNT",vname="MPR",title=_title)
     return
 
 
@@ -103,18 +110,20 @@ def experiment_1_plot(summary):
         abort_rate(nnodes,nalgos,summary,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="NODE_CNT",vname="CC_ALG",title=_title)
 
 # Performance: throughput vs. node count
-# Vary: Node count, Contention
+# Vary: Node count, # server worker threads
 def experiment_2():
     fmt = fmt_ycsb
-    nnodes = [1,2,4,8]
+    nnodes = [1]
     nmpr=[0.01]
-    nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL']
-    nthreads=[1]
-    ntifs=[8]
-    nzipf=[0.0,0.2,0.4,0.6,0.8]
-    nwr_perc=[0.5]
-    ntxn=1000000
-    exp = [[n,ntxn,'YCSB',cc,m,t,tif,z,1.0-wp,wp] for n,m,cc,t,tif,z,wp in itertools.product(nnodes,nmpr,nalgos,nthreads,ntifs,nzipf,nwr_perc)]
+    nalgos=['WAIT_DIE']
+    #nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL']
+    nthreads=[2]
+    ncthreads=[1]
+    ntifs=[10]
+    nzipf=[0.6]
+    nwr_perc=[0]
+    ntxn=10000
+    exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t,tif,z,1.0-wp,wp] for ct,t,tif,z,wp,m,cc,n in itertools.product(ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nnodes)]
     return fmt[0],exp
 
 def experiment_2_plot(summary):
