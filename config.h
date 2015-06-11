@@ -4,12 +4,12 @@
 /***********************************************/
 // Simulation + Hardware
 /***********************************************/
-#define NODE_CNT 1
-#define THREAD_CNT 2
+#define NODE_CNT 2
+#define THREAD_CNT 3
 // REM_THREAD_CNT should be at least NODE_CNT*THREAD_CNT to avoid deadlock
 #define REM_THREAD_CNT 1
 // PART_CNT should be at least NODE_CNT
-#define PART_CNT 1
+#define PART_CNT 2
 #define CLIENT_NODE_CNT 1
 #define CLIENT_THREAD_CNT 1
 #define CLIENT_REM_THREAD_CNT 1
@@ -32,7 +32,7 @@
 #define STATS_ENABLE        true
 #define TIME_ENABLE         true //STATS_ENABLE
 
-#define MAX_TXN_IN_FLIGHT 10
+#define MAX_TXN_IN_FLIGHT 1000
 
 /***********************************************/
 // Memory System
@@ -131,7 +131,7 @@
 // max number of rows touched per transaction
 #define MAX_ROW_PER_TXN       64
 #define QUERY_INTVL         1UL
-#define MAX_TXN_PER_PART 10000
+#define MAX_TXN_PER_PART 100000
 #define FIRST_PART_LOCAL      true
 #define MAX_TUPLE_SIZE        1024 // in bytes
 // ==== [YCSB] ====
