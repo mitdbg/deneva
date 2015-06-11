@@ -158,13 +158,12 @@ void txn_man::cleanup(RC rc) {
 #endif
 }
 
+RC txn_man::get_lock(row_t * row, access_t type) {
+  rc = row->get_lock(type, this);
+  return rc;
+}
+
 RC txn_man::get_row(row_t * row, access_t type, row_t *& row_rtn) {
-  /*
-	if (CC_ALG == HSTORE) {
-    row_rtn = row;
-		return RCOK;
-  }
-  */
 	uint64_t starttime = get_sys_clock();
   uint64_t timespan;
 	RC rc = RCOK;
@@ -213,7 +212,7 @@ RC txn_man::get_row(row_t * row, access_t type, row_t *& row_rtn) {
 	timespan = get_sys_clock() - starttime;
 	INC_STATS(get_thd_id(), time_man, timespan);
 	row_rtn  = accesses[row_cnt - 1]->data;
-  if(CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC)
+  if(CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || CC_ALG == CALVIN)
     assert(rc == RCOK);
   return rc;
 }

@@ -77,7 +77,7 @@ def experiment_1_plot(summary,summary_client):
     from plot_helper import tput,abort_rate,lat
     fmt = fmt_ycsb
     nnodes = [1,2,4,8,16]
-    nmpr=[0,0.01,0.1]
+    nmpr=[0.01,0.1,1]
     #nalgos=['WAIT_DIE']
     nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
     nthreads=[1]

@@ -31,7 +31,7 @@ row_t::switch_schema(table_t * host_table) {
 }
 
 void row_t::init_manager(row_t * row) {
-#if CC_ALG == DL_DETECT || CC_ALG == NO_WAIT || CC_ALG == WAIT_DIE
+#if CC_ALG == DL_DETECT || CC_ALG == NO_WAIT || CC_ALG == WAIT_DIE || CC_ALG == CALVIN
     manager = (Row_lock *) mem_allocator.alloc(sizeof(Row_lock), _part_id);
 #elif CC_ALG == TIMESTAMP
     manager = (Row_ts *) mem_allocator.alloc(sizeof(Row_ts), _part_id);
@@ -124,9 +124,17 @@ void row_t::free_row() {
 	mem_allocator.free(data, sizeof(char) * get_tuple_size());
 }
 
+RC row_t::get_lock(access_t type, txn_man * txn) {
+  RC rc = RCOK;
+  assert(CC_ALG == CALVIN);
+	lock_t lt = (type == RD || type == SCAN)? LOCK_SH : LOCK_EX;
+	rc = this->manager->lock_get(lt, txn);
+  return rc;
+}
+
 RC row_t::get_row(access_t type, txn_man * txn, row_t *& row) {
 	RC rc = RCOK;
-#if CC_ALG == WAIT_DIE || CC_ALG == NO_WAIT || CC_ALG == DL_DETECT
+#if CC_ALG == WAIT_DIE || CC_ALG == NO_WAIT || CC_ALG == DL_DETECT 
 	//uint64_t thd_id = txn->get_thd_id();
 	lock_t lt = (type == RD || type == SCAN)? LOCK_SH : LOCK_EX;
 #if CC_ALG == DL_DETECT
@@ -208,7 +216,7 @@ RC row_t::get_row(access_t type, txn_man * txn, row_t *& row) {
 	rc = this->manager->access(txn, R_REQ);
 	row = txn->cur_row;
 	return rc;
-#elif CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || CC_ALG == VLL
+#elif CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || CC_ALG == VLL || CC_ALG == CALVIN
 #if CC_ALG == HSTORE_SPEC
   if(txn_pool.spec_mode) {
 	  txn->cur_row = (row_t *) mem_allocator.alloc(sizeof(row_t), get_part_id());
@@ -265,7 +273,7 @@ RC row_t::get_row_post_wait(access_t type, txn_man * txn, row_t *& row) {
 // For TIMESTAMP, the row will be explicity deleted at the end of access().
 // (c.f. row_ts.cpp)
 void row_t::return_row(access_t type, txn_man * txn, row_t * row) {	
-#if CC_ALG == WAIT_DIE || CC_ALG == NO_WAIT || CC_ALG == DL_DETECT
+#if CC_ALG == WAIT_DIE || CC_ALG == NO_WAIT || CC_ALG == DL_DETECT || CC_ALG == CALVIN
 	assert (row == NULL || row == this || type == XP);
 	if (ROLL_BACK && type == XP) {// recover from previous writes.
 		this->copy(row);

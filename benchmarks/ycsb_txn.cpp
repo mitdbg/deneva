@@ -55,16 +55,35 @@ void ycsb_txn_man::read_keys(base_query * query) {
 	}
 }
 
+RC ycsb_txn_man::acquire_locks(base_query * query) {
+  assert(CC_ALG == VLL);
+	ycsb_query * m_query = (ycsb_query *) query;
+	for (uint32_t rid = 0; rid < m_query->request_cnt; rid ++) {
+		ycsb_request * req = &m_query->requests[rid];
+		uint64_t part_id = _wl->key_to_part( req->key );
+    if(GET_NODE_ID(part_id) != g_node_id)
+      continue;
+		INDEX * index = _wl->the_index;
+		itemid_t * item;
+		item = index_read(index, req->key, part_id);
+		row_t * row = ((row_t *)item->location);
+		rc = get_lock(row,req->acctype);
+    if(rc != RCOK)
+      break;
+	}
+  return rc;
+}
+
+
 RC ycsb_txn_man::run_txn(base_query * query) {
   RC rc = RCOK;
   rem_done = false;
   fin = false;
 
-  /*
-  //TODO: Add me for parallel YCSB!
+#if CC_ALG == CALVIN
   rc = run_ycsb(query);
   return rc;
-  */
+#endif
 
   // Resume query after hold
   if(query->rc == WAIT_REM) {
@@ -235,41 +254,29 @@ RC ycsb_txn_man::run_ycsb_1(access_t acctype, row_t * row_local) {
 RC ycsb_txn_man::run_ycsb(base_query * query) {
   RC rc = RCOK;
 	ycsb_query * m_query = (ycsb_query *) query;
+  assert(CC_ALG == CALVIN);
   
-  if((CC_ALG != HSTORE && CC_ALG != HSTORE_SPEC) && this->rc == WAIT) {
-    assert(query->rc == WAIT || query->rc == RCOK);
-    get_row_post_wait(row);
-  }
-
-#if CC_ALG == VLL
-  for (uint64_t i = 0; i < row_cnt; i++) {
-    row = accesses[i]->orig_row;
-    rc = run_ycsb_1(accesses[i]->type,row);
-  }
-#else
-  for (uint64_t i = m_query->req_i; i < m_query->request_cnt; i++) {
-    m_query->req_i = i;
+  for (uint64_t i = 0; i < m_query->request_cnt; i++) {
 	  ycsb_request * req = &m_query->requests[i];
+
 		uint64_t part_id = _wl->key_to_part( req->key );
     bool loc = GET_NODE_ID(part_id) == get_node_id();
+    assert(loc);
+
     if(!loc)
       continue;
 
     rc = run_ycsb_0(req,row);
+    assert(rc == RCOK);
     if(rc != RCOK)
       break;
     rc = run_ycsb_1(req->acctype,row);
+    assert(rc == RCOK);
   }
-#endif
-  if(rc == WAIT)
-    return rc;
-  // What if we're still waiting on nodes from rinit?
-  // Soln 1: Only do run_ycsb AFTER getting all rinit replies
-  // Soln 2: Wait for rsp cnt == 0; avoid activating finish twice
 	m_query->rc = rc;
-  if(GET_NODE_ID(m_query->pid) == g_node_id)
-    return finish(m_query,false);
-  return rc;
+
+  // Sends ack back to Calvin sequencer
+  return finish(m_query,false);
 }
 
 
