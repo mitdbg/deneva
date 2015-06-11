@@ -59,15 +59,14 @@ def test():
 # Vary: Node count, % writes
 def experiment_1():
     fmt = fmt_ycsb
-    #nnodes = [4]
-    nnodes = [2,4,8,16]
+    nnodes = [1,2,4,8,16]
     nmpr=[0.01,0.1,1]
-    nalgos=['WAIT_DIE']
+    #nalgos=['WAIT_DIE']
     #nalgos=['WAIT_DIE','HSTORE','HSTORE_SPEC']
-    #nalgos=['NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','WAIT_DIE','TIMESTAMP']
+    nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
     nthreads=[1]
     ncthreads=[1]
-    ntifs=[1000]
+    ntifs=[1000,2000]
     nzipf=[0.6]
     nwr_perc=[0.0]
     ntxn=2000000

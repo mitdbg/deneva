@@ -32,7 +32,7 @@
 #define STATS_ENABLE        true
 #define TIME_ENABLE         true //STATS_ENABLE
 
-#define MAX_TXN_IN_FLIGHT 1000
+#define MAX_TXN_IN_FLIGHT 2000
 
 /***********************************************/
 // Memory System
@@ -75,7 +75,7 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, OCC, VLL
-#define CC_ALG WAIT_DIE
+#define CC_ALG HSTORE
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER         false
@@ -138,8 +138,8 @@
 #define INIT_PARALLELISM      16 
 #define SYNTH_TABLE_SIZE      (NODE_CNT*1024)
 #define ZIPF_THETA 0.6
-#define READ_PERC 0
-#define WRITE_PERC 0
+#define READ_PERC 1.0
+#define WRITE_PERC 0.0
 #define SCAN_PERC           0
 #define SCAN_LEN          20
 #define PART_PER_TXN        2//PART_CNT  
@@ -159,9 +159,9 @@
 // are not modeled.
 #define TPCC_ACCESS_ALL       false 
 #define WH_UPDATE         true
-#define NUM_WH 2
+#define NUM_WH 16
 // % of transactions that access multiple partitions
-#define MPR 1.0
+#define MPR 0.01
 #define MPR_NEWORDER      20 // In %
 // Smaller item selection to model contention
 #define CONTENTION false
