@@ -56,6 +56,52 @@ def tput(xval,vval,summary,
     print("Created plot {}".format(name))
     draw_line(name,tpt,xval,ylab='Throughput (Txn/sec)',xlab=xname,title=_title,bbox=bbox,ncol=2) 
 
+def lat(xval,vval,summary,
+        cfg_fmt=[],
+        cfg=[],
+        xname="MPR",
+        vname="CC_ALG",
+        title=""
+        ):
+    tpt = {}
+    name = 'lat_{}_{}_{}'.format(xname.lower(),vname.lower(),title.replace(" ","_").lower())
+    _title = 'Average Transaction Latency {}'.format(title)
+
+    for v in vval:
+        if vname == "NETWORK_DELAY":
+            _v = (float(v.replace("UL","")))/1000000
+        else:
+            _v = v
+        tpt[_v] = [0] * len(xval)
+
+        for x,xi in zip(xval,range(len(xval))):
+            if xname == "NODE_CNT":
+                cfgs = get_cfgs(cfg_fmt + [xname] + [vname] + ["CLIENT_NODE_CNT"], cfg + [x] + [v] + [int(math.ceil(x/2)) if x > 1 else 1])
+            else:
+                cfgs = get_cfgs(cfg_fmt + [xname] + [vname], cfg + [x] + [v] )
+            cfgs = get_outfile_name(cfgs)
+            if cfgs not in summary.keys(): 
+                print("Not in summary: {}".format(cfgs))
+                break
+            try:
+                txn_lat = avg(summary[cfgs]['client_latency'])
+            except KeyError:
+                print("KeyError: {} {} {} -- {}".format(v,x,cfg,cfgs))
+                tpt[_v][xi] = 0
+                continue
+            # System Throughput: total txn count / average of all node's run time
+            # Per Node Throughput: avg txn count / average of all node's run time
+            # Per txn latency: total of all node's run time / total txn count
+            tpt[_v][xi] = txn_lat
+            #tpt[v][xi] = (avg_txn_cnt/avg_run_time)
+
+    bbox = [0.85,0.5]
+    if vname == "NETWORK_DELAY":
+        bbox = [0.8,0.2]
+    print("Created plot {}".format(name))
+    draw_line(name,tpt,xval,ylab='Latency (sec)',xlab=xname,title=_title,bbox=bbox,ncol=2) 
+
+
 
 def abort_rate(xval,vval,summary,
         cfg_fmt=[],
