@@ -220,6 +220,41 @@ uint64_t ycsb_client_query::zipf(uint64_t n, double theta) {
 	return 1 + (uint64_t)(n * pow(eta*u -eta + 1, alpha));
 }
 
+void ycsb_client_query::unpack_client(base_client_query * query, void * d) {
+	ycsb_client_query * m_query = (ycsb_client_query *) query;
+	char * data = (char *) d;
+	uint64_t ptr = HEADER_SIZE + sizeof(txnid_t) + sizeof(RemReqType);
+  memcpy(&m_query->pid, &data[ptr], sizeof(uint64_t));
+  ptr += sizeof(uint64_t);
+
+  memcpy(&m_query->client_startts, &data[ptr], sizeof(uint64_t));
+  ptr += sizeof(uint64_t);
+
+  memcpy(&m_query->part_num, &data[ptr], sizeof(uint64_t));
+  ptr += sizeof(uint64_t);
+
+ 	m_query->part_to_access = (uint64_t *)
+            	mem_allocator.alloc(sizeof(uint64_t) * m_query->part_num, 0);
+
+  for (uint64_t i = 0; i < m_query->part_num; ++i) {
+     	memcpy(&m_query->part_to_access[i], &data[ptr], sizeof(uint64_t));
+     	ptr += sizeof(uint64_t);
+  }
+
+   memcpy(&m_query->request_cnt, &data[ptr], sizeof(uint64_t));
+   ptr += sizeof(uint64_t);
+
+	m_query->requests = (ycsb_request *) 
+		          mem_allocator.alloc(sizeof(ycsb_request) * m_query->request_cnt, 0);
+
+   for (uint64_t i = 0; i < m_query->request_cnt; ++i) {
+      	memcpy(&m_query->requests[i], &data[ptr], sizeof(ycsb_request));
+      	ptr += sizeof(ycsb_request);
+   }
+
+}
+
+
 void ycsb_client_query::client_query(base_client_query * query, uint64_t dest_id) {
 #if DEBUG_DISTR
     	printf("Client: sending RTXN\n");
@@ -229,6 +264,9 @@ void ycsb_client_query::client_query(base_client_query * query, uint64_t dest_id
 	// Maximum number of parameters
 	// NOTE: Adjust if parameters sent is changed
 	int total = 7 + m_query->part_num + m_query->request_cnt;
+#if CC_ALG == CALVIN
+  total++;
+#endif
 
 	void ** data = new void *[total];
 	int * sizes = new int [total];
@@ -237,6 +275,7 @@ void ycsb_client_query::client_query(base_client_query * query, uint64_t dest_id
 	RemReqType rtype = RTXN;
 	uint64_t _pid = m_query->pid;
   uint64_t ts = get_sys_clock();
+  uint64_t batch_num = 0; // FIXME
 
 	data[num] = &tid;
 	sizes[num++] = sizeof(txnid_t);
@@ -249,6 +288,10 @@ void ycsb_client_query::client_query(base_client_query * query, uint64_t dest_id
 	data[num] = &ts;
 	sizes[num++] = sizeof(uint64_t);
 
+#if CC_ALG == CALVIN
+	data[num] = &batch_num;
+	sizes[num++] = sizeof(uint64_t);
+#endif
     	data[num] = &m_query->part_num;
     	sizes[num++] = sizeof(uint64_t);
     	for (uint64_t i = 0; i < m_query->part_num; ++i) {
@@ -273,11 +316,12 @@ void ycsb_query::unpack_client(base_query * query, void * d) {
 	ycsb_query * m_query = (ycsb_query *) query;
 	char * data = (char *) d;
 	uint64_t ptr = HEADER_SIZE + sizeof(txnid_t) + sizeof(RemReqType);
+  /*
     	m_query->part_to_access = (uint64_t *)
             	mem_allocator.alloc(sizeof(uint64_t) * g_part_cnt, thd_id);
 	m_query->requests = (ycsb_request *) 
 		mem_allocator.alloc(sizeof(ycsb_request) * g_req_per_query, thd_id);
-    	m_query->reset();
+    */
     	m_query->client_id = m_query->return_id;
     	memcpy(&m_query->pid, &data[ptr], sizeof(uint64_t));
     	ptr += sizeof(uint64_t);
@@ -285,8 +329,17 @@ void ycsb_query::unpack_client(base_query * query, void * d) {
     	memcpy(&m_query->client_startts, &data[ptr], sizeof(uint64_t));
     	ptr += sizeof(uint64_t);
 
+#if CC_ALG == CALVIN
+    	memcpy(&m_query->batch_num, &data[ptr], sizeof(uint64_t));
+    	ptr += sizeof(uint64_t);
+#endif
+
     	memcpy(&m_query->part_num, &data[ptr], sizeof(uint64_t));
     	ptr += sizeof(uint64_t);
+
+ 	m_query->part_to_access = (uint64_t *)
+            	mem_allocator.alloc(sizeof(uint64_t) * m_query->part_num, thd_id);
+
     	for (uint64_t i = 0; i < m_query->part_num; ++i) {
         	memcpy(&m_query->part_to_access[i], &data[ptr], sizeof(uint64_t));
         	ptr += sizeof(uint64_t);
@@ -299,10 +352,14 @@ void ycsb_query::unpack_client(base_query * query, void * d) {
     	memcpy(&m_query->request_cnt, &data[ptr], sizeof(uint64_t));
     	ptr += sizeof(uint64_t);
 
+	m_query->requests = (ycsb_request *) 
+		          mem_allocator.alloc(sizeof(ycsb_request) * m_query->request_cnt, thd_id);
+
     	for (uint64_t i = 0; i < m_query->request_cnt; ++i) {
         	memcpy(&m_query->requests[i], &data[ptr], sizeof(ycsb_request));
         	ptr += sizeof(ycsb_request);
     	}
+    	m_query->reset();
 	m_query->req = m_query->requests[0];
 
 }

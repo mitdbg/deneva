@@ -246,6 +246,52 @@ void Remote_query::send_remote_rsp(uint64_t dest_id, void ** data, int * sizes, 
 	tport_man.send_msg(dest_id, data, sizes, num);
 }
 
+base_client_query * Remote_query::unpack_client_query(void * d, int len) {
+  base_client_query * query;
+	char * data = (char *) d;
+	uint64_t ptr = 0;
+  
+  uint32_t dest_id;
+  uint32_t return_id;
+  txnid_t txn_id;
+	RemReqType rtype;
+  //RC rc;
+
+	memcpy(&dest_id,&data[ptr],sizeof(uint32_t));
+	ptr += sizeof(uint32_t);
+	memcpy(&return_id,&data[ptr],sizeof(uint32_t));
+	ptr += sizeof(uint32_t);
+	memcpy(&txn_id,&data[ptr],sizeof(txnid_t));
+	ptr += sizeof(txnid_t);
+	memcpy(&rtype,&data[ptr],sizeof(RemReqType));
+	ptr += sizeof(RemReqType);
+
+#if WORKLOAD == TPCC
+	      query = new tpcc_client_query();
+#elif WORKLOAD == YCSB
+        query = new ycsb_client_query();
+#endif
+
+    //query->dest_id = dest_id;
+    query->return_id = return_id;
+    //query->txn_id = txn_id;
+    //query->rtype = rtype;
+
+	switch(rtype) {
+        case RACK:
+          break;
+        case RTXN: 
+          query->unpack_client(query, data);
+          break;
+        default:
+          assert(false);
+  }
+
+  return query;
+
+}
+
+
 base_query * Remote_query::unpack(void * d, int len) {
     base_query * query;
 	char * data = (char *) d;
