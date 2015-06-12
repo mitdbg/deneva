@@ -37,6 +37,9 @@ RC Client_thread_t::run_remote() {
 	stats.init(get_thd_id());
 	// Send start msg to all nodes; wait for rsp from all nodes before continuing.
 	int rsp_cnt = g_node_cnt + g_client_node_cnt - 1;
+#if CC_ALG == CALVIN
+	rsp_cnt++;	// Account for sequencer node
+#endif
 	int32_t inf;
     uint32_t return_node_offset;
 	//int rsp_cnts[g_node_cnt];
@@ -74,7 +77,7 @@ RC Client_thread_t::run_remote() {
 			rq_time = get_sys_clock();
 			assert(m_query->rtype == CL_RSP);
 			assert(m_query->dest_id == g_node_id);
-			assert(m_query->return_id < g_node_id);
+			//assert(m_query->return_id < g_node_id);
 #if DEBUG_DISTR
 			printf("Received query response from %u\n", m_query->return_id);
 #endif

@@ -45,6 +45,9 @@ RC thread_t::run_remote() {
 	// Send start msg to all nodes; wait for rsp from all nodes before continuing.
 	//#if !TPORT_TYPE_IPC
 	int rsp_cnt = g_node_cnt + g_client_node_cnt - 1;
+#if CC_ALG == CALVIN
+	rsp_cnt++;	// Account for sequencer node
+#endif
 	while(rsp_cnt > 0) {
 		m_query = tport_man.recv_msg();
 		if(m_query != NULL && m_query->rtype == INIT_DONE) {
@@ -107,7 +110,11 @@ RC thread_t::run() {
 
 	//#if !TPORT_TYPE_IPC
 	if( _thd_id == 0) {
-		for(uint64_t i = 0; i < g_node_cnt+g_client_node_cnt; i++) {
+		uint64_t total_nodes = g_node_cnt + g_client_node_cnt;
+#if CC_ALG == CALVIN
+		total_nodes++;
+#endif
+		for(uint64_t i = 0; i < total_nodes; i++) {
 			if(i != g_node_id) {
 				rem_qry_man.send_init_done(i);
 			}

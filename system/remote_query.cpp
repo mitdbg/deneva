@@ -87,13 +87,16 @@ void Remote_query::ack_response(base_query * query) {
 }
 
 void Remote_query::send_client_rsp(base_query * query) {
+#if 0
 	// Maximum number of parameters
 	// NOTE: Adjust if parameters sent is changed
 #if DEBUG_DISTR
     	printf("Sending client response (CL_RSP %lu)\n",query->txn_id);
 #endif
+#endif
     	query->return_id = query->client_id;
     	query->dest_id = g_node_id;
+#if 0
     	uint64_t total = 5;
 	void ** data = new void *[total];
 	int * sizes = new int [total];
@@ -115,6 +118,40 @@ void Remote_query::send_client_rsp(base_query * query) {
 	sizes[num++] = sizeof(uint64_t);
 
     	send_remote_query(query->return_id,data,sizes,num);
+#endif
+	send_client_rsp(query->txn_id, query->rc, query->client_startts, query->return_id);
+}
+
+void Remote_query::send_client_rsp(txnid_t txn_id, RC rc, uint64_t client_startts,
+		uint32_t client_node_id) {
+	// Maximum number of parameters
+	// NOTE: Adjust if parameters sent is changed
+#if DEBUG_DISTR
+    	printf("Sending client response (CL_RSP)\n");
+#endif
+    //query->return_id = query->client_id;
+    //query->dest_id = g_node_id;
+    uint64_t total = 5;
+	void ** data = new void *[total];
+	int * sizes = new int [total];
+	int num = 0;
+
+    //txnid_t txn_id = query->txn_id;
+	RemReqType rtype = CL_RSP;
+
+	data[num] = &txn_id;
+	sizes[num++] = sizeof(txnid_t);
+
+	data[num] = &rtype;
+	sizes[num++] = sizeof(RemReqType);
+
+    data[num] = &rc;
+	sizes[num++] = sizeof(RC);
+
+    data[num] = &client_startts;
+	sizes[num++] = sizeof(uint64_t);
+
+    send_remote_query(client_node_id,data,sizes,num);
 }
 
 void Remote_query::send_init_done(uint64_t dest_id) {
