@@ -171,6 +171,8 @@ RC Client_thread_t::run() {
 		m_query = client_query_queue.get_next_query(next_node,_thd_id);
 		if (m_query == NULL) {
 			client_man.dec_inflight(next_node);
+      if(client_query_queue.done())
+        break;
 			continue;
 		}
 #if DEBUG_DISTR
