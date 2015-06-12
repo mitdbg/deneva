@@ -5,6 +5,7 @@ def set_env():
 	env.connection_attempts = 3
 	env.abort_on_prompts = True
 	env.skip_bad_hosts = False
+	env.colorize_errors = True
 
 def set_env_vcloud():
 	env.user = "root"
@@ -62,15 +63,15 @@ def set_hosts_istc():
 		"istc3.csail.mit.edu", 
 		#"istc4", 
 		"istc6.csail.mit.edu",
-		#"istc8.csail.mit.edu",
-		##OK
-		#"istc7.csail.mit.edu",
-		#"istc9.csail.mit.edu",
-		#"istc10.csail.mit.edu", 
-		#"istc13.csail.mit.edu", 
-		##BAD
-		#"istc11.csail.mit.edu",
-		#"istc12.csail.mit.edu", 
-		#"istc2.csail.mit.edu",
-		#"istc5.csail.mit.edu",
+		"istc8.csail.mit.edu",
+		#OK
+		"istc7.csail.mit.edu",
+		"istc9.csail.mit.edu",
+		"istc10.csail.mit.edu", 
+		"istc13.csail.mit.edu", 
+		#BAD
+		"istc11.csail.mit.edu",
+		"istc12.csail.mit.edu", 
+		"istc2.csail.mit.edu",
+		"istc5.csail.mit.edu",
 	]

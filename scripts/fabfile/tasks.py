@@ -40,6 +40,7 @@ skip = False
 uname = None
 cfg_fname = ""
 rem_homedir = ""
+cc_alg = ""
 
 set_env()
 
@@ -88,9 +89,16 @@ def run_exps_local(exps,skip_completed=False,exec_exps=True):
 	execute(run_exp,exps)
 
 @task
+@hosts('localhost')
+def delete_local_results():
+	local("rm -f results/*");
+
+@task
 @parallel
 def copy_files(schema,rem_homedir):
 	executable_files = ["rundb","runcl"]
+	if cc_alg == "CALVIN":
+		executable_files.append("runsq")
 	files = ["ifconfig.txt"]
 	files.append(schema)
 	for f in (files + executable_files):
@@ -125,6 +133,7 @@ def killall():
 	with settings(warn_only=True):
 		run("pkill -f rundb")
 		run("pkill -f runcl")
+		run("pkill -f runsq")
 
 @task
 @parallel
@@ -134,8 +143,11 @@ def deploy(schema_path):
 		with settings(command_timeout=max_time_per_exp):
 			if env.host in env.roledefs["servers"]:
 				cmd = "./rundb -nid{} >> results.out 2>&1".format(nid)	
-			else:
+			elif env.host in env.roledefs["clients"]:
 				cmd = "./runcl -nid{} >> results.out 2>&1".format(nid)
+			elif env.host in env.roledefs["sequencer"]:
+				cmd = "./runsq -nid{} >> results.out 2>&1".format(nid)
+
 			print(env.host + ": " + str(nid))
 			try:
 				run(cmd)
@@ -182,8 +194,8 @@ def write_ifconfig(machines):
 					f_ifcfg.write(line[1] + "\n")
 			elif cluster == 'vcloud':
 				if line in machines:
-					#f_ifcfg.write("172.19.153." + line + "\n")
 					f_ifcfg.write(line + "\n")
+
 
 def assign_roles(server_cnt,client_cnt):
 	assert(len(env.hosts) >= server_cnt+client_cnt)
@@ -192,7 +204,22 @@ def assign_roles(server_cnt,client_cnt):
 	env.roledefs={}
 	env.roledefs['clients']=clients
 	env.roledefs['servers']=servers
+
+	if cc_alg == 'CALVIN':
+		sequencer = env.hosts[server_cnt+client_cnt:server_cnt+client_cnt+1]
+		env.roledefs['sequencer']=sequencer
 	
+
+@task
+@hosts('localhost')
+def reset_hosts(new_hosts):
+	if new_hosts:
+		env.hosts = new_hosts;
+	else:
+		if cluster == 'vcloud':
+			set_hosts_vcloud()
+		else:
+			set_hosts_istc()
 
 @task
 @hosts('localhost')
@@ -220,6 +247,8 @@ def run_exp(expss):
 			output_f = output_f + strnow 
 
 			write_config(cfgs)
+			global cc_alg
+			cc_alg = cfgs["CC_ALG"]
 			execute(compile)
 			if not execute_exps:
 				exit()
@@ -232,9 +261,15 @@ def run_exp(expss):
 
 				nnodes = cfgs["NODE_CNT"]
 				nclnodes = cfgs["CLIENT_NODE_CNT"]
+				ntotal = nnodes + nclnodes
+				if cc_alg == 'CALVIN':
+					ntotal += 1
+
 				if remote:
-					machines = sorted(env.hosts[:(nnodes + nclnodes)])
+					execute(reset_hosts,None)
+					machines = sorted(env.hosts[:(ntotal)])
 					execute(assign_roles,nnodes,nclnodes)
+					execute(reset_hosts,machines)
 
 					write_ifconfig(machines)
 
@@ -256,18 +291,23 @@ def run_exp(expss):
 				else:
 					pids = []
 					print("Deploying: {}".format(output_f))
-					for n in range(nnodes+nclnodes):
+					for n in range(ntotal):
 						if n < nnodes:
 							cmd = "./rundb -nid{}".format(n)
-						else:
+						elif n < nnodes+nclnodes:
 							cmd = "./runcl -nid{}".format(n)
+						elif n == nnodes+nclnodes:
+							assert(cc_alg == 'CALVIN')
+							cmd = "./runsq -nid{}".format(n)
+						else:
+							assert(false)
 						print(cmd)
 						cmd = shlex.split(cmd)
 						ofile_n = "{}{}_{}.out".format(result_dir,n,output_f)
 						ofile = open(ofile_n,'w')
 						p = subprocess.Popen(cmd,stdout=ofile,stderr=ofile)
 						pids.insert(0,p)
-					for n in range(nnodes + nclnodes):
+					for n in range(ntotal):
 						pids[n].wait()
 
 
