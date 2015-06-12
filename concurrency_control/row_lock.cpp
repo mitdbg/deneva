@@ -28,7 +28,7 @@ RC Row_lock::lock_get(lock_t type, txn_man * txn) {
 }
 
 RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt) {
-	assert (CC_ALG == DL_DETECT || CC_ALG == NO_WAIT || CC_ALG == WAIT_DIE);
+	assert (CC_ALG == DL_DETECT || CC_ALG == NO_WAIT || CC_ALG == WAIT_DIE || CC_ALG == CALVIN);
 	RC rc;
 	int part_id =_row->get_part_id();
 	if (g_central_man)
@@ -126,6 +126,17 @@ RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt
         txn->wait_starttime = get_sys_clock();
       } else 
         rc = Abort;
+    } else if (CC_ALG == CALVIN){
+			LockEntry * entry = get_entry();
+                entry->start_ts = get_sys_clock();
+			entry->txn = txn;
+			entry->type = type;
+			LIST_PUT_TAIL(waiters_head, waiters_tail, entry);
+			waiter_cnt ++;
+      txn->lock_ready = false;
+      rc = WAIT;
+      txn->rc = rc;
+      txn->wait_starttime = get_sys_clock();
     }
 	} else {
 		LockEntry * entry = get_entry();

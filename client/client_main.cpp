@@ -127,7 +127,7 @@ int main(int argc, char* argv[])
 	if (WORKLOAD != TEST) {
 		printf("CLIENT PASS! SimTime = %ld\n", endtime - starttime);
 		if (STATS_ENABLE)
-			stats.print();
+			stats.print_client(false);
 	} else {
 		((TestWorkload *)m_wl)->summarize();
 	}

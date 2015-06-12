@@ -132,9 +132,9 @@ public:
 	void add_lat(uint64_t thd_id, uint64_t latency);
 	void commit(uint64_t thd_id);
 	void abort(uint64_t thd_id);
-  void print_prog_client(uint64_t tid); 
+  void print_client(bool prog); 
 	void print_prog(uint64_t tid);
-	void print();
+	void print(bool prog);
 	void print_cnts();
 	void print_lat_distr();
 	void print_abort_distr();

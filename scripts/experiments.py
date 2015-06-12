@@ -51,7 +51,7 @@ experiments_ycsb = [
 def test():
     fmt = fmt_ycsb
     exp = [
-    [1,2,10000,'YCSB','WAIT_DIE',1.0,1,1,10,0.6,0,0],
+    [1,2,500000,'YCSB','WAIT_DIE',1.0,1,1,10,0.6,0,0],
     ]
     return fmt[0],exp
 
@@ -64,11 +64,19 @@ def experiment_1():
     nalgos=['WAIT_DIE']
     #nalgos=['WAIT_DIE','HSTORE','HSTORE_SPEC']
     #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
+<<<<<<< HEAD
     nthreads=[3,1]
     ncthreads=[4]
     ntifs=[1000]
     nzipf=[0.6]
     nwr_perc=[0.5,0.0]
+=======
+    nthreads=[1,3]
+    ncthreads=[4]
+    ntifs=[1000]
+    nzipf=[0.6]
+    nwr_perc=[0.0,0.5]
+>>>>>>> 01f9a3ee812146bdc900f437d3670a0c735ccdd4
     ntxn=2000000
     exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t,tif,z,1.0-wp,wp] for ct,t,tif,z,wp,m,cc,n in itertools.product(ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nnodes)]
     return fmt[0],exp
@@ -77,26 +85,27 @@ def experiment_1_plot(summary,summary_client):
     from plot_helper import tput,abort_rate,lat
     fmt = fmt_ycsb
     nnodes = [1,2,4,8,16]
-    nmpr=[0,0.01,0.1]
-    #nalgos=['WAIT_DIE']
-    nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
-    nthreads=[1]
-    ncthreads=[1]
-    ntifs=[1000,2000]
+    nmpr=[0,0.01,0.1,1]
+    nalgos=['WAIT_DIE']
+    #nalgos=['WAIT_DIE','HSTORE','HSTORE_SPEC']
+    #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
+    nthreads=[1,3]
+    ncthreads=[4]
+    ntifs=[1000]
     nzipf=[0.6]
-    nwr_perc=[0.0]
+    nwr_perc=[0.0,0.5]
     ntxn=2000000
-    for wr,tif,cc in itertools.product(nwr_perc,ntifs,nalgos):
+    for wr,tif,cc,t in itertools.product(nwr_perc,ntifs,nalgos,nthreads):
         _cfg_fmt = ["CC_ALG","MAX_TXN_PER_PART","WORKLOAD","THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC"]
-        _cfg=[cc,ntxn,'YCSB',nthreads[0],tif,nzipf[0],1.0-wr,wr]
-        _title="{} {} {}% Writes {} TIF".format(cc,'YCSB',wr*100,tif)
+        _cfg=[cc,ntxn,'YCSB',t,tif,nzipf[0],1.0-wr,wr]
+        _title="{} {} {}% Writes {} TIF {} threads".format(cc,'YCSB',wr*100,tif,t)
         tput(nnodes,nmpr,summary,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="NODE_CNT",vname="MPR",title=_title)
 
     # x-axis: nodes, y-axis: latency
-    for wr,tif,cc in itertools.product(nwr_perc,ntifs,nalgos):
+    for wr,tif,cc,t in itertools.product(nwr_perc,ntifs,nalgos,nthreads):
         _cfg_fmt = ["CC_ALG","MAX_TXN_PER_PART","WORKLOAD","THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC"]
-        _cfg=[cc,ntxn,'YCSB',nthreads[0],tif,nzipf[0],1.0-wr,wr]
-        _title="{} {} {}% Writes {} TIF".format(cc,'YCSB',wr*100,tif)
+        _cfg=[cc,ntxn,'YCSB',t,tif,nzipf[0],1.0-wr,wr]
+        _title="{} {} {}% Writes {} TIF {} threads".format(cc,'YCSB',wr*100,tif,t)
         lat(nnodes,nmpr,summary_client,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="NODE_CNT",vname="MPR",title=_title)
     return
 

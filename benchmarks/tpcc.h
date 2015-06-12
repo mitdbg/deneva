@@ -82,6 +82,7 @@ public:
 	void init(thread_t * h_thd, workload * h_wl, uint64_t part_id); 
   bool conflict(base_query * query1,base_query * query2);
   void read_keys(base_query * query){ assert(false);}; 
+  RC acquire_locks(base_query * query){ assert(false);}; 
 	RC run_txn(base_query * query);
 	RC run_rem_txn(base_query * query);
 	void rem_txn_rsp(base_query * rtn_query,base_query * loc_query); 

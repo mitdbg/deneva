@@ -3,6 +3,7 @@
 #include "tpcc.h"
 #include "test.h"
 #include "thread.h"
+#include "calvin_thread.h"
 #include "manager.h"
 #include "mem_alloc.h"
 #include "query.h"
@@ -20,7 +21,11 @@ void network_test_recv();
 
 
 // TODO the following global variables are HACK
+#if CC_ALG == CALVIN
+calvin_thread_t * m_thds;
+#else
 thread_t * m_thds;
+#endif
 
 // defined in parser.cpp
 void parser(int argc, char * argv[]);
@@ -89,7 +94,11 @@ int main(int argc, char* argv[])
 	pthread_attr_t attr;
 	pthread_attr_init(&attr);
 	cpu_set_t cpus;
+#if CC_ALG == CALVIN
+	m_thds = new calvin_thread_t[thd_cnt + rthd_cnt];
+#else
 	m_thds = new thread_t[thd_cnt + rthd_cnt];
+#endif
 	// query_queue should be the last one to be initialized!!!
 	// because it collects txn latency
 	//if (WORKLOAD != TEST) {
@@ -191,7 +200,7 @@ int main(int argc, char* argv[])
 	if (WORKLOAD != TEST) {
 		printf("PASS! SimTime = %ld\n", endtime - starttime);
 		if (STATS_ENABLE)
-			stats.print();
+			stats.print(false);
 	} else {
 		((TestWorkload *)m_wl)->summarize();
 	}
