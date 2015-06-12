@@ -257,6 +257,8 @@ void Stats::print_client(bool prog) {
   }
   if(prog)
 		total_tot_run_time += _stats[0]->tot_run_time;
+  else
+		total_tot_run_time = total_tot_run_time / g_client_thread_cnt;
 
 	FILE * outf;
 	if (output_file != NULL) 
@@ -280,7 +282,7 @@ void Stats::print_client(bool prog) {
       ",time_tport_rcv=%f"
       ",tport_lat=%f"
 			"\n",
-			(total_tot_run_time / g_client_thread_cnt) / BILLION,
+			total_tot_run_time / BILLION,
 			total_txn_cnt, 
 			total_time_getqry / BILLION,
 		  total_client_latency,
@@ -491,7 +493,8 @@ void Stats::print(bool prog) {
 		total_abort_cnt += _stats[tid]->abort_cnt;
 		total_txn_abort_cnt += _stats[tid]->txn_abort_cnt;
 		total_rbk_abort_cnt += _stats[tid]->rbk_abort_cnt;
-		total_tot_run_time += _stats[tid]->tot_run_time;
+    if(!prog)
+		  total_tot_run_time += _stats[tid]->tot_run_time;
 		total_run_time += _stats[tid]->run_time;
 		total_time_work += _stats[tid]->time_work;
 		total_time_man += _stats[tid]->time_man;
@@ -547,6 +550,12 @@ void Stats::print(bool prog) {
 			_stats[tid]->abort_cnt
 		);
 	}
+
+  if(prog)
+		total_tot_run_time += _stats[0]->tot_run_time;
+  else
+		total_tot_run_time = total_tot_run_time / g_thread_cnt;
+
 	FILE * outf;
 	if (output_file != NULL) 
 		outf = fopen(output_file, "w");
@@ -601,7 +610,7 @@ void Stats::print(bool prog) {
       ",tport_lat=%f"
 			"\n",
 			total_txn_cnt, 
-			(total_tot_run_time / g_thread_cnt) / BILLION,
+			total_tot_run_time / BILLION,
 			total_abort_cnt,
 			total_txn_abort_cnt,
 			total_rbk_abort_cnt,

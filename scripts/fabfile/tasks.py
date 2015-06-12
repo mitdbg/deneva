@@ -31,7 +31,8 @@ max_time_per_exp = 60 * 6	# in seconds
 cfgs = configs
 
 vcloud_uname="root"
-istc_uname="dvanaken"
+istc_uname="rhardin"
+#istc_uname="dvanaken"
 
 execute_exps = True
 remote = False
