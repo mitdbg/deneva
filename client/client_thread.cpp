@@ -190,7 +190,8 @@ RC Client_thread_t::run() {
 		if(get_sys_clock() - prog_time >= PROG_TIMER) {
 			prog_time = get_sys_clock();
 			SET_STATS(get_thd_id(), tot_run_time, prog_time - run_starttime); 
-      stats.print_prog_client(get_thd_id());
+      if(get_thd_id() == 0)
+        stats.print_client(true);
     }
 	}
 //#if DEBUG_DISTR
@@ -200,5 +201,7 @@ RC Client_thread_t::run() {
 	if( !ATOM_CAS(_wl->sim_done, false, true) )
 		assert( _wl->sim_done);
 
+	prog_time = get_sys_clock();
+	SET_STATS(get_thd_id(), tot_run_time, prog_time - run_starttime); 
 	return FINISH;
 }

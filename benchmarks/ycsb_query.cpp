@@ -275,7 +275,9 @@ void ycsb_client_query::client_query(base_client_query * query, uint64_t dest_id
 	RemReqType rtype = RTXN;
 	uint64_t _pid = m_query->pid;
   uint64_t ts = get_sys_clock();
+#if CC_ALG == CALVIN
   uint64_t batch_num = 0; // FIXME
+#endif
 
 	data[num] = &tid;
 	sizes[num++] = sizeof(txnid_t);
