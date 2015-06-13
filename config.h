@@ -60,7 +60,7 @@
 /***********************************************/
 #define TPORT_TYPE "ipc"
 #define TPORT_TYPE_IPC true
-#define TPORT_PORT "_.ipc"
+#define TPORT_PORT ".ipc" 
 
 #define MAX_TPORT_NAME 128
 #define MSG_SIZE 128 // in bytes
@@ -142,8 +142,8 @@
 #define INIT_PARALLELISM      16 
 #define SYNTH_TABLE_SIZE      (NODE_CNT*1024)
 #define ZIPF_THETA 0.6
-#define READ_PERC 0
-#define WRITE_PERC 0
+#define READ_PERC 0.5
+#define WRITE_PERC 0.5
 #define SCAN_PERC           0
 #define SCAN_LEN          20
 #define PART_PER_TXN        2//PART_CNT  
@@ -165,7 +165,7 @@
 #define WH_UPDATE         true
 #define NUM_WH 2
 // % of transactions that access multiple partitions
-#define MPR 1.0
+#define MPR 1
 #define MPR_NEWORDER      20 // In %
 // Smaller item selection to model contention
 #define CONTENTION false

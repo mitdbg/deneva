@@ -25,6 +25,17 @@ Client_query_queue::init(int thread_id) {
 	all_queries[thread_id]->init(_wl, thread_id);
 }
 
+bool
+Client_query_queue::done() {
+  bool done = true;
+  for(uint32_t n = 0; n < g_servers_per_client; n++) {
+    done = all_queries[n]->done();
+    if(!done)
+      break;
+  }
+  return done;
+}
+
 base_client_query * 
 Client_query_queue::get_next_query(uint64_t nid, uint64_t tid) { 	
   uint64_t starttime = get_sys_clock();
@@ -103,6 +114,11 @@ Client_query_thd::init(workload * h_wl, int thread_id) {
 	}
 
 #endif
+}
+
+bool
+Client_query_thd::done(){
+  return q_idx >= MAX_TXN_PER_PART;
 }
 
 base_client_query * 

@@ -26,7 +26,8 @@ OBJS_SQ = $(addprefix obj/, $(notdir $(CPPS_SQ:.cpp=.o)))
 
 #NOGRAPHITE=1
 
-all:rundb runcl runsq
+all:rundb runcl runsq 
+#runsq
 
 .PHONY: deps_db
 deps:$(CPPS_DB)
