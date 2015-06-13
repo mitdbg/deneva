@@ -49,7 +49,7 @@ RC thread_t::run_remote() {
 	rsp_cnt++;	// Account for sequencer node
 #endif
 	while(rsp_cnt > 0) {
-		m_query = tport_man.recv_msg();
+		m_query = (base_query *) tport_man.recv_msg();
 		if(m_query != NULL && m_query->rtype == INIT_DONE) {
 			rsp_cnt --;
 		} else if(m_query != NULL) {
@@ -74,7 +74,7 @@ RC thread_t::run_remote() {
 	ts_t rq_time = get_sys_clock();
 
 	while (true) {
-		m_query = tport_man.recv_msg();
+		m_query = (base_query *) tport_man.recv_msg();
 		if( m_query != NULL ) { 
 			rq_time = get_sys_clock();
 			work_queue.add_query(m_query);
@@ -171,11 +171,11 @@ RC thread_t::run() {
 		//    work_queue.add_query(m_query);
 		//}
 
-		if(get_sys_clock() - prog_time >= PROG_TIMER) {
+		if(get_thd_id() == 0 && get_sys_clock() - prog_time >= PROG_TIMER) {
 			prog_time = get_sys_clock();
 			SET_STATS(get_thd_id(), tot_run_time, prog_time - run_starttime); 
 
-			stats.print_prog(_thd_id);
+			stats.print(true);
 		}
 		while(!work_queue.poll_next_query() && !(_wl->sim_done && _wl->sim_timeout)) { }
 

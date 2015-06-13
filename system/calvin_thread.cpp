@@ -27,7 +27,7 @@ uint64_t calvin_thread_t::get_cur_cid() { return _cur_cid; }
 void calvin_thread_t::set_cur_cid(uint64_t cid) {_cur_cid = cid; }
 
 RC calvin_thread_t::run_remote() {
-	printf("Run_remote %ld:%ld\n",_node_id, _thd_id);
+	printf("Run_remote (calvin_thread) %ld:%ld\n",_node_id, _thd_id);
 	if (warmup_finish) {
 		mem_allocator.register_thread(_thd_id);
 	}
@@ -39,7 +39,7 @@ RC calvin_thread_t::run_remote() {
 	// Send start msg to all nodes; wait for rsp from all nodes (incl. sequencer) before continuing.
 	int rsp_cnt = g_node_cnt + g_client_node_cnt;
 	while(rsp_cnt > 0) {
-		m_query = tport_man.recv_msg();
+		m_query = (base_query *) tport_man.recv_msg();
 		if(m_query != NULL && m_query->rtype == INIT_DONE) {
 			rsp_cnt --;
 		} else if(m_query != NULL) {
@@ -47,7 +47,7 @@ RC calvin_thread_t::run_remote() {
 		}
 	}
 	pthread_barrier_wait( &warmup_bar );
-	printf("Run_remote %ld:%ld\n",_node_id, _thd_id);
+	printf("Run_remote (calvin_thread) %ld:%ld\n",_node_id, _thd_id);
 
 	myrand rdm;
 	rdm.init(get_thd_id());
@@ -57,7 +57,7 @@ RC calvin_thread_t::run_remote() {
 	ts_t rq_time = get_sys_clock();
 
 	while (true) {
-		m_query = tport_man.recv_msg();
+		m_query = (base_query *) tport_man.recv_msg();
 		if( m_query != NULL ) { 
 			rq_time = get_sys_clock();
 			work_queue.add_query(m_query);
@@ -82,7 +82,7 @@ RC calvin_thread_t::run_remote() {
 
 
 RC calvin_thread_t::run() {
-	printf("Run %ld:%ld\n",_node_id, _thd_id);
+	printf("Run %ld:%ld (calvin_thread)\n",_node_id, _thd_id);
 	if (warmup_finish) {
 		mem_allocator.register_thread(_thd_id);
 	}
@@ -90,7 +90,7 @@ RC calvin_thread_t::run() {
 	stats.init(get_thd_id());
 
 	if( _thd_id == 0) {
-	  uint64_t rsp_cnt = g_node_cnt + g_client_node_cnt ;
+	  uint64_t rsp_cnt = g_node_cnt + g_client_node_cnt + 1;
 		for(uint64_t i = 0; i < rsp_cnt; i++) {
 			if(i != g_node_id) {
 				rem_qry_man.send_init_done(i);
@@ -99,7 +99,7 @@ RC calvin_thread_t::run() {
 	}
 	pthread_barrier_wait( &warmup_bar );
 	//sleep(4);
-	printf("Run %ld:%ld\n",_node_id, _thd_id);
+	printf("Run %ld:%ld (calvin_thread)\n",_node_id, _thd_id);
 
 	myrand rdm;
 	rdm.init(get_thd_id());
@@ -159,10 +159,11 @@ RC calvin_thread_t::run() {
 					ATOM_ADD(txn_st_cnt,1);
 					rc = _wl->get_txn_man(m_txn, this);
 					assert(rc == RCOK);
-				  txn_pool.add_txn(g_node_id,m_txn,m_query);
+					m_txn->set_txn_id(m_query->txn_id);
+					txn_pool.add_txn(g_node_id,m_txn,m_query);
         }
 				m_txn->abort_cnt = 0;
-        m_txn->set_txn_id(m_query->txn_id);
+        //m_txn->set_txn_id(m_query->txn_id);
 				m_txn->starttime = get_sys_clock();
 #if DEBUG_TIMELINE
 					printf("START %ld %ld\n",m_txn->get_txn_id(),m_txn->starttime);
@@ -175,6 +176,7 @@ RC calvin_thread_t::run() {
         //rc = m_txn->release_locks(m_query);
         assert(rc == RCOK);
 				rc = m_txn->finish(rc,m_query->part_to_access,m_query->part_num);
+				break;
 		  default:
 			  assert(false);
     }
@@ -187,7 +189,8 @@ RC calvin_thread_t::run() {
 			txn_pool.delete_txn(g_node_id,m_query->txn_id);
 			txn_cnt++;
       // FIXME
-			rem_qry_man.send_client_rsp(m_query);
+			//rem_qry_man.send_client_rsp(m_query);
+			rem_qry_man.ack_response(m_query);
     }
 
 		timespan = get_sys_clock() - starttime;

@@ -2,33 +2,33 @@
 #include "ycsb.h"
 #include "tpcc.h"
 #include "test.h"
-#include "client_thread.h"
+#include "thread.h"
 #include "mem_alloc.h"
-#include "client_query.h"
 #include "transport.h"
-#include "client_txn.h"
+#include "sequencer.h"
 
-void * f(void *);
-void * g(void *);
-void * worker(void *);
+//void * f(void *);
+//void * g(void *);
+//void * worker(void *);
 void * nn_worker(void *);
 void network_test();
 void network_test_recv();
 
 
 // TODO the following global variables are HACK
-Client_thread_t * m_thds;
+Seq_thread_t * m_thds;
 
 // defined in parser.cpp
 void parser(int argc, char * argv[]);
 
 int main(int argc, char* argv[])
 {
-    printf("Running client...\n\n");
+    printf("Running sequencer...\n\n");
 	// 0. initialize global data structure
 	parser(argc, argv);
-    assert(g_node_id >= g_node_cnt);
-    assert(g_client_node_cnt <= g_node_cnt);
+	assert(CC_ALG == CALVIN);
+    assert(g_node_id == g_node_cnt + g_client_node_cnt);
+	//assert(g_txn_inflight > 
 
 	uint64_t seed = get_sys_clock();
 	srand(seed);
@@ -44,7 +44,6 @@ int main(int argc, char* argv[])
 
 	return 0;
 #endif
-
 
 	int64_t starttime;
 	int64_t endtime;
@@ -71,53 +70,52 @@ int main(int argc, char* argv[])
 
 	rem_qry_man.init(g_node_id,m_wl);
 	tport_man.init(g_node_id);
-    client_man.init();
+	seq_man.init(m_wl);
 
 	// 2. spawn multiple threads
-	uint64_t thd_cnt = g_client_thread_cnt;
-	uint64_t rthd_cnt = g_client_rem_thread_cnt;
+	uint64_t thd_cnt = g_seq_thread_cnt;
 
 	pthread_t * p_thds = 
-		(pthread_t *) malloc(sizeof(pthread_t) * (thd_cnt + rthd_cnt));
+		(pthread_t *) malloc(sizeof(pthread_t) * (thd_cnt));
 	pthread_attr_t attr;
 	pthread_attr_init(&attr);
 	cpu_set_t cpus;
-	m_thds = new Client_thread_t[thd_cnt + rthd_cnt];
-	//// query_queue should be the last one to be initialized!!!
-	// because it collects txn latency
-	if (WORKLOAD != TEST) {
-		client_query_queue.init(m_wl);
-	}
+	m_thds = new Seq_thread_t[thd_cnt];
 	pthread_barrier_init( &warmup_bar, NULL, thd_cnt );
-	for (uint32_t i = 0; i < thd_cnt + rthd_cnt; i++) 
+	for (uint32_t i = 0; i < thd_cnt; i++) 
 		m_thds[i].init(i, g_node_id, m_wl);
   endtime = get_server_clock();
   printf("Initialization Time = %ld\n", endtime - starttime);
 	warmup_finish = true;
-	pthread_barrier_init( &warmup_bar, NULL, thd_cnt + rthd_cnt);
+	pthread_barrier_init( &warmup_bar, NULL, thd_cnt);
 #ifndef NOGRAPHITE
-	CarbonBarrierInit(&enable_barrier, thd_cnt+ rthd_cnt);
+	CarbonBarrierInit(&enable_barrier, thd_cnt);
 #endif
-	pthread_barrier_init( &warmup_bar, NULL, thd_cnt + rthd_cnt);
+	pthread_barrier_init( &warmup_bar, NULL, thd_cnt);
 
 	uint64_t cpu_cnt = 0;
 	// spawn and run txns again.
 	starttime = get_server_clock();
 
+	uint32_t numCPUs = sysconf(_SC_NPROCESSORS_ONLN);
+	printf("num cpus: %u\n",numCPUs);
 	for (uint32_t i = 0; i < thd_cnt; i++) {
 		uint64_t vid = i;
 		CPU_ZERO(&cpus);
 #if TPORT_TYPE_IPC
-        CPU_SET(g_node_id * thd_cnt + cpu_cnt, &cpus);
+        //CPU_SET(g_node_id * thd_cnt + cpu_cnt, &cpus);
 #else
         CPU_SET(cpu_cnt, &cpus);
 #endif
 		cpu_cnt++;
-        pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
-		pthread_create(&p_thds[i], &attr, worker, (void *)vid);
+        //pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
+		if (i == thd_cnt - 1)
+			nn_worker((void *)(vid));
+		else
+			pthread_create(&p_thds[i], &attr, nn_worker, (void *)vid);
     }
 
-    nn_worker((void *)(thd_cnt));
+    //nn_worker((void *)(thd_cnt - 1));
 
 	for (uint32_t i = 0; i < thd_cnt; i++) 
 		pthread_join(p_thds[i], NULL);
@@ -125,27 +123,23 @@ int main(int argc, char* argv[])
 	endtime = get_server_clock();
 	
 	if (WORKLOAD != TEST) {
-		printf("CLIENT PASS! SimTime = %ld\n", endtime - starttime);
+		printf("SEQUENCER PASS! SimTime = %ld\n", endtime - starttime);
 		if (STATS_ENABLE)
-			stats.print_client(false);
+			stats.print_sequencer(false);
 	} else {
 		((TestWorkload *)m_wl)->summarize();
 	}
 	return 0;
 }
 
-void * worker(void * id) {
-	uint64_t tid = (uint64_t)id;
-    printf("Starting client worker: %lu\n", tid);
-    fflush(stdout);
-	m_thds[tid].run();
-	return NULL;
-}
+//void * worker(void * id) {
+//	//uint64_t tid = (uint64_t)id;
+//	//m_thds[tid].run();
+//	return NULL;
+//}
 
 void * nn_worker(void * id) {
 	uint64_t tid = (uint64_t)id;
-    printf("Starting client nn_worker: %lu\n", tid);
-    fflush(stdout);
 	m_thds[tid].run_remote();
 	return NULL;
 }

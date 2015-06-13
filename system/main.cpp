@@ -200,7 +200,7 @@ int main(int argc, char* argv[])
 	if (WORKLOAD != TEST) {
 		printf("PASS! SimTime = %ld\n", endtime - starttime);
 		if (STATS_ENABLE)
-			stats.print();
+			stats.print(false);
 	} else {
 		((TestWorkload *)m_wl)->summarize();
 	}

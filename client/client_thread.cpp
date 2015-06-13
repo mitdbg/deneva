@@ -47,15 +47,21 @@ RC Client_thread_t::run_remote() {
 	int rsp_cnts[g_servers_per_client];
 	memset(rsp_cnts, 0, g_servers_per_client * sizeof(int));
 	while(rsp_cnt > 0) {
-		m_query = tport_man.recv_msg();
+		m_query = (base_query *) tport_man.recv_msg();
 		if (m_query != NULL) {
 			switch(m_query->rtype) {
 				case INIT_DONE:
+					printf("Received INIT_DONE from node %u\n",m_query->return_id);
 					rsp_cnt--;
 					break;
 				case CL_RSP:
+#if CC_ALG == CALVIN
+					assert(m_query->return_id == g_node_cnt + g_client_node_cnt);
+					return_node_offset = 0;
+#else
                     return_node_offset = m_query->return_id - g_server_start_node;
                     assert(return_node_offset < g_servers_per_client);
+#endif
 					rsp_cnts[return_node_offset]++;
 					inf = client_man.dec_inflight(return_node_offset);
 					break;
@@ -72,7 +78,7 @@ RC Client_thread_t::run_remote() {
 	ts_t rq_time = get_sys_clock();
 
 	while (true) {
-		m_query = tport_man.recv_msg();
+		m_query = (base_query *) tport_man.recv_msg();
 		if( m_query != NULL ) { 
 			rq_time = get_sys_clock();
 			assert(m_query->rtype == CL_RSP);
@@ -85,8 +91,13 @@ RC Client_thread_t::run_remote() {
 			//    printf("Response count for %lu: %d\n", l, rsp_cnts[l]);
 			switch (m_query->rtype) {
 				case CL_RSP:
+#if CC_ALG == CALVIN
+					assert(m_query->return_id == g_node_cnt + g_client_node_cnt);
+					return_node_offset = 0;
+#else
                     return_node_offset = m_query->return_id - g_server_start_node;
                     assert(return_node_offset < g_servers_per_client);
+#endif
 			        rsp_cnts[return_node_offset]++;
 					inf = client_man.dec_inflight(return_node_offset);
 					break;
@@ -136,7 +147,11 @@ RC Client_thread_t::run() {
 	stats.init(get_thd_id());
 
 	if( _thd_id == 0) {
-		for(uint64_t i = 0; i < g_node_cnt+g_client_node_cnt; i++) {
+		uint64_t nnodes = g_node_cnt + g_client_node_cnt;
+#if CC_ALG == CALVIN
+		nnodes++;
+#endif
+		for(uint64_t i = 0; i < nnodes; i++) {
 			if(i != g_node_id) {
 				rem_qry_man.send_init_done(i);
 			}
@@ -193,7 +208,8 @@ RC Client_thread_t::run() {
 		if(get_sys_clock() - prog_time >= PROG_TIMER) {
 			prog_time = get_sys_clock();
 			SET_STATS(get_thd_id(), tot_run_time, prog_time - run_starttime); 
-      stats.print_prog_client(get_thd_id());
+      if(get_thd_id() == 0)
+        stats.print_client(true);
     }
 	}
 //#if DEBUG_DISTR
@@ -203,5 +219,7 @@ RC Client_thread_t::run() {
 	if( !ATOM_CAS(_wl->sim_done, false, true) )
 		assert( _wl->sim_done);
 
+	prog_time = get_sys_clock();
+	SET_STATS(get_thd_id(), tot_run_time, prog_time - run_starttime); 
 	return FINISH;
 }

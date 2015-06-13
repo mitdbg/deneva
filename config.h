@@ -4,12 +4,12 @@
 /***********************************************/
 // Simulation + Hardware
 /***********************************************/
-#define NODE_CNT 2
+#define NODE_CNT 1 
 #define THREAD_CNT 1
 // REM_THREAD_CNT should be at least NODE_CNT*THREAD_CNT to avoid deadlock
 #define REM_THREAD_CNT 1
 // PART_CNT should be at least NODE_CNT
-#define PART_CNT 2
+#define PART_CNT 1
 #define CLIENT_NODE_CNT 1
 #define CLIENT_THREAD_CNT 1
 #define CLIENT_REM_THREAD_CNT 1
@@ -58,9 +58,9 @@
 /***********************************************/
 // Message Passing
 /***********************************************/
-#define TPORT_TYPE "tcp"
-#define TPORT_TYPE_IPC false
-#define TPORT_PORT 7000
+#define TPORT_TYPE "ipc"
+#define TPORT_TYPE_IPC true
+#define TPORT_PORT "_.ipc"
 
 #define MAX_TPORT_NAME 128
 #define MSG_SIZE 128 // in bytes
@@ -118,6 +118,10 @@
 #define HSTORE_LOCAL_TS       false
 // [VLL] 
 #define TXN_QUEUE_SIZE_LIMIT    THREAD_CNT
+// [CALVIN]
+#define SEQ_THREAD_CNT 4 // Must be > 1 until bug is fixed
+#define MAX_BATCH_WAITTIME 5000000	//5ms, currently unused
+
 
 /***********************************************/
 // Logging
@@ -131,15 +135,15 @@
 // max number of rows touched per transaction
 #define MAX_ROW_PER_TXN       64
 #define QUERY_INTVL         1UL
-#define MAX_TXN_PER_PART 100
+#define MAX_TXN_PER_PART 1000
 #define FIRST_PART_LOCAL      true
 #define MAX_TUPLE_SIZE        1024 // in bytes
 // ==== [YCSB] ====
 #define INIT_PARALLELISM      16 
 #define SYNTH_TABLE_SIZE      (NODE_CNT*1024)
 #define ZIPF_THETA 0.6
-#define READ_PERC 1.0
-#define WRITE_PERC 0.0
+#define READ_PERC 0
+#define WRITE_PERC 0
 #define SCAN_PERC           0
 #define SCAN_LEN          20
 #define PART_PER_TXN        2//PART_CNT  
@@ -161,7 +165,7 @@
 #define WH_UPDATE         true
 #define NUM_WH 2
 // % of transactions that access multiple partitions
-#define MPR 1
+#define MPR 1.0
 #define MPR_NEWORDER      20 // In %
 // Smaller item selection to model contention
 #define CONTENTION false
@@ -220,7 +224,7 @@ extern TestCases          g_test_case;
 #define DEBUG_TIMESTAMP				false
 #define DEBUG_SYNTH					false
 #define DEBUG_ASSERT				false
-#define DEBUG_DISTR				   false 
+#define DEBUG_DISTR					false 
 #define DEBUG_TIMELINE				false
 
 #define QRY_ONLY false

@@ -13,7 +13,15 @@ enum RemReqType {INIT_DONE,RLK, RULK, RQRY, RFIN, RLK_RSP, RULK_RSP, RQRY_RSP, R
 class base_client_query {
   public:
     uint64_t pid;
+    uint64_t return_id;
+    uint64_t client_startts; // For sequencer
+	RemReqType rtype;
     virtual void client_query(base_client_query * query, uint64_t dest_id) = 0; 
+    virtual void unpack_client(base_client_query * query, void * d) = 0; 
+
+	// calvin
+	virtual void client_query(base_client_query * query, uint64_t dest_id,
+			uint64_t batch_num, txnid_t txn_id) = 0;
 };
 
 class base_query {
@@ -37,6 +45,9 @@ public:
 
 	uint64_t part_cnt;
 	uint64_t * parts;
+
+  // CALVIN
+  uint64_t batch_num;
 
 	RemReqType rtype;
 	RC rc;

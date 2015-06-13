@@ -283,6 +283,55 @@ void Remote_query::send_remote_rsp(uint64_t dest_id, void ** data, int * sizes, 
 	tport_man.send_msg(dest_id, data, sizes, num);
 }
 
+base_client_query * Remote_query::unpack_client_query(void * d, int len) {
+  base_client_query * query;
+	char * data = (char *) d;
+	uint64_t ptr = 0;
+  
+	uint32_t dest_id;
+	uint32_t return_id;
+	txnid_t txn_id;
+	RemReqType rtype;
+  //RC rc;
+
+	memcpy(&dest_id,&data[ptr],sizeof(uint32_t));
+	ptr += sizeof(uint32_t);
+	memcpy(&return_id,&data[ptr],sizeof(uint32_t));
+	ptr += sizeof(uint32_t);
+	memcpy(&txn_id,&data[ptr],sizeof(txnid_t));
+	ptr += sizeof(txnid_t);
+	memcpy(&rtype,&data[ptr],sizeof(RemReqType));
+	ptr += sizeof(RemReqType);
+
+#if WORKLOAD == TPCC
+	      query = new tpcc_client_query();
+#elif WORKLOAD == YCSB
+        query = new ycsb_client_query();
+#endif
+
+    //query->dest_id = dest_id;
+    query->return_id = return_id;
+    //query->txn_id = txn_id;
+    query->rtype = rtype;
+
+	switch(rtype) {
+        case RACK:
+			// TODO: fix this hack
+			query->return_id = txn_id;
+			break;
+        case RTXN: 
+			query->unpack_client(query, data);
+			break;
+		case INIT_DONE:
+			break;
+        default:
+			assert(false);
+  }
+
+  return query;
+}
+
+
 base_query * Remote_query::unpack(void * d, int len) {
     base_query * query;
 	char * data = (char *) d;
@@ -306,7 +355,7 @@ base_query * Remote_query::unpack(void * d, int len) {
 	bool handle_init = false;
 #if CC_ALG != HSTORE && CC_ALG != HSTORE_SPEC && CC_ALG != VLL
 	// The remaining algos do not use 2PC init so we must check if we've seen
-	// this query before if the remote type is RPREPARE or RQRY 
+	// this query before if the remote type is RPREPARE or RQRY or RFIN 
 	if (rtype == RQRY || rtype == RPREPARE || rtype == RFIN) {
 		query = txn_pool.get_qry(g_node_id,txn_id);
 		if (query == NULL)
@@ -432,7 +481,7 @@ base_query * Remote_query::unpack(void * d, int len) {
             	ycsb_query *m_query = new ycsb_query;
 #endif
             	m_query->unpack_client(query, data);
-	    	assert(GET_NODE_ID(query->pid) == g_node_id);
+				assert(GET_NODE_ID(query->pid) == g_node_id);
             	break;
         }
         case CL_RSP:

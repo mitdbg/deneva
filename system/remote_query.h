@@ -57,6 +57,8 @@ public:
 	void send_client_rsp(txnid_t txn_id, RC rc, uint64_t client_startts,
 		uint32_t client_node_id); 
 	base_query * unpack(void * d, int len);
+	base_client_query * unpack_client_query(void * d, int len);
+  
 	int q_idx;
 	/*
 #if WORKLOAD == TPCC
