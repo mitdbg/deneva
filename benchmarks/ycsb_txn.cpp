@@ -56,7 +56,7 @@ void ycsb_txn_man::read_keys(base_query * query) {
 }
 
 RC ycsb_txn_man::acquire_locks(base_query * query) {
-  assert(CC_ALG == VLL);
+  assert(CC_ALG == VLL || CC_ALG == CALVIN);
 	ycsb_query * m_query = (ycsb_query *) query;
 	for (uint32_t rid = 0; rid < m_query->request_cnt; rid ++) {
 		ycsb_request * req = &m_query->requests[rid];

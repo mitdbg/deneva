@@ -309,7 +309,9 @@ RC txn_man::rem_fin_txn(base_query * query) {
 
 RC txn_man::finish(base_query * query, bool fin) {
   // Only home node should execute
+#if CC_ALG != CALVIN
   assert(query->txn_id % g_node_cnt == g_node_id);
+#endif
   if(query->part_num == 1) {
     if(CC_ALG == HSTORE_SPEC && txn_pool.spec_mode && this->spec)
       this->state = PREP;

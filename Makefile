@@ -11,8 +11,8 @@ LDFLAGS = -Wall -L. -L./nanomsg-0.5-beta -pthread -gdwarf-3 -lrt -std=c++0x
 LDFLAGS += $(CFLAGS)
 LIBS = -lnanomsg -lanl
 
-DB_MAINS = ./client/client_main.cpp ./system/sequencer.cpp
-CL_MAINS = ./system/main.cpp ./system/sequencer.cpp
+DB_MAINS = ./client/client_main.cpp ./system/sequencer_main.cpp
+CL_MAINS = ./system/main.cpp ./system/sequencer_main.cpp
 SQ_MAINS = ./system/main.cpp ./client/client_main.cpp
 
 CPPS_DB = $(foreach dir,$(SRC_DIRS),$(filter-out $(DB_MAINS), $(wildcard $(dir)*.cpp))) 
@@ -26,7 +26,7 @@ OBJS_SQ = $(addprefix obj/, $(notdir $(CPPS_SQ:.cpp=.o)))
 
 #NOGRAPHITE=1
 
-all:rundb runcl 
+all:rundb runcl runsq 
 #runsq
 
 .PHONY: deps_db

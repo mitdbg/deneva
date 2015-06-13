@@ -54,6 +54,9 @@ public:
 	double lock_diff;
   double qq_full;
 
+  // calvin
+  uint32_t batch_cnt;
+
   double time_getqry;
   double client_latency;
 
@@ -132,7 +135,8 @@ public:
 	void add_lat(uint64_t thd_id, uint64_t latency);
 	void commit(uint64_t thd_id);
 	void abort(uint64_t thd_id);
-  void print_client(bool prog); 
+	void print_client(bool prog); 
+	void print_sequencer(bool prog);
 	void print_prog(uint64_t tid);
 	void print(bool prog);
 	void print_cnts();

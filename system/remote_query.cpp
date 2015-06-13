@@ -87,13 +87,16 @@ void Remote_query::ack_response(base_query * query) {
 }
 
 void Remote_query::send_client_rsp(base_query * query) {
+#if 0
 	// Maximum number of parameters
 	// NOTE: Adjust if parameters sent is changed
 #if DEBUG_DISTR
     	printf("Sending client response (CL_RSP %lu)\n",query->txn_id);
 #endif
+#endif
     	query->return_id = query->client_id;
     	query->dest_id = g_node_id;
+#if 0
     	uint64_t total = 5;
 	void ** data = new void *[total];
 	int * sizes = new int [total];
@@ -115,6 +118,40 @@ void Remote_query::send_client_rsp(base_query * query) {
 	sizes[num++] = sizeof(uint64_t);
 
     	send_remote_query(query->return_id,data,sizes,num);
+#endif
+	send_client_rsp(query->txn_id, query->rc, query->client_startts, query->return_id);
+}
+
+void Remote_query::send_client_rsp(txnid_t txn_id, RC rc, uint64_t client_startts,
+		uint32_t client_node_id) {
+	// Maximum number of parameters
+	// NOTE: Adjust if parameters sent is changed
+#if DEBUG_DISTR
+    	printf("Sending client response (CL_RSP)\n");
+#endif
+    //query->return_id = query->client_id;
+    //query->dest_id = g_node_id;
+    uint64_t total = 5;
+	void ** data = new void *[total];
+	int * sizes = new int [total];
+	int num = 0;
+
+    //txnid_t txn_id = query->txn_id;
+	RemReqType rtype = CL_RSP;
+
+	data[num] = &txn_id;
+	sizes[num++] = sizeof(txnid_t);
+
+	data[num] = &rtype;
+	sizes[num++] = sizeof(RemReqType);
+
+    data[num] = &rc;
+	sizes[num++] = sizeof(RC);
+
+    data[num] = &client_startts;
+	sizes[num++] = sizeof(uint64_t);
+
+    send_remote_query(client_node_id,data,sizes,num);
 }
 
 void Remote_query::send_init_done(uint64_t dest_id) {
@@ -251,9 +288,9 @@ base_client_query * Remote_query::unpack_client_query(void * d, int len) {
 	char * data = (char *) d;
 	uint64_t ptr = 0;
   
-  uint32_t dest_id;
-  uint32_t return_id;
-  txnid_t txn_id;
+	uint32_t dest_id;
+	uint32_t return_id;
+	txnid_t txn_id;
 	RemReqType rtype;
   //RC rc;
 
@@ -275,20 +312,23 @@ base_client_query * Remote_query::unpack_client_query(void * d, int len) {
     //query->dest_id = dest_id;
     query->return_id = return_id;
     //query->txn_id = txn_id;
-    //query->rtype = rtype;
+    query->rtype = rtype;
 
 	switch(rtype) {
         case RACK:
-          break;
+			// TODO: fix this hack
+			query->return_id = txn_id;
+			break;
         case RTXN: 
-          query->unpack_client(query, data);
-          break;
+			query->unpack_client(query, data);
+			break;
+		case INIT_DONE:
+			break;
         default:
-          assert(false);
+			assert(false);
   }
 
   return query;
-
 }
 
 
@@ -315,7 +355,7 @@ base_query * Remote_query::unpack(void * d, int len) {
 	bool handle_init = false;
 #if CC_ALG != HSTORE && CC_ALG != HSTORE_SPEC && CC_ALG != VLL
 	// The remaining algos do not use 2PC init so we must check if we've seen
-	// this query before if the remote type is RPREPARE or RQRY 
+	// this query before if the remote type is RPREPARE or RQRY or RFIN 
 	if (rtype == RQRY || rtype == RPREPARE || rtype == RFIN) {
 		query = txn_pool.get_qry(g_node_id,txn_id);
 		if (query == NULL)
@@ -441,7 +481,7 @@ base_query * Remote_query::unpack(void * d, int len) {
             	ycsb_query *m_query = new ycsb_query;
 #endif
             	m_query->unpack_client(query, data);
-	    	assert(GET_NODE_ID(query->pid) == g_node_id);
+				assert(GET_NODE_ID(query->pid) == g_node_id);
             	break;
         }
         case CL_RSP:

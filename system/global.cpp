@@ -14,6 +14,7 @@
 #include "remote_query.h"
 #include "txn_pool.h"
 #include "client_txn.h"
+#include "sequencer.h"
 
 mem_alloc mem_allocator;
 Stats stats;
@@ -32,6 +33,7 @@ Remote_query rem_qry_man;
 TxnPool txn_pool;
 QWorkQueue work_queue;
 Client_txn client_man;
+Sequencer seq_man;
 
 bool volatile warmup_finish = false;
 bool volatile enable_thread_mem_pool = false;
@@ -78,6 +80,9 @@ UInt32 g_client_thread_cnt = CLIENT_THREAD_CNT;
 UInt32 g_client_rem_thread_cnt = CLIENT_REM_THREAD_CNT;
 UInt32 g_servers_per_client = 0;
 UInt32 g_server_start_node = 0;
+
+// CALVIN
+UInt32 g_seq_thread_cnt = SEQ_THREAD_CNT;
 
 double g_mpr = MPR;
 
