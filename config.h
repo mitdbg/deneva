@@ -75,10 +75,10 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, OCC, VLL, CALVIN
-#define CC_ALG CALVIN
+#define CC_ALG WAIT_DIE
 
 // all transactions acquire tuples according to the primary key order.
-#define KEY_ORDER         true
+#define KEY_ORDER         false
 // transaction roll back changes after abort
 #define ROLL_BACK         true
 // per-row lock/ts management or central lock/ts management

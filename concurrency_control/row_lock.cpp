@@ -95,20 +95,13 @@ RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt
 
 			bool canwait = true;
 			LockEntry * en = owners;
-      if(en != NULL) {
-        if(txn->get_ts() > en->txn->get_ts()) {
-          canwait = false;
-        }
-      }
-      /*
 			while (en != NULL) {
-        if (en->txn->get_ts() > txn->get_ts()) {
+        if (txn->get_ts() > en->txn->get_ts()) {
 					canwait = false;
 					break;
 				}
 				en = en->next;
 			}
-      */
 			if (canwait) {
 				// insert txn to the right position
 				// the waiter list is always in timestamp order
