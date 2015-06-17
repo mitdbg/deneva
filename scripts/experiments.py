@@ -51,7 +51,11 @@ experiments_ycsb = [
 def test():
     fmt = fmt_ycsb
     exp = [
+<<<<<<< HEAD
     [8,16,2000000,'YCSB','WAIT_DIE',0.1,4,3,1000,0.6,1.0,0.0],
+=======
+    [1,2,50000,'YCSB','WAIT_DIE',50,1,1,10,0.6,0.5,0.5],
+>>>>>>> 7c75091d616abe95cd711e6cfcfcbf9e8f241e2f
     ]
     return fmt[0],exp
 
