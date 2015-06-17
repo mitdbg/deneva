@@ -48,6 +48,7 @@ public:
   virtual bool  conflict(base_query * query1,base_query * query2) = 0;
   virtual void read_keys(base_query * query) = 0; 
   virtual RC acquire_locks(base_query * query) = 0; 
+  void register_thd(thread_t * h_thd);
 	uint64_t 		get_thd_id();
 	uint64_t 		get_node_id();
 	workload * 		get_wl();

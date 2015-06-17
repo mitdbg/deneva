@@ -204,6 +204,7 @@ RC thread_t::run() {
 			case RPASS:
 				m_txn = txn_pool.get_txn(m_query->return_id, m_query->txn_id);
 				assert(m_txn != NULL);
+        m_txn->register_thd(this);
 				break;
 			case RINIT:
 				printf("should be entering RINIT\n");
@@ -282,6 +283,7 @@ RC thread_t::run() {
 				}
 #else
 				assert(m_txn != NULL);
+        m_txn->register_thd(this);
 #endif
 				if (validate) {
 					m_txn->state = PREP;
@@ -314,6 +316,7 @@ RC thread_t::run() {
 				}
 #endif
 				assert(m_txn != NULL);
+        m_txn->register_thd(this);
 #if DEBUG_DISTR
 				if(m_txn->state != EXEC)
 					printf("Received RQRY %ld\n",m_query->txn_id);
@@ -367,6 +370,7 @@ RC thread_t::run() {
 				INC_STATS(0,rqry_rsp,1);
 				m_txn = txn_pool.get_txn(g_node_id, m_query->txn_id);
 				assert(m_txn != NULL);
+        m_txn->register_thd(this);
 				INC_STATS(get_thd_id(),time_wait_rem,get_sys_clock() - m_txn->wait_starttime);
 
 				outstanding_rwaits--;
@@ -396,9 +400,12 @@ RC thread_t::run() {
 					assert(m_query->rc == Abort);
 					finish = false;	
 				}
+        else
+          m_txn->register_thd(this);
 #else
 				// Transaction should ALWAYS be in the pool until node receives RFIN
 				assert(m_txn != NULL);
+        m_txn->register_thd(this);
 #endif
 				if (finish) {
 					m_txn->state = DONE;
@@ -418,6 +425,7 @@ RC thread_t::run() {
 				INC_STATS(0,rack,1);
 				m_txn = txn_pool.get_txn(g_node_id, m_query->txn_id);
 				assert(m_txn != NULL);
+        m_txn->register_thd(this);
 
 				m_txn->decr_rsp(1);
 				// TODO: May be waiting for different things: RINIT, RPREPARE, RFIN
@@ -542,6 +550,7 @@ RC thread_t::run() {
 					m_txn = txn_pool.get_txn(g_node_id,m_query->txn_id);
 					// 
 					assert(m_txn != NULL);
+          m_txn->register_thd(this);
 					if(m_txn->state == START && 
 							(get_sys_clock() - m_txn->penalty_start) < g_abort_penalty) {
 						work_queue.add_query(m_query);

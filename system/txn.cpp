@@ -36,6 +36,10 @@ void txn_man::init(thread_t * h_thd, workload * h_wl, uint64_t thd_id) {
 	num_accesses_alloc = 0;
 }
 
+void txn_man::register_thd(thread_t * h_thd) {
+  this->h_thd = h_thd;
+}
+
 void txn_man::set_txn_id(txnid_t txn_id) {
 	this->txn_id = txn_id;
 }
