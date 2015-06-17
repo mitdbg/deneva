@@ -51,7 +51,7 @@ experiments_ycsb = [
 def test():
     fmt = fmt_ycsb
     exp = [
-    [1,2,50000,'YCSB','WAIT_DIE',1.0,3,1,10,0.6,0,0],
+    [1,2,50000,'YCSB','WAIT_DIE',50,1,1,10,0.6,0.5,0.5],
     ]
     return fmt[0],exp
 

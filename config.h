@@ -4,12 +4,12 @@
 /***********************************************/
 // Simulation + Hardware
 /***********************************************/
-#define NODE_CNT 1
-#define THREAD_CNT 3
+#define NODE_CNT 2
+#define THREAD_CNT 1
 // REM_THREAD_CNT should be at least NODE_CNT*THREAD_CNT to avoid deadlock
 #define REM_THREAD_CNT 1
 // PART_CNT should be at least NODE_CNT
-#define PART_CNT 1
+#define PART_CNT 2
 #define CLIENT_NODE_CNT 1
 #define CLIENT_THREAD_CNT 1
 #define CLIENT_REM_THREAD_CNT 1
@@ -32,7 +32,7 @@
 #define STATS_ENABLE        true
 #define TIME_ENABLE         true //STATS_ENABLE
 
-#define MAX_TXN_IN_FLIGHT 1000
+#define MAX_TXN_IN_FLIGHT 10
 
 /***********************************************/
 // Memory System
@@ -60,7 +60,7 @@
 /***********************************************/
 #define TPORT_TYPE "ipc"
 #define TPORT_TYPE_IPC true
-#define TPORT_PORT ".ipc" 
+#define TPORT_PORT "_.ipc"
 
 #define MAX_TPORT_NAME 128
 #define MSG_SIZE 128 // in bytes
@@ -78,7 +78,7 @@
 #define CC_ALG WAIT_DIE
 
 // all transactions acquire tuples according to the primary key order.
-#define KEY_ORDER         false
+#define KEY_ORDER         true
 // transaction roll back changes after abort
 #define ROLL_BACK         true
 // per-row lock/ts management or central lock/ts management
@@ -131,7 +131,7 @@
 // max number of rows touched per transaction
 #define MAX_ROW_PER_TXN       64
 #define QUERY_INTVL         1UL
-#define MAX_TXN_PER_PART 10000
+#define MAX_TXN_PER_PART 50000
 #define FIRST_PART_LOCAL      true
 #define MAX_TUPLE_SIZE        1024 // in bytes
 // ==== [YCSB] ====
@@ -161,7 +161,7 @@
 #define WH_UPDATE         true
 #define NUM_WH 2
 // % of transactions that access multiple partitions
-#define MPR 1
+#define MPR 50
 #define MPR_NEWORDER      20 // In %
 // Smaller item selection to model contention
 #define CONTENTION false
