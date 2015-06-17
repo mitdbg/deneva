@@ -64,11 +64,11 @@ def experiment_1():
     nalgos=['WAIT_DIE']
     #nalgos=['WAIT_DIE','HSTORE','HSTORE_SPEC']
     #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
-    nthreads=[1,3]
+    nthreads=[3,1]
     ncthreads=[4]
     ntifs=[1000]
     nzipf=[0.6]
-    nwr_perc=[0.0,0.5]
+    nwr_perc=[0.5,0.0]
     ntxn=2000000
     exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t,tif,z,1.0-wp,wp] for ct,t,tif,z,wp,m,cc,n in itertools.product(ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nnodes)]
     return fmt[0],exp

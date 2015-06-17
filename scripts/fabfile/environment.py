@@ -9,7 +9,8 @@ def set_env():
 
 def set_env_vcloud():
 	env.user = "root"
-	env.key_filename = "/usr0/home/dvanaken/.ssh/id_rsa_vcloud"
+	env.key_filename = "/usr0/home/benchpress/.ssh/id_rsa_vcloud"
+	#env.key_filename = "/usr0/home/dvanaken/.ssh/id_rsa_vcloud"
 
 def set_env_istc():
 	env.user = "rhardin"
