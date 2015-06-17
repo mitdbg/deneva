@@ -75,7 +75,7 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, OCC, VLL, CALVIN
-#define CC_ALG WAIT_DIE
+#define CC_ALG CALVIN
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER         true
@@ -118,6 +118,10 @@
 #define HSTORE_LOCAL_TS       false
 // [VLL] 
 #define TXN_QUEUE_SIZE_LIMIT    THREAD_CNT
+// [CALVIN]
+#define SEQ_THREAD_CNT 4 // Must be > 1 until bug is fixed
+#define MAX_BATCH_WAITTIME 5000000	//5ms, currently unused
+
 
 /***********************************************/
 // Logging
@@ -220,7 +224,7 @@ extern TestCases          g_test_case;
 #define DEBUG_TIMESTAMP				false
 #define DEBUG_SYNTH					false
 #define DEBUG_ASSERT				false
-#define DEBUG_DISTR				   false 
+#define DEBUG_DISTR					false 
 #define DEBUG_TIMELINE				false
 
 #define QRY_ONLY false

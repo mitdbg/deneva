@@ -1,8 +1,8 @@
-#include "query_work_queue.h"
+#include "work_queue.h"
 #include "mem_alloc.h"
 #include "query.h"
 
-void QWorkQueue::init() {
+void WorkQueue::init() {
   cnt = 0;
   head = NULL;
   tail = NULL;
@@ -10,16 +10,16 @@ void QWorkQueue::init() {
   pthread_mutex_init(&mtx,NULL);
 }
 
-bool QWorkQueue::poll_next_query() {
+bool WorkQueue::poll_next_entry() {
   return cnt > 0;
 }
 
-void QWorkQueue::add_query(base_query * qry) {
+void WorkQueue::add_entry(void * data) {
 
-  wq_entry_t entry = (wq_entry_t) mem_allocator.alloc(sizeof(struct wq_entry), 0);
-  entry->qry = qry;
+  q_entry_t entry = (q_entry_t) mem_allocator.alloc(sizeof(struct q_entry), 0);
+  entry->entry = data;
   entry->next  = NULL;
-  assert(qry->rtype <= CL_RSP);
+  //assert(qry->rtype <= RPASS);
 
   pthread_mutex_lock(&mtx);
 
@@ -38,16 +38,20 @@ void QWorkQueue::add_query(base_query * qry) {
   pthread_mutex_unlock(&mtx);
 }
 
-base_query * QWorkQueue::get_next_query() {
-  base_query * next_qry = NULL;
+void * WorkQueue::get_next_entry() {
+  q_entry_t next_entry = NULL;
+  void * data = NULL;
 
   pthread_mutex_lock(&mtx);
 
   assert( ( (cnt == 0) && head == NULL && tail == NULL) || ( (cnt > 0) && head != NULL && tail !=NULL) );
 
   if(cnt > 0) {
-    next_qry = head->qry;
+    next_entry = head;
+	data = next_entry->entry;
+	assert(data != NULL);
     head = head->next;
+	free(next_entry);
     cnt--;
 
     if(cnt == 0) {
@@ -61,5 +65,10 @@ base_query * QWorkQueue::get_next_query() {
   }
 
   pthread_mutex_unlock(&mtx);
-  return next_qry;
+  return data;
 }
+
+uint64_t WorkQueue::size() {
+	return cnt;
+}
+

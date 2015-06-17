@@ -20,6 +20,9 @@
 	 */
 Transport::Transport() {
     _node_cnt = g_node_cnt + g_client_node_cnt;
+#if CC_ALG == CALVIN
+	_node_cnt++;	// account for the sequencer
+#endif
 	s = new Socket[_node_cnt];
 }
 
@@ -49,6 +52,13 @@ void Transport::read_ifconfig(const char * ifaddr_file) {
 void Transport::init(uint64_t node_id) {
 	printf("Init %ld\n",node_id);
 	_node_id = node_id;
+#if CC_ALG == CALVIN
+	// TODO: fix me. Calvin does not have separate remote and local threads
+	// so the stat updates seg fault if the sequencer thread count is 1
+	_thd_id = 0;
+#else
+	_thd_id = 1;
+#endif
 
 #if !TPORT_TYPE_IPC
 	// Read ifconfig file
@@ -115,6 +125,19 @@ uint64_t Transport::get_node_id() {
 
 void Transport::send_msg(uint64_t dest_id, void ** data, int * sizes, int num) {
     uint64_t starttime = get_sys_clock();
+#if CC_ALG == CALVIN
+	//RemReqType * rtype = (RemReqType *) data[rtype_offset];
+	RemReqType rtype = *((RemReqType *)data[1]);
+	//memcpy(&rtype, data[rtype_offset],sizeof(RemReqType));
+	if (rtype != INIT_DONE) {
+		// Sequencer is last node id
+		uint64_t seq_node_id = _node_cnt - 1;
+		if (g_node_id != seq_node_id)
+			dest_id = seq_node_id;
+	} else {
+		printf("Node %lu sending INIT_DONE to %lu\n",get_node_id(),dest_id);
+	}
+#endif
 
 	// 1: Scrape data pointers for actual data
 	// Profile data for size
@@ -164,16 +187,16 @@ void Transport::send_msg(uint64_t dest_id, void ** data, int * sizes, int num) {
 		assert(false);
 	}
 
-    INC_STATS(1,time_tport_send,get_sys_clock() - starttime);
-	INC_STATS(1,msg_sent_cnt,1);
-	INC_STATS(1,msg_bytes,size);
+    INC_STATS(_thd_id,time_tport_send,get_sys_clock() - starttime);
+	INC_STATS(_thd_id,msg_sent_cnt,1);
+	INC_STATS(_thd_id,msg_bytes,size);
 }
 
 // Listens to socket for messages from other nodes
-base_query * Transport::recv_msg() {
+void * Transport::recv_msg() {
 	int bytes = 0;
 	void * buf;
-    base_query * query = NULL;
+    void * query = NULL;
     uint64_t starttime = get_sys_clock();
 	
 	// FIXME: Currently unfair round robin; prioritizes nodes with low node_id
@@ -211,22 +234,39 @@ base_query * Transport::recv_msg() {
 #endif
 
 	ts_t time2 = get_sys_clock();
-	INC_STATS(1,tport_lat,time2 - time);
+	INC_STATS(_thd_id,tport_lat,time2 - time);
 
-    INC_STATS(1,time_tport_rcv, time2 - starttime);
+    INC_STATS(_thd_id,time_tport_rcv, time2 - starttime);
 
 	ts_t start = get_sys_clock();
-	INC_STATS(1,msg_rcv_cnt,1);
-  
-	query = rem_qry_man.unpack(buf,bytes);
+	INC_STATS(_thd_id,msg_rcv_cnt,1);
+
+	uint32_t return_id __attribute__ ((unused)); // for debug only
+	uint32_t dest_id;
+#if CC_ALG == CALVIN
+	if (get_node_id() == _node_cnt - 1) {
+		query = (void *) rem_qry_man.unpack_client_query(buf,bytes);
+		return_id = ((base_client_query *)query)->return_id;
+		memcpy(&dest_id,buf,sizeof(uint32_t));
+	} else {
+		query = (void *) rem_qry_man.unpack(buf,bytes);
+		return_id = ((base_query *)query)->return_id;
+		dest_id = ((base_query *)query)->dest_id;
+	}
+#else
+	query = (void *) rem_qry_man.unpack(buf,bytes);
+	return_id = ((base_query *)query)->return_id;
+	dest_id = ((base_query *)query)->dest_id;
+#endif
+
 #if DEBUG_DISTR
-	printf("Msg delay: %d->%d, %d bytes, %f s\n",query->return_id,
-            query->dest_id,bytes,((float)(time2-time))/BILLION);
+	printf("Msg delay: %d->%d, %d bytes, %f s\n",return_id,
+            dest_id,bytes,((float)(time2-time))/BILLION);
 #endif
 	nn::freemsg(buf);	
-    assert(query->dest_id == get_node_id());
+    assert(dest_id == get_node_id());
 
-	INC_STATS(1,time_unpack,get_sys_clock()-start);
+	INC_STATS(_thd_id,time_unpack,get_sys_clock()-start);
 	return query;
 }
 

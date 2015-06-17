@@ -11,19 +11,8 @@
 
 void 
 Client_query_queue::init(workload * h_wl) {
-    //server_node_cnt = g_node_cnt / g_client_node_cnt;
-    //uint32_t client_node_id = g_node_id - g_node_cnt;
-    //server_node_start = client_node_id * server_node_cnt; 
-    //if (g_node_cnt % server_node_cnt != 0 && client_node_id == g_node_cnt) {
-    //    // Have first client pick up any leftover servers if the number of
-    //    // servers cannot be evenly divided between client nodes
-    //    // TODO: fix the remainder to be equally distributed among clients
-    //    server_node_cnt += g_node_cnt % g_client_node_cnt;
-    //}
-	//all_queries = new Client_query_thd * [g_node_cnt];
 	all_queries = new Client_query_thd * [g_servers_per_client];
 	_wl = h_wl;
-	//for (UInt32 tid = 0; tid < g_node_cnt; tid ++)
 	for (UInt32 tid = 0; tid < g_servers_per_client; tid ++) {
 		init(tid);
     }

@@ -230,6 +230,12 @@ void ycsb_client_query::unpack_client(base_client_query * query, void * d) {
   memcpy(&m_query->client_startts, &data[ptr], sizeof(uint64_t));
   ptr += sizeof(uint64_t);
 
+#if CC_ALG == CALVIN
+	uint64_t batch_num __attribute__ ((unused));
+	memcpy(&batch_num, &data[ptr],sizeof(uint64_t));
+	ptr += sizeof(uint64_t);
+#endif
+
   memcpy(&m_query->part_num, &data[ptr], sizeof(uint64_t));
   ptr += sizeof(uint64_t);
 
@@ -254,8 +260,12 @@ void ycsb_client_query::unpack_client(base_client_query * query, void * d) {
 
 }
 
-
 void ycsb_client_query::client_query(base_client_query * query, uint64_t dest_id) {
+  client_query(query, dest_id, 0, UINT64_MAX);
+}
+
+void ycsb_client_query::client_query(base_client_query * query, uint64_t dest_id,
+		uint64_t batch_num, txnid_t txn_id) {
 #if DEBUG_DISTR
     	printf("Client: sending RTXN\n");
 #endif
@@ -271,15 +281,14 @@ void ycsb_client_query::client_query(base_client_query * query, uint64_t dest_id
 	void ** data = new void *[total];
 	int * sizes = new int [total];
 	int num = 0;
-  txnid_t tid = UINT64_MAX;
 	RemReqType rtype = RTXN;
 	uint64_t _pid = m_query->pid;
   uint64_t ts = get_sys_clock();
 #if CC_ALG == CALVIN
-  uint64_t batch_num = 0; // FIXME
+  //uint64_t batch_num = 0; // FIXME
 #endif
 
-	data[num] = &tid;
+	data[num] = &txn_id;
 	sizes[num++] = sizeof(txnid_t);
 	data[num] = &rtype;
 	sizes[num++] = sizeof(RemReqType);
