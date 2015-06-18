@@ -5,13 +5,13 @@
 // Simulation + Hardware
 /***********************************************/
 #define NODE_CNT 2
-#define THREAD_CNT 2
+#define THREAD_CNT 3
 // REM_THREAD_CNT should be at least NODE_CNT*THREAD_CNT to avoid deadlock
 #define REM_THREAD_CNT 1
 // PART_CNT should be at least NODE_CNT
-#define PART_CNT 4
-#define CLIENT_NODE_CNT 2
-#define CLIENT_THREAD_CNT 4
+#define PART_CNT 2
+#define CLIENT_NODE_CNT 1
+#define CLIENT_THREAD_CNT 1
 #define CLIENT_REM_THREAD_CNT 1
 #define CLIENT_RUNTIME false
 
@@ -32,7 +32,7 @@
 #define STATS_ENABLE        true
 #define TIME_ENABLE         true //STATS_ENABLE
 
-#define MAX_TXN_IN_FLIGHT 1000
+#define MAX_TXN_IN_FLIGHT 20
 
 /***********************************************/
 // Memory System
@@ -135,7 +135,7 @@
 // max number of rows touched per transaction
 #define MAX_ROW_PER_TXN       64
 #define QUERY_INTVL         1UL
-#define MAX_TXN_PER_PART 2000000
+#define MAX_TXN_PER_PART 100000
 #define FIRST_PART_LOCAL      true
 #define MAX_TUPLE_SIZE        1024 // in bytes
 // ==== [YCSB] ====
@@ -165,7 +165,7 @@
 #define WH_UPDATE         true
 #define NUM_WH 4
 // % of transactions that access multiple partitions
-#define MPR 50
+#define MPR 10 
 #define MPR_NEWORDER      20 // In %
 // Smaller item selection to model contention
 #define CONTENTION false
