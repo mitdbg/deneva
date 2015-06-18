@@ -127,7 +127,7 @@ void Remote_query::send_client_rsp(txnid_t txn_id, RC rc, uint64_t client_startt
 	// Maximum number of parameters
 	// NOTE: Adjust if parameters sent is changed
 #if DEBUG_DISTR
-    	printf("Sending client response (CL_RSP)\n");
+    	printf("Sending client response (CL_RSP) %ld\n",txn_id);
 #endif
     //query->return_id = query->client_id;
     //query->dest_id = g_node_id;
@@ -349,8 +349,8 @@ base_query * Remote_query::unpack(void * d, int len) {
 	ptr += sizeof(uint32_t);
 	memcpy(&txn_id,&data[ptr],sizeof(txnid_t));
 	ptr += sizeof(txnid_t);
-	memcpy(&rtype,&data[ptr],sizeof(query->rtype));
-	ptr += sizeof(query->rtype);
+	memcpy(&rtype,&data[ptr],sizeof(RemReqType));
+	ptr += sizeof(RemReqType);
 
 	bool handle_init = false;
 #if CC_ALG != HSTORE && CC_ALG != HSTORE_SPEC && CC_ALG != VLL
@@ -365,10 +365,10 @@ base_query * Remote_query::unpack(void * d, int len) {
 
     if(rtype == RINIT || rtype == INIT_DONE || rtype == RTXN || rtype == CL_RSP || (QRY_ONLY && rtype == RQRY) || handle_init) {
 #if WORKLOAD == TPCC
-	    //query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), 0);
+	    query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), 0);
 	      query = new tpcc_query();
 #elif WORKLOAD == YCSB
-	    //query = (ycsb_query *) mem_allocator.alloc(sizeof(ycsb_query), 0);
+	    query = (ycsb_query *) mem_allocator.alloc(sizeof(ycsb_query), 0);
         query = new ycsb_query();
 #endif
         query->clear();

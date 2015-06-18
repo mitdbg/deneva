@@ -119,7 +119,7 @@ extern ts_t g_timeout;
 extern ts_t g_dl_loop_detect;
 extern bool g_ts_batch_alloc;
 extern UInt32 g_ts_batch_num;
-extern UInt32 g_inflight_max;
+extern int32_t g_inflight_max;
 
 extern bool g_hw_migrate;
 

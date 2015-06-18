@@ -483,6 +483,8 @@ RC thread_t::run() {
 							m_txn->state = FIN;
 							// After RPREPARE, send rfin messages
 							m_txn->finish(m_query,true);
+              // Note: can't touch m_txn or m_query after this, since all other
+              //  RACKs may have been received and FIN processed before this point
 							break;
 						case FIN:
 							// After RFIN

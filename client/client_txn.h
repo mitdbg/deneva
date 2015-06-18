@@ -11,7 +11,7 @@ class Inflight_entry {
      int32_t dec_inflight();
      int32_t get_inflight();
  private:
-     volatile uint32_t num_inflight_txns;
+     volatile int32_t num_inflight_txns;
      sem_t mutex;
 };
 

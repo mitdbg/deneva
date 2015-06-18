@@ -14,6 +14,7 @@ int32_t Inflight_entry::inc_inflight() {
     } else {
         result = -1;
     }
+    assert(num_inflight_txns >= 0);
     sem_post(&mutex);
     return result;
 }
@@ -22,6 +23,7 @@ int32_t Inflight_entry::dec_inflight() {
     int32_t result;
     sem_wait(&mutex);
     result = --num_inflight_txns;
+    assert(num_inflight_txns >= 0);
     sem_post(&mutex);
     return result;
 }

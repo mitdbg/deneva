@@ -280,6 +280,7 @@ txn_man::index_read(INDEX * index, idx_key_t key, int part_id) {
 }
 
 RC txn_man::validate() {
+  assert(h_thd->_node_id < g_node_cnt);
   if(rc == WAIT && !this->spec) {
     rc = Abort;
     return rc;
@@ -295,6 +296,7 @@ RC txn_man::validate() {
 }
 
 RC txn_man::finish(RC rc, uint64_t * parts, uint64_t part_cnt) {
+  assert(h_thd->_node_id < g_node_cnt);
 	uint64_t starttime = get_sys_clock();
 	if (CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC) {
 		part_lock_man.rem_unlock(parts, part_cnt, this);
@@ -328,7 +330,7 @@ RC txn_man::finish(base_query * query, bool fin) {
 #if QRY_ONLY
   return RCOK;
 #endif
-  uint64_t starttime = get_sys_clock();
+  //uint64_t starttime = get_sys_clock();
 
   if(!fin) {
     this->state = PREP;
@@ -361,9 +363,15 @@ RC txn_man::finish(base_query * query, bool fin) {
       query->remote_prepare(query, part_node_id);    
     }
   }
+  // After all requests are sent, it's possible that all responses will come back
+  //  before we execute the next instructions and this txn will be deleted.
+  //  Can't touch anything related to this txn now.
 
+  /*
   uint64_t timespan = get_sys_clock() - starttime;
+  assert(h_thd->_node_id < g_node_cnt);
   INC_STATS(get_thd_id(),time_msg_sent,timespan);
+  */
 
   if(rsp_cnt >0) 
     return WAIT_REM;
