@@ -73,10 +73,58 @@ void ycsb_query::unpack_rsp(base_query * query, void * d) {
 	memcpy(&m_query->pid,&data[ptr],sizeof(uint64_t));
 	ptr += sizeof(uint64_t);
 
+  m_query->rc = rc;
+  /*
   if(rc == Abort || m_query->rc == WAIT || m_query->rc == WAIT_REM) {
     m_query->rc = rc;
     m_query->txn_rtype = YCSB_FIN;
   }
+  */
+}
+
+base_query * ycsb_query::merge(base_query * query) {
+	ycsb_query * m_query = (ycsb_query *) query;
+  this->rtype = m_query->rtype;
+  switch(m_query->rtype) {
+    case RINIT:
+      assert(false);
+      break;
+    case RPREPARE:
+      if(m_query->rc == Abort)
+        this->rc = Abort;
+      break;
+    case RQRY:
+      assert(m_query->pid == this->pid);
+      assert(m_query->ts == this->ts);
+#if CC_ALG == MVCC 
+      this->thd_id = m_query->thd_id;
+#endif
+#if CC_ALG == OCC 
+      this->start_ts = m_query->start_ts;
+#endif
+      this->req = m_query->req;
+      break;
+    case RQRY_RSP:
+      if(m_query->rc == Abort || this->rc == WAIT || this->rc == WAIT_REM) {
+        this->rc = rc;
+        this->txn_rtype = YCSB_FIN;
+      }
+      break;
+    case RFIN:
+      assert(this->pid == m_query->pid);
+      this->rc = m_query->rc;
+      break;
+    case RACK:
+      if(m_query->rc == Abort || this->rc == WAIT || this->rc == WAIT_REM) {
+        this->rc = m_query->rc;
+      }
+    case RTXN:
+      break;
+    default:
+      assert(false);
+      break;
+  }
+  return this;
 }
 
 void ycsb_query::unpack(base_query * query, void * d) {

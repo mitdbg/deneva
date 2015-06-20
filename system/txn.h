@@ -3,6 +3,7 @@
 
 #include "global.h"
 #include "helper.h"
+#include "semaphore.h"
 //#include "wl.h"
 
 class workload;
@@ -62,8 +63,8 @@ public:
 	void 			set_start_ts(uint64_t start_ts);
 	ts_t 			get_start_ts();
   uint64_t get_rsp_cnt(); 
-  void incr_rsp(int i); 
-  void decr_rsp(int i);
+  uint64_t incr_rsp(int i); 
+  uint64_t decr_rsp(int i);
 
 	pthread_mutex_t txn_lock;
 	row_t * volatile cur_row;
@@ -135,6 +136,7 @@ private:
 	txnid_t 		txn_id;
 	ts_t 			timestamp;
   uint64_t rsp_cnt;
+  sem_t rsp_mutex;
 };
 
 #endif

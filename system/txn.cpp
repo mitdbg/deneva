@@ -28,7 +28,11 @@ void txn_man::init(thread_t * h_thd, workload * h_wl, uint64_t thd_id) {
 	wr_cnt = 0;
 	insert_cnt = 0;
   ack_cnt = 0;
+  rsp_cnt = 0;
   state = START;
+
+  sem_init(&rsp_mutex, 0, 1);
+
 	//accesses = (Access **) mem_allocator.alloc(sizeof(Access **), 0);
 	accesses = new Access * [MAX_ROW_PER_TXN];
 	for (int i = 0; i < MAX_ROW_PER_TXN; i++)
@@ -88,12 +92,22 @@ uint64_t txn_man::get_rsp_cnt() {
   return this->rsp_cnt;
 }
 
-void txn_man::incr_rsp(int i) {
-  ATOM_ADD(this->rsp_cnt,i);
+uint64_t txn_man::incr_rsp(int i) {
+  //ATOM_ADD(this->rsp_cnt,i);
+  uint64_t result;
+  sem_wait(&rsp_mutex);
+  result = ++this->rsp_cnt;
+  sem_post(&rsp_mutex);
+  return result;
 }
 
-void txn_man::decr_rsp(int i) {
-  ATOM_SUB(this->rsp_cnt,i);
+uint64_t txn_man::decr_rsp(int i) {
+  //ATOM_SUB(this->rsp_cnt,i);
+  uint64_t result;
+  sem_wait(&rsp_mutex);
+  result = --this->rsp_cnt;
+  sem_post(&rsp_mutex);
+  return result;
 }
 
 void txn_man::cleanup(RC rc) {

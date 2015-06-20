@@ -13,6 +13,10 @@ void Remote_query::init(uint64_t node_id, workload * wl) {
 	_node_id = node_id;
 	_wl = wl;
   pthread_mutex_init(&mtx,NULL);
+  /*
+  for(int i=0;i<MAX_TXN_PER_PART*2*3;i++)
+    responses[i] = false;
+    */
 }
 
 txn_man * Remote_query::get_txn_man(uint64_t thd_id, uint64_t node_id, uint64_t txn_id) {
@@ -126,6 +130,10 @@ void Remote_query::send_client_rsp(txnid_t txn_id, RC rc, uint64_t client_startt
 		uint32_t client_node_id) {
 	// Maximum number of parameters
 	// NOTE: Adjust if parameters sent is changed
+  /*
+  assert(!responses[txn_id]);
+  responses[txn_id] = true;
+  */
 #if DEBUG_DISTR
     	printf("Sending client response (CL_RSP) %ld\n",txn_id);
 #endif
@@ -352,6 +360,7 @@ base_query * Remote_query::unpack(void * d, int len) {
 	memcpy(&rtype,&data[ptr],sizeof(RemReqType));
 	ptr += sizeof(RemReqType);
 
+  /*
 	bool handle_init = false;
 #if CC_ALG != HSTORE && CC_ALG != HSTORE_SPEC && CC_ALG != VLL
 	// The remaining algos do not use 2PC init so we must check if we've seen
@@ -362,7 +371,18 @@ base_query * Remote_query::unpack(void * d, int len) {
 			handle_init = true;
 	}
 #endif
+*/
 
+#if WORKLOAD == TPCC
+	    query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), 0);
+	      query = new tpcc_query();
+#elif WORKLOAD == YCSB
+	    query = (ycsb_query *) mem_allocator.alloc(sizeof(ycsb_query), 0);
+        query = new ycsb_query();
+#endif
+
+  // FIXME: Race condition if multiple RACKs come in for the same txn and all overwrite each other from txn pool
+        /*
     if(rtype == RINIT || rtype == INIT_DONE || rtype == RTXN || rtype == CL_RSP || (QRY_ONLY && rtype == RQRY) || handle_init) {
 #if WORKLOAD == TPCC
 	    query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), 0);
@@ -375,6 +395,7 @@ base_query * Remote_query::unpack(void * d, int len) {
     } else {
         query = txn_pool.get_qry(g_node_id,txn_id);
     }
+    */
 	assert(query != NULL);
 
     query->dest_id = dest_id;
@@ -438,11 +459,13 @@ base_query * Remote_query::unpack(void * d, int len) {
                     }
             break;
         case RPREPARE:
+            /*
 #if CC_ALG != HSTORE && CC_ALG != HSTORE_SPEC && CC_ALG != VLL
 			if (handle_init) {
 				query->rc = Abort;
 			}
 #endif
+*/
             break;
 		case RQRY: {
 #if WORKLOAD == TPCC
@@ -468,9 +491,15 @@ base_query * Remote_query::unpack(void * d, int len) {
         case RACK:
 	        memcpy(&rc,&data[ptr],sizeof(RC));
 	        ptr += sizeof(RC);
+          // FIXME: Race condition if 2 RACKs received at same time:
+          //  Thread1: Reads query->rc == WAIT .............. writes rc == RCOK to query->rc
+          //  Thread 2: ...................writes query->rc = ABORT ...........
+          /*
             if(rc == Abort || query->rc == WAIT || query->rc == WAIT_REM) {
                 query->rc = rc;
             }
+            */
+            query->rc = rc;
             break;
         case INIT_DONE:
             break;

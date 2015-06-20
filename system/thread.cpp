@@ -143,6 +143,7 @@ RC thread_t::run() {
 #endif
 
 	base_query * m_query = NULL;
+	base_query * tmp_query = NULL;
 	//base_query * next_query = NULL;
 	uint64_t txn_cnt = 0;
 	uint64_t txn_st_cnt = 0;
@@ -155,6 +156,9 @@ RC thread_t::run() {
 	uint64_t last_rwaittime = 0;
 	uint64_t outstanding_waits = 0;
 	uint64_t outstanding_rwaits = 0;
+	uint64_t rsp_cnt;
+  uint64_t debug1;
+  RemReqType debug2;
 
 	uint64_t run_starttime = get_sys_clock();
 	uint64_t prog_time = run_starttime;
@@ -197,8 +201,14 @@ RC thread_t::run() {
 		if((m_query = work_queue.get_next_query()) == NULL)
 			continue;
 
+    uint64_t txn_id = m_query->txn_id;
+
 		rc = RCOK;
 		starttime = get_sys_clock();
+    debug1 = 0;
+    debug2 = m_query->rtype;
+    assert(debug2 <= CL_RSP);
+    //printf("%ld: %d %ld\n",this->_thd_id,m_query->rtype,m_query->txn_id);
 
 		switch(m_query->rtype) {
 			case RPASS:
@@ -283,8 +293,12 @@ RC thread_t::run() {
 				}
 #else
 				assert(m_txn != NULL);
-        m_txn->register_thd(this);
 #endif
+        if(m_txn) {
+          m_txn->register_thd(this);
+				  tmp_query = txn_pool.get_qry(m_query->return_id, m_query->txn_id);
+          m_query = tmp_query->merge(m_query);
+        }
 				if (validate) {
 					m_txn->state = PREP;
 					// Validate transaction
@@ -317,6 +331,10 @@ RC thread_t::run() {
 #endif
 				assert(m_txn != NULL);
         m_txn->register_thd(this);
+
+        // FIXME: May be doing twice the work
+				tmp_query = txn_pool.get_qry(m_query->return_id, m_query->txn_id);
+        m_query = tmp_query->merge(m_query);
 #if DEBUG_DISTR
 				if(m_txn->state != EXEC)
 					printf("Received RQRY %ld\n",m_query->txn_id);
@@ -371,6 +389,8 @@ RC thread_t::run() {
 				m_txn = txn_pool.get_txn(g_node_id, m_query->txn_id);
 				assert(m_txn != NULL);
         m_txn->register_thd(this);
+				tmp_query = txn_pool.get_qry(m_query->return_id, m_query->txn_id);
+        m_query = tmp_query->merge(m_query);
 				INC_STATS(get_thd_id(),time_wait_rem,get_sys_clock() - m_txn->wait_starttime);
 
 				outstanding_rwaits--;
@@ -400,13 +420,15 @@ RC thread_t::run() {
 					assert(m_query->rc == Abort);
 					finish = false;	
 				}
-        else
-          m_txn->register_thd(this);
 #else
 				// Transaction should ALWAYS be in the pool until node receives RFIN
 				assert(m_txn != NULL);
-        m_txn->register_thd(this);
 #endif
+        if(m_txn) {
+          m_txn->register_thd(this);
+				  tmp_query = txn_pool.get_qry(m_query->return_id, m_query->txn_id);
+          m_query = tmp_query->merge(m_query);
+        }
 				if (finish) {
 					m_txn->state = DONE;
 					m_txn->rem_fin_txn(m_query);
@@ -425,11 +447,15 @@ RC thread_t::run() {
 				INC_STATS(0,rack,1);
 				m_txn = txn_pool.get_txn(g_node_id, m_query->txn_id);
 				assert(m_txn != NULL);
+        // FIXME: Could have multiple threads in RACK on the same txn
         m_txn->register_thd(this);
+				tmp_query = txn_pool.get_qry(m_query->return_id, m_query->txn_id);
+        m_query = tmp_query->merge(m_query);
 
-				m_txn->decr_rsp(1);
-				// TODO: May be waiting for different things: RINIT, RPREPARE, RFIN
-				if(m_txn->get_rsp_cnt() == 0) {
+        // returns the current response count for this transaction
+				rsp_cnt = m_txn->decr_rsp(1);
+
+				if(rsp_cnt == 0) {
 					// Done waiting 
 					INC_STATS(get_thd_id(),time_wait_rem,get_sys_clock() - m_txn->wait_starttime);
 					m_txn->rc = RCOK;
@@ -446,8 +472,10 @@ RC thread_t::run() {
 								m_txn->rc = rc;
 							}
 
-							if(m_txn->ready_part > 0)
+							if(m_txn->ready_part > 0) {
+					      m_query = NULL;
 								break;
+              }
 #endif
 #if CC_ALG == VLL
               // This may return an Abort
@@ -460,14 +488,17 @@ RC thread_t::run() {
 							m_txn->state = FIN;
 							// send rfin messages w/ abort
 							m_txn->finish(m_query,true);
+					    m_query = NULL;
               break;
         }
 #endif
 							m_txn->state = EXEC; 
 							txn_pool.restart_txn(m_txn->get_txn_id());
+					    m_query = NULL;
 							break;
 						case PREP:
 							// Validate
+              debug1 = 1;
 							m_txn->spec = true;
 							rc  = m_txn->validate();
 							m_txn->spec = false;
@@ -483,11 +514,13 @@ RC thread_t::run() {
 							m_txn->state = FIN;
 							// After RPREPARE, send rfin messages
 							m_txn->finish(m_query,true);
-              // Note: can't touch m_txn or m_query after this, since all other
+              // Note: can't touch m_txn after this, since all other
               //  RACKs may have been received and FIN processed before this point
+					    m_query = NULL;
 							break;
 						case FIN:
 							// After RFIN
+              debug1 = 2;
 							m_txn->state = DONE;
 #if CC_ALG == HSTORE_SPEC
 							// allow speculative execution to start
@@ -501,9 +534,14 @@ RC thread_t::run() {
 						default:
 							assert(false);
 					}
-				}
+				} else {
+					m_query = NULL;
+        }
+        // Possible race condition here if processing 2 RACKs and 1 thread updates txn state to DONE
+/*
 				if(m_txn->state != DONE)
 					m_query = NULL;
+*/
 				break;
 			case RTXN:
 				// This transaction is originating at this node
@@ -534,6 +572,8 @@ RC thread_t::run() {
 					//m_txn->set_txn_id( (get_thd_id() + get_node_id() * g_thread_cnt) + (g_thread_cnt * g_node_cnt * thd_txn_id));
 					thd_txn_id ++;
 					m_query->set_txn_id(m_txn->get_txn_id());
+          work_queue.update_hash(m_txn->get_txn_id());
+          txn_id= m_txn->get_txn_id();
 
 					if(m_query->part_num > 1) {
 						INC_STATS(get_thd_id(),mpq_cnt,1);
@@ -698,10 +738,12 @@ RC thread_t::run() {
 					printf("COMMIT %ld %ld\n",m_txn->get_txn_id(),get_sys_clock());
 					//printf("COMMIT %ld %ld\n",m_txn->get_txn_id(),get_sys_clock() - run_starttime);
 #endif
+					// Send "result" back to client
+          assert(m_query->part_num == 1 || debug1 == 2);
+          assert((m_query->part_num == 1 && m_query->rtype == RTXN) || (m_query->part_num > 1 && m_query->rtype == RACK));
+					rem_qry_man.send_client_rsp(m_query);
 					txn_pool.delete_txn(g_node_id,m_query->txn_id);
 					txn_cnt++;
-					// Send "result" back to client
-					rem_qry_man.send_client_rsp(m_query);
 					//ATOM_SUB(txn_pool.inflight_cnt,1);
           /*
 #if CC_ALG == VLL
@@ -796,6 +838,9 @@ RC thread_t::run() {
 					break;
 			}
 		} 
+
+    work_queue.done(txn_id);
+
 		timespan = get_sys_clock() - starttime;
 		INC_STATS(get_thd_id(),time_work,timespan);
 

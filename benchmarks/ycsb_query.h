@@ -68,6 +68,7 @@ public:
   void unpack_rsp(base_query * query, void * d); 
   void client_query(base_query * query, uint64_t dest_id) {} 
 	
+  base_query * merge(base_query * query); 
 void unpack(base_query * query, void * d) ;
 void remote_qry(base_query * query, int type, int dest_id) ;
 void remote_rsp(base_query * query) ;

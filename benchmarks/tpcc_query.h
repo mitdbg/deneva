@@ -49,6 +49,7 @@ public:
 	void pack(base_query * query, void ** data, int * sizes, int * num, RC rc);
     void client_query(base_query * query, uint64_t dest_id);
     void unpack_client(base_query * query, void * d); 
+  base_query * merge(base_query * query) {return NULL;}
 	//uint64_t rtn_node_id;
 	TPCCTxnType txn_type;
 	TPCCRemTxnType txn_rtype;

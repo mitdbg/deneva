@@ -32,6 +32,7 @@ public:
     virtual void unpack(base_query * query, void * d) = 0;
     virtual void client_query(base_query * query, uint64_t dest_id) = 0; 
     virtual void unpack_client(base_query * query, void * d) = 0; 
+    virtual base_query * merge(base_query * query) = 0;
 	uint64_t waiting_time;
 	uint64_t part_num;
 	uint64_t * part_to_access;
@@ -46,6 +47,8 @@ public:
 	uint64_t part_cnt;
 	uint64_t * parts;
 
+  // FIXME: for debugging;
+  uint64_t debug1;
   // CALVIN
   uint64_t batch_num;
 

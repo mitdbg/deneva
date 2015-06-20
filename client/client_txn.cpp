@@ -14,7 +14,6 @@ int32_t Inflight_entry::inc_inflight() {
     } else {
         result = -1;
     }
-    assert(num_inflight_txns >= 0);
     sem_post(&mutex);
     return result;
 }

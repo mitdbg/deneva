@@ -60,6 +60,7 @@ public:
 	base_client_query * unpack_client_query(void * d, int len);
   
 	int q_idx;
+  //bool responses[MAX_TXN_PER_PART*2*3];
 	/*
 #if WORKLOAD == TPCC
 	tpcc_query * queries;
