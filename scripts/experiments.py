@@ -59,7 +59,7 @@ def test():
 # Vary: Node count, % writes
 def experiment_1():
     fmt = fmt_ycsb
-    nnodes = [1,2,4,8,16]
+    nnodes = [1,2,4,8]
     nmpr=[0,0.01,0.1,1]
     nalgos=['WAIT_DIE']
     #nalgos=['WAIT_DIE','HSTORE','HSTORE_SPEC']
@@ -76,7 +76,7 @@ def experiment_1():
 def experiment_1_plot(summary,summary_client):
     from plot_helper import tput,abort_rate,lat
     fmt = fmt_ycsb
-    nnodes = [1,2,4,8,16]
+    nnodes = [1,2,4,8]
     nmpr=[0,0.01,0.1,1]
     nalgos=['WAIT_DIE']
     #nalgos=['WAIT_DIE','HSTORE','HSTORE_SPEC']

@@ -288,7 +288,7 @@ RC thread_t::run() {
 				bool validate = true;
 #if CC_ALG != HSTORE && CC_ALG != HSTORE_SPEC && CC_ALG != VLL
 				if (m_txn == NULL) {
-					assert(m_query->rc == Abort);
+					//assert(m_query->rc == Abort);
 					validate = false;
 				}
 #else
@@ -659,6 +659,7 @@ RC thread_t::run() {
 							m_txn->rc = rc;
 							rem_qry_man.send_init(m_query,part_id);
 							m_txn->wait_starttime = get_sys_clock();
+              m_query->part_touched[m_query->part_touched_cnt++] = part_id;
 						} else {
 							// local init: MPQ Moved to after RINITs return
               if(m_query->part_num == 1) {
@@ -831,6 +832,9 @@ RC thread_t::run() {
 						break;
 #endif
 					assert(m_query->dest_id != g_node_id);
+#if CC_ALG != HSTORE && CC_ALG != HSTORE_SPEC
+          m_query->part_touched[m_query->part_touched_cnt++] = GET_PART_ID(0,m_query->dest_id);
+#endif
 					rem_qry_man.remote_qry(m_query,m_query->rem_req_state,m_query->dest_id,m_txn);
 					break;
 				default:

@@ -127,8 +127,10 @@ void row_t::free_row() {
 RC row_t::get_lock(access_t type, txn_man * txn) {
   RC rc = RCOK;
   assert(CC_ALG == CALVIN);
+#if CC_ALG == CALVIN
 	lock_t lt = (type == RD || type == SCAN)? LOCK_SH : LOCK_EX;
 	rc = this->manager->lock_get(lt, txn);
+#endif
   return rc;
 }
 

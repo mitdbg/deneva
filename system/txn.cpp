@@ -352,8 +352,10 @@ RC txn_man::finish(base_query * query, bool fin) {
 
   // Send prepare message to all participating transaction
   assert(rsp_cnt == 0);
-  for (uint64_t i = 0; i < query->part_num; ++i) {
-    uint64_t part_node_id = GET_NODE_ID(query->part_to_access[i]);
+  //for (uint64_t i = 0; i < query->part_num; ++i) {
+  //  uint64_t part_node_id = GET_NODE_ID(query->part_to_access[i]);
+  for (uint64_t i = 0; i < query->part_touched_cnt; ++i) {
+    uint64_t part_node_id = GET_NODE_ID(query->part_touched[i]);
     //if(query->part_to_access[i] == get_node_id()) {
     if(part_node_id == get_node_id()) {
       continue;
@@ -361,7 +363,8 @@ RC txn_man::finish(base_query * query, bool fin) {
     // Check if we have already sent this node an RPREPARE message
     bool sent = false;
     for (uint64_t j = 0; j < i; j++) {
-      if (part_node_id == GET_NODE_ID(query->part_to_access[j])) {
+      //if (part_node_id == GET_NODE_ID(query->part_to_access[j])) {
+      if (part_node_id == GET_NODE_ID(query->part_touched[j])) {
         sent = true;
         break;
       }

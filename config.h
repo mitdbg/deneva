@@ -5,7 +5,7 @@
 // Simulation + Hardware
 /***********************************************/
 #define NODE_CNT 2
-#define THREAD_CNT 3
+#define THREAD_CNT 2
 // REM_THREAD_CNT should be at least NODE_CNT*THREAD_CNT to avoid deadlock
 #define REM_THREAD_CNT 1
 // PART_CNT should be at least NODE_CNT
@@ -32,7 +32,7 @@
 #define STATS_ENABLE        true
 #define TIME_ENABLE         true //STATS_ENABLE
 
-#define MAX_TXN_IN_FLIGHT 20
+#define MAX_TXN_IN_FLIGHT 10
 
 /***********************************************/
 // Memory System
@@ -133,6 +133,7 @@
 // Benchmark
 /***********************************************/
 // max number of rows touched per transaction
+#define MAX_PART_PER_TXN      16 
 #define MAX_ROW_PER_TXN       64
 #define QUERY_INTVL         1UL
 #define MAX_TXN_PER_PART 100000
@@ -142,8 +143,8 @@
 #define INIT_PARALLELISM      16 
 #define SYNTH_TABLE_SIZE      (NODE_CNT*1024)
 #define ZIPF_THETA 0.6
-#define READ_PERC 1.0
-#define WRITE_PERC 0
+#define READ_PERC 0.5
+#define WRITE_PERC 0.5
 #define SCAN_PERC           0
 #define SCAN_LEN          20
 #define PART_PER_TXN        2//PART_CNT  
@@ -224,7 +225,7 @@ extern TestCases          g_test_case;
 #define DEBUG_TIMESTAMP				false
 #define DEBUG_SYNTH					false
 #define DEBUG_ASSERT				false
-#define DEBUG_DISTR					false 
+#define DEBUG_DISTR					true 
 #define DEBUG_TIMELINE				false
 
 #define QRY_ONLY false
