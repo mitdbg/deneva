@@ -349,6 +349,14 @@ RC txn_man::finish(base_query * query, bool fin) {
   if(!fin) {
     this->state = PREP;
   }
+  if(query->part_touched_cnt == 0) {
+    assert(query->rc == Abort);
+    this->state = DONE;
+		uint64_t part_arr[1];
+		part_arr[0] = query->part_to_access[0];
+	  finish(query->rc,part_arr,1);
+    return RCOK;
+  }
 
   // Send prepare message to all participating transaction
   assert(rsp_cnt == 0);

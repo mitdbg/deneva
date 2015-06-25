@@ -209,7 +209,9 @@ RC ycsb_txn_man::run_txn_state(base_query * query) {
 	m_query->rc = rc;
   if(rc == Abort && !fin && GET_NODE_ID(m_query->pid) == g_node_id) {
     query->rem_req_state = YCSB_FIN;
-    return finish(m_query,false);
+    rc = finish(m_query,false);
+    if(rc == RCOK)
+      rc = m_query->rc;
   }
   return rc;
 }
