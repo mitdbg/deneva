@@ -195,9 +195,9 @@ void Remote_query::send_init(base_query * query,uint64_t dest_part_id) {
 #endif
 #endif
 
-  uint64_t total = 3;
+  uint64_t total = 4;
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
-  total += 3;
+  total += 2;
 #endif
 #if CC_ALG == VLL
   total++; // m_query->request_cnt
@@ -226,12 +226,13 @@ void Remote_query::send_init(base_query * query,uint64_t dest_part_id) {
 	data[num] = &query->ts;
 	sizes[num++] = sizeof(ts_t);
 
-#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
-  uint64_t _dest_part_id = dest_part_id;
   uint64_t _part_id = GET_PART_ID(0,g_node_id);
-  uint64_t _part_cnt = 1; // FIXME
 	data[num] = &_part_id;
 	sizes[num++] = sizeof(uint64_t);
+
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
+  uint64_t _dest_part_id = dest_part_id;
+  uint64_t _part_cnt = 1; // FIXME
 	data[num] = &_part_cnt;
 	sizes[num++] = sizeof(uint64_t);
 	data[num] = &_dest_part_id;
@@ -421,9 +422,9 @@ base_query * Remote_query::unpack(void * d, int len) {
         case RINIT: {
 	        memcpy(&query->ts,&data[ptr],sizeof(ts_t));
 	        ptr += sizeof(ts_t);
-#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
 	        memcpy(&query->pid,&data[ptr],sizeof(query->pid));
 	        ptr += sizeof(query->pid);
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
 	        memcpy(&query->part_cnt,&data[ptr],sizeof(query->part_cnt));
 	        ptr += sizeof(query->part_cnt);
             assert(query->part_cnt == 1);
@@ -521,6 +522,7 @@ base_query * Remote_query::unpack(void * d, int len) {
 	        memcpy(&client_startts,&data[ptr],sizeof(uint64_t));
 	        ptr += sizeof(uint64_t);
           INC_STATS(0,client_latency,get_sys_clock() - client_startts);
+          INC_STATS(0,txn_cnt,1);
             	break;
 	    	default:
 		assert(false);

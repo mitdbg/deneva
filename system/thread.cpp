@@ -217,7 +217,6 @@ RC thread_t::run() {
         m_txn->register_thd(this);
 				break;
 			case RINIT:
-				printf("should be entering RINIT\n");
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || CC_ALG == VLL
 				// This transaction is from a remote node
 #if DEBUG_DISTR
@@ -713,7 +712,8 @@ RC thread_t::run() {
 		}
 
 		// If m_query was freed just before this, m_query is NULL
-		if(m_query != NULL && GET_NODE_ID(m_query->pid) == g_node_id) {
+		//if(m_query != NULL && GET_NODE_ID(m_query->pid) == g_node_id) {
+		if(m_query != NULL && m_query->txn_id % g_node_cnt == g_node_id) {
 			switch(rc) {
 				case RCOK:
 #if CC_ALG == HSTORE_SPEC

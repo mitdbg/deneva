@@ -206,7 +206,7 @@ RC Client_thread_t::run() {
 		m_query->client_query(m_query, GET_NODE_ID(m_query->pid));
 		num_txns_sent++;
 		txns_sent[GET_NODE_ID(m_query->pid)-g_server_start_node]++;
-    INC_STATS(get_thd_id(),txn_cnt,1);
+    INC_STATS(get_thd_id(),txn_sent,1);
 
 		if(get_sys_clock() - prog_time >= PROG_TIMER) {
 			prog_time = get_sys_clock();

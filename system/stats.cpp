@@ -137,6 +137,7 @@ void Stats_thd::clear() {
 
   time_getqry = 0;
   client_latency = 0;
+  txn_sent = 0;
 
   cflt_cnt = 0;
 	mpq_cnt = 0;
@@ -226,6 +227,7 @@ void Stats::print_sequencer(bool prog) {
 	fflush(stdout);
 
 	uint64_t total_txn_cnt = 0;
+	uint64_t total_txn_sent = 0;
 	double total_tot_run_time = 0;
 	double total_seq_latency = 0;
 	double total_time_tport_send = 0;
@@ -243,6 +245,7 @@ void Stats::print_sequencer(bool prog) {
 		if(!prog)
 			total_tot_run_time += _stats[tid]->tot_run_time;
 		total_txn_cnt += _stats[tid]->txn_cnt;
+		total_txn_sent += _stats[tid]->txn_sent;
 		total_seq_latency += _stats[tid]->client_latency;
 		total_time_getqry += _stats[tid]->time_getqry;
 		total_time_tport_send += _stats[tid]->time_tport_send;
@@ -270,6 +273,7 @@ void Stats::print_sequencer(bool prog) {
 	  fprintf(outf, "[summary] ");
 	fprintf(outf, 
       "clock_time=%f"
+      ",txn_cnt=%ld"
       ",txns_sent=%ld"
       ",time_getqry=%f"
       ",latency=%f"
@@ -284,6 +288,7 @@ void Stats::print_sequencer(bool prog) {
 			"\n",
 			total_tot_run_time / BILLION,
 			total_txn_cnt, 
+			total_txn_sent, 
 			total_time_getqry / BILLION,
 			total_seq_latency,
 			total_msg_bytes, 
@@ -322,6 +327,7 @@ void Stats::print_client(bool prog) {
   fflush(stdout);
 
 	uint64_t total_txn_cnt = 0;
+	uint64_t total_txn_sent = 0;
 	double total_tot_run_time = 0;
 	double total_client_latency = 0;
 	double total_time_tport_send = 0;
@@ -342,6 +348,7 @@ void Stats::print_client(bool prog) {
     if(!prog)
 		  total_tot_run_time += _stats[tid]->tot_run_time;
 		total_txn_cnt += _stats[tid]->txn_cnt;
+		total_txn_sent += _stats[tid]->txn_sent;
 		total_client_latency += _stats[tid]->client_latency;
 		total_time_getqry += _stats[tid]->time_getqry;
 		total_time_tport_send += _stats[tid]->time_tport_send;
@@ -368,7 +375,8 @@ void Stats::print_client(bool prog) {
 	  fprintf(outf, "[summary] ");
 	fprintf(outf, 
       "clock_time=%f"
-      ",txns_sent=%ld"
+      ",txn_cnt=%ld"
+      ",txn_sent=%ld"
       ",time_getqry=%f"
       ",latency=%f"
       ",msg_bytes=%ld"
@@ -381,8 +389,9 @@ void Stats::print_client(bool prog) {
 			"\n",
 			total_tot_run_time / BILLION,
 			total_txn_cnt, 
+			total_txn_sent, 
 			total_time_getqry / BILLION,
-		  total_client_latency,
+		  total_client_latency / total_txn_cnt / BILLION,
 			total_msg_bytes, 
 			total_msg_rcv_cnt, 
 			total_msg_sent_cnt, 

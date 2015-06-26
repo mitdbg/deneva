@@ -22,6 +22,7 @@ public:
 
 	char _pad2[CL_SIZE];
 	uint64_t txn_cnt;
+	uint64_t txn_sent;
 	uint64_t abort_cnt;
 	uint64_t txn_abort_cnt;
 	uint64_t rbk_abort_cnt;
