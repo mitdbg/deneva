@@ -345,7 +345,7 @@ base_query * Remote_query::unpack(void * d, int len) {
     base_query * query;
 	char * data = (char *) d;
 	uint64_t ptr = 0;
-  
+  uint64_t timespan;
     uint32_t dest_id;
     uint32_t return_id;
     txnid_t txn_id;
@@ -521,7 +521,9 @@ base_query * Remote_query::unpack(void * d, int len) {
           uint64_t client_startts;
 	        memcpy(&client_startts,&data[ptr],sizeof(uint64_t));
 	        ptr += sizeof(uint64_t);
-          INC_STATS(0,client_latency,get_sys_clock() - client_startts);
+          timespan = get_sys_clock() - client_startts;
+          INC_STATS(0,client_latency,timespan);
+          INC_STATS_ARR(0,all_lat,timespan);
           INC_STATS(0,txn_cnt,1);
             	break;
 	    	default:

@@ -1,10 +1,12 @@
 import matplotlib
+from matplotlib.table import Table
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import os, sys, re, math,itertools
 from pylab import *
 from helper import *
 from textwrap import wrap
+import latency_stats as ls
 
 rename = {
     "average": "   avg   "
@@ -403,4 +405,41 @@ def draw_scatter(fname, data, xticks,
     savefig('../figs/' + fname +'.pdf', bbox_inches='tight')
     plt.close()
 
+def draw_lat_matrix(fname,data,title="",lat_type=None,lat_types=None,columns=[],rows=[]):
+    bkg_colors=['#CCFFFF','white']
+    fmt='{:.3f}'
+    fig,ax=plt.subplots()
+    ax.set_axis_off()
+    tb=Table(ax,bbox=[0,0,1,1])
+    nrows,ncols=data.shape
+    assert nrows==len(rows)
+    assert ncols==len(columns)
+    width, height = 1.0 / ncols * 2, 1.0 / nrows * 2 
+    for (i,j),val in np.ndenumerate(data):
+        idx = [j % 2, (j + 1) % 2][i % 2]
+        color = bkg_colors[idx]
+        if val:
+            if lat_type:
+                txt=fmt.format(ls.exec_fn(val,lat_type))
+            else:
+                assert lat_types
+                txt=fmt.format(ls.exec_fn(val,lat_types[i]))
+        else:
+            txt="-"
+        tb.add_cell(i, j, width, height, text=txt, 
+                loc='center', facecolor=color)
+    # Row Labels...
+    for i, label in enumerate(rows):
+        tb.add_cell(i, -1, width, height, text=label, loc='right', 
+                edgecolor='none', facecolor='none')
+    # Column Labels...
+    for j, label in enumerate(columns):
+        tb.add_cell(-1, j, width, height/2, text=label, loc='center', 
+                edgecolor='none', facecolor='none')
+    ax.add_table(tb)
+
+    if title:
+        ax.set_title("\n".join(wrap(title)), y=1.08)
+    savefig('../figs/' + fname +'.pdf', bbox_inches='tight')
+    plt.close()
 

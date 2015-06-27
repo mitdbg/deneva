@@ -1,6 +1,7 @@
 import os,re,sys,math
 from experiments import configs
 from experiments import config_names
+import latency_stats as ls
 
 cnts = ["all_abort"]
 cflts = ["w_cflt","d_cflt","cnp_cflt","c_cflt","ol_cflt","s_cflt","w_abrt","d_abrt","cnp_abrt","c_abrt","ol_abrt","s_abrt"]
@@ -68,6 +69,37 @@ def get_summary(sfile,summary={}):
 
     return summary
 
+def get_network_stats(n_file):
+    setup = n_file.split("/")[-1].split("_")
+
+    # A few checks
+    assert setup[0] == "0" # The corresponding file contains no info
+    assert setup[3] == "NETWORK"
+
+    # What to call the participating pair of nodes
+    node_names = {}
+    node_names['n0']=setup[1]
+    node_names['n1']=setup[2]
+
+    with open(n_file,'r') as f:
+        lines = f.readlines()
+
+    stats = {}
+    for line in lines:
+        if line.startswith('0:') or line.startswith('1:'):
+            assert line.strip()[-3:] in node_names.values()
+        elif line.startswith("Network Bytes:"):
+            metadata = {}
+            metadata.update(node_names.copy())
+            num_msg_bytes=line.split(":")[1].strip()
+            metadata["bytes"]=num_msg_bytes
+        elif line.startswith('ns:'):
+            lat_str = line.split(":")[1].strip()
+            latencies = lat_str.split(" ")
+            latencies = list(map(int,latencies))
+            stats[metadata["bytes"]] = ls.LatencyStats(latencies,metadata)
+    return stats
+
 def merge_results(summary,cnt,drop):
     
     for k in summary.keys():
@@ -88,13 +120,13 @@ def merge_results(summary,cnt,drop):
             print("{}: {} {}".format(k,avg(l),stdev(l)))
             
 def process_results(summary,results):
-	for r in results:
-		(name,val) = re.split('=',r)
-		val = float(val)
-		if name not in summary.keys():
-		    summary[name] = [val]
-		else:
-		    summary[name].append(val)
+    for r in results:
+        (name,val) = re.split('=',r)
+        val = float(val)
+        if name not in summary.keys():
+            summary[name] = [val]
+        else:
+            summary[name].append(val)
 
 def process_cnts(summary,line,name):
     
@@ -142,18 +174,25 @@ def process_cflts(summary,line,name):
         summary[name][k] = c
 
 
-def get_outfile_name(cfgs,network_test=False,network_hosts=[]):
-	output_f = ""
-	if network_test:
-		assert len(network_hosts) == 2
-		for host in sorted(network_hosts):
-			output_f += "{}_".format(host.split(".")[3])
-		output_f += "NETWORK_TEST_"
-	else:
-		#for key in sorted(cfgs.keys()):
-		for key in sorted(config_names):
-			output_f += "{}-{}_".format(key,cfgs[key])
-	return output_f
+def get_outfile_name(cfgs,network_hosts=[]):
+    output_f = ""
+    assert "NETWORK_TEST" in cfgs
+    if cfgs["NETWORK_TEST"] == "true":
+        assert len(network_hosts) == 2
+        for host in sorted(network_hosts):
+            parts = host.split(".")
+            if len(parts) == 4:
+                h = parts[3]
+            else:
+                h = host
+            output_f += "{}_".format(h)
+
+        output_f += "NETWORK_TEST_"
+    else:
+        #for key in sorted(cfgs.keys()):
+        for key in sorted(config_names):
+            output_f += "{}-{}_".format(key,cfgs[key])
+    return output_f
 
 def get_cfgs(fmt,e):
     cfgs = configs

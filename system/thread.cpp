@@ -71,6 +71,7 @@ RC thread_t::run_remote() {
 	}
 #endif
 
+	uint64_t run_starttime = get_sys_clock();
 	ts_t rq_time = get_sys_clock();
 
 	while (true) {
@@ -81,12 +82,12 @@ RC thread_t::run_remote() {
 		}
 
 		ts_t tend = get_sys_clock();
-		if (warmup_finish && _wl->sim_done && ((tend - rq_time) > MSG_TIMEOUT)) {
+		if (warmup_finish && ((get_sys_clock() - run_starttime >= DONE_TIMER) || (_wl->sim_done && (  ((tend - rq_time) > MSG_TIMEOUT))))) {
 			if( !ATOM_CAS(_wl->sim_timeout, false, true) )
 				assert( _wl->sim_timeout);
 		}
 
-		if (_wl->sim_done && _wl->sim_timeout) {
+		if (_wl->sim_done || _wl->sim_timeout) {
 #if !NOGRAPHITE
 			CarbonDisableModelsBarrier(&enable_barrier);
 #endif
@@ -181,10 +182,11 @@ RC thread_t::run() {
 
 			stats.print(true);
 		}
-		while(!work_queue.poll_next_query() && !(_wl->sim_done && _wl->sim_timeout)) { }
+		while(!work_queue.poll_next_query() && !_wl->sim_done && !_wl->sim_timeout) { }
+		//while(!work_queue.poll_next_query() && !(_wl->sim_done && _wl->sim_timeout)) { }
 
 		// End conditions
-		if (_wl->sim_done && _wl->sim_timeout) {
+		if (_wl->sim_done || _wl->sim_timeout) {
 #if !NOGRAPHITE
 			CarbonDisableModelsBarrier(&enable_barrier);
 #endif
@@ -734,6 +736,7 @@ RC thread_t::run() {
 					timespan = get_sys_clock() - m_txn->starttime;
 					INC_STATS(get_thd_id(), run_time, timespan);
 					INC_STATS(get_thd_id(), latency, timespan);
+          INC_STATS_ARR(get_thd_id(),all_lat,timespan);
           INC_STATS(get_thd_id(), cc_wait_cnt, m_txn->cc_wait_cnt);
           INC_STATS(get_thd_id(), cc_wait_time, m_txn->cc_wait_time);
 
@@ -859,7 +862,7 @@ RC thread_t::run() {
 			return FINISH;
 		}
 
-		if (warmup_finish && txn_st_cnt >= MAX_TXN_PER_PART/g_thread_cnt && txn_pool.empty(get_node_id())) {
+		if (warmup_finish && ((get_sys_clock() - run_starttime >= DONE_TIMER) || (txn_st_cnt >= MAX_TXN_PER_PART/g_thread_cnt && txn_pool.empty(get_node_id())))) {
 			//assert(txn_cnt == MAX_TXN_PER_PART);
 			if( !ATOM_CAS(_wl->sim_done, false, true) )
 				assert( _wl->sim_done);

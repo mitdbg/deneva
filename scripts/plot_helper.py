@@ -1,12 +1,46 @@
 import os, sys, re, math, os.path
+import numpy as np
 import operator
 from helper import get_cfgs 
 from draw import *
 import types
+import latency_stats as ls
 #from experiments import experiments as experiments
 #from experiments import configs
 
 PATH=os.getcwd()
+
+def lat_node_tbls(exp,nodes,msg_bytes,ts,
+                title="",
+                stats=['99th','95th','90th','50th','mean']):
+    nnodes = len(nodes)
+    tables = {}
+    for i,b in enumerate(msg_bytes):
+        tables[b]=np.empty([nnodes,nnodes],dtype=object)
+    for i,e in enumerate(exp):
+        for k,v in e.iteritems():
+            n0 = nodes.index(v.get_metadata()["n0"])
+            n1 = nodes.index(v.get_metadata()["n1"])
+            tables[k][n0][n1] = v
+    for i,b in enumerate(msg_bytes):
+        for s in stats:
+            _title="{} % Latencies (ms), Message Size of {} bytes".format(s,b)
+            name="nlat_{}_{}bytes_{}nodes_{}".format(s,b,nnodes,ts)
+            draw_lat_matrix(name,tables[b],lat_type=s,rows=nodes,columns=nodes,title=_title)
+
+def lat_tbl(totals,msg_bytes,ts,
+            title="",
+            stats=['99th','95th','90th','50th','mean']):
+    nrows = len(stats)
+    ncols = len(msg_bytes)
+    for i,b in enumerate(msg_bytes):
+        table=np.empty([nrows,ncols],dtype=object)
+    for (i,j),val in np.ndenumerate(table):
+        table[i,j] = totals[msg_bytes[j]]
+    _title="Latencies Stats(ms), Message Size of {} bytes".format("all")
+    name="nlat_{}_{}bytes_{}".format('all-lat',"all-msgs",ts)
+    draw_lat_matrix(name,table,lat_types=stats,rows=stats,columns=msg_bytes,title=_title)
+    
 
 def tput(xval,vval,summary,
         cfg_fmt=[],

@@ -5,6 +5,7 @@
 #include "thread.h"
 #include "calvin_thread.h"
 #include "manager.h"
+#include "math.h"
 #include "mem_alloc.h"
 #include "query.h"
 #include "plock.h"
@@ -225,21 +226,41 @@ void network_test() {
 
 	ts_t start;
 	ts_t end;
-	double time;
+	ts_t time;
 	int bytes;
-	for(int i=4; i < 257; i+=4) {
+	//for(int i=4; i < 257; i+=4) {
+	//	time = 0;
+	//	for(int j=0;j < 1000; j++) {
+	//		start = get_sys_clock();
+	//		tport_man.simple_send_msg(i);
+	//		while((bytes = tport_man.simple_recv_msg()) == 0) {}
+	//		end = get_sys_clock();
+	//		assert(bytes == i);
+	//		time += end-start;
+	//	}
+	//	time = time/1000;
+	//	printf("Network Bytes: %d, s: %f\n",i,time/BILLION);
+	//}
+	for (int i = 0; i < 4; ++i) {
 		time = 0;
-		for(int j=0;j < 1000; j++) {
+		int num_bytes = (int) pow(10,i);
+		printf("Network Bytes: %d\nns: ", num_bytes);
+		for(int j = 0;j < 1000; j++) {
 			start = get_sys_clock();
-			tport_man.simple_send_msg(i);
+			tport_man.simple_send_msg(num_bytes);
 			while((bytes = tport_man.simple_recv_msg()) == 0) {}
 			end = get_sys_clock();
-			assert(bytes == i);
-			time += end-start;
+			assert(bytes == num_bytes);
+			time = end-start;
+			printf("%lu ",time);
 		}
-		time = time/1000;
-		printf("Network Bytes: %d, s: %f\n",i,time/BILLION);
+		printf("\n");
+		//time = time/1000;
+		//printf("Network Bytes: %d, s: %f\n",i,time/BILLION);
+		//printf("Network Bytes: %d, ns: %.3f\n",i,time);
+		
 	}
+
 }
 
 void network_test_recv() {
