@@ -190,7 +190,7 @@ def get_results(output_basename):
 	return succeeded
 
 @task
-@runs_once
+#@runs_once
 def write_config(cfgs):
 	dbx_cfg = os.path.join(env.local_path,"config.h")
 	f = open(dbx_cfg,'r');
@@ -205,6 +205,7 @@ def write_config(cfgs):
 					f_cfg.write("#define " + c + " " + str(cfgs[c]) + "\n")
 					break
 			if not found_cfg: f_cfg.write(line)
+		print(" ")
 
 @task
 @hosts('localhost')
