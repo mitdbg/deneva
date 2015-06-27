@@ -61,6 +61,8 @@ public:
   double time_getqry;
   double client_latency;
 
+	uint64_t cc_wait_cnt; // # of times a committed txn has been blocked in the cc algo
+	double cc_wait_time; // time a committed txn has been blocked in this cc algo 
   uint64_t cflt_cnt;
 	uint64_t mpq_cnt; // multi-partition queries
 	uint64_t msg_bytes;
@@ -113,6 +115,10 @@ public:
 	void init();
 	void clear();
 	uint64_t mpq_cnt;
+
+  uint64_t cc_wait_cnt;
+  double cc_wait_time;
+  
 	char _pad[CL_SIZE - sizeof(double)*3];
 };
 

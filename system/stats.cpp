@@ -139,6 +139,8 @@ void Stats_thd::clear() {
   client_latency = 0;
   txn_sent = 0;
 
+	cc_wait_cnt = 0;
+	cc_wait_time = 0;
   cflt_cnt = 0;
 	mpq_cnt = 0;
 	msg_bytes = 0;
@@ -165,6 +167,8 @@ void Stats_tmp::clear() {
 	time_wait_rem = 0;
 	*/
 	mpq_cnt = 0;
+	cc_wait_cnt = 0;
+	cc_wait_time = 0;
 }
 
 void Stats::init() {
@@ -214,6 +218,8 @@ void Stats::add_lat(uint64_t thd_id, uint64_t latency) {
 void Stats::commit(uint64_t thd_id) {
 	if (STATS_ENABLE) {
 		_stats[thd_id]->mpq_cnt += tmp_stats[thd_id]->mpq_cnt;
+		_stats[thd_id]->cc_wait_cnt += tmp_stats[thd_id]->cc_wait_cnt;
+		_stats[thd_id]->cc_wait_time += tmp_stats[thd_id]->cc_wait_time;
 		tmp_stats[thd_id]->init();
 	}
 }
@@ -444,6 +450,8 @@ void Stats::print_prog(uint64_t tid) {
       ",rbk_abort_cnt=%ld"
       ",latency=%f"
       ",run_time=%f"
+			",cc_wait_cnt=%ld"
+			",cc_wait_time=%f"
       ",cflt_cnt=%ld"
 			",mpq_cnt=%ld"
       ",msg_bytes=%ld"
@@ -488,6 +496,8 @@ void Stats::print_prog(uint64_t tid) {
 			_stats[tid]->rbk_abort_cnt,
 			((float)_stats[tid]->latency) / BILLION / _stats[tid]->txn_cnt,
 			_stats[tid]->run_time / BILLION,
+			_stats[tid]->cc_wait_cnt, 
+			_stats[tid]->cc_wait_time / BILLION, 
 			_stats[tid]->cflt_cnt, 
 			_stats[tid]->mpq_cnt, 
 			_stats[tid]->msg_bytes, 
@@ -570,6 +580,8 @@ void Stats::print(bool prog) {
 	double total_time_query = 0;
 	double total_rtime_proc = 0;
 	double total_time_unpack = 0;
+	uint64_t total_cc_wait_cnt = 0;
+	double total_cc_wait_time = 0;
 	uint64_t total_cflt_cnt = 0;
 	uint64_t total_spec_commit_cnt = 0;
 	uint64_t total_spec_abort_cnt = 0;
@@ -639,6 +651,8 @@ void Stats::print(bool prog) {
 		total_rtime_proc += _stats[tid]->rtime_proc;
 		total_time_unpack += _stats[tid]->time_unpack;
 
+		total_cc_wait_cnt += _stats[tid]->cc_wait_cnt;
+		total_cc_wait_time += _stats[tid]->cc_wait_time;
 		total_cflt_cnt += _stats[tid]->cflt_cnt;
 		total_spec_commit_cnt += _stats[tid]->spec_commit_cnt;
 		total_spec_abort_cnt += _stats[tid]->spec_abort_cnt;
@@ -679,6 +693,8 @@ void Stats::print(bool prog) {
       ",rbk_abort_cnt=%ld"
       ",latency=%f"
       ",run_time=%f"
+			",cc_wait_cnt=%ld"
+			",cc_wait_time=%f"
       ",cflt_cnt=%ld"
 			",mpq_cnt=%ld"
       ",msg_bytes=%ld"
@@ -722,6 +738,8 @@ void Stats::print(bool prog) {
 			total_rbk_abort_cnt,
 			total_latency / BILLION / total_txn_cnt,
 			total_run_time / BILLION,
+      total_cc_wait_cnt,
+      total_cc_wait_time / BILLION,
       total_cflt_cnt,
 			total_mpq_cnt, 
 			total_msg_bytes, 

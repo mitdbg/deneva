@@ -36,6 +36,7 @@ class txn_man
 {
 public:
 	virtual void init(thread_t * h_thd, workload * h_wl, uint64_t part_id);
+  void clear();
 	void release();
 	thread_t * h_thd;
 	workload * h_wl;
@@ -128,6 +129,8 @@ public:
   // For performance measurements
   uint64_t starttime;
   uint64_t wait_starttime;
+  uint64_t cc_wait_cnt;
+  double cc_wait_time;
   
 private:
 	// insert rows

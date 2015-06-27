@@ -123,6 +123,7 @@ RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt
         txn->lock_ready = false;
         rc = WAIT;
         txn->rc = rc;
+        txn->cc_wait_cnt++;
         txn->wait_starttime = get_sys_clock();
       } else 
         rc = Abort;
@@ -230,8 +231,9 @@ RC Row_lock::lock_release(txn_man * txn) {
 	// If any waiter can join the owners, just do it!
 	while (waiters_head && !conflict_lock(lock_type, waiters_head->type)) {
 		LIST_GET_HEAD(waiters_head, waiters_tail, entry);
-        t = get_sys_clock() - entry->start_ts;
-        INC_STATS(0, time_wait_lock, t);
+    t = get_sys_clock() - entry->start_ts;
+    INC_STATS(0, time_wait_lock, t);
+    entry->txn->cc_wait_time += t;
 		STACK_PUSH(owners, entry);
 		owner_cnt ++;
 		waiter_cnt --;
