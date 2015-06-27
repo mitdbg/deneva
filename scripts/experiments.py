@@ -114,17 +114,33 @@ def experiment_1_plot(summary,summary_client):
 # Vary: Node count, # server worker threads
 def experiment_2():
     fmt = fmt_ycsb
-    nnodes = [2]
-    nmpr=[0,0.1,1]
+    nnodes = [1]
+    nmpr=[0]
     nalgos=['WAIT_DIE']
     #nalgos=['WAIT_DIE','HSTORE','HSTORE_SPEC']
     #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
     nthreads=[2]
-    ncthreads=[1]
+    ncthreads=[4]
     ntifs=[1000]
     nzipf=[0.6]
-    nwr_perc=[0.5]
-    ntxn=1000000
+    nwr_perc=[0.0]
+    ntxn=2000000
+    exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t,tif,z,1.0-wp,wp] for ct,t,tif,z,wp,m,cc,n in itertools.product(ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nnodes)]
+    return fmt[0],exp
+
+def network_experiment():
+    fmt = fmt_ycsb
+    nnodes = [1]
+    nmpr=[0]
+    nalgos=['WAIT_DIE']
+    #nalgos=['WAIT_DIE','HSTORE','HSTORE_SPEC']
+    #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
+    nthreads=[2]
+    ncthreads=[4]
+    ntifs=[1000]
+    nzipf=[0.6]
+    nwr_perc=[0.0]
+    ntxn=2000000
     exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t,tif,z,1.0-wp,wp] for ct,t,tif,z,wp,m,cc,n in itertools.product(ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nnodes)]
     return fmt[0],exp
 
@@ -167,10 +183,10 @@ def experiment_3():
 # Vary: Node count, txn in flight
 def experiment_4():
     fmt = fmt_ycsb
-    nnodes = [1,2,4,8]
-    nmpr=[0.1]
-    nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL']
-    nthreads=[1]
+    nnodes = [4]
+    nmpr=[0.0]
+    nalgos=['WAIT_DIE']
+    nthreads=[4]
     ntifs=[50,100,500,1000]
     nzipf=[0.6]
     nwr_perc=[0.5]
@@ -221,6 +237,7 @@ experiment_map = {
     'experiment_4': experiment_4,
     'experiment_1_plot': experiment_1_plot,
     'experiment_4_plot': experiment_4_plot,
+	'network_experiment' : network_experiment,
 }
 
 

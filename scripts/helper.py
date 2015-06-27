@@ -142,12 +142,18 @@ def process_cflts(summary,line,name):
         summary[name][k] = c
 
 
-def get_outfile_name(cfgs):
-    output_f = ""
-    #for key in sorted(cfgs.keys()):
-    for key in sorted(config_names):
-        output_f += "{}-{}_".format(key,cfgs[key])
-    return output_f
+def get_outfile_name(cfgs,network_test=False,network_hosts=[]):
+	output_f = ""
+	if network_test:
+		assert len(network_hosts) == 2
+		for host in sorted(network_hosts):
+			output_f += "{}_".format(host.split(".")[3])
+		output_f += "NETWORK_TEST_"
+	else:
+		#for key in sorted(cfgs.keys()):
+		for key in sorted(config_names):
+			output_f += "{}-{}_".format(key,cfgs[key])
+	return output_f
 
 def get_cfgs(fmt,e):
     cfgs = configs
