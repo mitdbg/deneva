@@ -734,6 +734,8 @@ RC thread_t::run() {
 					timespan = get_sys_clock() - m_txn->starttime;
 					INC_STATS(get_thd_id(), run_time, timespan);
 					INC_STATS(get_thd_id(), latency, timespan);
+          INC_STATS(get_thd_id(), cc_wait_cnt, m_txn->cc_wait_cnt);
+          INC_STATS(get_thd_id(), cc_wait_time, m_txn->cc_wait_time);
 
 #if DEBUG_TIMELINE
 					printf("COMMIT %ld %ld\n",m_txn->get_txn_id(),get_sys_clock());
