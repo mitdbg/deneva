@@ -7,6 +7,7 @@ import math
 fmt_tpcc = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","NUM_WH","MAX_TXN_IN_FLIGHT"]]
 fmt_nd = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","NUM_WH","MAX_TXN_IN_FLIGHT","NETWORK_DELAY"]]
 fmt_ycsb = [["CLIENT_NODE_CNT","NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","CLIENT_THREAD_CNT","THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC"]]
+fmt_nt = [["NODE_CNT","CLIENT_NODE_CNT","NETWORK_TEST"]]
 
 
 #nnodes=[1,2,4,8,16,32]
@@ -128,22 +129,6 @@ def experiment_2():
     exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t,tif,z,1.0-wp,wp] for ct,t,tif,z,wp,m,cc,n in itertools.product(ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nnodes)]
     return fmt[0],exp
 
-def network_experiment():
-    fmt = fmt_ycsb
-    nnodes = [1]
-    nmpr=[0]
-    nalgos=['WAIT_DIE']
-    #nalgos=['WAIT_DIE','HSTORE','HSTORE_SPEC']
-    #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
-    nthreads=[2]
-    ncthreads=[4]
-    ntifs=[1000]
-    nzipf=[0.6]
-    nwr_perc=[0.0]
-    ntxn=2000000
-    exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t,tif,z,1.0-wp,wp] for ct,t,tif,z,wp,m,cc,n in itertools.product(ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nnodes)]
-    return fmt[0],exp
-
 def experiment_2_plot(summary):
     from plot_helper import tput,abort_rate
     fmt = fmt_ycsb
@@ -228,6 +213,27 @@ def experiment_4_plot(summary):
         time_breakdown(nalgos,summary,normalized=True,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="CC_ALG",title=_title)
 
 
+def network_experiment():
+    fmt = fmt_nt
+    nnodes = [1]
+    cnodes = [1]
+    ntest = ["true"]
+    exp = [nnodes,cnodes,ntest]
+    exp = [[n,c,t] for n,c,t in itertools.product(nnodes,cnodes,ntest)]
+    return fmt[0],exp
+
+def network_experiment_plot(all_exps,all_nodes,timestamps):
+    from plot_helper import lat_node_tbls,lat_tbl
+    fmt = fmt_nt
+    nnodes = [1]
+    cnodes = [1]
+    ntest = ["true"]
+    rexp = [nnodes,cnodes,ntest]
+    rexp = [[n,c,t] for n,c,t in itertools.product(nnodes,cnodes,ntest)]
+    for i,exp in enumerate(all_exps):
+        lat_node_tbls(exp[:-1],all_nodes[i],exp[0].keys(),timestamps[i])
+        lat_tbl(exp[-1],exp[-1].keys(),timestamps[i])
+
 
 experiment_map = {
     'test': test,
@@ -235,9 +241,10 @@ experiment_map = {
     'experiment_2': experiment_2,
     'experiment_3': experiment_3,
     'experiment_4': experiment_4,
+    'network_experiment' : network_experiment,
     'experiment_1_plot': experiment_1_plot,
     'experiment_4_plot': experiment_4_plot,
-	'network_experiment' : network_experiment,
+    'network_experiment_plot' : network_experiment_plot,
 }
 
 
@@ -248,8 +255,8 @@ configs = {
     "CLIENT_THREAD_CNT" : 2,
     "CLIENT_REM_THREAD_CNT" : 1,
     "MAX_TXN_PER_PART" : 100,
-    "WORKLOAD" : "TPCC",
-    "CC_ALG" : "HSTORE",
+    "WORKLOAD" : "YCSB",
+    "CC_ALG" : "NO_WAIT",
     "MPR" : 0.0,
     "TPORT_TYPE":"\"ipc\"",
     "TPORT_TYPE_IPC":"true",
@@ -260,6 +267,7 @@ configs = {
     "NUM_WH": 2,
     "MAX_TXN_IN_FLIGHT": 1,
     "NETWORK_DELAY": '0UL',
+    "NETWORK_TEST" : "false",
 #YCSB
     "READ_PERC":0.5,
     "WRITE_PERC":0.5,
