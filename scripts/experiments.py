@@ -13,7 +13,7 @@ fmt_nt = [["NODE_CNT","CLIENT_NODE_CNT","NETWORK_TEST"]]
 def test():
     fmt = fmt_ycsb
     exp = [
-    [1,2,50000,'YCSB','WAIT_DIE',50,1,1,10,0.6,0.5,0.5],
+    [1,2,50000,'YCSB','WAIT_DIE',50,1,1,10,0.6,0.5,0.5,2],
     ]
     return fmt[0],exp
 
@@ -247,7 +247,7 @@ configs = {
     "NUM_WH": 2,
     "MAX_TXN_IN_FLIGHT": 1,
     "NETWORK_DELAY": '0UL',
-    "DONE_TIMER": "5 * 60 * BILLION // 5 minutes",
+    "DONE_TIMER": "3 * 60 * BILLION // 3 minutes",
     "NETWORK_TEST" : "false",
 #YCSB
     "READ_PERC":0.5,
@@ -256,3 +256,4 @@ configs = {
     "PART_PER_TXN": 2,
 }
 
+config_names = fmt_ycsb[0]
