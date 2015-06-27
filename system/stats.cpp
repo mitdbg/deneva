@@ -64,8 +64,11 @@ void Stats_thd::init(uint64_t thd_id) {
 	clear();
 //	all_lat = new uint64_t [MAX_TXN_PER_PART]; 
 #if PRT_LAT_DISTR
+	all_lat.init(MAX_TXN_PER_PART,ArrIncr);
+  /*
 	all_lat = (uint64_t *)
 		mem_allocator.alloc(sizeof(uint64_t) * MAX_TXN_PER_PART, thd_id);
+    */
 #endif
 
   all_abort.init(STAT_ARR_SIZE,ArrInsert);
@@ -206,6 +209,7 @@ void Stats::clear(uint64_t tid) {
 	}
 }
 
+/*
 void Stats::add_lat(uint64_t thd_id, uint64_t latency) {
 #if PRT_LAT_DISTR
 	if (g_prt_lat_distr && warmup_finish) {
@@ -214,6 +218,7 @@ void Stats::add_lat(uint64_t thd_id, uint64_t latency) {
 	}
 #endif
 }
+*/
 
 void Stats::commit(uint64_t thd_id) {
 	if (STATS_ENABLE) {
@@ -427,6 +432,9 @@ void Stats::print_client(bool prog) {
             );
       }
       printf("\n");
+    } else {
+
+	    print_lat_distr();
     }
 
 	if (output_file != NULL) 
@@ -780,8 +788,8 @@ void Stats::print(bool prog) {
 		fclose(outf);
 
   print_cnts();
-	if (g_prt_lat_distr)
-		print_lat_distr();
+  if(!prog)
+	  print_lat_distr();
 }
 
 void Stats::print_cnts() {
@@ -869,6 +877,17 @@ void Stats::print_cnts() {
 
 void Stats::print_lat_distr() {
 #if PRT_LAT_DISTR
+  printf("\n[all_lat] ");
+  uint64_t limit = 0;
+  if(g_node_id < g_node_cnt)
+    limit = g_thread_cnt;
+  else
+    limit = g_client_thread_cnt;
+	for (UInt32 tid = 0; tid < limit; tid ++) 
+    _stats[tid]->all_lat.print(stdout);
+#endif
+  /*
+#if PRT_LAT_DISTR
 	FILE * outf;
 	if (output_file != NULL) {
 		outf = fopen(output_file, "a");
@@ -887,5 +906,6 @@ void Stats::print_lat_distr() {
 		printf("\n");
 	}
 #endif
+*/
 }
 

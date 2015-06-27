@@ -103,9 +103,10 @@ public:
   StatsArr c_abrt;
   StatsArr ol_abrt;
   StatsArr s_abrt;
+  StatsArr all_lat;
 
 	uint64_t latency;
-	uint64_t * all_lat;
+	//uint64_t * all_lat;
 
 	char _pad[CL_SIZE];
 };
@@ -139,7 +140,7 @@ public:
 	void init();
 	void init(uint64_t thread_id);
 	void clear(uint64_t tid);
-	void add_lat(uint64_t thd_id, uint64_t latency);
+	//void add_lat(uint64_t thd_id, uint64_t latency);
 	void commit(uint64_t thd_id);
 	void abort(uint64_t thd_id);
 	void print_client(bool prog); 
