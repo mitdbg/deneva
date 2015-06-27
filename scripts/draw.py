@@ -415,9 +415,7 @@ def draw_lat_matrix(fname,data,title="",lat_type=None,lat_types=None,columns=[],
     assert nrows==len(rows)
     assert ncols==len(columns)
     width, height = 1.0 / ncols * 2, 1.0 / nrows * 2 
-    print data.shape
     for (i,j),val in np.ndenumerate(data):
-        print i,j
         idx = [j % 2, (j + 1) % 2][i % 2]
         color = bkg_colors[idx]
         if val:
