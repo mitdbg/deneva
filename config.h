@@ -4,14 +4,14 @@
 /***********************************************/
 // Simulation + Hardware
 /***********************************************/
-#define NODE_CNT 2
+#define NODE_CNT 1
 #define THREAD_CNT 2
 // REM_THREAD_CNT should be at least NODE_CNT*THREAD_CNT to avoid deadlock
 #define REM_THREAD_CNT 1
 // PART_CNT should be at least NODE_CNT
-#define PART_CNT 2
+#define PART_CNT 1
 #define CLIENT_NODE_CNT 1
-#define CLIENT_THREAD_CNT 1
+#define CLIENT_THREAD_CNT 2
 #define CLIENT_REM_THREAD_CNT 1
 #define CLIENT_RUNTIME false
 
@@ -28,11 +28,11 @@
 // YCSB or TPCC
 #define WORKLOAD YCSB
 // print the transaction latency distribution
-#define PRT_LAT_DISTR       false
+#define PRT_LAT_DISTR       true
 #define STATS_ENABLE        true
 #define TIME_ENABLE         true //STATS_ENABLE
 
-#define MAX_TXN_IN_FLIGHT 10
+#define MAX_TXN_IN_FLIGHT 10 
 
 /***********************************************/
 // Memory System
@@ -136,13 +136,13 @@
 #define MAX_PART_PER_TXN      16 
 #define MAX_ROW_PER_TXN       64
 #define QUERY_INTVL         1UL
-#define MAX_TXN_PER_PART 100000
+#define MAX_TXN_PER_PART 5000000
 #define FIRST_PART_LOCAL      true
 #define MAX_TUPLE_SIZE        1024 // in bytes
 // ==== [YCSB] ====
 #define INIT_PARALLELISM      16 
 #define SYNTH_TABLE_SIZE      (NODE_CNT*1024)
-#define ZIPF_THETA 0.6
+#define ZIPF_THETA 0.0
 #define READ_PERC 0.5
 #define WRITE_PERC 0.5
 #define SCAN_PERC           0
@@ -164,9 +164,9 @@
 // are not modeled.
 #define TPCC_ACCESS_ALL       false 
 #define WH_UPDATE         true
-#define NUM_WH 4
+#define NUM_WH 1
 // % of transactions that access multiple partitions
-#define MPR 10 
+#define MPR 0
 #define MPR_NEWORDER      20 // In %
 // Smaller item selection to model contention
 #define CONTENTION false
@@ -225,7 +225,7 @@ extern TestCases          g_test_case;
 #define DEBUG_TIMESTAMP				false
 #define DEBUG_SYNTH					false
 #define DEBUG_ASSERT				false
-#define DEBUG_DISTR					true 
+#define DEBUG_DISTR					false 
 #define DEBUG_TIMELINE				false
 
 #define QRY_ONLY false
@@ -259,9 +259,10 @@ extern TestCases          g_test_case;
 #define TS_CLOCK          4
 
 // Stats and timeout
-#define BILLION 1000000000UL
+#define BILLION 1000000000UL // in ns => 1 second
 #define STAT_ARR_SIZE 1024
-#define PROG_TIMER 10000000000UL // in ns
+#define PROG_TIMER 10 * BILLION // in s
+#define DONE_TIMER 1 * 60 * BILLION // 5 minutes
 
 #define SEED 0 
 
