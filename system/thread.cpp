@@ -82,12 +82,12 @@ RC thread_t::run_remote() {
 		}
 
 		ts_t tend = get_sys_clock();
-		if (warmup_finish && ((get_sys_clock() - run_starttime >= DONE_TIMER) || (_wl->sim_done && (  ((tend - rq_time) > MSG_TIMEOUT))))) {
+		if (warmup_finish && ((tend - run_starttime >= DONE_TIMER) || (_wl->sim_done && (  ((tend - rq_time) > MSG_TIMEOUT))))) {
 			if( !ATOM_CAS(_wl->sim_timeout, false, true) )
 				assert( _wl->sim_timeout);
 		}
 
-		if (_wl->sim_done || _wl->sim_timeout) {
+		if ((_wl->sim_done && _wl->sim_timeout) || (tend - run_starttime >= DONE_TIMER)) {
 #if !NOGRAPHITE
 			CarbonDisableModelsBarrier(&enable_barrier);
 #endif
@@ -186,7 +186,7 @@ RC thread_t::run() {
 		//while(!work_queue.poll_next_query() && !(_wl->sim_done && _wl->sim_timeout)) { }
 
 		// End conditions
-		if (_wl->sim_done || _wl->sim_timeout) {
+		if ((_wl->sim_done && _wl->sim_timeout) || (get_sys_clock() - run_starttime >= DONE_TIMER)) {
 #if !NOGRAPHITE
 			CarbonDisableModelsBarrier(&enable_barrier);
 #endif

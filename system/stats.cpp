@@ -63,13 +63,11 @@ void StatsArr::print(FILE * f) {
 void Stats_thd::init(uint64_t thd_id) {
 	clear();
 //	all_lat = new uint64_t [MAX_TXN_PER_PART]; 
-#if PRT_LAT_DISTR
 	all_lat.init(MAX_TXN_PER_PART,ArrIncr);
   /*
 	all_lat = (uint64_t *)
 		mem_allocator.alloc(sizeof(uint64_t) * MAX_TXN_PER_PART, thd_id);
     */
-#endif
 
   all_abort.init(STAT_ARR_SIZE,ArrInsert);
   w_cflt.init(WH_TAB_SIZE,ArrInsert);

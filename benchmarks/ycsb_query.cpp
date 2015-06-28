@@ -95,7 +95,7 @@ base_query * ycsb_query::merge(base_query * query) {
       break;
     case RQRY:
       assert(m_query->pid == this->pid);
-      assert(m_query->ts == this->ts);
+      //assert(m_query->ts == this->ts);
 #if CC_ALG == MVCC 
       this->thd_id = m_query->thd_id;
 #endif

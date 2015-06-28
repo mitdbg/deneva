@@ -204,6 +204,7 @@ void * Transport::recv_msg() {
 		bytes = s[i].sock.recv(&buf, NN_MSG, NN_DONTWAIT);
 
 		if(bytes <= 0 && errno != 11) {
+		  printf("Recv Error %d %s\n",errno,strerror(errno));
 			nn::freemsg(buf);	
 		}
 
