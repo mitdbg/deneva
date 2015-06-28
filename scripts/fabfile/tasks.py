@@ -190,7 +190,7 @@ def get_results(output_basename):
     return succeeded
 
 @task
-#@runs_once
+@hosts('localhost')
 def write_config(cfgs):
     dbx_cfg = os.path.join(env.local_path,"config.h")
     f = open(dbx_cfg,'r');
@@ -245,12 +245,7 @@ def run_exp(expss,network_test=False):
             cfgs = get_cfgs(fmt,e)
             if env.remote:
                 cfgs["TPORT_TYPE"],cfgs["TPORT_TYPE_IPC"],cfgs["TPORT_PORT"]="\"tcp\"","false",7000
-            #if network_test:
-                #cfgs["NETWORK_TEST"]="true"
             output_f = get_outfile_name(cfgs,env.hosts) 
-            #else:
-                #cfgs["NETWORK_TEST"]="false"
-            #output_f = get_outfile_name(cfgs)
 
             # Check whether experiment has been already been run in this batch
             if skip:
@@ -365,9 +360,4 @@ def ping():
 
     assert res != None
     return res.return_code
-
-@task
-@parallel
-def run_network_test():
-    pass
 
