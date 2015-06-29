@@ -436,10 +436,11 @@ void Stats::print_client(bool prog) {
 	    print_lat_distr();
     }
 
-	if (output_file != NULL) 
+	if (output_file != NULL) {
+    fflush(outf);
 		fclose(outf);
-  else
-    fflush(stdout);
+  }
+  fflush(stdout);
 }
  
 void Stats::print_prog(uint64_t tid) {
@@ -789,13 +790,17 @@ void Stats::print(bool prog) {
 			total_time_rqry / BILLION,
 			total_tport_lat / BILLION / total_msg_rcv_cnt
 		);
-	if (output_file != NULL) 
-		fclose(outf);
 
   if(!prog) {
     print_cnts();
 	  print_lat_distr();
   }
+	if (output_file != NULL) {
+    fflush(outf);
+		fclose(outf);
+  }
+  fflush(stdout);
+
 }
 
 void Stats::print_cnts() {

@@ -65,6 +65,7 @@ int main(int argc, char* argv[])
 	if (g_cc_alg == DL_DETECT) 
 		dl_detector.init();
 	printf("mem_allocator initialized!\n");
+  fflush(stdout);
 	workload * m_wl;
 	switch (WORKLOAD) {
 		case YCSB :
@@ -80,6 +81,7 @@ int main(int argc, char* argv[])
 	}
 	m_wl->init();
 	printf("workload initialized!\n");
+  fflush(stdout);
 
 	rem_qry_man.init(g_node_id,m_wl);
 	tport_man.init(g_node_id);
@@ -108,6 +110,7 @@ int main(int argc, char* argv[])
 	//}
 	pthread_barrier_init( &warmup_bar, NULL, g_thread_cnt );
 	printf("query_queue initialized!\n");
+  fflush(stdout);
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
 	part_lock_man.init(g_node_id);
 #elif CC_ALG == OCC

@@ -66,12 +66,13 @@ int main(int argc, char* argv[])
 		default:
 			assert(false);
 	}
-	m_wl->init();
-	printf("workload initialized!\n");
+	//m_wl->init();
+	//printf("workload initialized!\n");
 
 	rem_qry_man.init(g_node_id,m_wl);
 	tport_man.init(g_node_id);
     client_man.init();
+   fflush(stdout);
 
 	// 2. spawn multiple threads
 	uint64_t thd_cnt = g_client_thread_cnt;
@@ -93,6 +94,7 @@ int main(int argc, char* argv[])
 		m_thds[i].init(i, g_node_id, m_wl);
   endtime = get_server_clock();
   printf("Initialization Time = %ld\n", endtime - starttime);
+  fflush(stdout);
 	warmup_finish = true;
 	pthread_barrier_init( &warmup_bar, NULL, thd_cnt + rthd_cnt);
 #ifndef NOGRAPHITE
