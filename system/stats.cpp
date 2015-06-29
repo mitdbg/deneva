@@ -135,6 +135,7 @@ void Stats_thd::clear() {
 	time_unpack = 0;
 	lock_diff = 0;
   qq_full = 0;
+  aq_full = 0;
 
   time_getqry = 0;
   client_latency = 0;
@@ -456,6 +457,7 @@ void Stats::print_prog(uint64_t tid) {
       ",rbk_abort_cnt=%ld"
       ",latency=%f"
       ",run_time=%f"
+      ",aq_full=%f"
 			",cc_wait_cnt=%ld"
 			",cc_wait_time=%f"
       ",cflt_cnt=%ld"
@@ -502,6 +504,7 @@ void Stats::print_prog(uint64_t tid) {
 			_stats[tid]->rbk_abort_cnt,
 			((float)_stats[tid]->latency) / BILLION / _stats[tid]->txn_cnt,
 			_stats[tid]->run_time / BILLION,
+			_stats[tid]->aq_full / BILLION,
 			_stats[tid]->cc_wait_cnt, 
 			_stats[tid]->cc_wait_time / BILLION, 
 			_stats[tid]->cflt_cnt, 
@@ -569,6 +572,7 @@ void Stats::print(bool prog) {
 	double total_debug4 = 0;
 	double total_debug5 = 0;
 	double total_qq_full = 0;
+	double total_aq_full = 0;
 	double total_time_index = 0;
 	double total_rtime_index = 0;
 	double total_time_abort = 0;
@@ -632,6 +636,7 @@ void Stats::print(bool prog) {
 		total_debug4 += _stats[tid]->debug4;
 		total_debug5 += _stats[tid]->debug5;
 		total_qq_full += _stats[tid]->qq_full;
+		total_aq_full += _stats[tid]->aq_full;
 		total_rtxn += _stats[tid]->rtxn;
 		total_rqry_rsp += _stats[tid]->rqry_rsp;
 		total_rack += _stats[tid]->rack;
@@ -699,6 +704,7 @@ void Stats::print(bool prog) {
       ",rbk_abort_cnt=%ld"
       ",latency=%f"
       ",run_time=%f"
+      ",aq_full=%f"
 			",cc_wait_cnt=%ld"
 			",cc_wait_time=%f"
       ",cflt_cnt=%ld"
@@ -744,6 +750,7 @@ void Stats::print(bool prog) {
 			total_rbk_abort_cnt,
 			total_latency / BILLION / total_txn_cnt,
 			total_run_time / BILLION,
+			total_aq_full / BILLION,
       total_cc_wait_cnt,
       total_cc_wait_time / BILLION,
       total_cflt_cnt,
@@ -785,9 +792,10 @@ void Stats::print(bool prog) {
 	if (output_file != NULL) 
 		fclose(outf);
 
-  print_cnts();
-  if(!prog)
+  if(!prog) {
+    print_cnts();
 	  print_lat_distr();
+  }
 }
 
 void Stats::print_cnts() {

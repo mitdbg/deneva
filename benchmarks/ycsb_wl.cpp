@@ -57,6 +57,11 @@ RC ycsb_wl::init_table() {
     	for (UInt32 part_id = 0; part_id < g_part_cnt; part_id ++) {
             if (total_row > g_synth_table_size)
                 goto ins_done;
+            // FIXME: assumes striping of partitions to nodes
+            if(g_part_cnt % g_node_cnt != g_node_id) {
+              total_row++;
+              continue;
+            }
             row_t * new_row = NULL;
 			uint64_t row_id;
             rc = the_table->get_new_row(new_row, part_id, row_id); 

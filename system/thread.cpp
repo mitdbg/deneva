@@ -150,7 +150,7 @@ RC thread_t::run() {
 	uint64_t txn_st_cnt = 0;
 	uint64_t thd_txn_id = 0;
 	uint64_t starttime;
-	uint64_t stoptime;
+	uint64_t stoptime = 0;
 	uint64_t timespan;
 	uint64_t ttime;
 	uint64_t last_waittime = 0;
@@ -182,7 +182,7 @@ RC thread_t::run() {
 
 			stats.print(true);
 		}
-		while(!work_queue.poll_next_query() && !_wl->sim_done && !_wl->sim_timeout) { }
+		while(!work_queue.poll_next_query() && !abort_queue.poll_abort() && !_wl->sim_done && !_wl->sim_timeout) { }
 		//while(!work_queue.poll_next_query() && !(_wl->sim_done && _wl->sim_timeout)) { }
 
 		// End conditions
@@ -191,14 +191,23 @@ RC thread_t::run() {
 			CarbonDisableModelsBarrier(&enable_barrier);
 #endif
 			uint64_t currtime = get_sys_clock();
+      if(stoptime == 0)
+        stoptime = currtime;
 			if(currtime - stoptime > MSG_TIMEOUT) {
 				SET_STATS(get_thd_id(), tot_run_time, currtime - run_starttime - MSG_TIMEOUT); 
 			}
 			else {
 				SET_STATS(get_thd_id(), tot_run_time, stoptime - run_starttime); 
 			}
+      if(get_thd_id() == 0) {
+        work_queue.finish(currtime);
+        abort_queue.abort_finish(currtime);
+      }
 			return FINISH;
 		}
+
+		if((m_query = abort_queue.get_next_abort_query()) != NULL)
+      work_queue.add_query(m_query);
 
 		if((m_query = work_queue.get_next_query()) == NULL)
 			continue;
@@ -746,7 +755,7 @@ RC thread_t::run() {
 #endif
 					// Send "result" back to client
           assert(m_query->part_num == 1 || debug1 == 2);
-          assert((m_query->part_num == 1 && m_query->rtype == RTXN) || (m_query->part_num > 1 && m_query->rtype == RACK));
+          assert((m_query->part_num == 1 && (m_query->rtype == RTXN || m_query->rtype == RPASS)) || (m_query->part_num > 1 && m_query->rtype == RACK));
 					rem_qry_man.send_client_rsp(m_query);
 					txn_pool.delete_txn(g_node_id,m_query->txn_id);
 					txn_cnt++;
@@ -805,8 +814,10 @@ RC thread_t::run() {
 					//printf("ABORT %ld %ld\n",m_txn->get_txn_id(),get_sys_clock() - run_starttime);
 #endif
 					m_txn->penalty_start = get_sys_clock();
+					m_query->penalty_start = m_txn->penalty_start;
 
-					work_queue.add_query(m_query);
+          abort_queue.add_query(m_query);
+					//work_queue.add_query(m_query);
           /*
 #if CC_ALG == VLL
           vll_man.restartQFront();

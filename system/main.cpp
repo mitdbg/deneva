@@ -84,6 +84,7 @@ int main(int argc, char* argv[])
 	rem_qry_man.init(g_node_id,m_wl);
 	tport_man.init(g_node_id);
   work_queue.init();
+  abort_queue.init();
   txn_pool.init();
 
 	// 2. spawn multiple threads

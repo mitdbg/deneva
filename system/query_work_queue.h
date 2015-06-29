@@ -26,12 +26,17 @@ class QWorkQueue {
 public:
   void init();
   bool poll_next_query();
+  void finish(uint64_t time); 
+  void abort_finish(uint64_t time); 
   void add_query(base_query * qry);
   base_query * get_next_query();
   bool in_hash(uint64_t id);
   void add_hash(uint64_t id);
   void update_hash(uint64_t id);
   void done(uint64_t id);
+  bool poll_abort(); 
+  base_query * get_next_abort_query();
+
 
 private:
   pthread_mutex_t mtx;

@@ -54,6 +54,7 @@ public:
 	double tport_lat;
 	double lock_diff;
   double qq_full;
+  double aq_full;
 
   // calvin
   uint32_t batch_cnt;

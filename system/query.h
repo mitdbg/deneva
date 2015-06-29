@@ -47,6 +47,9 @@ public:
 	uint64_t part_cnt;
 	uint64_t * parts;
 
+  // For aborts
+  uint64_t penalty_start;
+
   // FIXME: for debugging;
   uint64_t debug1;
   // CALVIN

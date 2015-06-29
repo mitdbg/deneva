@@ -21,6 +21,16 @@ bool QWorkQueue::poll_next_query() {
   return cnt > 0;
 }
 
+void QWorkQueue::finish(uint64_t time) {
+  if(last_add_time != 0)
+    INC_STATS(0,qq_full,time - last_add_time);
+}
+
+void QWorkQueue::abort_finish(uint64_t time) {
+  if(last_add_time != 0)
+    INC_STATS(0,aq_full,time - last_add_time);
+}
+
 void QWorkQueue::add_query(base_query * qry) {
 
   wq_entry_t entry = (wq_entry_t) mem_allocator.alloc(sizeof(struct wq_entry), 0);
@@ -149,4 +159,40 @@ void QWorkQueue::done(uint64_t id) {
     prev->next = bin->next;
 
   pthread_mutex_unlock(&mtx);
+}
+
+bool QWorkQueue::poll_abort() {
+  wq_entry_t elem = head;
+  if(elem)
+    return (get_sys_clock() - elem->qry->penalty_start) >= g_abort_penalty;
+  return false;
+}
+
+base_query * QWorkQueue::get_next_abort_query() {
+  base_query * next_qry = NULL;
+
+  pthread_mutex_lock(&mtx);
+
+  if(cnt > 0) {
+    wq_entry_t elem = head;
+    assert(elem);
+    if((get_sys_clock() - elem->qry->penalty_start) >= g_abort_penalty) {
+      next_qry = elem->qry;
+      head = head->next;
+      cnt--;
+    }
+
+    if(cnt == 0) {
+      tail = NULL;
+      assert(head == NULL);
+    }
+  }
+
+  if(cnt == 0 && last_add_time != 0) {
+    INC_STATS(0,aq_full,get_sys_clock() - last_add_time);
+    last_add_time = 0;
+  }
+
+  pthread_mutex_unlock(&mtx);
+  return next_qry;
 }

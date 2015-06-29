@@ -32,6 +32,7 @@ Transport tport_man;
 Remote_query rem_qry_man;
 TxnPool txn_pool;
 QWorkQueue work_queue;
+QWorkQueue abort_queue;
 Client_txn client_man;
 Sequencer seq_man;
 

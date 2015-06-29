@@ -79,6 +79,7 @@ extern Transport tport_man;
 extern Remote_query rem_qry_man;
 extern TxnPool txn_pool;
 extern QWorkQueue work_queue;
+extern QWorkQueue abort_queue;
 extern Client_txn client_man;
 extern Sequencer seq_man;
 

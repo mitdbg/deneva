@@ -79,6 +79,9 @@ RC Client_thread_t::run_remote() {
 	uint64_t run_starttime = get_sys_clock();
 
 	while (true) {
+		  if(get_sys_clock() - run_starttime >= DONE_TIMER) {
+			  return FINISH;
+      }
 		m_query = (base_query *) tport_man.recv_msg();
 		if( m_query != NULL ) { 
 			rq_time = get_sys_clock();
@@ -128,9 +131,6 @@ RC Client_thread_t::run_remote() {
 				}
 			}
 
-		  if(get_sys_clock() - run_starttime >= DONE_TIMER) {
-			  return FINISH;
-      }
 
 			if (!done)
 				continue;
