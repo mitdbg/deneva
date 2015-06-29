@@ -106,7 +106,7 @@ Client_query_thd::init(workload * h_wl, int thread_id) {
 
 	for (uint32_t i = 0; i < g_init_parallelism - 1; i++) {
 		int rc = pthread_join(p_thds[i], NULL);
-		printf("thread %d complete\n", i);
+		//printf("thread %d complete\n", i);
 		if (rc) {
 			printf("ERROR; return code from pthread_join() is %d\n", rc);
 			exit(-1);

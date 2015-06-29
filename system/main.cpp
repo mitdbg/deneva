@@ -59,13 +59,20 @@ int main(int argc, char* argv[])
 	int64_t endtime;
   starttime = get_server_clock();
 	// per-partition malloc
+  printf("Initializing memory allocator... ");
+  fflush(stdout);
 	mem_allocator.init(g_part_cnt, MEM_SIZE / g_part_cnt); 
+  printf("Done\n");
+  printf("Initializing stats... ");
+  fflush(stdout);
 	stats.init();
+  printf("Done\n");
+  printf("Initializing global manager... ");
+  fflush(stdout);
 	glob_manager.init();
+  printf("Done\n");
 	if (g_cc_alg == DL_DETECT) 
 		dl_detector.init();
-	printf("mem_allocator initialized!\n");
-  fflush(stdout);
 	workload * m_wl;
 	switch (WORKLOAD) {
 		case YCSB :
@@ -80,14 +87,26 @@ int main(int argc, char* argv[])
 			assert(false);
 	}
 	m_wl->init();
-	printf("workload initialized!\n");
+	printf("Workload initialized!\n");
   fflush(stdout);
 
+  printf("Initializing remote query manager... ");
+  fflush(stdout);
 	rem_qry_man.init(g_node_id,m_wl);
+  printf("Done\n");
+  printf("Initializing transport manager... ");
+  fflush(stdout);
 	tport_man.init(g_node_id);
+  printf("Done\n");
+  printf("Initializing work queue... ");
   work_queue.init();
+  printf("Done\n");
+  printf("Initializing abort queue... ");
   abort_queue.init();
+  printf("Done\n");
+  printf("Initializing transaction pool... ");
   txn_pool.init();
+  printf("Done\n");
 
 	// 2. spawn multiple threads
 	uint64_t thd_cnt = g_thread_cnt;
@@ -109,18 +128,25 @@ int main(int argc, char* argv[])
 	//	query_queue.init(m_wl);
 	//}
 	pthread_barrier_init( &warmup_bar, NULL, g_thread_cnt );
-	printf("query_queue initialized!\n");
-  fflush(stdout);
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
+  printf("Initializing partition lock manager... ");
 	part_lock_man.init(g_node_id);
+  printf("Done\n");
 #elif CC_ALG == OCC
+  printf("Initializing occ lock manager... ");
 	occ_man.init();
+  printf("Done\n");
 #elif CC_ALG == VLL
+  printf("Initializing vll lock manager... ");
 	vll_man.init();
+  printf("Done\n");
 #endif
 
+  printf("Initializing threads... ");
+  fflush(stdout);
 	for (uint32_t i = 0; i < thd_cnt + rthd_cnt; i++) 
 		m_thds[i].init(i, g_node_id, m_wl);
+  printf("Done\n");
 
   endtime = get_server_clock();
   printf("Initialization Time = %ld\n", endtime - starttime);

@@ -29,9 +29,15 @@ RC ycsb_wl::init() {
 		path += "YCSB_schema.txt";
 		//path += "/tests/apps/dbms/YCSB_schema.txt";
 	}
+  printf("Initializing schema... ");
+  fflush(stdout);
 	init_schema( path.c_str() );
+  printf("Done\n");
 	
+  printf("Initializing table... ");
+  fflush(stdout);
 	init_table_parallel();
+  printf("Done\n");
 //	init_table();
 	return RCOK;
 }
@@ -109,7 +115,7 @@ void ycsb_wl::init_table_parallel() {
 
 	for (uint32_t i = 0; i < g_init_parallelism - 1; i++) {
 		int rc = pthread_join(p_thds[i], NULL);
-		printf("thread %d complete\n", i);
+		//printf("thread %d complete\n", i);
 		if (rc) {
 			printf("ERROR; return code from pthread_join() is %d\n", rc);
 			exit(-1);

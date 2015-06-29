@@ -50,9 +50,14 @@ int main(int argc, char* argv[])
 	int64_t endtime;
     starttime = get_server_clock();
 	// per-partition malloc
+  printf("Initializing memory allocator... ");
+  fflush(stdout);
 	mem_allocator.init(g_part_cnt, MEM_SIZE / g_part_cnt); 
+  printf("Done\n");
+  printf("Initializing stats... ");
+  fflush(stdout);
 	stats.init();
-	printf("mem_allocator initialized!\n");
+  printf("Done\n");
 	workload * m_wl;
 	switch (WORKLOAD) {
 		case YCSB :
@@ -69,10 +74,18 @@ int main(int argc, char* argv[])
 	//m_wl->init();
 	//printf("workload initialized!\n");
 
+  printf("Initializing remote query manager... ");
+  fflush(stdout);
 	rem_qry_man.init(g_node_id,m_wl);
+  printf("Done\n");
+  printf("Initializing transport manager... ");
+  fflush(stdout);
 	tport_man.init(g_node_id);
-    client_man.init();
-   fflush(stdout);
+  printf("Done\n");
+  printf("Initializing client manager... ");
+  client_man.init();
+  printf("Done\n");
+  fflush(stdout);
 
 	// 2. spawn multiple threads
 	uint64_t thd_cnt = g_client_thread_cnt;
@@ -86,12 +99,19 @@ int main(int argc, char* argv[])
 	m_thds = new Client_thread_t[thd_cnt + rthd_cnt];
 	//// query_queue should be the last one to be initialized!!!
 	// because it collects txn latency
+  printf("Initializing client query queue... ");
+  fflush(stdout);
 	if (WORKLOAD != TEST) {
 		client_query_queue.init(m_wl);
 	}
+  printf("Done\n");
 	pthread_barrier_init( &warmup_bar, NULL, thd_cnt );
+  printf("Initializing threads... ");
+  fflush(stdout);
 	for (uint32_t i = 0; i < thd_cnt + rthd_cnt; i++) 
 		m_thds[i].init(i, g_node_id, m_wl);
+  printf("Done\n");
+
   endtime = get_server_clock();
   printf("Initialization Time = %ld\n", endtime - starttime);
   fflush(stdout);
