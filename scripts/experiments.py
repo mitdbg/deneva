@@ -21,18 +21,19 @@ def test():
 # Vary: Node count, % writes
 def experiment_1():
     fmt = fmt_ycsb
-    nnodes = [1,2,4,8]
-    nmpr=[0,0.01,0.1,1]
+    nnodes = [2]
+    nmpr=[1]
     nalgos=['WAIT_DIE']
     #nalgos=['WAIT_DIE','HSTORE','HSTORE_SPEC']
     #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
-    nthreads=[3,1]
+    nthreads=[1]
     ncthreads=[4]
     ntifs=[1000]
-    nzipf=[0.6]
-    nwr_perc=[0.5,0.0]
+    nzipf=[0.2]
+    nwr_perc=[0.5]
     ntxn=2000000
-    exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t,tif,z,1.0-wp,wp] for ct,t,tif,z,wp,m,cc,n in itertools.product(ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nnodes)]
+    nparts=[2]
+    exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t,tif,z,1.0-wp,wp,p] for ct,t,tif,z,wp,m,cc,n,p in itertools.product(ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nnodes,nparts)]
     return fmt[0],exp
 
 def experiment_1_plot(summary,summary_client):
@@ -49,6 +50,7 @@ def experiment_1_plot(summary,summary_client):
     nzipf=[0.6]
     nwr_perc=[0.0,0.5]
     ntxn=2000000
+    nparts=[2]
     for wr,tif,cc,t in itertools.product(nwr_perc,ntifs,nalgos,nthreads):
         _cfg_fmt = ["CC_ALG","MAX_TXN_PER_PART","WORKLOAD","THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC"]
         _cfg=[cc,ntxn,'YCSB',t,tif,nzipf[0],1.0-wr,wr]
@@ -254,6 +256,7 @@ configs = {
     "WRITE_PERC":0.5,
     "ZIPF_THETA":0.6,
     "PART_PER_TXN": 2,
+    "SYNTH_TABLE_SIZE":"2097152"
 }
 
 config_names = fmt_ycsb[0]
