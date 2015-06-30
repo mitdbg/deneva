@@ -12,6 +12,7 @@ def set_env():
     env.skip_bad_hosts = False
     env.colorize_errors = True
     env.kill = False
+    env.batch_mode = True 
     env.local_path = os.getcwd()
     env.result_dir = os.path.join(env.local_path,"results/")
 

@@ -34,7 +34,7 @@ def experiment_1():
     nwr_perc=[0.5]
     ntxn=2000000
     nparts=[1]
-    exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t,tif,z,1.0-wp,wp,p if p <= n else 1] for ct,t,tif,z,wp,m,cc,n,p in itertools.product(ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nnodes,nparts)]
+    exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t,tif,z,1.0-wp,wp,p if p <= n else 1] for n,ct,t,tif,z,wp,m,cc,p in itertools.product(nnodes,ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts)]
     return fmt[0],exp
 
 def experiment_1_plot(summary,summary_client):
@@ -96,7 +96,8 @@ def partition_sweep():
 
 def mpr_sweep():
     fmt = fmt_ycsb
-    nnodes = [1,2,4,8,16]
+    #nnodes = [1,2,4,8,16]
+    nnodes = [2]
     nmpr=[0,1,5,10,20,30,40,50,60,70,80,90,100]
     nalgos=['WAIT_DIE']
     #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
@@ -105,9 +106,9 @@ def mpr_sweep():
     ntifs=[1000]
     nzipf=[0.6]
     nwr_perc=[0.5]
-    ntxn=5000000
+    ntxn=2000000
     nparts = [2]
-    exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t,tif,z,1.0-wp,wp,p if p <= n else 1] for ct,t,tif,z,wp,m,cc,n,p in itertools.product(ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nnodes,nparts)]
+    exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t,tif,z,1.0-wp,wp,p if p <= n else 1] for n,ct,t,tif,z,wp,m,cc,p in itertools.product(nnodes,ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts)]
     return fmt[0],exp
 
 def tif_sweep():
@@ -123,7 +124,7 @@ def tif_sweep():
     nwr_perc=[0.5]
     ntxn=5000000
     nparts = [2]
-    exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t,tif,z,1.0-wp,wp,p if p <= n else 1] for ct,t,tif,z,wp,m,cc,n,p in itertools.product(ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nnodes,nparts)]
+    exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t,tif,z,1.0-wp,wp,p if p <= n else 1] for n,ct,t,tif,z,wp,m,cc,p in itertools.product(nnodes,ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts)]
     return fmt[0],exp
 
 def write_ratio_sweep():
@@ -139,7 +140,7 @@ def write_ratio_sweep():
     nwr_perc=[0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]
     ntxn=5000000
     nparts = [2]
-    exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t,tif,z,round(1.0-wp,1),wp,p if p <= n else 1] for ct,t,tif,z,wp,m,cc,n,p in itertools.product(ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nnodes,nparts)]
+    exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t,tif,z,round(1.0-wp,1),wp,p if p <= n else 1] for n,ct,t,tif,z,wp,m,cc,p in itertools.product(nnodes,ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts)]
     return fmt[0],exp
 
 def skew_sweep():
@@ -155,7 +156,7 @@ def skew_sweep():
     nwr_perc=[0.5]
     ntxn=5000000
     nparts = [2]
-    exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t,tif,z,1.0-wp,wp,p if p <= n else 1] for ct,t,tif,z,wp,m,cc,n,p in itertools.product(ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nnodes,nparts)]
+    exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t,tif,z,1.0-wp,wp,p if p <= n else 1] for n,ct,t,tif,z,wp,m,cc,p in itertools.product(nnodes,ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts)]
     return fmt[0],exp
 
 #Should do this one on an ISTC machine
@@ -173,7 +174,7 @@ def network_sweep():
     nparts=[2]
     network_delay = ["0UL","10000UL","100000UL","1000000UL","10000000UL","100000000UL"]
     ntxn=5000000
-    exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t,tif,z,1.0-wp,wp,p if p <= n else 1,nd] for ct,t,tif,z,wp,m,cc,n,p,nd in itertools.product(ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nnodes,nparts,network_delay)]
+    exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t,tif,z,1.0-wp,wp,p if p <= n else 1,nd] for n,ct,t,tif,z,wp,m,cc,p,nd in itertools.product(nnodes,ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts,network_delay)]
     return fmt[0],exp
 
 def tpcc_sweep():
@@ -188,7 +189,7 @@ def tpcc_sweep():
     nzipf=[0.6]
     nwr_perc=[0.5]
     ntxn=5000000
-    exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t,tif,z,1.0-wp,wp] for ct,t,tif,z,wp,m,cc,n in itertools.product(ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nnodes)]
+    exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t,tif,z,1.0-wp,wp] for n,ct,t,tif,z,wp,m,cc in itertools.product(nnodes,ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos)]
     return fmt[0],exp
 
 

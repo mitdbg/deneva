@@ -4,6 +4,8 @@ from fabric.api import task,run,local,put,get,execute,settings
 from fabric.decorators import *
 from fabric.context_managers import shell_env
 from fabric.exceptions import *
+from fabric.colors import red
+from time import sleep
 import traceback
 import os,sys,datetime,re
 import itertools
@@ -67,13 +69,15 @@ def run_exps(exps,skip_completed='False',exec_exps='True'):
 @task
 @hosts(['localhost'])
 def network_test(num_nodes=16,exps="network_experiment",skip_completed='False',exec_exps='True'):
+    env.batch_mode = False
     global skip, execute_exps, max_time_per_exp 
     skip = skip_completed == 'True'
     execute_exps = exec_exps == 'True'
     max_time_per_exp = 30
     num_nodes = int(num_nodes)
+    print num_nodes
     if num_nodes < 2 or len(env.hosts) < num_nodes:
-        raise("Not enough hosts in ifconfig!")
+        raise Exception("Not enough hosts in ifconfig!")
     exp_hosts=env.hosts[0:num_nodes]
     pairs = list(itertools.combinations(exp_hosts,2))
     for pair in pairs:
@@ -98,8 +102,10 @@ def copy_files(schema):
     try:
         for f in (files + executable_files):
             put(f,env.rem_homedir)
+            pass
         for f in executable_files:
             run("chmod +x {}/{}".format(env.rem_homedir,f))
+            pass
     except NetworkError as ne:
         print "ERROR: Host: {}".format(env.host)
         traceback.print_exc()
@@ -108,12 +114,26 @@ def copy_files(schema):
         print "ERROR: Host: {}".format(env.host)
         traceback.print_exc()
         succeeded = False
+    print "{}: copied files to remote".format(env.host)
     return succeeded
 
 @task
 @parallel
-def sync_clocks():
-    run("ntpdate -b clock-1.cs.cmu.edu")
+def sync_clocks(max_offset=0.01,max_attempts=5,delay=15):
+    offset = sys.float_info.max
+    attempts = 0
+    while attempts < max_attempts:
+        res = run("ntpdate -q clock-1.cs.cmu.edu")
+        offset = float(res.stdout.split(",")[-2].split()[-1])
+        print "Host ",env.host,": offset = ",offset
+        if abs(offset) < max_offset:
+            break
+        sleep(delay)
+        res = run("ntpdate -b clock-1.cs.cmu.edu")
+        sleep(delay)
+        attempts += 1
+    return attempts < max_attempts
+        
 
 @task
 @hosts('localhost')
@@ -139,8 +159,8 @@ def killall():
 
 @task
 @parallel
-def deploy(schema_path):
-    nid = env.hosts.index(env.host)
+def deploy(schema_path,nids):
+    nid = nids[env.host]
     succeeded = True
     with shell_env(SCHEMA_PATH=schema_path):
         with settings(command_timeout=max_time_per_exp):
@@ -157,6 +177,7 @@ def deploy(schema_path):
             print(env.host + ": " + str(nid))
             try:
                 run(cmd)
+                pass
             except CommandTimeout:
                 pass
             except NetworkError as ne:
@@ -171,11 +192,11 @@ def deploy(schema_path):
 
 @task
 @parallel
-def get_results(output_basename):
+def get_results(outfiles):
     succeeded = True
     nid = env.hosts.index(env.host)
     rem_path=os.path.join(env.rem_homedir,"results.out")
-    loc_path=os.path.join(env.result_dir,"{}_{}".format(nid,output_basename))
+    loc_path=os.path.join(env.result_dir, outfiles[env.host])
     try:
         get(remote_path=rem_path, local_path=loc_path)
         run("rm -f results.out")
@@ -208,29 +229,57 @@ def write_config(cfgs):
 
 @task
 @hosts('localhost')
-def write_ifconfig(machines):
+def write_ifconfig(machines,roles):
+    print "roles: ",roles
+    nids = {}
+    nid = 0
     with open("ifconfig.txt",'w') as f:
-        for server in env.roledefs['servers']:
+        for server in roles['servers']:
             f.write(server + "\n")
-        for client in env.roledefs['clients']:
+            nids[server] = nid
+            nid += 1
+        for client in roles['clients']:
             f.write(client + "\n")
-        if "sequencer" in env.roledefs:
+            nids[client] = nid
+            nid += 1
+        if "sequencer" in roles:
             assert cc_alg == "CALVIN"
-            f.write(env.roledefs['sequencer'][0] + "\n")
+            sequencer = roles['sequencer'][0]
+            f.write(sequencer + "\n")
+            nids[sequencer] = nid
+            nid += 1
+    return nids
             
 @task
 @hosts('localhost')
-def assign_roles(server_cnt,client_cnt):
+def assign_roles(server_cnt,client_cnt,append=False):
     assert(len(env.hosts) >= server_cnt+client_cnt)
+    new_roles = {}
     servers=env.hosts[0:server_cnt]
     clients=env.hosts[server_cnt:server_cnt+client_cnt]
-    env.roledefs={}
-    env.roledefs['clients']=clients
-    env.roledefs['servers']=servers
-
     if cc_alg == 'CALVIN':
         sequencer = env.hosts[server_cnt+client_cnt:server_cnt+client_cnt+1]
-        env.roledefs['sequencer']=sequencer
+    if env.roledefs is None or len(env.roledefs) == 0: 
+        env.roledefs={}
+        env.roledefs['clients']=[]
+        env.roledefs['servers']=[]
+        if cc_alg == 'CALVIN':
+            env.roledefs['sequencer']=[]
+    if append:
+        env.roledefs['clients'].extend(clients)
+        env.roledefs['servers'].extend(servers)
+        if cc_alg == 'CALVIN':
+            env.roledefs['sequencer'].extend(sequencer)
+    else:
+        env.roledefs['clients']=clients
+        env.roledefs['servers']=servers
+        if cc_alg == 'CALVIN':
+            env.roledefs['sequencer']=sequencer
+    new_roles['clients']=clients
+    new_roles['servers']=servers
+    if cc_alg == 'CALVIN':
+        new_roles['sequencer']=sequencer
+    return new_roles
 
 @task
 @hosts(['localhost'])
@@ -238,9 +287,12 @@ def run_exp(expss,network_test=False):
     # TODO: fix this
     exps = []
     exps.append(expss)
+    schema_path = "{}/".format(env.rem_homedir)
     for exp in exps:
         fmt,experiments = experiment_map[exp]()
-        
+        batch_size = 0 
+        nids = {} 
+        outfiles = {}
         for e in experiments:
             cfgs = get_cfgs(fmt,e)
             if env.remote:
@@ -278,7 +330,6 @@ def run_exp(expss,network_test=False):
                     while not completed and attempts < 3:
                         if not network_test:
                             set_hosts()
-                            
                             # Find and skip bad hosts
                             ping_results = execute(ping)
                             for host in ping_results:
@@ -286,11 +337,48 @@ def run_exp(expss,network_test=False):
                                     env.hosts.remove(host)
                                     print "Skipping non-responsive host {}".format(host)
 
-                        machines = env.hosts[:ntotal]
-                        execute(assign_roles,nnodes,nclnodes)
-                        set_hosts(machines)
+                        if ntotal > len(env.hosts):
+                            msg = "Not enough nodes to run experiment!\n"
+                            msg += "\tRequired nodes: {}, ".format(ntotal)
+                            msg += "Actual nodes: {}".format(len(env.hosts))
+                            print(red(msg))
+                            cmd = "rm -f config.h {}{}.cfg".format(env.result_dir,output_f)
+                            local(cmd)
+                            completed = True
+                            continue
+                            
+                        if env.batch_mode:
+                            # If full, execute all exps in batch and reset everything
+                            full = (batch_size + ntotal) > len(env.hosts)
+                            if full:
+                                print("Batch is full, deploying batch...")
+                                set_hosts(env.hosts[:batch_size])
+                                res = execute(deploy,schema_path,nids)
+                                if not succeeded(res):
+                                    attempts += 1
+                                    continue
+                                #res = execute(get_results,output_f)
+                                res = execute(get_results,outfiles)
+                                if not succeeded(res):
+                                    attempts += 1
+                                    continue
+                                env.roledefs = None
+                                batch_size = 0
+                                nids = {}
+                                outfiles = {}
+                            else:
+                                print "adding exp to batch"
+                            machines = env.hosts[batch_size : batch_size + ntotal]
+                            batch_size += ntotal
+                        else:
+                            machines = env.hosts[:ntotal]
 
-                        write_ifconfig(machines)
+                        set_hosts(machines)
+                        new_roles=execute(assign_roles,nnodes,nclnodes,append=env.batch_mode)[env.host]
+                        new_nids = execute(write_ifconfig,machines,new_roles)[env.host]
+                        nids.update(new_nids)
+                        for host,nid in new_nids.iteritems():
+                            outfiles[host] = "{}_{}.out".format(nid,output_f) 
 
                         if cfgs["WORKLOAD"] == "TPCC":
                             schema = "benchmarks/TPCC_short_schema.txt"
@@ -312,18 +400,30 @@ def run_exp(expss,network_test=False):
                             # Sync clocks before each experiment
                             print("Syncing Clocks...")
                             execute(sync_clocks)
-                        print("Deploying: {}".format(output_f))
-                        schema_path = "{}/".format(env.rem_homedir)
-                        res = execute(deploy,schema_path)
-                        if not succeeded(res):
-                            attempts += 1
-                            continue
-                        res = execute(get_results,output_f)
-                        if not succeeded(res):
-                            attempts += 1
-                            continue
-                        completed = True
+                        last_exp = experiments.index(e) == len(experiments) - 1
+                        if not env.batch_mode or last_exp:
+                            if env.batch_mode:
+                                set_hosts()
+                                set_hosts(env.hosts[:batch_size])
+                                print("Deploying last batch")
+                            else:
+                                print("Deploying: {}".format(output_f))
+                            res = execute(deploy,schema_path,nids)
+                            nids = {}
+                            if not succeeded(res):
+                                attempts += 1
+                                continue
+                            #res = execute(get_results,output_f)
+                            res = execute(get_results,outfiles)
+                            if not succeeded(res):
+                                attempts += 1
+                                continue
 
+                            batch_size = 0
+                            nids = {}
+                            outfiles = {}
+                            env.roledefs = None
+                        completed = True
                 else:
                     pids = []
                     print("Deploying: {}".format(output_f))
@@ -345,6 +445,7 @@ def run_exp(expss,network_test=False):
                         pids.insert(0,p)
                     for n in range(ntotal):
                         pids[n].wait()
+
 
 def succeeded(outcomes):
     for host,outcome in outcomes.iteritems():
