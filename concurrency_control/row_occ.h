@@ -17,6 +17,7 @@ public:
 	void 				release();
 private:
  	pthread_mutex_t * 	_latch;
+ 	sem_t 	_semaphore;
 	bool 				blatch;
 
 	row_t * 			_row;
