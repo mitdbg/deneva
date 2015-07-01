@@ -10,6 +10,7 @@ Row_occ::init(row_t * row) {
 	_latch = (pthread_mutex_t *) 
 		mem_allocator.alloc(sizeof(pthread_mutex_t), part_id);
 	pthread_mutex_init( _latch, NULL );
+  sem_init(&_semaphore, 0, 1);
 	wts = 0;
 	blatch = false;
 }
@@ -17,7 +18,8 @@ Row_occ::init(row_t * row) {
 RC
 Row_occ::access(txn_man * txn, TsType type) {
 	RC rc = RCOK;
-	pthread_mutex_lock( _latch );
+	//pthread_mutex_lock( _latch );
+  sem_wait(&_semaphore);
 	if (type == R_REQ) {
 		if (txn->start_ts < wts)
 			rc = Abort;
@@ -27,13 +29,15 @@ Row_occ::access(txn_man * txn, TsType type) {
 		}
 	} else 
 		assert(false);
-	pthread_mutex_unlock( _latch );
+	//pthread_mutex_unlock( _latch );
+  sem_post(&_semaphore);
 	return rc;
 }
 
 void
 Row_occ::latch() {
-	pthread_mutex_lock( _latch );
+	//pthread_mutex_lock( _latch );
+  sem_wait(&_semaphore);
 }
 
 bool
@@ -53,5 +57,6 @@ Row_occ::write(row_t * data, uint64_t ts) {
 
 void
 Row_occ::release() {
-	pthread_mutex_unlock( _latch );
+	//pthread_mutex_unlock( _latch );
+  sem_post(&_semaphore);
 }
