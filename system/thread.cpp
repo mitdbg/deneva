@@ -802,6 +802,7 @@ RC thread_t::run() {
         //txn_pool.add_txn(g_node_id,m_txn,m_query);
 				INC_STATS(get_thd_id(), abort_cnt, 1);
         m_txn->abort_cnt++;
+        m_query->part_touched_cnt = 0;
         m_query->rtype = RTXN;
         m_query->rc = RCOK;
         m_query->reset();
