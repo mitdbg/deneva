@@ -10,6 +10,56 @@ import latency_stats as ls
 
 PATH=os.getcwd()
 
+def tput_plotter(title,x_name,v_name,fmt,exp,summary,summary_client):
+    _cfg_fmt = list(fmt)
+    x_idx = _cfg_fmt.index(x_name)
+    _cfg_fmt.remove(x_name)
+    v_idx = _cfg_fmt.index(v_name)
+    _cfg_fmt.remove(v_name)
+    _cfg = list(exp)
+    x_vals = []
+    v_vals = []
+    print _cfg
+    for p in _cfg:
+        x_vals.append(p[x_idx])
+        del p[x_idx]
+        v_vals.append(p[v_idx])
+        del p[v_idx]
+    x_vals = sorted(list(set(x_vals)))
+    v_vals = sorted(list(set(v_vals)))
+    if x_name == "NODE_CNT" or v_name == "NODE_CNT":
+        cl_idx = _cfg_fmt.index("CLIENT_NODE_CNT")
+        _cfg_fmt.remove("CLIENT_NODE_CNT")
+        for p in _cfg:
+            del p[cl_idx]
+        
+    cfg_list = []
+    for f in _cfg_fmt:
+        f_idx = _cfg_fmt.index(f)
+        f_vals = []
+        for p in _cfg:
+            f_vals.append(p[f_idx])
+        f_vals = sorted(list(set(f_vals)))
+        if f == "PART_PER_TXN": 
+            f_vals = [2]
+        cfg_list.append(f_vals)
+
+    for c in itertools.product(*cfg_list):
+        c = list(c)
+        title2 = ""
+        cl_idx = _cfg_fmt.index("CLIENT_NODE_CNT")
+        n_idx = _cfg_fmt.index("NODE_CNT")
+        c[cl_idx] = c[n_idx] / 2 if c[n_idx] > 1 else 1
+        print c
+        for f in sorted(_cfg_fmt):
+            f_idx = _cfg_fmt.index(f)
+            title2 = title2 + "_%s-%s" %(f,c[f_idx])
+        title2 = title +title2
+            
+        tput(x_vals,v_vals,summary,cfg_fmt=_cfg_fmt,cfg=c,xname=x_name,vname=v_name,title=title2)
+
+
+
 def lat_node_tbls(exp,nodes,msg_bytes,ts,
                 title="",
                 stats=['99th','95th','90th','50th','mean']):
@@ -53,6 +103,8 @@ def tput(xval,vval,summary,
     name = 'tput_{}_{}_{}'.format(xname.lower(),vname.lower(),title.replace(" ","_").lower())
     _title = 'System Throughput {}'.format(title)
 
+    print xval
+    print vval
     for v in vval:
         if vname == "NETWORK_DELAY":
             _v = (float(v.replace("UL","")))/1000000
@@ -61,11 +113,18 @@ def tput(xval,vval,summary,
         tpt[_v] = [0] * len(xval)
 
         for x,xi in zip(xval,range(len(xval))):
+            my_cfg_fmt = cfg_fmt + [xname] + [vname]
+            my_cfg = cfg + [x] + [v]
             if xname == "NODE_CNT":
-                cfgs = get_cfgs(cfg_fmt + [xname] + [vname] + ["CLIENT_NODE_CNT"], cfg + [x] + [v] + [int(math.ceil(x/2)) if x > 1 else 1])
-            else:
-                cfgs = get_cfgs(cfg_fmt + [xname] + [vname], cfg + [x] + [v] )
+                my_cfg_fmt = my_cfg_fmt + ["CLIENT_NODE_CNT"]
+                my_cfg = my_cfg + [int(math.ceil(x/2)) if x > 1 else 1]
+            if xname != "PART_PER_TXN" and vname != "PART_PER_TXN":
+                my_cfg_fmt = my_cfg_fmt + ["PART_PER_TXN"]
+                my_cfg = my_cfg + [1 if x == 1 else 2]
+
+            cfgs = get_cfgs(cfg_fmt + [xname] + [vname], cfg + [x] + [v] )
             cfgs = get_outfile_name(cfgs)
+            print cfgs
             if cfgs not in summary.keys(): 
                 print("Not in summary: {}".format(cfgs))
                 break

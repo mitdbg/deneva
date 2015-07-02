@@ -21,11 +21,10 @@ def test():
 # Vary: Node count, % writes
 def experiment_1():
     fmt = fmt_ycsb
-    nnodes = [1]
-    #nnodes = [1,2,4,8]
-    nmpr=[1]
-    nalgos=['WAIT_DIE']
-    #nalgos=['WAIT_DIE','HSTORE','HSTORE_SPEC']
+    #nnodes = [1,2,4,8,16]
+    nnodes = [1,2,4]
+    nmpr=[1,5,10,20,30,40,50]#,60,70,80,90,100]
+    nalgos=['OCC','MVCC','HSTORE']
     #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
     nthreads=[3]
     ncthreads=[4]
@@ -33,47 +32,19 @@ def experiment_1():
     nzipf=[0.6]
     nwr_perc=[0.5]
     ntxn=2000000
-    nparts=[1]
+    nparts = [2]
     exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t,tif,z,1.0-wp,wp,p if p <= n else 1] for n,ct,t,tif,z,wp,m,cc,p in itertools.product(nnodes,ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts)]
     return fmt[0],exp
 
 def experiment_1_plot(summary,summary_client):
-    from plot_helper import tput,abort_rate,lat
-    fmt = fmt_ycsb
-    nnodes = [1,2,4,8]
-    nmpr=[0,0.01,0.1,1]
-    nalgos=['WAIT_DIE']
-    #nalgos=['WAIT_DIE','HSTORE','HSTORE_SPEC']
-    #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
-    nthreads=[1,3]
-    ncthreads=[4]
-    ntifs=[1000]
-    nzipf=[0.6]
-    nwr_perc=[0.0,0.5]
-    ntxn=2000000
-    nparts=[2]
-    for wr,tif,cc,t in itertools.product(nwr_perc,ntifs,nalgos,nthreads):
-        _cfg_fmt = ["CC_ALG","MAX_TXN_PER_PART","WORKLOAD","THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC"]
-        _cfg=[cc,ntxn,'YCSB',t,tif,nzipf[0],1.0-wr,wr]
-        _title="{} {} {}% Writes {} TIF {} threads".format(cc,'YCSB',wr*100,tif,t)
-        tput(nnodes,nmpr,summary,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="NODE_CNT",vname="MPR",title=_title)
-
-    # x-axis: nodes, y-axis: latency
-    for wr,tif,cc,t in itertools.product(nwr_perc,ntifs,nalgos,nthreads):
-        _cfg_fmt = ["CC_ALG","MAX_TXN_PER_PART","WORKLOAD","THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC"]
-        _cfg=[cc,ntxn,'YCSB',t,tif,nzipf[0],1.0-wr,wr]
-        _title="{} {} {}% Writes {} TIF {} threads".format(cc,'YCSB',wr*100,tif,t)
-        lat(nnodes,nmpr,summary_client,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="NODE_CNT",vname="MPR",title=_title)
-    return
+    from plot_helper import tput_plotter
+    fmt,exp = experiment_1()
+    x_name = "NODE_CNT"
+    v_name = "CC_ALG"
+    title = "Experiment_1"
+    tput_plotter(title,x_name,v_name,fmt,exp,summary,summary_client);
 
 
-    # x-axis: nodes; one plot for each wr %
-    for wr,mpr,tif in itertools.product(nwr_perc,nmpr,ntifs):
-        _cfg_fmt = ["MPR","MAX_TXN_PER_PART","WORKLOAD","THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC"]
-        _cfg=[mpr,ntxn,'YCSB',nthreads[0],tif,nzipf[0],1.0-wr,wr]
-        _title="{} {}% Writes {} MPR {} TIF".format('YCSB',wr*100,mpr,tif)
-        tput(nnodes,nalgos,summary,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="NODE_CNT",vname="CC_ALG",title=_title)
-        abort_rate(nnodes,nalgos,summary,cfg_fmt=_cfg_fmt,cfg=_cfg,xname="NODE_CNT",vname="CC_ALG",title=_title)
 
 def partition_sweep():
     fmt = fmt_ycsb
@@ -94,12 +65,31 @@ def partition_sweep():
         exp = exp + tmp
     return fmt[0],exp
 
+def partition_sweep_plot(summary,summary_client):
+    from plot_helper import tput_plotter
+    fmt,exp = partition_sweep()
+    x_name = "NODE_CNT"
+    v_name = "CC_ALG"
+    x_idx = fmt.index(x_name)
+    v_idx = fmt.index(v_name)
+    _cfg_fmt = fmt.remove(x_name).remove(v_name)
+    _cfg = exp
+    x_vals = []
+    v_vals = []
+    for p in _cfg:
+        x_vals.append(p[x_idx])
+        del p[x_idx]
+        v_vals.append(p[v_idx])
+        del p[v_idx]
+    x_vals = sorted(list(set(x_vals)))
+    v_vals = sorted(list(set(v_vals)))
+    tput(x_vals,v_vals,summary,cfg_fmt=_cfg_fmt,cfg=_cfg,xname=x_name,vname=v_name,title=_title)
+
 def mpr_sweep():
     fmt = fmt_ycsb
-    #nnodes = [1,2,4,8,16]
-    nnodes = [2]
+    nnodes = [1,2,4,8,16]
     nmpr=[0,1,5,10,20,30,40,50,60,70,80,90,100]
-    nalgos=['WAIT_DIE']
+    nalgos=['WAIT_DIE','NO_WAIT','OCC']
     #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
     nthreads=[1]
     ncthreads=[4]
@@ -110,6 +100,14 @@ def mpr_sweep():
     nparts = [2]
     exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t,tif,z,1.0-wp,wp,p if p <= n else 1] for n,ct,t,tif,z,wp,m,cc,p in itertools.product(nnodes,ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts)]
     return fmt[0],exp
+
+def mpr_sweep_plot(summary,summary_client):
+    from plot_helper import tput_plotter
+    fmt,exp = mpr_sweep()
+    x_name = "MPR"
+    v_name = "CC_ALG"
+    title = "MPR Sweep"
+    tput_plotter(title,x_name,v_name,fmt,exp,summary,summary_client);
 
 def tif_sweep():
     fmt = fmt_ycsb
@@ -229,6 +227,8 @@ experiment_map = {
     'tpcc_sweep': tpcc_sweep,
     'network_experiment' : network_experiment,
     'network_experiment_plot' : network_experiment_plot,
+    'partition_sweep_plot': partition_sweep_plot,
+    'mpr_sweep_plot': mpr_sweep_plot,
 }
 
 
