@@ -108,6 +108,9 @@ for exp in exps:
                             r2 = get_summary(res_list[x],r2)
                     merge_results(r,exp_cnt,drop)
                     merge_results(r2,exp_cnt,drop)
+            
+            get_lstats(r)
+            get_lstats(r2)
             summary[output_f] = r
             summary_client[output_f] = r2
  

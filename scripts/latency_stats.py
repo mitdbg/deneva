@@ -1,4 +1,5 @@
 import numpy as np
+import math
 
 # Units of time per second
 CONVERSIONS = {
@@ -10,14 +11,19 @@ CONVERSIONS = {
 
 class LatencyStats(object):
 
-    def __init__(self,latencies,metadata={},in_time_unit='ns',out_time_unit='ms'):
-        self._latencies = sorted(latencies)
+    def __init__(self,latencies,metadata={},in_time_unit='ns',out_time_unit='ms',store=False):
         self._metadata = metadata 
         self._in_time_unit = in_time_unit.lower()
         self._out_time_unit = out_time_unit.lower()
         self.__set_conversion_factor__()
         self._mean = np.mean(latencies)
         self._percentiles = np.percentile(latencies,[50.0,90.0,95.0,99.0])
+        self._min = min(latencies)
+        self._max = max(latencies)
+        if store:
+            self._latencies = latencies
+        else:
+            self._latencies = None
     
     def get_latencies(self):
         return self._latencies
@@ -41,10 +47,13 @@ class LatencyStats(object):
         return self._percentiles[3]*self._conversion_factor
 
     def get_min(self):
-        return self._latencies[0]*self._conversion_factor
+        return self._min*self._conversion_factor
     
     def get_max(self):
-        return self._latencies[-1]*self._conversion_factor
+        return self._max*self._conversion_factor
+
+    def get_percentiles(self):
+        return [p*self._conversion_factor for p in self._percentiles]
     
     def set_output_time_unit(self,new_unit):
         self._out_time_unit = new_unit
