@@ -1,5 +1,5 @@
 import sys,os,os.path
-from fabric.api import env
+from fabric.api import env,output
 
 user="rhardin"
 
@@ -11,10 +11,22 @@ def set_env():
     env.abort_on_prompts = True
     env.skip_bad_hosts = False
     env.colorize_errors = True
-    env.kill = False
+    env.kill = True
+    env.dry_run = False
     env.batch_mode = True 
     env.local_path = os.getcwd()
     env.result_dir = os.path.join(env.local_path,"results/")
+
+    # These control the Fabric output
+    output.status = False
+    output.aborts = True
+    output.warnings = True
+    output.running = True
+    output.stdout = True
+    output.stderr = True
+    output.exceptions = True
+    output.debug = False
+    output.user = True
 
 def set_env_vcloud():
     env.user = "root"

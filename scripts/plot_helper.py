@@ -57,40 +57,9 @@ def tput_plotter(title,x_name,v_name,fmt,exp,summary,summary_client):
         title2 = title + title2
             
         tput(x_vals,v_vals,summary,cfg_fmt=_cfg_fmt,cfg=c,xname=x_name,vname=v_name,title=title2)
+        lat(x_vals,v_vals,summary,cfg_fmt=_cfg_fmt,cfg=c,xname=x_name,vname=v_name,title=title2)
 
 
-
-def lat_node_tbls(exp,nodes,msg_bytes,ts,
-                title="",
-                stats=['99th','95th','90th','50th','mean']):
-    nnodes = len(nodes)
-    tables = {}
-    for i,b in enumerate(msg_bytes):
-        tables[b]=np.empty([nnodes,nnodes],dtype=object)
-    for i,e in enumerate(exp):
-        for k,v in e.iteritems():
-            n0 = nodes.index(v.get_metadata()["n0"])
-            n1 = nodes.index(v.get_metadata()["n1"])
-            tables[k][n0][n1] = v
-    for i,b in enumerate(msg_bytes):
-        for s in stats:
-            _title="{} % Latencies (ms), Message Size of {} bytes".format(s,b)
-            name="nlat_{}_{}bytes_{}nodes_{}".format(s,b,nnodes,ts)
-            draw_lat_matrix(name,tables[b],lat_type=s,rows=nodes,columns=nodes,title=_title)
-
-def lat_tbl(totals,msg_bytes,ts,
-            title="",
-            stats=['99th','95th','90th','50th','mean']):
-    nrows = len(stats)
-    ncols = len(msg_bytes)
-    for i,b in enumerate(msg_bytes):
-        table=np.empty([nrows,ncols],dtype=object)
-    for (i,j),val in np.ndenumerate(table):
-        table[i,j] = totals[msg_bytes[j]]
-    _title="Latencies Stats(ms), Message Size of {} bytes".format("all")
-    name="nlat_{}_{}bytes_{}".format('all-lat',"all-msgs",ts)
-    draw_lat_matrix(name,table,lat_types=stats,rows=stats,columns=msg_bytes,title=_title)
-    
 
 def tput(xval,vval,summary,
         cfg_fmt=[],
@@ -148,52 +117,87 @@ def tput(xval,vval,summary,
     print("Created plot {}".format(name))
     draw_line(name,tpt,xval,ylab='Throughput (Txn/sec)',xlab=xname,title=_title,bbox=bbox,ncol=2) 
 
+
 def lat(xval,vval,summary,
         cfg_fmt=[],
         cfg=[],
         xname="MPR",
         vname="CC_ALG",
-        title=""
+        title="",
+        stat_types=['99th']
         ):
-    tpt = {}
-    name = 'lat_{}_{}_{}'.format(xname.lower(),vname.lower(),title.replace(" ","_").lower())
-    _title = 'Average Transaction Latency {}'.format(title)
+    for stat in stat_types:
+        name = 'lat-{}_{}_{}_{}'.format(stat,xname.lower(),vname.lower(),title.replace(" ","_").lower())
+        _title = 'Transaction Latency-{}% {}'.format(stat,title)
+        lat = {}
 
-    for v in vval:
-        if vname == "NETWORK_DELAY":
-            _v = (float(v.replace("UL","")))/1000000
-        else:
-            _v = v
-        tpt[_v] = [0] * len(xval)
-
-        for x,xi in zip(xval,range(len(xval))):
-            if xname == "NODE_CNT":
-                cfgs = get_cfgs(cfg_fmt + [xname] + [vname] + ["CLIENT_NODE_CNT"], cfg + [x] + [v] + [int(math.ceil(x/2)) if x > 1 else 1])
+        for v in vval:
+            if vname == "NETWORK_DELAY":
+                _v = (float(v.replace("UL","")))/1000000
             else:
+                _v = v
+            lat[_v] = [0] * len(xval)
+
+            for x,xi in zip(xval,range(len(xval))):
+                my_cfg_fmt = cfg_fmt + [xname] + [vname]
+                my_cfg = cfg + [x] + [v]
+                if xname == "NODE_CNT":
+                    my_cfg_fmt = my_cfg_fmt + ["CLIENT_NODE_CNT"]
+                    my_cfg = my_cfg + [int(math.ceil(x/2)) if x > 1 else 1]
+                if xname != "PART_PER_TXN" and vname != "PART_PER_TXN":
+                    my_cfg_fmt = my_cfg_fmt + ["PART_PER_TXN"]
+                    my_cfg = my_cfg + [1 if x == 1 else 2]
+
                 cfgs = get_cfgs(cfg_fmt + [xname] + [vname], cfg + [x] + [v] )
-            cfgs = get_outfile_name(cfgs)
-            if cfgs not in summary.keys(): 
-                print("Not in summary: {}".format(cfgs))
-                break
-            try:
-                txn_lat = avg(summary[cfgs]['client_latency'])
-            except KeyError:
-                print("KeyError: {} {} {} -- {}".format(v,x,cfg,cfgs))
-                tpt[_v][xi] = 0
-                continue
-            # System Throughput: total txn count / average of all node's run time
-            # Per Node Throughput: avg txn count / average of all node's run time
-            # Per txn latency: total of all node's run time / total txn count
-            tpt[_v][xi] = txn_lat
-            #tpt[v][xi] = (avg_txn_cnt/avg_run_time)
+                cfgs = get_outfile_name(cfgs)
+                if cfgs not in summary.keys(): 
+                    print("Not in summary: {}".format(cfgs))
+                    break
+                try:
+                    lat[_v][xi] = ls.exec_fn(summary[cfgs]['all_lat'],stat)
+                except KeyError:
+                    print("KeyError: {} {} {} -- {}".format(v,x,cfg,cfgs))
+                    lat[_v][xi] = 0
+                    continue
 
-    bbox = [0.85,0.5]
-    if vname == "NETWORK_DELAY":
-        bbox = [0.8,0.2]
-    print("Created plot {}".format(name))
-    draw_line(name,tpt,xval,ylab='Latency (sec)',xlab=xname,title=_title,bbox=bbox,ncol=2) 
+        bbox = [0.85,0.5]
+        if vname == "NETWORK_DELAY":
+            bbox = [0.8,0.2]
+        print("Created plot {}".format(name))
+        draw_line(name,lat,xval,ylab='Latency-{}% (Sec)'.format(stat),xlab=xname,title=_title,bbox=bbox,ncol=2) 
 
 
+def lat_node_tbls(exp,nodes,msg_bytes,ts,
+                title="",
+                stats=['99th','95th','90th','50th','mean']):
+    nnodes = len(nodes)
+    tables = {}
+    for i,b in enumerate(msg_bytes):
+        tables[b]=np.empty([nnodes,nnodes],dtype=object)
+    for i,e in enumerate(exp):
+        for k,v in e.iteritems():
+            n0 = nodes.index(v.get_metadata()["n0"])
+            n1 = nodes.index(v.get_metadata()["n1"])
+            tables[k][n0][n1] = v
+    for i,b in enumerate(msg_bytes):
+        for s in stats:
+            _title="{} % Latencies (ms), Message Size of {} bytes".format(s,b)
+            name="nlat_{}_{}bytes_{}nodes_{}".format(s,b,nnodes,ts)
+            draw_lat_matrix(name,tables[b],lat_type=s,rows=nodes,columns=nodes,title=_title)
+
+def lat_tbl(totals,msg_bytes,ts,
+            title="",
+            stats=['99th','95th','90th','50th','mean']):
+    nrows = len(stats)
+    ncols = len(msg_bytes)
+    for i,b in enumerate(msg_bytes):
+        table=np.empty([nrows,ncols],dtype=object)
+    for (i,j),val in np.ndenumerate(table):
+        table[i,j] = totals[msg_bytes[j]]
+    _title="Latencies Stats(ms), Message Size of {} bytes".format("all")
+    name="nlat_{}_{}bytes_{}".format('all-lat',"all-msgs",ts)
+    draw_lat_matrix(name,table,lat_types=stats,rows=stats,columns=msg_bytes,title=_title)
+    
 
 def abort_rate(xval,vval,summary,
         cfg_fmt=[],

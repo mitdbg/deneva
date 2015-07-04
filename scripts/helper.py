@@ -5,6 +5,7 @@ import latency_stats as ls
 
 cnts = ["all_abort"]
 cflts = ["w_cflt","d_cflt","cnp_cflt","c_cflt","ol_cflt","s_cflt","w_abrt","d_abrt","cnp_abrt","c_abrt","ol_abrt","s_abrt"]
+lats = ["all_lat"]
 
 def avg(l):
     return float(sum(l) / float(len(l)))
@@ -60,13 +61,16 @@ def get_summary(sfile,summary={}):
                     if re.search(c,line):
                         line = line.rstrip('\n')
                         process_cflts(summary,line,c)
+                for l in lats:
+                    if re.search(l,line):
+                        line = line.rstrip('\n')
+                        process_lats(summary,line,l)
         if not found:
             if re.search("prog",last_line):
                 line = last_line.rstrip('\n')
                 line = line[9:] #remove '[prog 0] ' from start of line 
                 results = re.split(',',line)
                 process_results(summary,results)
-
     return summary
 
 def get_network_stats(n_file):
@@ -101,21 +105,35 @@ def get_network_stats(n_file):
     return stats
 
 def merge_results(summary,cnt,drop):
-    
     for k in summary.keys():
         if type(summary[k]) is not list:
             continue
-        l = []
-        for c in range(cnt):
-            try:
-                l.append(summary[k].pop())
-            except IndexError:
-                print("IndexError {} {}/{}".format(k,c,cnt))
-                continue
-        if drop:
-            l.remove(max(l))
-            l.remove(min(l))
-        summary[k].append(avg(l))
+        if k == 'all_lat':
+            if len(summary[k]) > 0 and isinstance(summary[k][0],list):
+                l = []
+                for c in range(cnt):
+                    print "length of summary ", len(summary[k])
+                    try:
+                        m=summary[k].pop()
+                        print "Length of m ",len(m)
+                        l = sorted(l + summary[k].pop())
+                        #l = sorted(l + m)
+                    except TypeError:
+                        print "m=",m
+                summary[k]=l
+        else:
+            l = []
+            for c in range(cnt):
+                try:
+                    l.append(summary[k].pop())
+                except IndexError:
+                    print("IndexError {} {}/{}".format(k,c,cnt))
+                    continue
+            if drop:
+                l.remove(max(l))
+                l.remove(min(l))
+            summary[k].append(avg(l))
+
         if k == "txn_cnt" or k == "clock_time":
             print("{}: {} {}".format(k,avg(l),stdev(l)))
             
@@ -173,6 +191,27 @@ def process_cflts(summary,line,name):
         c = int(r[1])
         summary[name][k] = c
 
+def process_lats(summary,line,name):
+    if name not in summary.keys():
+        summary[name] = []
+    line = re.split(' |] |,',line)
+    results = line[2:-1]
+    for r in results:
+        try:
+            summary[name].append(float(r))
+        except:
+            print "Passing...",r
+            pass
+    print "process_lats len: ",len(summary[name])
+    #results = sorted([float(r) for r in results])
+    #summary[name] = sorted(results+summary[name])
+
+def get_lstats(summary):
+    try:
+        latencies = summary['all_lat']
+        summary['all_lat']=ls.LatencyStats(latencies,out_time_unit='s') 
+    except:
+        pass
 
 def get_outfile_name(cfgs,network_hosts=[]):
     output_f = ""
