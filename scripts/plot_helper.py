@@ -148,7 +148,7 @@ def lat(xval,vval,summary,
                     my_cfg_fmt = my_cfg_fmt + ["PART_PER_TXN"]
                     my_cfg = my_cfg + [1 if x == 1 else 2]
 
-                cfgs = get_cfgs(cfg_fmt + [xname] + [vname], cfg + [x] + [v] )
+                cfgs = get_cfgs(my_cfg_fmt, my_cfg)
                 cfgs = get_outfile_name(cfgs)
                 if cfgs not in summary.keys(): 
                     print("Not in summary: {}".format(cfgs))

@@ -22,11 +22,11 @@ def test():
 def experiment_1():
     fmt = fmt_ycsb
     #nnodes = [1,2,4,8,16]
-    nnodes = [1,2,4]
-    nmpr=[1,5,10,20,30,40,50]#,60,70,80,90,100]
-    nalgos=['OCC','MVCC','HSTORE']
+    nnodes = [2]
+    nmpr=[1]#,5,10,20,30,40,50]#,60,70,80,90,100]
+    nalgos=['WAIT_DIE']
     #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
-    nthreads=[3]
+    nthreads=[1]
     ncthreads=[4]
     ntifs=[1000]
     nzipf=[0.6]
