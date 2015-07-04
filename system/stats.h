@@ -64,6 +64,10 @@ public:
 
 	uint64_t cc_wait_cnt; // # of times a committed txn has been blocked in the cc algo
 	double cc_wait_time; // time a committed txn has been blocked in this cc algo 
+	double cc_hold_time; // time a committed txn has held a lock in this cc algo
+	uint64_t cc_wait_abrt_cnt; // # of times an aborted txn has been blocked in the cc algo
+	double cc_wait_abrt_time; // time an aborted txn has been blocked in this cc algo 
+	double cc_hold_abrt_time; // time an aborted txn has held a lock in this cc algo
   uint64_t cflt_cnt;
 	uint64_t mpq_cnt; // multi-partition queries
 	uint64_t msg_bytes;
@@ -120,6 +124,10 @@ public:
 
   uint64_t cc_wait_cnt;
   double cc_wait_time;
+  double cc_hold_time;
+	uint64_t cc_wait_abrt_cnt; // # of times an aborted txn has been blocked in the cc algo
+	double cc_wait_abrt_time; // time an aborted txn has been blocked in this cc algo 
+	double cc_hold_abrt_time; // time an aborted txn has held a lock in this cc algo
   
 	char _pad[CL_SIZE - sizeof(double)*3];
 };

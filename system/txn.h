@@ -131,6 +131,10 @@ public:
   uint64_t wait_starttime;
   uint64_t cc_wait_cnt;
   double cc_wait_time;
+  double cc_hold_time;
+  uint64_t cc_wait_abrt_cnt;
+  double cc_wait_abrt_time;
+  double cc_hold_abrt_time;
   
 private:
 	// insert rows

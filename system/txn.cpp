@@ -30,6 +30,9 @@ void txn_man::init(thread_t * h_thd, workload * h_wl, uint64_t thd_id) {
   ack_cnt = 0;
   rsp_cnt = 0;
   state = START;
+  cc_wait_abrt_cnt = 0;
+  cc_wait_abrt_time = 0;
+  cc_hold_abrt_time = 0;
   clear();
 
   sem_init(&rsp_mutex, 0, 1);
@@ -44,6 +47,7 @@ void txn_man::init(thread_t * h_thd, workload * h_wl, uint64_t thd_id) {
 void txn_man::clear() {
   cc_wait_cnt = 0;
   cc_wait_time = 0;
+  cc_hold_time = 0;
 }
 
 void txn_man::register_thd(thread_t * h_thd) {

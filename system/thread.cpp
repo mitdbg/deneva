@@ -748,6 +748,10 @@ RC thread_t::run() {
           INC_STATS_ARR(get_thd_id(),all_lat,timespan);
           INC_STATS(get_thd_id(), cc_wait_cnt, m_txn->cc_wait_cnt);
           INC_STATS(get_thd_id(), cc_wait_time, m_txn->cc_wait_time);
+          INC_STATS(get_thd_id(), cc_hold_time, m_txn->cc_hold_time);
+          INC_STATS(get_thd_id(), cc_wait_abrt_cnt, m_txn->cc_wait_abrt_cnt);
+          INC_STATS(get_thd_id(), cc_wait_abrt_time, m_txn->cc_wait_abrt_time);
+          INC_STATS(get_thd_id(), cc_hold_abrt_time, m_txn->cc_hold_abrt_time);
 
 #if DEBUG_TIMELINE
 					printf("COMMIT %ld %ld\n",m_txn->get_txn_id(),get_sys_clock());
@@ -809,6 +813,10 @@ RC thread_t::run() {
         m_txn->state = START;
         m_txn->rc = RCOK;
         m_txn->spec = false;
+        m_txn->cc_wait_abrt_cnt += m_txn->cc_wait_cnt;
+        m_txn->cc_wait_abrt_time += m_txn->cc_wait_time;
+        m_txn->cc_hold_abrt_time += m_txn->cc_hold_time;
+        m_txn->clear();
 
 #if DEBUG_TIMELINE
 					printf("ABORT %ld %ld\n",m_txn->get_txn_id(),get_sys_clock());
