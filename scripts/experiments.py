@@ -85,13 +85,37 @@ def partition_sweep_plot(summary,summary_client):
     v_vals = sorted(list(set(v_vals)))
     tput(x_vals,v_vals,summary,cfg_fmt=_cfg_fmt,cfg=_cfg,xname=x_name,vname=v_name,title=_title)
 
+def node_sweep():
+    fmt = fmt_ycsb
+    nnodes = [1,2,4,8,16]
+    nmpr=[0]
+    nalgos=['WAIT_DIE','NO_WAIT','OCC']
+    #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
+    nthreads=[1]
+    ncthreads=[4]
+    ntifs=[1000]
+    nzipf=[0.6]
+    nwr_perc=[0.5]
+    ntxn=2000000
+    nparts = [2]
+    exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t,tif,z,1.0-wp,wp,p if p <= n else 1] for n,ct,t,tif,z,wp,m,cc,p in itertools.product(nnodes,ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts)]
+    return fmt[0],exp
+
+def node_sweep_plot(summary,summary_client):
+    from plot_helper import tput_plotter
+    fmt,exp = node_sweep()
+    x_name = "NODE_CNT"
+    v_name = "CC_ALG"
+    title = "Scalability"
+    tput_plotter(title,x_name,v_name,fmt,exp,summary,summary_client);
+
 def mpr_sweep():
     fmt = fmt_ycsb
     nnodes = [1,2,4,8,16]
     nmpr=[0,1,5,10,20,30,40,50,60,70,80,90,100]
     nalgos=['WAIT_DIE','NO_WAIT','OCC']
     #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
-    nthreads=[1]
+    nthreads=[3]
     ncthreads=[4]
     ntifs=[1000]
     nzipf=[0.6]
@@ -219,6 +243,7 @@ experiment_map = {
     'experiment_1': experiment_1,
     'experiment_1_plot': experiment_1_plot,
     'partition_sweep': partition_sweep,
+    'node_sweep': node_sweep,
     'mpr_sweep': mpr_sweep,
     'tif_sweep': tif_sweep,
     'write_ratio_sweep': write_ratio_sweep,
@@ -229,6 +254,7 @@ experiment_map = {
     'network_experiment_plot' : network_experiment_plot,
     'partition_sweep_plot': partition_sweep_plot,
     'mpr_sweep_plot': mpr_sweep_plot,
+    'node_sweep_plot': node_sweep_plot,
 }
 
 

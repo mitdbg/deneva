@@ -19,7 +19,6 @@ def tput_plotter(title,x_name,v_name,fmt,exp,summary,summary_client):
     _cfg = list(exp)
     x_vals = []
     v_vals = []
-    print _cfg
     for p in _cfg:
         x_vals.append(p[x_idx])
         del p[x_idx]
@@ -47,14 +46,15 @@ def tput_plotter(title,x_name,v_name,fmt,exp,summary,summary_client):
     for c in itertools.product(*cfg_list):
         c = list(c)
         title2 = ""
-        cl_idx = _cfg_fmt.index("CLIENT_NODE_CNT")
-        n_idx = _cfg_fmt.index("NODE_CNT")
-        c[cl_idx] = c[n_idx] / 2 if c[n_idx] > 1 else 1
+        if x_name != "NODE_CNT" and v_name != "NODE_CNT":
+            cl_idx = _cfg_fmt.index("CLIENT_NODE_CNT")
+            n_idx = _cfg_fmt.index("NODE_CNT")
+            c[cl_idx] = c[n_idx] / 2 if c[n_idx] > 1 else 1
         print c
         for f in sorted(_cfg_fmt):
             f_idx = _cfg_fmt.index(f)
             title2 = title2 + "_%s-%s" %(f,c[f_idx])
-        title2 = title +title2
+        title2 = title + title2
             
         tput(x_vals,v_vals,summary,cfg_fmt=_cfg_fmt,cfg=c,xname=x_name,vname=v_name,title=title2)
 
@@ -103,8 +103,8 @@ def tput(xval,vval,summary,
     name = 'tput_{}_{}_{}'.format(xname.lower(),vname.lower(),title.replace(" ","_").lower())
     _title = 'System Throughput {}'.format(title)
 
-    print xval
-    print vval
+    print "X-axis: " + str(xval)
+    print "Var: " + str(vval)
     for v in vval:
         if vname == "NETWORK_DELAY":
             _v = (float(v.replace("UL","")))/1000000
@@ -122,12 +122,11 @@ def tput(xval,vval,summary,
                 my_cfg_fmt = my_cfg_fmt + ["PART_PER_TXN"]
                 my_cfg = my_cfg + [1 if x == 1 else 2]
 
-            cfgs = get_cfgs(cfg_fmt + [xname] + [vname], cfg + [x] + [v] )
+            cfgs = get_cfgs(my_cfg_fmt, my_cfg)
             cfgs = get_outfile_name(cfgs)
-            print cfgs
             if cfgs not in summary.keys(): 
                 print("Not in summary: {}".format(cfgs))
-                break
+                continue 
             try:
                 tot_run_time = sum(summary[cfgs]['clock_time'])
                 tot_txn_cnt = sum(summary[cfgs]['txn_cnt'])
