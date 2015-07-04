@@ -1,6 +1,7 @@
 import os,re,sys,math
 from experiments import configs
 from experiments import config_names
+import glob
 import latency_stats as ls
 
 cnts = ["all_abort"]
@@ -245,4 +246,43 @@ def get_cfgs(fmt,e):
     if "NUM_WH" not in fmt:
         cfgs["NUM_WH"] = cfgs["PART_CNT"]
     return cfgs
+
+def print_keys(result_dir="../results",keys=['txn_cnt']):
+    cfgs = sorted(glob.glob(os.path.join(result_dir,"*.cfg")))
+    bases=[cfg.split('/')[-1][:-4] for cfg in cfgs]
+    missing_files = 0
+    missing_results = 0
+    
+    for base in bases:
+        print base
+        node_cnt=int(base.split('NODE_CNT-')[-1].split('_')[0])
+        keys_to_print= []
+        for n in range(node_cnt):
+            server_file="{}_{}.out".format(n,base)
+            try:
+                with open(os.path.join(result_dir,server_file),"r") as f:
+                    lines = f.readlines()
+            except IOError:
+                print "Error opening file: {}".format(server_file)
+                missing_files += 1
+                continue
+            summary_line = [l for l in lines if '[summary]' in l]
+            if len(summary_line) == 0:
+                prog_line = [p for p in lines if "[prog]" in p]
+                if len(prog_line) == 0:
+                    res_line = None
+                    missing_results += 1
+                else:
+                    res_line = prog_line[-1][len('[prog]'):].strip()
+            elif len(summary_line) == 1:
+                res_line=summary_line[0][len('[summary]'):].strip()
+            else:
+                assert false
+            if res_line:
+                avail_keys = res_line.split(',')
+                keys_to_print=[k for k in avail_keys if k.split('=')[0] in keys]
+            print "\tNode {}: ".format(n),", ".join(keys_to_print)
+        print '\n'
+    print "Total missing files (files not in dir): {}".format(missing_files)
+    print "Total missing server results (no [summary] or [prog]): {}".format(missing_results)
 
