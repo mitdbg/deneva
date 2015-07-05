@@ -284,6 +284,7 @@ def draw_bars(data, xlabels,
 
 def draw_stack(data, xlabels, slabels, figname='stack', title=None, figsize=(8, 3),ymin=0, ymax=1) :
     fig = figure(figsize=figsize)
+    slabels = list(reversed(slabels))
     ind = range(0, len(xlabels))
 
     plots = ()
