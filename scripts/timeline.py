@@ -1,8 +1,7 @@
 import os, sys, re, math, os.path, math
 from helper import *
-from experiments import experiments as experiments
+from experiments import experiment_1
 from experiments import configs
-from experiments import nnodes,nmpr,nalgos,nthreads,nwfs,ntifs,nnet_delay,ntxn
 from plot_helper import *
 from draw import *
 import glob
@@ -10,11 +9,14 @@ import glob
 PATH=os.getcwd()
 result_dir = PATH + "/../results/"
 
-llim = 0 
-ulim = sys.maxint
-for e in experiments[1:]:
+llim = 1000 
+ulim = 1300#sys.maxint
+
+fmt,exps=experiment_1()
+
+for e in exps:
     r = {}
-    cfgs = get_cfgs(experiments[0],e)
+    cfgs = get_cfgs(fmt,e)
     output_f = get_outfile_name(cfgs)
     min_time=0
     for n in range(cfgs["NODE_CNT"]):

@@ -52,13 +52,14 @@ def get_summary(sfile,summary={}):
                 line = line[10:] #remove '[summary] ' from start of line 
                 results = re.split(',',line)
                 process_results(summary,results)
+                continue
             if found:
                 for c in cnts:
-                    if re.search(c,line):
+                    if re.search("^[.*"+c+".*]",line):
                         line = line.rstrip('\n')
                         process_cflts(summary,line,c)
                 for c in cflts:
-                    if re.search(c,line):
+                    if re.search("^[.*"+c+".*]",line):
                         line = line.rstrip('\n')
                         process_cflts(summary,line,c)
                 for l in lats:
