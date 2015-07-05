@@ -58,7 +58,6 @@ def tput_plotter(title,x_name,v_name,fmt,exp,summary,summary_client):
             
         tput(x_vals,v_vals,summary,cfg_fmt=_cfg_fmt,cfg=c,xname=x_name,vname=v_name,title=title2)
         lat(x_vals,v_vals,summary,cfg_fmt=_cfg_fmt,cfg=c,xname=x_name,vname=v_name,title=title2,stat_types=["99th","90th","mean","max"])
-        time_breakdown(x_vals,summary,normalized=True,xname=x_name,cfg_fmt=_cfg_fmt,cfg=c,title=title2)
 
 
 def tput(xval,vval,summary,
