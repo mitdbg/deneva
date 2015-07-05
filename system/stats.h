@@ -43,6 +43,7 @@ public:
 	double time_wait_rem;
 	double time_abort;
 	double time_cleanup;
+	double time_qq;
 	double time_tport_rcv;
 	double time_tport_send;
 	double time_validate;
@@ -54,6 +55,8 @@ public:
 	double tport_lat;
 	double lock_diff;
   double qq_full;
+  double qq_cnt;
+  double qq_lat;
   double aq_full;
 
   // calvin
@@ -94,6 +97,19 @@ public:
 	uint64_t rprep;
 	uint64_t rinit;
 	uint64_t rtxn;
+
+  double txn_time_idx;
+  double txn_time_man;
+  double txn_time_ts;
+  double txn_time_abrt;
+  double txn_time_clean;
+  double txn_time_copy;
+  double txn_time_wait;
+  double txn_time_twopc;
+  double txn_time_q_abrt;
+  double txn_time_q_work;
+  double txn_time_net;
+  double txn_time_misc;
 
   StatsArr all_abort;
   StatsArr w_cflt;

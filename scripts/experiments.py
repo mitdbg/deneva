@@ -21,12 +21,11 @@ def test():
 # Vary: Node count, % writes
 def experiment_1():
     fmt = fmt_ycsb
-    #nnodes = [1,2,4,8,16]
     nnodes = [2]
-    nmpr=[1]#,5,10,20,30,40,50]#,60,70,80,90,100]
+    nmpr=[1]
     nalgos=['WAIT_DIE']
     #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
-    nthreads=[1]
+    nthreads=[4]
     ncthreads=[4]
     ntifs=[1000]
     nzipf=[0.6]
@@ -277,8 +276,9 @@ configs = {
     "NUM_WH": 2,
     "MAX_TXN_IN_FLIGHT": 1,
     "NETWORK_DELAY": '0UL',
-    "DONE_TIMER": "3 * 60 * BILLION // 3 minutes",
+    "DONE_TIMER": "20 * 1 * BILLION",#"3 * 60 * BILLION // 3 minutes",
     "NETWORK_TEST" : "false",
+    "ABORT_PENALTY": "1 * 1000000UL   // in ns.",
 #YCSB
     "READ_PERC":0.5,
     "WRITE_PERC":0.5,

@@ -194,7 +194,7 @@ def deploy(schema_path,nids):
     succeeded = True
     with shell_env(SCHEMA_PATH=schema_path):
         # TODO: remove this assertion after debugging
-        assert schema_path == '/root/'
+        #assert schema_path == '/root/'
         with settings(warn_only=True,command_timeout=MAX_TIME_PER_EXP):
             if env.host in env.roledefs["servers"]:
                 cmd = "./rundb -nid{} >> results.out 2>&1".format(nid)  

@@ -399,6 +399,10 @@ RC thread_t::run() {
 				m_txn = txn_pool.get_txn(g_node_id, m_query->txn_id);
 				assert(m_txn != NULL);
         m_txn->register_thd(this);
+        if(m_txn->txn_stat_starttime > 0) {
+          m_txn->txn_time_net += get_sys_clock() - m_txn->txn_stat_starttime;
+          m_txn->txn_stat_starttime = 0;
+        }
 				tmp_query = txn_pool.get_qry(m_query->return_id, m_query->txn_id);
         m_query = tmp_query->merge(m_query);
 				INC_STATS(get_thd_id(),time_wait_rem,get_sys_clock() - m_txn->wait_starttime);
@@ -457,7 +461,6 @@ RC thread_t::run() {
 				INC_STATS(0,rack,1);
 				m_txn = txn_pool.get_txn(g_node_id, m_query->txn_id);
 				assert(m_txn != NULL);
-        // FIXME: Could have multiple threads in RACK on the same txn
         m_txn->register_thd(this);
 				tmp_query = txn_pool.get_qry(m_query->return_id, m_query->txn_id);
         m_query = tmp_query->merge(m_query);
@@ -592,6 +595,8 @@ RC thread_t::run() {
 					txn_pool.add_txn(g_node_id,m_txn,m_query);
 
 					m_txn->starttime = get_sys_clock();
+          m_txn->txn_time_misc += m_query->time_q_work;
+          m_txn->txn_time_misc += m_query->time_copy;
 #if DEBUG_TIMELINE
 					printf("START %ld %ld\n",m_txn->get_txn_id(),m_txn->starttime);
 					//printf("START %ld %ld\n",m_txn->get_txn_id(),m_txn->starttime - run_starttime);
@@ -746,12 +751,12 @@ RC thread_t::run() {
 					INC_STATS(get_thd_id(), run_time, timespan);
 					INC_STATS(get_thd_id(), latency, timespan);
           INC_STATS_ARR(get_thd_id(),all_lat,timespan);
-          INC_STATS(get_thd_id(), cc_wait_cnt, m_txn->cc_wait_cnt);
-          INC_STATS(get_thd_id(), cc_wait_time, m_txn->cc_wait_time);
-          INC_STATS(get_thd_id(), cc_hold_time, m_txn->cc_hold_time);
-          INC_STATS(get_thd_id(), cc_wait_abrt_cnt, m_txn->cc_wait_abrt_cnt);
-          INC_STATS(get_thd_id(), cc_wait_abrt_time, m_txn->cc_wait_abrt_time);
-          INC_STATS(get_thd_id(), cc_hold_abrt_time, m_txn->cc_hold_abrt_time);
+
+          m_txn->txn_time_q_abrt += m_query->time_q_abrt;
+          m_txn->txn_time_q_work += m_query->time_q_work;
+          m_txn->txn_time_copy += m_query->time_copy;
+          m_txn->txn_time_misc += timespan;
+          m_txn->update_stats();
 
 #if DEBUG_TIMELINE
 					printf("COMMIT %ld %ld\n",m_txn->get_txn_id(),get_sys_clock());
@@ -804,6 +809,7 @@ RC thread_t::run() {
 #endif
         //rc = m_txn->finish(rc);
         //txn_pool.add_txn(g_node_id,m_txn,m_query);
+        // Stats
 				INC_STATS(get_thd_id(), abort_cnt, 1);
         m_txn->abort_cnt++;
         m_query->part_touched_cnt = 0;
@@ -860,6 +866,9 @@ RC thread_t::run() {
 #if CC_ALG != HSTORE && CC_ALG != HSTORE_SPEC
           m_query->part_touched[m_query->part_touched_cnt++] = GET_PART_ID(0,m_query->dest_id);
 #endif
+          // Stat start for txn_time_net
+          m_txn->txn_stat_starttime = get_sys_clock();
+
 					rem_qry_man.remote_qry(m_query,m_query->rem_req_state,m_query->dest_id,m_txn);
 					break;
 				default:

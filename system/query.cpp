@@ -71,6 +71,9 @@ void base_query::clear() {
   client_id = UINT32_MAX;
   debug1 = 0;
   part_touched_cnt = 0;
+  //time_q_abrt = 0;
+  //time_q_work = 0;
+  //time_copy = 0;
 } 
 
 void base_query::update_rc(RC rc) {

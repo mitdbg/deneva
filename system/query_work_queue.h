@@ -8,6 +8,7 @@ class base_query;
 
 struct wq_entry {
   base_query * qry;
+  uint64_t starttime;
   struct wq_entry * next;
 };
 
