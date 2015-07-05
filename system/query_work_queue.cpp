@@ -36,6 +36,7 @@ void QWorkQueue::add_query(base_query * qry) {
   wq_entry_t entry = (wq_entry_t) mem_allocator.alloc(sizeof(struct wq_entry), 0);
   entry->qry = qry;
   entry->next  = NULL;
+  entry->starttime = get_sys_clock();
   assert(qry->rtype <= CL_RSP);
 
   pthread_mutex_lock(&mtx);
@@ -66,6 +67,8 @@ base_query * QWorkQueue::get_next_query() {
 
   pthread_mutex_lock(&mtx);
 
+  uint64_t starttime = get_sys_clock();
+
   assert( ( (cnt == 0) && head == NULL && tail == NULL) || ( (cnt > 0) && head != NULL && tail !=NULL) );
 
   if(cnt > 0) {
@@ -92,6 +95,13 @@ base_query * QWorkQueue::get_next_query() {
     if(cnt == 0) {
       tail = NULL;
     }
+
+    if(next_qry) {
+      uint64_t t = get_sys_clock() - next->starttime;
+      next_qry->time_q_work += t;
+      INC_STATS(0,qq_cnt,1);
+      INC_STATS(0,qq_lat,t);
+    }
   }
 
   if(cnt == 0 && last_add_time != 0) {
@@ -105,6 +115,9 @@ base_query * QWorkQueue::get_next_query() {
     n = n->next;
   }
 
+
+  INC_STATS(0,time_qq,get_sys_clock() - starttime);
+  INC_STATS(0,time_qq,get_sys_clock() - starttime);
   pthread_mutex_unlock(&mtx);
   return next_qry;
 }
@@ -186,6 +199,9 @@ base_query * QWorkQueue::get_next_abort_query() {
       tail = NULL;
       assert(head == NULL);
     }
+
+    if(next_qry)
+      next_qry->time_q_abrt += get_sys_clock() - elem->starttime;
   }
 
   if(cnt == 0 && last_add_time != 0) {

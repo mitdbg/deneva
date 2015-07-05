@@ -81,6 +81,11 @@ public:
 
   uint64_t client_startts;
 
+  // Stats
+  double time_q_abrt;
+  double time_q_work;
+  double time_copy;
+
   void clear();
   void update_rc(RC rc);
   void set_txn_id(uint64_t _txn_id); 

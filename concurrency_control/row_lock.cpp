@@ -62,14 +62,17 @@ RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt
 
 	bool conflict = conflict_lock(lock_type, type);
 	if (CC_ALG == WAIT_DIE && !conflict) {
-		if (waiters_head && txn->get_ts() < waiters_head->txn->get_ts())
+		if (waiters_head && txn->get_ts() < waiters_head->txn->get_ts()) {
 			conflict = true;
+      //printf("special ");
+    }
 	}
 	// Some txns coming earlier is waiting. Should also wait.
 	if (CC_ALG == DL_DETECT && waiters_head != NULL)
 		conflict = true;
 	
 	if (conflict) { 
+    //printf("conflict! txnid%ld ",txn->get_txn_id());
 		// Cannot be added to the owner list.
 		if (CC_ALG == NO_WAIT) {
 			rc = Abort;
@@ -106,7 +109,7 @@ RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt
 				// insert txn to the right position
 				// the waiter list is always in timestamp order
 				LockEntry * entry = get_entry();
-                entry->start_ts = get_sys_clock();
+        entry->start_ts = get_sys_clock();
 				entry->txn = txn;
 				entry->type = type;
 				en = waiters_head;
@@ -125,8 +128,11 @@ RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt
         txn->rc = rc;
         txn->cc_wait_cnt++;
         txn->wait_starttime = get_sys_clock();
-      } else 
+        //printf("wait \n");
+      } else {
         rc = Abort;
+        //printf("abort \n");
+      }
     } else if (CC_ALG == CALVIN){
 			LockEntry * entry = get_entry();
                 entry->start_ts = get_sys_clock();
@@ -142,14 +148,17 @@ RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt
 	} else {
 		LockEntry * entry = get_entry();
 		entry->type = type;
-        entry->start_ts = get_sys_clock();
+    entry->start_ts = get_sys_clock();
 		entry->txn = txn;
+#if DEBUG_TIMELINE
+    printf("LOCK %ld %ld\n",entry->txn->get_txn_id(),entry->start_ts);
+#endif
 		STACK_PUSH(owners, entry);
 		owner_cnt ++;
 		lock_type = type;
 		if (CC_ALG == DL_DETECT) 
 			ASSERT(waiters_head == NULL);
-        rc = RCOK;
+    rc = RCOK;
 	}
 final:
 	
@@ -198,6 +207,7 @@ RC Row_lock::lock_release(txn_man * txn) {
 		en = en->next;
 	}
 	if (en) { // find the entry in the owner list
+    en->txn->cc_hold_time = get_sys_clock() - en->start_ts;
 		if (prev) prev->next = en->next;
 		else owners = en->next;
 		return_entry(en);
@@ -210,6 +220,11 @@ RC Row_lock::lock_release(txn_man * txn) {
 		while (en != NULL && en->txn != txn)
 			en = en->next;
 		ASSERT(en);
+    uint64_t t = get_sys_clock() - en->start_ts;
+    // Stats
+    en->txn->cc_wait_time += t;
+    en->txn->txn_time_wait += t;
+
 		LIST_REMOVE(en);
 		if (en == waiters_head)
 			waiters_head = en->next;
@@ -231,9 +246,15 @@ RC Row_lock::lock_release(txn_man * txn) {
 	// If any waiter can join the owners, just do it!
 	while (waiters_head && !conflict_lock(lock_type, waiters_head->type)) {
 		LIST_GET_HEAD(waiters_head, waiters_tail, entry);
+#if DEBUG_TIMELINE
+    printf("LOCK %ld %ld\n",entry->txn->get_txn_id(),get_sys_clock());
+#endif
+    // Stats
     t = get_sys_clock() - entry->start_ts;
-    INC_STATS(0, time_wait_lock, t);
+    //INC_STATS(0, time_wait_lock, t);
     entry->txn->cc_wait_time += t;
+    entry->txn->txn_time_wait += t;
+
 		STACK_PUSH(owners, entry);
 		owner_cnt ++;
 		waiter_cnt --;

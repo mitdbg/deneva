@@ -104,8 +104,7 @@ void PartMan::unlock(txn_man * txn) {
         waiters[i] = waiters[i + 1];
       }
       waiter_cnt --;
-      // FIXME: stat locality w/ thd_id
-      INC_STATS(0,time_wait_lock,get_sys_clock() - owner->wait_starttime);
+      INC_STATS(txn->get_thd_id(),time_wait_lock,get_sys_clock() - owner->wait_starttime);
 			if(GET_NODE_ID(owner->get_pid()) == _node_id) {
         ATOM_SUB(owner->ready_part, 1);
         // If local and ready_part is 0, restart txn
@@ -116,8 +115,7 @@ void PartMan::unlock(txn_man * txn) {
         }
       }
       else {
-        // FIXME: stat locality w/ thd_id
-        INC_STATS(0,time_wait_lock_rem,get_sys_clock() - owner->wait_starttime);
+        INC_STATS(txn->get_thd_id(),time_wait_lock_rem,get_sys_clock() - owner->wait_starttime);
         owner->rc = RCOK;
 				remote_rsp(true,RCOK,owner);
 			}
@@ -353,7 +351,7 @@ RC Plock::rem_lock(uint64_t * parts, uint64_t part_cnt, txn_man * txn) {
 		assert(GET_NODE_ID(part_id) == get_node_id());
 		rc = part_mans[part_id]->lock(txn);
 	}
-	INC_STATS(0, time_lock_man, get_sys_clock() - starttime);
+	INC_STATS(txn->get_thd_id(), time_lock_man, get_sys_clock() - starttime);
   return rc;
 }
 
@@ -364,7 +362,7 @@ void Plock::rem_unlock(uint64_t * parts, uint64_t part_cnt, txn_man * txn) {
 		assert(GET_NODE_ID(part_id) == get_node_id());
 		part_mans[part_id]->unlock(txn);
 	}
-  INC_STATS(0, time_lock_man, get_sys_clock() - starttime);
+  INC_STATS(txn->get_thd_id(), time_lock_man, get_sys_clock() - starttime);
 }
 
 void Plock::rem_lock_rsp(RC rc, txn_man * txn) {
@@ -374,11 +372,11 @@ void Plock::rem_lock_rsp(RC rc, txn_man * txn) {
     txn->rc = rc;
   }
 	ATOM_SUB(txn->ready_part, 1);
-	INC_STATS(1, time_lock_man, get_sys_clock() - starttime);
+	INC_STATS(txn->get_thd_id(), time_lock_man, get_sys_clock() - starttime);
 }
 
 void Plock::rem_unlock_rsp(txn_man * txn) {
 	ts_t starttime = get_sys_clock();
 	ATOM_SUB(txn->ready_ulk, 1);
-	INC_STATS(1, time_lock_man, get_sys_clock() - starttime);
+	INC_STATS(txn->get_thd_id(), time_lock_man, get_sys_clock() - starttime);
 }

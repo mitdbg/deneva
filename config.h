@@ -1,11 +1,12 @@
 #ifndef _CONFIG_H_
+
 #define _CONFIG_H_
 
 /***********************************************/
 // Simulation + Hardware
 /***********************************************/
 #define NODE_CNT 2
-#define THREAD_CNT 1
+#define THREAD_CNT 4
 // REM_THREAD_CNT should be at least NODE_CNT*THREAD_CNT to avoid deadlock
 #define REM_THREAD_CNT 1
 // PART_CNT should be at least NODE_CNT
@@ -84,7 +85,7 @@
 // per-row lock/ts management or central lock/ts management
 #define CENTRAL_MAN         false
 #define BUCKET_CNT          31
-#define ABORT_PENALTY       1000000UL   // in ns.
+#define ABORT_PENALTY 1 * 1000000UL   // in ns.
 // [ INDEX ]
 #define ENABLE_LATCH        false
 #define CENTRAL_INDEX       false
@@ -141,8 +142,8 @@
 #define MAX_TUPLE_SIZE        1024 // in bytes
 // ==== [YCSB] ====
 #define INIT_PARALLELISM      16 
-#define SYNTH_TABLE_SIZE      (NODE_CNT*1024)
-#define ZIPF_THETA 0.2
+#define SYNTH_TABLE_SIZE 2097152
+#define ZIPF_THETA 0.6
 #define READ_PERC 0.5
 #define WRITE_PERC 0.5
 #define SCAN_PERC           0
@@ -227,6 +228,7 @@ extern TestCases          g_test_case;
 #define DEBUG_ASSERT				false
 #define DEBUG_DISTR					false 
 #define DEBUG_TIMELINE				false
+#define DEBUG_BREAKDOWN				false
 
 #define QRY_ONLY false
 #define TWOPC_ONLY false
@@ -262,9 +264,9 @@ extern TestCases          g_test_case;
 #define BILLION 1000000000UL // in ns => 1 second
 #define STAT_ARR_SIZE 1024
 #define PROG_TIMER 10 * BILLION // in s
-#define DONE_TIMER 3 * 60 * BILLION // 3 minutes
+#define DONE_TIMER 20 * 1 * BILLION
 
-#define SEED 0 
+#define SEED 0
 
 #endif
 

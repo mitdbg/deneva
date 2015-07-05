@@ -120,6 +120,7 @@ void Stats_thd::clear() {
 	rtime_index = 0;
 	time_abort = 0;
 	time_cleanup = 0;
+	time_qq = 0;
 	time_wait = 0;
 	time_wait_lock_rem = 0;
 	time_wait_lock = 0;
@@ -135,6 +136,8 @@ void Stats_thd::clear() {
 	time_unpack = 0;
 	lock_diff = 0;
   qq_full = 0;
+  qq_cnt = 0;
+  qq_lat = 0;
   aq_full = 0;
 
   time_getqry = 0;
@@ -142,7 +145,25 @@ void Stats_thd::clear() {
   txn_sent = 0;
 
 	cc_wait_cnt = 0;
+	cc_wait_abrt_cnt = 0;
 	cc_wait_time = 0;
+	cc_wait_abrt_time = 0;
+	cc_hold_time = 0;
+	cc_hold_abrt_time = 0;
+
+  txn_time_idx = 0;
+  txn_time_man = 0;
+  txn_time_ts = 0;
+  txn_time_abrt = 0;
+  txn_time_clean = 0;
+  txn_time_copy = 0;
+  txn_time_wait = 0;
+  txn_time_twopc = 0;
+  txn_time_q_abrt = 0;
+  txn_time_q_work = 0;
+  txn_time_net = 0;
+  txn_time_misc = 0;
+
   cflt_cnt = 0;
 	mpq_cnt = 0;
 	msg_bytes = 0;
@@ -170,7 +191,11 @@ void Stats_tmp::clear() {
 	*/
 	mpq_cnt = 0;
 	cc_wait_cnt = 0;
+	cc_wait_abrt_cnt = 0;
 	cc_wait_time = 0;
+	cc_wait_abrt_time = 0;
+	cc_hold_time = 0;
+	cc_hold_abrt_time = 0;
 }
 
 void Stats::init() {
@@ -223,7 +248,11 @@ void Stats::commit(uint64_t thd_id) {
 	if (STATS_ENABLE) {
 		_stats[thd_id]->mpq_cnt += tmp_stats[thd_id]->mpq_cnt;
 		_stats[thd_id]->cc_wait_cnt += tmp_stats[thd_id]->cc_wait_cnt;
+		_stats[thd_id]->cc_wait_abrt_cnt += tmp_stats[thd_id]->cc_wait_abrt_cnt;
 		_stats[thd_id]->cc_wait_time += tmp_stats[thd_id]->cc_wait_time;
+		_stats[thd_id]->cc_wait_abrt_time += tmp_stats[thd_id]->cc_wait_abrt_time;
+		_stats[thd_id]->cc_hold_time += tmp_stats[thd_id]->cc_hold_time;
+		_stats[thd_id]->cc_hold_abrt_time += tmp_stats[thd_id]->cc_hold_abrt_time;
 		tmp_stats[thd_id]->init();
 	}
 }
@@ -461,12 +490,17 @@ void Stats::print_prog(uint64_t tid) {
       ",aq_full=%f"
 			",cc_wait_cnt=%ld"
 			",cc_wait_time=%f"
+			",cc_hold_time=%f"
+			",cc_wait_abrt_cnt=%ld"
+			",cc_wait_abrt_time=%f"
+			",cc_hold_abrt_time=%f"
       ",cflt_cnt=%ld"
 			",mpq_cnt=%ld"
       ",msg_bytes=%ld"
       ",msg_rcv=%ld"
       ",msg_sent=%ld"
       ",qq_full=%f"
+      ",qq_lat=%f"
       ",qry_cnt=%ld"
       ",qry_rtxn=%ld"
       ",qry_rqry_rsp=%ld"
@@ -508,12 +542,17 @@ void Stats::print_prog(uint64_t tid) {
 			_stats[tid]->aq_full / BILLION,
 			_stats[tid]->cc_wait_cnt, 
 			_stats[tid]->cc_wait_time / BILLION, 
+			_stats[tid]->cc_hold_time / BILLION, 
+			_stats[tid]->cc_wait_abrt_cnt, 
+			_stats[tid]->cc_wait_abrt_time / BILLION, 
+			_stats[tid]->cc_hold_abrt_time / BILLION, 
 			_stats[tid]->cflt_cnt, 
 			_stats[tid]->mpq_cnt, 
 			_stats[tid]->msg_bytes, 
 			_stats[tid]->msg_rcv_cnt, 
 			_stats[tid]->msg_sent_cnt, 
 			_stats[tid]->qq_full / BILLION,
+			_stats[tid]->qq_lat / _stats[tid]->qq_cnt,
 			qry_cnt,
 			_stats[tid]->rtxn,
 			_stats[tid]->rqry_rsp,
@@ -573,11 +612,14 @@ void Stats::print(bool prog) {
 	double total_debug4 = 0;
 	double total_debug5 = 0;
 	double total_qq_full = 0;
+	double total_qq_cnt = 0;
+	double total_qq_lat = 0;
 	double total_aq_full = 0;
 	double total_time_index = 0;
 	double total_rtime_index = 0;
 	double total_time_abort = 0;
 	double total_time_cleanup = 0;
+	double total_time_qq = 0;
 	double total_time_wait = 0;
 	double total_time_wait_lock_rem = 0;
 	double total_time_wait_lock = 0;
@@ -593,6 +635,10 @@ void Stats::print(bool prog) {
 	double total_time_unpack = 0;
 	uint64_t total_cc_wait_cnt = 0;
 	double total_cc_wait_time = 0;
+	double total_cc_hold_time = 0;
+	uint64_t total_cc_wait_abrt_cnt = 0;
+	double total_cc_wait_abrt_time = 0;
+	double total_cc_hold_abrt_time = 0;
 	uint64_t total_cflt_cnt = 0;
 	uint64_t total_spec_commit_cnt = 0;
 	uint64_t total_spec_abort_cnt = 0;
@@ -601,6 +647,20 @@ void Stats::print(bool prog) {
 	uint64_t total_msg_sent_cnt = 0;
 	uint64_t total_msg_rcv_cnt = 0;
 	double total_time_msg_sent = 0;
+
+
+  double total_txn_time_idx = 0;
+  double total_txn_time_man = 0;
+  double total_txn_time_ts = 0;
+  double total_txn_time_abrt = 0;
+  double total_txn_time_clean = 0;
+  double total_txn_time_copy = 0;
+  double total_txn_time_wait = 0;
+  double total_txn_time_twopc = 0;
+  double total_txn_time_q_abrt = 0;
+  double total_txn_time_q_work = 0;
+  double total_txn_time_net = 0;
+  double total_txn_time_misc = 0;
 
 
   uint64_t total_rqry = 0;
@@ -637,6 +697,8 @@ void Stats::print(bool prog) {
 		total_debug4 += _stats[tid]->debug4;
 		total_debug5 += _stats[tid]->debug5;
 		total_qq_full += _stats[tid]->qq_full;
+		total_qq_cnt += _stats[tid]->qq_cnt;
+		total_qq_lat += _stats[tid]->qq_lat;
 		total_aq_full += _stats[tid]->aq_full;
 		total_rtxn += _stats[tid]->rtxn;
 		total_rqry_rsp += _stats[tid]->rqry_rsp;
@@ -649,6 +711,7 @@ void Stats::print(bool prog) {
 		total_rtime_index += _stats[tid]->rtime_index;
 		total_time_abort += _stats[tid]->time_abort;
 		total_time_cleanup += _stats[tid]->time_cleanup;
+		total_time_qq += _stats[tid]->time_qq;
 		total_time_wait += _stats[tid]->time_wait;
 		total_time_wait_lock_rem += _stats[tid]->time_wait_lock_rem;
 		total_time_wait_lock += _stats[tid]->time_wait_lock;
@@ -665,6 +728,10 @@ void Stats::print(bool prog) {
 
 		total_cc_wait_cnt += _stats[tid]->cc_wait_cnt;
 		total_cc_wait_time += _stats[tid]->cc_wait_time;
+		total_cc_hold_time += _stats[tid]->cc_hold_time;
+		total_cc_wait_abrt_cnt += _stats[tid]->cc_wait_abrt_cnt;
+		total_cc_wait_abrt_time += _stats[tid]->cc_wait_abrt_time;
+		total_cc_hold_abrt_time += _stats[tid]->cc_hold_abrt_time;
 		total_cflt_cnt += _stats[tid]->cflt_cnt;
 		total_spec_commit_cnt += _stats[tid]->spec_commit_cnt;
 		total_spec_abort_cnt += _stats[tid]->spec_abort_cnt;
@@ -674,6 +741,19 @@ void Stats::print(bool prog) {
 		total_msg_rcv_cnt += _stats[tid]->msg_rcv_cnt;
 		total_time_msg_sent += _stats[tid]->time_msg_sent;
 		
+  total_txn_time_idx += _stats[tid]->txn_time_idx;
+  total_txn_time_man += _stats[tid]->txn_time_man;
+  total_txn_time_ts += _stats[tid]->txn_time_ts;
+  total_txn_time_abrt += _stats[tid]->txn_time_abrt;
+  total_txn_time_clean += _stats[tid]->txn_time_clean;
+  total_txn_time_copy += _stats[tid]->txn_time_copy;
+  total_txn_time_wait += _stats[tid]->txn_time_wait;
+  total_txn_time_twopc += _stats[tid]->txn_time_twopc;
+  total_txn_time_q_abrt += _stats[tid]->txn_time_q_abrt;
+  total_txn_time_q_work += _stats[tid]->txn_time_q_work;
+  total_txn_time_net += _stats[tid]->txn_time_net;
+  total_txn_time_misc += _stats[tid]->txn_time_misc;
+
   total_qry_cnt += _stats[tid]->rtxn +_stats[tid]->rqry_rsp +_stats[tid]->rack +_stats[tid]->rinit +_stats[tid]->rqry +_stats[tid]->rprep +_stats[tid]->rfin;
 
 		printf("[tid=%ld] txn_cnt=%ld,abort_cnt=%ld\n", 
@@ -708,12 +788,17 @@ void Stats::print(bool prog) {
       ",aq_full=%f"
 			",cc_wait_cnt=%ld"
 			",cc_wait_time=%f"
+			",cc_hold_time=%f"
+			",cc_wait_abrt_cnt=%ld"
+			",cc_wait_abrt_time=%f"
+			",cc_hold_abrt_time=%f"
       ",cflt_cnt=%ld"
 			",mpq_cnt=%ld"
       ",msg_bytes=%ld"
       ",msg_rcv=%ld"
       ",msg_sent=%ld"
       ",qq_full=%f"
+      ",qq_lat=%f"
       ",qry_cnt=%ld"
       ",qry_rtxn=%ld"
       ",qry_rqry_rsp=%ld"
@@ -730,6 +815,7 @@ void Stats::print(bool prog) {
       ",time_lock_man=%f"
 			",time_man=%f"
 			",time_msg_sent=%f"
+      ",time_qq=%f"
       ",time_tport_send=%f"
       ",time_tport_rcv=%f"
       ",time_ts_alloc=%f"
@@ -743,6 +829,18 @@ void Stats::print(bool prog) {
       ",time_work=%f"
       ",time_rqry=%f"
       ",tport_lat=%f"
+  ",txn_time_idx=%f"
+  ",txn_time_man=%f"
+  ",txn_time_ts=%f"
+  ",txn_time_abrt=%f"
+  ",txn_time_clean=%f"
+  ",txn_time_copy=%f"
+  ",txn_time_wait=%f"
+  ",txn_time_twopc=%f"
+  ",txn_time_q_abrt=%f"
+  ",txn_time_q_work=%f"
+  ",txn_time_net=%f"
+  ",txn_time_misc=%f"
 			"\n",
 			total_txn_cnt, 
 			total_tot_run_time / BILLION,
@@ -754,12 +852,17 @@ void Stats::print(bool prog) {
 			total_aq_full / BILLION,
       total_cc_wait_cnt,
       total_cc_wait_time / BILLION,
+      total_cc_hold_time / BILLION,
+      total_cc_wait_abrt_cnt,
+      total_cc_wait_abrt_time / BILLION,
+      total_cc_hold_abrt_time / BILLION,
       total_cflt_cnt,
 			total_mpq_cnt, 
 			total_msg_bytes, 
 			total_msg_rcv_cnt, 
 			total_msg_sent_cnt, 
 			total_qq_full / BILLION,
+			total_qq_lat / total_qq_cnt / BILLION,
 			total_qry_cnt,
 			total_rtxn,
 			total_rqry_rsp ,
@@ -776,6 +879,7 @@ void Stats::print(bool prog) {
 			total_time_lock_man / BILLION,
 			total_time_man / BILLION,
       total_time_msg_sent / BILLION,
+			total_time_qq / BILLION,
 			total_time_tport_send / BILLION,
 			total_time_tport_rcv / BILLION,
 			total_time_ts_alloc / BILLION,
@@ -788,7 +892,19 @@ void Stats::print(bool prog) {
 			total_time_wait_rem / BILLION,
 			total_time_work / BILLION,
 			total_time_rqry / BILLION,
-			total_tport_lat / BILLION / total_msg_rcv_cnt
+			total_tport_lat / BILLION / total_msg_rcv_cnt,
+  total_txn_time_idx / BILLION,
+  total_txn_time_man / BILLION,
+  total_txn_time_ts / BILLION,
+  total_txn_time_abrt / BILLION,
+  total_txn_time_clean / BILLION,
+  total_txn_time_copy / BILLION,
+  total_txn_time_wait / BILLION,
+  total_txn_time_twopc / BILLION,
+  total_txn_time_q_abrt / BILLION,
+  total_txn_time_q_work / BILLION,
+  total_txn_time_net / BILLION,
+  total_txn_time_misc / BILLION
 		);
 
   if(!prog) {
@@ -837,6 +953,7 @@ void Stats::print_cnts() {
   printf("\n[all_abort %ld] ",all_abort_cnt);
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) 
     _stats[tid]->all_abort.print(stdout);
+#if WORKLOAD == TPCC
   /*
   printf("\n[w_cflt %ld] ",w_cflt_cnt);
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) 
@@ -881,6 +998,7 @@ void Stats::print_cnts() {
   printf("\n[s_abrt %ld] ",s_abrt_cnt);
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) 
     _stats[tid]->s_abrt.print(stdout);
+#endif
 
   printf("\n");
 

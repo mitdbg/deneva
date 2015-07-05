@@ -30,7 +30,7 @@ class LatencyStats(object):
 
     def get_metadata(self):
         return self._metadata
-    
+
     def get_mean(self):
         return self._mean*self._conversion_factor
     
@@ -77,6 +77,8 @@ def exec_fn(ls,fn):
         return ls.get_50th()
     elif fn == "mean":
         return ls.get_mean()
+    elif fn == "max":
+        return ls.get_max()
     else:
         assert False
 

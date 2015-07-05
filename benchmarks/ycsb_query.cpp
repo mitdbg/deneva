@@ -31,6 +31,7 @@ void ycsb_client_query::init(uint64_t thd_id, workload * h_wl, uint64_t node_id)
 		denom = zeta(the_n, g_zipf_theta);
 	}
 	gen_requests(pid, h_wl);
+
 }
 
 
@@ -52,6 +53,9 @@ void ycsb_query::init(uint64_t thd_id, workload * h_wl, uint64_t node_id) {
 	}
 	gen_requests(pid, h_wl);
   */
+  time_q_abrt = 0;
+  time_q_work = 0;
+  time_copy = 0;
 }
 
 void ycsb_query::reset() {

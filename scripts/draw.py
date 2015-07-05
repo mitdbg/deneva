@@ -109,6 +109,8 @@ def draw_bar(filename, data, label, names=None, dots=None,
         top='off', # ticks along the top edge are off
         labelbottom='on') # labels along the bottom edge are off
 
+    if title:
+        ax1.set_title("\n".join(wrap(title)))
     fig.legend([x[0] for x in bars], names, prop={'size':12}, 
         ncol=ncol, bbox_to_anchor=bbox, labelspacing=0.2) 
     subplots_adjust(left=left, bottom=bottom, right=right, top=top)
@@ -207,7 +209,7 @@ def draw_bars_single(data, xlabels,
     ylabel(ylab)
     xlabel(xlab)
     if title:
-        ax.set_title(title)
+        ax.set_title("\n".join(wrap(title)))
     legend(plots, xlabels, bbox_to_anchor = bbox, prop={'size':11})
     subplots_adjust(bottom=0.25, right=0.7, top=None)
     savefig('../figs/' + figname + '.pdf', bbox_inches='tight')
@@ -235,7 +237,7 @@ def draw_stack(data, xlabels, slabels, figname='stack', title=None, figsize=(8, 
         bottom = [a + b for a,b in zip(bottom, data[s])]
 
     if title:
-        plt.title(title)
+        plt.title("\n".join(wrap(title)))
     legend(reversed(plots), tuple(slabels), bbox_to_anchor = (0.38, -0.2, 1, 1), prop={'size':11})
     subplots_adjust(bottom=0.25, right=0.7, top=None)
     savefig('../figs/' + figname + '.pdf', bbox_inches='tight')
@@ -272,7 +274,7 @@ def draw_bars(data, xlabels,
     ylabel(ylab)
     xlabel(xlab)
     if title:
-        ax.set_title(title)
+        ax.set_title("\n".join(wrap(title)))
     legend(plots, sorted(data.keys()), bbox_to_anchor = bbox, prop={'size':11})
     subplots_adjust(bottom=0.25, right=0.7, top=None)
     savefig('../figs/' + figname + '.pdf', bbox_inches='tight')
@@ -300,7 +302,7 @@ def draw_stack(data, xlabels, slabels, figname='stack', title=None, figsize=(8, 
         bottom = [a + b for a,b in zip(bottom, data[s])]
 
     if title:
-        plt.title(title)
+        plt.title("\n".join(wrap(title)))
     legend(reversed(plots), tuple(slabels), bbox_to_anchor = (0.38, -0.2, 1, 1), prop={'size':11})
     subplots_adjust(bottom=0.25, right=0.7, top=None)
     savefig('../figs/' + figname + '.pdf', bbox_inches='tight')

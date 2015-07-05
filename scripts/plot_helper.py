@@ -57,8 +57,7 @@ def tput_plotter(title,x_name,v_name,fmt,exp,summary,summary_client):
         title2 = title + title2
             
         tput(x_vals,v_vals,summary,cfg_fmt=_cfg_fmt,cfg=c,xname=x_name,vname=v_name,title=title2)
-        lat(x_vals,v_vals,summary_client,cfg_fmt=_cfg_fmt,cfg=c,xname=x_name,vname=v_name,title=title2)
-
+        lat(x_vals,v_vals,summary,cfg_fmt=_cfg_fmt,cfg=c,xname=x_name,vname=v_name,title=title2,stat_types=["99th","90th","mean","max"])
 
 
 def tput(xval,vval,summary,
@@ -399,6 +398,7 @@ def time_breakdown(xval,summary,
     data = [time_wait,time_msg,time_man,time_index,time_ts_alloc,time_cleanup,time_abort,time_work]
 
     draw_stack(data,xval,stack_names,figname=name,title=_title,ymax=_ymax)
+    print("Created plot {}".format(name))
 
 
 # Stack graph of time breakdowns

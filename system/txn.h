@@ -51,6 +51,7 @@ public:
   virtual void read_keys(base_query * query) = 0; 
   virtual RC acquire_locks(base_query * query) = 0; 
   void register_thd(thread_t * h_thd);
+  void update_stats(); 
 	uint64_t 		get_thd_id();
 	uint64_t 		get_node_id();
 	workload * 		get_wl();
@@ -131,6 +132,26 @@ public:
   uint64_t wait_starttime;
   uint64_t cc_wait_cnt;
   double cc_wait_time;
+  double cc_hold_time;
+  uint64_t cc_wait_abrt_cnt;
+  double cc_wait_abrt_time;
+  double cc_hold_abrt_time;
+
+  double last_time_abrt;
+  uint64_t txn_stat_starttime;
+  uint64_t txn_twopc_starttime;
+  double txn_time_idx;
+  double txn_time_man;
+  double txn_time_ts;
+  double txn_time_abrt;
+  double txn_time_clean;
+  double txn_time_copy;
+  double txn_time_wait;
+  double txn_time_twopc;
+  double txn_time_q_abrt;
+  double txn_time_q_work;
+  double txn_time_net;
+  double txn_time_misc;
   
 private:
 	// insert rows

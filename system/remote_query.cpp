@@ -351,6 +351,7 @@ base_query * Remote_query::unpack(void * d, int len) {
     txnid_t txn_id;
 	RemReqType rtype;
     RC rc;
+    uint64_t starttime = get_sys_clock();
 
 	memcpy(&dest_id,&data[ptr],sizeof(uint32_t));
 	ptr += sizeof(uint32_t);
@@ -529,6 +530,7 @@ base_query * Remote_query::unpack(void * d, int len) {
 	    	default:
 		assert(false);
 	}
+  query->time_copy += get_sys_clock() - starttime;
     return query;
 }
 

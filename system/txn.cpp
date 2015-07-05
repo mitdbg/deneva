@@ -30,9 +30,26 @@ void txn_man::init(thread_t * h_thd, workload * h_wl, uint64_t thd_id) {
   ack_cnt = 0;
   rsp_cnt = 0;
   state = START;
+  cc_wait_abrt_cnt = 0;
+  cc_wait_abrt_time = 0;
+  cc_hold_abrt_time = 0;
   clear();
 
   sem_init(&rsp_mutex, 0, 1);
+
+
+  txn_time_idx = 0;
+  txn_time_man = 0;
+  txn_time_ts = 0;
+  txn_time_abrt = 0;
+  txn_time_clean = 0;
+  txn_time_copy = 0;
+  txn_time_wait = 0;
+  txn_time_twopc = 0;
+  txn_time_q_abrt = 0;
+  txn_time_q_work = 0;
+  txn_time_net = 0;
+  txn_time_misc = 0;
 
 	//accesses = (Access **) mem_allocator.alloc(sizeof(Access **), 0);
 	accesses = new Access * [MAX_ROW_PER_TXN];
@@ -44,6 +61,65 @@ void txn_man::init(thread_t * h_thd, workload * h_wl, uint64_t thd_id) {
 void txn_man::clear() {
   cc_wait_cnt = 0;
   cc_wait_time = 0;
+  cc_hold_time = 0;
+}
+
+void txn_man::update_stats() {
+  INC_STATS(get_thd_id(), cc_wait_cnt, cc_wait_cnt);
+  INC_STATS(get_thd_id(), cc_wait_time, cc_wait_time);
+  INC_STATS(get_thd_id(), cc_hold_time, cc_hold_time);
+  INC_STATS(get_thd_id(), cc_wait_abrt_cnt, cc_wait_abrt_cnt);
+  INC_STATS(get_thd_id(), cc_wait_abrt_time, cc_wait_abrt_time);
+  INC_STATS(get_thd_id(), cc_hold_abrt_time, cc_hold_abrt_time);
+
+  double txn_time_total = txn_time_misc;
+  txn_time_misc = txn_time_misc - (txn_time_idx + txn_time_man + txn_time_ts + txn_time_abrt + txn_time_clean + txn_time_copy + txn_time_wait + txn_time_twopc + txn_time_q_abrt + txn_time_q_work + txn_time_net); 
+  INC_STATS(get_thd_id(), txn_time_idx, this->txn_time_idx);
+  INC_STATS(get_thd_id(), txn_time_man, this->txn_time_man);
+  INC_STATS(get_thd_id(), txn_time_ts, this->txn_time_ts);
+  INC_STATS(get_thd_id(), txn_time_abrt, this->txn_time_abrt);
+  INC_STATS(get_thd_id(), txn_time_clean, this->txn_time_clean);
+  INC_STATS(get_thd_id(), txn_time_copy, this->txn_time_copy);
+  INC_STATS(get_thd_id(), txn_time_wait, this->txn_time_wait);
+  INC_STATS(get_thd_id(), txn_time_twopc, this->txn_time_twopc);
+  INC_STATS(get_thd_id(), txn_time_q_abrt, this->txn_time_q_abrt);
+  INC_STATS(get_thd_id(), txn_time_q_work, this->txn_time_q_work);
+  INC_STATS(get_thd_id(), txn_time_net, this->txn_time_net);
+  INC_STATS(get_thd_id(), txn_time_misc, this->txn_time_misc);
+  // FIXME: Only for debugging
+#if DEBUG_BREAKDOWN
+  printf("ID %ld: abrt_cnt: %ld"
+      ",idx: %f"
+      ",man: %f"
+      ",ts: %f"
+      ",abrt: %f"
+      ",clean: %f"
+      ",copy: %f"
+      ",wait: %f"
+      ",twopc: %f"
+      ",q_abrt: %f"
+      ",q_work: %f"
+      ",net: %f"
+      ",misc: %f\n"
+      ",total: %f\n"
+      ,txn_id
+      ,abort_cnt
+      ,txn_time_idx / BILLION
+      ,txn_time_man / BILLION
+      ,txn_time_ts / BILLION
+      ,txn_time_abrt / BILLION
+      ,txn_time_clean / BILLION
+      ,txn_time_copy / BILLION
+      ,txn_time_wait / BILLION
+      ,txn_time_twopc / BILLION
+      ,txn_time_q_abrt / BILLION
+      ,txn_time_q_work / BILLION
+      ,txn_time_net / BILLION
+      ,txn_time_misc / BILLION
+      ,txn_time_total / BILLION
+      );
+#endif
+
 }
 
 void txn_man::register_thd(thread_t * h_thd) {
@@ -170,7 +246,10 @@ void txn_man::cleanup(RC rc) {
 			row->free_row();
 			mem_allocator.free(row, sizeof(row));
 		}
-		INC_STATS(get_thd_id(), time_abort, get_sys_clock() - starttime);
+    uint64_t t = get_sys_clock() - starttime;
+		INC_STATS(get_thd_id(), time_abort, t);
+    txn_time_abrt += t;
+    last_time_abrt = t;
 	}
 	row_cnt = 0;
 	wr_cnt = 0;
@@ -294,7 +373,9 @@ txn_man::index_read(INDEX * index, idx_key_t key, int part_id) {
 	itemid_t * item;
 	index->index_read(key, item, part_id, get_thd_id());
 
-  INC_STATS(get_thd_id(), time_index, get_sys_clock() - starttime);
+  uint64_t t = get_sys_clock() - starttime;
+  INC_STATS(get_thd_id(), time_index, t);
+  txn_time_idx += t;
 
 	return item;
 }
@@ -318,13 +399,19 @@ RC txn_man::validate() {
 RC txn_man::finish(RC rc, uint64_t * parts, uint64_t part_cnt) {
   assert(h_thd->_node_id < g_node_cnt);
 	uint64_t starttime = get_sys_clock();
+    if(txn_twopc_starttime > 0)
+      txn_time_twopc = starttime - txn_twopc_starttime;
 	if (CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC) {
 		part_lock_man.rem_unlock(parts, part_cnt, this);
   }
   //if(CC_ALG != HSTORE)
   cleanup(rc);
-	uint64_t timespan = get_sys_clock() - starttime;
+
+  // Stats
+	uint64_t timespan = (get_sys_clock() - starttime) - last_time_abrt;
+  last_time_abrt = 0;
 	INC_STATS(get_thd_id(), time_cleanup,  timespan);
+	txn_time_clean += timespan;
 	return rc;
 }
 
@@ -351,6 +438,10 @@ RC txn_man::finish(base_query * query, bool fin) {
   return RCOK;
 #endif
   //uint64_t starttime = get_sys_clock();
+
+  // Stats start
+  txn_twopc_starttime = get_sys_clock();
+
 
   if(!fin) {
     this->state = PREP;
