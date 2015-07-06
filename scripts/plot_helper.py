@@ -57,7 +57,7 @@ def tput_plotter(title,x_name,v_name,fmt,exp,summary,summary_client):
         title2 = title + title2
             
         tput(x_vals,v_vals,summary,cfg_fmt=_cfg_fmt,cfg=c,xname=x_name,vname=v_name,title=title2)
-        lat(x_vals,v_vals,summary,cfg_fmt=_cfg_fmt,cfg=c,xname=x_name,vname=v_name,title=title2,stat_types=["99th","90th","mean","max"])
+        lat(x_vals,v_vals,summary_client,cfg_fmt=_cfg_fmt,cfg=c,xname=x_name,vname=v_name,title=title2,stat_types=["99th","90th","mean","max"])
 
 
 def tput(xval,vval,summary,
@@ -73,6 +73,15 @@ def tput(xval,vval,summary,
 
     print "X-axis: " + str(xval)
     print "Var: " + str(vval)
+    if xname == "ABORT_PENALTY":
+        _xval = [(float(x.replace("UL","")))/1000000000 for x in xval]
+        sort_idxs = sorted(range(len(_xval)),key=lambda x:_xval[x])
+        xval = [xval[i] for i in sort_idxs]
+        _xval = sorted(_xval)
+        _xlab = xname + " (Sec)"
+    else:
+        _xval = xval
+        _xlab = xname
     for v in vval:
         if vname == "NETWORK_DELAY":
             _v = (float(v.replace("UL","")))/1000000
@@ -91,7 +100,7 @@ def tput(xval,vval,summary,
                 my_cfg = my_cfg + [1 if x == 1 else 2]
 
             cfgs = get_cfgs(my_cfg_fmt, my_cfg)
-            cfgs = get_outfile_name(cfgs)
+            cfgs = get_outfile_name(cfgs,my_cfg_fmt)
             if cfgs not in summary.keys(): 
                 print("Not in summary: {}".format(cfgs))
                 continue 
@@ -114,7 +123,7 @@ def tput(xval,vval,summary,
     if vname == "NETWORK_DELAY":
         bbox = [0.8,0.2]
     print("Created plot {}".format(name))
-    draw_line(name,tpt,xval,ylab='Throughput (Txn/sec)',xlab=xname,title=_title,bbox=bbox,ncol=2) 
+    draw_line(name,tpt,_xval,ylab='Throughput (Txn/sec)',xlab=_xlab,title=_title,bbox=bbox,ncol=2) 
 
 
 def lat(xval,vval,summary,
@@ -135,6 +144,15 @@ def lat(xval,vval,summary,
                 _v = (float(v.replace("UL","")))/1000000
             else:
                 _v = v
+            if xname == "ABORT_PENALTY":
+                _xval = [(float(x.replace("UL","")))/1000000000 for x in xval]
+                sort_idxs = sorted(range(len(_xval)),key=lambda x:_xval[x])
+                xval = [xval[i] for i in sort_idxs]
+                _xval = sorted(_xval)
+                _xlab = xname + " (Sec)"
+            else:
+                _xval = xval
+                _xlab = xname
             lat[_v] = [0] * len(xval)
 
             for x,xi in zip(xval,range(len(xval))):
@@ -148,7 +166,7 @@ def lat(xval,vval,summary,
                     my_cfg = my_cfg + [1 if x == 1 else 2]
 
                 cfgs = get_cfgs(my_cfg_fmt, my_cfg)
-                cfgs = get_outfile_name(cfgs)
+                cfgs = get_outfile_name(cfgs,my_cfg_fmt)
                 if cfgs not in summary.keys(): 
                     print("Not in summary: {}".format(cfgs))
                     break
@@ -163,7 +181,7 @@ def lat(xval,vval,summary,
         if vname == "NETWORK_DELAY":
             bbox = [0.8,0.2]
         print("Created plot {}".format(name))
-        draw_line(name,lat,xval,ylab='Latency-{}% (Sec)'.format(stat),xlab=xname,title=_title,bbox=bbox,ncol=2) 
+        draw_line(name,lat,xval,ylab='Latency-{}% (Sec)'.format(stat),xlab=_xlab,title=_title,bbox=bbox,ncol=2) 
 
 
 def lat_node_tbls(exp,nodes,msg_bytes,ts,

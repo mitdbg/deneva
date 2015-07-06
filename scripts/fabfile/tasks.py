@@ -350,7 +350,7 @@ def run_exp(expss,network_test=False):
             if env.remote:
                 cfgs["TPORT_TYPE"],cfgs["TPORT_TYPE_IPC"],cfgs["TPORT_PORT"]="\"tcp\"","false",7000
             
-            output_f = get_outfile_name(cfgs,env.hosts) 
+            output_f = get_outfile_name(cfgs,fmt,env.hosts) 
 
             # Check whether experiment has been already been run in this batch
             if SKIP:

@@ -182,7 +182,7 @@ def skew_sweep():
 
 #Should do this one on an ISTC machine
 def network_sweep():
-    fmt = fmt_ycsb + ["NETWORK_DELAY"]
+    fmt = [fmt_ycsb[0] + ["NETWORK_DELAY"]]
     nnodes = [1,2,4,8,16]
     nmpr=[1]
     nalgos=['WAIT_DIE']
@@ -236,6 +236,34 @@ def network_experiment_plot(all_exps,all_nodes,timestamps):
         lat_node_tbls(exp[:-1],all_nodes[i],exp[0].keys(),timestamps[i])
         lat_tbl(exp[-1],exp[-1].keys(),timestamps[i])
 
+def abort_penalty_sweep():
+    fmt = [fmt_ycsb[0] + ["ABORT_PENALTY"]]
+    global config_names
+    config_names = fmt[0]
+    nnodes = [1,2,4]#,8,16]
+    nmpr=[1]
+    nalgos=['WAIT_DIE']
+    #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
+    #nthreads=[1,2]
+    nthreads=[4]
+    ncthreads=[4]
+    ntifs=[1000]
+    nzipf=[0.6]
+    nwr_perc=[0.5]
+    nparts=[2]
+    abt_pen = ["1000000UL","5000000UL","1000000000UL","2000000000UL","4000000000UL","8000000000UL"]
+    ntxn=2000000
+    exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t,tif,z,1.0-wp,wp,p if p <= n else 1,ap] for n,ct,t,tif,z,wp,m,cc,p,ap in itertools.product(nnodes,ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts,abt_pen)]
+    return fmt[0],exp
+
+def abort_penalty_sweep_plot(summary,summary_client):
+    from plot_helper import tput_plotter
+    fmt,exp = abort_penalty_sweep()
+    x_name = "ABORT_PENALTY"
+    v_name = "CC_ALG"
+    title = "Abort Penalty Sweep"
+    tput_plotter(title,x_name,v_name,fmt,exp,summary,summary_client);
+
 
 experiment_map = {
     'test': test,
@@ -250,10 +278,12 @@ experiment_map = {
     'network_sweep': network_sweep,
     'tpcc_sweep': tpcc_sweep,
     'network_experiment' : network_experiment,
+    'abort_penalty_sweep': abort_penalty_sweep,
     'network_experiment_plot' : network_experiment_plot,
     'partition_sweep_plot': partition_sweep_plot,
     'mpr_sweep_plot': mpr_sweep_plot,
     'node_sweep_plot': node_sweep_plot,
+    'abort_penalty_sweep_plot': abort_penalty_sweep_plot,
 }
 
 

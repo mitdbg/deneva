@@ -58,7 +58,7 @@ for exp in exps:
         r = {}
         r2 = {}
         cfgs = get_cfgs(fmt,e)
-        output_f = get_outfile_name(cfgs,["*","*"])
+        output_f = get_outfile_name(cfgs,fmt,["*","*"])
         is_network_test = cfgs["NETWORK_TEST"] == "true"
         if is_network_test:
             ofile = "{}0_{}*".format(result_dir,output_f) 

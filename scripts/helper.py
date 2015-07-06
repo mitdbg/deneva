@@ -215,7 +215,7 @@ def get_lstats(summary):
     except:
         pass
 
-def get_outfile_name(cfgs,network_hosts=[]):
+def get_outfile_name(cfgs,fmt,network_hosts=[]):
     output_f = ""
     assert "NETWORK_TEST" in cfgs
     if cfgs["NETWORK_TEST"] == "true":
@@ -231,7 +231,7 @@ def get_outfile_name(cfgs,network_hosts=[]):
         output_f += "NETWORK_TEST_"
     else:
         #for key in sorted(cfgs.keys()):
-        for key in sorted(config_names):
+        for key in sorted(set(fmt)):
             output_f += "{}-{}_".format(key,cfgs[key])
     return output_f
 
