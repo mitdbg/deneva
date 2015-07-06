@@ -58,6 +58,8 @@ def tput_plotter(title,x_name,v_name,fmt,exp,summary,summary_client):
             
         tput(x_vals,v_vals,summary,cfg_fmt=_cfg_fmt,cfg=c,xname=x_name,vname=v_name,title=title2)
         lat(x_vals,v_vals,summary_client,cfg_fmt=_cfg_fmt,cfg=c,xname=x_name,vname=v_name,title=title2,stat_types=["99th","90th","mean","max"])
+        for v in v_vals:
+            time_breakdown(x_vals,summary,normalized=True,xname=x_name,cfg_fmt=_cfg_fmt+[v_name],cfg=c+[v],title=title2)
 
 
 def tput(xval,vval,summary,
@@ -362,7 +364,17 @@ def time_breakdown(xval,summary,
         cfg=[],
         title=''
         ):
-    stack_names = ['Useful Work','Abort','Cleanup','Timestamp','Index','Manager','Messaging','Wait']
+    stack_names = [
+    'Index',
+    'Abort',
+    'Cleanup',
+    'Wait',
+    '2PC',
+    'Backoff',
+    'Queue',
+    'Remote',
+    'Work'
+    ]
 #stack_names = ['Useful Work','Abort','Timestamp','Index','Lock Wait','Remote Wait','Manager']
     _title = ''
     _ymax=1.0
@@ -372,49 +384,70 @@ def time_breakdown(xval,summary,
         _title = 'Time Breakdown {}'.format(title)
     name = '{}'.format(_title.replace(" ","_").lower())
 
-    run_time = [0] * len(xval)
-    time_man = [0] * len(xval)
-    time_wait_rem = [0] * len(xval)
-    time_wait_lock = [0] * len(xval)
+    time_wait = [0] * len(xval)
     time_index = [0] * len(xval)
-    time_ts_alloc = [0] * len(xval)
     time_abort = [0] * len(xval)
+    time_queue = [0] * len(xval)
+    time_net = [0] * len(xval)
+    time_twopc = [0] * len(xval)
+    time_backoff = [0] * len(xval)
     time_work = [0] * len(xval)
     time_cleanup = [0] * len(xval)
-    time_msg = [0] * len(xval)
-    time_wait = [0] * len(xval)
+    total = [1] * len(xval)
 
     for x,i in zip(xval,range(len(xval))):
-        _cfgs = get_cfgs(cfg_fmt + [xname],cfg + [x])
-        cfgs = get_outfile_name(_cfgs)
+        my_cfg_fmt = cfg_fmt + [xname]
+        my_cfg = cfg + [x]
+        if xname == "NODE_CNT":
+            my_cfg_fmt = my_cfg_fmt + ["CLIENT_NODE_CNT"]
+            my_cfg = my_cfg + [int(math.ceil(x/2)) if x > 1 else 1]
+        if xname != "PART_PER_TXN":
+            my_cfg_fmt = my_cfg_fmt + ["PART_PER_TXN"]
+            my_cfg = my_cfg + [1 if x == 1 else 2]
+
+        cfgs = get_cfgs(my_cfg_fmt, my_cfg)
+        cfgs = get_outfile_name(cfgs)
+        print cfgs
         if cfgs not in summary.keys(): break
         try:
-            if normalized:
-                run_time[i] = avg(summary[cfgs]['clock_time'])
-#run_time[i] = avg(summary[cfgs]['run_time'])
-            else:
-                run_time[i] = 1.0
-            time_abort[i] = avg(summary[cfgs]['time_abort']) / run_time[i]
-            time_ts_alloc[i] = avg(summary[cfgs]['time_ts_alloc']) / run_time[i]
-            time_index[i] = avg(summary[cfgs]['time_index']) / run_time[i]
-            time_cleanup[i] = (avg(summary[cfgs]['time_cleanup']) - avg(summary[cfgs]['time_abort'])) / run_time[i]
-            time_man[i] = (avg(summary[cfgs]['time_man'])) / run_time[i]
-            time_msg[i] = avg(summary[cfgs]['time_msg_sent']) / run_time[i]
-            time_wait[i] = (avg(summary[cfgs]['clock_time']) - avg(summary[cfgs]['time_work'])) / run_time[i]
-            total = sum([time_abort[i],time_ts_alloc[i],time_index[i],time_cleanup[i],time_man[i],time_msg[i],time_wait[i]])
+            time_index[i] = avg(summary[cfgs]['txn_time_idx'])
+            time_abort[i] = avg(summary[cfgs]['txn_time_abrt'])
+            time_cleanup[i] = avg(summary[cfgs]['txn_time_clean'])
+            time_wait[i] = avg(summary[cfgs]['txn_time_wait'])
+            time_twopc[i] = avg(summary[cfgs]['txn_time_twopc'])
+            time_backoff[i] = avg(summary[cfgs]['txn_time_q_abrt'])
+            time_queue[i] = avg(summary[cfgs]['txn_time_q_work'])
+            time_net[i] = avg(summary[cfgs]['txn_time_net'])
+            time_work[i] = avg(summary[cfgs]['txn_time_misc']) + avg(summary[cfgs]['txn_time_copy'])
+            total[i] = sum(time_index[i] + time_abort[i] + time_cleanup[i] + time_wait[i] + time_twopc[i] + time_backoff[i] + time_queue[i] + time_net[i] + time_work[i] )
 
-            if normalized:
-                #assert(sum([time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]]) < 1.0)
-                time_work[i] = 1.0 - total
-            else:
-                #assert(sum([time_man[i],time_wait_rem[i],time_wait_lock[i],time_index[i],time_ts_alloc[i],time_abort[i]]) < avg(summary[cfgs]['run_time']))
-                time_work[i] = avg(summary[cfgs]['run_time']) - total
-            _ymax = max(_ymax, total + time_work[i]) 
         except KeyError:
             print("KeyError: {} {}".format(x,cfg))
-            run_time[i] = 1.0
-    data = [time_wait,time_msg,time_man,time_index,time_ts_alloc,time_cleanup,time_abort,time_work]
 
+
+    if normalized:
+        time_index = [i / j for i,j in zip(time_index,total)]
+        time_abort =  [i / j for i,j in zip(time_abort,total)]
+        time_cleanup =  [i / j for i,j in zip(time_cleanup,total)]
+        time_wait =  [i / j for i,j in zip(time_wait,total)]
+        time_twopc =  [i / j for i,j in zip(time_twopc,total)]
+        time_backoff =  [i / j for i,j in zip(time_backoff,total)]
+        time_queue =  [i / j for i,j in zip(time_queue,total)]
+        time_net =  [i / j for i,j in zip(time_net,total)]
+        time_work =  [i / j for i,j in zip(time_work,total)]
+        _ymax = 1
+    else:
+        _ymax = max(total)
+    data = [time_index,
+        time_abort,
+        time_cleanup,
+        time_wait,
+        time_twopc,
+        time_backoff, 
+        time_queue,
+        time_net, 
+        time_work]
+    print data
     draw_stack(data,xval,stack_names,figname=name,title=_title,ymax=_ymax)
     print("Created plot {}".format(name))
 
