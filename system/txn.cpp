@@ -72,7 +72,6 @@ void txn_man::update_stats() {
   INC_STATS(get_thd_id(), cc_wait_abrt_time, cc_wait_abrt_time);
   INC_STATS(get_thd_id(), cc_hold_abrt_time, cc_hold_abrt_time);
 
-  double txn_time_total = txn_time_misc;
   txn_time_misc = txn_time_misc - (txn_time_idx + txn_time_man + txn_time_ts + txn_time_abrt + txn_time_clean + txn_time_copy + txn_time_wait + txn_time_twopc + txn_time_q_abrt + txn_time_q_work + txn_time_net); 
   INC_STATS(get_thd_id(), txn_time_idx, this->txn_time_idx);
   INC_STATS(get_thd_id(), txn_time_man, this->txn_time_man);
@@ -88,6 +87,7 @@ void txn_man::update_stats() {
   INC_STATS(get_thd_id(), txn_time_misc, this->txn_time_misc);
   // FIXME: Only for debugging
 #if DEBUG_BREAKDOWN
+  double txn_time_total = txn_time_misc + txn_time_idx + txn_time_man + txn_time_ts + txn_time_abrt + txn_time_clean + txn_time_copy + txn_time_wait + txn_time_twopc + txn_time_q_abrt + txn_time_q_work + txn_time_net;
   printf("ID %ld: abrt_cnt: %ld"
       ",idx: %f"
       ",man: %f"

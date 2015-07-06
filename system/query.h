@@ -48,7 +48,9 @@ public:
 	uint64_t * parts;
 
   // For aborts
+  uint64_t penalty;
   uint64_t penalty_start;
+  uint64_t penalty_end;
 
   // FIXME: for debugging;
   uint64_t debug1;

@@ -594,6 +594,9 @@ RC thread_t::run() {
 					// Put txn in txn_pool in case of WAIT
 					txn_pool.add_txn(g_node_id,m_txn,m_query);
 
+          //FIXME: move clearing query variables elsewhere?
+          m_query->penalty = 0;
+
 					m_txn->starttime = get_sys_clock();
           m_txn->txn_time_misc += m_query->time_q_work;
           m_txn->txn_time_misc += m_query->time_copy;
@@ -829,9 +832,9 @@ RC thread_t::run() {
 					//printf("ABORT %ld %ld\n",m_txn->get_txn_id(),get_sys_clock() - run_starttime);
 #endif
 					m_txn->penalty_start = get_sys_clock();
-					m_query->penalty_start = m_txn->penalty_start;
+					//m_query->penalty_start = m_txn->penalty_start;
 
-          abort_queue.add_query(m_query);
+          abort_queue.add_abort_query(m_query);
 					//work_queue.add_query(m_query);
           /*
 #if CC_ALG == VLL

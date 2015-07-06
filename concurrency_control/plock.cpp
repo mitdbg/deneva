@@ -104,7 +104,9 @@ void PartMan::unlock(txn_man * txn) {
         waiters[i] = waiters[i + 1];
       }
       waiter_cnt --;
-      INC_STATS(txn->get_thd_id(),time_wait_lock,get_sys_clock() - owner->wait_starttime);
+      uint64_t t = get_sys_clock() - owner->wait_starttime;
+      INC_STATS(txn->get_thd_id(),time_wait_lock,t);
+      txn->txn_time_wait += t;
 			if(GET_NODE_ID(owner->get_pid()) == _node_id) {
         ATOM_SUB(owner->ready_part, 1);
         // If local and ready_part is 0, restart txn

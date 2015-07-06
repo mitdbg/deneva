@@ -85,6 +85,7 @@ void Row_mvcc::buffer_req(TsType type, txn_man * txn)
 	assert(req_entry != NULL);
 	req_entry->txn = txn;
 	req_entry->ts = txn->get_ts();
+	req_entry->starttime = get_sys_clock();
 	if (type == R_REQ) {
 		rreq_len ++;
 		STACK_PUSH(readreq_mvcc, req_entry);
@@ -174,9 +175,9 @@ void Row_mvcc::insert_history( ts_t ts, row_t * row)
 	}
 
 	if (his) {
-		LIST_INSERT_BEFORE(his, new_entry);					
-		if (his == *queue)
-			*queue = new_entry;
+		LIST_INSERT_BEFORE(his, new_entry,(*queue));					
+		//if (his == *queue)
+		//	*queue = new_entry;
 	} else 
 		LIST_PUT_TAIL((*queue), (*tail), new_entry);
 }

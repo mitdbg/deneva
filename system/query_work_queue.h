@@ -10,6 +10,7 @@ struct wq_entry {
   base_query * qry;
   uint64_t starttime;
   struct wq_entry * next;
+  struct wq_entry * prev;
 };
 
 typedef wq_entry * wq_entry_t;
@@ -30,6 +31,7 @@ public:
   void finish(uint64_t time); 
   void abort_finish(uint64_t time); 
   void add_query(base_query * qry);
+  void add_abort_query(base_query * qry);
   base_query * get_next_query();
   bool in_hash(uint64_t id);
   void add_hash(uint64_t id);

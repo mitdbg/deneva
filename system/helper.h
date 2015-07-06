@@ -63,11 +63,12 @@
 	en->prev = NULL; \
 	if (ltail) { en->prev = ltail; ltail->next = en; ltail = en; } \
 	else { lhead = en; ltail = en; }}
-#define LIST_INSERT_BEFORE(entry, newentry) { \
+#define LIST_INSERT_BEFORE(entry, newentry,lhead) { \
 	newentry->next = entry; \
 	newentry->prev = entry->prev; \
 	if (entry->prev) entry->prev->next = newentry; \
-	entry->prev = newentry; }
+	entry->prev = newentry; \
+  if (lhead == entry) lhead = newentry;}
 #define LIST_REMOVE(entry) { \
 	if (entry->next) entry->next->prev = entry->prev; \
 	if (entry->prev) entry->prev->next = entry->next; }

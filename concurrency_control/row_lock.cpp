@@ -72,7 +72,7 @@ RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt
 		conflict = true;
 	
 	if (conflict) { 
-    //printf("conflict! txnid%ld ",txn->get_txn_id());
+    //printf("conflict! rid%ld txnid%ld ",_row->get_primary_key(),txn->get_txn_id());
 		// Cannot be added to the owner list.
 		if (CC_ALG == NO_WAIT) {
 			rc = Abort;
@@ -116,9 +116,7 @@ RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt
 				while (en != NULL && txn->get_ts() < en->txn->get_ts()) 
 					en = en->next;
 				if (en) {
-					LIST_INSERT_BEFORE(en, entry);
-					if (en == waiters_head)
-						waiters_head = entry;
+					LIST_INSERT_BEFORE(en, entry,waiters_head);
 				} else 
 					LIST_PUT_TAIL(waiters_head, waiters_tail, entry);
 

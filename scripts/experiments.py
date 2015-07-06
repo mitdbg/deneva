@@ -309,7 +309,7 @@ configs = {
     "NETWORK_DELAY": '0UL',
     "DONE_TIMER": "20 * 1 * BILLION",#"3 * 60 * BILLION // 3 minutes",
     "NETWORK_TEST" : "false",
-    "ABORT_PENALTY": "2 * 1000000000UL   // in ns.",
+    "ABORT_PENALTY": "1 * 1000000UL   // in ns.",
 #YCSB
     "READ_PERC":0.5,
     "WRITE_PERC":0.5,

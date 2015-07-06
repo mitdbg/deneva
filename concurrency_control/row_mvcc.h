@@ -8,6 +8,7 @@ class txn_man;
 struct MVReqEntry {
 	txn_man * txn;
 	ts_t ts;
+	ts_t starttime;
 	MVReqEntry * next;
 };
 
