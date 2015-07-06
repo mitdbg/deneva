@@ -168,10 +168,11 @@ VLLMan::beginTxn(txn_man * txn, base_query * query) {
 		ret = RCOK;
 
 final:
-	pthread_mutex_unlock(&_mutex);
   assert((!_txn_queue || _txn_queue->prev == NULL) && (!_txn_queue_tail || _txn_queue_tail->next == NULL));
-  assert(!_txn_queue || _txn_queue->txn->vll_txn_type == VLL_Free);
+  // Race condition on this assert:
+  //assert(!_txn_queue || _txn_queue->txn->vll_txn_type == VLL_Free);
   assert(entry || ret == Abort);
+	pthread_mutex_unlock(&_mutex);
 	return ret;
 }
 
@@ -188,14 +189,14 @@ VLLMan::finishTxn(txn_man * txn) {
 	  LIST_REMOVE_HT(entry, _txn_queue, _txn_queue_tail);
   }
 
+  assert((!_txn_queue || _txn_queue->prev == NULL) && (!_txn_queue_tail || _txn_queue_tail->next == NULL));
+
 	pthread_mutex_unlock(&_mutex);
 
   if(entry)
     returnQEntry(entry);
 
   restartQFront(); 
-  assert((!_txn_queue || _txn_queue->prev == NULL) && (!_txn_queue_tail || _txn_queue_tail->next == NULL));
-  assert(!_txn_queue || _txn_queue->txn->vll_txn_type == VLL_Free);
 	//txn->release();
 	//mem_allocator.free(txn, 0);
 }
