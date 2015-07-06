@@ -72,6 +72,8 @@
 
 #define MAX_QUEUE_LEN NODE_CNT * 2
 
+#define PRIORITY_WORK_QUEUE true
+
 /***********************************************/
 // Concurrency Control
 /***********************************************/

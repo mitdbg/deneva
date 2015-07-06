@@ -44,16 +44,19 @@ void QWorkQueue::add_query(base_query * qry) {
   wq_entry_t n = head;
   while(n) {
     assert(n->qry != qry);
+#if PRIORITY_WORK_QUEUE
+    if(n->qry->txn_id > entry->qry->txn_id)
+      break;
+#endif
     n = n->next;
   }
 
-  if(cnt > 0) {
-    tail->next = entry;
+  if(n) {
+    LIST_INSERT_BEFORE(n,entry,head);
   }
-  if(cnt == 0) {
-    head = entry;
+  else {
+    LIST_PUT_TAIL(head,tail,entry);
   }
-  tail = entry;
   cnt++;
 
   if(last_add_time == 0)
@@ -73,27 +76,16 @@ base_query * QWorkQueue::get_next_query() {
 
   if(cnt > 0) {
     wq_entry_t next = head;
-    wq_entry_t prev = NULL;
     while(next) {
       if(next->qry->txn_id == UINT64_MAX || !in_hash(next->qry->txn_id)) {
         next_qry = next->qry;
         add_hash(next_qry->txn_id);
-        if(prev == NULL)
-          head = head->next;
-        else
-          prev->next = next->next; 
+        LIST_REMOVE_HT(next,head,tail);
         cnt--;
-        if(next == tail) 
-          tail = prev;
         assert(in_hash(next_qry->txn_id));
         break;
       }
-      prev = next;
       next = next->next;
-    }
-
-    if(cnt == 0) {
-      tail = NULL;
     }
 
     if(next_qry) {
