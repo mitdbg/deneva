@@ -183,7 +183,7 @@ def lat(xval,vval,summary,
         if vname == "NETWORK_DELAY":
             bbox = [0.8,0.2]
         print("Created plot {}".format(name))
-        draw_line(name,lat,xval,ylab='Latency-{}% (Sec)'.format(stat),xlab=_xlab,title=_title,bbox=bbox,ncol=2) 
+        draw_line(name,lat,_xval,ylab='Latency-{}% (Sec)'.format(stat),xlab=_xlab,title=_title,bbox=bbox,ncol=2) 
 
 
 def lat_node_tbls(exp,nodes,msg_bytes,ts,
@@ -384,6 +384,16 @@ def time_breakdown(xval,summary,
         _title = 'Time Breakdown {}'.format(title)
     name = '{}'.format(_title.replace(" ","_").lower())
 
+    if xname == "ABORT_PENALTY":
+        _xval = [(float(x.replace("UL","")))/1000000000 for x in xval]
+        sort_idxs = sorted(range(len(_xval)),key=lambda x:_xval[x])
+        xval = [xval[i] for i in sort_idxs]
+        _xval = sorted(_xval)
+        _xlab = xname + " (Sec)"
+    else:
+        _xval = xval
+        _xlab = xname
+
     time_wait = [0] * len(xval)
     time_index = [0] * len(xval)
     time_abort = [0] * len(xval)
@@ -406,7 +416,7 @@ def time_breakdown(xval,summary,
             my_cfg = my_cfg + [1 if x == 1 else 2]
 
         cfgs = get_cfgs(my_cfg_fmt, my_cfg)
-        cfgs = get_outfile_name(cfgs)
+        cfgs = get_outfile_name(cfgs,my_cfg_fmt)
         print cfgs
         if cfgs not in summary.keys(): break
         try:
@@ -448,7 +458,7 @@ def time_breakdown(xval,summary,
         time_net, 
         time_work]
     print data
-    draw_stack(data,xval,stack_names,figname=name,title=_title,ymax=_ymax)
+    draw_stack(data,_xval,stack_names,figname=name,title=_title,ymax=_ymax)
     print("Created plot {}".format(name))
 
 
