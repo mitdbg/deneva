@@ -86,11 +86,11 @@ def partition_sweep_plot(summary,summary_client):
 
 def node_sweep():
     fmt = fmt_ycsb
-    nnodes = [1,2,4,8,16]
-    nmpr=[0]
-    nalgos=['WAIT_DIE','NO_WAIT','OCC']
+    nnodes = [1,2,4,8]
+    nmpr=[0,1,5]
+    nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','TIMESTAMP','VLL','HSTORE']
     #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
-    nthreads=[1]
+    nthreads=[2]
     ncthreads=[4]
     ntifs=[1000]
     nzipf=[0.6]

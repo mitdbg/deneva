@@ -234,6 +234,7 @@ void TxnPool::commit_spec_ex(int r) {
       else {
         INC_STATS(0,spec_commit_cnt,1);
       }
+      // FIXME: May cause deadlock when function eventually calls something in txn_pool
       t_node->txn->finish(rc,t_node->qry->part_to_access,t_node->qry->part_num);
       t_node->txn->state = DONE;
       t_node->qry->rtype = RPASS;
