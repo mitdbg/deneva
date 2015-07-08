@@ -4,6 +4,19 @@ from experiments import config_names
 import glob
 import latency_stats as ls
 
+SHORTNAMES = {
+    "CLIENT_NODE_CNT" : "CNODE_CNT",
+    "CLIENT_THREAD_CNT" : "CTHREAD_CNT",
+    "CC_ALG" : "",
+    "WORKLOAD" : "",
+    "MAX_TXN_PER_PART" : "TXNS",
+    "MAX_TXN_IN_FLIGHT" : "TIF",
+    "PART_PER_TXN" : "PPT",
+    "READ_PERC" : "RDS",
+    "WRITE_PERC" : "WRS",
+    "ZIPF_THETA" : "ZIPF",
+}
+
 cnts = ["all_abort"]
 cflts = ["w_cflt","d_cflt","cnp_cflt","c_cflt","ol_cflt","s_cflt","w_abrt","d_abrt","cnp_abrt","c_abrt","ol_abrt","s_abrt"]
 lats = ["all_lat"]
@@ -232,7 +245,8 @@ def get_outfile_name(cfgs,fmt,network_hosts=[]):
     else:
         #for key in sorted(cfgs.keys()):
         for key in sorted(set(fmt)):
-            output_f += "{}-{}_".format(key,cfgs[key])
+            nkey = SHORTNAMES[key] if key in SHORTNAMES else key
+            output_f += "{}-{}_".format(nkey,cfgs[key])
     return output_f
 
 def get_cfgs(fmt,e):

@@ -39,6 +39,7 @@ lineconfig = {
     'MVCC'          : "ls='--', lw=2, color='#5DA5DA', marker='o', ms=4", #, marker='+', ms=10",
     'OCC'           : "ls='--', lw=2, color='#B276B2', marker='+', ms=6",
     'HSTORE'        : "ls='-', lw=2, color='#4d4d4d', marker='x', ms=6",
+    'VLL'           : "ls='-', lw=2, color='#ff3333', marker='*', ms=4",
 
     60              : "ls='-', lw=2, color='#4d4d4d', marker='s', ms=6",
     70              : "ls='-', lw=2, color='#faa43a', marker='+', ms=6",
