@@ -6,15 +6,17 @@ import latency_stats as ls
 
 SHORTNAMES = {
     "CLIENT_NODE_CNT" : "CNODE_CNT",
-    "CLIENT_THREAD_CNT" : "CTHREAD_CNT",
+    "CLIENT_THREAD_CNT" : "CTHD_CNT",
+    "NODE_CNT" : "NODE_CNT",
+    "THREAD_CNT" : "THD_CNT",
     "CC_ALG" : "",
     "WORKLOAD" : "",
     "MAX_TXN_PER_PART" : "TXNS",
     "MAX_TXN_IN_FLIGHT" : "TIF",
     "PART_PER_TXN" : "PPT",
-    "READ_PERC" : "RDS",
-    "WRITE_PERC" : "WRS",
-    "ZIPF_THETA" : "ZIPF",
+    "READ_PERC" : "RD",
+    "WRITE_PERC" : "WR",
+    "ZIPF_THETA" : "SKEW",
 }
 
 cnts = ["all_abort"]
