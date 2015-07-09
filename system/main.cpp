@@ -147,9 +147,11 @@ int main(int argc, char* argv[])
 	for (uint32_t i = 0; i < thd_cnt + rthd_cnt; i++) 
 		m_thds[i].init(i, g_node_id, m_wl);
   printf("Done\n");
+  fflush(stdout);
 
   endtime = get_server_clock();
   printf("Initialization Time = %ld\n", endtime - starttime);
+  fflush(stdout);
 	if (WARMUP > 0){
 		printf("WARMUP start!\n");
 		for (uint32_t i = 0; i < thd_cnt - 1; i++) {
