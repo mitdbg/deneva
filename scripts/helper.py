@@ -248,7 +248,10 @@ def get_outfile_name(cfgs,fmt,network_hosts=[]):
         #for key in sorted(cfgs.keys()):
         for key in sorted(set(fmt)):
             nkey = SHORTNAMES[key] if key in SHORTNAMES else key
-            output_f += "{}-{}_".format(nkey,cfgs[key])
+            if nkey == "":
+                output_f += "{}_".format(cfgs[key])
+            else:
+                output_f += "{}-{}_".format(nkey,cfgs[key])
     return output_f
 
 def get_cfgs(fmt,e):
