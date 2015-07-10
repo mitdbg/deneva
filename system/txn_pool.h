@@ -29,6 +29,7 @@ public:
   void delete_txn(uint64_t node_id, uint64_t txn_id);
   uint64_t get_min_ts(); 
 
+  void spec_next();
   void start_spec_ex();
   void end_spec_ex();
   void commit_spec_ex(int r);
@@ -40,6 +41,12 @@ private:
 	uint64_t _node_id;
 
   pthread_mutex_t mtx;
+  pthread_cond_t cond_m;
+  pthread_cond_t cond_a;
+  bool modify;
+  int access;
+
+
   txn_node_t *txns;
 };
 

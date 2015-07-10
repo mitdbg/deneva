@@ -182,7 +182,11 @@ RC thread_t::run() {
 
 			stats.print(true);
 		}
-		while(!work_queue.poll_next_query() && !abort_queue.poll_abort() && !_wl->sim_done && !_wl->sim_timeout) { }
+		while(!work_queue.poll_next_query() && !abort_queue.poll_abort() && !_wl->sim_done && !_wl->sim_timeout) { 
+#if CC_ALG == HSTORE_SPEC
+      txn_pool.spec_next();
+#endif
+    }
 		//while(!work_queue.poll_next_query() && !(_wl->sim_done && _wl->sim_timeout)) { }
 
 		// End conditions
@@ -206,8 +210,9 @@ RC thread_t::run() {
 			return FINISH;
 		}
 
-		if((m_query = abort_queue.get_next_abort_query()) != NULL)
+		if((m_query = abort_queue.get_next_abort_query()) != NULL) {
       work_queue.add_query(m_query);
+    }
 
 		if((m_query = work_queue.get_next_query()) == NULL)
 			continue;
@@ -483,6 +488,8 @@ RC thread_t::run() {
 							m_query->update_rc(rc);
 							if(rc == WAIT) {
 								m_txn->rc = rc;
+					      m_query = NULL;
+								break;
 							}
 
 							if(m_txn->ready_part > 0) {
@@ -611,12 +618,20 @@ RC thread_t::run() {
 					// 
 					assert(m_txn != NULL);
           m_txn->register_thd(this);
+          /*
 					if(m_txn->state == START && 
 							(get_sys_clock() - m_txn->penalty_start) < g_abort_penalty) {
 						work_queue.add_query(m_query);
 						m_query = NULL;
 						break;
 					}
+          */
+          /*
+#if CC_ALG == HSTORE_SPEC
+          if(m_txn->spec && m_txn->rc == WAIT)
+            m_txn->rc = RCOK;
+#endif
+*/
 				}
 
 				if(m_txn->rc != WAIT && m_txn->state == START) {
@@ -779,19 +794,20 @@ RC thread_t::run() {
 */
 					break;
 				case Abort:
-					// TODO: Add to abort list that includes txn_id and ts
-					//    List will be checked periodically to restart transactions and put them back on the work queue
-					//    This will be used to implement abort penalty
-					// For now, just re-add query to work queue.
+          /*
 #if CC_ALG == HSTORE_SPEC
 					if(m_txn->spec && m_txn->state != DONE)
 						break;
 #endif
+*/
 					assert(m_txn->get_rsp_cnt() == 0);
-					if(m_query->part_num == 1 && !m_txn->spec)
+					//if(m_query->part_num == 1 && !m_txn->spec)
+					if(m_query->part_num == 1)
 						rc = m_txn->finish(rc,m_query->part_to_access,m_query->part_num);
+          /*
 					else
 						assert(m_txn->state == DONE);
+            */
 					assert(m_txn != NULL);
 					assert(m_query->txn_id != UINT64_MAX);
 
@@ -818,6 +834,7 @@ RC thread_t::run() {
         m_query->part_touched_cnt = 0;
         m_query->rtype = RTXN;
         m_query->rc = RCOK;
+        m_query->spec = false;
         m_query->reset();
         m_txn->state = START;
         m_txn->rc = RCOK;
@@ -832,6 +849,7 @@ RC thread_t::run() {
 					//printf("ABORT %ld %ld\n",m_txn->get_txn_id(),get_sys_clock() - run_starttime);
 #endif
 					m_txn->penalty_start = get_sys_clock();
+
 					//m_query->penalty_start = m_txn->penalty_start;
 
           abort_queue.add_abort_query(m_query);

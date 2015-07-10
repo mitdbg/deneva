@@ -62,6 +62,8 @@ void txn_man::clear() {
   cc_wait_cnt = 0;
   cc_wait_time = 0;
   cc_hold_time = 0;
+  ready_ulk = 0;
+  ready_part = 0;
 }
 
 void txn_man::update_stats() {
@@ -426,8 +428,12 @@ RC txn_man::finish(base_query * query, bool fin) {
   assert(query->txn_id % g_node_cnt == g_node_id);
 #endif
   if(query->part_num == 1) {
-    if(CC_ALG == HSTORE_SPEC && txn_pool.spec_mode && this->spec)
+    if(CC_ALG == HSTORE_SPEC && txn_pool.spec_mode && this->spec) {
       this->state = PREP;
+    }
+    else if (CC_ALG == HSTORE_SPEC && !txn_pool.spec_mode && this->spec) {
+      return Abort;
+    }
     RC rc = validate();
     if(rc != RCOK)
       return rc;

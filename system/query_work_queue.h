@@ -33,6 +33,7 @@ public:
   void add_query(base_query * qry);
   void add_abort_query(base_query * qry);
   base_query * get_next_query();
+  void remove_query(base_query * qry);
   bool in_hash(uint64_t id);
   void add_hash(uint64_t id);
   void update_hash(uint64_t id);

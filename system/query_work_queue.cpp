@@ -45,8 +45,13 @@ void QWorkQueue::add_query(base_query * qry) {
   while(n) {
     assert(n->qry != qry);
 #if PRIORITY_WORK_QUEUE
+#if CC_ALG == HSTORE_SPEC
+    if(qry->spec)
+      break;
+#else
     if(n->qry->txn_id > entry->qry->txn_id)
       break;
+#endif
 #endif
     n = n->next;
   }
@@ -64,6 +69,28 @@ void QWorkQueue::add_query(base_query * qry) {
 
   pthread_mutex_unlock(&mtx);
 }
+
+void QWorkQueue::remove_query(base_query* qry) {
+
+  pthread_mutex_lock(&mtx);
+
+  if(cnt > 0) {
+    wq_entry_t next = head;
+    while(next) {
+      if(next->qry == qry) {
+        LIST_REMOVE_HT(next,head,tail);
+        cnt--;
+        break;
+      }
+      next = next->next;
+    }
+
+  }
+
+  pthread_mutex_unlock(&mtx);
+
+}
+
 
 base_query * QWorkQueue::get_next_query() {
   base_query * next_qry = NULL;
@@ -169,7 +196,8 @@ void QWorkQueue::done(uint64_t id) {
 bool QWorkQueue::poll_abort() {
   wq_entry_t elem = head;
   if(elem)
-    return (get_sys_clock() - elem->qry->penalty_start) >= g_abort_penalty;
+    return (get_sys_clock() >= elem->qry->penalty_end);
+    //return (get_sys_clock() - elem->qry->penalty_start) >= g_abort_penalty;
   return false;
 }
 
