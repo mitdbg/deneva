@@ -217,16 +217,12 @@ def process_lats(summary,line,name):
         try:
             summary[name].append(float(r))
         except:
-            print "Passing...",r
             pass
-    print "process_lats len: ",len(summary[name])
-    #results = sorted([float(r) for r in results])
-    #summary[name] = sorted(results+summary[name])
 
 def get_lstats(summary):
     try:
         latencies = summary['all_lat']
-        summary['all_lat']=ls.LatencyStats(latencies,out_time_unit='s') 
+        summary['all_lat']=ls.LatencyStats(latencies,out_time_unit='ms') 
     except:
         pass
 
