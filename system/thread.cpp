@@ -31,6 +31,7 @@ void thread_t::set_cur_cid(uint64_t cid) {_cur_cid = cid; }
 
 RC thread_t::run_remote() {
 	printf("Run_remote %ld:%ld\n",_node_id, _thd_id);
+  fflush(stdout);
 #if !NOGRAPHITE
 	_thd_id = CarbonGetTileId();
 #endif
@@ -59,6 +60,7 @@ RC thread_t::run_remote() {
 	//#endif
 	pthread_barrier_wait( &warmup_bar );
 	printf("Run_remote %ld:%ld\n",_node_id, _thd_id);
+  fflush(stdout);
 
 	myrand rdm;
 	rdm.init(get_thd_id());
@@ -100,6 +102,7 @@ RC thread_t::run_remote() {
 
 RC thread_t::run() {
 	printf("Run %ld:%ld\n",_node_id, _thd_id);
+  fflush(stdout);
 #if !NOGRAPHITE
 	_thd_id = CarbonGetTileId();
 #endif
@@ -125,6 +128,7 @@ RC thread_t::run() {
 	pthread_barrier_wait( &warmup_bar );
 	//sleep(4);
 	printf("Run %ld:%ld\n",_node_id, _thd_id);
+  fflush(stdout);
 
 	myrand rdm;
 	rdm.init(get_thd_id());
