@@ -61,6 +61,9 @@ public:
 	RC rc;
 	uint64_t pid;
 
+  // HStore specx
+  bool spec;
+
   // Prevent unnecessary remote messages
   uint64_t part_touched_cnt;
   uint64_t part_touched[MAX_PART_PER_TXN];

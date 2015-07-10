@@ -58,6 +58,7 @@ RC PartMan::lock(txn_man * txn) {
     // depends on txn in flight
 		//assert(waiter_cnt < (g_thread_cnt * g_node_cnt -1 ));
     for (i = waiter_cnt; i > 0; i--) {
+      assert(txn != waiters[i-1]);
       if (txn->get_ts() > waiters[i - 1]->get_ts()) {
         waiters[i] = txn;
         break;
@@ -94,16 +95,39 @@ void PartMan::unlock(txn_man * txn) {
       owner = NULL;
     }
     else {
-      owner = waiters[0];     
 #if DEBUG_TIMELINE
       printf("LOCK %ld %ld\n",owner->get_txn_id(),get_sys_clock());
 #endif
       // TODO: Calculate plock wait time here
+      /*
+#if CC_ALG == HSTORE_SPEC
+      owner = NULL;
+      uint32_t shift = 1;
+      for (UInt32 i = 0; i < waiter_cnt - 1; i++) {
+        if(!waiters[i]->spec) {
+          owner = waiters[i];
+          break;
+        }
+        else {
+          shift++;
+        }
+      }
+      for (UInt32 i = 0; i < waiter_cnt - shift; i++) {
+        waiters[i] = waiters[i + shift];
+      }
+      waiter_cnt -= shift;
+      if(owner == NULL) {
+        goto final;
+      }
+#else
+*/
+      owner = waiters[0];     
       for (UInt32 i = 0; i < waiter_cnt - 1; i++) {
         assert( waiters[i]->get_ts() < waiters[i + 1]->get_ts() );
         waiters[i] = waiters[i + 1];
       }
       waiter_cnt --;
+//#endif
       uint64_t t = get_sys_clock() - owner->wait_starttime;
       INC_STATS(txn->get_thd_id(),time_wait_lock,t);
       txn->txn_time_wait += t;
@@ -145,6 +169,7 @@ void PartMan::unlock(txn_man * txn) {
 	  remote_rsp(false,RCOK,txn);
     */
   // If local, decr ready_ulk
+//final:
 	if(GET_NODE_ID(txn->get_pid()) == _node_id)
     ATOM_SUB(txn->ready_ulk, 1);
 
