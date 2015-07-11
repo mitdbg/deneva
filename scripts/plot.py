@@ -5,44 +5,50 @@ from plot_helper import *
 import latency_stats as ls
 import glob
 import types
+import pickle
 
 PATH=os.getcwd()
 
+###########################################
+# Get experiments from command line
+###########################################
 drop = False
-rem = False
+store_tmp = True
+use_tmp = False
 exp_cnt = 1
-for arg in sys.argv:
-    if arg == "-rem":
-        rem = True
-    elif exp_cnt == sys.maxint:
+last_arg = None
+plot = True;
+clear = False;
+exps = []
+for arg in sys.argv[1:]:
+    if last_arg == "-n":
         exp_cnt = int(arg)
-    elif arg == "-n":
-        exp_cnt = sys.maxint
+    elif arg == "-clear":
+        clear = True
+    elif arg == "-s":
+        store_tmp = True
+    elif arg == "-ns":
+        store_tmp = False
+    elif arg == "-np":
+        plot = False
+    elif arg == "-u":
+        use_tmp = True
+#    elif exp_cnt == sys.maxint:
+#        exp_cnt = int(arg)
+#if arg == "-n":
+#        exp_cnt = sys.maxint
+    elif arg == "-d":
+        drop = True
     elif arg == "-help" or arg == "-h":
-        sys.exit("Usage: {} [-rem]".format(sys.argv[0]))
+        sys.exit("Usage: {}".format(sys.argv[0]))
+    else:
+        exps.append(arg)
+    last_arg = arg
 
 result_dir = PATH + "/../results/"
 #result_dir = PATH + "/../results/results_201503pt2/"
 test_dir = ""
 
-###########################################
-# Get experiments from command line
-###########################################
-exps = []
-for arg in sys.argv[1:]:
-    if arg == "-help" or arg == "-h":
-        sys.exit("Usage: %s experiments \
-                -n Number of experiments to average\
-                -d Drop max and min of each individual stat\
-                " % sys.argv[0])
-    elif exp_cnt == sys.maxint:
-        exp_cnt = int(arg)
-    elif arg == "-n":
-        exp_cnt = sys.maxint
-    elif arg == "-d":
-        drop = True
-    else:
-        exps.append(arg)
 
 
 ############################################
@@ -57,6 +63,7 @@ for exp in exps:
     for e in experiments:
         r = {}
         r2 = {}
+        timestamp = 0
         cfgs = get_cfgs(fmt,e)
         output_f = get_outfile_name(cfgs,fmt,["*","*"])
         is_network_test = cfgs["NETWORK_TEST"] == "true"
@@ -91,33 +98,53 @@ for exp in exps:
                 all_exps.append(sub_exp)
                 all_nodes.append(sorted(list(set(nodes))))
         else:
-            for n in range(cfgs["NODE_CNT"]+cfgs["CLIENT_NODE_CNT"]):
-                if rem:
-                    ofile = "{}{}/{}_{}.out".format(test_dir,output_f,n,output_f)
-                else:
+            if not clear and os.path.isfile("{}s_{}.p".format(result_dir,output_f)) and os.path.isfile("{}c_{}.p".format(result_dir,output_f)):
+                with open("{}s_{}.p".format(result_dir,output_f),'r') as f:
+                    p = pickle.Unpickler(f)
+                    r = p.load()
+#r = pickle.load(f)
+                with open("{}c_{}.p".format(result_dir,output_f),'r') as f:
+                    p = pickle.Unpickler(f)
+                    r2 = p.load()
+#r2 = pickle.load(f)
+            else:
+                for n in range(cfgs["NODE_CNT"]+cfgs["CLIENT_NODE_CNT"]):
                     ofile = "{}{}_{}*.out".format(result_dir,n,output_f)
-                res_list = sorted(glob.glob(ofile),key=os.path.getmtime,reverse=True)
-                if res_list:
-                    for x in range(exp_cnt):
-                        if x >= len(res_list):
-                            continue
-                        print(res_list[x])
-                        if n < cfgs["NODE_CNT"]:
-                            r = get_summary(res_list[x],r)
-                        else:
-                            r2 = get_summary(res_list[x],r2)
-                    merge_results(r,exp_cnt,drop)
-                    merge_results(r2,exp_cnt,drop)
-            
+                    res_list = sorted(glob.glob(ofile),key=os.path.getmtime,reverse=True)
+#timestamp = re.search("(\d{8}-\d{6})",res_list[0]).group(0)
+                    if res_list:
+                        for x in range(exp_cnt):
+                            if x >= len(res_list):
+                                continue
+                            print(res_list[x])
+                            if n < cfgs["NODE_CNT"]:
+                                r = get_summary(res_list[x],r)
+                            else:
+                                r2 = get_summary(res_list[x],r2)
+                        merge_results(r,exp_cnt,drop)
+                        merge_results(r2,exp_cnt,drop)
+                
             get_lstats(r)
             get_lstats(r2)
-            summary[output_f] = r
-            summary_client[output_f] = r2
- 
-    exp_plot = exp + '_plot'
-    if is_network_test:
-        experiment_map[exp_plot](all_exps,all_nodes,timestamps)
-    else:
-        experiment_map[exp_plot](summary,summary_client)
+            with open("{}s_{}.p".format(result_dir,output_f),'w') as f:
+                p = pickle.Pickler(f)
+                p.dump(r)
+#pickle.dump(r,f)
+            with open("{}c_{}.p".format(result_dir,output_f),'w') as f:
+                p = pickle.Pickler(f)
+                p.dump(r)
+#pickle.dump(r2,f)
+            if plot:
+                summary[output_f] = r
+                summary_client[output_f] = r2
+                print(output_f)
+                print(summary[output_f])
+
+    if plot:
+        exp_plot = exp + '_plot'
+        if is_network_test:
+            experiment_map[exp_plot](all_exps,all_nodes,timestamps)
+        else:
+            experiment_map[exp_plot](summary,summary_client)
 
 exit()
