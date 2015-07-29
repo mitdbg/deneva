@@ -49,9 +49,9 @@ def partition_sweep():
     fmt = fmt_ycsb
     nnodes = [1,2,4,8]
     nmpr=[1]
-    nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','TIMESTAMP']
+    nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','TIMESTAMP','HSTORE','HSTORE_SPEC']
     #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
-    nthreads=[1]
+    nthreads=[2]
     ncthreads=[4]
     ntifs=[1000]
     nzipf=[0.6]
@@ -60,7 +60,7 @@ def partition_sweep():
     exp = []
     for node in nnodes:
         nparts = range(2,node,2)
-        tmp = [[int(math.ceil(node/2)) if node > 1 else 1,node,ntxn,'YCSB',cc,m,ct,t,tif,z,1.0-wp,wp,part if part <= node else 1] for ct,t,tif,z,wp,m,cc,part in itertools.product(ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts)]
+        tmp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t if cc!="HSTORE" and cc!= "HSTORE_SPEC" else 1,tif,z,1.0-wp,wp,p if p <= n else 1] for n,ct,t,tif,z,wp,m,cc,p in itertools.product(nnodes,ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts)]
         exp = exp + tmp
     return fmt[0],exp
 
@@ -88,16 +88,16 @@ def node_sweep():
     fmt = fmt_ycsb
     nnodes = [1,2,4,8]
     nmpr=[0,1,5]
-    nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','TIMESTAMP','VLL','HSTORE']
+    nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','TIMESTAMP','VLL','HSTORE','HSTORE','HSTORE_SPEC']
     #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
     nthreads=[2]
     ncthreads=[4]
     ntifs=[1000]
     nzipf=[0.6]
     nwr_perc=[0.5]
-    ntxn=2000000
+    ntxn=3000000
     nparts = [2]
-    exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t,tif,z,1.0-wp,wp,p if p <= n else 1] for n,ct,t,tif,z,wp,m,cc,p in itertools.product(nnodes,ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts)]
+    exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t if cc!="HSTORE" and cc!= "HSTORE_SPEC" else 1,tif,z,1.0-wp,wp,p if p <= n else 1] for n,ct,t,tif,z,wp,m,cc,p in itertools.product(nnodes,ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts)]
     return fmt[0],exp
 
 def node_sweep_plot(summary,summary_client):
@@ -113,16 +113,16 @@ def mpr_sweep():
     nnodes = [1,2,4,8]#,16]
     #nmpr=[0,1,5,10,20,30,40,50,60,70,80,90,100]
     nmpr=[0,1,5,10,25,50,75,100]
-    nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','TIMESTAMP']
+    nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','TIMESTAMP','HSTORE','HSTORE_SPEC']
     #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
-    nthreads=[1,2,4,8]
+    nthreads=[2]
     ncthreads=[4]
     ntifs=[1000]
-    nzipf=[0.6]
-    nwr_perc=[0.5]
-    ntxn=2000000
+    nzipf=[0.0,0.6]
+    nwr_perc=[0.0,0.5]
+    ntxn=3000000
     nparts = [2]
-    exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t,tif,z,1.0-wp,wp,p if p <= n else 1] for n,ct,t,tif,z,wp,m,cc,p in itertools.product(nnodes,ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts)]
+    exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t if cc!="HSTORE" and cc!= "HSTORE_SPEC" else 1,tif,z,1.0-wp,wp,p if p <= n else 1] for n,ct,t,tif,z,wp,m,cc,p in itertools.product(nnodes,ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts)]
     return fmt[0],exp
 
 def mpr_sweep_plot(summary,summary_client):
@@ -137,48 +137,48 @@ def tif_sweep():
     fmt = fmt_ycsb
     nnodes = [1,2,4,8]
     nmpr=[1]
-    nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','TIMESTAMP']
+    nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','TIMESTAMP','HSTORE','HSTORE_SPEC']
     #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
-    nthreads=[1]
+    nthreads=[2]
     ncthreads=[4]
     ntifs=[1,2,10,35,100,1000]
     nzipf=[0.6]
     nwr_perc=[0.5]
-    ntxn=2000000
+    ntxn=3000000
     nparts = [2]
-    exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t,tif,z,1.0-wp,wp,p if p <= n else 1] for n,ct,t,tif,z,wp,m,cc,p in itertools.product(nnodes,ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts)]
+    exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t if cc!="HSTORE" and cc!= "HSTORE_SPEC" else 1,tif,z,1.0-wp,wp,p if p <= n else 1] for n,ct,t,tif,z,wp,m,cc,p in itertools.product(nnodes,ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts)]
     return fmt[0],exp
 
 def write_ratio_sweep():
     fmt = fmt_ycsb
     nnodes = [1,2,4,8]
     nmpr=[1]
-    nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','TIMESTAMP']
+    nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','TIMESTAMP','HSTORE','HSTORE_SPEC']
     #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
-    nthreads=[1]
+    nthreads=[2]
     ncthreads=[4]
     ntifs=[1000]
     nzipf=[0.6]
     nwr_perc=[0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]
-    ntxn=2000000
+    ntxn=3000000
     nparts = [2]
-    exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t,tif,z,round(1.0-wp,1),wp,p if p <= n else 1] for n,ct,t,tif,z,wp,m,cc,p in itertools.product(nnodes,ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts)]
+    exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t if cc!="HSTORE" and cc!= "HSTORE_SPEC" else 1,tif,z,1.0-wp,wp,p if p <= n else 1] for n,ct,t,tif,z,wp,m,cc,p in itertools.product(nnodes,ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts)]
     return fmt[0],exp
 
 def skew_sweep():
     fmt = fmt_ycsb
     nnodes = [1,2,4,8]
     nmpr=[1]
-    nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','TIMESTAMP']
+    nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','TIMESTAMP','HSTORE','HSTORE_SPEC']
     #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
-    nthreads=[1]
+    nthreads=[2]
     ncthreads=[4]
     ntifs=[1000]
     nzipf=[0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]
     nwr_perc=[0.5]
-    ntxn=2000000
+    ntxn=3000000
     nparts = [2]
-    exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t,tif,z,1.0-wp,wp,p if p <= n else 1] for n,ct,t,tif,z,wp,m,cc,p in itertools.product(nnodes,ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts)]
+    exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t if cc!="HSTORE" and cc!= "HSTORE_SPEC" else 1,tif,z,1.0-wp,wp,p if p <= n else 1] for n,ct,t,tif,z,wp,m,cc,p in itertools.product(nnodes,ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts)]
     return fmt[0],exp
 
 #Should do this one on an ISTC machine
@@ -186,17 +186,17 @@ def network_sweep():
     fmt = [fmt_ycsb[0] + ["NETWORK_DELAY"]]
     nnodes = [1,2,4,8]
     nmpr=[1]
-    nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','TIMESTAMP']
+    nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','TIMESTAMP','HSTORE','HSTORE_SPEC']
     #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
-    nthreads=[1]
+    nthreads=[2]
     ncthreads=[4]
     ntifs=[1000]
     nzipf=[0.6]
     nwr_perc=[0.5]
     nparts=[2]
     network_delay = ["0UL","10000UL","100000UL","1000000UL","10000000UL","100000000UL"]
-    ntxn=2000000
-    exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t,tif,z,1.0-wp,wp,p if p <= n else 1,nd] for n,ct,t,tif,z,wp,m,cc,p,nd in itertools.product(nnodes,ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts,network_delay)]
+    ntxn=3000000
+    exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t if cc!="HSTORE" and cc!= "HSTORE_SPEC" else 1,tif,z,1.0-wp,wp,p if p <= n else 1,nd] for n,ct,t,tif,z,wp,m,cc,p,nd in itertools.product(nnodes,ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts,network_delay)]
     return fmt[0],exp
 
 def tpcc_sweep():
@@ -210,7 +210,7 @@ def tpcc_sweep():
     ntifs=[1000]
     nzipf=[0.6]
     nwr_perc=[0.5]
-    ntxn=2000000
+    ntxn=3000000
     exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t,tif,z,1.0-wp,wp] for n,ct,t,tif,z,wp,m,cc in itertools.product(nnodes,ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos)]
     return fmt[0],exp
 
@@ -307,11 +307,11 @@ configs = {
     "NUM_WH": 2,
     "MAX_TXN_IN_FLIGHT": 1,
     "NETWORK_DELAY": '0UL',
-    "DONE_TIMER": "3 * 60 * BILLION",#"3 * 60 * BILLION // 3 minutes",
+    "DONE_TIMER": "3 * 60 * BILLION // 3 minutes",
+    "PROG_TIMER" : "30 * BILLION // in s",
     "NETWORK_TEST" : "false",
     "ABORT_PENALTY": "1 * 1000000UL   // in ns.",
     "PRT_LAT_DISTR": "true",
-    "PROG_TIMER": "1 * 30 * BILLION",
 #YCSB
     "INIT_PARALLELISM" : 4, 
     "READ_PERC":0.5,
