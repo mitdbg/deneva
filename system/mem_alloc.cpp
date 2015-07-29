@@ -1,6 +1,7 @@
 #include "mem_alloc.h"
 #include "helper.h"
 #include "global.h"
+//#include <jemallloc.h>
 
 // Assume the data is strided across the L2 slices, stride granularity 
 // is the size of a page
