@@ -228,7 +228,10 @@ def get_lstats(summary):
 
 def get_outfile_name(cfgs,fmt,network_hosts=[]):
     output_f = ""
-    assert "NETWORK_TEST" in cfgs
+    nettest = False
+    if "NETWORK_TEST" in cfgs and cfgs["NETWORK_TEST"] == "true":
+        nettest = True
+#    assert "NETWORK_TEST" in cfgs
     if cfgs["NETWORK_TEST"] == "true":
         assert len(network_hosts) == 2
         for host in sorted(network_hosts):

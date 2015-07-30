@@ -33,33 +33,42 @@ def tput_plotter(title,x_name,v_name,fmt,exp,summary,summary_client):
 #            del p[cl_idx]
         
     cfg_list = []
+#    print(_cfg)
+#    print(_cfg_fmt)
     for f in _cfg_fmt:
         f_idx = _cfg_fmt.index(f)
         f_vals = []
         for p in _cfg:
             f_vals.append(p[f_idx])
         f_vals = sorted(list(set(f_vals)))
-#        if f == "PART_PER_TXN": 
-#            f_vals = [2] 
+        if f == "THREAD_CNT": 
+            f_vals = [2] 
+        if f == "PART_PER_TXN": 
+            f_vals = [2] 
+        if f == "CLIENT_NODE_CNT": 
+            f_vals = [1] 
         cfg_list.append(f_vals)
 
     for c in itertools.product(*cfg_list):
         c = list(c)
+        if c[_cfg_fmt.index("READ_PERC")] + c[_cfg_fmt.index("WRITE_PERC")] != 1.0:
+            continue
         title2 = ""
         if x_name != "NODE_CNT" and v_name != "NODE_CNT":
             cl_idx = _cfg_fmt.index("CLIENT_NODE_CNT")
             n_idx = _cfg_fmt.index("NODE_CNT")
             c[cl_idx] = c[n_idx] / 2 if c[n_idx] > 1 else 1
         print c
-        for f in sorted(_cfg_fmt):
-            f_idx = _cfg_fmt.index(f)
-            title2 = title2 + "_%s-%s" %(f,c[f_idx])
+        title2 = get_outfile_name(get_cfgs(_cfg_fmt,c),_cfg_fmt,["*","*"])
+#        for f in sorted(_cfg_fmt):
+#            f_idx = _cfg_fmt.index(f)
+#            title2 = title2 + "_%s-%s" %(f,c[f_idx])
         title2 = title + title2
             
         tput(x_vals,v_vals,summary,cfg_fmt=_cfg_fmt,cfg=c,xname=x_name,vname=v_name,title=title2)
         lat(x_vals,v_vals,summary_client,cfg_fmt=_cfg_fmt,cfg=c,xname=x_name,vname=v_name,title=title2,stat_types=["99th","90th","mean","max"])
-        for v in v_vals:
-            time_breakdown(x_vals,summary,normalized=True,xname=x_name,cfg_fmt=_cfg_fmt+[v_name],cfg=c+[v],title=title2)
+#        for v in v_vals:
+#            time_breakdown(x_vals,summary,normalized=True,xname=x_name,cfg_fmt=_cfg_fmt+[v_name],cfg=c+[v],title=title2)
 
 
 def tput(xval,vval,summary,
@@ -94,11 +103,18 @@ def tput(xval,vval,summary,
         for x,xi in zip(xval,range(len(xval))):
             my_cfg_fmt = cfg_fmt + [xname] + [vname]
             my_cfg = cfg + [x] + [v]
+#            my_cfg_fmt = cfg_fmt
+#            my_cfg = cfg
+#            my_cfg[my_cfg_fmt.index(xname)] = x
+#            my_cfg[my_cfg_fmt.index(vname)] = v
             n_cnt = my_cfg[my_cfg_fmt.index("NODE_CNT")]
             n_clt = my_cfg[my_cfg_fmt.index("CLIENT_NODE_CNT")]
             my_cfg[my_cfg_fmt.index("CLIENT_NODE_CNT")] = int(math.ceil(n_cnt/2)) if n_cnt > 1 else 1
             n_ppt = my_cfg[my_cfg_fmt.index("PART_PER_TXN")]
             my_cfg[my_cfg_fmt.index("PART_PER_TXN")] = n_ppt if n_ppt <= n_cnt else 1
+            n_thd =  my_cfg[my_cfg_fmt.index("THREAD_CNT")]
+            n_alg =  my_cfg[my_cfg_fmt.index("CC_ALG")]
+            my_cfg[my_cfg_fmt.index("THREAD_CNT")] = 1 if n_alg == "HSTORE" or n_alg == "HSTORE_SPEC" else n_thd
 #            if "CLIENT_NODE_CNT" not in my_cfg_fmt:
 #                my_cfg_fmt = my_cfg_fmt + ["CLIENT_NODE_CNT"]
 #                my_cfg = my_cfg + [int(math.ceil(n_cnt/2)) if n_cnt > 1 else 1]
@@ -162,11 +178,16 @@ def lat(xval,vval,summary,
             for x,xi in zip(xval,range(len(xval))):
                 my_cfg_fmt = cfg_fmt + [xname] + [vname]
                 my_cfg = cfg + [x] + [v]
+#                my_cfg[my_cfg_fmt.index(xname)] = x
+#                my_cfg[my_cfg_fmt.index(vname)] = v
                 n_cnt = my_cfg[my_cfg_fmt.index("NODE_CNT")]
                 n_clt = my_cfg[my_cfg_fmt.index("CLIENT_NODE_CNT")]
                 my_cfg[my_cfg_fmt.index("CLIENT_NODE_CNT")] = int(math.ceil(n_cnt/2)) if n_cnt > 1 else 1
                 n_ppt = my_cfg[my_cfg_fmt.index("PART_PER_TXN")]
                 my_cfg[my_cfg_fmt.index("PART_PER_TXN")] = n_ppt if n_ppt <= n_cnt else 1
+                n_thd =  my_cfg[my_cfg_fmt.index("THREAD_CNT")]
+                n_alg =  my_cfg[my_cfg_fmt.index("CC_ALG")]
+                my_cfg[my_cfg_fmt.index("THREAD_CNT")] = 1 if n_alg == "HSTORE" or n_alg == "HSTORE_SPEC" else n_thd
 #    if xname == "NODE_CNT":
 #                    my_cfg_fmt = my_cfg_fmt + ["CLIENT_NODE_CNT"]
 #                    my_cfg = my_cfg + [int(math.ceil(x/2)) if x > 1 else 1]
@@ -415,11 +436,16 @@ def time_breakdown(xval,summary,
     for x,i in zip(xval,range(len(xval))):
         my_cfg_fmt = cfg_fmt + [xname]
         my_cfg = cfg + [x]
+#        my_cfg[my_cfg_fmt.index(xname)] = x
+#        my_cfg[my_cfg_fmt.index(vname)] = v
         n_cnt = my_cfg[my_cfg_fmt.index("NODE_CNT")]
         n_clt = my_cfg[my_cfg_fmt.index("CLIENT_NODE_CNT")]
         my_cfg[my_cfg_fmt.index("CLIENT_NODE_CNT")] = int(math.ceil(n_cnt/2)) if n_cnt > 1 else 1
         n_ppt = my_cfg[my_cfg_fmt.index("PART_PER_TXN")]
         my_cfg[my_cfg_fmt.index("PART_PER_TXN")] = n_ppt if n_ppt <= n_cnt else 1
+        n_thd =  my_cfg[my_cfg_fmt.index("THREAD_CNT")]
+        n_alg =  my_cfg[my_cfg_fmt.index("CC_ALG")]
+        my_cfg[my_cfg_fmt.index("THREAD_CNT")] = 1 if n_alg == "HSTORE" or n_alg == "HSTORE_SPEC" else n_thd
 #        if xname == "NODE_CNT":
 #            my_cfg_fmt = my_cfg_fmt + ["CLIENT_NODE_CNT"]
 #            my_cfg = my_cfg + [int(math.ceil(x/2)) if x > 1 else 1]

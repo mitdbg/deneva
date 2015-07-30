@@ -137,8 +137,8 @@ for exp in exps:
             if plot:
                 summary[output_f] = r
                 summary_client[output_f] = r2
-                print(output_f)
-                print(summary[output_f])
+#                print(output_f)
+#                print(summary[output_f])
 
     if plot:
         exp_plot = exp + '_plot'
