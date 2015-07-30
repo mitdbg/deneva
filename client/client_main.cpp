@@ -7,6 +7,7 @@
 #include "client_query.h"
 #include "transport.h"
 #include "client_txn.h"
+//#include <jemallloc.h>
 
 void * f(void *);
 void * g(void *);

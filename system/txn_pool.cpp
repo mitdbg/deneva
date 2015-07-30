@@ -290,6 +290,20 @@ void TxnPool::commit_spec_ex(int r) {
   while (t_node->next != NULL) {
     t_node = t_node->next;
     if (t_node->txn->get_txn_id() % g_node_cnt == g_node_id && t_node->qry->part_num == 1 && t_node->txn->state == PREP && t_node->txn->spec) {
+      t_node->txn->validate();
+      /*
+      if(t_node->txn->rc == Abort) {
+        INC_STATS(0,spec_abort_cnt,1);
+      }
+      else {
+        INC_STATS(0,spec_commit_cnt,1);
+      }
+      */
+      t_node->txn->finish(rc,t_node->qry->part_to_access,t_node->qry->part_num);
+      t_node->txn->state = DONE;
+      t_node->qry->rtype = RPASS;
+      work_queue.add_query(t_node->qry);
+      /*
       if(rc != Abort)
         rc = t_node->txn->validate();
       if(rc == Abort) {
@@ -303,6 +317,7 @@ void TxnPool::commit_spec_ex(int r) {
       t_node->txn->state = DONE;
       t_node->qry->rtype = RPASS;
       work_queue.add_query(t_node->qry);
+      */
     }
     else if (t_node->txn->get_txn_id() % g_node_cnt == g_node_id && t_node->qry->part_num == 1 && t_node->txn->state != PREP && t_node->txn->spec) {
       work_queue.remove_query(t_node->qry);
