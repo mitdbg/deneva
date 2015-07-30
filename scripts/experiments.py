@@ -12,10 +12,33 @@ fmt_nt = [["NODE_CNT","CLIENT_NODE_CNT","NETWORK_TEST"]]
 
 def test():
     fmt = fmt_ycsb
-    exp = [
-    [1,2,50000,'YCSB','WAIT_DIE',50,1,1,10,0.6,0.5,0.5,2],
-    ]
+    nnodes = [1]#,16]
+    #nmpr=[0,1,5,10,20,30,40,50,60,70,80,90,100]
+    nmpr=[0]
+    nalgos=['WAIT_DIE']
+    #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
+    nthreads=[2]
+    ncthreads=[4]
+    ntifs=[1000]
+    nzipf=[0.0]
+    nwr_perc=[0.0]
+    ntxn=3000000
+    nparts = [2]
+    exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t if cc!="HSTORE" and cc!= "HSTORE_SPEC" else 1,tif,z,1.0-wp,wp,p if p <= n else 1] for n,ct,t,tif,z,wp,m,cc,p in itertools.product(nnodes,ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts)]
+#    fmt = fmt_ycsb
+#    exp = [
+#    [1,2,50000,'YCSB','WAIT_DIE',50,1,1,10,0.6,0.5,0.5,2],
+#    ]
+#    return fmt[0],exp
     return fmt[0],exp
+
+def test_plot(summary,summary_client):
+    from plot_helper import tput_plotter
+    fmt,exp = test()
+    x_name = "MPR"
+    v_name = "CC_ALG"
+    title = "TEST"
+    tput_plotter(title,x_name,v_name,fmt,exp,summary,summary_client);
 
 # Performance: throughput vs. node count
 # Vary: Node count, % writes
@@ -268,6 +291,7 @@ def abort_penalty_sweep_plot(summary,summary_client):
 
 experiment_map = {
     'test': test,
+    'test_plot': test_plot,
     'experiment_1': experiment_1,
     'experiment_1_plot': experiment_1_plot,
     'partition_sweep': partition_sweep,
