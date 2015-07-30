@@ -155,6 +155,11 @@ def mpr_sweep_plot(summary,summary_client):
     v_name = "CC_ALG"
     title = "MPR Sweep"
     tput_plotter(title,x_name,v_name,fmt,exp,summary,summary_client);
+    fmt,exp = mpr_sweep()
+    x_name = "NODE_CNT"
+    v_name = "CC_ALG"
+    title = "Node Sweep"
+    tput_plotter(title,x_name,v_name,fmt,exp,summary,summary_client);
 
 def tif_sweep():
     fmt = fmt_ycsb

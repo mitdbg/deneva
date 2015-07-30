@@ -126,15 +126,15 @@ for exp in exps:
                         merge_results(r,exp_cnt,drop)
                         merge_results(r2,exp_cnt,drop)
                 
-            get_lstats(r)
-            get_lstats(r2)
-            with open("{}s_{}.p".format(result_dir,output_f),'w') as f:
-                p = pickle.Pickler(f)
-                p.dump(r)
+                get_lstats(r)
+                get_lstats(r2)
+                with open("{}s_{}.p".format(result_dir,output_f),'w') as f:
+                    p = pickle.Pickler(f)
+                    p.dump(r)
 #pickle.dump(r,f)
-            with open("{}c_{}.p".format(result_dir,output_f),'w') as f:
-                p = pickle.Pickler(f)
-                p.dump(r)
+                with open("{}c_{}.p".format(result_dir,output_f),'w') as f:
+                    p = pickle.Pickler(f)
+                    p.dump(r)
 #pickle.dump(r2,f)
             if plot:
                 summary[output_f] = r

@@ -38,6 +38,7 @@ RC ycsb_wl::init() {
   fflush(stdout);
 	init_table_parallel();
   printf("Done\n");
+  fflush(stdout);
 //	init_table();
 	return RCOK;
 }
