@@ -99,6 +99,8 @@ for exp in exps:
                 all_nodes.append(sorted(list(set(nodes))))
         else:
             if not clear and os.path.isfile("{}s_{}.p".format(result_dir,output_f)) and os.path.isfile("{}c_{}.p".format(result_dir,output_f)):
+                if not plot and use_tmp:
+                    continue
                 with open("{}s_{}.p".format(result_dir,output_f),'r') as f:
                     p = pickle.Unpickler(f)
                     r = p.load()
