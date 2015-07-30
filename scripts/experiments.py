@@ -45,13 +45,13 @@ def test_plot(summary,summary_client):
 def experiment_1():
     fmt = fmt_ycsb
     nnodes = [2]
-    nmpr=[1]
-    nalgos=['WAIT_DIE']
+    nmpr=[0,1,5,10,25]#,50,75,100]
+    nalgos=['HSTORE_SPEC']
     #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
-    nthreads=[4]
+    nthreads=[1]
     ncthreads=[4]
     ntifs=[1000]
-    nzipf=[0.6]
+    nzipf=[0.0]
     nwr_perc=[0.5]
     ntxn=2000000
     nparts = [2]
@@ -332,9 +332,10 @@ configs = {
     "MAX_TXN_IN_FLIGHT": 1,
     "NETWORK_DELAY": '0UL',
     "DONE_TIMER": "3 * 60 * BILLION // 3 minutes",
-    "PROG_TIMER" : "10 * BILLION // in s",
+    "PROG_TIMER" : "30 * BILLION // in s",
     "NETWORK_TEST" : "false",
     "ABORT_PENALTY": "1 * 1000000UL   // in ns.",
+    "PRT_LAT_DISTR": "true",
 #YCSB
     "INIT_PARALLELISM" : 4, 
     "READ_PERC":0.5,

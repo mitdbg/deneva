@@ -3,12 +3,12 @@
 #include "txn.h"
 #include "pthread.h"
 #include "remote_query.h"
+//#include <jemallloc.h>
 
 void Manager::init() {
 	timestamp = 1;
 	last_min_ts_time = 0;
 	min_ts = 0; 
-	//all_ts = (ts_t *) malloc(sizeof(ts_t) * (g_thread_cnt + g_node_cnt));
 	all_ts = (ts_t *) malloc(sizeof(ts_t) * (g_thread_cnt * g_node_cnt));
 	_all_txns = new txn_man * [g_thread_cnt + g_rem_thread_cnt];
 	for (UInt32 i = 0; i < g_thread_cnt + g_rem_thread_cnt; i++) {

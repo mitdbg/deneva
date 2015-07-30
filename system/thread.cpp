@@ -235,6 +235,7 @@ RC thread_t::run() {
 				m_txn = txn_pool.get_txn(m_query->return_id, m_query->txn_id);
 				assert(m_txn != NULL);
         m_txn->register_thd(this);
+        rc = m_txn->rc;
 				break;
 			case RINIT:
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || CC_ALG == VLL
@@ -486,6 +487,11 @@ RC thread_t::run() {
 					switch(m_txn->state) {
 						case INIT:
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
+              
+#if CC_ALG == HSTORE_SPEC
+							txn_pool.commit_spec_ex(RCOK);
+							spec_man.clear();
+#endif
 							uint64_t part_arr_s[1];
 							part_arr_s[0] = m_query->part_to_access[0];
 							rc = part_lock_man.rem_lock(part_arr_s, 1, m_txn);
@@ -547,7 +553,6 @@ RC thread_t::run() {
               debug1 = 2;
 							m_txn->state = DONE;
 #if CC_ALG == HSTORE_SPEC
-							// allow speculative execution to start
 							txn_pool.commit_spec_ex(m_query->rc);
 							spec_man.clear();
 #endif
@@ -599,9 +604,11 @@ RC thread_t::run() {
           work_queue.update_hash(m_txn->get_txn_id());
           txn_id= m_txn->get_txn_id();
 
+          /*
 					if(m_query->part_num > 1) {
 						INC_STATS(get_thd_id(),mpq_cnt,1);
 					}
+          */
 					// Put txn in txn_pool in case of WAIT
 					txn_pool.add_txn(g_node_id,m_txn,m_query);
 
@@ -675,6 +682,12 @@ RC thread_t::run() {
 						}
 					}
 
+#if CC_ALG == HSTORE_SPEC
+          if(m_query->part_num > 1) {
+						// allow speculative execution to start
+						txn_pool.start_spec_ex();
+          }
+#endif
 
 					// Send RINIT message to all involved nodes
 					for(uint64_t i = 0; i < m_query->part_num; i++) {
@@ -759,6 +772,10 @@ RC thread_t::run() {
 						break;
 #endif
 					// Transaction is finished. Increment stats. Remove from txn pool
+          if(m_txn->spec) {
+            assert(m_query->part_num == 1);
+            INC_STATS(0,spec_commit_cnt,1);
+          }
 					assert(m_txn->get_rsp_cnt() == 0);
 					if(m_query->part_num == 1 && !m_txn->spec) {
 						rc = m_txn->finish(rc,m_query->part_to_access,m_query->part_num);
@@ -768,6 +785,9 @@ RC thread_t::run() {
 					if(m_txn->abort_cnt > 0) { 
 						INC_STATS(get_thd_id(), txn_abort_cnt, 1);
 						INC_STATS_ARR(get_thd_id(), all_abort, m_txn->abort_cnt);
+					}
+					if(m_query->part_num > 1) {
+						INC_STATS(get_thd_id(),mpq_cnt,1);
 					}
 					timespan = get_sys_clock() - m_txn->starttime;
 					INC_STATS(get_thd_id(), run_time, timespan);
@@ -806,7 +826,7 @@ RC thread_t::run() {
 */
 					assert(m_txn->get_rsp_cnt() == 0);
 					//if(m_query->part_num == 1 && !m_txn->spec)
-					if(m_query->part_num == 1)
+					if(m_query->part_num == 1 && !m_txn->spec)
 						rc = m_txn->finish(rc,m_query->part_to_access,m_query->part_num);
           /*
 					else
@@ -842,7 +862,6 @@ RC thread_t::run() {
         m_query->reset();
         m_txn->state = START;
         m_txn->rc = RCOK;
-        m_txn->spec = false;
         m_txn->cc_wait_abrt_cnt += m_txn->cc_wait_cnt;
         m_txn->cc_wait_abrt_time += m_txn->cc_wait_time;
         m_txn->cc_hold_abrt_time += m_txn->cc_hold_time;
@@ -856,6 +875,15 @@ RC thread_t::run() {
 
 					//m_query->penalty_start = m_txn->penalty_start;
 
+#if CC_ALG == HSTORE_SPEC
+          if(m_txn->spec) {
+            INC_STATS(0,spec_abort_cnt,1);
+            m_txn->spec = false;
+					  work_queue.add_query(m_query);
+            break;
+          }
+#endif
+          m_txn->spec = false;
           abort_queue.add_abort_query(m_query);
 					//work_queue.add_query(m_query);
           /*

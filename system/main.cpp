@@ -12,6 +12,7 @@
 #include "occ.h"
 #include "vll.h"
 #include "transport.h"
+//#include <jemalloc.h>
 
 void * f(void *);
 void * g(void *);
@@ -234,6 +235,7 @@ int main(int argc, char* argv[])
 		printf("PASS! SimTime = %ld\n", endtime - starttime);
 		if (STATS_ENABLE)
 			stats.print(false);
+    //malloc_stats_print(NULL, NULL, NULL);
 	} else {
 		((TestWorkload *)m_wl)->summarize();
 	}

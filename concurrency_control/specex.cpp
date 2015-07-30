@@ -42,7 +42,8 @@ RC SpecEx::validate(txn_man * txn) {
 final:
 	mem_allocator.free(rset, sizeof(set_ent));
 
-	if (!readonly) {
+  // Only add write set of aborting txns to history
+	if (!readonly && !valid) {
 		// only update active & tnc for non-readonly transactions
 		pthread_mutex_lock( &latch );
 			STACK_PUSH(history, wset);
