@@ -110,15 +110,15 @@ def node_sweep_plot(summary,summary_client):
 
 def mpr_sweep():
     fmt = fmt_ycsb
-    nnodes = [1,2,4,8]#,16]
+    nnodes = [1,2,4,8,16]
     #nmpr=[0,1,5,10,20,30,40,50,60,70,80,90,100]
     nmpr=[0,1,5,10,25,50,75,100]
-    nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','TIMESTAMP','HSTORE','HSTORE_SPEC']
+    nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','TIMESTAMP','VLL']
     #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
     nthreads=[2]
     ncthreads=[4]
     ntifs=[1000]
-    nzipf=[0.0,0.6]
+    nzipf=[0.0]
     nwr_perc=[0.0,0.5]
     ntxn=3000000
     nparts = [2]
@@ -308,7 +308,7 @@ configs = {
     "MAX_TXN_IN_FLIGHT": 1,
     "NETWORK_DELAY": '0UL',
     "DONE_TIMER": "3 * 60 * BILLION // 3 minutes",
-    "PROG_TIMER" : "10 * BILLION // in s",
+    "PROG_TIMER" : "30 * BILLION // in s",
     "NETWORK_TEST" : "false",
     "ABORT_PENALTY": "1 * 1000000UL   // in ns.",
 #YCSB
