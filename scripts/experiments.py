@@ -6,7 +6,7 @@ import math
 # Format: [#Nodes,#Txns,Workload,CC_ALG,MPR]
 fmt_tpcc = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","NUM_WH","MAX_TXN_IN_FLIGHT"]]
 fmt_nd = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","NUM_WH","MAX_TXN_IN_FLIGHT","NETWORK_DELAY"]]
-fmt_ycsb = [["CLIENT_NODE_CNT","NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","CLIENT_THREAD_CNT","THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC","PART_PER_TXN"]]
+fmt_ycsb = [["CLIENT_NODE_CNT","NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","CLIENT_THREAD_CNT","THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC","PART_PER_TXN","PART_CNT"]]
 fmt_nt = [["NODE_CNT","CLIENT_NODE_CNT","NETWORK_TEST"]]
 
 
@@ -109,18 +109,18 @@ def partition_sweep_plot(summary,summary_client):
 
 def node_sweep():
     fmt = fmt_ycsb
-    nnodes = [1,2,4,8]
+    nnodes = [1,2,4,8,16]
     nmpr=[0,1,5]
-    nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','TIMESTAMP','VLL','HSTORE','HSTORE','HSTORE_SPEC']
+    nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','TIMESTAMP','HSTORE']
     #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
     nthreads=[2]
     ncthreads=[4]
     ntifs=[1000]
-    nzipf=[0.6]
-    nwr_perc=[0.5]
-    ntxn=3000000
+    nzipf=[0.0]
+    nwr_perc=[0.0,0.5]
+    ntxn=[3000000]
     nparts = [2]
-    exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t if cc!="HSTORE" and cc!= "HSTORE_SPEC" else 1,tif,z,1.0-wp,wp,p if p <= n else 1] for n,ct,t,tif,z,wp,m,cc,p in itertools.product(nnodes,ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts)]
+    exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,txn,'YCSB',cc,m,ct,t,tif,z,1.0-wp,wp,p if p <= n else 1,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n] for n,ct,t,tif,z,wp,m,cc,p,txn in itertools.product(nnodes,ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts,ntxn)]
     return fmt[0],exp
 
 def node_sweep_plot(summary,summary_client):

@@ -132,7 +132,11 @@ void TxnPool::restart_txn(uint64_t txn_id){
         t_node->qry->rtype = RTXN;
       else
         t_node->qry->rtype = RQRY;
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
       work_queue.add_query(t_node->qry->active_part/g_node_cnt,t_node->qry);
+#else
+      work_queue.add_query(0,t_node->qry);
+#endif
       /*
       assert(t_node->qry->part_cnt > 0 || t_node->qry->part_num > 0);
       if(t_node->qry->part_num > 0)
@@ -255,7 +259,11 @@ void TxnPool::spec_next() {
       part_lock_man.rem_unlock(part_arr_s,1,t_node->txn);
       */
       t_node->txn->rc = RCOK;
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
       work_queue.add_query(t_node->qry->active_part/g_node_cnt,t_node->qry);
+#else
+      work_queue.add_query(0,t_node->qry);
+#endif
       /*
       assert(t_node->qry->part_cnt > 0 || t_node->qry->part_num > 0);
       if(t_node->qry->part_num > 0)
@@ -318,7 +326,11 @@ void TxnPool::commit_spec_ex(int r) {
       t_node->txn->finish(rc,t_node->qry->part_to_access,t_node->qry->part_num);
       t_node->txn->state = DONE;
       t_node->qry->rtype = RPASS;
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
       work_queue.add_query(t_node->qry->active_part/g_node_cnt,t_node->qry);
+#else
+      work_queue.add_query(0,t_node->qry);
+#endif
       /*
       assert(t_node->qry->part_cnt > 0 || t_node->qry->part_num > 0);
       if(t_node->qry->part_num > 0)
@@ -343,7 +355,11 @@ void TxnPool::commit_spec_ex(int r) {
       */
     }
     else if (t_node->txn->get_txn_id() % g_node_cnt == g_node_id && t_node->qry->part_num == 1 && t_node->txn->state != PREP && t_node->txn->spec) {
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
       work_queue.add_query(t_node->qry->active_part/g_node_cnt,t_node->qry);
+#else
+      work_queue.add_query(0,t_node->qry);
+#endif
       /*
       assert(t_node->qry->part_cnt > 0 || t_node->qry->part_num > 0);
       if(t_node->qry->part_num > 0)

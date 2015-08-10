@@ -202,6 +202,23 @@ void Remote_query::send_init_done(uint64_t dest_id) {
   send_remote_query(dest_id,data,sizes,num);
 }
 
+void Remote_query::send_exp_done(uint64_t dest_id) {
+  uint64_t total = 2;
+	void ** data = new void *[total];
+	int * sizes = new int [total];
+  int num = 0;
+
+  txnid_t txn_id = 0;
+	RemReqType rtype = EXP_DONE;
+
+	data[num] = &txn_id;
+	sizes[num++] = sizeof(txnid_t);
+	data[num] = &rtype;
+	sizes[num++] = sizeof(RemReqType);
+  send_remote_query(dest_id,data,sizes,num);
+}
+
+
 // TODO: What if in HStore we want to lock multiple partitions at same node?
 void Remote_query::send_init(base_query * query,uint64_t dest_part_id) {
 
@@ -412,6 +429,9 @@ base_query * Remote_query::unpack(void * d, int len) {
     query->txn_id = txn_id;
     query->rtype = rtype;
 
+    if(query->rtype == INIT_DONE || query->rtype == EXP_DONE)
+      return query;
+
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
   if(query->rtype != INIT_DONE && g_node_id < g_node_cnt) {
     // Set active partition
@@ -518,7 +538,9 @@ base_query * Remote_query::unpack(void * d, int len) {
 #elif WORKLOAD == YCSB
             	ycsb_query *m_query = new ycsb_query;
 #endif
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
               query->home_part = query->active_part;
+#endif
             	m_query->unpack_client(query, data);
 				assert(GET_NODE_ID(query->pid) == g_node_id);
             	break;

@@ -66,6 +66,7 @@ void txn_man::clear() {
   cc_hold_time = 0;
   ready_ulk = 0;
   ready_part = 0;
+  row_cnt = 0;
 }
 
 void txn_man::update_stats() {
@@ -486,10 +487,15 @@ RC txn_man::finish(base_query * query, bool fin) {
   for (uint64_t i = 0; i < query->part_touched_cnt; ++i) {
     uint64_t part_node_id = GET_NODE_ID(query->part_touched[i]);
     uint64_t part_id = query->part_touched[i];
-    //if(part_node_id == get_node_id()) {
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
     if(part_id == home_part) {
       continue;
     }
+#else
+    if(part_node_id == get_node_id()) {
+      continue;
+    }
+#endif
     // Check if we have already sent this node an RPREPARE message
     bool sent = false;
     for (uint64_t j = 0; j < i; j++) {
@@ -508,6 +514,7 @@ RC txn_man::finish(base_query * query, bool fin) {
       if(GET_NODE_ID(part_id) != g_node_id) {
         query->remote_finish(query, part_node_id);    
       } else {
+        assert(CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC);
          // Model after RFIN
 #if WORKLOAD == TPCC
 	    base_query * tmp_query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), 0);
@@ -535,6 +542,7 @@ RC txn_man::finish(base_query * query, bool fin) {
       if(GET_NODE_ID(part_id) != g_node_id) {
         query->remote_prepare(query, part_node_id);    
       } else {
+        assert(CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC);
          // Model after RPREP
 #if WORKLOAD == TPCC
 	    base_query * tmp_query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), 0);

@@ -46,6 +46,7 @@ RC thread_t::run_remote() {
 	// Send start msg to all nodes; wait for rsp from all nodes before continuing.
 	//#if !TPORT_TYPE_IPC
 	int rsp_cnt = g_node_cnt + g_client_node_cnt - 1;
+	int done_cnt = g_node_cnt + g_client_node_cnt - 1;
 #if CC_ALG == CALVIN
 	rsp_cnt++;	// Account for sequencer node
 #endif
@@ -54,7 +55,11 @@ RC thread_t::run_remote() {
 		if(m_query != NULL && m_query->rtype == INIT_DONE) {
 			rsp_cnt --;
 		} else if(m_query != NULL) {
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
 			work_queue.add_query(GET_PART_ID_IDX(m_query->active_part),m_query);
+#else
+			work_queue.add_query(0,m_query);
+#endif
       /*
       assert(m_query->part_cnt > 0 || m_query->part_num > 0);
       if(m_query->part_num > 0)
@@ -87,7 +92,15 @@ RC thread_t::run_remote() {
 		m_query = (base_query *) tport_man.recv_msg();
 		if( m_query != NULL ) { 
 			rq_time = get_sys_clock();
+      if(m_query->rtype == EXP_DONE) {
+        done_cnt--;
+        continue;
+      }
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
 			work_queue.add_query(GET_PART_ID_IDX(m_query->active_part),m_query);
+#else
+			work_queue.add_query(0,m_query);
+#endif
       /*
       assert(m_query->part_cnt > 0 || m_query->part_num > 0);
       if(m_query->part_num > 0)
@@ -103,10 +116,18 @@ RC thread_t::run_remote() {
 				assert( _wl->sim_timeout);
 		}
 
+    if(warmup_finish && done_cnt == 0) {
+			if( !ATOM_CAS(_wl->sim_timeout, false, true) )
+				assert( _wl->sim_timeout);
+			if( !ATOM_CAS(_wl->sim_done, false, true) )
+				assert( _wl->sim_done);
+    }
+
 		if ((_wl->sim_done && _wl->sim_timeout) || (tend - run_starttime >= DONE_TIMER)) {
 #if !NOGRAPHITE
 			CarbonDisableModelsBarrier(&enable_barrier);
 #endif
+
 			return FINISH;
 		}
 
@@ -224,6 +245,17 @@ RC thread_t::run() {
       if(get_thd_id() == 0) {
         work_queue.finish(currtime);
         abort_queue.abort_finish(currtime);
+
+      // Send EXP_DONE to all nodes
+		uint64_t nnodes = g_node_cnt + g_client_node_cnt;
+#if CC_ALG == CALVIN
+		nnodes++;
+#endif
+		for(uint64_t i = 0; i < nnodes; i++) {
+			if(i != g_node_id) {
+				rem_qry_man.send_exp_done(i);
+			}
+		}
       }
 			return FINISH;
 		}
@@ -276,8 +308,10 @@ RC thread_t::run() {
 				m_txn->set_txn_id(m_query->txn_id);
 				m_txn->set_ts(m_query->ts);
 
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
         m_txn->home_part = m_query->home_part;
         m_txn->active_part = m_query->active_part;
+#endif
 				m_txn->set_pid(m_query->pid);
 				m_txn->state = INIT;
         if((CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC) && m_query->txn_id % g_node_cnt == g_node_id) {
@@ -366,7 +400,7 @@ RC thread_t::run() {
 				  rem_qry_man.ack_response(m_query);
         } else {
          // Model after RACK
-      printf("Local RACK 4 -- %ld\n",_thd_id);
+      //printf("Local RACK 4 -- %ld\n",_thd_id);
 #if WORKLOAD == TPCC
 	    base_query * tmp_query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), 0);
 	      tmp_query = new tpcc_query();
@@ -552,7 +586,7 @@ RC thread_t::run() {
 				  rem_qry_man.ack_response(m_query);
         } else {
          // Model after RACK
-      printf("Local RACK 5 -- %ld\n",_thd_id);
+      //printf("Local RACK 5 -- %ld\n",_thd_id);
 #if WORKLOAD == TPCC
 	    base_query * tmp_query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), 0);
 	      tmp_query = new tpcc_query();
@@ -712,8 +746,10 @@ RC thread_t::run() {
 						m_query->thd_id = _thd_id;
 					}
 
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
           m_txn->home_part = m_query->home_part;
           m_txn->active_part = m_query->active_part;
+#endif
 					m_txn->set_pid(m_query->pid);
 
 					// Only set new txn_id when txn first starts
@@ -771,6 +807,10 @@ RC thread_t::run() {
 #endif
 
 					ttime = get_sys_clock();
+#if CC_ALG != HSTORE && CC_ALG != HSTORE_SPEC && CC_ALG != VLL
+          // Touch first partition
+          m_query->part_touched[m_query->part_touched_cnt++] = m_query->part_to_access[0];
+#endif
 #if !QRY_ONLY && (CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || CC_ALG == VLL)
 					m_txn->state = INIT;
 					for(uint64_t i = 0; i < m_query->part_num; i++) {
@@ -999,7 +1039,9 @@ RC thread_t::run() {
         m_query->rc = RCOK;
         m_query->spec = false;
         m_query->reset();
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
         m_query->active_part = m_query->home_part;
+#endif
         m_txn->state = START;
         m_txn->rc = RCOK;
         m_txn->cc_wait_abrt_cnt += m_txn->cc_wait_cnt;

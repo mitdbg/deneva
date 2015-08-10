@@ -37,6 +37,7 @@ RC Client_thread_t::run_remote() {
 	stats.init(get_thd_id());
 	// Send start msg to all nodes; wait for rsp from all nodes before continuing.
 	int rsp_cnt = g_node_cnt + g_client_node_cnt - 1;
+	int done_cnt = g_node_cnt + g_client_node_cnt - 1;
 #if CC_ALG == CALVIN
 	rsp_cnt++;	// Account for sequencer node
 #endif
@@ -85,7 +86,7 @@ RC Client_thread_t::run_remote() {
 		m_query = (base_query *) tport_man.recv_msg();
 		if( m_query != NULL ) { 
 			rq_time = get_sys_clock();
-			assert(m_query->rtype == CL_RSP);
+			assert(m_query->rtype == CL_RSP || m_query->rtype == EXP_DONE);
 			assert(m_query->dest_id == g_node_id);
 			//assert(m_query->return_id < g_node_id);
 #if DEBUG_DISTR
@@ -106,12 +107,23 @@ RC Client_thread_t::run_remote() {
 					inf = client_man.dec_inflight(return_node_offset);
           assert(inf >=0);
 					break;
+        case EXP_DONE:
+          done_cnt--;
+          break;
 				default:
 					assert(false);
 			}
 		}
 		ts_t tend = get_sys_clock(); 
 		if (warmup_finish && _wl->sim_done && ((tend - rq_time) > MSG_TIMEOUT)) {
+			if( !ATOM_CAS(_wl->sim_timeout, false, true) )
+				assert( _wl->sim_timeout);
+		}
+
+    // If all other nodes are done, finish.
+		if (warmup_finish && done_cnt == 0) {
+			if( !ATOM_CAS(_wl->sim_done, false, true) )
+				assert( _wl->sim_done);
 			if( !ATOM_CAS(_wl->sim_timeout, false, true) )
 				assert( _wl->sim_timeout);
 		}
@@ -240,5 +252,18 @@ RC Client_thread_t::run() {
 
 	prog_time = get_sys_clock();
 	SET_STATS(get_thd_id(), tot_run_time, prog_time - run_starttime); 
+
+	if( _thd_id == 0) {
+      // Send EXP_DONE to all nodes
+		uint64_t nnodes = g_node_cnt + g_client_node_cnt;
+#if CC_ALG == CALVIN
+		nnodes++;
+#endif
+		for(uint64_t i = 0; i < nnodes; i++) {
+			if(i != g_node_id) {
+				rem_qry_man.send_exp_done(i);
+			}
+		}
+  }
 	return FINISH;
 }

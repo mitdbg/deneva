@@ -61,7 +61,7 @@ RC PartMan::lock(txn_man * txn) {
       // possibly restart txn, remove WAIT status
 
       // Model after RACK
-      printf("Local RACK 3 -- %ld\n",_part_id);
+      //printf("Local RACK 3 -- %ld\n",_part_id);
 #if WORKLOAD == TPCC
 	    base_query * tmp_query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), 0);
 	      tmp_query = new tpcc_query();
@@ -112,7 +112,7 @@ RC PartMan::lock(txn_man * txn) {
       // Abort this txn at this node, possible restarting txn
 
       // Model after RACK
-      printf("Local RACK 1 -- %ld\n",_part_id);
+      //printf("Local RACK 1 -- %ld\n",_part_id);
 #if WORKLOAD == TPCC
 	    base_query * tmp_query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), 0);
 	      tmp_query = new tpcc_query();
@@ -171,7 +171,7 @@ void PartMan::unlock(txn_man * txn) {
           }
         } else {
           // Model after RACK
-      printf("Local RACK 2 -- %ld\n",_part_id);
+      //printf("Local RACK 2 -- %ld\n",_part_id);
 #if WORKLOAD == TPCC
 	    base_query * tmp_query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), 0);
 	      tmp_query = new tpcc_query();

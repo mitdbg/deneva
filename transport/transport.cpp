@@ -179,6 +179,11 @@ void Transport::send_msg(uint64_t dest_id, void ** data, int * sizes, int num) {
 	int rc;
 	
 	// 4: send message
+  if(*(RemReqType*)data[1] == EXP_DONE) {
+	  rc = s[dest_id].sock.send(&sbuf,NN_MSG,NN_DONTWAIT);
+    return;
+  }
+
 	rc= s[dest_id].sock.send(&sbuf,NN_MSG,0);
 
 	// Check for a send error

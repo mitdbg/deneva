@@ -16,6 +16,10 @@ def tput_plotter(title,x_name,v_name,fmt,exp,summary,summary_client):
     _cfg_fmt.remove(x_name)
     v_idx = _cfg_fmt.index(v_name)
     _cfg_fmt.remove(v_name)
+    p_idx = _cfg_fmt.index("PART_CNT")
+    _cfg_fmt.remove("PART_CNT")
+    t_idx = _cfg_fmt.index("MAX_TXN_PER_PART")
+    _cfg_fmt.remove("MAX_TXN_PER_PART")
     _cfg = list(exp)
     x_vals = []
     v_vals = []
@@ -24,6 +28,8 @@ def tput_plotter(title,x_name,v_name,fmt,exp,summary,summary_client):
         del p[x_idx]
         v_vals.append(p[v_idx])
         del p[v_idx]
+        del p[p_idx]
+        del p[t_idx]
     x_vals = sorted(list(set(x_vals)))
     v_vals = sorted(list(set(v_vals)))
 #    if x_name == "NODE_CNT" or v_name == "NODE_CNT":
@@ -66,7 +72,7 @@ def tput_plotter(title,x_name,v_name,fmt,exp,summary,summary_client):
         title2 = title + title2
             
         tput(x_vals,v_vals,summary,cfg_fmt=_cfg_fmt,cfg=c,xname=x_name,vname=v_name,title=title2)
-        lat(x_vals,v_vals,summary_client,cfg_fmt=_cfg_fmt,cfg=c,xname=x_name,vname=v_name,title=title2,stat_types=["99th","90th","mean","max"])
+#lat(x_vals,v_vals,summary_client,cfg_fmt=_cfg_fmt,cfg=c,xname=x_name,vname=v_name,title=title2,stat_types=["99th","90th","mean","max"])
 #        for v in v_vals:
 #            time_breakdown(x_vals,summary,normalized=True,xname=x_name,cfg_fmt=_cfg_fmt+[v_name],cfg=c+[v],title=title2)
 
@@ -114,7 +120,18 @@ def tput(xval,vval,summary,
             my_cfg[my_cfg_fmt.index("PART_PER_TXN")] = n_ppt if n_ppt <= n_cnt else 1
             n_thd =  my_cfg[my_cfg_fmt.index("THREAD_CNT")]
             n_alg =  my_cfg[my_cfg_fmt.index("CC_ALG")]
-            my_cfg[my_cfg_fmt.index("THREAD_CNT")] = 1 if n_alg == "HSTORE" or n_alg == "HSTORE_SPEC" else n_thd
+#            my_cfg[my_cfg_fmt.index("THREAD_CNT")] = 1 if n_alg == "HSTORE" or n_alg == "HSTORE_SPEC" else n_thd
+            if n_alg == "HSTORE" or n_alg == "HSTORE_SPEC":
+#                my_cfg[my_cfg_fmt.index("PART_CNT")] = n_thd*n_cnt
+                my_cfg_fmt = my_cfg_fmt + ["PART_CNT"]
+                my_cfg = my_cfg + [n_thd*n_cnt]
+                my_cfg_fmt = my_cfg_fmt + ["MAX_TXN_PER_PART"]
+                my_cfg = my_cfg + [3000000]
+            else:
+                my_cfg_fmt = my_cfg_fmt + ["MAX_TXN_PER_PART"]
+                my_cfg = my_cfg + [3000000]
+#                my_cfg.pop(my_cfg_fmt.index("PART_CNT"))
+#                my_cfg_fmt.remove("PART_CNT")
 #            if "CLIENT_NODE_CNT" not in my_cfg_fmt:
 #                my_cfg_fmt = my_cfg_fmt + ["CLIENT_NODE_CNT"]
 #                my_cfg = my_cfg + [int(math.ceil(n_cnt/2)) if n_cnt > 1 else 1]

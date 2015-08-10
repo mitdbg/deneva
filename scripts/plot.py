@@ -64,8 +64,14 @@ for exp in exps:
         r = {}
         r2 = {}
         timestamp = 0
-        cfgs = get_cfgs(fmt,e)
-        output_f = get_outfile_name(cfgs,fmt,["*","*"])
+        if "HSTORE" in e or "HSTORE_SPEC" in e:
+            nfmt=fmt
+            ne=e
+        else:
+            nfmt=fmt[:-1]
+            ne=e[:-1]
+        cfgs = get_cfgs(nfmt,ne)
+        output_f = get_outfile_name(cfgs,nfmt,["*","*"])
         is_network_test = cfgs["NETWORK_TEST"] == "true"
         if is_network_test:
             ofile = "{}0_{}*".format(result_dir,output_f) 
@@ -98,16 +104,19 @@ for exp in exps:
                 all_exps.append(sub_exp)
                 all_nodes.append(sorted(list(set(nodes))))
         else:
+            opened = False
             if not clear and os.path.isfile("{}s_{}.p".format(result_dir,output_f)) and os.path.isfile("{}c_{}.p".format(result_dir,output_f)):
                 if not plot and use_tmp:
                     continue
                 with open("{}s_{}.p".format(result_dir,output_f),'r') as f:
                     p = pickle.Unpickler(f)
                     r = p.load()
+                    opened = True
 #r = pickle.load(f)
                 with open("{}c_{}.p".format(result_dir,output_f),'r') as f:
                     p = pickle.Unpickler(f)
                     r2 = p.load()
+                    opened = True
 #r2 = pickle.load(f)
             else:
                 for n in range(cfgs["NODE_CNT"]+cfgs["CLIENT_NODE_CNT"]):
@@ -126,15 +135,16 @@ for exp in exps:
                         merge_results(r,exp_cnt,drop)
                         merge_results(r2,exp_cnt,drop)
                 
-                get_lstats(r)
-                get_lstats(r2)
-                with open("{}s_{}.p".format(result_dir,output_f),'w') as f:
-                    p = pickle.Pickler(f)
-                    p.dump(r)
-#pickle.dump(r,f)
-                with open("{}c_{}.p".format(result_dir,output_f),'w') as f:
-                    p = pickle.Pickler(f)
-                    p.dump(r)
+                if not opened:
+                    get_lstats(r)
+                    get_lstats(r2)
+                    with open("{}s_{}.p".format(result_dir,output_f),'w') as f:
+                        p = pickle.Pickler(f)
+                        p.dump(r)
+#    pickle.dump(r,f)
+                    with open("{}c_{}.p".format(result_dir,output_f),'w') as f:
+                        p = pickle.Pickler(f)
+                        p.dump(r)
 #pickle.dump(r2,f)
             if plot:
                 summary[output_f] = r
