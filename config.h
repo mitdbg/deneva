@@ -6,13 +6,13 @@
 // Simulation + Hardware
 /***********************************************/
 #define NODE_CNT 2
-#define THREAD_CNT 1
+#define THREAD_CNT 2
 // REM_THREAD_CNT should be at least NODE_CNT*THREAD_CNT to avoid deadlock
 #define REM_THREAD_CNT 1
 // PART_CNT should be at least NODE_CNT
-#define PART_CNT 2
+#define PART_CNT 4
 #define CLIENT_NODE_CNT 1
-#define CLIENT_THREAD_CNT 4
+#define CLIENT_THREAD_CNT 2
 #define CLIENT_REM_THREAD_CNT 1
 #define CLIENT_RUNTIME false
 
@@ -29,11 +29,11 @@
 // YCSB or TPCC
 #define WORKLOAD YCSB
 // print the transaction latency distribution
-#define PRT_LAT_DISTR true
+#define PRT_LAT_DISTR false
 #define STATS_ENABLE        true
 #define TIME_ENABLE         true //STATS_ENABLE
 
-#define MAX_TXN_IN_FLIGHT 100
+#define MAX_TXN_IN_FLIGHT 5
 
 /***********************************************/
 // Memory System
@@ -78,7 +78,7 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, OCC, VLL, CALVIN
-#define CC_ALG HSTORE_SPEC
+#define CC_ALG HSTORE
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER         false
@@ -140,11 +140,11 @@
 #define MAX_PART_PER_TXN      16 
 #define MAX_ROW_PER_TXN       64
 #define QUERY_INTVL         1UL
-#define MAX_TXN_PER_PART 200000
+#define MAX_TXN_PER_PART 10000
 #define FIRST_PART_LOCAL      true
 #define MAX_TUPLE_SIZE        1024 // in bytes
 // ==== [YCSB] ====
-#define INIT_PARALLELISM 4
+#define INIT_PARALLELISM 2
 #define SYNTH_TABLE_SIZE 2097152
 #define ZIPF_THETA 0.0
 #define READ_PERC 0.5
@@ -170,7 +170,7 @@
 #define WH_UPDATE         true
 #define NUM_WH 2
 // % of transactions that access multiple partitions
-#define MPR 25
+#define MPR 20 
 #define MPR_NEWORDER      20 // In %
 // Smaller item selection to model contention
 #define CONTENTION false
@@ -229,8 +229,8 @@ extern TestCases          g_test_case;
 #define DEBUG_TIMESTAMP				false
 #define DEBUG_SYNTH					false
 #define DEBUG_ASSERT				false
-#define DEBUG_DISTR					false 
-#define DEBUG_TIMELINE				false
+#define DEBUG_DISTR					true 
+#define DEBUG_TIMELINE				true
 #define DEBUG_BREAKDOWN				false
 
 #define QRY_ONLY false
@@ -267,7 +267,7 @@ extern TestCases          g_test_case;
 #define BILLION 1000000000UL // in ns => 1 second
 #define STAT_ARR_SIZE 1024
 #define PROG_TIMER 1 * 30 * BILLION
-#define DONE_TIMER 10 * 1 * BILLION
+#define DONE_TIMER 10 * 60 * BILLION
 
 #define SEED 0
 

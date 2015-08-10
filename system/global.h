@@ -178,8 +178,10 @@ enum lock_t {LOCK_EX, LOCK_SH, LOCK_NONE };
 enum TsType {R_REQ, W_REQ, P_REQ, XP_REQ}; 
 
 #define GET_THREAD_ID(id)	(id % g_thread_cnt)
-#define GET_NODE_ID(id)	(id)
+#define GET_NODE_ID(id)	(id % g_node_cnt)
 #define GET_PART_ID(t,n)	(n) 
+#define GET_PART_ID_FROM_IDX(idx)	(g_node_id + idx * g_node_cnt) 
+#define GET_PART_ID_IDX(p)	(p / g_node_cnt) 
 
 /*
 #define GET_THREAD_ID(id)	(id % g_thread_cnt)

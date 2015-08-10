@@ -44,6 +44,11 @@ void Remote_query::ack_response(RC rc, txn_man * txn) {
   printf("Sending RACK-1 %ld\n",txn->get_txn_id());
 #endif
   uint64_t total = 3;
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
+  total ++; // For home partition id
+  total ++; // For home partition id (2)
+#endif
+
 	void ** data = new void *[total];
 	int * sizes = new int [total];
 	int num = 0;
@@ -58,11 +63,19 @@ void Remote_query::ack_response(RC rc, txn_man * txn) {
 	data[num] = &rtype;
 	sizes[num++] = sizeof(RemReqType);
 
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
+	data[num] = &txn->home_part;
+	sizes[num++] = sizeof(uint64_t);
+	data[num] = &txn->home_part;
+	sizes[num++] = sizeof(uint64_t);
+#endif
+
   data[num] = &_rc;
 	sizes[num++] = sizeof(RC);
 
   send_remote_query(GET_NODE_ID(txn->get_pid()),data,sizes,num);
 }
+
 void Remote_query::ack_response(base_query * query) {
 
 	// Maximum number of parameters
@@ -71,6 +84,10 @@ void Remote_query::ack_response(base_query * query) {
   printf("Sending RACK-2 %ld\n",query->txn_id);
 #endif
   uint64_t total = 3;
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
+  total += 1;
+  total += 1;
+#endif
 	void ** data = new void *[total];
 	int * sizes = new int [total];
 	int num = 0;
@@ -83,6 +100,13 @@ void Remote_query::ack_response(base_query * query) {
 
 	data[num] = &rtype;
 	sizes[num++] = sizeof(RemReqType);
+
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
+  data[num] = &query->home_part;
+	sizes[num++] = sizeof(uint64_t);
+  data[num] = &query->home_part;
+	sizes[num++] = sizeof(uint64_t);
+#endif
 
   data[num] = &query->rc;
 	sizes[num++] = sizeof(RC);
@@ -178,7 +202,7 @@ void Remote_query::send_init_done(uint64_t dest_id) {
   send_remote_query(dest_id,data,sizes,num);
 }
 
-// FIXME: What if in HStore we want to lock multiple partitions at same node?
+// TODO: What if in HStore we want to lock multiple partitions at same node?
 void Remote_query::send_init(base_query * query,uint64_t dest_part_id) {
 
 	// Maximum number of parameters
@@ -197,6 +221,7 @@ void Remote_query::send_init(base_query * query,uint64_t dest_part_id) {
 
   uint64_t total = 4;
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
+  total += 2; // destination partition, home partition
   total += 2;
 #endif
 #if CC_ALG == VLL
@@ -223,6 +248,13 @@ void Remote_query::send_init(base_query * query,uint64_t dest_part_id) {
 	data[num] = &rtype;
 	sizes[num++] = sizeof(RemReqType);
 
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
+	data[num] = &query->dest_part;
+	sizes[num++] = sizeof(uint64_t);
+	data[num] = &query->home_part;
+	sizes[num++] = sizeof(uint64_t);
+#endif
+
 	data[num] = &query->ts;
 	sizes[num++] = sizeof(ts_t);
 
@@ -231,8 +263,9 @@ void Remote_query::send_init(base_query * query,uint64_t dest_part_id) {
 	sizes[num++] = sizeof(uint64_t);
 
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
+
   uint64_t _dest_part_id = dest_part_id;
-  uint64_t _part_cnt = 1; // FIXME
+  uint64_t _part_cnt = 1; // TODO: generalize
 	data[num] = &_part_cnt;
 	sizes[num++] = sizeof(uint64_t);
 	data[num] = &_dest_part_id;
@@ -362,19 +395,6 @@ base_query * Remote_query::unpack(void * d, int len) {
 	memcpy(&rtype,&data[ptr],sizeof(RemReqType));
 	ptr += sizeof(RemReqType);
 
-  /*
-	bool handle_init = false;
-#if CC_ALG != HSTORE && CC_ALG != HSTORE_SPEC && CC_ALG != VLL
-	// The remaining algos do not use 2PC init so we must check if we've seen
-	// this query before if the remote type is RPREPARE or RQRY or RFIN 
-	if (rtype == RQRY || rtype == RPREPARE || rtype == RFIN) {
-		query = txn_pool.get_qry(g_node_id,txn_id);
-		if (query == NULL)
-			handle_init = true;
-	}
-#endif
-*/
-
 #if WORKLOAD == TPCC
 	    query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), 0);
 	      query = new tpcc_query();
@@ -383,21 +403,6 @@ base_query * Remote_query::unpack(void * d, int len) {
         query = new ycsb_query();
 #endif
 
-  // FIXME: Race condition if multiple RACKs come in for the same txn and all overwrite each other from txn pool
-        /*
-    if(rtype == RINIT || rtype == INIT_DONE || rtype == RTXN || rtype == CL_RSP || (QRY_ONLY && rtype == RQRY) || handle_init) {
-#if WORKLOAD == TPCC
-	    query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), 0);
-	      query = new tpcc_query();
-#elif WORKLOAD == YCSB
-	    query = (ycsb_query *) mem_allocator.alloc(sizeof(ycsb_query), 0);
-        query = new ycsb_query();
-#endif
-        query->clear();
-    } else {
-        query = txn_pool.get_qry(g_node_id,txn_id);
-    }
-    */
 	assert(query != NULL);
 
     query->dest_id = dest_id;
@@ -405,19 +410,19 @@ base_query * Remote_query::unpack(void * d, int len) {
     query->txn_id = txn_id;
     query->rtype = rtype;
 
-  /*
-	memcpy(&query->dest_id,&data[ptr],sizeof(uint32_t));
-	ptr += sizeof(uint32_t);
-	memcpy(&query->return_id,&data[ptr],sizeof(uint32_t));
-	ptr += sizeof(uint32_t);
-	memcpy(&query->txn_id,&data[ptr],sizeof(txnid_t));
-	ptr += sizeof(txnid_t);
-	memcpy(&query->rtype,&data[ptr],sizeof(query->rtype));
-	ptr += sizeof(query->rtype);
-  */
-
-	if(query->dest_id != _node_id)
-		return NULL;
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
+  if(query->rtype != INIT_DONE && g_node_id < g_node_cnt) {
+    // Set active partition
+	  memcpy(&query->active_part,&data[ptr],sizeof(uint64_t));
+	  ptr += sizeof(uint64_t);
+  if(query->rtype != RTXN) {
+    // Set home partition
+	  memcpy(&query->home_part,&data[ptr],sizeof(query->home_part));
+	  ptr += sizeof(query->home_part);
+  }
+    assert(query->active_part < g_part_cnt && query->active_part % g_node_cnt == g_node_id);
+  }
+#endif
 
 	switch(query->rtype) {
         case RINIT: {
@@ -511,6 +516,7 @@ base_query * Remote_query::unpack(void * d, int len) {
 #elif WORKLOAD == YCSB
             	ycsb_query *m_query = new ycsb_query;
 #endif
+              query->home_part = query->active_part;
             	m_query->unpack_client(query, data);
 				assert(GET_NODE_ID(query->pid) == g_node_id);
             	break;

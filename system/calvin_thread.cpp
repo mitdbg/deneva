@@ -43,7 +43,11 @@ RC calvin_thread_t::run_remote() {
 		if(m_query != NULL && m_query->rtype == INIT_DONE) {
 			rsp_cnt --;
 		} else if(m_query != NULL) {
-			work_queue.add_query(m_query);
+      assert(m_query->part_cnt > 0 || m_query->part_num > 0);
+      if(m_query->part_num > 0)
+			  work_queue.add_query(m_query->part_to_access[0]/g_node_cnt,m_query);
+      if(m_query->part_cnt > 0)
+			  work_queue.add_query(m_query->parts[0]/g_node_cnt,m_query);
 		}
 	}
 	pthread_barrier_wait( &warmup_bar );
@@ -60,7 +64,11 @@ RC calvin_thread_t::run_remote() {
 		m_query = (base_query *) tport_man.recv_msg();
 		if( m_query != NULL ) { 
 			rq_time = get_sys_clock();
-			work_queue.add_query(m_query);
+      assert(m_query->part_cnt > 0 || m_query->part_num > 0);
+      if(m_query->part_num > 0)
+			  work_queue.add_query(m_query->part_to_access[0]/g_node_cnt,m_query);
+      if(m_query->part_cnt > 0)
+			  work_queue.add_query(m_query->parts[0]/g_node_cnt,m_query);
 		}
 
 		ts_t tend = get_sys_clock();
@@ -130,7 +138,7 @@ RC calvin_thread_t::run() {
 
 			stats.print_prog(_thd_id);
 		}
-		while(!work_queue.poll_next_query() && !(_wl->sim_done && _wl->sim_timeout)) { }
+		while(!work_queue.poll_next_query(_thd_id) && !(_wl->sim_done && _wl->sim_timeout)) { }
 
     // End conditions
 		if (_wl->sim_done && _wl->sim_timeout) {
@@ -144,7 +152,7 @@ RC calvin_thread_t::run() {
 			return FINISH;
 		}
 
-		if((m_query = work_queue.get_next_query()) == NULL)
+		if((m_query = work_queue.get_next_query(_thd_id)) == NULL)
 			continue;
 
 		rc = RCOK;

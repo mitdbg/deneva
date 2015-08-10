@@ -18,9 +18,11 @@
     pthread_mutex_unlock(&mtx); }
 
 #define MODIFY_END() {\
+  pthread_mutex_lock(&mtx);\
   modify = false;\
-  pthread_cond_signal(&cond_m);\
-  pthread_cond_broadcast(&cond_a); }
+  pthread_cond_signal(&cond_m); \
+  pthread_cond_broadcast(&cond_a); \
+  pthread_mutex_unlock(&mtx); }
 
 #define ACCESS_START() {\
   pthread_mutex_lock(&mtx);\
@@ -130,7 +132,14 @@ void TxnPool::restart_txn(uint64_t txn_id){
         t_node->qry->rtype = RTXN;
       else
         t_node->qry->rtype = RQRY;
-      work_queue.add_query(t_node->qry);
+      work_queue.add_query(t_node->qry->active_part/g_node_cnt,t_node->qry);
+      /*
+      assert(t_node->qry->part_cnt > 0 || t_node->qry->part_num > 0);
+      if(t_node->qry->part_num > 0)
+        work_queue.add_query(t_node->qry->part_to_access[0]/g_node_cnt,t_node->qry);
+      else if(t_node->qry->part_cnt > 0)
+        work_queue.add_query(t_node->qry->parts[0]/g_node_cnt,t_node->qry);
+        */
       break;
     }
   }
@@ -246,7 +255,14 @@ void TxnPool::spec_next() {
       part_lock_man.rem_unlock(part_arr_s,1,t_node->txn);
       */
       t_node->txn->rc = RCOK;
-      work_queue.add_query(t_node->qry);
+      work_queue.add_query(t_node->qry->active_part/g_node_cnt,t_node->qry);
+      /*
+      assert(t_node->qry->part_cnt > 0 || t_node->qry->part_num > 0);
+      if(t_node->qry->part_num > 0)
+        work_queue.add_query(t_node->qry->part_to_access[0]/g_node_cnt,t_node->qry);
+      else if(t_node->qry->part_cnt > 0)
+        work_queue.add_query(t_node->qry->parts[0]/g_node_cnt,t_node->qry);
+        */
     }
   }
 
@@ -302,7 +318,14 @@ void TxnPool::commit_spec_ex(int r) {
       t_node->txn->finish(rc,t_node->qry->part_to_access,t_node->qry->part_num);
       t_node->txn->state = DONE;
       t_node->qry->rtype = RPASS;
-      work_queue.add_query(t_node->qry);
+      work_queue.add_query(t_node->qry->active_part/g_node_cnt,t_node->qry);
+      /*
+      assert(t_node->qry->part_cnt > 0 || t_node->qry->part_num > 0);
+      if(t_node->qry->part_num > 0)
+        work_queue.add_query(t_node->qry->part_to_access[0]/g_node_cnt,t_node->qry);
+      else if(t_node->qry->part_cnt > 0)
+        work_queue.add_query(t_node->qry->parts[0]/g_node_cnt,t_node->qry);
+        */
       /*
       if(rc != Abort)
         rc = t_node->txn->validate();
@@ -320,7 +343,14 @@ void TxnPool::commit_spec_ex(int r) {
       */
     }
     else if (t_node->txn->get_txn_id() % g_node_cnt == g_node_id && t_node->qry->part_num == 1 && t_node->txn->state != PREP && t_node->txn->spec) {
-      work_queue.remove_query(t_node->qry);
+      work_queue.add_query(t_node->qry->active_part/g_node_cnt,t_node->qry);
+      /*
+      assert(t_node->qry->part_cnt > 0 || t_node->qry->part_num > 0);
+      if(t_node->qry->part_num > 0)
+        work_queue.remove_query(t_node->qry->part_to_access[0]/g_node_cnt,t_node->qry);
+      else if(t_node->qry->part_cnt > 0)
+        work_queue.remove_query(t_node->qry->parts[0]/g_node_cnt,t_node->qry);
+        */
     }
     // FIXME: what if txn is already in work queue or is currently being executed?
   }

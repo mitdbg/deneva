@@ -212,7 +212,11 @@ RC Client_thread_t::run() {
 		}
 #endif
 
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
+		m_query->client_query(m_query, m_query->pid);
+#else
 		m_query->client_query(m_query, GET_NODE_ID(m_query->pid));
+#endif
 		num_txns_sent++;
 		txns_sent[GET_NODE_ID(m_query->pid)-g_server_start_node]++;
     INC_STATS(get_thd_id(),txn_sent,1);

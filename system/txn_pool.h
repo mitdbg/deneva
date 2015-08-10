@@ -43,7 +43,7 @@ private:
   pthread_mutex_t mtx;
   pthread_cond_t cond_m;
   pthread_cond_t cond_a;
-  bool modify;
+  volatile bool modify;
   int access;
 
 

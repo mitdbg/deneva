@@ -64,6 +64,10 @@ public:
   // HStore specx
   bool spec;
 
+  uint64_t home_part;
+  uint64_t active_part;
+  uint64_t dest_part;
+
   // Prevent unnecessary remote messages
   uint64_t part_touched_cnt;
   uint64_t part_touched[MAX_PART_PER_TXN];

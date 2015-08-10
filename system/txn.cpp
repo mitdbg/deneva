@@ -1,4 +1,4 @@
-#include "manager.h"
+
 #include "helper.h"
 #include "txn.h"
 #include "row.h"
@@ -17,6 +17,8 @@
 #include "remote_query.h"
 #include "plock.h"
 #include "vll.h"
+#include "ycsb_query.h"
+#include "tpcc_query.h"
 
 void txn_man::init(thread_t * h_thd, workload * h_wl, uint64_t thd_id) {
 	this->h_thd = h_thd;
@@ -126,6 +128,9 @@ void txn_man::update_stats() {
 
 void txn_man::register_thd(thread_t * h_thd) {
   this->h_thd = h_thd;
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
+  this->active_part = GET_PART_ID_FROM_IDX(get_thd_id());
+#endif
 }
 
 void txn_man::set_txn_id(txnid_t txn_id) {
@@ -398,6 +403,13 @@ RC txn_man::validate() {
   return rc;
 }
 
+RC txn_man::finish_local(RC rc, uint64_t * parts, uint64_t part_cnt) {
+  assert(h_thd->_node_id < g_node_cnt);
+	assert(CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC); 
+	part_lock_man.rem_unlock(parts, part_cnt, this);
+  return RCOK;
+}
+
 RC txn_man::finish(RC rc, uint64_t * parts, uint64_t part_cnt) {
   assert(h_thd->_node_id < g_node_cnt);
 	uint64_t starttime = get_sys_clock();
@@ -421,6 +433,12 @@ RC txn_man::rem_fin_txn(base_query * query) {
   assert(query->rc == Abort || query->rc == RCOK);
   return finish(query->rc,query->parts,query->part_cnt);
 }
+
+RC txn_man::loc_fin_txn(base_query * query) {
+  assert(query->rc == Abort || query->rc == RCOK);
+  return finish_local(query->rc,query->parts,query->part_cnt);
+}
+
 
 RC txn_man::finish(base_query * query, bool fin) {
   // Only home node should execute
@@ -467,15 +485,16 @@ RC txn_man::finish(base_query * query, bool fin) {
   //  uint64_t part_node_id = GET_NODE_ID(query->part_to_access[i]);
   for (uint64_t i = 0; i < query->part_touched_cnt; ++i) {
     uint64_t part_node_id = GET_NODE_ID(query->part_touched[i]);
-    //if(query->part_to_access[i] == get_node_id()) {
-    if(part_node_id == get_node_id()) {
+    uint64_t part_id = query->part_touched[i];
+    //if(part_node_id == get_node_id()) {
+    if(part_id == home_part) {
       continue;
     }
     // Check if we have already sent this node an RPREPARE message
     bool sent = false;
     for (uint64_t j = 0; j < i; j++) {
       //if (part_node_id == GET_NODE_ID(query->part_to_access[j])) {
-      if (part_node_id == GET_NODE_ID(query->part_touched[j])) {
+      if (part_id == query->part_touched[j]) {
         sent = true;
         break;
       }
@@ -484,11 +503,60 @@ RC txn_man::finish(base_query * query, bool fin) {
       continue;
 
     incr_rsp(1);
+    query->dest_part = part_id;
     if(fin) {
-      query->remote_finish(query, part_node_id);    
+      if(GET_NODE_ID(part_id) != g_node_id) {
+        query->remote_finish(query, part_node_id);    
+      } else {
+         // Model after RFIN
+#if WORKLOAD == TPCC
+	    base_query * tmp_query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), 0);
+	      tmp_query = new tpcc_query();
+#elif WORKLOAD == YCSB
+	    base_query * tmp_query = (ycsb_query *) mem_allocator.alloc(sizeof(ycsb_query), 0);
+        tmp_query = new ycsb_query();
+#endif
+        tmp_query->txn_id = query->txn_id;
+        tmp_query->ts = query->ts;
+        tmp_query->home_part = query->home_part;
+        tmp_query->pid = query->pid;
+        tmp_query->rtype = RFIN;
+        tmp_query->rc = query->rc;
+        tmp_query->active_part = part_id;
+        tmp_query->part_cnt = 1;
+        tmp_query->parts = new uint64_t[1];
+        tmp_query->parts[0] = part_id;
+        work_queue.add_query(GET_PART_ID_IDX(tmp_query->active_part),tmp_query);
+
+
+      }
     } else {
       query->rc = RCOK;
-      query->remote_prepare(query, part_node_id);    
+      if(GET_NODE_ID(part_id) != g_node_id) {
+        query->remote_prepare(query, part_node_id);    
+      } else {
+         // Model after RPREP
+#if WORKLOAD == TPCC
+	    base_query * tmp_query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), 0);
+	      tmp_query = new tpcc_query();
+#elif WORKLOAD == YCSB
+	    base_query * tmp_query = (ycsb_query *) mem_allocator.alloc(sizeof(ycsb_query), 0);
+        tmp_query = new ycsb_query();
+#endif
+        tmp_query->txn_id = query->txn_id;
+        tmp_query->ts = query->ts;
+        tmp_query->home_part = query->home_part;
+        tmp_query->pid = query->pid;
+        tmp_query->rtype = RPREPARE;
+        tmp_query->rc = query->rc;
+        tmp_query->active_part = part_id;
+        tmp_query->part_cnt = 1;
+        tmp_query->parts = new uint64_t[1];
+        tmp_query->parts[0] = part_id;
+        work_queue.add_query(GET_PART_ID_IDX(tmp_query->active_part),tmp_query);
+
+
+      }
     }
   }
   // After all requests are sent, it's possible that all responses will come back

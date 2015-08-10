@@ -18,6 +18,7 @@ void ycsb_query::init(uint64_t thd_id, workload * h_wl) {
 void ycsb_client_query::init(uint64_t thd_id, workload * h_wl, uint64_t node_id) {
 	mrand = (myrand *) mem_allocator.alloc(sizeof(myrand), thd_id);
 	mrand->init(get_sys_clock());
+  // FIXME for HSTORE/SPEC, need to generate queries to more than 1 part per node
 	pid = GET_PART_ID(0,node_id);
 	requests = (ycsb_request *) 
 		mem_allocator.alloc(sizeof(ycsb_request) * g_req_per_query, thd_id);
@@ -70,6 +71,9 @@ void ycsb_query::unpack_rsp(base_query * query, void * d) {
 
 	ycsb_query * m_query = (ycsb_query *) query;
 	uint64_t ptr = HEADER_SIZE + sizeof(txnid_t) + sizeof(RemReqType);
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
+  ptr += 2*sizeof(uint64_t);
+#endif
 	//memcpy(&m_query->txn_rtype,&data[ptr],sizeof(YCSBRemTxnType));
 	//ptr += sizeof(YCSBRemTxnType);
 	memcpy(&rc,&data[ptr],sizeof(RC));
@@ -117,6 +121,10 @@ base_query * ycsb_query::merge(base_query * query) {
     case RFIN:
       assert(this->pid == m_query->pid);
       this->rc = m_query->rc;
+      if(this->part_cnt == 0) {
+        this->part_cnt = m_query->part_cnt;
+        this->parts = m_query->parts;
+      }
       break;
     case RACK:
       if(m_query->rc == Abort || this->rc == WAIT || this->rc == WAIT_REM) {
@@ -135,6 +143,9 @@ void ycsb_query::unpack(base_query * query, void * d) {
 	ycsb_query * m_query = (ycsb_query *) query;
 	char * data = (char *) d;
 	uint64_t ptr = HEADER_SIZE + sizeof(txnid_t) + sizeof(RemReqType);
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
+  ptr += 2*sizeof(uint64_t);
+#endif
 	memcpy(&m_query->txn_rtype,&data[ptr],sizeof(YCSBRemTxnType));
 	ptr += sizeof(YCSBRemTxnType);
 	memcpy(&m_query->pid,&data[ptr],sizeof(uint64_t));
@@ -176,6 +187,10 @@ void ycsb_query::remote_qry(base_query * query, int type, int dest_id) {
 #if CC_ALG == OCC
   total ++; // For start_ts
 #endif
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
+  total ++; // For destination partition
+  total ++; // For home partition
+#endif
 
 	void ** data = new void *[total];
 	int * sizes = new int [total];
@@ -188,6 +203,14 @@ void ycsb_query::remote_qry(base_query * query, int type, int dest_id) {
 
 	data[num] = &rtype;
 	sizes[num++] = sizeof(RemReqType);
+
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
+	data[num] = &m_query->dest_part;
+	sizes[num++] = sizeof(uint64_t);
+	data[num] = &m_query->home_part;
+	sizes[num++] = sizeof(uint64_t);
+#endif
+
 	data[num] = &t;
 	sizes[num++] = sizeof(YCSBRemTxnType); 
 	// The requester's PID
@@ -223,6 +246,10 @@ void ycsb_query::remote_rsp(base_query * query) {
   printf("Sending RQRY_RSP %ld\n",query->txn_id);
 #endif
 	int total = 4;
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
+  total++; // For dest partition id (same as home)
+  total++; // For home partition id
+#endif
 
 	void ** data = new void *[total];
 	int * sizes = new int [total];
@@ -236,8 +263,13 @@ void ycsb_query::remote_rsp(base_query * query) {
 
 	data[num] = &rtype;
 	sizes[num++] = sizeof(RemReqType);
-	//data[num] = &m_query->txn_rtype;
-	//sizes[num++] = sizeof(m_query->txn_rtype);
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
+	data[num] = &m_query->home_part;
+	sizes[num++] = sizeof(uint64_t);
+	data[num] = &m_query->home_part;
+	sizes[num++] = sizeof(uint64_t);
+#endif
+
 	data[num] = &m_query->rc;
 	sizes[num++] = sizeof(RC);
 	// The original requester's pid
@@ -276,6 +308,9 @@ void ycsb_client_query::unpack_client(base_client_query * query, void * d) {
 	ycsb_client_query * m_query = (ycsb_client_query *) query;
 	char * data = (char *) d;
 	uint64_t ptr = HEADER_SIZE + sizeof(txnid_t) + sizeof(RemReqType);
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
+  ptr += sizeof(uint64_t);
+#endif
   memcpy(&m_query->pid, &data[ptr], sizeof(uint64_t));
   ptr += sizeof(uint64_t);
 
@@ -318,16 +353,19 @@ void ycsb_client_query::client_query(base_client_query * query, uint64_t dest_id
 
 void ycsb_client_query::client_query(base_client_query * query, uint64_t dest_id,
 		uint64_t batch_num, txnid_t txn_id) {
-#if DEBUG_DISTR
-    	printf("Client: sending RTXN\n");
-#endif
 	ycsb_client_query * m_query = (ycsb_client_query *) query;
+#if DEBUG_DISTR
+    	printf("Client: sending RTXN to %ld -- %ld\n",dest_id,m_query->part_to_access[0]);
+#endif
 
 	// Maximum number of parameters
 	// NOTE: Adjust if parameters sent is changed
 	int total = 7 + m_query->part_num + m_query->request_cnt;
 #if CC_ALG == CALVIN
   total++;
+#endif
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
+  total++; // For destination partition id
 #endif
 
 	void ** data = new void *[total];
@@ -344,6 +382,11 @@ void ycsb_client_query::client_query(base_client_query * query, uint64_t dest_id
 	sizes[num++] = sizeof(txnid_t);
 	data[num] = &rtype;
 	sizes[num++] = sizeof(RemReqType);
+
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
+  data[num] = &m_query->part_to_access[0]; // Is this the same as _pid?
+  sizes[num++] = sizeof(uint64_t);
+#endif
 
 	data[num] = &_pid;
 	sizes[num++] = sizeof(uint64_t);
@@ -379,6 +422,9 @@ void ycsb_query::unpack_client(base_query * query, void * d) {
 	ycsb_query * m_query = (ycsb_query *) query;
 	char * data = (char *) d;
 	uint64_t ptr = HEADER_SIZE + sizeof(txnid_t) + sizeof(RemReqType);
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
+  ptr += sizeof(uint64_t);
+#endif
   /*
     	m_query->part_to_access = (uint64_t *)
             	mem_allocator.alloc(sizeof(uint64_t) * g_part_cnt, thd_id);
@@ -559,13 +605,8 @@ void ycsb_client_query::gen_requests(uint64_t thd_id, workload * h_wl) {
 				part_to_access[part_num] = thd_id % g_part_cnt;
 				//part_to_access[part_num] = thd_id % g_virtual_part_cnt;
 			else {
-        			//if(!rem) {
+//part_to_access[part_num] = part_to_access[0] + g_node_cnt % g_part_cnt;
 				  	while((part_to_access[part_num] = mrand->next() % g_part_cnt) == thd_id % g_part_cnt) {}
-					//rem = true;
-        			//}
-        			//else
-						//part_to_access[part_num] = mrand->next() % g_part_cnt;
-						//part_to_access[part_num] = thd_id % g_part_cnt;
 			}
 			UInt32 j;
 			for (j = 0; j < part_num; j++) 

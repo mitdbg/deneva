@@ -4,17 +4,20 @@
 #include "mem_alloc.h"
 #include "txn.h"
 #include "remote_query.h"
+#include "ycsb_query.h"
+#include "tpcc_query.h"
 
 /************************************************/
 // per-partition Manager
 /************************************************/
-void PartMan::init(uint64_t node_id) {
-	uint64_t part_id = get_part_id(this);
+void PartMan::init(uint64_t node_id, uint64_t part_id) {
+	uint64_t part_id_tmp = get_part_id(this);
+  _part_id = part_id;
 	_node_id = node_id; 
 	waiter_cnt = 0;
 	owner = NULL;
 	waiters = (txn_man **)
-		mem_allocator.alloc(sizeof(txn_man *) * g_node_cnt * MAX_TXN_IN_FLIGHT, part_id);
+		mem_allocator.alloc(sizeof(txn_man *) * g_node_cnt * MAX_TXN_IN_FLIGHT, part_id_tmp);
 	pthread_mutex_init( &latch, NULL );
 }
 
@@ -47,11 +50,34 @@ RC PartMan::lock(txn_man * txn) {
   if (owner == NULL) {
     owner = txn;
 #if DEBUG_TIMELINE
-      printf("LOCK %ld %ld\n",owner->get_txn_id(),get_sys_clock());
+      printf("LOCK %ld -- %ld\n",owner->get_txn_id(),_part_id);
+      //printf("LOCK %ld %ld\n",owner->get_txn_id(),get_sys_clock());
 #endif
 		// If not local, send remote response
-		if(GET_NODE_ID(owner->get_pid()) != _node_id)
+		//if(GET_NODE_ID(owner->get_pid()) != _node_id) {
+		if(GET_NODE_ID(owner->home_part) != _node_id) {
 			remote_rsp(true,RCOK,owner);
+    } else if(owner->home_part != owner->active_part) {
+      // possibly restart txn, remove WAIT status
+
+      // Model after RACK
+      printf("Local RACK 3 -- %ld\n",_part_id);
+#if WORKLOAD == TPCC
+	    base_query * tmp_query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), 0);
+	      tmp_query = new tpcc_query();
+#elif WORKLOAD == YCSB
+	    base_query * tmp_query = (ycsb_query *) mem_allocator.alloc(sizeof(ycsb_query), 0);
+        tmp_query = new ycsb_query();
+#endif
+        tmp_query->set_txn_id(owner->get_txn_id());
+        tmp_query->ts = owner->get_ts();
+        tmp_query->home_part = owner->home_part;
+        tmp_query->rtype = RACK;
+        tmp_query->rc = RCOK;
+        tmp_query->active_part = owner->home_part;
+        work_queue.add_query(GET_PART_ID_IDX(tmp_query->active_part),tmp_query);
+
+    }
     rc = RCOK;
   } else if (owner->get_ts() < txn->get_ts()) {
     int i;
@@ -68,7 +94,8 @@ RC PartMan::lock(txn_man * txn) {
     if (i == 0)
       waiters[i] = txn;
     waiter_cnt ++;
-		if(GET_NODE_ID(txn->get_pid()) == _node_id)
+		//if(GET_NODE_ID(txn->get_pid()) == _node_id)
+		if(txn->home_part == _part_id)
       ATOM_ADD(txn->ready_part, 1);
     rc = WAIT;
     txn->rc = rc;
@@ -78,8 +105,31 @@ RC PartMan::lock(txn_man * txn) {
     rc = Abort;
     txn->rc = rc;
 		// if we abort, need to send abort to remote node
-		if(GET_NODE_ID(txn->get_pid()) != _node_id)
+		//if(GET_NODE_ID(txn->get_pid()) != _node_id) {
+		if(GET_NODE_ID(txn->home_part) != _node_id) {
 			remote_rsp(true,rc,txn);
+    } else if(txn->home_part != txn->active_part) {
+      // Abort this txn at this node, possible restarting txn
+
+      // Model after RACK
+      printf("Local RACK 1 -- %ld\n",_part_id);
+#if WORKLOAD == TPCC
+	    base_query * tmp_query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), 0);
+	      tmp_query = new tpcc_query();
+#elif WORKLOAD == YCSB
+	    base_query * tmp_query = (ycsb_query *) mem_allocator.alloc(sizeof(ycsb_query), 0);
+        tmp_query = new ycsb_query();
+#endif
+        tmp_query->set_txn_id(txn->get_txn_id());
+        tmp_query->ts = txn->get_ts();
+        tmp_query->home_part = txn->home_part;
+        tmp_query->rtype = RACK;
+        tmp_query->rc = rc;
+        tmp_query->active_part = txn->home_part;
+        work_queue.add_query(GET_PART_ID_IDX(tmp_query->active_part),tmp_query);
+
+
+    }
   }
   pthread_mutex_unlock( &latch );
   return rc;
@@ -89,56 +139,57 @@ void PartMan::unlock(txn_man * txn) {
   pthread_mutex_lock( &latch );
   if (txn == owner) {   
 #if DEBUG_TIMELINE
-      printf("UNLOCK %ld %ld\n",owner->get_txn_id(),get_sys_clock());
+      printf("UNLOCK %ld -- %ld\n",owner->get_txn_id(),_part_id);
+      //printf("UNLOCK %ld %ld\n",owner->get_txn_id(),get_sys_clock());
 #endif
     if (waiter_cnt == 0) {
       owner = NULL;
     }
     else {
-#if DEBUG_TIMELINE
-      printf("LOCK %ld %ld\n",owner->get_txn_id(),get_sys_clock());
-#endif
-      // TODO: Calculate plock wait time here
-      /*
-#if CC_ALG == HSTORE_SPEC
-      owner = NULL;
-      uint32_t shift = 1;
-      for (UInt32 i = 0; i < waiter_cnt - 1; i++) {
-        if(!waiters[i]->spec) {
-          owner = waiters[i];
-          break;
-        }
-        else {
-          shift++;
-        }
-      }
-      for (UInt32 i = 0; i < waiter_cnt - shift; i++) {
-        waiters[i] = waiters[i + shift];
-      }
-      waiter_cnt -= shift;
-      if(owner == NULL) {
-        goto final;
-      }
-#else
-*/
       owner = waiters[0];     
+#if DEBUG_TIMELINE
+      //printf("LOCK %ld %ld\n",owner->get_txn_id(),get_sys_clock());
+      printf("LOCK %ld -- %ld\n",owner->get_txn_id(),_part_id);
+#endif
       for (UInt32 i = 0; i < waiter_cnt - 1; i++) {
         assert( waiters[i]->get_ts() < waiters[i + 1]->get_ts() );
         waiters[i] = waiters[i + 1];
       }
       waiter_cnt --;
-//#endif
       uint64_t t = get_sys_clock() - owner->wait_starttime;
       INC_STATS(txn->get_thd_id(),time_wait_lock,t);
       txn->txn_time_wait += t;
-			if(GET_NODE_ID(owner->get_pid()) == _node_id) {
-        ATOM_SUB(owner->ready_part, 1);
-        // If local and ready_part is 0, restart txn
-        if(owner->ready_part == 0 && owner->get_rsp_cnt() == 0) {
-          owner->state = EXEC; 
-          owner->rc = RCOK;
-          txn_pool.restart_txn(owner->get_txn_id());
+			//if(GET_NODE_ID(owner->get_pid()) == _node_id) {
+			if(GET_NODE_ID(owner->home_part) == _node_id) {
+        if(owner->home_part == _part_id) {
+          ATOM_SUB(owner->ready_part, 1);
+          // If local and ready_part is 0, restart txn
+          if(owner->ready_part == 0 && owner->get_rsp_cnt() == 0) {
+            owner->state = EXEC; 
+            owner->rc = RCOK;
+            txn_pool.restart_txn(owner->get_txn_id());
+          }
+        } else {
+          // Model after RACK
+      printf("Local RACK 2 -- %ld\n",_part_id);
+#if WORKLOAD == TPCC
+	    base_query * tmp_query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), 0);
+	      tmp_query = new tpcc_query();
+#elif WORKLOAD == YCSB
+	    base_query * tmp_query = (ycsb_query *) mem_allocator.alloc(sizeof(ycsb_query), 0);
+        tmp_query = new ycsb_query();
+#endif
+        tmp_query->set_txn_id(owner->get_txn_id());
+        tmp_query->ts = owner->get_ts();
+        tmp_query->home_part = owner->home_part;
+        tmp_query->rtype = RACK;
+        tmp_query->rc = RCOK;
+        tmp_query->active_part = owner->home_part;
+        work_queue.add_query(GET_PART_ID_IDX(tmp_query->active_part),tmp_query);
+
+
         }
+
       }
       else {
         INC_STATS(txn->get_thd_id(),time_wait_lock_rem,get_sys_clock() - owner->wait_starttime);
@@ -170,7 +221,8 @@ void PartMan::unlock(txn_man * txn) {
     */
   // If local, decr ready_ulk
 //final:
-	if(GET_NODE_ID(txn->get_pid()) == _node_id)
+	//if(GET_NODE_ID(txn->get_pid()) == _node_id)
+	if(txn->home_part == _part_id)
     ATOM_SUB(txn->ready_ulk, 1);
 
   pthread_mutex_unlock( &latch );
@@ -225,7 +277,7 @@ void Plock::init(uint64_t node_id) {
 	_node_id = node_id;
 	ARR_PTR(PartMan, part_mans, g_part_cnt);
 	for (UInt32 i = 0; i < g_part_cnt; i++)
-		part_mans[i]->init(node_id);
+		part_mans[i]->init(node_id,i);
 }
 
 void Plock::start_spec_ex(uint64_t * parts, uint64_t part_cnt) {

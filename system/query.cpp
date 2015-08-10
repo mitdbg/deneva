@@ -87,6 +87,11 @@ void base_query::set_txn_id(uint64_t _txn_id) { txn_id = _txn_id; }
 void base_query::remote_prepare(base_query * query, int dest_id) {
   int total = 5;
 
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
+  total++; // For destination partition id
+  total++; // For home partition id
+#endif
+
 #if DEBUG_DISTR
   printf("Sending RPREPARE %ld\n",query->txn_id);
 #endif
@@ -103,6 +108,13 @@ void base_query::remote_prepare(base_query * query, int dest_id) {
 
   data[num] = &rtype;
   sizes[num++] = sizeof(RemReqType);
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
+  data[num] = &query->dest_part;
+  sizes[num++] = sizeof(uint64_t);
+  data[num] = &query->home_part;
+  sizes[num++] = sizeof(uint64_t);
+#endif
+
   data[num] = &_pid;
   sizes[num++] = sizeof(uint64_t);
   data[num] = &rc;
@@ -114,6 +126,10 @@ void base_query::remote_prepare(base_query * query, int dest_id) {
 }
 void base_query::remote_finish(base_query * query, int dest_id) {
   int total = 5;
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
+  total++; // For destination partition id
+  total++; // For home partition id
+#endif
 
 #if DEBUG_DISTR
   printf("Sending RFIN %ld\n",query->txn_id);
@@ -131,6 +147,12 @@ void base_query::remote_finish(base_query * query, int dest_id) {
 
   data[num] = &rtype;
   sizes[num++] = sizeof(RemReqType);
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
+  data[num] = &query->dest_part;
+  sizes[num++] = sizeof(uint64_t);
+  data[num] = &query->home_part;
+  sizes[num++] = sizeof(uint64_t);
+#endif
   data[num] = &_pid;
   sizes[num++] = sizeof(uint64_t);
   data[num] = &rc;
@@ -144,6 +166,9 @@ void base_query::remote_finish(base_query * query, int dest_id) {
 void base_query::unpack_finish(base_query * query, void * d) {
     char * data = (char *) d;
     uint64_t ptr = HEADER_SIZE + sizeof(txnid_t) + sizeof(RemReqType);
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
+  ptr += 2*sizeof(uint64_t);
+#endif
     memcpy(&query->pid, &data[ptr], sizeof(uint64_t));
     ptr += sizeof(uint64_t);
     memcpy(&query->rc, &data[ptr], sizeof(RC));

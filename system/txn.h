@@ -80,9 +80,11 @@ public:
 	int volatile 	ready_ulk;
   RC        validate();
 	RC 				finish(RC rc, uint64_t * parts, uint64_t part_cnt);
+	RC 				finish_local(RC rc, uint64_t * parts, uint64_t part_cnt);
 	RC 				finish(base_query * query,bool fin);
 	void 			cleanup(RC rc);
     RC              rem_fin_txn(base_query * query);
+    RC              loc_fin_txn(base_query * query);
 
 	////////////////////////////////
 	// LOGGING
@@ -92,8 +94,10 @@ public:
 protected:	
 	void 			insert_row(row_t * row, table_t * table);
 public:
-  // Home partition id TODO: populate
+  // Home partition id 
   uint64_t pid;
+  uint64_t home_part; // Are these duplicates?
+  uint64_t active_part; 
   uint64_t parts_locked; 
 	// For OCC
 	uint64_t 		start_ts;

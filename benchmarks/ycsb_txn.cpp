@@ -165,7 +165,13 @@ RC ycsb_txn_man::run_txn_state(base_query * query) {
 	//ycsb_request * req = &m_query->requests[m_query->rid];
 	ycsb_request * req = &m_query->req;
 	uint64_t part_id = _wl->key_to_part( req->key );
+  /*
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_PART
+  bool loc = part_id == query->active_part;
+#else
+*/
   bool loc = GET_NODE_ID(part_id) == get_node_id();
+//#endif
 
 	RC rc = RCOK;
 
@@ -179,6 +185,8 @@ RC ycsb_txn_man::run_txn_state(base_query * query) {
         break;
 #endif
         assert(GET_NODE_ID(m_query->pid) == g_node_id);
+
+        query->dest_part = part_id;
         query->dest_id = GET_NODE_ID(part_id);
         query->rem_req_state = YCSB_0;
         rc = WAIT_REM;

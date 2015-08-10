@@ -54,7 +54,14 @@ RC thread_t::run_remote() {
 		if(m_query != NULL && m_query->rtype == INIT_DONE) {
 			rsp_cnt --;
 		} else if(m_query != NULL) {
-			work_queue.add_query(m_query);
+			work_queue.add_query(GET_PART_ID_IDX(m_query->active_part),m_query);
+      /*
+      assert(m_query->part_cnt > 0 || m_query->part_num > 0);
+      if(m_query->part_num > 0)
+			  work_queue.add_query(m_query->part_to_access[0]/g_node_cnt,m_query);
+      else if(m_query->part_cnt > 0)
+			  work_queue.add_query(m_query->parts[0]/g_node_cnt,m_query);
+        */
 		}
 	}
 	//#endif
@@ -80,7 +87,14 @@ RC thread_t::run_remote() {
 		m_query = (base_query *) tport_man.recv_msg();
 		if( m_query != NULL ) { 
 			rq_time = get_sys_clock();
-			work_queue.add_query(m_query);
+			work_queue.add_query(GET_PART_ID_IDX(m_query->active_part),m_query);
+      /*
+      assert(m_query->part_cnt > 0 || m_query->part_num > 0);
+      if(m_query->part_num > 0)
+			  work_queue.add_query(m_query->part_to_access[0]/g_node_cnt,m_query);
+      else if(m_query->part_cnt > 0)
+			  work_queue.add_query(m_query->parts[0]/g_node_cnt,m_query);
+        */
 		}
 
 		ts_t tend = get_sys_clock();
@@ -161,7 +175,7 @@ RC thread_t::run() {
 	uint64_t last_rwaittime = 0;
 	uint64_t outstanding_waits = 0;
 	uint64_t outstanding_rwaits = 0;
-	uint64_t rsp_cnt;
+	int rsp_cnt;
   uint64_t debug1;
   RemReqType debug2;
 
@@ -186,7 +200,7 @@ RC thread_t::run() {
 
 			stats.print(true);
 		}
-		while(!work_queue.poll_next_query() && !abort_queue.poll_abort() && !_wl->sim_done && !_wl->sim_timeout) { 
+		while(!work_queue.poll_next_query(get_thd_id()) && !abort_queue.poll_abort(get_thd_id()) && !_wl->sim_done && !_wl->sim_timeout) { 
 #if CC_ALG == HSTORE_SPEC
       txn_pool.spec_next();
 #endif
@@ -214,11 +228,11 @@ RC thread_t::run() {
 			return FINISH;
 		}
 
-		if((m_query = abort_queue.get_next_abort_query()) != NULL) {
-      work_queue.add_query(m_query);
+		if((m_query = abort_queue.get_next_abort_query(get_thd_id())) != NULL) {
+      work_queue.add_query(_thd_id,m_query);
     }
 
-		if((m_query = work_queue.get_next_query()) == NULL)
+		if((m_query = work_queue.get_next_query(get_thd_id())) == NULL)
 			continue;
 
     uint64_t txn_id = m_query->txn_id;
@@ -241,19 +255,35 @@ RC thread_t::run() {
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || CC_ALG == VLL
 				// This transaction is from a remote node
 #if DEBUG_DISTR
-				printf("Received RINIT %ld\n",m_query->txn_id);
+				printf("%ld Received RINIT %ld\n",GET_PART_ID_FROM_IDX(_thd_id),m_query->txn_id);
 #endif
-				assert(m_query->txn_id % g_node_cnt != g_node_id);
+				assert(CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || m_query->txn_id % g_node_cnt != g_node_id);
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
+        assert(m_query->home_part != GET_PART_ID_FROM_IDX(_thd_id));
+#endif
 				INC_STATS(0,rinit,1);
 
 				// Set up txn_pool
-				rc = _wl->get_txn_man(m_txn, this);
+        if((CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC) && m_query->txn_id % g_node_cnt == g_node_id) {
+          m_txn = txn_pool.get_txn(m_query->return_id, m_query->txn_id);
+          tmp_query = txn_pool.get_qry(m_query->return_id, m_query->txn_id);
+          tmp_query->active_part = m_query->active_part;
+          //m_query = tmp_query;
+        } else {
+				  rc = _wl->get_txn_man(m_txn, this);
+        }
 				assert(rc == RCOK);
 				m_txn->set_txn_id(m_query->txn_id);
 				m_txn->set_ts(m_query->ts);
+
+        m_txn->home_part = m_query->home_part;
+        m_txn->active_part = m_query->active_part;
 				m_txn->set_pid(m_query->pid);
 				m_txn->state = INIT;
-				txn_pool.add_txn(m_query->return_id,m_txn,m_query);
+        if((CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC) && m_query->txn_id % g_node_cnt == g_node_id) {
+        } else {
+				  txn_pool.add_txn(m_query->return_id,m_txn,m_query);
+        }
 
 #if CC_ALG == MVCC
 				//glob_manager.add_ts(m_query->return_id, 0, m_query->ts);
@@ -293,16 +323,17 @@ RC thread_t::run() {
 //#endif
 
 #endif
+        m_query = NULL;
 
 
 				break;
 #endif	// CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || CC_ALG == VLL
 			case RPREPARE: {
 #if DEBUG_DISTR
-				printf("Received RPREPARE %ld\n",m_query->txn_id);
+				printf("%ld Received RPREPARE %ld\n",GET_PART_ID_FROM_IDX(_thd_id),m_query->txn_id);
 #endif
 				// This transaction is from a remote node
-				assert(m_query->txn_id % g_node_cnt != g_node_id);
+				assert(CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || m_query->txn_id % g_node_cnt != g_node_id);
 				INC_STATS(0,rprep,1);
 				m_txn = txn_pool.get_txn(m_query->return_id, m_query->txn_id);
 				bool validate = true;
@@ -318,20 +349,57 @@ RC thread_t::run() {
           m_txn->register_thd(this);
 				  tmp_query = txn_pool.get_qry(m_query->return_id, m_query->txn_id);
           m_query = tmp_query->merge(m_query);
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
+        assert(m_query->home_part != GET_PART_ID_FROM_IDX(_thd_id));
+#endif
         }
 				if (validate) {
 					m_txn->state = PREP;
 					// Validate transaction
 					rc  = m_txn->validate();
-					m_query->rc = rc;
 				}
 				// Send ACK w/ commit/abort
-				rem_qry_man.ack_response(m_query);
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
+        if(GET_NODE_ID(m_query->active_part) != GET_NODE_ID(m_query->home_part)) {
+          if(validate)
+					  m_query->rc = rc;
+				  rem_qry_man.ack_response(m_query);
+        } else {
+         // Model after RACK
+      printf("Local RACK 4 -- %ld\n",_thd_id);
+#if WORKLOAD == TPCC
+	    base_query * tmp_query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), 0);
+	      tmp_query = new tpcc_query();
+#elif WORKLOAD == YCSB
+	    base_query * tmp_query = (ycsb_query *) mem_allocator.alloc(sizeof(ycsb_query), 0);
+        tmp_query = new ycsb_query();
+#endif
+        tmp_query->txn_id = m_query->txn_id;
+        tmp_query->ts = m_query->ts;
+        tmp_query->home_part = m_query->home_part;
+        tmp_query->pid = m_query->pid;
+        tmp_query->rtype = RACK;
+        tmp_query->rc = rc;
+        tmp_query->active_part = m_query->home_part;
+        work_queue.add_query(GET_PART_ID_IDX(tmp_query->active_part),tmp_query);
+        }
+#else
+          if(validate)
+					  m_query->rc = rc;
+				  rem_qry_man.ack_response(m_query);
+#endif
+
+        m_query = NULL;
 				break;
 			}
 			case RQRY:
 				// This transaction is from a remote node
-				assert(m_query->txn_id % g_node_cnt != g_node_id);
+				assert(CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || m_query->txn_id % g_node_cnt != g_node_id);
+        /*
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
+        assert(m_query->home_part != GET_PART_ID_FROM_IDX(_thd_id));
+#endif
+*/
 				INC_STATS(0,rqry,1);
 
 				// Theoretically, we could send multiple queries to one node.
@@ -357,7 +425,7 @@ RC thread_t::run() {
         m_query = tmp_query->merge(m_query);
 #if DEBUG_DISTR
 				if(m_txn->state != EXEC)
-					printf("Received RQRY %ld\n",m_query->txn_id);
+					printf("%ld Received RQRY %ld\n",GET_PART_ID_FROM_IDX(_thd_id),m_query->txn_id);
 #endif
 
 
@@ -398,10 +466,11 @@ RC thread_t::run() {
 				txn_pool.delete_txn(m_query->return_id, m_query->txn_id);
 #endif
 //#endif
+        m_query = NULL;
 				break;
 			case RQRY_RSP:
 #if DEBUG_DISTR
-				printf("Received RQRY_RSP %ld\n",m_query->txn_id);
+				printf("%ld Received RQRY_RSP %ld\n",GET_PART_ID_FROM_IDX(_thd_id),m_query->txn_id);
 #endif
 				// This transaction originated from this node
 				assert(m_query->txn_id % g_node_cnt == g_node_id);
@@ -432,10 +501,10 @@ RC thread_t::run() {
 				break;
 			case RFIN: {
 #if DEBUG_DISTR
-				printf("Received RFIN %ld\n",m_query->txn_id);
+				printf("%ld Received RFIN %ld\n",GET_PART_ID_FROM_IDX(_thd_id),m_query->txn_id);
 #endif
 				// This transaction is from a remote node
-				assert(m_query->txn_id % g_node_cnt != g_node_id);
+				assert(CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || m_query->txn_id % g_node_cnt != g_node_id);
 				INC_STATS(0,rfin,1);
 				m_txn = txn_pool.get_txn(m_query->return_id, m_query->txn_id);
 				bool finish = true;
@@ -450,24 +519,73 @@ RC thread_t::run() {
 #endif
         if(m_txn) {
           m_txn->register_thd(this);
+#if CC_ALG != HSTORE && CC_ALG != HSTORE_SPEC
 				  tmp_query = txn_pool.get_qry(m_query->return_id, m_query->txn_id);
           m_query = tmp_query->merge(m_query);
+#else
+          if(GET_NODE_ID(m_query->home_part) != g_node_id || GET_PART_ID_IDX(m_query->home_part) == _thd_id) {
+				    tmp_query = txn_pool.get_qry(m_query->return_id, m_query->txn_id);
+            m_query = tmp_query->merge(m_query);
+        assert(m_query->home_part != GET_PART_ID_FROM_IDX(_thd_id));
+          } else {
+          }
+#endif
         }
 				if (finish) {
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
+          if(GET_NODE_ID(m_query->home_part) != g_node_id || GET_PART_ID_IDX(m_query->home_part) == _thd_id) {
+					  m_txn->state = DONE;
+					  m_txn->rem_fin_txn(m_query);
+					  txn_pool.delete_txn(m_query->return_id, m_query->txn_id);
+          } else {
+					  m_txn->loc_fin_txn(m_query);
+          }
+#else
 					m_txn->state = DONE;
 					m_txn->rem_fin_txn(m_query);
 					txn_pool.delete_txn(m_query->return_id, m_query->txn_id);
+#endif
 				}
-				rem_qry_man.ack_response(m_query);
+
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
+        if(GET_NODE_ID(m_query->home_part) != g_node_id) {
+				  rem_qry_man.ack_response(m_query);
+        } else {
+         // Model after RACK
+      printf("Local RACK 5 -- %ld\n",_thd_id);
+#if WORKLOAD == TPCC
+	    base_query * tmp_query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), 0);
+	      tmp_query = new tpcc_query();
+#elif WORKLOAD == YCSB
+	    base_query * tmp_query = (ycsb_query *) mem_allocator.alloc(sizeof(ycsb_query), 0);
+        tmp_query = new ycsb_query();
+#endif
+        tmp_query->txn_id=m_query->txn_id;
+        tmp_query->ts = m_query->ts;
+        tmp_query->home_part = m_query->home_part;
+        tmp_query->pid = m_query->pid;
+        tmp_query->rtype = RACK;
+        tmp_query->rc = rc;
+        tmp_query->active_part = m_query->home_part;
+        work_queue.add_query(GET_PART_ID_IDX(tmp_query->active_part),tmp_query);
+        }
+#else
+				  rem_qry_man.ack_response(m_query);
+#endif
+
+
 				m_query = NULL;
 				break;
 			}
 			case RACK:
 #if DEBUG_DISTR
-				printf("Received RACK %ld\n",m_query->txn_id);
+				printf("%ld Received RACK %ld\n",GET_PART_ID_FROM_IDX(_thd_id),m_query->txn_id);
 #endif
 				// This transaction originated from this node
 				assert(m_query->txn_id % g_node_cnt == g_node_id);
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
+				assert(GET_PART_ID_IDX(m_query->home_part) == _thd_id);
+#endif
 				INC_STATS(0,rack,1);
 				m_txn = txn_pool.get_txn(g_node_id, m_query->txn_id);
 				assert(m_txn != NULL);
@@ -477,6 +595,7 @@ RC thread_t::run() {
 
         // returns the current response count for this transaction
 				rsp_cnt = m_txn->decr_rsp(1);
+        assert(rsp_cnt >=0);
 
 				if(rsp_cnt == 0) {
 					// Done waiting 
@@ -593,6 +712,8 @@ RC thread_t::run() {
 						m_query->thd_id = _thd_id;
 					}
 
+          m_txn->home_part = m_query->home_part;
+          m_txn->active_part = m_query->active_part;
 					m_txn->set_pid(m_query->pid);
 
 					// Only set new txn_id when txn first starts
@@ -601,7 +722,7 @@ RC thread_t::run() {
 					//m_txn->set_txn_id( (get_thd_id() + get_node_id() * g_thread_cnt) + (g_thread_cnt * g_node_cnt * thd_txn_id));
 					thd_txn_id ++;
 					m_query->set_txn_id(m_txn->get_txn_id());
-          work_queue.update_hash(m_txn->get_txn_id());
+          work_queue.update_hash(get_thd_id(),m_txn->get_txn_id());
           txn_id= m_txn->get_txn_id();
 
           /*
@@ -618,6 +739,7 @@ RC thread_t::run() {
 					m_txn->starttime = get_sys_clock();
           m_txn->txn_time_misc += m_query->time_q_work;
           m_txn->txn_time_misc += m_query->time_copy;
+          m_txn->register_thd(this);
 #if DEBUG_TIMELINE
 					printf("START %ld %ld\n",m_txn->get_txn_id(),m_txn->starttime);
 					//printf("START %ld %ld\n",m_txn->get_txn_id(),m_txn->starttime - run_starttime);
@@ -629,20 +751,6 @@ RC thread_t::run() {
 					// 
 					assert(m_txn != NULL);
           m_txn->register_thd(this);
-          /*
-					if(m_txn->state == START && 
-							(get_sys_clock() - m_txn->penalty_start) < g_abort_penalty) {
-						work_queue.add_query(m_query);
-						m_query = NULL;
-						break;
-					}
-          */
-          /*
-#if CC_ALG == HSTORE_SPEC
-          if(m_txn->spec && m_txn->rc == WAIT)
-            m_txn->rc = RCOK;
-#endif
-*/
 				}
 
 				if(m_txn->rc != WAIT && m_txn->state == START) {
@@ -677,14 +785,15 @@ RC thread_t::run() {
 						}
 						if(sent)
 							continue;
-						if(GET_NODE_ID(part_id) != g_node_id) {
+						//if(GET_NODE_ID(part_id) != g_node_id) {
+						if(part_id != m_query->home_part) {
 							m_txn->incr_rsp(1);
 						}
 					}
 
 #if CC_ALG == HSTORE_SPEC
           if(m_query->part_num > 1) {
-						// allow speculative execution to start
+						// allow speculative execution to start // FIXME: Only allow for this specific partition
 						txn_pool.start_spec_ex();
           }
 #endif
@@ -703,13 +812,43 @@ RC thread_t::run() {
 						if(sent)
 							continue;
 
-						if(GET_NODE_ID(part_id) != g_node_id) {
-							//m_txn->incr_rsp(1);
-							rc = WAIT;
-							m_txn->rc = rc;
-							rem_qry_man.send_init(m_query,part_id);
-							m_txn->wait_starttime = get_sys_clock();
-              m_query->part_touched[m_query->part_touched_cnt++] = part_id;
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
+            assert(m_query->active_part == m_query->home_part);
+#endif
+						if(part_id != m_query->home_part) {
+              if(GET_NODE_ID(part_id) != g_node_id) {
+                //m_txn->incr_rsp(1);
+                rc = WAIT;
+                m_txn->rc = rc;
+                m_query->dest_part = part_id;
+                rem_qry_man.send_init(m_query,part_id);
+                m_txn->wait_starttime = get_sys_clock();
+                m_query->part_touched[m_query->part_touched_cnt++] = part_id;
+              } else {
+                assert(CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC);
+                rc = WAIT;
+                m_txn->rc = rc;
+                m_query->part_touched[m_query->part_touched_cnt++] = part_id;
+                // initialize new query and place on work queue
+#if WORKLOAD == TPCC
+	    base_query * tmp_query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), 0);
+	      tmp_query = new tpcc_query();
+#elif WORKLOAD == YCSB
+	    base_query * tmp_query = (ycsb_query *) mem_allocator.alloc(sizeof(ycsb_query), 0);
+        tmp_query = new ycsb_query();
+#endif
+        tmp_query->txn_id = m_query->txn_id;
+        tmp_query->ts = m_query->ts;
+        tmp_query->home_part = m_query->home_part;
+        tmp_query->rtype = RINIT;
+        tmp_query->active_part = part_id;
+        tmp_query->part_cnt = 1;
+        tmp_query->parts = new uint64_t[1];
+        tmp_query->parts[0] = part_id;
+        work_queue.add_query(GET_PART_ID_IDX(tmp_query->active_part),tmp_query);
+                
+
+              }
 						} else {
 							// local init: MPQ Moved to after RINITs return
               if(m_query->part_num == 1) {
@@ -860,6 +999,7 @@ RC thread_t::run() {
         m_query->rc = RCOK;
         m_query->spec = false;
         m_query->reset();
+        m_query->active_part = m_query->home_part;
         m_txn->state = START;
         m_txn->rc = RCOK;
         m_txn->cc_wait_abrt_cnt += m_txn->cc_wait_cnt;
@@ -879,12 +1019,12 @@ RC thread_t::run() {
           if(m_txn->spec) {
             INC_STATS(0,spec_abort_cnt,1);
             m_txn->spec = false;
-					  work_queue.add_query(m_query);
+					  work_queue.add_query(_thd_id,m_query);
             break;
           }
 #endif
           m_txn->spec = false;
-          abort_queue.add_abort_query(m_query);
+          abort_queue.add_abort_query(_thd_id,m_query);
 					//work_queue.add_query(m_query);
           /*
 #if CC_ALG == VLL
@@ -915,7 +1055,7 @@ RC thread_t::run() {
 					if(m_query->rem_req_state == YCSB_FIN)
 						break;
 #endif
-					assert(m_query->dest_id != g_node_id);
+					assert((CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC) || m_query->dest_id != g_node_id);
 #if CC_ALG != HSTORE && CC_ALG != HSTORE_SPEC
           m_query->part_touched[m_query->part_touched_cnt++] = GET_PART_ID(0,m_query->dest_id);
 #endif
@@ -930,7 +1070,7 @@ RC thread_t::run() {
 			}
 		} 
 
-    work_queue.done(txn_id);
+    work_queue.done(get_thd_id(),txn_id);
 
 		timespan = get_sys_clock() - starttime;
 		INC_STATS(get_thd_id(),time_work,timespan);

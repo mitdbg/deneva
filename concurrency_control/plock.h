@@ -11,7 +11,7 @@ class txn_man;
 // Parition manager for HSTORE / HSTORE_SPEC
 class PartMan {
 public:
-	void init(uint64_t node_id);
+	void init(uint64_t node_id,uint64_t part_id);
   void start_spec_ex(); 
 	RC lock(txn_man * txn);
 	void unlock(txn_man * txn);
@@ -23,6 +23,7 @@ private:
 	txn_man * owner;
 	txn_man ** waiters;
 	UInt32 waiter_cnt;
+  uint64_t _part_id;
   /*
 	uint64_t owner;
 	uint64_t owner_ts;
