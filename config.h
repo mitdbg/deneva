@@ -1,7 +1,39 @@
+#ifndef _CONFIG_H_
+
+#define _CONFIG_H_
+
+/***********************************************/
+// Simulation + Hardware
+/***********************************************/
+#define NODE_CNT 2 
+#define THREAD_CNT 2
+// REM_THREAD_CNT should be at least NODE_CNT*THREAD_CNT to avoid deadlock
+#define REM_THREAD_CNT 1
+// PART_CNT should be at least NODE_CNT
+#define PART_CNT 2
+#define CLIENT_NODE_CNT 8
+#define CLIENT_THREAD_CNT 4
+#define CLIENT_REM_THREAD_CNT 1
+#define CLIENT_RUNTIME false
+
+// each transaction only accesses only 1 virtual partition. But the lock/ts manager and index are not aware of such partitioning. VIRTUAL_PART_CNT describes the request distribution and is only used to generate queries. For HSTORE, VIRTUAL_PART_CNT should be the same as PART_CNT.
+#define VIRTUAL_PART_CNT    PART_CNT  
+#define PAGE_SIZE         4096 
+#define CL_SIZE           64
+#define CPU_FREQ          2.6
+// enable hardware migration.
+#define HW_MIGRATE          false
+
+// # of transactions to run for warmup
+#define WARMUP            0
+// YCSB or TPCC
+#define WORKLOAD YCSB
+// print the transaction latency distribution
+#define PRT_LAT_DISTR true
 #define STATS_ENABLE        true
 #define TIME_ENABLE         true //STATS_ENABLE
 
-#define MAX_TXN_IN_FLIGHT 10 
+#define MAX_TXN_IN_FLIGHT 5
 
 /***********************************************/
 // Memory System
@@ -27,9 +59,9 @@
 /***********************************************/
 // Message Passing
 /***********************************************/
-#define TPORT_TYPE "ipc"
-#define TPORT_TYPE_IPC true
-#define TPORT_PORT ".ipc"
+#define TPORT_TYPE "tcp"
+#define TPORT_TYPE_IPC false
+#define TPORT_PORT 7000
 
 #define MAX_TPORT_NAME 128
 #define MSG_SIZE 128 // in bytes
@@ -46,7 +78,7 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, OCC, VLL, CALVIN
-#define CC_ALG MVCC
+#define CC_ALG HSTORE
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER         false
@@ -92,7 +124,7 @@
 #define TXN_QUEUE_SIZE_LIMIT    THREAD_CNT
 // [CALVIN]
 #define SEQ_THREAD_CNT 4 // Must be > 1 until bug is fixed
-#define MAX_BATCH_WAITTIME 5000000	//5ms, currently unused
+#define MAX_BATCH_WAITTIME 5000000  //5ms, currently unused
 
 
 /***********************************************/
@@ -108,15 +140,15 @@
 #define MAX_PART_PER_TXN      16 
 #define MAX_ROW_PER_TXN       64
 #define QUERY_INTVL         1UL
-#define MAX_TXN_PER_PART 10000
+#define MAX_TXN_PER_PART 3000000
 #define FIRST_PART_LOCAL      true
 #define MAX_TUPLE_SIZE        1024 // in bytes
 // ==== [YCSB] ====
-#define INIT_PARALLELISM 2
+#define INIT_PARALLELISM 4
 #define SYNTH_TABLE_SIZE 2097152
 #define ZIPF_THETA 0.0
-#define READ_PERC 1.0 
-#define WRITE_PERC 0.0
+#define READ_PERC 0.5
+#define WRITE_PERC 0.5
 #define SCAN_PERC           0
 #define SCAN_LEN          20
 #define PART_PER_TXN 2
@@ -136,9 +168,9 @@
 // are not modeled.
 #define TPCC_ACCESS_ALL       false 
 #define WH_UPDATE         true
-#define NUM_WH 2
+#define NUM_WH 32
 // % of transactions that access multiple partitions
-#define MPR 20 
+#define MPR 5
 #define MPR_NEWORDER      20 // In %
 // Smaller item selection to model contention
 #define CONTENTION false
@@ -193,13 +225,13 @@ extern TestCases          g_test_case;
 #define IDX_VERB          false
 #define VERB_ALLOC          true
 
-#define DEBUG_LOCK					false
-#define DEBUG_TIMESTAMP				false
-#define DEBUG_SYNTH					false
-#define DEBUG_ASSERT				false
-#define DEBUG_DISTR					false 
-#define DEBUG_TIMELINE				false
-#define DEBUG_BREAKDOWN				false
+#define DEBUG_LOCK          false
+#define DEBUG_TIMESTAMP       false
+#define DEBUG_SYNTH         false
+#define DEBUG_ASSERT        false
+#define DEBUG_DISTR         false 
+#define DEBUG_TIMELINE        false
+#define DEBUG_BREAKDOWN       false
 
 #define QRY_ONLY false
 #define TWOPC_ONLY false
@@ -224,7 +256,7 @@ extern TestCases          g_test_case;
 #define HSTORE_SPEC           7
 #define OCC             8
 #define VLL             9
-#define CALVIN			10
+#define CALVIN      10
 // TIMESTAMP allocation method.
 #define TS_MUTEX          1
 #define TS_CAS            2
@@ -234,10 +266,11 @@ extern TestCases          g_test_case;
 // Stats and timeout
 #define BILLION 1000000000UL // in ns => 1 second
 #define STAT_ARR_SIZE 1024
-#define PROG_TIMER 1 * 5 * BILLION
-#define DONE_TIMER 10 * 60 * BILLION
+#define PROG_TIMER 30 * BILLION // in s
+#define DONE_TIMER 3 * 60 * BILLION // 3 minutes
 
 #define SEED 0
 
 #endif
+
 
