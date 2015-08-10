@@ -20,6 +20,10 @@ void ycsb_client_query::init(uint64_t thd_id, workload * h_wl, uint64_t node_id)
 	mrand->init(get_sys_clock());
   // FIXME for HSTORE/SPEC, need to generate queries to more than 1 part per node
 	pid = GET_PART_ID(0,node_id);
+#if CC_ALG==HSTORE || CC_ALG==HSTORE_SPEC
+	UInt32 r = mrand->next() % (g_part_cnt/g_node_cnt);
+  pid = node_id + r * g_node_cnt;
+#endif
 	requests = (ycsb_request *) 
 		mem_allocator.alloc(sizeof(ycsb_request) * g_req_per_query, thd_id);
 	part_to_access = (uint64_t *) 

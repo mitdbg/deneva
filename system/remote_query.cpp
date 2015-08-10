@@ -253,12 +253,14 @@ void Remote_query::send_init(base_query * query,uint64_t dest_part_id) {
 	sizes[num++] = sizeof(uint64_t);
 	data[num] = &query->home_part;
 	sizes[num++] = sizeof(uint64_t);
+  uint64_t _part_id = query->home_part;
+#else
+  uint64_t _part_id = GET_PART_ID(0,g_node_id);
 #endif
 
 	data[num] = &query->ts;
 	sizes[num++] = sizeof(ts_t);
 
-  uint64_t _part_id = GET_PART_ID(0,g_node_id);
 	data[num] = &_part_id;
 	sizes[num++] = sizeof(uint64_t);
 
@@ -417,8 +419,8 @@ base_query * Remote_query::unpack(void * d, int len) {
 	  ptr += sizeof(uint64_t);
   if(query->rtype != RTXN) {
     // Set home partition
-	  memcpy(&query->home_part,&data[ptr],sizeof(query->home_part));
-	  ptr += sizeof(query->home_part);
+	  memcpy(&query->home_part,&data[ptr],sizeof(uint64_t));
+	  ptr += sizeof(uint64_t);
   }
     assert(query->active_part < g_part_cnt && query->active_part % g_node_cnt == g_node_id);
   }
