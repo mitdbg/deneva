@@ -47,7 +47,7 @@ void QWorkQueue::add_query(int tid, base_query * qry) {
 // FIXME: Only should abort at 1 partition
 void QWorkQueue::add_abort_query(int tid, base_query * qry) {
   int idx = get_idx(tid);
-    queue[idx].add_query(qry);
+    queue[idx].add_abort_query(qry);
 }
 
 base_query * QWorkQueue::get_next_query(int tid) {
@@ -191,6 +191,7 @@ void QWorkQueueHelper::add_query(base_query * qry) {
   pthread_mutex_lock(&mtx);
 
   wq_entry_t n = head;
+
   while(n) {
     assert(CC_ALG==HSTORE_SPEC || n->qry != qry);
 #if CC_ALG == HSTORE_SPEC
