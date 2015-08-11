@@ -192,7 +192,12 @@ void QWorkQueueHelper::add_query(base_query * qry) {
 
   wq_entry_t n = head;
   while(n) {
-    assert(n->qry != qry);
+    assert(CC_ALG==HSTORE_SPEC || n->qry != qry);
+#if CC_ALG == HSTORE_SPEC
+    if(n->qry == qry)
+      goto final;
+#endif
+    
 #if PRIORITY_WORK_QUEUE
 #if CC_ALG == HSTORE_SPEC
     if(qry->spec)
@@ -213,6 +218,9 @@ void QWorkQueueHelper::add_query(base_query * qry) {
   }
   cnt++;
 
+#if CC_ALG == HSTORE_SPEC
+final:
+#endif
   if(last_add_time == 0)
     last_add_time = get_sys_clock();
 

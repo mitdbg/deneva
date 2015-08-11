@@ -315,14 +315,6 @@ void TxnPool::commit_spec_ex(int r) {
     t_node = t_node->next;
     if (t_node->txn->get_txn_id() % g_node_cnt == g_node_id && t_node->qry->part_num == 1 && t_node->txn->state == PREP && t_node->txn->spec) {
       t_node->txn->validate();
-      /*
-      if(t_node->txn->rc == Abort) {
-        INC_STATS(0,spec_abort_cnt,1);
-      }
-      else {
-        INC_STATS(0,spec_commit_cnt,1);
-      }
-      */
       t_node->txn->finish(rc,t_node->qry->part_to_access,t_node->qry->part_num);
       t_node->txn->state = DONE;
       t_node->qry->rtype = RPASS;
@@ -331,28 +323,6 @@ void TxnPool::commit_spec_ex(int r) {
 #else
       work_queue.add_query(0,t_node->qry);
 #endif
-      /*
-      assert(t_node->qry->part_cnt > 0 || t_node->qry->part_num > 0);
-      if(t_node->qry->part_num > 0)
-        work_queue.add_query(t_node->qry->part_to_access[0]/g_node_cnt,t_node->qry);
-      else if(t_node->qry->part_cnt > 0)
-        work_queue.add_query(t_node->qry->parts[0]/g_node_cnt,t_node->qry);
-        */
-      /*
-      if(rc != Abort)
-        rc = t_node->txn->validate();
-      if(rc == Abort) {
-        INC_STATS(0,spec_abort_cnt,1);
-      }
-      else {
-        INC_STATS(0,spec_commit_cnt,1);
-      }
-      // FIXME: May cause deadlock when function eventually calls something in txn_pool
-      t_node->txn->finish(rc,t_node->qry->part_to_access,t_node->qry->part_num);
-      t_node->txn->state = DONE;
-      t_node->qry->rtype = RPASS;
-      work_queue.add_query(t_node->qry);
-      */
     }
     else if (t_node->txn->get_txn_id() % g_node_cnt == g_node_id && t_node->qry->part_num == 1 && t_node->txn->state != PREP && t_node->txn->spec) {
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
@@ -360,13 +330,6 @@ void TxnPool::commit_spec_ex(int r) {
 #else
       work_queue.add_query(0,t_node->qry);
 #endif
-      /*
-      assert(t_node->qry->part_cnt > 0 || t_node->qry->part_num > 0);
-      if(t_node->qry->part_num > 0)
-        work_queue.remove_query(t_node->qry->part_to_access[0]/g_node_cnt,t_node->qry);
-      else if(t_node->qry->part_cnt > 0)
-        work_queue.remove_query(t_node->qry->parts[0]/g_node_cnt,t_node->qry);
-        */
     }
     // FIXME: what if txn is already in work queue or is currently being executed?
   }

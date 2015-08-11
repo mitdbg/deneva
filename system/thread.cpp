@@ -826,9 +826,15 @@ RC thread_t::run() {
 						if(sent)
 							continue;
 						//if(GET_NODE_ID(part_id) != g_node_id) {
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
 						if(part_id != m_query->home_part) {
 							m_txn->incr_rsp(1);
 						}
+#else
+						if(GET_NODE_ID(part_id) != g_node_id) {
+							m_txn->incr_rsp(1);
+						}
+#endif
 					}
 
 #if CC_ALG == HSTORE_SPEC
@@ -852,9 +858,28 @@ RC thread_t::run() {
 						if(sent)
 							continue;
 
+#if CC_ALG == VLL
+              if(GET_NODE_ID(part_id) != g_node_id) {
+                //m_txn->incr_rsp(1);
+                rc = WAIT;
+                m_txn->rc = rc;
+                m_query->dest_part = part_id;
+                rem_qry_man.send_init(m_query,part_id);
+                m_txn->wait_starttime = get_sys_clock();
+                m_query->part_touched[m_query->part_touched_cnt++] = part_id;
+              } else {
+							// local init: MPQ Moved to after RINITs return
+                if(m_query->part_num == 1) {
+                  rc = vll_man.beginTxn(m_txn,m_query);
+                  if(rc == WAIT) {
+                    m_txn->rc = rc;
+                  }
+                }
+              }
+#endif
+
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
             assert(m_query->active_part == m_query->home_part);
-#endif
 						if(part_id != m_query->home_part) {
               if(GET_NODE_ID(part_id) != g_node_id) {
                 //m_txn->incr_rsp(1);
@@ -892,7 +917,6 @@ RC thread_t::run() {
 						} else {
 							// local init: MPQ Moved to after RINITs return
               if(m_query->part_num == 1) {
-#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
 							uint64_t part_arr[1];
 							part_arr[0] = part_id;
 							rc2 = part_lock_man.rem_lock(part_arr, 1, m_txn);
@@ -901,15 +925,9 @@ RC thread_t::run() {
 								rc = WAIT;
 								m_txn->rc = rc;
 							}
-#endif
-#if CC_ALG == VLL
-        rc = vll_man.beginTxn(m_txn,m_query);
-        if(rc == WAIT) {
-          m_txn->rc = rc;
-        }
-#endif
               }
 						}
+#endif
 					} // for(uint64_t i = 0; i < m_query->part_num; i++) 
 
 #endif // !QRY_ONLY
