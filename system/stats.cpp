@@ -909,7 +909,7 @@ void Stats::print(bool prog) {
 
   if(!prog) {
     print_cnts();
-	  print_lat_distr();
+	  //print_lat_distr();
   }
 	if (output_file != NULL) {
     fflush(outf);
