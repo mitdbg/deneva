@@ -71,8 +71,9 @@ def using_local():
 ##      fab using_istc   run_exps:experiment_1
 @task
 @hosts('localhost')
-def run_exps(exps,skip_completed='False',exec_exps='True',dry_run='False'):
+def run_exps(exps,skip_completed='False',exec_exps='True',dry_run='False',iterations='1'):
     global SKIP, EXECUTE_EXPS 
+    ITERS = int(iterations)
     SKIP = skip_completed == 'True'
     EXECUTE_EXPS = exec_exps == 'True'
     env.dry_run = dry_run == 'True'
@@ -81,7 +82,10 @@ def run_exps(exps,skip_completed='False',exec_exps='True',dry_run='False'):
             puts("this will be a dry run!",show_prefix=True)
         with color():
             puts("running experiment set:{}".format(exps),show_prefix=True)
-    execute(run_exp,exps)
+    for i in range(ITERS):
+        NOW=datetime.datetime.now()
+        STRNOW=NOW.strftime("%Y%m%d-%H%M%S")
+        execute(run_exp,exps)
 
 
 ## Basic usage:
@@ -501,7 +505,7 @@ def ping():
 def ec2_run_instances(
             dry_run="False",
             image_id="ami-d05e75b8",
-            count="24",
+            count="12",
             security_group="dist-sg",
             instance_type="m4.xlarge",
             key_name="devenv-key",

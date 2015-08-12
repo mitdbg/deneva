@@ -5,14 +5,14 @@
 /***********************************************/
 // Simulation + Hardware
 /***********************************************/
-#define NODE_CNT 2 
+#define NODE_CNT 2
 #define THREAD_CNT 2
 // REM_THREAD_CNT should be at least NODE_CNT*THREAD_CNT to avoid deadlock
 #define REM_THREAD_CNT 1
 // PART_CNT should be at least NODE_CNT
 #define PART_CNT 2
 #define CLIENT_NODE_CNT 1
-#define CLIENT_THREAD_CNT 2
+#define CLIENT_THREAD_CNT 4
 #define CLIENT_REM_THREAD_CNT 1
 #define CLIENT_RUNTIME false
 
@@ -29,11 +29,11 @@
 // YCSB or TPCC
 #define WORKLOAD YCSB
 // print the transaction latency distribution
-#define PRT_LAT_DISTR false
+#define PRT_LAT_DISTR true
 #define STATS_ENABLE        true
 #define TIME_ENABLE         true //STATS_ENABLE
 
-#define MAX_TXN_IN_FLIGHT 10 
+#define MAX_TXN_IN_FLIGHT 1000
 
 /***********************************************/
 // Memory System
@@ -59,9 +59,9 @@
 /***********************************************/
 // Message Passing
 /***********************************************/
-#define TPORT_TYPE "ipc"
-#define TPORT_TYPE_IPC true
-#define TPORT_PORT ".ipc"
+#define TPORT_TYPE "tcp"
+#define TPORT_TYPE_IPC false
+#define TPORT_PORT 7000
 
 #define MAX_TPORT_NAME 128
 #define MSG_SIZE 128 // in bytes
@@ -140,15 +140,15 @@
 #define MAX_PART_PER_TXN      16 
 #define MAX_ROW_PER_TXN       64
 #define QUERY_INTVL         1UL
-#define MAX_TXN_PER_PART 10000
+#define MAX_TXN_PER_PART 3000000
 #define FIRST_PART_LOCAL      true
 #define MAX_TUPLE_SIZE        1024 // in bytes
 // ==== [YCSB] ====
 #define INIT_PARALLELISM 4
 #define SYNTH_TABLE_SIZE 2097152
 #define ZIPF_THETA 0.0
-#define READ_PERC 0.5
-#define WRITE_PERC 0.5
+#define READ_PERC 1.0
+#define WRITE_PERC 0.0
 #define SCAN_PERC           0
 #define SCAN_LEN          20
 #define PART_PER_TXN 2
@@ -168,9 +168,9 @@
 // are not modeled.
 #define TPCC_ACCESS_ALL       false 
 #define WH_UPDATE         true
-#define NUM_WH 32
+#define NUM_WH 2
 // % of transactions that access multiple partitions
-#define MPR 20 
+#define MPR 0
 #define MPR_NEWORDER      20 // In %
 // Smaller item selection to model contention
 #define CONTENTION false
@@ -267,7 +267,7 @@ extern TestCases          g_test_case;
 #define BILLION 1000000000UL // in ns => 1 second
 #define STAT_ARR_SIZE 1024
 #define PROG_TIMER 30 * BILLION // in s
-#define DONE_TIMER 10 * 60 * BILLION // 3 minutes
+#define DONE_TIMER 3 * 60 * BILLION // 3 minutes
 
 #define SEED 0
 

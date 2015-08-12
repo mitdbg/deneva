@@ -12,9 +12,9 @@ fmt_nt = [["NODE_CNT","CLIENT_NODE_CNT","NETWORK_TEST"]]
 
 def test():
     fmt = fmt_ycsb
-    nnodes = [1]#,16]
+    nnodes = [8]#,16]
     #nmpr=[0,1,5,10,20,30,40,50,60,70,80,90,100]
-    nmpr=[0]
+    nmpr=[1]
     nalgos=['WAIT_DIE']
     #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
     nthreads=[2]
@@ -22,9 +22,9 @@ def test():
     ntifs=[1000]
     nzipf=[0.0]
     nwr_perc=[0.0]
-    ntxn=3000000
+    ntxn=[3000000]
     nparts = [2]
-    exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t if cc!="HSTORE" and cc!= "HSTORE_SPEC" else 1,tif,z,1.0-wp,wp,p if p <= n else 1] for n,ct,t,tif,z,wp,m,cc,p in itertools.product(nnodes,ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts)]
+    exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,txn,'YCSB',cc,m,ct,t,tif,z,1.0-wp,wp,p if p <= n else 1,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n] for n,ct,t,tif,z,wp,m,cc,p,txn in itertools.product(nnodes,ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts,ntxn)]
 #    fmt = fmt_ycsb
 #    exp = [
 #    [1,2,50000,'YCSB','WAIT_DIE',50,1,1,10,0.6,0.5,0.5,2],
@@ -111,7 +111,7 @@ def node_sweep():
     fmt = fmt_ycsb
     nnodes = [1,2,4,8,16]
     nmpr=[0,1,5]
-    nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','TIMESTAMP','HSTORE']
+    nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','TIMESTAMP','HSTORE','HSTORE_SPEC','VLL']
     #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
     nthreads=[2]
     ncthreads=[4]
