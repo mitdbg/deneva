@@ -117,6 +117,11 @@ def delete_local_results():
     local("rm -f results/*");
 
 @task
+@hosts('localhost')
+def delete_remote_results():
+    run("rm -f results.out")
+
+@task
 @parallel
 def copy_files(schema):
     executable_files = ["rundb","runcl"]
