@@ -137,7 +137,7 @@ RC Client_thread_t::run_remote() {
 #if DEBUG_DISTR
 				//printf("Wrapping up... Node %u: inflight txns left: %d\n",i,inf);
 #endif
-				if (inf > 0) {
+				if (inf > 0 && done_cnt > 0) {
 					done = false;
 					break;
 				}

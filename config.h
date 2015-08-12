@@ -10,7 +10,7 @@
 // REM_THREAD_CNT should be at least NODE_CNT*THREAD_CNT to avoid deadlock
 #define REM_THREAD_CNT 1
 // PART_CNT should be at least NODE_CNT
-#define PART_CNT 4
+#define PART_CNT 2
 #define CLIENT_NODE_CNT 1
 #define CLIENT_THREAD_CNT 2
 #define CLIENT_REM_THREAD_CNT 1
@@ -33,7 +33,7 @@
 #define STATS_ENABLE        true
 #define TIME_ENABLE         true //STATS_ENABLE
 
-#define MAX_TXN_IN_FLIGHT 5
+#define MAX_TXN_IN_FLIGHT 10 
 
 /***********************************************/
 // Memory System
@@ -78,7 +78,7 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, OCC, VLL, CALVIN
-#define CC_ALG HSTORE_SPEC
+#define CC_ALG NO_WAIT
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER         false
@@ -229,7 +229,7 @@ extern TestCases          g_test_case;
 #define DEBUG_TIMESTAMP       false
 #define DEBUG_SYNTH         false
 #define DEBUG_ASSERT        false
-#define DEBUG_DISTR         true 
+#define DEBUG_DISTR         false 
 #define DEBUG_TIMELINE        false
 #define DEBUG_BREAKDOWN       false
 
