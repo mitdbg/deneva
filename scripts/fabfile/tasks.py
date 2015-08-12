@@ -9,11 +9,9 @@ from fabric.utils import puts,fastprint
 from time import sleep
 from contextlib import contextmanager
 import traceback
-import os,sys,datetime,re
+import os,sys,datetime,re,ast
 import itertools
-import glob
-import shlex
-import subprocess
+import glob,shlex,subprocess
 import pprint
 
 sys.path.append('..')
@@ -56,6 +54,11 @@ def using_vcloud():
 @hosts('localhost')
 def using_istc():
     set_env_istc()
+
+@task
+@hosts('localhost')
+def using_ec2():
+    set_env_ec2()
 
 @task
 @hosts('localhost')
@@ -152,7 +155,7 @@ def sync_clocks(max_offset=0.01,max_attempts=5,delay=15):
         if abs(offset) < max_offset:
             break
         sleep(delay)
-        res = run("ntpdate -b clock-1.cs.cmu.edu")
+        res = run("sudo ntpdate -b clock-1.cs.cmu.edu")
         sleep(delay)
         attempts += 1
     return attempts < max_attempts
@@ -193,7 +196,6 @@ def deploy(schema_path,nids):
     nid = nids[env.host]
     succeeded = True
     with shell_env(SCHEMA_PATH=schema_path):
-        # TODO: remove this assertion after debugging
         with settings(warn_only=True,command_timeout=MAX_TIME_PER_EXP):
             if env.host in env.roledefs["servers"]:
                 cmd = "./rundb -nid{} >> results.out 2>&1".format(nid)  
@@ -493,6 +495,78 @@ def ping():
         res=local("ping -w8 -c1 {}".format(env.host),capture=True)
     assert res != None
     return res.return_code
+
+@task
+@hosts('localhost')
+def ec2_run_instances(
+            dry_run="False",
+            image_id="ami-d05e75b8",
+            count="24",
+            security_group="dist-sg",
+            instance_type="m4.xlarge",
+            key_name="devenv-key",
+        ):
+    opt = "--{k} {v} ".format
+    cmd = "aws ec2 run-instances "
+    if dry_run == "True":
+        cmd += "--dry-run "
+    cmd += opt(k="image-id",v=image_id)
+    cmd += opt(k="count",v=count)
+    cmd += opt(k="security-groups",v=security_group)
+    cmd += opt(k="instance-type",v=instance_type)
+    cmd += opt(k="key-name",v=key_name)
+    local(cmd)
+
+@task
+@hosts('localhost')
+def ec2_get_status():
+    cmd = "aws ec2 describe-instance-status --query 'InstanceStatuses[*].{InstanceId:InstanceId,SystemStatus:SystemStatus.Status,InstanceStatus:InstanceStatus.Status}'" 
+    res = local(cmd,capture=True)
+    statuses = ast.literal_eval(res)
+    for status in statuses:
+        if status['SystemStatus'] != "ok":
+            print("{}: ERROR: bad system status {}".format(status['InstanceId'],status['SystemStatus']))
+            sys.exit(1)
+        elif status['InstanceStatus'] == "initializing":
+            print("{}: ERROR: still initializing...".format(status['InstanceId']))
+            sys.exit(1)
+        elif status['InstanceStatus'] != "ok":
+            print("{}: ERROR: bad instance status {}".format(status['InstanceId'],status['InstanceStatus']))
+            sys.exit(1)
+    print("READY!")
+    return 0
+
+
+@task
+@hosts('localhost')
+def ec2_write_ifconfig():
+    cmd = "aws ec2 describe-instances --query 'Reservations[*].Instances[*].{ID:InstanceId,IP:PublicIpAddress,TYPE:InstanceType}'"
+    res = local(cmd,capture=True)
+
+    # Skip any previously terminated VMs (terminate VM state remains for 1 hour)
+    res = res.replace("null","\"\"")
+    ip_info = ast.literal_eval(res)
+    with open("ec2_ifconfig.txt","w") as f:
+        for entry in ip_info:
+            for ip in entry:
+                if ip["IP"] != "":
+                    f.write(ip["IP"] + "\n")
+
+@task
+@hosts('localhost')
+def ec2_terminate_instances():
+    cmd = "aws ec2 describe-instances --query 'Reservations[*].Instances[*].InstanceId'"
+    res = local(cmd,capture=True)
+    ids = ast.literal_eval(res)
+    
+    id_list = []
+    for id_entry in ids:
+        for id in id_entry:
+            id_list.append(id)
+
+    cmd = "aws ec2 terminate-instances --instance-ids {}".format(" ".join(id_list))
+    res = local(cmd,capture=True)
+    print(res)
 
 @contextmanager
 def color(level="info"):
