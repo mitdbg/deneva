@@ -360,6 +360,7 @@ def compile_binaries(exps):
         if env.remote:
             cfgs["TPORT_TYPE"],cfgs["TPORT_TYPE_IPC"],cfgs["TPORT_PORT"]="\"tcp\"","false",7000
 
+        execute(write_config,cfgs)
         execute(compile)
         
         output_f = get_outfile_name(cfgs,fmt,env.hosts) 
