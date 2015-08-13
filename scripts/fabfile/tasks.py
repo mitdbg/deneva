@@ -80,6 +80,11 @@ def run_exps(exps,skip_completed='False',exec_exps='True',dry_run='False',iterat
             puts("this will be a dry run!",show_prefix=True)
         with color():
             puts("running experiment set:{}".format(exps),show_prefix=True)
+
+    # Make sure all experiment binaries exist
+    execute(check_binaries,exps)
+
+    # Run experiments
     for i in range(ITERS):
         NOW=datetime.datetime.now()
         STRNOW=NOW.strftime("%Y%m%d-%H%M%S")
@@ -136,7 +141,7 @@ def copy_files(schema,exp_fname):
     # Copying executable files may fail if a process is running the executable
     with settings(warn_only=True):
         for f in (executable_files):
-            local_fpath = os.path.join("binaries","{}_{}".format(exp_fname,f))
+            local_fpath = os.path.join("binaries","{}{}".format(exp_fname,f))
             remote_fpath = os.path.join(env.rem_homedir,f)
             #res = put(f,env.rem_homedir,mirror_local_mode=True)
             res = put(local_fpath,remote_fpath,mirror_local_mode=True)
@@ -151,7 +156,7 @@ def copy_files(schema,exp_fname):
             killall()
             # If this fails again then we abort
             for f in (executable_files):
-                local_fpath = os.path.join("binaries","{}_{}".format(exp_fname,f))
+                local_fpath = os.path.join("binaries","{}{}".format(exp_fname,f))
                 remote_fpath = os.path.join(env.rem_homedir,f)
                 #res = put(f,env.rem_homedir,mirror_local_mode=True)
                 res = put(local_fpath,remote_fpath,mirror_local_mode=True)
@@ -351,31 +356,68 @@ def get_good_hosts():
 
 @task
 @hosts('localhost')
+def compile_binary(fmt,e):
+    cfgs = get_cfgs(fmt,e)
+    if env.remote:
+        cfgs["TPORT_TYPE"],cfgs["TPORT_TYPE_IPC"],cfgs["TPORT_PORT"]="\"tcp\"","false",7000
+
+    execute(write_config,cfgs)
+    execute(compile)
+
+    output_f = get_outfile_name(cfgs,fmt,env.hosts)
+
+    local("cp rundb binaries/{}rundb".format(output_f))
+    local("cp runcl binaries/{}runcl".format(output_f))
+    local("cp runsq binaries/{}runsq".format(output_f))
+    local("cp config.h binaries/{}cfg".format(output_f))
+
+    if EXECUTE_EXPS:
+        cmd = "mkdir -p {}".format(env.result_dir)
+        local(cmd)
+        #cmd = "cp config.h {}.cfg".format(os.path.join(env.result_dir,output_f))
+        #local(cmd)
+
+@task
+@hosts('localhost')
 def compile_binaries(exps):
     local("mkdir -p binaries")
     local("rm -rf binaries/*")
     fmt,experiments = experiment_map[exps]()
     for e in experiments:
+        execute(compile_binary,fmt,e)
+
+
+@task
+@hosts('localhost')
+def check_binaries(exps):
+    if not os.path.isdir("binaries"):
+        execute(compile_binaries,exps)
+        return
+    if len(glob.glob("binaries/*")) == 0:
+        execute(compile_binaries,exps)
+        return
+    fmt,experiments = experiment_map[exps]()
+
+    for e in experiments:
         cfgs = get_cfgs(fmt,e)
         if env.remote:
             cfgs["TPORT_TYPE"],cfgs["TPORT_TYPE_IPC"],cfgs["TPORT_PORT"]="\"tcp\"","false",7000
-
-        execute(write_config,cfgs)
-        execute(compile)
         
         output_f = get_outfile_name(cfgs,fmt,env.hosts) 
-        output_f = output_f + STRNOW 
 
-        local("cp rundb binaries/{}_rundb".format(output_f))
-        local("cp runcl binaries/{}_runcl".format(output_f))
-        local("cp runsq binaries/{}_runsq".format(output_f))
-        
-        if EXECUTE_EXPS:
-            cmd = "mkdir -p {}".format(env.result_dir)
-            local(cmd)
-            cmd = "cp config.h {}.cfg".format(os.path.join(env.result_dir,output_f))
-            local(cmd)
-         
+        executables = glob.glob("{}*".format(os.path.join("binaries",output_f)))
+        has_rundb,has_runcl,has_runsq,has_config=False,False,False,False
+        for executable in executables:
+            if executable.endswith("rundb"):
+                has_rundb = True
+            elif executable.endswith("runcl"):
+                has_runcl = True
+            elif executable.endswith("runsq"):
+                has_runsq = True
+            elif executable.endswith("cfg"):
+                has_config = True
+        if not has_rundb or not has_runcl or not has_runsq or not has_config:
+            execute(compile_binary,fmt,e)
 
 
 @task
@@ -392,27 +434,25 @@ def run_exp(exps,network_test=False):
     nids = {} 
     outfiles = {}
 
-    # Precompile Binaries
-    execute(compile_binaries,exps)
-
     for e in experiments:
         cfgs = get_cfgs(fmt,e)
         
-        output_f = get_outfile_name(cfgs,fmt,env.hosts) 
+        output_fbase = get_outfile_name(cfgs,fmt,env.hosts)
+        output_f = output_fbase + STRNOW
 
         # Check whether experiment has been already been run in this batch
         if SKIP:
-            if len(glob.glob('{}*{}*.out'.format(env.result_dir,output_f))) > 0:
+            if len(glob.glob('{}*{}*.out'.format(env.result_dir,output_fbase))) > 0:
                 with color("warn"):
                     puts("experiment exists in results folder... skipping",show_prefix=True)
                 continue
 
-        output_dir = output_f + "/"
-        output_f = output_f + STRNOW 
-
         global CC_ALG
         CC_ALG = cfgs["CC_ALG"]
         if EXECUTE_EXPS:
+            cfg_srcpath = "{}cfg".format(os.path.join("binaries",output_fbase))
+            cfg_destpath = "{}.cfg".format(os.path.join(env.result_dir,output_f))
+            local("cp {} {}".format(cfg_srcpath,cfg_destpath))
             nnodes = cfgs["NODE_CNT"]
             nclnodes = cfgs["CLIENT_NODE_CNT"]
             ntotal = nnodes + nclnodes
@@ -428,7 +468,7 @@ def run_exp(exps,network_test=False):
                     msg += "Actual nodes: {}".format(len(env.hosts))
                     with color():
                         puts(msg,show_prefix=True)
-                    cmd = "rm -f config.h {}{}.cfg".format(env.result_dir,output_f)
+                    cmd = "rm -f config.h {}".format(cfg_destpath)
                     local(cmd)
                     continue
                     
@@ -476,7 +516,7 @@ def run_exp(exps,network_test=False):
                 # flag in environment.py to true to kill these processes. This
                 # is useful for running real experiments but dangerous when both
                 # of us are debugging...
-                execute(copy_files,schema,output_f)
+                execute(copy_files,schema,output_fbase)
                 
                 last_exp = experiments.index(e) == len(experiments) - 1
                 if not env.batch_mode or last_exp:
