@@ -37,8 +37,6 @@ os.chdir('../..')
 
 MAX_TIME_PER_EXP = 60 * 8   # in seconds
 
-#cfgs = configs
-
 EXECUTE_EXPS = True
 SKIP = False
 CC_ALG = ""
@@ -117,22 +115,31 @@ def delete_local_results():
     local("rm -f results/*");
 
 @task
-@hosts('localhost')
+#@hosts('localhost')
 def delete_remote_results():
     run("rm -f results.out")
 
 @task
 @parallel
-def copy_files(schema):
+def copy_files(schema,exp_fname):
     executable_files = ["rundb","runcl"]
     if CC_ALG == "CALVIN":
         executable_files.append("runsq")
     files = ["ifconfig.txt"]
     files.append(schema)
     succeeded = True
+
+    # Copying regular files should always succeed unless node is down
+    for f in files:
+        put(f,env.rem_homedir)
+
+    # Copying executable files may fail if a process is running the executable
     with settings(warn_only=True):
-        for f in (files + executable_files):
-            res = put(f,env.rem_homedir,mirror_local_mode=True)
+        for f in (executable_files):
+            local_fpath = os.path.join("binaries","{}_{}".format(exp_fname,f))
+            remote_fpath = os.path.join(env.rem_homedir,f)
+            #res = put(f,env.rem_homedir,mirror_local_mode=True)
+            res = put(local_fpath,remote_fpath,mirror_local_mode=True)
             if not res.succeeded:
                 with color("warn"):
                     puts("WARN: put: {} -> {} failed!".format(f,env.rem_homedir),show_prefix=True)
@@ -143,8 +150,11 @@ def copy_files(schema):
                 puts("WARN: killing all executables and retrying...",show_prefix=True)
             killall()
             # If this fails again then we abort
-            for f in (files + executable_files):
-                res = put(f,env.rem_homedir,mirror_local_mode=True)
+            for f in (executable_files):
+                local_fpath = os.path.join("binaries","{}_{}".format(exp_fname,f))
+                remote_fpath = os.path.join(env.rem_homedir,f)
+                #res = put(f,env.rem_homedir,mirror_local_mode=True)
+                res = put(local_fpath,remote_fpath,mirror_local_mode=True)
             if not res.succeeded:
                 with color("error"):
                     puts("ERROR: put: {} -> {} failed! (2nd attempt)... Aborting".format(f,env.rem_homedir),show_prefix=True)
@@ -158,13 +168,13 @@ def sync_clocks(max_offset=0.01,max_attempts=5,delay=15):
     offset = sys.float_info.max
     attempts = 0
     while attempts < max_attempts:
-        res = run("ntpdate -q clock-1.cs.cmu.edu")
+        res = run("ntpdate -q clock-2.cs.cmu.edu")
         offset = float(res.stdout.split(",")[-2].split()[-1])
         #print "Host ",env.host,": offset = ",offset
         if abs(offset) < max_offset:
             break
         sleep(delay)
-        res = run("sudo ntpdate -b clock-1.cs.cmu.edu")
+        res = run("sudo ntpdate -b clock-2.cs.cmu.edu")
         sleep(delay)
         attempts += 1
     return attempts < max_attempts
@@ -340,155 +350,173 @@ def get_good_hosts():
     return good_hosts
 
 @task
+@hosts('localhost')
+def compile_binaries(exps):
+    local("mkdir -p binaries")
+    local("rm -rf binaries/*")
+    fmt,experiments = experiment_map[exps]()
+    for e in experiments:
+        cfgs = get_cfgs(fmt,e)
+        if env.remote:
+            cfgs["TPORT_TYPE"],cfgs["TPORT_TYPE_IPC"],cfgs["TPORT_PORT"]="\"tcp\"","false",7000
+
+        execute(compile)
+        
+        output_f = get_outfile_name(cfgs,fmt,env.hosts) 
+        output_f = output_f + STRNOW 
+
+        local("cp rundb binaries/{}_rundb".format(output_f))
+        local("cp runcl binaries/{}_runcl".format(output_f))
+        local("cp runsq binaries/{}_runsq".format(output_f))
+        
+        if EXECUTE_EXPS:
+            cmd = "mkdir -p {}".format(env.result_dir)
+            local(cmd)
+            cmd = "cp config.h {}.cfg".format(os.path.join(env.result_dir,output_f))
+            local(cmd)
+         
+
+
+@task
 @hosts(['localhost'])
-def run_exp(expss,network_test=False):
-    # TODO: fix this
-    exps = []
-    exps.append(expss)
+def run_exp(exps,network_test=False):
     schema_path = "{}/".format(env.rem_homedir)
     good_hosts = []
     if not network_test and EXECUTE_EXPS:
         good_hosts = get_good_hosts()
         with color():
             puts("good host list =\n{}".format(pprint.pformat(good_hosts,depth=3)),show_prefix=True)
-    for exp in exps:
-        fmt,experiments = experiment_map[exp]()
-        batch_size = 0 
-        nids = {} 
-        outfiles = {}
-        for e in experiments:
-            cfgs = get_cfgs(fmt,e)
+    fmt,experiments = experiment_map[exps]()
+    batch_size = 0 
+    nids = {} 
+    outfiles = {}
+
+    # Precompile Binaries
+    execute(compile_binaries,exps)
+
+    for e in experiments:
+        cfgs = get_cfgs(fmt,e)
+        
+        output_f = get_outfile_name(cfgs,fmt,env.hosts) 
+
+        # Check whether experiment has been already been run in this batch
+        if SKIP:
+            if len(glob.glob('{}*{}*.out'.format(env.result_dir,output_f))) > 0:
+                with color("warn"):
+                    puts("experiment exists in results folder... skipping",show_prefix=True)
+                continue
+
+        output_dir = output_f + "/"
+        output_f = output_f + STRNOW 
+
+        global CC_ALG
+        CC_ALG = cfgs["CC_ALG"]
+        if EXECUTE_EXPS:
+            nnodes = cfgs["NODE_CNT"]
+            nclnodes = cfgs["CLIENT_NODE_CNT"]
+            ntotal = nnodes + nclnodes
+            if CC_ALG == 'CALVIN':
+                ntotal += 1
+
             if env.remote:
-                cfgs["TPORT_TYPE"],cfgs["TPORT_TYPE_IPC"],cfgs["TPORT_PORT"]="\"tcp\"","false",7000
-            
-            output_f = get_outfile_name(cfgs,fmt,env.hosts) 
-
-            # Check whether experiment has been already been run in this batch
-            if SKIP:
-                if len(glob.glob('{}*{}*.out'.format(env.result_dir,output_f))) > 0:
-                    with color("warn"):
-                        puts("experiment exists in results folder... skipping",show_prefix=True)
+                if not network_test:
+                    set_hosts(good_hosts)
+                if ntotal > len(env.hosts):
+                    msg = "Not enough nodes to run experiment!\n"
+                    msg += "\tRequired nodes: {}, ".format(ntotal)
+                    msg += "Actual nodes: {}".format(len(env.hosts))
+                    with color():
+                        puts(msg,show_prefix=True)
+                    cmd = "rm -f config.h {}{}.cfg".format(env.result_dir,output_f)
+                    local(cmd)
                     continue
-
-            output_dir = output_f + "/"
-            output_f = output_f + STRNOW 
-
-            write_config(cfgs)
-            global CC_ALG
-            CC_ALG = cfgs["CC_ALG"]
-            execute(compile)
-            if EXECUTE_EXPS:
-                cmd = "mkdir -p {}".format(env.result_dir)
-                local(cmd)
-                cmd = "cp config.h {}{}.cfg".format(env.result_dir,output_f)
-                local(cmd)
-
-                nnodes = cfgs["NODE_CNT"]
-                nclnodes = cfgs["CLIENT_NODE_CNT"]
-                ntotal = nnodes + nclnodes
-                if CC_ALG == 'CALVIN':
-                    ntotal += 1
-
-                if env.remote:
-                    if not network_test:
-                        set_hosts(good_hosts)
-                    if ntotal > len(env.hosts):
-                        msg = "Not enough nodes to run experiment!\n"
-                        msg += "\tRequired nodes: {}, ".format(ntotal)
-                        msg += "Actual nodes: {}".format(len(env.hosts))
-                        with color():
-                            puts(msg,show_prefix=True)
-                        cmd = "rm -f config.h {}{}.cfg".format(env.result_dir,output_f)
-                        local(cmd)
-                        continue
-                        
-                    if env.batch_mode:
-                        # If full, execute all exps in batch and reset everything
-                        full = (batch_size + ntotal) > len(env.hosts)
-                        if full:
-                            if env.cluster != 'istc':
-                                # Sync clocks before each experiment
-                                execute(sync_clocks)
-                            with color():
-                                puts("Batch is full, deploying batch...",show_prefix=True)
-                            with color("debug"):
-                                puts(pprint.pformat(outfiles,depth=3),show_prefix=False)
-                            set_hosts(env.hosts[:batch_size])
-                            execute(deploy,schema_path,nids)
-                            execute(get_results,outfiles)
-                            good_hosts = get_good_hosts()
-                            env.roledefs = None
-                            batch_size = 0
-                            nids = {}
-                            outfiles = {}
-                            set_hosts(good_hosts)
-                        else:
-                            with color():
-                                puts("Adding experiment to current batch: {}".format(output_f), show_prefix=True)
-                        machines = env.hosts[batch_size : batch_size + ntotal]
-                        batch_size += ntotal
-                    else:
-                        machines = env.hosts[:ntotal]
-
-                    set_hosts(machines)
-                    new_roles=execute(assign_roles,nnodes,nclnodes,append=env.batch_mode)[env.host]
-                    new_nids = execute(write_ifconfig,new_roles)[env.host]
-                    nids.update(new_nids)
-                    for host,nid in new_nids.iteritems():
-                        outfiles[host] = "{}_{}.out".format(nid,output_f) 
-
-                    if cfgs["WORKLOAD"] == "TPCC":
-                        schema = "benchmarks/TPCC_short_schema.txt"
-                    elif cfgs["WORKLOAD"] == "YCSB":
-                        schema = "benchmarks/YCSB_schema.txt"
-                    # NOTE: copy_files will fail if any (possibly) stray processes
-                    # are still running one of the executables. Setting the 'kill'
-                    # flag in environment.py to true to kill these processes. This
-                    # is useful for running real experiments but dangerous when both
-                    # of us are debugging...
-                    execute(copy_files,schema)
                     
-                    last_exp = experiments.index(e) == len(experiments) - 1
-                    if not env.batch_mode or last_exp:
-                        if env.batch_mode:
-                            #set_hosts(good_hosts)
-                            set_hosts(env.hosts[:batch_size])
-                            print("Deploying last batch")
-                        else:
-                            print("Deploying: {}".format(output_f))
+                if env.batch_mode:
+                    # If full, execute all exps in batch and reset everything
+                    full = (batch_size + ntotal) > len(env.hosts)
+                    if full:
                         if env.cluster != 'istc':
                             # Sync clocks before each experiment
-                            print("Syncing Clocks...")
                             execute(sync_clocks)
+                        with color():
+                            puts("Batch is full, deploying batch...",show_prefix=True)
+                        with color("debug"):
+                            puts(pprint.pformat(outfiles,depth=3),show_prefix=False)
+                        set_hosts(env.hosts[:batch_size])
                         execute(deploy,schema_path,nids)
                         execute(get_results,outfiles)
                         good_hosts = get_good_hosts()
-                        set_hosts(good_hosts)
+                        env.roledefs = None
                         batch_size = 0
                         nids = {}
                         outfiles = {}
-                        env.roledefs = None
+                        set_hosts(good_hosts)
+                    else:
+                        with color():
+                            puts("Adding experiment to current batch: {}".format(output_f), show_prefix=True)
+                    machines = env.hosts[batch_size : batch_size + ntotal]
+                    batch_size += ntotal
                 else:
-                    pids = []
-                    print("Deploying: {}".format(output_f))
-                    for n in range(ntotal):
-                        if n < nnodes:
-                            cmd = "./rundb -nid{}".format(n)
-                        elif n < nnodes+nclnodes:
-                            cmd = "./runcl -nid{}".format(n)
-                        elif n == nnodes+nclnodes:
-                            assert(CC_ALG == 'CALVIN')
-                            cmd = "./runsq -nid{}".format(n)
-                        else:
-                            assert(false)
-                        print(cmd)
-                        cmd = shlex.split(cmd)
-                        ofile_n = "{}{}_{}.out".format(env.result_dir,n,output_f)
-                        ofile = open(ofile_n,'w')
-                        p = subprocess.Popen(cmd,stdout=ofile,stderr=ofile)
-                        pids.insert(0,p)
-                    for n in range(ntotal):
-                        pids[n].wait()
+                    machines = env.hosts[:ntotal]
+
+                set_hosts(machines)
+                new_roles=execute(assign_roles,nnodes,nclnodes,append=env.batch_mode)[env.host]
+                new_nids = execute(write_ifconfig,new_roles)[env.host]
+                nids.update(new_nids)
+                for host,nid in new_nids.iteritems():
+                    outfiles[host] = "{}_{}.out".format(nid,output_f) 
+
+                if cfgs["WORKLOAD"] == "TPCC":
+                    schema = "benchmarks/TPCC_short_schema.txt"
+                elif cfgs["WORKLOAD"] == "YCSB":
+                    schema = "benchmarks/YCSB_schema.txt"
+                # NOTE: copy_files will fail if any (possibly) stray processes
+                # are still running one of the executables. Setting the 'kill'
+                # flag in environment.py to true to kill these processes. This
+                # is useful for running real experiments but dangerous when both
+                # of us are debugging...
+                execute(copy_files,schema,output_f)
+                
+                last_exp = experiments.index(e) == len(experiments) - 1
+                if not env.batch_mode or last_exp:
+                    if env.batch_mode:
+                        set_hosts(good_hosts[:batch_size])
+                        print("Deploying last batch")
+                    else:
+                        print("Deploying: {}".format(output_f))
+                    if env.cluster != 'istc':
+                        # Sync clocks before each experiment
+                        print("Syncing Clocks...")
+                        execute(sync_clocks)
+                    execute(deploy,schema_path,nids)
+                    execute(get_results,outfiles)
+                    good_hosts = get_good_hosts()
+                    set_hosts(good_hosts)
+                    batch_size = 0
+                    nids = {}
+                    outfiles = {}
+                    env.roledefs = None
+            else:
+                pids = []
+                print("Deploying: {}".format(output_f))
+                for n in range(ntotal):
+                    if n < nnodes:
+                        cmd = "./rundb -nid{}".format(n)
+                    elif n < nnodes+nclnodes:
+                        cmd = "./runcl -nid{}".format(n)
+                    elif n == nnodes+nclnodes:
+                        assert(CC_ALG == 'CALVIN')
+                        cmd = "./runsq -nid{}".format(n)
+                    else:
+                        assert(false)
+                    print(cmd)
+                    cmd = shlex.split(cmd)
+                    ofile_n = "{}{}_{}.out".format(env.result_dir,n,output_f)
+                    ofile = open(ofile_n,'w')
+                    p = subprocess.Popen(cmd,stdout=ofile,stderr=ofile)
+                    pids.insert(0,p)
+                for n in range(ntotal):
+                    pids[n].wait()
 
 
 def succeeded(outcomes):
