@@ -139,14 +139,14 @@ for exp in exps:
                                 r = get_summary(res_list[0],r)
                             else:
                                 r2 = get_summary(res_list[0],r2)
-                        get_lstats(r)
-                        get_lstats(r2)
-                        with open(p_sfile,'w') as f:
-                            p = pickle.Pickler(f)
-                            p.dump(r)
-                        with open(p_cfile,'w') as f:
-                            p = pickle.Pickler(f)
-                            p.dump(r2)
+                    get_lstats(r)
+                    get_lstats(r2)
+                    with open(p_sfile,'w') as f:
+                        p = pickle.Pickler(f)
+                        p.dump(r)
+                    with open(p_cfile,'w') as f:
+                        p = pickle.Pickler(f)
+                        p.dump(r2)
                 else:
                     with open(p_sfile,'r') as f:
                         p = pickle.Unpickler(f)
@@ -167,8 +167,9 @@ for exp in exps:
                     merge(s2,r2)
 
             if plot:
-                merge_results(s,exp_cnt,drop)
-                merge_results(s2,exp_cnt,drop)
+                print(s)
+                s = merge_results(s,exp_cnt,drop,cfgs["NODE_CNT"])
+                s2 = merge_results(s2,exp_cnt,drop,cfgs["CLIENT_NODE_CNT"])
                 summary[output_f] = s
                 summary_client[output_f] = s2
                 print(output_f)

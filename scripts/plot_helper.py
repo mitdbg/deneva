@@ -8,6 +8,8 @@ import latency_stats as ls
 #from experiments import experiments as experiments
 #from experiments import configs
 
+plot_cnt = 0
+
 PATH=os.getcwd()
 
 def tput_plotter(title,x_name,v_name,fmt,exp,summary,summary_client):
@@ -18,8 +20,6 @@ def tput_plotter(title,x_name,v_name,fmt,exp,summary,summary_client):
     _cfg_fmt.remove(v_name)
     p_idx = _cfg_fmt.index("PART_CNT")
     _cfg_fmt.remove("PART_CNT")
-    t_idx = _cfg_fmt.index("MAX_TXN_PER_PART")
-    _cfg_fmt.remove("MAX_TXN_PER_PART")
     _cfg = list(exp)
     x_vals = []
     v_vals = []
@@ -29,7 +29,6 @@ def tput_plotter(title,x_name,v_name,fmt,exp,summary,summary_client):
         v_vals.append(p[v_idx])
         del p[v_idx]
         del p[p_idx]
-        del p[t_idx]
     x_vals = sorted(list(set(x_vals)))
     v_vals = sorted(list(set(v_vals)))
 #    if x_name == "NODE_CNT" or v_name == "NODE_CNT":
@@ -86,9 +85,13 @@ def tput(xval,vval,summary,
         vname="CC_ALG",
         title=""
         ):
+    global plot_cnt
     tpt = {}
-    name = 'tput_{}_{}_{}'.format(xname.lower(),vname.lower(),title.replace(" ","_").lower())
-    _title = 'System Throughput {}'.format(title)
+    name = 'tput_plot{}'.format(plot_cnt)
+    plot_cnt += 1
+#    name = 'tput_{}_{}_{}'.format(xname.lower(),vname.lower(),title.replace(" ","_").lower())
+#    _title = 'System Throughput {}'.format(title)
+    _title = title
 
     print "X-axis: " + str(xval)
     print "Var: " + str(vval)
@@ -127,14 +130,10 @@ def tput(xval,vval,summary,
 #                my_cfg[my_cfg_fmt.index("PART_CNT")] = n_thd*n_cnt
                 my_cfg_fmt = my_cfg_fmt + ["PART_CNT"]
                 my_cfg = my_cfg + [n_thd*n_cnt]
-                my_cfg_fmt = my_cfg_fmt + ["MAX_TXN_PER_PART"]
-                my_cfg = my_cfg + [3000000]
             else:
 #                my_cfg[my_cfg_fmt.index("PART_CNT")] = n_cnt
                 my_cfg_fmt = my_cfg_fmt + ["PART_CNT"]
                 my_cfg = my_cfg + [n_cnt]
-                my_cfg_fmt = my_cfg_fmt + ["MAX_TXN_PER_PART"]
-                my_cfg = my_cfg + [3000000]
 #                my_cfg.pop(my_cfg_fmt.index("PART_CNT"))
 #                my_cfg_fmt.remove("PART_CNT")
 #            if "CLIENT_NODE_CNT" not in my_cfg_fmt:
@@ -216,14 +215,10 @@ def lat(xval,vval,summary,
 #                my_cfg[my_cfg_fmt.index("PART_CNT")] = n_thd*n_cnt
                     my_cfg_fmt = my_cfg_fmt + ["PART_CNT"]
                     my_cfg = my_cfg + [n_thd*n_cnt]
-                    my_cfg_fmt = my_cfg_fmt + ["MAX_TXN_PER_PART"]
-                    my_cfg = my_cfg + [3000000]
                 else:
 #                my_cfg[my_cfg_fmt.index("PART_CNT")] = n_cnt
                     my_cfg_fmt = my_cfg_fmt + ["PART_CNT"]
                     my_cfg = my_cfg + [n_cnt]
-                    my_cfg_fmt = my_cfg_fmt + ["MAX_TXN_PER_PART"]
-                    my_cfg = my_cfg + [3000000]
 #                my_cfg.pop(my_cfg_fmt.index("PART_CNT"))
 #                my_cfg_fmt.remove("PART_CNT")
 #            if "CLIENT_NODE_CNT" not in my_cfg_fmt:
@@ -318,14 +313,10 @@ def abort_rate(xval,vval,summary,
 #                my_cfg[my_cfg_fmt.index("PART_CNT")] = n_thd*n_cnt
                 my_cfg_fmt = my_cfg_fmt + ["PART_CNT"]
                 my_cfg = my_cfg + [n_thd*n_cnt]
-                my_cfg_fmt = my_cfg_fmt + ["MAX_TXN_PER_PART"]
-                my_cfg = my_cfg + [3000000]
             else:
 #                my_cfg[my_cfg_fmt.index("PART_CNT")] = n_cnt
                 my_cfg_fmt = my_cfg_fmt + ["PART_CNT"]
                 my_cfg = my_cfg + [n_cnt]
-                my_cfg_fmt = my_cfg_fmt + ["MAX_TXN_PER_PART"]
-                my_cfg = my_cfg + [3000000]
 #                my_cfg.pop(my_cfg_fmt.index("PART_CNT"))
 #                my_cfg_fmt.remove("PART_CNT")
 #            if "CLIENT_NODE_CNT" not in my_cfg_fmt:
@@ -523,14 +514,10 @@ def time_breakdown(xval,summary,
 #                my_cfg[my_cfg_fmt.index("PART_CNT")] = n_thd*n_cnt
             my_cfg_fmt = my_cfg_fmt + ["PART_CNT"]
             my_cfg = my_cfg + [n_thd*n_cnt]
-            my_cfg_fmt = my_cfg_fmt + ["MAX_TXN_PER_PART"]
-            my_cfg = my_cfg + [3000000]
         else:
 #                my_cfg[my_cfg_fmt.index("PART_CNT")] = n_cnt
             my_cfg_fmt = my_cfg_fmt + ["PART_CNT"]
             my_cfg = my_cfg + [n_cnt]
-            my_cfg_fmt = my_cfg_fmt + ["MAX_TXN_PER_PART"]
-            my_cfg = my_cfg + [3000000]
 #                my_cfg.pop(my_cfg_fmt.index("PART_CNT"))
 #                my_cfg_fmt.remove("PART_CNT")
 #            if "CLIENT_NODE_CNT" not in my_cfg_fmt:

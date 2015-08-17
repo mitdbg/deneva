@@ -19,6 +19,86 @@ SHORTNAMES = {
     "ZIPF_THETA" : "SKEW",
 }
 
+stat_map = {
+'latency': [],
+ 'txn_sent': [],
+ 'all_lat': [],
+ 'msg_sent': [],
+ 'time_msg_sent': [],
+ 'msg_rcv': [],
+ 'txn_cnt': [],
+ 'time_tport_rcv': [],
+ 'tport_lat': [],
+ 'time_tport_send': [],
+ 'clock_time': [],
+ 'msg_bytes': [],
+ 'time_getqry': [],
+'cc_hold_time': [],
+ 'abort_cnt': [],
+ 'time_abort': [],
+ 'txn_time_wait': [],
+ 'time_validate': [],
+ 'txn_time_copy': [],
+ 'msg_rcv': [],
+ 'cc_wait_cnt': [],
+ 'qry_rprep': [],
+ 'time_index': [],
+ 'time_tport_send': [],
+ 'tport_lat': [],
+ 'cc_wait_abrt_time': [],
+ 'latency': [],
+ 'time_cleanup': [],
+ 'time_lock_man': [],
+ 'qq_full': [],
+ 'cc_hold_abrt_time': [],
+ 'spec_abort_cnt': [],
+ 'time_msg_sent': [],
+ 'qry_rack': [],
+ 'qq_lat': [],
+ 'txn_cnt': [],
+ 'time_man': [],
+ 'time_rqry': [],
+ 'qry_rfin': [],
+ 'aq_full': [],
+ 'cc_wait_time': [],
+ 'time_wait': [],
+ 'msg_bytes': [],
+ 'clock_time': [],
+ 'qry_rqry_rsp': [],
+ 'time_tport_rcv': [],
+ 'rbk_abort_cnt': [],
+ 'txn_abort_cnt': [],
+ 'qry_rinit': [],
+ 'txn_time_q_work': [],
+ 'txn_time_man': [],
+ 'txn_time_ts': [],
+ 'txn_time_net': [],
+ 'time_clock_rwait': [],
+ 'run_time': [],
+ 'txn_time_clean': [],
+ 'txn_time_misc': [],
+ 'qry_rqry': [],
+ 'cc_wait_abrt_cnt': [],
+ 'time_qq': [],
+ 'txn_time_twopc': [],
+ 'mpq_cnt': [],
+ 'cflt_cnt': [],
+ 'time_wait_rem': [],
+ 'qry_cnt': [],
+ 'time_wait_lock': [],
+ 'txn_time_idx': [],
+ 'txn_time_abrt': [],
+ 'msg_sent': [],
+ 'qry_rtxn': [],
+ 'time_clock_wait': [],
+ 'time_work': [],
+ 'time_wait_lock_rem': [],
+ 'spec_commit_cnt': [],
+ 'time_ts_alloc': [],
+ 'txn_time_q_abrt': []
+
+}
+
 cnts = ["all_abort"]
 cflts = ["w_cflt","d_cflt","cnp_cflt","c_cflt","ol_cflt","s_cflt","w_abrt","d_abrt","cnp_abrt","c_abrt","ol_abrt","s_abrt"]
 lats = ["all_lat"]
@@ -85,7 +165,7 @@ def get_summary(sfile,summary={}):
         if not found:
             if re.search("prog",last_line):
                 line = last_line.rstrip('\n')
-                line = line[9:] #remove '[prog 0] ' from start of line 
+                line = line[7:] #remove '[prog] ' from start of line 
                 results = re.split(',',line)
                 process_results(summary,results)
     return summary
@@ -122,49 +202,70 @@ def get_network_stats(n_file):
     return stats
 
 def merge(summary,tmp):
-    for k in summary.keys():
-        if type(summary[k]) is not list:
-            continue
+#    for k in summary.keys():
+    for k in stat_map.keys():
         try:
-            summary[k].append(tmp[k].pop())
+            if type(summary[k]) is not list:
+                continue
+            try:
+                for i in range(len(tmp[k])):
+                    summary[k].append(tmp[k].pop())
+            except KeyError:
+                print("KeyError {}".format(k))
         except KeyError:
-            print("KeyError {}".format(k))
-
-
-def merge_results(summary,cnt,drop):
-    for k in summary.keys():
-        if type(summary[k]) is not list:
+            try:
+                if type(tmp[k]) is list:
+                    summary[k] = tmp[k]
+            except KeyError:
+                continue
             continue
-        if k == 'all_lat':
-            if len(summary[k]) > 0 and isinstance(summary[k][0],list):
-                l = []
-                for c in range(cnt):
-                    print "length of summary ", len(summary[k])
-                    try:
-                        m=summary[k].pop()
-                        print "Length of m ",len(m)
-                        l = sorted(l + summary[k].pop())
-                        #l = sorted(l + m)
-                    except TypeError:
-                        print "m=",m
-                summary[k]=l
-        else:
-            l = []
-            for c in range(cnt):
-                try:
-                    l.append(summary[k].pop())
-                except IndexError:
-                    print("IndexError {} {}/{}".format(k,c,cnt))
-                    continue
-            if drop:
-                l.remove(max(l))
-                l.remove(min(l))
+
+
+def merge_results(summary,cnt,drop,gap):
+#    for k in summary.keys():
+    new_summary = {}
+    for k in stat_map.keys():
+        try:
+            if type(summary[k]) is not list:
+                continue
+            new_summary[k] = []
+            for g in range(gap):
+                if k == 'all_lat':
+                    if len(summary[k]) > 0 and isinstance(summary[k][0],list):
+                        l = []
+                        for c in range(cnt):
+                            print "length of summary ", len(summary[k])
+                            try:
+                                m=summary[k].pop()
+                                print "Length of m ",len(m)
+                                l = sorted(l + summary[k].pop())
+                                #l = sorted(l + m)
+                            except TypeError:
+                                print "m=",m
+                        new_summary[k]=l
+                else:
+                    l = []
+                    for c in range(cnt):
+                        try:
+                            l.append(summary[k][(c)*gap+g])
+#                            l.append(summary[k].pop(c*gap))
+                        except IndexError:
+                            print("IndexError {} {}/{}".format(k,c,cnt))
+                            continue
+                    if drop:
+                        l.remove(max(l))
+                        l.remove(min(l))
 #            print("{}: {}".format(k,l))
-            summary[k].append(avg(l))
+                    if k == "txn_cnt" or k == "clock_time":
+                        print(l)
+                    new_summary[k].append(avg(l))
 
 #        if k == "txn_cnt" or k == "clock_time":
 #            print("{}: {} {}".format(k,avg(l),stdev(l)))
-            
+        except KeyError:
+            continue
+    return new_summary
+                
 def process_results(summary,results):
     for r in results:
         (name,val) = re.split('=',r)

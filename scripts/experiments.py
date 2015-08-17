@@ -7,6 +7,7 @@ import math
 fmt_tpcc = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","NUM_WH","MAX_TXN_IN_FLIGHT"]]
 fmt_nd = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","NUM_WH","MAX_TXN_IN_FLIGHT","NETWORK_DELAY"]]
 fmt_ycsb = [["CLIENT_NODE_CNT","NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","CLIENT_THREAD_CNT","THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC","PART_PER_TXN","PART_CNT"]]
+fmt_ycsb_plot = [["CLIENT_NODE_CNT","NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","CLIENT_THREAD_CNT","THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC","PART_PER_TXN"]]
 fmt_nt = [["NODE_CNT","CLIENT_NODE_CNT","NETWORK_TEST"]]
 
 
@@ -102,15 +103,18 @@ def partition_sweep_plot(summary,summary_client):
 
 def node_sweep():
     fmt = fmt_ycsb
+#    nnodes = [8]
     nnodes = [16,8,4,2,1]
+#    nmpr=[5]
     nmpr=[0,1,5]
-#    nalgos=['OCC','MVCC','TIMESTAMP','VLL']
+#    nalgos=['VLL']
     nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','TIMESTAMP','HSTORE','VLL']
     #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
     nthreads=[2]
     ncthreads=[4]
     ntifs=[1000]
     nzipf=[0.0]
+#    nwr_perc=[0.5]
     nwr_perc=[0.0,0.5]
     ntxn=[3000000]
     nparts = [2]
@@ -124,6 +128,19 @@ def node_sweep_plot(summary,summary_client):
     v_name = "CC_ALG"
     title = "Scalability"
     tput_plotter(title,x_name,v_name,fmt,exp,summary,summary_client);
+
+def node_sweep_plot2(summary,summary_client):
+    from plot_helper import tput
+    fmt,exp = node_sweep()
+    fmt = ["CLIENT_NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","MPR","CLIENT_THREAD_CNT","THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC","PART_PER_TXN"]
+    x_name = "NODE_CNT"
+    v_name = "CC_ALG"
+    x_vals = [1,2,4,8,16]
+    v_vals = ['WAIT_DIE','NO_WAIT','MVCC','TIMESTAMP','HSTORE','VLL']
+    for mpr,wr in itertools.product([0,1,5],[0.0,0.5]):
+        c = [1,3000000,"YCSB",mpr,4,2,1000,0.0,1.0-wr,wr,2]
+        title = "YCSB System Throughput {}% Writes, {}% Multi-part rate".format(wr*100,mpr);
+        tput(x_vals,v_vals,summary,cfg_fmt=fmt,cfg=c,xname=x_name,vname=v_name,title=title)
 
 def mpr_sweep():
     fmt = fmt_ycsb
@@ -306,7 +323,8 @@ experiment_map = {
     'network_experiment_plot' : network_experiment_plot,
     'partition_sweep_plot': partition_sweep_plot,
     'mpr_sweep_plot': mpr_sweep_plot,
-    'node_sweep_plot': node_sweep_plot,
+    'node_sweep_plot': node_sweep_plot2,
+#    'node_sweep_plot': node_sweep_plot,
     'abort_penalty_sweep_plot': abort_penalty_sweep_plot,
 }
 
