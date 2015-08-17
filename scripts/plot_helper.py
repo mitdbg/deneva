@@ -72,9 +72,11 @@ def tput_plotter(title,x_name,v_name,fmt,exp,summary,summary_client):
         title2 = title + title2
             
         tput(x_vals,v_vals,summary,cfg_fmt=_cfg_fmt,cfg=c,xname=x_name,vname=v_name,title=title2)
-#lat(x_vals,v_vals,summary_client,cfg_fmt=_cfg_fmt,cfg=c,xname=x_name,vname=v_name,title=title2,stat_types=["99th","90th","mean","max"])
+        abort_rate(x_vals,v_vals,summary,cfg_fmt=_cfg_fmt,cfg=c,xname=x_name,vname=v_name,title=title2)
+        lat(x_vals,v_vals,summary_client,cfg_fmt=_cfg_fmt,cfg=c,xname=x_name,vname=v_name,title=title2,stat_types=["99th"])
+#        lat(x_vals,v_vals,summary_client,cfg_fmt=_cfg_fmt,cfg=c,xname=x_name,vname=v_name,title=title2,stat_types=["99th","90th","mean","max"])
 #        for v in v_vals:
-#            time_breakdown(x_vals,summary,normalized=True,xname=x_name,cfg_fmt=_cfg_fmt+[v_name],cfg=c+[v],title=title2)
+#            time_breakdown(x_vals,summary,normalized=True,xname=x_name,cfg_fmt=_cfg_fmt+[v_name],cfg=c+[v],title=title2+v_name)
 
 
 def tput(xval,vval,summary,
@@ -128,6 +130,9 @@ def tput(xval,vval,summary,
                 my_cfg_fmt = my_cfg_fmt + ["MAX_TXN_PER_PART"]
                 my_cfg = my_cfg + [3000000]
             else:
+#                my_cfg[my_cfg_fmt.index("PART_CNT")] = n_cnt
+                my_cfg_fmt = my_cfg_fmt + ["PART_CNT"]
+                my_cfg = my_cfg + [n_cnt]
                 my_cfg_fmt = my_cfg_fmt + ["MAX_TXN_PER_PART"]
                 my_cfg = my_cfg + [3000000]
 #                my_cfg.pop(my_cfg_fmt.index("PART_CNT"))
@@ -195,8 +200,10 @@ def lat(xval,vval,summary,
             for x,xi in zip(xval,range(len(xval))):
                 my_cfg_fmt = cfg_fmt + [xname] + [vname]
                 my_cfg = cfg + [x] + [v]
-#                my_cfg[my_cfg_fmt.index(xname)] = x
-#                my_cfg[my_cfg_fmt.index(vname)] = v
+#            my_cfg_fmt = cfg_fmt
+#            my_cfg = cfg
+#            my_cfg[my_cfg_fmt.index(xname)] = x
+#            my_cfg[my_cfg_fmt.index(vname)] = v
                 n_cnt = my_cfg[my_cfg_fmt.index("NODE_CNT")]
                 n_clt = my_cfg[my_cfg_fmt.index("CLIENT_NODE_CNT")]
                 my_cfg[my_cfg_fmt.index("CLIENT_NODE_CNT")] = int(math.ceil(n_cnt/2)) if n_cnt > 1 else 1
@@ -204,13 +211,24 @@ def lat(xval,vval,summary,
                 my_cfg[my_cfg_fmt.index("PART_PER_TXN")] = n_ppt if n_ppt <= n_cnt else 1
                 n_thd =  my_cfg[my_cfg_fmt.index("THREAD_CNT")]
                 n_alg =  my_cfg[my_cfg_fmt.index("CC_ALG")]
-                my_cfg[my_cfg_fmt.index("THREAD_CNT")] = 1 if n_alg == "HSTORE" or n_alg == "HSTORE_SPEC" else n_thd
-#    if xname == "NODE_CNT":
-#                    my_cfg_fmt = my_cfg_fmt + ["CLIENT_NODE_CNT"]
-#                    my_cfg = my_cfg + [int(math.ceil(x/2)) if x > 1 else 1]
-#                if xname != "PART_PER_TXN" and vname != "PART_PER_TXN":
-#                    my_cfg_fmt = my_cfg_fmt + ["PART_PER_TXN"]
-#                    my_cfg = my_cfg + [1 if x == 1 else 2]
+#            my_cfg[my_cfg_fmt.index("THREAD_CNT")] = 1 if n_alg == "HSTORE" or n_alg == "HSTORE_SPEC" else n_thd
+                if n_alg == "HSTORE" or n_alg == "HSTORE_SPEC":
+#                my_cfg[my_cfg_fmt.index("PART_CNT")] = n_thd*n_cnt
+                    my_cfg_fmt = my_cfg_fmt + ["PART_CNT"]
+                    my_cfg = my_cfg + [n_thd*n_cnt]
+                    my_cfg_fmt = my_cfg_fmt + ["MAX_TXN_PER_PART"]
+                    my_cfg = my_cfg + [3000000]
+                else:
+#                my_cfg[my_cfg_fmt.index("PART_CNT")] = n_cnt
+                    my_cfg_fmt = my_cfg_fmt + ["PART_CNT"]
+                    my_cfg = my_cfg + [n_cnt]
+                    my_cfg_fmt = my_cfg_fmt + ["MAX_TXN_PER_PART"]
+                    my_cfg = my_cfg + [3000000]
+#                my_cfg.pop(my_cfg_fmt.index("PART_CNT"))
+#                my_cfg_fmt.remove("PART_CNT")
+#            if "CLIENT_NODE_CNT" not in my_cfg_fmt:
+#                my_cfg_fmt = my_cfg_fmt + ["CLIENT_NODE_CNT"]
+#                my_cfg = my_cfg + [int(math.ceil(n_cnt/2)) if n_cnt > 1 else 1]
 
                 cfgs = get_cfgs(my_cfg_fmt, my_cfg)
                 cfgs = get_outfile_name(cfgs,my_cfg_fmt)
@@ -282,8 +300,40 @@ def abort_rate(xval,vval,summary,
         tpt[_v] = [0] * len(xval)
 
         for x,xi in zip(xval,range(len(xval))):
-            cfgs = get_cfgs(cfg_fmt + [xname] + [vname], cfg + [x] + [v] )
-            cfgs = get_outfile_name(cfgs)
+            my_cfg_fmt = cfg_fmt + [xname] + [vname]
+            my_cfg = cfg + [x] + [v]
+#            my_cfg_fmt = cfg_fmt
+#            my_cfg = cfg
+#            my_cfg[my_cfg_fmt.index(xname)] = x
+#            my_cfg[my_cfg_fmt.index(vname)] = v
+            n_cnt = my_cfg[my_cfg_fmt.index("NODE_CNT")]
+            n_clt = my_cfg[my_cfg_fmt.index("CLIENT_NODE_CNT")]
+            my_cfg[my_cfg_fmt.index("CLIENT_NODE_CNT")] = int(math.ceil(n_cnt/2)) if n_cnt > 1 else 1
+            n_ppt = my_cfg[my_cfg_fmt.index("PART_PER_TXN")]
+            my_cfg[my_cfg_fmt.index("PART_PER_TXN")] = n_ppt if n_ppt <= n_cnt else 1
+            n_thd =  my_cfg[my_cfg_fmt.index("THREAD_CNT")]
+            n_alg =  my_cfg[my_cfg_fmt.index("CC_ALG")]
+#            my_cfg[my_cfg_fmt.index("THREAD_CNT")] = 1 if n_alg == "HSTORE" or n_alg == "HSTORE_SPEC" else n_thd
+            if n_alg == "HSTORE" or n_alg == "HSTORE_SPEC":
+#                my_cfg[my_cfg_fmt.index("PART_CNT")] = n_thd*n_cnt
+                my_cfg_fmt = my_cfg_fmt + ["PART_CNT"]
+                my_cfg = my_cfg + [n_thd*n_cnt]
+                my_cfg_fmt = my_cfg_fmt + ["MAX_TXN_PER_PART"]
+                my_cfg = my_cfg + [3000000]
+            else:
+#                my_cfg[my_cfg_fmt.index("PART_CNT")] = n_cnt
+                my_cfg_fmt = my_cfg_fmt + ["PART_CNT"]
+                my_cfg = my_cfg + [n_cnt]
+                my_cfg_fmt = my_cfg_fmt + ["MAX_TXN_PER_PART"]
+                my_cfg = my_cfg + [3000000]
+#                my_cfg.pop(my_cfg_fmt.index("PART_CNT"))
+#                my_cfg_fmt.remove("PART_CNT")
+#            if "CLIENT_NODE_CNT" not in my_cfg_fmt:
+#                my_cfg_fmt = my_cfg_fmt + ["CLIENT_NODE_CNT"]
+#                my_cfg = my_cfg + [int(math.ceil(n_cnt/2)) if n_cnt > 1 else 1]
+
+            cfgs = get_cfgs(my_cfg_fmt, my_cfg)
+            cfgs = get_outfile_name(cfgs,my_cfg_fmt)
             if cfgs not in summary.keys(): 
                 print("Not in summary: {}".format(cfgs))
                 break
@@ -293,14 +343,18 @@ def abort_rate(xval,vval,summary,
                 tot_abrt_cnt = sum(summary[cfgs]['abort_cnt'])
                 avg_abrt_cnt = avg(summary[cfgs]['abort_cnt'])
             except KeyError:
-                print("KeyError: {} {} {} -- {}".format(v,x,cfg,cfgs))
+                print("KeyError: {} {} {} -- {}".format(v,x,my_cfg,cfgs))
                 tpt[_v][xi] = 0
                 continue
             # System Throughput: total txn count / average of all node's run time
             # Per Node Throughput: avg txn count / average of all node's run time
             # Per txn latency: total of all node's run time / total txn count
 #print("Aborts:: {} / {} = {} -- {}".format(tot_abrt_cnt, tot_txn_cnt,(float(tot_abrt_cnt) / float(tot_txn_cnt)),cfgs))
-            tpt[_v][xi] = (float(tot_abrt_cnt) / float(tot_txn_cnt))
+            try:
+                tpt[_v][xi] = (float(tot_abrt_cnt) / float(tot_txn_cnt))
+            except ZeroDivisionError:
+                print("ZeroDivisionError: {} {} {} -- {}".format(v,x,my_cfg,cfgs));
+                tpt[_v][xi] = 0
             #tpt[v][xi] = (avg_txn_cnt/avg_run_time)
 
     bbox = [0.5,0.95]
@@ -453,8 +507,10 @@ def time_breakdown(xval,summary,
     for x,i in zip(xval,range(len(xval))):
         my_cfg_fmt = cfg_fmt + [xname]
         my_cfg = cfg + [x]
-#        my_cfg[my_cfg_fmt.index(xname)] = x
-#        my_cfg[my_cfg_fmt.index(vname)] = v
+#            my_cfg_fmt = cfg_fmt
+#            my_cfg = cfg
+#            my_cfg[my_cfg_fmt.index(xname)] = x
+#            my_cfg[my_cfg_fmt.index(vname)] = v
         n_cnt = my_cfg[my_cfg_fmt.index("NODE_CNT")]
         n_clt = my_cfg[my_cfg_fmt.index("CLIENT_NODE_CNT")]
         my_cfg[my_cfg_fmt.index("CLIENT_NODE_CNT")] = int(math.ceil(n_cnt/2)) if n_cnt > 1 else 1
@@ -462,17 +518,27 @@ def time_breakdown(xval,summary,
         my_cfg[my_cfg_fmt.index("PART_PER_TXN")] = n_ppt if n_ppt <= n_cnt else 1
         n_thd =  my_cfg[my_cfg_fmt.index("THREAD_CNT")]
         n_alg =  my_cfg[my_cfg_fmt.index("CC_ALG")]
-        my_cfg[my_cfg_fmt.index("THREAD_CNT")] = 1 if n_alg == "HSTORE" or n_alg == "HSTORE_SPEC" else n_thd
-#        if xname == "NODE_CNT":
-#            my_cfg_fmt = my_cfg_fmt + ["CLIENT_NODE_CNT"]
-#            my_cfg = my_cfg + [int(math.ceil(x/2)) if x > 1 else 1]
-#        if xname != "PART_PER_TXN":
-#            my_cfg_fmt = my_cfg_fmt + ["PART_PER_TXN"]
-#            my_cfg = my_cfg + [1 if x == 1 else 2]
+#            my_cfg[my_cfg_fmt.index("THREAD_CNT")] = 1 if n_alg == "HSTORE" or n_alg == "HSTORE_SPEC" else n_thd
+        if n_alg == "HSTORE" or n_alg == "HSTORE_SPEC":
+#                my_cfg[my_cfg_fmt.index("PART_CNT")] = n_thd*n_cnt
+            my_cfg_fmt = my_cfg_fmt + ["PART_CNT"]
+            my_cfg = my_cfg + [n_thd*n_cnt]
+            my_cfg_fmt = my_cfg_fmt + ["MAX_TXN_PER_PART"]
+            my_cfg = my_cfg + [3000000]
+        else:
+#                my_cfg[my_cfg_fmt.index("PART_CNT")] = n_cnt
+            my_cfg_fmt = my_cfg_fmt + ["PART_CNT"]
+            my_cfg = my_cfg + [n_cnt]
+            my_cfg_fmt = my_cfg_fmt + ["MAX_TXN_PER_PART"]
+            my_cfg = my_cfg + [3000000]
+#                my_cfg.pop(my_cfg_fmt.index("PART_CNT"))
+#                my_cfg_fmt.remove("PART_CNT")
+#            if "CLIENT_NODE_CNT" not in my_cfg_fmt:
+#                my_cfg_fmt = my_cfg_fmt + ["CLIENT_NODE_CNT"]
+#                my_cfg = my_cfg + [int(math.ceil(n_cnt/2)) if n_cnt > 1 else 1]
 
         cfgs = get_cfgs(my_cfg_fmt, my_cfg)
         cfgs = get_outfile_name(cfgs,my_cfg_fmt)
-        print cfgs
         if cfgs not in summary.keys(): break
         try:
             time_index[i] = avg(summary[cfgs]['txn_time_idx'])

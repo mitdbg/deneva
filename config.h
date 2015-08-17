@@ -5,12 +5,12 @@
 /***********************************************/
 // Simulation + Hardware
 /***********************************************/
-#define NODE_CNT 2
+#define NODE_CNT 1
 #define THREAD_CNT 2
 // REM_THREAD_CNT should be at least NODE_CNT*THREAD_CNT to avoid deadlock
 #define REM_THREAD_CNT 1
 // PART_CNT should be at least NODE_CNT
-#define PART_CNT 2
+#define PART_CNT 1
 #define CLIENT_NODE_CNT 1
 #define CLIENT_THREAD_CNT 4
 #define CLIENT_REM_THREAD_CNT 1
@@ -78,7 +78,7 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, OCC, VLL, CALVIN
-#define CC_ALG NO_WAIT
+#define CC_ALG VLL
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER         false
@@ -147,11 +147,11 @@
 #define INIT_PARALLELISM 4
 #define SYNTH_TABLE_SIZE 2097152
 #define ZIPF_THETA 0.0
-#define READ_PERC 1.0
-#define WRITE_PERC 0.0
+#define READ_PERC 0.5
+#define WRITE_PERC 0.5
 #define SCAN_PERC           0
 #define SCAN_LEN          20
-#define PART_PER_TXN 2
+#define PART_PER_TXN 1
 #define PERC_MULTI_PART     MPR 
 #define REQ_PER_QUERY       16
 #define FIELD_PER_TUPLE       10
@@ -168,9 +168,9 @@
 // are not modeled.
 #define TPCC_ACCESS_ALL       false 
 #define WH_UPDATE         true
-#define NUM_WH 2
+#define NUM_WH 1
 // % of transactions that access multiple partitions
-#define MPR 0
+#define MPR 5
 #define MPR_NEWORDER      20 // In %
 // Smaller item selection to model contention
 #define CONTENTION false

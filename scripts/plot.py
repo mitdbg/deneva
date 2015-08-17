@@ -12,6 +12,7 @@ PATH=os.getcwd()
 ###########################################
 # Get experiments from command line
 ###########################################
+blah = False
 drop = False
 store_tmp = True
 use_tmp = False
@@ -19,10 +20,13 @@ exp_cnt = 1
 last_arg = None
 plot = True;
 clear = False;
+timedate = [];
 exps = []
 for arg in sys.argv[1:]:
     if last_arg == "-n":
         exp_cnt = int(arg)
+    elif last_arg == "-tdate":
+        timedate.append(arg)
     elif arg == "-clear":
         clear = True
     elif arg == "-s":
@@ -33,6 +37,8 @@ for arg in sys.argv[1:]:
         plot = False
     elif arg == "-u":
         use_tmp = True
+    elif arg == "-n" or arg == "-tdate":
+        blah = True
 #    elif exp_cnt == sys.maxint:
 #        exp_cnt = int(arg)
 #if arg == "-n":
@@ -40,7 +46,7 @@ for arg in sys.argv[1:]:
     elif arg == "-d":
         drop = True
     elif arg == "-help" or arg == "-h":
-        sys.exit("Usage: {}".format(sys.argv[0]))
+        sys.exit("Usage: {} [-np no plot] [-clear clear all pickle files] [-tdate [date-time]] ".format(sys.argv[0]))
     else:
         exps.append(arg)
     last_arg = arg
@@ -61,19 +67,23 @@ for exp in exps:
     fmt,experiments = experiment_map[exp]()
 
     for e in experiments:
-        r = {}
-        r2 = {}
+        s = {}
+        s2 = {}
         timestamp = 0
-        if "HSTORE" in e or "HSTORE_SPEC" in e:
-            nfmt=fmt
-            ne=e
-        else:
-            nfmt=fmt[:-1]
-            ne=e[:-1]
-        cfgs = get_cfgs(nfmt,ne)
-        output_f = get_outfile_name(cfgs,nfmt,["*","*"])
+#        if "HSTORE" in e or "HSTORE_SPEC" in e:
+#            nfmt=fmt
+#            ne=e
+#        else:
+#            nfmt=fmt[:-1]
+#            ne=e[:-1]
+#        cfgs = get_cfgs(nfmt,ne)
+        cfgs = get_cfgs(fmt,e)
+        output_f = get_outfile_name(cfgs,fmt,["*","*"])
+#        output_f = get_outfile_name(cfgs,nfmt,["*","*"])
         is_network_test = cfgs["NETWORK_TEST"] == "true"
         if is_network_test:
+            r = {}
+            r2 = {}
             ofile = "{}0_{}*".format(result_dir,output_f) 
             res_list = sorted(glob.glob(ofile),key=os.path.getmtime,reverse=False)
             timestamps = list(set([t.split("_")[5] for t in res_list]))
@@ -105,52 +115,64 @@ for exp in exps:
                 all_nodes.append(sorted(list(set(nodes))))
         else:
             opened = False
-            if not clear and os.path.isfile("{}s_{}.p".format(result_dir,output_f)) and os.path.isfile("{}c_{}.p".format(result_dir,output_f)):
-                if not plot and use_tmp:
-                    continue
-                with open("{}s_{}.p".format(result_dir,output_f),'r') as f:
-                    p = pickle.Unpickler(f)
-                    r = p.load()
-                    opened = True
-#r = pickle.load(f)
-                with open("{}c_{}.p".format(result_dir,output_f),'r') as f:
-                    p = pickle.Unpickler(f)
-                    r2 = p.load()
-                    opened = True
-#r2 = pickle.load(f)
-            else:
-                for n in range(cfgs["NODE_CNT"]+cfgs["CLIENT_NODE_CNT"]):
-                    ofile = "{}{}_{}*.out".format(result_dir,n,output_f)
-                    res_list = sorted(glob.glob(ofile),key=os.path.getmtime,reverse=True)
-#timestamp = re.search("(\d{8}-\d{6})",res_list[0]).group(0)
-                    if res_list:
-                        for x in range(exp_cnt):
-                            if x >= len(res_list):
-                                continue
-                            print(res_list[x])
+            if timedate == []:
+                ofile = "{}{}_{}*.out".format(result_dir,0,output_f)
+                res_list = sorted(glob.glob(ofile),key=os.path.getmtime,reverse=True)
+                for x in range(exp_cnt):
+                    if x >= len(res_list):
+                        print("Exceeded experiment limit")
+                        continue
+                    timedate.append(re.search("(\d{8}-\d{6})",res_list[x]).group(0))
+            p_sfiles = ["{}s_{}_{}.p".format(result_dir,output_f,t) for t in timedate]
+            p_cfiles = ["{}c_{}_{}.p".format(result_dir,output_f,t) for t in timedate]
+            for p_sfile,p_cfile,time in zip(p_sfiles,p_cfiles,timedate):
+                r = {}
+                r2 = {}
+                if clear or not os.path.isfile(p_sfile) or not os.path.isfile(p_cfile):
+                    for n in range(cfgs["NODE_CNT"]+cfgs["CLIENT_NODE_CNT"]):
+                        ofile = "{}{}_{}*{}.out".format(result_dir,n,output_f,time)
+                        res_list = sorted(glob.glob(ofile),key=os.path.getmtime,reverse=True)
+                        if res_list:
+                            assert time == re.search("(\d{8}-\d{6})",res_list[0]).group(0)
+                            print(res_list[0])
                             if n < cfgs["NODE_CNT"]:
-                                r = get_summary(res_list[x],r)
+                                r = get_summary(res_list[0],r)
                             else:
-                                r2 = get_summary(res_list[x],r2)
-                        merge_results(r,exp_cnt,drop)
-                        merge_results(r2,exp_cnt,drop)
-                
-                if not opened:
-                    get_lstats(r)
-                    get_lstats(r2)
-                    with open("{}s_{}.p".format(result_dir,output_f),'w') as f:
-                        p = pickle.Pickler(f)
-                        p.dump(r)
-#    pickle.dump(r,f)
-                    with open("{}c_{}.p".format(result_dir,output_f),'w') as f:
-                        p = pickle.Pickler(f)
-                        p.dump(r)
-#pickle.dump(r2,f)
+                                r2 = get_summary(res_list[0],r2)
+                        get_lstats(r)
+                        get_lstats(r2)
+                        with open(p_sfile,'w') as f:
+                            p = pickle.Pickler(f)
+                            p.dump(r)
+                        with open(p_cfile,'w') as f:
+                            p = pickle.Pickler(f)
+                            p.dump(r2)
+                else:
+                    with open(p_sfile,'r') as f:
+                        p = pickle.Unpickler(f)
+                        r = p.load()
+                        opened = True
+                    with open(p_cfile,'r') as f:
+                        p = pickle.Unpickler(f)
+                        r2 = p.load()
+                        opened = True
+
+#                merge_results(r,cfgs["NODE_CNT"],0)
+#                merge_results(r2,cfgs["CLIENT_NODE_CNT"],0)
+                if s == {}:
+                    s = r
+                    s2 = r2
+                else:
+                    merge(s,r)
+                    merge(s2,r2)
+
             if plot:
-                summary[output_f] = r
-                summary_client[output_f] = r2
-#                print(output_f)
-#                print(summary[output_f])
+                merge_results(s,exp_cnt,drop)
+                merge_results(s2,exp_cnt,drop)
+                summary[output_f] = s
+                summary_client[output_f] = s2
+                print(output_f)
+                print(summary[output_f])
 
     if plot:
         exp_plot = exp + '_plot'

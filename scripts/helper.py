@@ -121,6 +121,16 @@ def get_network_stats(n_file):
             stats[metadata["bytes"]] = ls.LatencyStats(latencies,metadata)
     return stats
 
+def merge(summary,tmp):
+    for k in summary.keys():
+        if type(summary[k]) is not list:
+            continue
+        try:
+            summary[k].append(tmp[k].pop())
+        except KeyError:
+            print("KeyError {}".format(k))
+
+
 def merge_results(summary,cnt,drop):
     for k in summary.keys():
         if type(summary[k]) is not list:
@@ -149,10 +159,11 @@ def merge_results(summary,cnt,drop):
             if drop:
                 l.remove(max(l))
                 l.remove(min(l))
+#            print("{}: {}".format(k,l))
             summary[k].append(avg(l))
 
-        if k == "txn_cnt" or k == "clock_time":
-            print("{}: {} {}".format(k,avg(l),stdev(l)))
+#        if k == "txn_cnt" or k == "clock_time":
+#            print("{}: {} {}".format(k,avg(l),stdev(l)))
             
 def process_results(summary,results):
     for r in results:

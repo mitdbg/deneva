@@ -35,7 +35,7 @@ STRNOW=NOW.strftime("%Y%m%d-%H%M%S")
 
 os.chdir('../..')
 
-MAX_TIME_PER_EXP = 60 * 8   # in seconds
+MAX_TIME_PER_EXP = 60 * 7   # in seconds
 
 #cfgs = configs
 
@@ -72,7 +72,7 @@ def using_local():
 @task
 @hosts('localhost')
 def run_exps(exps,skip_completed='False',exec_exps='True',dry_run='False',iterations='1'):
-    global SKIP, EXECUTE_EXPS 
+    global SKIP, EXECUTE_EXPS,NOW,STRNOW 
     ITERS = int(iterations)
     SKIP = skip_completed == 'True'
     EXECUTE_EXPS = exec_exps == 'True'
@@ -117,9 +117,10 @@ def delete_local_results():
     local("rm -f results/*");
 
 @task
-@hosts('localhost')
+#@hosts('localhost')
+@parallel
 def delete_remote_results():
-    run("rm -f results.out")
+    run("rm -f /home/ubuntu/results.out")
 
 @task
 @parallel
@@ -158,13 +159,19 @@ def sync_clocks(max_offset=0.01,max_attempts=5,delay=15):
     offset = sys.float_info.max
     attempts = 0
     while attempts < max_attempts:
-        res = run("ntpdate -q clock-1.cs.cmu.edu")
+        if env.cluster == "ec2":
+            res = run("ntpdate -q 0.amazon.pool.ntp.org")
+        else:
+            res = run("ntpdate -q clock-2.cs.cmu.edu")
         offset = float(res.stdout.split(",")[-2].split()[-1])
         #print "Host ",env.host,": offset = ",offset
         if abs(offset) < max_offset:
             break
         sleep(delay)
-        res = run("sudo ntpdate -b clock-1.cs.cmu.edu")
+        if env.cluster == "ec2":
+            res = run("sudo ntpdate -b 0.amazon.pool.ntp.org")
+        else:
+            res = run("sudo ntpdate -b clock-2.cs.cmu.edu")
         sleep(delay)
         attempts += 1
     return attempts < max_attempts
