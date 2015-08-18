@@ -190,6 +190,7 @@ void QWorkQueueHelper::add_query(base_query * qry) {
 
   pthread_mutex_lock(&mtx);
 
+  printf("Add Query %ld %d\n",qry->txn_id,qry->rtype);
   wq_entry_t n = head;
 
   while(n) {
@@ -200,13 +201,15 @@ void QWorkQueueHelper::add_query(base_query * qry) {
 #endif
     
 #if PRIORITY_WORK_QUEUE
+    /*
 #if CC_ALG == HSTORE_SPEC
     if(qry->spec)
       break;
 #else
+*/
     if(n->qry->txn_id > entry->qry->txn_id)
       break;
-#endif
+//#endif
 #endif
     n = n->next;
   }
@@ -297,6 +300,8 @@ base_query * QWorkQueueHelper::get_next_query() {
   INC_STATS(0,time_qq,get_sys_clock() - starttime);
   INC_STATS(0,time_qq,get_sys_clock() - starttime);
   hash->unlock();
+  if(next_qry)
+    printf("Get Query %ld %d\n",next_qry->txn_id,next_qry->rtype);
   pthread_mutex_unlock(&mtx);
   return next_qry;
 }

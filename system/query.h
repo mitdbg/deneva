@@ -63,6 +63,7 @@ public:
 
   // HStore specx
   bool spec;
+  bool spec_done;
 
   uint64_t home_part;
   uint64_t active_part;

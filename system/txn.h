@@ -130,6 +130,7 @@ public:
 
   // For HStore
   bool spec;
+  bool spec_done;
 
   // For performance measurements
   uint64_t starttime;

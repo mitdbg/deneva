@@ -38,7 +38,9 @@
   pthread_mutex_unlock(&mtx); }
 
 void TxnPool::init() {
-  spec_mode = false;
+  for(uint64_t i = 0; i < g_part_cnt / g_node_cnt; i++) {
+      spec_mode[i] = false;
+  }
   //inflight_cnt = 0;
   pthread_mutex_init(&mtx,NULL);
   pthread_cond_init(&cond_m,NULL);
@@ -237,9 +239,9 @@ uint64_t TxnPool::get_min_ts() {
   return min;
 }
 
-void TxnPool::spec_next() {
+void TxnPool::spec_next(uint64_t tid) {
   assert(CC_ALG == HSTORE_SPEC);
-  if(!spec_mode)
+  if(!spec_mode[tid])
     return;
 
   MODIFY_START();
@@ -248,7 +250,12 @@ void TxnPool::spec_next() {
 
   while (t_node->next != NULL) {
     t_node = t_node->next;
-    if (t_node->txn->get_txn_id() % g_node_cnt == g_node_id && t_node->qry->part_num == 1 && t_node->txn->state == INIT && !t_node->txn->spec && t_node->qry->penalty_end < get_sys_clock()) {
+    if (t_node->txn->get_txn_id() % g_node_cnt == g_node_id  // txn is local to this node
+        && t_node->qry->active_part/g_node_cnt == tid // txn is local to this thread's part
+        && t_node->qry->part_num == 1  // is a single part txn
+        && t_node->txn->state == INIT // hasn't started executing yet
+        && !t_node->txn->spec  // is not currently speculative
+        && t_node->qry->penalty_end < get_sys_clock()) { // is not currently in an abort penalty phase
       t_node->txn->spec = true;
       t_node->qry->spec = true;
       t_node->txn->state = EXEC;
@@ -260,26 +267,20 @@ void TxnPool::spec_next() {
       */
       t_node->txn->rc = RCOK;
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
+      printf("SPEC %ld\n",t_node->qry->txn_id);
       work_queue.add_query(t_node->qry->active_part/g_node_cnt,t_node->qry);
 #else
       work_queue.add_query(0,t_node->qry);
 #endif
-      /*
-      assert(t_node->qry->part_cnt > 0 || t_node->qry->part_num > 0);
-      if(t_node->qry->part_num > 0)
-        work_queue.add_query(t_node->qry->part_to_access[0]/g_node_cnt,t_node->qry);
-      else if(t_node->qry->part_cnt > 0)
-        work_queue.add_query(t_node->qry->parts[0]/g_node_cnt,t_node->qry);
-        */
     }
   }
 
   MODIFY_END();
 }
 
-void TxnPool::start_spec_ex() {
+void TxnPool::start_spec_ex(uint64_t tid) {
   assert(CC_ALG == HSTORE_SPEC);
-  spec_mode = true;
+  spec_mode[tid] = true;
 
   /*
   ACCESS_START();
@@ -301,31 +302,38 @@ void TxnPool::start_spec_ex() {
 
 }
 
-void TxnPool::commit_spec_ex(int r) {
+void TxnPool::commit_spec_ex(int r, uint64_t tid) {
   assert(CC_ALG == HSTORE_SPEC);
   RC rc = (RC) r;
 
   ACCESS_START();
 
-  spec_mode = false;
+  spec_mode[tid] = false;
 
   txn_node_t t_node = txns[0];
 
   while (t_node->next != NULL) {
     t_node = t_node->next;
-    if (t_node->txn->get_txn_id() % g_node_cnt == g_node_id && t_node->qry->part_num == 1 && t_node->txn->state == PREP && t_node->txn->spec) {
+    if (t_node->txn->get_txn_id() % g_node_cnt == g_node_id && t_node->qry->active_part/g_node_cnt == tid && t_node->qry->part_num == 1 && t_node->txn->state == PREP && t_node->txn->spec && !t_node->txn->spec_done) {
       t_node->txn->validate();
       t_node->txn->finish(rc,t_node->qry->part_to_access,t_node->qry->part_num);
       t_node->txn->state = DONE;
       t_node->qry->rtype = RPASS;
+      t_node->txn->spec_done = true;
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
+      printf("SPEC END %ld\n",t_node->qry->txn_id);
       work_queue.add_query(t_node->qry->active_part/g_node_cnt,t_node->qry);
 #else
       work_queue.add_query(0,t_node->qry);
 #endif
     }
-    else if (t_node->txn->get_txn_id() % g_node_cnt == g_node_id && t_node->qry->part_num == 1 && t_node->txn->state != PREP && t_node->txn->spec) {
+    else if (t_node->txn->get_txn_id() % g_node_cnt == g_node_id && t_node->qry->active_part/g_node_cnt == tid && t_node->qry->part_num == 1 && t_node->txn->state != PREP && t_node->txn->state != DONE && !t_node->txn->spec_done && t_node->txn->spec) {
+      // Why is this here?
+      t_node->qry->rtype = RPASS;
+      t_node->txn->rc = Abort;
+      t_node->txn->finish(Abort,t_node->qry->part_to_access,t_node->qry->part_num);
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
+      printf("SPEC ABRT %ld\n",t_node->qry->txn_id);
       work_queue.add_query(t_node->qry->active_part/g_node_cnt,t_node->qry);
 #else
       work_queue.add_query(0,t_node->qry);

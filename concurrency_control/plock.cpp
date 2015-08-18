@@ -53,6 +53,7 @@ RC PartMan::lock(txn_man * txn) {
       printf("LOCK %ld -- %ld\n",owner->get_txn_id(),_part_id);
       //printf("LOCK %ld %ld\n",owner->get_txn_id(),get_sys_clock());
 #endif
+    assert(!owner->spec);
 		// If not local, send remote response
 		//if(GET_NODE_ID(owner->get_pid()) != _node_id) {
 		if(GET_NODE_ID(owner->home_part) != _node_id) {
@@ -146,6 +147,7 @@ void PartMan::unlock(txn_man * txn) {
       owner = NULL;
     }
     else {
+      do {
       owner = waiters[0];     
 #if DEBUG_TIMELINE
       //printf("LOCK %ld %ld\n",owner->get_txn_id(),get_sys_clock());
@@ -156,6 +158,12 @@ void PartMan::unlock(txn_man * txn) {
         waiters[i] = waiters[i + 1];
       }
       waiter_cnt --;
+      } while(owner->spec && waiter_cnt > 0);
+
+    if (waiter_cnt == 0 && owner->spec) {
+      owner = NULL;
+      goto final;
+    }
       uint64_t t = get_sys_clock() - owner->wait_starttime;
       INC_STATS(txn->get_thd_id(),time_wait_lock,t);
       txn->txn_time_wait += t;
@@ -222,6 +230,7 @@ void PartMan::unlock(txn_man * txn) {
   // If local, decr ready_ulk
 //final:
 	//if(GET_NODE_ID(txn->get_pid()) == _node_id)
+final:
 	if(txn->home_part == _part_id)
     ATOM_SUB(txn->ready_ulk, 1);
 

@@ -29,13 +29,13 @@ public:
   void delete_txn(uint64_t node_id, uint64_t txn_id);
   uint64_t get_min_ts(); 
 
-  void spec_next();
-  void start_spec_ex();
+  void spec_next(uint64_t tid);
+  void start_spec_ex(uint64_t tid);
   void end_spec_ex();
-  void commit_spec_ex(int r);
+  void commit_spec_ex(int r,uint64_t tid);
 
   //uint64_t inflight_cnt;
-  bool spec_mode;
+  bool spec_mode[PART_CNT/NODE_CNT];
 
 private:
 	uint64_t _node_id;

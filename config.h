@@ -5,14 +5,14 @@
 /***********************************************/
 // Simulation + Hardware
 /***********************************************/
-#define NODE_CNT 1
+#define NODE_CNT 2
 #define THREAD_CNT 2
 // REM_THREAD_CNT should be at least NODE_CNT*THREAD_CNT to avoid deadlock
 #define REM_THREAD_CNT 1
 // PART_CNT should be at least NODE_CNT
-#define PART_CNT 1
+#define PART_CNT 4
 #define CLIENT_NODE_CNT 1
-#define CLIENT_THREAD_CNT 4
+#define CLIENT_THREAD_CNT 1
 #define CLIENT_REM_THREAD_CNT 1
 #define CLIENT_RUNTIME false
 
@@ -33,7 +33,7 @@
 #define STATS_ENABLE        true
 #define TIME_ENABLE         true //STATS_ENABLE
 
-#define MAX_TXN_IN_FLIGHT 1000
+#define MAX_TXN_IN_FLIGHT 10 
 
 /***********************************************/
 // Memory System
@@ -59,9 +59,9 @@
 /***********************************************/
 // Message Passing
 /***********************************************/
-#define TPORT_TYPE "tcp"
-#define TPORT_TYPE_IPC false
-#define TPORT_PORT 7000
+#define TPORT_TYPE "ipc"
+#define TPORT_TYPE_IPC true
+#define TPORT_PORT ".ipc"
 
 #define MAX_TPORT_NAME 128
 #define MSG_SIZE 128 // in bytes
@@ -77,8 +77,8 @@
 /***********************************************/
 // Concurrency Control
 /***********************************************/
-// WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, OCC, VLL, CALVIN
-#define CC_ALG VLL
+// WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, VOLTDB, OCC, VLL, CALVIN
+#define CC_ALG HSTORE_SPEC
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER         false
@@ -140,7 +140,7 @@
 #define MAX_PART_PER_TXN      16 
 #define MAX_ROW_PER_TXN       64
 #define QUERY_INTVL         1UL
-#define MAX_TXN_PER_PART 3000000
+#define MAX_TXN_PER_PART 10000
 #define FIRST_PART_LOCAL      true
 #define MAX_TUPLE_SIZE        1024 // in bytes
 // ==== [YCSB] ====
@@ -151,7 +151,7 @@
 #define WRITE_PERC 0.5
 #define SCAN_PERC           0
 #define SCAN_LEN          20
-#define PART_PER_TXN 1
+#define PART_PER_TXN 2
 #define PERC_MULTI_PART     MPR 
 #define REQ_PER_QUERY       16
 #define FIELD_PER_TUPLE       10
@@ -170,7 +170,7 @@
 #define WH_UPDATE         true
 #define NUM_WH 1
 // % of transactions that access multiple partitions
-#define MPR 5
+#define MPR 30 
 #define MPR_NEWORDER      20 // In %
 // Smaller item selection to model contention
 #define CONTENTION false
@@ -267,7 +267,7 @@ extern TestCases          g_test_case;
 #define BILLION 1000000000UL // in ns => 1 second
 #define STAT_ARR_SIZE 1024
 #define PROG_TIMER 30 * BILLION // in s
-#define DONE_TIMER 3 * 60 * BILLION // 3 minutes
+#define DONE_TIMER 30 * 60 * BILLION // 3 minutes
 
 #define SEED 0
 
