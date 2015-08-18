@@ -225,6 +225,13 @@ RC thread_t::run() {
 #if CC_ALG == HSTORE_SPEC
       txn_pool.spec_next(_thd_id);
 #endif
+      // FIXME: Probably slow.
+		if (warmup_finish && ((get_sys_clock() - run_starttime >= DONE_TIMER) || (txn_st_cnt >= MAX_TXN_PER_PART/g_thread_cnt && txn_pool.empty(get_node_id())))) {
+			//assert(txn_cnt == MAX_TXN_PER_PART);
+			if( !ATOM_CAS(_wl->sim_done, false, true) )
+				assert( _wl->sim_done);
+			stoptime = get_sys_clock();
+		}
     }
 		//while(!work_queue.poll_next_query() && !(_wl->sim_done && _wl->sim_timeout)) { }
 
