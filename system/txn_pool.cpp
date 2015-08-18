@@ -267,7 +267,7 @@ void TxnPool::spec_next(uint64_t tid) {
       */
       t_node->txn->rc = RCOK;
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
-      printf("SPEC %ld\n",t_node->qry->txn_id);
+      //printf("SPEC %ld\n",t_node->qry->txn_id);
       work_queue.add_query(t_node->qry->active_part/g_node_cnt,t_node->qry);
 #else
       work_queue.add_query(0,t_node->qry);
@@ -321,7 +321,7 @@ void TxnPool::commit_spec_ex(int r, uint64_t tid) {
       t_node->qry->rtype = RPASS;
       t_node->txn->spec_done = true;
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
-      printf("SPEC END %ld\n",t_node->qry->txn_id);
+      //printf("SPEC END %ld\n",t_node->qry->txn_id);
       work_queue.add_query(t_node->qry->active_part/g_node_cnt,t_node->qry);
 #else
       work_queue.add_query(0,t_node->qry);
@@ -333,7 +333,7 @@ void TxnPool::commit_spec_ex(int r, uint64_t tid) {
       t_node->txn->rc = Abort;
       t_node->txn->finish(Abort,t_node->qry->part_to_access,t_node->qry->part_num);
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
-      printf("SPEC ABRT %ld\n",t_node->qry->txn_id);
+      //printf("SPEC ABRT %ld\n",t_node->qry->txn_id);
       work_queue.add_query(t_node->qry->active_part/g_node_cnt,t_node->qry);
 #else
       work_queue.add_query(0,t_node->qry);
