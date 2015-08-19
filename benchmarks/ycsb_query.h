@@ -34,6 +34,7 @@ class ycsb_client_query : public base_client_query {
   public:
 	void init(uint64_t thd_id, workload * h_wl);
   void init(uint64_t thd_id, workload * h_wl, uint64_t node_id);
+  void init();
   void client_query(base_client_query * query, uint64_t dest_id) ;
   void unpack_client(base_client_query * query, void * d);
   

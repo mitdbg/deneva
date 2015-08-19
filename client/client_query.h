@@ -62,6 +62,7 @@ class Client_query_thd {
 public:
 	void init(workload * h_wl, int thread_id);
   bool done(); 
+  void init_txns_file(const char * txn_file);
 	base_client_query * get_next_query(uint64_t tid); 
 	//base_query * get_next_query(uint64_t tid); 
   volatile int q_idx;

@@ -83,8 +83,9 @@ VLLMan::restartQFront() {
     front_txn->rc = RCOK;
     //if(WORKLOAD != YCSB && front_txn->get_txn_id() % g_node_cnt != g_node_id) {
     if(front_txn->get_txn_id() % g_node_cnt != g_node_id) {
-      base_query * qry = txn_pool.get_qry(g_node_id,front_txn->get_txn_id());
-  		rem_qry_man.ack_response(qry);
+      //base_query * qry = txn_pool.get_qry(g_node_id,front_txn->get_txn_id());
+  		//rem_qry_man.ack_response(qry);
+  		rem_qry_man.ack_response(RCOK,front_txn);
     }
     else {
       txn_pool.restart_txn(front_txn->get_txn_id());

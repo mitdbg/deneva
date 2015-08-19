@@ -106,6 +106,7 @@ int main(int argc, char* argv[])
 		client_query_queue.init(m_wl);
 	}
   printf("Done\n");
+
 	pthread_barrier_init( &warmup_bar, NULL, thd_cnt );
   printf("Initializing threads... ");
   fflush(stdout);
