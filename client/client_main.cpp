@@ -107,12 +107,16 @@ int main(int argc, char* argv[])
 	}
   printf("Done\n");
 
+
 	pthread_barrier_init( &warmup_bar, NULL, thd_cnt );
   printf("Initializing threads... ");
   fflush(stdout);
 	for (uint32_t i = 0; i < thd_cnt + rthd_cnt; i++) 
 		m_thds[i].init(i, g_node_id, m_wl);
   printf("Done\n");
+#if CREATE_TXN_FILE
+  return(0);
+#endif
 
   endtime = get_server_clock();
   printf("Initialization Time = %ld\n", endtime - starttime);

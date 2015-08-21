@@ -686,7 +686,7 @@ void ycsb_client_query::gen_requests(uint64_t thd_id, workload * h_wl) {
 	}
 	request_cnt = rid;
 
-  /*
+#if CREATE_TXN_FILE
   char output_file[50];
   sprintf(output_file,"p%ld_%d_mpr%g.txt",part_to_access[0],g_part_cnt,g_mpr);
   FILE * outf;
@@ -698,7 +698,7 @@ void ycsb_client_query::gen_requests(uint64_t thd_id, workload * h_wl) {
   }
   fprintf(outf,"\n");
   fclose(outf);
-  */
+#endif
 
 	// Sort the requests in key order.
 	if (g_key_order) {

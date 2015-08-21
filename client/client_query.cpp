@@ -11,13 +11,18 @@
 
 void 
 Client_query_queue::init(workload * h_wl) {
-	//all_queries = new Client_query_thd * [PART_CNT];
-	all_queries = new Client_query_thd * [g_servers_per_client];
 	_wl = h_wl;
-	//for (UInt32 tid = 0; tid < PART_CNT; tid ++) {
-	for (UInt32 tid = 0; tid < g_servers_per_client; tid ++) {
+#if CREATE_TXN_FILE
+	all_queries = new Client_query_thd * [PART_CNT];
+	for (UInt32 tid = 0; tid < PART_CNT; tid ++) {
 		init(tid);
     }
+#else
+	all_queries = new Client_query_thd * [g_servers_per_client];
+	for (UInt32 tid = 0; tid < g_servers_per_client; tid ++) {
+		init(tid);
+  }
+#endif
 }
 
 void 
@@ -83,9 +88,9 @@ Client_query_thd::init(workload * h_wl, int thread_id) {
   char input_file[50];
 	char * cpath = getenv("SCHEMA_PATH");
 	if (cpath == NULL) 
-    sprintf(input_file,"./input_txn_files/p%d_%d_mpr%g.txt",thread_id,g_part_cnt,g_mpr);
+    sprintf(input_file,"./input_txn_files/p%d_%d_mpr%g.txt",thread_id+g_server_start_node,g_part_cnt,g_mpr);
 	else { 
-    sprintf(input_file,"%s/p%d_%d_mpr%g.txt",cpath,thread_id,g_part_cnt,g_mpr);
+    sprintf(input_file,"%s/p%d_%d_mpr%g.txt",cpath,thread_id+g_server_start_node,g_part_cnt,g_mpr);
 	}
   printf("%s\n",input_file);
   init_txns_file( input_file );

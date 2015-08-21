@@ -5,13 +5,13 @@
 /***********************************************/
 // Simulation + Hardware
 /***********************************************/
-#define NODE_CNT 2
+#define NODE_CNT 8
 #define THREAD_CNT 2
 // REM_THREAD_CNT should be at least NODE_CNT*THREAD_CNT to avoid deadlock
 #define REM_THREAD_CNT 1
 // PART_CNT should be at least NODE_CNT
-#define PART_CNT 2 
-#define CLIENT_NODE_CNT 1
+#define PART_CNT 8
+#define CLIENT_NODE_CNT 4
 #define CLIENT_THREAD_CNT 2
 #define CLIENT_REM_THREAD_CNT 1
 #define CLIENT_RUNTIME false
@@ -33,7 +33,7 @@
 #define STATS_ENABLE        true
 #define TIME_ENABLE         true //STATS_ENABLE
 
-#define MAX_TXN_IN_FLIGHT 5
+#define MAX_TXN_IN_FLIGHT 1000 
 
 /***********************************************/
 // Memory System
@@ -61,7 +61,7 @@
 /***********************************************/
 #define TPORT_TYPE "ipc"
 #define TPORT_TYPE_IPC true
-#define TPORT_PORT ".ipc"
+#define TPORT_PORT "_.ipc"
 
 #define MAX_TPORT_NAME 128
 #define MSG_SIZE 128 // in bytes
@@ -78,7 +78,7 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, VOLTDB, OCC, VLL, CALVIN
-#define CC_ALG WAIT_DIE
+#define CC_ALG TIMESTAMP
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER         false
@@ -140,11 +140,11 @@
 #define MAX_PART_PER_TXN      16 
 #define MAX_ROW_PER_TXN       64
 #define QUERY_INTVL         1UL
-#define MAX_TXN_PER_PART 1000
+#define MAX_TXN_PER_PART 3000000
 #define FIRST_PART_LOCAL      true
 #define MAX_TUPLE_SIZE        1024 // in bytes
 // ==== [YCSB] ====
-#define INIT_PARALLELISM 1
+#define INIT_PARALLELISM 4
 #define SYNTH_TABLE_SIZE 2097152
 #define ZIPF_THETA 0.0
 #define READ_PERC 0.5
@@ -156,6 +156,7 @@
 #define REQ_PER_QUERY      16
 #define FIELD_PER_TUPLE       10
 #define LOAD_TXN_FILE true
+#define CREATE_TXN_FILE false
 // ==== [TPCC] ====
 // For large warehouse count, the tables do not fit in memory
 // small tpcc schemas shrink the table size.
@@ -169,9 +170,9 @@
 // are not modeled.
 #define TPCC_ACCESS_ALL       false 
 #define WH_UPDATE         true
-#define NUM_WH 4
+#define NUM_WH 8
 // % of transactions that access multiple partitions
-#define MPR 50 
+#define MPR 5
 #define MPR_NEWORDER      20 // In %
 // Smaller item selection to model contention
 #define CONTENTION false
@@ -230,7 +231,7 @@ extern TestCases          g_test_case;
 #define DEBUG_TIMESTAMP       false
 #define DEBUG_SYNTH         false
 #define DEBUG_ASSERT        false
-#define DEBUG_DISTR         true 
+#define DEBUG_DISTR         false 
 #define DEBUG_TIMELINE        false
 #define DEBUG_BREAKDOWN       false
 
@@ -268,7 +269,7 @@ extern TestCases          g_test_case;
 #define BILLION 1000000000UL // in ns => 1 second
 #define STAT_ARR_SIZE 1024
 #define PROG_TIMER 30 * BILLION // in s
-#define DONE_TIMER 10 * 60 * BILLION // 3 minutes
+#define DONE_TIMER 3 * 60 * BILLION // 3 minutes
 
 #define SEED 0
 

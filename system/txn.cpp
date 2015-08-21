@@ -204,6 +204,9 @@ void txn_man::cleanup(RC rc) {
 #if CC_ALG == OCC
   occ_man.finish(rc,this);
 #endif
+#if DEBUG_DISTR
+  printf("CLEANUP %ld %lu\n",get_txn_id(),get_ts());
+#endif
 	ts_t starttime = get_sys_clock();
 	for (int rid = row_cnt - 1; rid >= 0; rid --) {
 #if !NOGRAPHITE
@@ -471,7 +474,9 @@ RC txn_man::finish(base_query * query, bool fin) {
   if(!fin) {
     this->state = PREP;
   }
-  if(query->part_touched_cnt == 0) {
+  if(query->part_touched_cnt == 0 || 
+      ((CC_ALG != HSTORE && CC_ALG != HSTORE_SPEC && CC_ALG != VLL) 
+       && query->part_touched_cnt == 1 && query->part_num > 1)) {
     assert(query->rc == Abort);
     this->state = DONE;
 		uint64_t part_arr[1];

@@ -13,11 +13,11 @@ fmt_nt = [["NODE_CNT","CLIENT_NODE_CNT","NETWORK_TEST"]]
 
 def test():
     fmt = fmt_ycsb
-    nnodes = [2]
+    nnodes = [8]
 #    nnodes = [16,8,4,2,1]
     nmpr=[5]
 #    nmpr=[0,1,5]
-    nalgos=['HSTORE_SPEC']
+    nalgos=['TIMESTAMP']
 #    nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','TIMESTAMP','HSTORE','VLL']
     #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
     nthreads=[2]
@@ -364,7 +364,8 @@ configs = {
     "WRITE_PERC":0.5,
     "ZIPF_THETA":0.6,
     "PART_PER_TXN": 1,
-    "SYNTH_TABLE_SIZE":"2097152"
+    "SYNTH_TABLE_SIZE":"2097152",
+    "LOAD_TXN_FILE":"true"
 }
 
 config_names = fmt_ycsb[0]
