@@ -80,6 +80,9 @@ VLLMan::restartQFront() {
 		front_txn = front->txn;
 	if (front_txn && front_txn->vll_txn_type == VLL_Blocked) {
 		front_txn->vll_txn_type = VLL_Free;
+#if DEBUG_DISTR
+    printf("FREE %ld\n",front_txn->get_txn_id());
+#endif
     front_txn->rc = RCOK;
     //if(WORKLOAD != YCSB && front_txn->get_txn_id() % g_node_cnt != g_node_id) {
     if(front_txn->get_txn_id() % g_node_cnt != g_node_id) {
@@ -140,39 +143,42 @@ VLLMan::beginTxn(txn_man * txn, base_query * query) {
   while(prev_entry && prev_entry->txn->get_ts() < txn->get_ts()) {
     prev_entry = prev_entry->next;
   }
+
   if(prev_entry) {
-    entry->prev = prev_entry;
-    entry->next = prev_entry->next;
-    prev_entry->next = entry;
-    if(!entry->next)
-      _txn_queue_tail = entry;
-    else
-      entry->next->prev = entry;
+    LIST_INSERT_BEFORE(prev_entry,entry,_txn_queue);
   }
   else {
-    if(_txn_queue) {
-      // Reached end of queue
-      entry->prev = _txn_queue_tail;
-      _txn_queue_tail->next = entry;
-      _txn_queue_tail = entry;
-    }
-    else {
-      // Head of queue
-      _txn_queue = entry;
-      _txn_queue_tail = entry;
-    }
+    LIST_PUT_TAIL(_txn_queue,_txn_queue_tail,entry);
   }
   txn->vll_entry = entry;
-	if (txn->vll_txn_type == VLL_Blocked)
+	if (txn->vll_txn_type == VLL_Blocked) {
 		ret = WAIT;
-	else 
+#if DEBUG_DISTR
+    printf("BLOCKED %ld\n",txn->get_txn_id());
+#endif
+  }
+	else {
 		ret = RCOK;
+#if DEBUG_DISTR
+    printf("FREE %ld\n",txn->get_txn_id());
+#endif
+  }
 
 final:
   assert((!_txn_queue || _txn_queue->prev == NULL) && (!_txn_queue_tail || _txn_queue_tail->next == NULL));
   // Race condition on this assert:
   //assert(!_txn_queue || _txn_queue->txn->vll_txn_type == VLL_Free);
   assert(entry || ret == Abort);
+
+  TxnQEntry * tmp1 = _txn_queue;
+  if(tmp1) {
+  TxnQEntry * tmp2 = tmp1->next;
+  while(tmp1 && tmp2) {
+    assert( tmp1->txn->get_ts() < tmp2->txn->get_ts());
+    tmp1 = tmp1->next;
+    tmp2 = tmp2->next;
+  }
+  }
 	pthread_mutex_unlock(&_mutex);
 	return ret;
 }

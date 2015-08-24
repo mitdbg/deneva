@@ -183,6 +183,7 @@ void ycsb_query::remote_qry(base_query * query, int type, int dest_id) {
 #endif
 	ycsb_query * m_query = (ycsb_query *) query;
 	YCSBRemTxnType t = (YCSBRemTxnType) type;
+  assert(m_query->txn_rtype != YCSB_FIN);
 
 	// Maximum number of parameters
 	// NOTE: Adjust if parameters sent is changed

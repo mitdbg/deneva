@@ -655,7 +655,7 @@ RC thread_t::run() {
 					// Done waiting 
 					INC_STATS(get_thd_id(),time_wait_rem,get_sys_clock() - m_txn->wait_starttime);
           //FIXME: this was uncommented. should we always say ok?
-					//m_txn->rc = RCOK;
+					m_txn->rc = RCOK;
 
 					// After RINIT
 					switch(m_txn->state) {
@@ -684,7 +684,7 @@ RC thread_t::run() {
 #if CC_ALG == VLL
               // This may return an Abort
 
-        if(m_txn->rc == Abort) {
+        if(m_query->rc == Abort) {
 							m_txn->state = FIN;
 							// send rfin messages w/ abort
 							m_txn->finish(m_query,true);

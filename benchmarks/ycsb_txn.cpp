@@ -32,6 +32,8 @@ void ycsb_txn_man::merge_txn_rsp(base_query * query1, base_query *query2) {
   if(m_query1->rc == Abort) {
     m_query2->rc = m_query1->rc;
     m_query2->txn_rtype = YCSB_FIN;
+    //assert(GET_NODE_ID(m_query2->pid) == g_node_id);
+    //assert(GET_NODE_ID(m_query1->pid) == g_node_id);
   }
 
 }
@@ -130,6 +132,7 @@ void ycsb_txn_man::next_ycsb_state(base_query * query) {
       }
       else {
         m_query->txn_rtype = YCSB_FIN;
+        assert(GET_NODE_ID(m_query->pid) == g_node_id);
       }
     case YCSB_FIN:
       break;
@@ -149,6 +152,7 @@ void ycsb_txn_man::rtn_ycsb_state(base_query * query) {
       }
       else {
         m_query->txn_rtype = YCSB_FIN;
+        assert(GET_NODE_ID(m_query->pid) == g_node_id);
       }
       break;
     case YCSB_1:
