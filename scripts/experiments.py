@@ -13,31 +13,52 @@ fmt_nt = [["NODE_CNT","CLIENT_NODE_CNT","NETWORK_TEST"]]
 
 def test():
     fmt = fmt_ycsb
-    nnodes = [8]
-#    nnodes = [16,8,4,2,1]
-    nmpr=[5]
-#    nmpr=[0,1,5]
-    nalgos=['TIMESTAMP']
+    nnodes = [4]
+#    nnodes = [1,2,4,8]
+    nmpr=[1,25]
+#    nmpr=[25,50,75]
+#    nmpr=[1,5,10,25,50,75,100]
+    nalgos=['OCC']
+#    nalgos=['TIMESTAMP','WAIT_DIE','MVCC','OCC','NO_WAIT']
 #    nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','TIMESTAMP','HSTORE','VLL']
     #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
     nthreads=[2]
-    ncthreads=[4]
+    ncthreads=[8]
     ntifs=[1000]
-    nzipf=[0.0]
+    nzipf=[0.6]
+#    nzipf=[0.0]
     nwr_perc=[0.5]
+#    nwr_perc=[0.0,0.05,0.2,0.5]
 #    nwr_perc=[0.0,0.5]
-    ntxn=[3000000]
+    ntxn=[2000000]
     nparts = [2]
-    exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,txn,'YCSB',cc,m,ct,t,tif,z,1.0-wp,wp,p if p <= n else 1,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n] for n,ct,t,tif,z,wp,m,cc,p,txn in itertools.product(nnodes,ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts,ntxn)]
+    exp = [[int(math.ceil(n)) if n > 2 else 1,n,txn,'YCSB',cc,m,ct,t,tif,z,1.0-wp,wp,p if p <= n else 1,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n] for n,ct,t,tif,z,wp,m,cc,p,txn in itertools.product(nnodes,ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts,ntxn)]
     return fmt[0],exp
 
 def test_plot(summary,summary_client):
-    from plot_helper import tput_plotter
+    from plot_helper import tput
     fmt,exp = test()
-    x_name = "MPR"
+    fmt = ["CLIENT_NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","MPR","CLIENT_THREAD_CNT","THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC","PART_PER_TXN"]
+    x_name = "NODE_CNT"
     v_name = "CC_ALG"
-    title = "TEST"
-    tput_plotter(title,x_name,v_name,fmt,exp,summary,summary_client);
+    x_vals = [1,2,4,8]
+    nmpr=[1,5,10,25,50,75,100]
+    nwr_perc=[0.5]
+    nalgos=['TIMESTAMP','WAIT_DIE','MVCC','OCC','NO_WAIT']
+    v_vals=nalgos
+    for mpr,wr in itertools.product(nmpr,nwr_perc):
+        c = [1,2000000,"YCSB",mpr,8,2,1000,0.6,1.0-wr,wr,2]
+        title = "YCSB System Throughput {}% Writes, {}% Multi-part rate".format(wr*100,mpr);
+        tput(x_vals,v_vals,summary,cfg_fmt=fmt,cfg=c,xname=x_name,vname=v_name,title=title)
+
+    fmt = ["CLIENT_NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","CLIENT_THREAD_CNT","THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC","PART_PER_TXN"]
+    v_vals = nmpr
+    v_name = "MPR"
+    for a in nalgos: 
+        wr = 0.5
+        c = [1,2000000,"YCSB",a,8,2,1000,0.6,1.0-wr,wr,2]
+        title = "YCSB System Throughput {}% Writes, {}".format(wr*100,a);
+        tput(x_vals,v_vals,summary,cfg_fmt=fmt,cfg=c,xname=x_name,vname=v_name,title=title)
 
 # Performance: throughput vs. node count
 # Vary: Node count, % writes
@@ -357,7 +378,7 @@ configs = {
     "PROG_TIMER" : "30 * BILLION // in s",
     "NETWORK_TEST" : "false",
     "ABORT_PENALTY": "1 * 1000000UL   // in ns.",
-    "PRT_LAT_DISTR": "true",
+    "PRT_LAT_DISTR": "false", #"true",
 #YCSB
     "INIT_PARALLELISM" : 4, 
     "READ_PERC":0.5,
@@ -365,7 +386,7 @@ configs = {
     "ZIPF_THETA":0.6,
     "PART_PER_TXN": 1,
     "SYNTH_TABLE_SIZE":"2097152",
-    "LOAD_TXN_FILE":"true"
+    "LOAD_TXN_FILE":"false"
 }
 
 config_names = fmt_ycsb[0]
