@@ -448,6 +448,7 @@ RC thread_t::run() {
 			case RQRY:
 				// This transaction is from a remote node
 				assert(CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || m_query->txn_id % g_node_cnt != g_node_id);
+        assert(CC_ALG != VLL || m_query->rc != Abort);
         /*
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
         assert(m_query->home_part != GET_PART_ID_FROM_IDX(_thd_id));
@@ -653,7 +654,8 @@ RC thread_t::run() {
 				if(rsp_cnt == 0) {
 					// Done waiting 
 					INC_STATS(get_thd_id(),time_wait_rem,get_sys_clock() - m_txn->wait_starttime);
-					m_txn->rc = RCOK;
+          //FIXME: this was uncommented. should we always say ok?
+					//m_txn->rc = RCOK;
 
 					// After RINIT
 					switch(m_txn->state) {
@@ -681,11 +683,17 @@ RC thread_t::run() {
 #endif
 #if CC_ALG == VLL
               // This may return an Abort
-              /*
+
+        if(m_txn->rc == Abort) {
+							m_txn->state = FIN;
+							// send rfin messages w/ abort
+							m_txn->finish(m_query,true);
+					    m_query = NULL;
+              break;
+        }
         rc = vll_man.beginTxn(m_txn,m_query);
         if(rc == WAIT)
           break;
-          */
         if(rc == Abort) {
 							m_txn->state = FIN;
 							// send rfin messages w/ abort
@@ -757,7 +765,7 @@ RC thread_t::run() {
 					assert(rc == RCOK);
 
 					m_txn->abort_cnt = 0;
-					if (CC_ALG == WAIT_DIE) {
+					if (CC_ALG == WAIT_DIE || CC_ALG == VLL) {
 						m_txn->set_ts(get_next_ts());
 						m_query->ts = m_txn->get_ts();
 					}
