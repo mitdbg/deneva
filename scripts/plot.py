@@ -167,13 +167,12 @@ for exp in exps:
                     merge(s2,r2)
 
             if plot:
-                print(s)
                 s = merge_results(s,exp_cnt,drop,cfgs["NODE_CNT"])
                 s2 = merge_results(s2,exp_cnt,drop,cfgs["CLIENT_NODE_CNT"])
                 summary[output_f] = s
                 summary_client[output_f] = s2
-                print(output_f)
-                print(summary[output_f])
+#                print(output_f)
+#                print(summary[output_f])
 
     if plot:
         exp_plot = exp + '_plot'

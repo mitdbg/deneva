@@ -107,8 +107,8 @@ def node_sweep():
     nnodes = [16,8,4,2,1]
 #    nmpr=[5]
     nmpr=[0,1,5]
-#    nalgos=['VLL']
-    nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','TIMESTAMP','HSTORE','VLL']
+#    nalgos=['HSTORE_SPEC']
+    nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','TIMESTAMP','HSTORE','HSTORE_SPEC','VLL']
     #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
     nthreads=[2]
     ncthreads=[4]
@@ -136,10 +136,24 @@ def node_sweep_plot2(summary,summary_client):
     x_name = "NODE_CNT"
     v_name = "CC_ALG"
     x_vals = [1,2,4,8,16]
-    v_vals = ['WAIT_DIE','NO_WAIT','MVCC','TIMESTAMP','HSTORE','VLL']
+#    v_vals = ['HSTORE_SPEC']
+    v_vals = ['WAIT_DIE','NO_WAIT','MVCC','TIMESTAMP','HSTORE']
     for mpr,wr in itertools.product([0,1,5],[0.0,0.5]):
         c = [1,3000000,"YCSB",mpr,4,2,1000,0.0,1.0-wr,wr,2]
         title = "YCSB System Throughput {}% Writes, {}% Multi-part rate".format(wr*100,mpr);
+        tput(x_vals,v_vals,summary,cfg_fmt=fmt,cfg=c,xname=x_name,vname=v_name,title=title)
+    v_vals = ['OCC','HSTORE_SPEC','VLL']
+    for mpr,wr in itertools.product([0,1,5],[0.0,0.5]):
+        c = [1,3000000,"YCSB",mpr,4,2,1000,0.0,1.0-wr,wr,2]
+        title = "YCSB System Throughput {}% Writes, {}% Multi-part rate".format(wr*100,mpr);
+        tput(x_vals,v_vals,summary,cfg_fmt=fmt,cfg=c,xname=x_name,vname=v_name,title=title)
+    v_vals = [0,1,5]
+    v_name = "MPR"
+    fmt = ["CLIENT_NODE_CNT","CC_ALG","MAX_TXN_PER_PART","WORKLOAD","CLIENT_THREAD_CNT","THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC","PART_PER_TXN"]
+    for algo in ['WAIT_DIE','NO_WAIT','OCC','MVCC','TIMESTAMP','HSTORE','HSTORE_SPEC','VLL']:
+        print(algo)
+        c = [1,algo,3000000,"YCSB",4,2,1000,0.0,0.5,0.5,2]
+        title = "YCSB System Throughput {} 50% Writes".format(algo);
         tput(x_vals,v_vals,summary,cfg_fmt=fmt,cfg=c,xname=x_name,vname=v_name,title=title)
 
 def mpr_sweep():

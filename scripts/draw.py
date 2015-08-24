@@ -32,13 +32,14 @@ lineconfig_nopreset = [
 
 lineconfig = {
 # CC Algos
-    'DL_DETECT'     : "ls='-', lw=2, color='#f15854', marker='o', ms=4",
+#    'DL_DETECT'     : "ls='-', lw=2, color='#f15854', marker='o', ms=4",
     'NO_WAIT'       : "ls='-', lw=2, color='#faa43a', marker='D', ms=4",
     'WAIT_DIE'      : "ls='-', lw=2, color='#DECF3F', marker='s', ms=4",
     'TIMESTAMP'     : "ls='-', lw=2, color='#60BD68', marker='^', ms=4",
     'MVCC'          : "ls='--', lw=2, color='#5DA5DA', marker='o', ms=4", #, marker='+', ms=10",
     'OCC'           : "ls='--', lw=2, color='#B276B2', marker='+', ms=6",
     'HSTORE'        : "ls='-', lw=2, color='#4d4d4d', marker='x', ms=6",
+    'HSTORE_SPEC'   : "ls='--', lw=2, color='#4d4d4d', marker='x', ms=6",
     'VLL'           : "ls='-', lw=2, color='#ff3333', marker='*', ms=4",
 
     60              : "ls='-', lw=2, color='#4d4d4d', marker='s', ms=6",
@@ -47,8 +48,9 @@ lineconfig = {
     90              : "ls='-', lw=2, color='#60BD68', marker='D', ms=6",
     100             : "ls='-', lw=2, color='#5DA5DA', marker='s', ms=6",
 # Multipartition Rates
-#    0               : "ls='-', lw=2, color='#f15854', marker='o', ms=4",
-#    1               : "ls='-', lw=2, color='#faa43a', marker='D', ms=4",
+    0               : "ls='-', lw=2, color='#ff3333', marker='o', ms=4",
+    1               : "ls='-', lw=2, color='#faa43a', marker='D', ms=4",
+    5               : "ls='-', lw=2, color='#DECF3F', marker='s', ms=4",
 #    10              : "ls='-', lw=2, color='#DECF3F', marker='s', ms=4",
 #    20              : "ls='-', lw=2, color='#60BD68', marker='^', ms=4",
 #    30              : "ls='--', lw=2, color='#5DA5DA', marker='o', ms=4", #, marker='+', ms=10",

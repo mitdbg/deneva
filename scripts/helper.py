@@ -248,20 +248,16 @@ def merge_results(summary,cnt,drop,gap):
                     for c in range(cnt):
                         try:
                             l.append(summary[k][(c)*gap+g])
-#                            l.append(summary[k].pop(c*gap))
                         except IndexError:
-                            print("IndexError {} {}/{}".format(k,c,cnt))
+#                            print("IndexError {} {}/{}".format(k,c,cnt))
                             continue
                     if drop:
                         l.remove(max(l))
                         l.remove(min(l))
-#            print("{}: {}".format(k,l))
-                    if k == "txn_cnt" or k == "clock_time":
-                        print(l)
+                    if len(l) == 0:
+                        continue
                     new_summary[k].append(avg(l))
 
-#        if k == "txn_cnt" or k == "clock_time":
-#            print("{}: {} {}".format(k,avg(l),stdev(l)))
         except KeyError:
             continue
     return new_summary
