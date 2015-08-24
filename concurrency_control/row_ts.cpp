@@ -157,16 +157,17 @@ RC Row_ts::access(txn_man * txn, TsType type, row_t * row) {
 	else
 		pthread_mutex_lock( latch );
 	if (type == R_REQ) {
-		if (ts < wts) {
+		if (ts < wts) { // read would occur before most recent write
 			rc = Abort;
-		} else if (ts > min_pts) {
+		} else if (ts > min_pts) { // read would occur after one of the prereqs already queued
 			// insert the req into the read request queue
+      //printf("Buffer R_REQ %ld\n",txn->txn_id);
 			buffer_req(R_REQ, txn, NULL);
 			txn->ts_ready = false;
 			rc = WAIT;
       txn->rc = rc;
       txn->wait_starttime = get_sys_clock();
-		} else {
+		} else { // read is ok
 			// return the value.
 			txn->cur_row->copy(_row);
 			if (rts < ts)
@@ -174,16 +175,17 @@ RC Row_ts::access(txn_man * txn, TsType type, row_t * row) {
 			rc = RCOK;
 		}
 	} else if (type == P_REQ) {
-		if (ts < rts) {
+		if (ts < rts) { // pre-write would occur before most recent read
 			rc = Abort;
 		} else {
 #if TS_TWR
 			buffer_req(P_REQ, txn, NULL);
 			rc = RCOK;
 #else 
-			if (ts < wts) {
+			if (ts < wts) { //pre-write would occur before most recent write
 				rc = Abort;
-			} else {
+			} else { // pre-write is ok
+        //printf("Buffer P_REQ %ld\n",txn->txn_id);
 				buffer_req(P_REQ, txn, NULL);
 				rc = RCOK;
 			}
@@ -204,16 +206,18 @@ RC Row_ts::access(txn_man * txn, TsType type, row_t * row) {
 			goto final;
 		}
 #else
-		if (ts > min_pts) {
+		if (ts > min_pts) { // write should happen after older writes are processed
+      //printf("Buffer W_REQ %ld\n",txn->txn_id);
 			buffer_req(W_REQ, txn, row);
 			goto final;
 		}
 #endif
-		if (ts > min_rts) {
+		if (ts > min_rts) { // write should happen after older reads are processed
 			row = txn->cur_row;
+      //printf("Buffer W_REQ %ld\n",txn->txn_id);
 			buffer_req(W_REQ, txn, row);
             goto final;
-		} else { 
+		} else { // write is ok;
 			// the write is output. 
 			_row->copy(row);
 			if (wts < ts)

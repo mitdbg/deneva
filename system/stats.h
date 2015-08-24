@@ -28,6 +28,7 @@ public:
 	uint64_t rbk_abort_cnt;
 	double tot_run_time;
 	double run_time;
+    double finish_time;
   double time_clock_rwait;
   double time_clock_wait;
   double time_work;
@@ -175,6 +176,7 @@ public:
 	void print_cnts();
 	void print_lat_distr();
 	void print_abort_distr();
+    uint64_t get_txn_cnts();
 };
 
 #endif

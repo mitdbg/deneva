@@ -39,6 +39,12 @@ void ycsb_client_query::init(uint64_t thd_id, workload * h_wl, uint64_t node_id)
 
 }
 
+void ycsb_client_query::init() {
+	requests = (ycsb_request *) 
+		mem_allocator.alloc(sizeof(ycsb_request) * g_req_per_query, 0);
+	part_to_access = (uint64_t *) 
+		mem_allocator.alloc(sizeof(uint64_t) * g_part_per_txn, 0);
+}
 
 void ycsb_query::init(uint64_t thd_id, workload * h_wl, uint64_t node_id) {
 /*
@@ -679,6 +685,20 @@ void ycsb_client_query::gen_requests(uint64_t thd_id, workload * h_wl) {
 		rid ++;
 	}
 	request_cnt = rid;
+
+#if CREATE_TXN_FILE
+  char output_file[50];
+  sprintf(output_file,"p%ld_%d_mpr%g.txt",part_to_access[0],g_part_cnt,g_mpr);
+  FILE * outf;
+  outf = fopen(output_file,"a");
+  //printf("%ld %ld %ld ",request_cnt,part_to_access[0],part_num);
+  for(uint64_t i = 0; i < request_cnt; i++) {
+    fprintf(outf,"%d %ld ",requests[i].acctype,requests[i].key);
+    //printf("%d %d %ld | ",requests[i].acctype,((ycsb_wl*)h_wl)->key_to_part(requests[i].key),requests[i].key);
+  }
+  fprintf(outf,"\n");
+  fclose(outf);
+#endif
 
 	// Sort the requests in key order.
 	if (g_key_order) {

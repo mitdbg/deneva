@@ -6,6 +6,7 @@
 // Simulation + Hardware
 /***********************************************/
 #define NODE_CNT 1
+#define NODE_CNT 4
 #define THREAD_CNT 2
 // REM_THREAD_CNT should be at least NODE_CNT*THREAD_CNT to avoid deadlock
 #define REM_THREAD_CNT 1
@@ -78,7 +79,7 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, VOLTDB, OCC, VLL, CALVIN
-#define CC_ALG HSTORE_SPEC
+#define CC_ALG OCC
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER         false
@@ -140,21 +141,23 @@
 #define MAX_PART_PER_TXN      16 
 #define MAX_ROW_PER_TXN       64
 #define QUERY_INTVL         1UL
-#define MAX_TXN_PER_PART 3000000
+#define MAX_TXN_PER_PART 2000000
 #define FIRST_PART_LOCAL      true
 #define MAX_TUPLE_SIZE        1024 // in bytes
 // ==== [YCSB] ====
 #define INIT_PARALLELISM 4
 #define SYNTH_TABLE_SIZE 2097152
-#define ZIPF_THETA 0.0
+#define ZIPF_THETA 0.6
 #define READ_PERC 0.5
 #define WRITE_PERC 0.5
 #define SCAN_PERC           0
 #define SCAN_LEN          20
 #define PART_PER_TXN 1
 #define PERC_MULTI_PART     MPR 
-#define REQ_PER_QUERY       16
+#define REQ_PER_QUERY      16
 #define FIELD_PER_TUPLE       10
+#define LOAD_TXN_FILE false
+#define CREATE_TXN_FILE false
 // ==== [TPCC] ====
 // For large warehouse count, the tables do not fit in memory
 // small tpcc schemas shrink the table size.
@@ -170,7 +173,7 @@
 #define WH_UPDATE         true
 #define NUM_WH 2
 // % of transactions that access multiple partitions
-#define MPR 5
+#define MPR 25
 #define MPR_NEWORDER      20 // In %
 // Smaller item selection to model contention
 #define CONTENTION false

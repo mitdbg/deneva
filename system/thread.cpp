@@ -202,6 +202,7 @@ RC thread_t::run() {
 
 	uint64_t run_starttime = get_sys_clock();
 	uint64_t prog_time = run_starttime;
+    bool txns_completed = false;
 
 	while(true) {
 
@@ -215,16 +216,34 @@ RC thread_t::run() {
 		//    work_queue.add_query(m_query);
 		//}
 
-		if(get_thd_id() == 0 && get_sys_clock() - prog_time >= PROG_TIMER) {
-			prog_time = get_sys_clock();
-			SET_STATS(get_thd_id(), tot_run_time, prog_time - run_starttime); 
+		if(get_thd_id() == 0) {
+            uint64_t now_time = get_sys_clock();
+            if (now_time - prog_time >= PROG_TIMER) {
+			    prog_time = now_time;
+			    SET_STATS(get_thd_id(), tot_run_time, prog_time - run_starttime); 
 
-			stats.print(true);
+			    stats.print(true);
+            }
+            if (!txns_completed && stats.get_txn_cnts() >= MAX_TXN_PER_PART) {
+                assert (stats._stats[get_thd_id()]->finish_time == 0);
+                txns_completed = true;
+                printf("Setting final finish time\n");
+                SET_STATS(get_thd_id(), finish_time, now_time - run_starttime);
+                fflush(stdout);
+            }
 		}
 		while(!work_queue.poll_next_query(get_thd_id()) && !abort_queue.poll_abort(get_thd_id()) && !_wl->sim_done && !_wl->sim_timeout) { 
 #if CC_ALG == HSTORE_SPEC
       txn_pool.spec_next(_thd_id);
 #endif
+      // FIXME: Probably slow.
+		if (warmup_finish && ((get_sys_clock() - run_starttime >= DONE_TIMER) || (txn_st_cnt >= MAX_TXN_PER_PART/g_thread_cnt && txn_pool.empty(get_node_id())))) {
+        //if (warmup_finish && ((get_sys_clock() - run_starttime >= DONE_TIMER) || (stats.get_txn_cnts() >= MAX_TXN_PER_PART && txn_pool.empty(get_node_id())))) {
+			//assert(txn_cnt == MAX_TXN_PER_PART);
+			if( !ATOM_CAS(_wl->sim_done, false, true) )
+				assert( _wl->sim_done);
+			stoptime = get_sys_clock();
+		}
     }
 		//while(!work_queue.poll_next_query() && !(_wl->sim_done && _wl->sim_timeout)) { }
 
@@ -776,6 +795,9 @@ RC thread_t::run() {
           m_txn->txn_time_misc += m_query->time_q_work;
           m_txn->txn_time_misc += m_query->time_copy;
           m_txn->register_thd(this);
+#if DEBUG_DISTR && !DEBUG_TIMELINE
+					printf("START %ld %f\n",m_txn->get_txn_id(),(double)(m_txn->starttime - run_starttime) / BILLION);
+#endif
 #if DEBUG_TIMELINE
 					printf("START %ld %ld\n",m_txn->get_txn_id(),m_txn->starttime);
 					//printf("START %ld %ld\n",m_txn->get_txn_id(),m_txn->starttime - run_starttime);
@@ -797,6 +819,9 @@ RC thread_t::run() {
 							|| CC_ALG == TIMESTAMP) { 
 						m_txn->set_ts(get_next_ts());
 						m_query->ts = m_txn->get_ts();
+#if DEBUG_DISTR
+					//printf("GET_TIMESTAMP %ld %lu\n",m_txn->get_txn_id(),m_txn->get_ts());
+#endif
 					}
 
 #if CC_ALG == MVCC
@@ -1001,6 +1026,9 @@ RC thread_t::run() {
           m_txn->txn_time_misc += timespan;
           m_txn->update_stats();
 
+#if DEBUG_DISTR && !DEBUG_TIMELINE
+					printf("COMMIT %ld %f\n",m_txn->get_txn_id(),(double)(get_sys_clock() - run_starttime) / BILLION);
+#endif
 #if DEBUG_TIMELINE
 					printf("COMMIT %ld %ld\n",m_txn->get_txn_id(),get_sys_clock());
 					//printf("COMMIT %ld %ld\n",m_txn->get_txn_id(),get_sys_clock() - run_starttime);
@@ -1019,14 +1047,7 @@ RC thread_t::run() {
 */
 					break;
 				case Abort:
-          /*
-#if CC_ALG == HSTORE_SPEC
-					if(m_txn->spec && m_txn->state != DONE)
-						break;
-#endif
-*/
 					assert(m_txn->get_rsp_cnt() == 0);
-					//if(m_query->part_num == 1 && !m_txn->spec)
 					if(m_query->part_num == 1 && !m_txn->spec)
 						rc = m_txn->finish(rc,m_query->part_to_access,m_query->part_num);
           /*
@@ -1055,6 +1076,9 @@ RC thread_t::run() {
         //txn_pool.add_txn(g_node_id,m_txn,m_query);
         // Stats
 				INC_STATS(get_thd_id(), abort_cnt, 1);
+
+				//printf("ABORT %ld %ld %ld\n",m_txn->get_txn_id(),m_query->part_num,m_query->part_touched_cnt);
+
         m_txn->abort_cnt++;
         m_query->part_touched_cnt = 0;
         m_query->rtype = RTXN;

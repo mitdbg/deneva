@@ -11,11 +11,18 @@
 
 void 
 Client_query_queue::init(workload * h_wl) {
-	all_queries = new Client_query_thd * [g_servers_per_client];
 	_wl = h_wl;
-	for (UInt32 tid = 0; tid < g_servers_per_client; tid ++) {
+#if CREATE_TXN_FILE
+	all_queries = new Client_query_thd * [PART_CNT];
+	for (UInt32 tid = 0; tid < PART_CNT; tid ++) {
 		init(tid);
     }
+#else
+	all_queries = new Client_query_thd * [g_servers_per_client];
+	for (UInt32 tid = 0; tid < g_servers_per_client; tid ++) {
+		init(tid);
+  }
+#endif
 }
 
 void 
@@ -56,12 +63,6 @@ Client_query_thd::init(workload * h_wl, int thread_id) {
 		mem_allocator.alloc(sizeof(ycsb_client_query) * g_client_thread_cnt, thread_id);
   for(uint64_t i=0;i<g_client_thread_cnt;i++)
 	  new(&queries[i]) ycsb_client_query();
-  /*
-	queries = (ycsb_query *) 
-		mem_allocator.alloc(sizeof(ycsb_query) * g_client_thread_cnt, thread_id);
-  for(uint64_t i=0;i<g_client_thread_cnt;i++)
-	  new(&queries[i]) ycsb_query();
-    */
 #elif WORKLOAD == TPCC
 	queries = (tpcc_query *) 
 		mem_allocator.alloc(sizeof(tpcc_query) * g_client_thread_cnt, thread_id);
@@ -77,27 +78,25 @@ Client_query_thd::init(workload * h_wl, int thread_id) {
 #if WORKLOAD == YCSB	
 	queries = (ycsb_client_query *) 
 		mem_allocator.alloc(sizeof(ycsb_client_query) * request_cnt, thread_id);
-  /*
-	queries = (ycsb_query *) 
-		mem_allocator.alloc(sizeof(ycsb_query) * request_cnt, thread_id);
-    */
 #elif WORKLOAD == TPCC
 	queries = (tpcc_query *) 
 		mem_allocator.alloc(sizeof(tpcc_query) * request_cnt, thread_id);
 #endif
 
-//	for (UInt32 qid = 0; qid < request_cnt; qid ++) {
-//#if WORKLOAD == YCSB	
-//		new(&queries[qid]) ycsb_query();
-//#elif WORKLOAD == TPCC
-//		new(&queries[qid]) tpcc_query();
-//#endif
-//		//queries[qid].init(thread_id, h_wl, qid % g_node_cnt);
-//		queries[qid].init(thread_id, h_wl, thread_id+g_server_start_node);
-//		// Setup
-//		queries[qid].txn_id = UINT64_MAX;
-//		queries[qid].rtype = RTXN;
-//		//queries[qid].client_id = g_node_id;
+#if LOAD_TXN_FILE
+
+  char input_file[50];
+	char * cpath = getenv("SCHEMA_PATH");
+	if (cpath == NULL) 
+    sprintf(input_file,"./input_txn_files/p%d_%d_mpr%g.txt",thread_id+g_server_start_node,g_part_cnt,g_mpr);
+	else { 
+    sprintf(input_file,"%s/p%d_%d_mpr%g.txt",cpath,thread_id+g_server_start_node,g_part_cnt,g_mpr);
+	}
+  printf("%s\n",input_file);
+  init_txns_file( input_file );
+  return;
+#endif
+
 	pthread_t * p_thds = new pthread_t[g_init_parallelism - 1];
 	for (UInt32 i = 0; i < g_init_parallelism - 1; i++) {
 		pthread_create(&p_thds[i], NULL, threadInitQuery, this);
@@ -114,6 +113,60 @@ Client_query_thd::init(workload * h_wl, int thread_id) {
 	}
 
 #endif
+}
+
+void 
+Client_query_thd::init_txns_file(const char * txn_file) {
+	string line;
+  uint64_t qid = 0;
+  uint64_t request_cnt;
+	request_cnt = MAX_TXN_PER_PART + 4;
+	ifstream fin(txn_file);
+  while (getline(fin, line) && qid < request_cnt) {
+
+#if WORKLOAD == YCSB	
+		new(&queries[qid]) ycsb_client_query();
+#elif WORKLOAD == TPCC
+		new(&queries[qid]) tpcc_query();
+#endif
+    queries[qid].init();
+    int num = 0;
+    int idx = 0;
+    int part_cnt = 0;
+		size_t pos = 0;
+		string token;
+    while(line.length() != 0) {
+      pos = line.find(" ");
+		  if (pos == string::npos)
+				pos = line.length();
+	    token = line.substr(0, pos);
+		 	line.erase(0, pos + 1);
+      switch(num) {
+        case 0: queries[qid].requests[idx].acctype = (access_t)atoi(token.c_str()); break;// Rd/Wr
+        case 1: queries[qid].requests[idx].key = atoi(token.c_str());break;// key
+      }
+      if(num == 1) {
+        uint64_t part = queries[qid].requests[idx].key % g_part_cnt;
+        int i = 0;
+        for(i = 0; i < part_cnt; i++) {
+          if(part == queries[qid].part_to_access[i])
+            break;
+        }
+        if(i == part_cnt)
+          queries[qid].part_to_access[part_cnt++] = part;
+        idx++;
+      }
+      num = (num + 1) % 2;
+
+    }
+    queries[qid].request_cnt = idx;
+    queries[qid].part_num = part_cnt;
+    queries[qid].pid = queries[qid].part_to_access[0];
+    qid++;
+  }
+
+	fin.close();
+
 }
 
 bool
@@ -168,7 +221,6 @@ void Client_query_thd::init_query() {
 	for (UInt32 qid = request_cnt / g_init_parallelism * tid; qid < final_request; qid ++) {
 #if WORKLOAD == YCSB	
 		new(&queries[qid]) ycsb_client_query();
-		//new(&queries[qid]) ycsb_query();
 #elif WORKLOAD == TPCC
 		new(&queries[qid]) tpcc_query();
 #endif

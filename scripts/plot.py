@@ -20,13 +20,13 @@ exp_cnt = 1
 last_arg = None
 plot = True;
 clear = False;
-timedate = [];
+_timedate = [];
 exps = []
 for arg in sys.argv[1:]:
     if last_arg == "-n":
         exp_cnt = int(arg)
     elif last_arg == "-tdate":
-        timedate.append(arg)
+        _timedate.append(arg)
     elif arg == "-clear":
         clear = True
     elif arg == "-s":
@@ -115,7 +115,8 @@ for exp in exps:
                 all_nodes.append(sorted(list(set(nodes))))
         else:
             opened = False
-            if timedate == []:
+            timedate = []
+            if _timedate == []:
                 ofile = "{}{}_{}*.out".format(result_dir,0,output_f)
                 res_list = sorted(glob.glob(ofile),key=os.path.getmtime,reverse=True)
                 for x in range(exp_cnt):
@@ -123,6 +124,8 @@ for exp in exps:
                         print("Exceeded experiment limit")
                         continue
                     timedate.append(re.search("(\d{8}-\d{6})",res_list[x]).group(0))
+            else:
+                timedate = _timedate
             p_sfiles = ["{}s_{}_{}.p".format(result_dir,output_f,t) for t in timedate]
             p_cfiles = ["{}c_{}_{}.p".format(result_dir,output_f,t) for t in timedate]
             for p_sfile,p_cfile,time in zip(p_sfiles,p_cfiles,timedate):

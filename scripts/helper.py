@@ -104,6 +104,8 @@ cflts = ["w_cflt","d_cflt","cnp_cflt","c_cflt","ol_cflt","s_cflt","w_abrt","d_ab
 lats = ["all_lat"]
 
 def avg(l):
+    if len(l) == 0:
+        return 0
     return float(sum(l) / float(len(l)))
 
 def stdev(l):
