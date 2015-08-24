@@ -824,6 +824,7 @@ RC thread_t::run() {
 					if ((CC_ALG == HSTORE && !HSTORE_LOCAL_TS)
 							|| (CC_ALG == HSTORE_SPEC && !HSTORE_LOCAL_TS)
 							|| CC_ALG == MVCC 
+              || CC_ALG == VLL
 							|| CC_ALG == TIMESTAMP) { 
 						m_txn->set_ts(get_next_ts());
 						m_query->ts = m_txn->get_ts();
@@ -908,7 +909,8 @@ RC thread_t::run() {
                 if(m_query->part_num == 1) {
                   rc = vll_man.beginTxn(m_txn,m_query);
                   if(rc == WAIT) {
-                    m_txn->rc = rc;
+                    break;
+                    //m_txn->rc = rc;
                   }
                 }
               }
