@@ -202,6 +202,7 @@ RC thread_t::run() {
 
 	uint64_t run_starttime = get_sys_clock();
 	uint64_t prog_time = run_starttime;
+    bool txns_completed = false;
 
 	while(true) {
 
@@ -215,11 +216,21 @@ RC thread_t::run() {
 		//    work_queue.add_query(m_query);
 		//}
 
-		if(get_thd_id() == 0 && get_sys_clock() - prog_time >= PROG_TIMER) {
-			prog_time = get_sys_clock();
-			SET_STATS(get_thd_id(), tot_run_time, prog_time - run_starttime); 
+		if(get_thd_id() == 0) {
+            uint64_t now_time = get_sys_clock();
+            if (now_time - prog_time >= PROG_TIMER) {
+			    prog_time = now_time;
+			    SET_STATS(get_thd_id(), tot_run_time, prog_time - run_starttime); 
 
-			stats.print(true);
+			    stats.print(true);
+            }
+            if (!txns_completed && stats.get_txn_cnts() >= MAX_TXN_PER_PART) {
+                assert (stats._stats[get_thd_id()]->finish_time == 0);
+                txns_completed = true;
+                printf("Setting final finish time\n");
+                SET_STATS(get_thd_id(), finish_time, now_time - run_starttime);
+                fflush(stdout);
+            }
 		}
 		while(!work_queue.poll_next_query(get_thd_id()) && !abort_queue.poll_abort(get_thd_id()) && !_wl->sim_done && !_wl->sim_timeout) { 
 #if CC_ALG == HSTORE_SPEC
@@ -227,6 +238,7 @@ RC thread_t::run() {
 #endif
       // FIXME: Probably slow.
 		if (warmup_finish && ((get_sys_clock() - run_starttime >= DONE_TIMER) || (txn_st_cnt >= MAX_TXN_PER_PART/g_thread_cnt && txn_pool.empty(get_node_id())))) {
+        //if (warmup_finish && ((get_sys_clock() - run_starttime >= DONE_TIMER) || (stats.get_txn_cnts() >= MAX_TXN_PER_PART && txn_pool.empty(get_node_id())))) {
 			//assert(txn_cnt == MAX_TXN_PER_PART);
 			if( !ATOM_CAS(_wl->sim_done, false, true) )
 				assert( _wl->sim_done);

@@ -92,6 +92,7 @@ void Stats_thd::clear() {
 	rbk_abort_cnt = 0;
 	tot_run_time = 0;
 	run_time = 0;
+    finish_time = 0;
 	time_clock_wait = 0;
 	time_clock_rwait = 0;
 	time_work = 0;
@@ -600,6 +601,7 @@ void Stats::print(bool prog) {
 	uint64_t total_rbk_abort_cnt = 0;
 	double total_tot_run_time = 0;
 	double total_run_time = 0;
+    double total_finish_time = 0;
 	double total_time_work = 0;
 	double total_time_man = 0;
 	double total_time_rqry = 0;
@@ -685,6 +687,7 @@ void Stats::print(bool prog) {
     if(!prog)
 		  total_tot_run_time += _stats[tid]->tot_run_time;
 		total_run_time += _stats[tid]->run_time;
+        total_finish_time += _stats[tid]->finish_time;
 		total_time_work += _stats[tid]->time_work;
 		total_time_man += _stats[tid]->time_man;
 		total_time_rqry += _stats[tid]->time_rqry;
@@ -765,8 +768,12 @@ void Stats::print(bool prog) {
 
   if(prog)
 		total_tot_run_time += _stats[0]->tot_run_time;
-  else
+  else {
 		total_tot_run_time = total_tot_run_time / g_thread_cnt;
+        if (total_finish_time == 0.0) {
+            total_finish_time = total_tot_run_time;
+        }
+    }
 
 	FILE * outf;
 	if (output_file != NULL) 
@@ -785,6 +792,7 @@ void Stats::print(bool prog) {
       ",rbk_abort_cnt=%ld"
       ",latency=%f"
       ",run_time=%f"
+      ",finish_time=%f"
       ",aq_full=%f"
 			",cc_wait_cnt=%ld"
 			",cc_wait_time=%f"
@@ -849,6 +857,7 @@ void Stats::print(bool prog) {
 			total_rbk_abort_cnt,
 			total_latency / BILLION / total_txn_cnt,
 			total_run_time / BILLION,
+            total_finish_time / BILLION,
 			total_aq_full / BILLION,
       total_cc_wait_cnt,
       total_cc_wait_time / BILLION,
@@ -917,6 +926,18 @@ void Stats::print(bool prog) {
   }
   fflush(stdout);
 
+}
+
+uint64_t Stats::get_txn_cnts() {
+    if(g_node_id >= g_node_cnt)
+        return 0;
+    uint64_t limit =  g_thread_cnt + g_rem_thread_cnt;
+    uint64_t total_txn_cnt = 0;
+	for (uint64_t tid = 0; tid < limit; tid ++) {
+		total_txn_cnt += _stats[tid]->txn_cnt;
+    }
+    //printf("total_txn_cnt: %lu\n",total_txn_cnt);
+    return total_txn_cnt;
 }
 
 void Stats::print_cnts() {
