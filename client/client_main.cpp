@@ -107,9 +107,6 @@ int main(int argc, char* argv[])
 	}
   printf("Done\n");
 
-  // FIXME
-  return(1);
-
 	pthread_barrier_init( &warmup_bar, NULL, thd_cnt );
   printf("Initializing threads... ");
   fflush(stdout);

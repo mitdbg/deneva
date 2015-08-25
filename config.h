@@ -6,7 +6,7 @@
 // Simulation + Hardware
 /***********************************************/
 #define NODE_CNT 1
-#define THREAD_CNT 2
+#define THREAD_CNT 3
 // REM_THREAD_CNT should be at least NODE_CNT*THREAD_CNT to avoid deadlock
 #define REM_THREAD_CNT 1
 // PART_CNT should be at least NODE_CNT
@@ -33,7 +33,7 @@
 #define STATS_ENABLE        true
 #define TIME_ENABLE         true //STATS_ENABLE
 
-#define MAX_TXN_IN_FLIGHT 2500
+#define MAX_TXN_IN_FLIGHT 10000
 
 /***********************************************/
 // Memory System
@@ -156,7 +156,7 @@
 #define REQ_PER_QUERY      16
 #define FIELD_PER_TUPLE       10
 #define LOAD_TXN_FILE false
-#define CREATE_TXN_FILE true
+#define CREATE_TXN_FILE false
 // ==== [TPCC] ====
 // For large warehouse count, the tables do not fit in memory
 // small tpcc schemas shrink the table size.
