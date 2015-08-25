@@ -42,6 +42,8 @@ lineconfig = {
     'HSTORE_SPEC'   : "ls='--', lw=2, color='#4d4d4d', marker='x', ms=6",
     'VLL'           : "ls='-', lw=2, color='#ff3333', marker='*', ms=4",
 
+    25              : "ls='-', lw=2, color='#4d4d4d', marker='s', ms=6",
+    50              : "ls='-', lw=2, color='#5DA5DA', marker='+', ms=6",
     60              : "ls='-', lw=2, color='#4d4d4d', marker='s', ms=6",
     70              : "ls='-', lw=2, color='#faa43a', marker='+', ms=6",
     80              : "ls='-', lw=2, color='#DECF3F', marker='o', ms=6",
