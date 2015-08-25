@@ -80,6 +80,8 @@ VLLMan::restartQFront() {
 		front_txn = front->txn;
 	if (front_txn && front_txn->vll_txn_type == VLL_Blocked) {
 		front_txn->vll_txn_type = VLL_Free;
+    uint64_t t = get_sys_clock() - front_txn->wait_starttime;
+    front_txn->txn_time_wait += t;
 #if DEBUG_DISTR
     printf("FREE %ld\n",front_txn->get_txn_id());
 #endif
@@ -153,6 +155,7 @@ VLLMan::beginTxn(txn_man * txn, base_query * query) {
   txn->vll_entry = entry;
 	if (txn->vll_txn_type == VLL_Blocked) {
 		ret = WAIT;
+    txn->wait_starttime = get_sys_clock();
 #if DEBUG_DISTR
     printf("BLOCKED %ld\n",txn->get_txn_id());
 #endif
