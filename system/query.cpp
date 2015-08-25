@@ -52,6 +52,8 @@ Query_thd::init(workload * h_wl, int thread_id) {
     queries[qid].txn_id = UINT64_MAX;
     queries[qid].rtype = RTXN;
 	}
+
+
 }
 
 base_query * 

@@ -8,7 +8,7 @@
 #define NODE_CNT 1
 #define THREAD_CNT 3
 // REM_THREAD_CNT should be at least NODE_CNT*THREAD_CNT to avoid deadlock
-#define REM_THREAD_CNT 1
+#define REM_THREAD_CNT 2
 // PART_CNT should be at least NODE_CNT
 #define PART_CNT 1
 #define CLIENT_NODE_CNT 1
@@ -34,6 +34,7 @@
 #define TIME_ENABLE         true //STATS_ENABLE
 
 #define MAX_TXN_IN_FLIGHT 10000
+>>>>>>> 112193071178b7334f30a3a6f29f1be8209e7f7b
 
 /***********************************************/
 // Memory System
@@ -156,7 +157,7 @@
 #define REQ_PER_QUERY      16
 #define FIELD_PER_TUPLE       10
 #define LOAD_TXN_FILE false
-#define CREATE_TXN_FILE false
+#define CREATE_TXN_FILE true
 // ==== [TPCC] ====
 // For large warehouse count, the tables do not fit in memory
 // small tpcc schemas shrink the table size.
@@ -170,9 +171,9 @@
 // are not modeled.
 #define TPCC_ACCESS_ALL       false 
 #define WH_UPDATE         true
-#define NUM_WH 1
+#define NUM_WH 2
 // % of transactions that access multiple partitions
-#define MPR 0
+#define MPR 50 
 #define MPR_NEWORDER      20 // In %
 // Smaller item selection to model contention
 #define CONTENTION false
