@@ -30,6 +30,29 @@ Client_query_queue::init(int thread_id) {
 	all_queries[thread_id] = (Client_query_thd *) 
 		mem_allocator.alloc(sizeof(Client_query_thd), thread_id);
 	all_queries[thread_id]->init(_wl, thread_id);
+
+#if CREATE_TXN_FILE
+  char output_file[50];
+  sprintf(output_file,"p%d_%d_mpr%g.txt",thread_id,g_part_cnt,g_mpr);
+  FILE * outf;
+  outf = fopen(output_file,"w");
+  //printf("%ld %ld %ld ",request_cnt,part_to_access[0],part_num);
+
+  for(uint64_t j = 0; j < g_client_thread_cnt; j++) {
+	ycsb_client_query * query = (ycsb_client_query*)all_queries[thread_id]->get_next_query(j);
+  while(query) {
+    for(uint64_t i = 0; i < query->request_cnt; i++) {
+      fprintf(outf,"%d,%ld,",query->requests[i].acctype,query->requests[i].key);
+    }
+    fprintf(outf,"\n");
+	  query = (ycsb_client_query*)all_queries[thread_id]->get_next_query(j);
+    //printf("%d %d %ld | ",requests[i].acctype,((ycsb_wl*)h_wl)->key_to_part(requests[i].key),requests[i].key);
+  }
+  }
+  fclose(outf);
+#endif
+
+
 }
 
 bool

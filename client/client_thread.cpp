@@ -45,8 +45,10 @@ RC Client_thread_t::run_remote() {
     uint32_t return_node_offset;
 	//int rsp_cnts[g_node_cnt];
 	//memset(rsp_cnts, 0, g_node_cnt * sizeof(int));
+
 	int rsp_cnts[g_servers_per_client];
 	memset(rsp_cnts, 0, g_servers_per_client * sizeof(int));
+  if(_thd_id == g_client_thread_cnt) {
 	while(rsp_cnt > 0) {
 		m_query = (base_query *) tport_man.recv_msg();
 		if (m_query != NULL) {
@@ -71,6 +73,7 @@ RC Client_thread_t::run_remote() {
 			}
 		}
 	}
+  }
 	pthread_barrier_wait( &warmup_bar );
 	printf("Run_remote %ld:%ld\n",_node_id, _thd_id);
 
@@ -89,9 +92,11 @@ RC Client_thread_t::run_remote() {
 			assert(m_query->rtype == CL_RSP || m_query->rtype == EXP_DONE);
 			assert(m_query->dest_id == g_node_id);
 			//assert(m_query->return_id < g_node_id);
+      /*
 #if DEBUG_DISTR
 			printf("Received query response from %u\n", m_query->return_id);
 #endif
+*/
 			//for (uint64_t l = 0; l < g_node_cnt; ++l)
 			//    printf("Response count for %lu: %d\n", l, rsp_cnts[l]);
 			switch (m_query->rtype) {

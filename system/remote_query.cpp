@@ -556,6 +556,9 @@ base_query * Remote_query::unpack(void * d, int len) {
           INC_STATS(0,client_latency,timespan);
           INC_STATS_ARR(0,all_lat,timespan);
           INC_STATS(0,txn_cnt,1);
+#if DEBUG_DISTR
+			  printf("Received CL_RSP from %u -- %ld %f\n", query->return_id,query->txn_id,(float)timespan/BILLION);
+#endif
             	break;
 	    	default:
 		assert(false);

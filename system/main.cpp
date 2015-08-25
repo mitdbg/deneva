@@ -178,7 +178,8 @@ int main(int argc, char* argv[])
 	// spawn and run txns again.
 	starttime = get_server_clock();
 
-	for (uint32_t i = 0; i < thd_cnt; i++) {
+  uint64_t i = 0;
+	for (i = 0; i < thd_cnt; i++) {
 		uint64_t vid = i;
 		CPU_ZERO(&cpus);
 #if TPORT_TYPE_IPC
@@ -191,44 +192,17 @@ int main(int argc, char* argv[])
 		pthread_create(&p_thds[i], &attr, worker, (void *)vid);
   }
 
-  nn_worker((void *)(thd_cnt));
-
-	for (uint32_t i = 0; i < thd_cnt; i++) 
-		pthread_join(p_thds[i], NULL);
-
-    /*
-	for (uint32_t i = 0; i < thd_cnt; i++) {
+	for (; i < thd_cnt + rthd_cnt -1; i++) {
 		uint64_t vid = i;
-		CPU_ZERO(&cpus);
-#if TPORT_TYPE_IPC
-    CPU_SET(g_node_id * (g_thread_cnt) + cpu_cnt, &cpus);
-    //CPU_SET(g_node_id * (g_thread_cnt + g_rem_thread_cnt) + cpu_cnt, &cpus);
-#else
-    CPU_SET(cpu_cnt, &cpus);
-#endif
-		cpu_cnt++;
-    pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
-		pthread_create(&p_thds[i], &attr, f, (void *)vid);
-	}
+		pthread_create(&p_thds[i], &attr, nn_worker, (void *)vid);
+  }
 
 
-	for (uint32_t i = 0; i < rthd_cnt; i++) {
-		CPU_ZERO(&cpus);
-#if TPORT_TYPE_IPC
-    //CPU_SET(g_node_id * (g_thread_cnt + g_rem_thread_cnt) + cpu_cnt, &cpus);
-#else
-    CPU_SET(cpu_cnt, &cpus);
-  	pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
-#endif
-		cpu_cnt++;
-		pthread_create(&p_thds[thd_cnt+i], &attr, g, (void *)(thd_cnt + i));
-	//g((void *)(thd_cnt));
-	}
+  nn_worker((void *)(i));
 
-
-	for (uint32_t i = 0; i < thd_cnt + rthd_cnt; i++) 
+	for (i = 0; i < thd_cnt + rthd_cnt - 1; i++) 
 		pthread_join(p_thds[i], NULL);
-    */
+
 	endtime = get_server_clock();
 	
 	if (WORKLOAD != TEST) {

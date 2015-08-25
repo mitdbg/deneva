@@ -107,6 +107,8 @@ int main(int argc, char* argv[])
 	}
   printf("Done\n");
 
+  // FIXME
+  return(1);
 
 	pthread_barrier_init( &warmup_bar, NULL, thd_cnt );
   printf("Initializing threads... ");
@@ -132,7 +134,8 @@ int main(int argc, char* argv[])
 	// spawn and run txns again.
 	starttime = get_server_clock();
 
-	for (uint32_t i = 0; i < thd_cnt; i++) {
+  uint64_t i = 0;
+	for (i = 0; i < thd_cnt; i++) {
 		uint64_t vid = i;
 		CPU_ZERO(&cpus);
 #if TPORT_TYPE_IPC
@@ -145,9 +148,14 @@ int main(int argc, char* argv[])
 		pthread_create(&p_thds[i], &attr, worker, (void *)vid);
     }
 
-    nn_worker((void *)(thd_cnt));
+	for (; i < thd_cnt + rthd_cnt -1; i++) {
+		uint64_t vid = i;
+		pthread_create(&p_thds[i], &attr, nn_worker, (void *)vid);
+  }
 
-	for (uint32_t i = 0; i < thd_cnt; i++) 
+    nn_worker((void *)(i));
+
+	for (i = 0; i < thd_cnt + rthd_cnt - 1; i++) 
 		pthread_join(p_thds[i], NULL);
 
 	endtime = get_server_clock();

@@ -50,6 +50,7 @@ RC thread_t::run_remote() {
 #if CC_ALG == CALVIN
 	rsp_cnt++;	// Account for sequencer node
 #endif
+  if(_thd_id == g_thread_cnt) {
 	while(rsp_cnt > 0) {
 		m_query = (base_query *) tport_man.recv_msg();
 		if(m_query != NULL && m_query->rtype == INIT_DONE) {
@@ -69,6 +70,7 @@ RC thread_t::run_remote() {
         */
 		}
 	}
+  }
 	//#endif
 	pthread_barrier_wait( &warmup_bar );
 	printf("Run_remote %ld:%ld\n",_node_id, _thd_id);
@@ -1037,7 +1039,7 @@ RC thread_t::run() {
           m_txn->update_stats();
 
 #if DEBUG_DISTR && !DEBUG_TIMELINE
-					printf("COMMIT %ld %f\n",m_txn->get_txn_id(),(double)(get_sys_clock() - run_starttime) / BILLION);
+					printf("COMMIT %ld %ld %ld %f -- %f\n",m_txn->get_txn_id(),m_query->part_num,m_txn->abort_cnt,(double)m_txn->txn_time_wait/BILLION,(double)timespan/ BILLION);
 #endif
 #if DEBUG_TIMELINE
 					printf("COMMIT %ld %ld\n",m_txn->get_txn_id(),get_sys_clock());
@@ -1125,8 +1127,13 @@ RC thread_t::run() {
 #endif
           m_txn->spec = false;
           m_txn->spec_done = false;
+
+					if (CC_ALG == VLL) { 
+					work_queue.add_query(_thd_id,m_query);
+          }
+          else {
           abort_queue.add_abort_query(_thd_id,m_query);
-					//work_queue.add_query(m_query);
+          }
           /*
 #if CC_ALG == VLL
           vll_man.restartQFront();
