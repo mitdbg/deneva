@@ -12,8 +12,8 @@
 // PART_CNT should be at least NODE_CNT
 #define PART_CNT 1
 #define CLIENT_NODE_CNT 1
-#define CLIENT_THREAD_CNT 2
-#define CLIENT_REM_THREAD_CNT 2
+#define CLIENT_THREAD_CNT 3
+#define CLIENT_REM_THREAD_CNT 1
 #define CLIENT_RUNTIME false
 
 // each transaction only accesses only 1 virtual partition. But the lock/ts manager and index are not aware of such partitioning. VIRTUAL_PART_CNT describes the request distribution and is only used to generate queries. For HSTORE, VIRTUAL_PART_CNT should be the same as PART_CNT.
@@ -33,7 +33,7 @@
 #define STATS_ENABLE        true
 #define TIME_ENABLE         true //STATS_ENABLE
 
-#define MAX_TXN_IN_FLIGHT 10000
+#define MAX_TXN_IN_FLIGHT 2000
 
 /***********************************************/
 // Memory System
@@ -78,7 +78,7 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, VOLTDB, OCC, VLL, CALVIN
-#define CC_ALG WAIT_DIE
+#define CC_ALG NO_WAIT
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER         false
@@ -146,7 +146,7 @@
 // ==== [YCSB] ====
 #define INIT_PARALLELISM 4
 #define SYNTH_TABLE_SIZE 2097152
-#define ZIPF_THETA 0.0
+#define ZIPF_THETA 0.6
 #define READ_PERC 0.5
 #define WRITE_PERC 0.5
 #define SCAN_PERC           0
@@ -172,7 +172,7 @@
 #define WH_UPDATE         true
 #define NUM_WH 1
 // % of transactions that access multiple partitions
-#define MPR 0
+#define MPR 5
 #define MPR_NEWORDER      20 // In %
 // Smaller item selection to model contention
 #define CONTENTION false
@@ -268,8 +268,8 @@ extern TestCases          g_test_case;
 // Stats and timeout
 #define BILLION 1000000000UL // in ns => 1 second
 #define STAT_ARR_SIZE 1024
-#define PROG_TIMER 100 * BILLION // in s
-#define DONE_TIMER 5 * 60 * BILLION // 3 minutes
+#define PROG_TIMER 30 * BILLION // in s
+#define DONE_TIMER 3 * 60 * BILLION // 3 minutes
 
 #define SEED 0
 

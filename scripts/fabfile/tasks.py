@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 from __future__ import print_function
+import logging
 from fabric.api import task,run,local,put,get,execute,settings
 from fabric.decorators import *
 from fabric.context_managers import shell_env,quiet
@@ -19,6 +20,11 @@ sys.path.append('..')
 from environment import *
 from experiments import *
 from helper import get_cfgs,get_outfile_name
+
+# (see https://github.com/fabric/fabric/issues/51#issuecomment-96341022)
+logging.basicConfig()
+paramiko_logger = logging.getLogger("paramiko.transport")
+paramiko_logger.disabled = True
 
 COLORS = {
     "info"  : 32, #green
@@ -82,7 +88,7 @@ def run_exps(exps,skip_completed='False',exec_exps='True',dry_run='False',iterat
             puts("running experiment set:{}".format(exps),show_prefix=True)
 
     # Make sure all experiment binaries exist
-    execute(check_binaries,exps)
+#    execute(check_binaries,exps)
 
     # Run experiments
     for i in range(ITERS):

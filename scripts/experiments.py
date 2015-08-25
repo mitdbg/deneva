@@ -6,7 +6,7 @@ import math
 # Format: [#Nodes,#Txns,Workload,CC_ALG,MPR]
 fmt_tpcc = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","NUM_WH","MAX_TXN_IN_FLIGHT"]]
 fmt_nd = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","NUM_WH","MAX_TXN_IN_FLIGHT","NETWORK_DELAY"]]
-fmt_ycsb = [["CLIENT_NODE_CNT","NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","CLIENT_THREAD_CNT","CLIENT_REM_THREAD_CNT","THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC","PART_PER_TXN","PART_CNT"]]
+fmt_ycsb = [["CLIENT_NODE_CNT","NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","CLIENT_THREAD_CNT","CLIENT_REM_THREAD_CNT","THREAD_CNT","REM_THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC","PART_PER_TXN","PART_CNT"]]
 fmt_ycsb_plot = [["CLIENT_NODE_CNT","NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","CLIENT_THREAD_CNT","THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC","PART_PER_TXN"]]
 fmt_nt = [["NODE_CNT","CLIENT_NODE_CNT","NETWORK_TEST"]]
 
@@ -18,15 +18,16 @@ def test():
     nmpr=[0]
     nalgos=['WAIT_DIE']
     #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
-    nthreads=[2,3]
+    nthreads=[3]
+    nrthreads=[1]
     ncthreads=[2]
     ncrthreads=[2]
-    ntifs=[2500,5000,7500,10000]
+    ntifs=[10000]
     nzipf=[0.0]
     nwr_perc=[0.5]
     ntxn=[3000000]
     nparts = [2]
-    exp = [[int(math.ceil(n)) if n > 1 else 1,n,txn,'YCSB',cc,m,ct,crt,t,tif,z,1.0-wp,wp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n] for n,ct,crt,t,tif,z,wp,m,cc,p,txn in itertools.product(nnodes,ncthreads,ncrthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts,ntxn)]
+    exp = [[int(math.ceil(n)) if n > 1 else 1,n,txn,'YCSB',cc,m,ct,crt,t,rt,tif,z,1.0-wp,wp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n] for n,ct,crt,t,rt,tif,z,wp,m,cc,p,txn in itertools.product(nnodes,ncthreads,ncrthreads,nthreads,nrthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts,ntxn)]
     return fmt[0],exp
 
 def test_plot(summary,summary_client):
@@ -126,17 +127,24 @@ def partition_sweep_plot(summary,summary_client):
 def node_sweep():
     fmt = fmt_ycsb
     nnodes = [1,2,4,8,16]
-    nmpr=[0,5,25,50,75,100]
+    nmpr=[100]
+#    nmpr=[0,5,25,50,75,100]
     nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','TIMESTAMP','VLL','HSTORE']
     #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
     nthreads=[3]
-    ncthreads=[4]
-    ntifs=[1000]
-    nzipf=[0.0,0.6,0.8]
+    nrthreads=[1]
+    ncthreads=[3]
+    ncrthreads=[1]
+    ntifs=[2000]
+    nzipf=[0.0]
+#    nzipf=[0.0,0.6,0.8]
     nwr_perc=[0.5]
     ntxn=[3000000]
-    nparts = [2,4,8,16]
-    exp = [[int(math.ceil(n)) if n > 1 else 1,n,txn,'YCSB',cc,m,ct,t,tif,z,1.0-wp,wp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n] for n,ct,t,tif,z,wp,m,cc,p,txn in itertools.product(nnodes,ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts,ntxn)]
+    nparts = [2]
+#    nparts = [2,4,8,16]
+    exp = [[int(math.ceil(n)) if n > 1 else 1,n,txn,'YCSB',cc,m,ct,crt,t,rt,tif,z,1.0-wp,wp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n] for n,ct,crt,t,rt,tif,z,wp,m,cc,p,txn in itertools.product(nnodes,ncthreads,ncrthreads,nthreads,nrthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts,ntxn)]
+    exp.sort()
+    exp = list(k for k,_ in itertools.groupby(exp))
     return fmt[0],exp
 
 def node_sweep_plot(summary,summary_client):
@@ -150,35 +158,37 @@ def node_sweep_plot(summary,summary_client):
 def node_sweep_plot2(summary,summary_client):
     from plot_helper import tput
     fmt,exp = node_sweep()
-    fmt = ["CLIENT_NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","MPR","CLIENT_THREAD_CNT","THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC","PART_PER_TXN"]
+    fmt = [["CLIENT_NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","MPR","CLIENT_THREAD_CNT","CLIENT_REM_THREAD_CNT","THREAD_CNT","REM_THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC","PART_PER_TXN","PART_CNT"]]
     x_name = "NODE_CNT"
-    x_vals = [1,2,4,8]
-#    v_vals = ['HSTORE_SPEC']
-
-    nzipf=[0.0,0.6]
-    nwr_perc=[0.5]
-    nmpr=[1,5,25,50]
+    x_vals = [1,2,4,8,16]
+    nmpr=[100]
+#    nmpr=[0,5,25,50,75,100]
     nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','TIMESTAMP','VLL','HSTORE']
-
+    nthreads=3
+    nrthreads=1
+    ncthreads=3
+    ncrthreads=1
+    ntifs=2000
+    nzipf=[0.0]
+#    nzipf=[0.0,0.6,0.8]
+    nwr_perc=[0.5]
+    nparts = 2
+ 
     v_vals = nalgos
     v_name = "CC_ALG"
     for mpr,wr,zipf in itertools.product(nmpr,nwr_perc,nzipf):
-        c = [1,3000000,"YCSB",mpr,4,2,1000,zipf,1.0-wr,wr,2]
+        c = [1,3000000,"YCSB",mpr,ncthreads,ncrthreads,nthreads,nrthreads,ntifs,zipf,1.0-wr,wr,nparts]
         title = "YCSB System Throughput {}% Writes, {}% Multi-part rate {} Skew".format(wr*100,mpr,zipf);
         tput(x_vals,v_vals,summary,cfg_fmt=fmt,cfg=c,xname=x_name,vname=v_name,title=title)
-#    v_vals = ['OCC','HSTORE_SPEC','VLL']
-#    for mpr,wr in itertools.product([0,1,5],[0.0,0.5]):
-#        c = [1,3000000,"YCSB",mpr,4,2,1000,0.0,1.0-wr,wr,2]
-#        title = "YCSB System Throughput {}% Writes, {}% Multi-part rate".format(wr*100,mpr);
+
+#    v_vals = nmpr
+#    v_name = "MPR"
+#    fmt = ["CLIENT_NODE_CNT","CC_ALG","MAX_TXN_PER_PART","WORKLOAD","CLIENT_THREAD_CNT","THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC","PART_PER_TXN"]
+#    for zipf,algo in itertools.product(nzipf,nalgos):
+#        print(algo)
+#        c = [1,algo,3000000,"YCSB",4,2,1000,zipf,0.5,0.5,2]
+#        title = "YCSB System Throughput {} 50% Writes {} Skew".format(algo,zipf);
 #        tput(x_vals,v_vals,summary,cfg_fmt=fmt,cfg=c,xname=x_name,vname=v_name,title=title)
-    v_vals = nmpr
-    v_name = "MPR"
-    fmt = ["CLIENT_NODE_CNT","CC_ALG","MAX_TXN_PER_PART","WORKLOAD","CLIENT_THREAD_CNT","THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC","PART_PER_TXN"]
-    for zipf,algo in itertools.product(nzipf,nalgos):
-        print(algo)
-        c = [1,algo,3000000,"YCSB",4,2,1000,zipf,0.5,0.5,2]
-        title = "YCSB System Throughput {} 50% Writes {} Skew".format(algo,zipf);
-        tput(x_vals,v_vals,summary,cfg_fmt=fmt,cfg=c,xname=x_name,vname=v_name,title=title)
 
 def mpr_sweep():
     fmt = fmt_ycsb
@@ -386,8 +396,8 @@ configs = {
     "NUM_WH": 2,
     "MAX_TXN_IN_FLIGHT": 1,
     "NETWORK_DELAY": '0UL',
-    "DONE_TIMER": "5 * 60 * BILLION // 3 minutes",
-    "PROG_TIMER" : "100 * BILLION // in s",
+    "DONE_TIMER": "3 * 60 * BILLION // 3 minutes",
+    "PROG_TIMER" : "30 * BILLION // in s",
     "NETWORK_TEST" : "false",
     "ABORT_PENALTY": "1 * 1000000UL   // in ns.",
     "PRT_LAT_DISTR": "true",

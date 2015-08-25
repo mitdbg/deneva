@@ -119,6 +119,8 @@ for exp in exps:
             if _timedate == []:
                 ofile = "{}{}_{}*.out".format(result_dir,0,output_f)
                 res_list = sorted(glob.glob(ofile),key=os.path.getmtime,reverse=True)
+                if res_list == 0:
+                    continue
                 for x in range(exp_cnt):
                     if x >= len(res_list):
                         print("Exceeded experiment limit")
