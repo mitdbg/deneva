@@ -123,7 +123,7 @@ def tput(xval,vval,summary,
             my_cfg[my_cfg_fmt.index("CLIENT_NODE_CNT")] = n_cnt
 #            my_cfg[my_cfg_fmt.index("CLIENT_NODE_CNT")] = int(math.ceil(n_cnt/2)) if n_cnt > 1 else 1
             n_ppt = my_cfg[my_cfg_fmt.index("PART_PER_TXN")]
-            my_cfg[my_cfg_fmt.index("PART_PER_TXN")] = n_ppt if n_ppt <= n_cnt else 1
+            my_cfg[my_cfg_fmt.index("PART_PER_TXN")] = n_ppt if n_ppt <= n_cnt else n_cnt
             n_thd =  my_cfg[my_cfg_fmt.index("THREAD_CNT")]
             n_alg =  my_cfg[my_cfg_fmt.index("CC_ALG")]
 #            my_cfg[my_cfg_fmt.index("THREAD_CNT")] = 1 if n_alg == "HSTORE" or n_alg == "HSTORE_SPEC" else n_thd
@@ -161,7 +161,7 @@ def tput(xval,vval,summary,
             tpt[_v][xi] = (tot_txn_cnt/avg_run_time)
             #tpt[v][xi] = (avg_txn_cnt/avg_run_time)
 
-    bbox = [0.7,0.9]
+    bbox = [0.9,0.9]
     if vname == "NETWORK_DELAY":
         bbox = [0.8,0.2]
     print("Created plot {}".format(name))

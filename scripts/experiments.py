@@ -127,9 +127,11 @@ def partition_sweep_plot(summary,summary_client):
 def node_sweep():
     fmt = fmt_ycsb
     nnodes = [1,2,4,8,16]
-    nmpr=[100]
+#    nmpr=[100]
+    nmpr=[5,25,50]
 #    nmpr=[0,5,25,50,75,100]
-    nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','TIMESTAMP','VLL','HSTORE']
+    nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','TIMESTAMP','VLL']
+#nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','TIMESTAMP','VLL','HSTORE']
     #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
     nthreads=[3]
     nrthreads=[1]
@@ -141,7 +143,7 @@ def node_sweep():
     nwr_perc=[0.5]
     ntxn=[3000000]
     nparts = [2]
-#    nparts = [2,4,8,16]
+    nparts = [2,4,8,16]
     exp = [[int(math.ceil(n)) if n > 1 else 1,n,txn,'YCSB',cc,m,ct,crt,t,rt,tif,z,1.0-wp,wp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n] for n,ct,crt,t,rt,tif,z,wp,m,cc,p,txn in itertools.product(nnodes,ncthreads,ncrthreads,nthreads,nrthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts,ntxn)]
     exp.sort()
     exp = list(k for k,_ in itertools.groupby(exp))
@@ -158,12 +160,12 @@ def node_sweep_plot(summary,summary_client):
 def node_sweep_plot2(summary,summary_client):
     from plot_helper import tput
     fmt,exp = node_sweep()
-    fmt = [["CLIENT_NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","MPR","CLIENT_THREAD_CNT","CLIENT_REM_THREAD_CNT","THREAD_CNT","REM_THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC","PART_PER_TXN","PART_CNT"]]
+    fmt = ["CLIENT_NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","MPR","CLIENT_THREAD_CNT","CLIENT_REM_THREAD_CNT","THREAD_CNT","REM_THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC","PART_PER_TXN"]
     x_name = "NODE_CNT"
-    x_vals = [1,2,4,8,16]
-    nmpr=[100]
+    x_vals = [1,2,4,8]
+    nmpr=[5,25,50]
 #    nmpr=[0,5,25,50,75,100]
-    nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','TIMESTAMP','VLL','HSTORE']
+    nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','TIMESTAMP','VLL']
     nthreads=3
     nrthreads=1
     ncthreads=3
@@ -172,14 +174,24 @@ def node_sweep_plot2(summary,summary_client):
     nzipf=[0.0]
 #    nzipf=[0.0,0.6,0.8]
     nwr_perc=[0.5]
-    nparts = 2
+    nparts = [2,4,8]#,16]
  
     v_vals = nalgos
     v_name = "CC_ALG"
-    for mpr,wr,zipf in itertools.product(nmpr,nwr_perc,nzipf):
-        c = [1,3000000,"YCSB",mpr,ncthreads,ncrthreads,nthreads,nrthreads,ntifs,zipf,1.0-wr,wr,nparts]
-        title = "YCSB System Throughput {}% Writes, {}% Multi-part rate {} Skew".format(wr*100,mpr,zipf);
+    for mpr,wr,zipf,parts in itertools.product(nmpr,nwr_perc,nzipf,nparts):
+        c = [1,3000000,"YCSB",mpr,ncthreads,ncrthreads,nthreads,nrthreads,ntifs,zipf,1.0-wr,wr,parts]
+        assert(len(c) == len(fmt))
+        title = "YCSB System Throughput {}% Writes, {}% Multi-part rate {} Skew {} Parts".format(wr*100,mpr,zipf,parts);
         tput(x_vals,v_vals,summary,cfg_fmt=fmt,cfg=c,xname=x_name,vname=v_name,title=title)
+    v_vals = nparts
+    v_name = "PART_PER_TXN"
+    fmt = ["CLIENT_NODE_CNT","CC_ALG","MAX_TXN_PER_PART","WORKLOAD","CLIENT_THREAD_CNT","THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC","MPR"]
+    for zipf,algo,mpr in itertools.product(nzipf,nalgos,nmpr):
+        print(algo)
+        c = [1,algo,3000000,"YCSB",4,2,1000,zipf,0.5,0.5,2,mpr]
+        title = "YCSB System Throughput {} 50% Writes {} Skew".format(algo,zipf);
+        tput(x_vals,v_vals,summary,cfg_fmt=fmt,cfg=c,xname=x_name,vname=v_name,title=title)
+
 
 #    v_vals = nmpr
 #    v_name = "MPR"

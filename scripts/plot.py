@@ -131,6 +131,7 @@ for exp in exps:
             p_sfiles = ["{}s_{}_{}.p".format(result_dir,output_f,t) for t in timedate]
             p_cfiles = ["{}c_{}_{}.p".format(result_dir,output_f,t) for t in timedate]
             for p_sfile,p_cfile,time in zip(p_sfiles,p_cfiles,timedate):
+                print(p_sfile)
                 r = {}
                 r2 = {}
                 if clear or not os.path.isfile(p_sfile) or not os.path.isfile(p_cfile):
