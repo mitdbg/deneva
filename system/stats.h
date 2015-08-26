@@ -73,6 +73,7 @@ public:
 	double cc_wait_abrt_time; // time an aborted txn has been blocked in this cc algo 
 	double cc_hold_abrt_time; // time an aborted txn has held a lock in this cc algo
   uint64_t cflt_cnt;
+  uint64_t cflt_cnt_txn;
 	uint64_t mpq_cnt; // multi-partition queries
 	uint64_t msg_bytes;
 	uint64_t msg_sent_cnt;

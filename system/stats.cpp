@@ -166,6 +166,7 @@ void Stats_thd::clear() {
   txn_time_misc = 0;
 
   cflt_cnt = 0;
+  cflt_cnt_txn = 0;
 	mpq_cnt = 0;
 	msg_bytes = 0;
 	msg_sent_cnt = 0;
@@ -496,6 +497,7 @@ void Stats::print_prog(uint64_t tid) {
 			",cc_wait_abrt_time=%f"
 			",cc_hold_abrt_time=%f"
       ",cflt_cnt=%ld"
+      ",cflt_cnt_txn=%ld"
 			",mpq_cnt=%ld"
       ",msg_bytes=%ld"
       ",msg_rcv=%ld"
@@ -548,6 +550,7 @@ void Stats::print_prog(uint64_t tid) {
 			_stats[tid]->cc_wait_abrt_time / BILLION, 
 			_stats[tid]->cc_hold_abrt_time / BILLION, 
 			_stats[tid]->cflt_cnt, 
+			_stats[tid]->cflt_cnt_txn, 
 			_stats[tid]->mpq_cnt, 
 			_stats[tid]->msg_bytes, 
 			_stats[tid]->msg_rcv_cnt, 
@@ -642,6 +645,7 @@ void Stats::print(bool prog) {
 	double total_cc_wait_abrt_time = 0;
 	double total_cc_hold_abrt_time = 0;
 	uint64_t total_cflt_cnt = 0;
+	uint64_t total_cflt_cnt_txn = 0;
 	uint64_t total_spec_commit_cnt = 0;
 	uint64_t total_spec_abort_cnt = 0;
 	uint64_t total_mpq_cnt = 0;
@@ -736,6 +740,7 @@ void Stats::print(bool prog) {
 		total_cc_wait_abrt_time += _stats[tid]->cc_wait_abrt_time;
 		total_cc_hold_abrt_time += _stats[tid]->cc_hold_abrt_time;
 		total_cflt_cnt += _stats[tid]->cflt_cnt;
+		total_cflt_cnt_txn += _stats[tid]->cflt_cnt_txn;
 		total_spec_commit_cnt += _stats[tid]->spec_commit_cnt;
 		total_spec_abort_cnt += _stats[tid]->spec_abort_cnt;
 		total_mpq_cnt += _stats[tid]->mpq_cnt;
@@ -801,6 +806,7 @@ void Stats::print(bool prog) {
 			",cc_wait_abrt_time=%f"
 			",cc_hold_abrt_time=%f"
       ",cflt_cnt=%ld"
+      ",cflt_cnt_txn=%ld"
 			",mpq_cnt=%ld"
       ",msg_bytes=%ld"
       ",msg_rcv=%ld"
@@ -866,6 +872,7 @@ void Stats::print(bool prog) {
       total_cc_wait_abrt_time / BILLION,
       total_cc_hold_abrt_time / BILLION,
       total_cflt_cnt,
+      total_cflt_cnt_txn,
 			total_mpq_cnt, 
 			total_msg_bytes, 
 			total_msg_rcv_cnt, 

@@ -108,6 +108,7 @@ public:
 //	int * 			row_cnts;
 	Access **		accesses;
 	int 			num_accesses_alloc;
+  bool cflt;
   
   // Internal state
   TxnState state;
