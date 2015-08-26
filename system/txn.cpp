@@ -35,6 +35,7 @@ void txn_man::init(thread_t * h_thd, workload * h_wl, uint64_t thd_id) {
   cc_wait_abrt_cnt = 0;
   cc_wait_abrt_time = 0;
   cc_hold_abrt_time = 0;
+  cflt = false;
   clear();
 
   sem_init(&rsp_mutex, 0, 1);
@@ -305,6 +306,7 @@ RC txn_man::get_row(row_t * row, access_t type, row_t *& row_rtn) {
 	  timespan = get_sys_clock() - starttime;
 	  INC_STATS(get_thd_id(), time_man, timespan);
     INC_STATS(get_thd_id(), cflt_cnt, 1);
+    cflt = true;
 #if DEBUG_TIMELINE
     printf("CONFLICT %ld %ld\n",get_txn_id(),get_sys_clock());
 #endif

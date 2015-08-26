@@ -75,7 +75,7 @@ def using_local():
 ##      fab using_istc   run_exps:experiment_1
 @task
 @hosts('localhost')
-def run_exps(exps,skip_completed='False',exec_exps='True',dry_run='False',iterations='1'):
+def run_exps(exps,skip_completed='False',exec_exps='True',dry_run='False',iterations='1',check='True',delay=''):
     global SKIP, EXECUTE_EXPS,NOW,STRNOW 
     ITERS = int(iterations)
     SKIP = skip_completed == 'True'
@@ -88,13 +88,14 @@ def run_exps(exps,skip_completed='False',exec_exps='True',dry_run='False',iterat
             puts("running experiment set:{}".format(exps),show_prefix=True)
 
     # Make sure all experiment binaries exist
-#    execute(check_binaries,exps)
+    if check:
+        execute(check_binaries,exps)
 
     # Run experiments
     for i in range(ITERS):
         NOW=datetime.datetime.now()
         STRNOW=NOW.strftime("%Y%m%d-%H%M%S")
-        execute(run_exp,exps)
+        execute(run_exp,exps,delay=delay)
 
 
 ## Basic usage:
@@ -172,6 +173,18 @@ def copy_files(schema,exp_fname):
                     puts("ERROR: put: {} -> {} failed! (2nd attempt)... Aborting".format(f,env.rem_homedir),show_prefix=True)
                     abort()
 
+#delay is in ms
+@task
+@parallel
+def set_delay(delay='10'):
+    run("sudo tc qdisc add dev eth0 root netem delay {}ms".format(delay))
+ 
+#delay is in ms
+@task
+@parallel
+def reset_delay():
+    run("sudo tc qdisc del dev eth0 root") 
+ 
 @task
 @parallel
 def sync_clocks(max_offset=0.01,max_attempts=5,delay=15):
@@ -435,7 +448,7 @@ def check_binaries(exps):
 
 @task
 @hosts(['localhost'])
-def run_exp(exps,network_test=False):
+def run_exp(exps,network_test=False,delay=''):
     schema_path = "{}/".format(env.rem_homedir)
     good_hosts = []
     if not network_test and EXECUTE_EXPS:
@@ -542,7 +555,14 @@ def run_exp(exps,network_test=False):
                         # Sync clocks before each experiment
                         print("Syncing Clocks...")
                         execute(sync_clocks)
+
+
+                    if delay != '':
+                        execute(set_delay,delay=delay)
                     execute(deploy,schema_path,nids)
+                    if delay != '':
+                        execute(reset_delay)
+
                     execute(get_results,outfiles)
                     good_hosts = get_good_hosts()
                     set_hosts(good_hosts)

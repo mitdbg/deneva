@@ -1027,6 +1027,9 @@ RC thread_t::run() {
 					if(m_query->part_num > 1) {
 						INC_STATS(get_thd_id(),mpq_cnt,1);
 					}
+          if(m_txn->cflt) {
+						INC_STATS(get_thd_id(),cflt_cnt_txn,1);
+          }
 					timespan = get_sys_clock() - m_txn->starttime;
 					INC_STATS(get_thd_id(), run_time, timespan);
 					INC_STATS(get_thd_id(), latency, timespan);
