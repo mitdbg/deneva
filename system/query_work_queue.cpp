@@ -263,8 +263,9 @@ base_query * QWorkQueueHelper::get_next_query() {
 
   assert( ( (cnt == 0) && head == NULL && tail == NULL) || ( (cnt > 0) && head != NULL && tail !=NULL) );
 
+  wq_entry_t next = NULL;
   if(cnt > 0) {
-    wq_entry_t next = head;
+    next = head;
     while(next) {
       if(next->qry->txn_id == UINT64_MAX || !hash->in_hash(next->qry->txn_id)) {
         next_qry = next->qry;
@@ -302,6 +303,8 @@ base_query * QWorkQueueHelper::get_next_query() {
   hash->unlock();
 //  if(next_qry)
 //    printf("Get Query %ld %d\n",next_qry->txn_id,next_qry->rtype);
+  if(next)
+    mem_allocator.free(next,sizeof(struct wq_entry));
   pthread_mutex_unlock(&mtx);
   return next_qry;
 }
@@ -379,6 +382,8 @@ base_query * QWorkQueueHelper::get_next_abort_query() {
       if(next_qry)
         next_qry->time_q_abrt += get_sys_clock() - elem->starttime;
       cnt--;
+
+      mem_allocator.free(elem,sizeof(struct wq_entry));
     }
 
   }
@@ -389,6 +394,7 @@ base_query * QWorkQueueHelper::get_next_abort_query() {
   }
 
   assert((head && tail && cnt > 0) || (!head && !tail && cnt ==0));
+
 
   pthread_mutex_unlock(&mtx);
   return next_qry;
