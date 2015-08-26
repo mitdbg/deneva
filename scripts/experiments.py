@@ -13,16 +13,15 @@ fmt_nt = [["NODE_CNT","CLIENT_NODE_CNT","NETWORK_TEST"]]
 
 def test():
     fmt = fmt_ycsb
-    nnodes = [1]
-#    nnodes = [1,2,4,8]
-    nmpr=[0]
+    nnodes = [1,2,4,8,16]
+    nmpr=[100]
     nalgos=['WAIT_DIE']
     #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
     nthreads=[3]
     nrthreads=[1]
     ncthreads=[2]
     ncrthreads=[2]
-    ntifs=[10000]
+    ntifs=[2000]
     nzipf=[0.0]
     nwr_perc=[0.5]
     ntxn=[3000000]
@@ -33,29 +32,35 @@ def test():
 def test_plot(summary,summary_client):
     from plot_helper import tput
     fmt,exp = test()
-    fmt = ["CLIENT_NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","MPR","CLIENT_THREAD_CNT","THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC","PART_PER_TXN"]
+    fmt = ["CLIENT_NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","MPR","CLIENT_THREAD_CNT","CLIENT_REM_THREAD_CNT","THREAD_CNT","REM_THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC","PART_PER_TXN"]
     x_name = "NODE_CNT"
     v_name = "CC_ALG"
-    x_vals = [1,2,4,8]
-#    nmpr=[1,5,10,25,50,75,100]
-    nmpr=[1,5,25,50]
+    x_vals = [1,2,4,8,16]
+    nthreads=3
+    nrthreads=1
+    ncthreads=2
+    ncrthreads=2
+    nmpr=[100]
+    ntifs=2000
+    zipf=0.0
     nwr_perc=[0.5]
-#    nalgos=['TIMESTAMP','WAIT_DIE','MVCC','OCC','NO_WAIT']
-    nalgos=['VLL']
+    nalgos=['WAIT_DIE']
+    nparts = 2
     v_vals=nalgos
     for mpr,wr in itertools.product(nmpr,nwr_perc):
-        c = [1,2000000,"YCSB",mpr,8,2,1000,0.6,1.0-wr,wr,2]
+        c = [1,3000000,"YCSB",mpr,ncthreads,ncrthreads,nthreads,nrthreads,ntifs,zipf,1.0-wr,wr,nparts]
+        assert(len(c) == len(fmt))
         title = "YCSB System Throughput {}% Writes, {}% Multi-part rate".format(wr*100,mpr);
         tput(x_vals,v_vals,summary,cfg_fmt=fmt,cfg=c,xname=x_name,vname=v_name,title=title)
 
-    fmt = ["CLIENT_NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","CLIENT_THREAD_CNT","THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC","PART_PER_TXN"]
-    v_vals = nmpr
-    v_name = "MPR"
-    for a in nalgos: 
-        wr = 0.5
-        c = [1,2000000,"YCSB",a,8,2,1000,0.6,1.0-wr,wr,2]
-        title = "YCSB System Throughput {}% Writes, {}".format(wr*100,a);
-        tput(x_vals,v_vals,summary,cfg_fmt=fmt,cfg=c,xname=x_name,vname=v_name,title=title)
+#    fmt = ["CLIENT_NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","CLIENT_THREAD_CNT","THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC","PART_PER_TXN"]
+#    v_vals = nmpr
+#    v_name = "MPR"
+#    for a in nalgos: 
+#        wr = 0.5
+#        c = [1,2000000,"YCSB",a,8,2,1000,0.6,1.0-wr,wr,2]
+#        title = "YCSB System Throughput {}% Writes, {}".format(wr*100,a);
+#        tput(x_vals,v_vals,summary,cfg_fmt=fmt,cfg=c,xname=x_name,vname=v_name,title=title)
 
 # Performance: throughput vs. node count
 # Vary: Node count, % writes
