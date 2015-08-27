@@ -214,11 +214,10 @@ void TxnPool::delete_txn(uint64_t node_id, uint64_t txn_id){
     mem_allocator.free(node->txn, sizeof(ycsb_txn_man));
     // FIXME: Why does this break when we free query at this node?
     if(node->qry->txn_id % g_node_cnt != node_id) {
-      mem_allocator.free(((ycsb_query*)node->qry)->requests, sizeof(ycsb_request)*((ycsb_query*)node->qry)->request_cnt);
+      if(((ycsb_query*)node->qry)->requests)
+        //mem_allocator.free(((ycsb_query*)node->qry)->requests, sizeof(ycsb_request)*((ycsb_query*)node->qry)->request_cnt);
       mem_allocator.free(node->qry, sizeof(ycsb_query));
     }
-    node->txn = NULL;
-    node->qry = NULL;
 #endif
     mem_allocator.free(node, sizeof(struct txn_node));
   }

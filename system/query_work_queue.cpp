@@ -316,11 +316,14 @@ void QWorkQueueHelper::done(uint64_t id) {
 }
 
 bool QWorkQueueHelper::poll_abort() {
+  bool ready = false;
+  pthread_mutex_lock(&mtx);
   wq_entry_t elem = head;
   if(elem)
-    return (get_sys_clock() >= elem->qry->penalty_end);
+    ready = (get_sys_clock() >= elem->qry->penalty_end);
+  pthread_mutex_unlock(&mtx);
     //return (get_sys_clock() - elem->qry->penalty_start) >= g_abort_penalty;
-  return false;
+  return ready;
 }
 
 void QWorkQueueHelper::add_abort_query(base_query * qry) {
