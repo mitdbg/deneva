@@ -592,14 +592,14 @@ RC thread_t::run() {
           if(GET_NODE_ID(m_query->home_part) != g_node_id || GET_PART_ID_IDX(m_query->home_part) == _thd_id) {
 					  m_txn->state = DONE;
 					  m_txn->rem_fin_txn(m_query);
-					  txn_pool.delete_txn(m_query->return_id, m_query->txn_id);
+					  //txn_pool.delete_txn(m_query->return_id, m_query->txn_id);
           } else {
 					  m_txn->loc_fin_txn(m_query);
           }
 #else
 					m_txn->state = DONE;
 					m_txn->rem_fin_txn(m_query);
-					txn_pool.delete_txn(m_query->return_id, m_query->txn_id);
+					//txn_pool.delete_txn(m_query->return_id, m_query->txn_id);
 #endif
 				}
 
@@ -628,7 +628,15 @@ RC thread_t::run() {
 #else
 				  rem_qry_man.ack_response(m_query);
 #endif
-
+				if (finish) {
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
+          if(GET_NODE_ID(m_query->home_part) != g_node_id || GET_PART_ID_IDX(m_query->home_part) == _thd_id) {
+					  txn_pool.delete_txn(m_query->return_id, m_query->txn_id);
+          } 
+#else
+					txn_pool.delete_txn(m_query->return_id, m_query->txn_id);
+#endif
+				}
 
 				m_query = NULL;
 				break;

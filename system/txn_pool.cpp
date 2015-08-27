@@ -170,6 +170,7 @@ void TxnPool::delete_txn(uint64_t node_id, uint64_t txn_id){
   if(t_node != NULL) {
     assert(!t_node->txn->spec || t_node->txn->state == DONE);
     t_node->txn->release();
+    printf("FREE %ld\n",t_node->txn->get_txn_id());
 #if WORKLOAD == TPCC
     mem_allocator.free(t_node->txn, sizeof(tpcc_txn_man));
     if(t_node->qry->txn_id % g_node_cnt != node_id) {
@@ -177,14 +178,9 @@ void TxnPool::delete_txn(uint64_t node_id, uint64_t txn_id){
     }
 #elif WORKLOAD == YCSB
     mem_allocator.free(t_node->txn, sizeof(ycsb_txn_man));
-    // FIXME: Why does this break when we free query at this node?
-    if(t_node->qry->txn_id % g_node_cnt != node_id) {
-      /*
       if(((ycsb_query*)t_node->qry)->requests)
         mem_allocator.free(((ycsb_query*)t_node->qry)->requests, sizeof(ycsb_request)*((ycsb_query*)t_node->qry)->request_cnt);
-        */
       mem_allocator.free(t_node->qry, sizeof(ycsb_query));
-    }
 #endif
     mem_allocator.free(t_node, sizeof(struct txn_node));
   }
