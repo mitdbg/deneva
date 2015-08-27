@@ -45,48 +45,40 @@ void TxnPool::init() {
   pthread_mutex_init(&mtx,NULL);
   pthread_cond_init(&cond_m,NULL);
   pthread_cond_init(&cond_a,NULL);
-  txns = (txn_node_t *) mem_allocator.alloc(
-            sizeof(txn_node_t *) * g_node_cnt, 0);
-  for (uint64_t i = 0; i < g_node_cnt; i++) {
-    txn_node_t t_node = (txn_node_t) mem_allocator.alloc(
-                  sizeof(struct txn_node), 0);
-    memset(t_node, '\0', sizeof(struct txn_node));
-    txns[i] = t_node;
-  }
+  head = NULL;
+  tail = NULL;
   modify = false;
   access = 0;
 }
 
 bool TxnPool::empty(uint64_t node_id) {
-  return txns[0]->next == NULL;
+  //return txns[0]->next == NULL;
+  return head == NULL;
 }
 
 void TxnPool::add_txn(uint64_t node_id, txn_man * txn, base_query * qry) {
 
   MODIFY_START();
-    // Only 1 thread should access this
 
   uint64_t txn_id = txn->get_txn_id();
   assert(txn_id == qry->txn_id);
-  //assert(txn_id % g_node_cnt == node_id);
   txn_man * next_txn = NULL;
-  txn_node_t t_node = txns[0];
-  //txn_node_t t_node = txns[node_id];
+  txn_node_t t_node = head;
 
-  while (t_node->next != NULL) {
-    t_node = t_node->next;
+  while (t_node != NULL) {
     if (t_node->txn->get_txn_id() == txn_id) {
       next_txn = t_node->txn;
       break;
     }
+    t_node = t_node->next;
   }
+
 
   if(next_txn == NULL) {
     t_node = (txn_node_t) mem_allocator.alloc(sizeof(struct txn_node), g_thread_cnt);
     t_node->txn = txn;
     t_node->qry = qry;
-    t_node->next = txns[0]->next;
-    txns[0]->next = t_node;
+    LIST_PUT_TAIL(head,tail,t_node);
   }
   else {
     t_node->txn = txn;
@@ -98,23 +90,18 @@ void TxnPool::add_txn(uint64_t node_id, txn_man * txn, base_query * qry) {
 
 txn_man * TxnPool::get_txn(uint64_t node_id, uint64_t txn_id){
   txn_man * next_txn = NULL;
-  //assert(txn_id % g_node_cnt == node_id);
 
   ACCESS_START();
 
-  txn_node_t t_node = txns[0];
-  //txn_node_t t_node = txns[node_id];
+  txn_node_t t_node = head;
 
-  while (t_node->next != NULL) {
-    t_node = t_node->next;
-    //assert(t_node->txn->get_txn_id() == t_node->qry->txn_id);
+  while (t_node != NULL) {
     if (t_node->txn->get_txn_id() == txn_id) {
       next_txn = t_node->txn;
       break;
     }
+    t_node = t_node->next;
   }
-  //assert(next_txn != NULL);
-
 
   ACCESS_END();
   return next_txn;
@@ -124,11 +111,9 @@ void TxnPool::restart_txn(uint64_t txn_id){
 
   ACCESS_START();
 
-  txn_node_t t_node = txns[0];
-  //txn_node_t t_node = txns[node_id];
+  txn_node_t t_node = head;
 
-  while (t_node->next != NULL) {
-    t_node = t_node->next;
+  while (t_node != NULL) {
     if (t_node->txn->get_txn_id() == txn_id) {
       if(txn_id % g_node_cnt == g_node_id)
         t_node->qry->rtype = RTXN;
@@ -139,15 +124,9 @@ void TxnPool::restart_txn(uint64_t txn_id){
 #else
       work_queue.add_query(0,t_node->qry);
 #endif
-      /*
-      assert(t_node->qry->part_cnt > 0 || t_node->qry->part_num > 0);
-      if(t_node->qry->part_num > 0)
-        work_queue.add_query(t_node->qry->part_to_access[0]/g_node_cnt,t_node->qry);
-      else if(t_node->qry->part_cnt > 0)
-        work_queue.add_query(t_node->qry->parts[0]/g_node_cnt,t_node->qry);
-        */
       break;
     }
+    t_node = t_node->next;
   }
 
   ACCESS_END();
@@ -157,21 +136,17 @@ void TxnPool::restart_txn(uint64_t txn_id){
 base_query * TxnPool::get_qry(uint64_t node_id, uint64_t txn_id){
   base_query * next_qry = NULL;
 
-  //assert(txn_id % g_node_cnt == node_id);
-
   ACCESS_START();
 
-  txn_node_t t_node = txns[0];
-  //txn_node_t t_node = txns[node_id];
+  txn_node_t t_node = head;
 
-  while (t_node->next != NULL) {
-    t_node = t_node->next;
+  while (t_node != NULL) {
     if (t_node->txn->get_txn_id() == txn_id) {
       next_qry = t_node->qry;
       break;
     }
+    t_node = t_node->next;
   }
-  //assert(next_qry != NULL);
 
   ACCESS_END();
 
@@ -180,46 +155,38 @@ base_query * TxnPool::get_qry(uint64_t node_id, uint64_t txn_id){
 
 
 void TxnPool::delete_txn(uint64_t node_id, uint64_t txn_id){
-  //assert(txn_id % g_node_cnt == node_id);
   MODIFY_START();
-    // Only 1 thread should access this
 
+  txn_node_t t_node = head;
 
-  //printf("Delete: %ld\n",txn_id);
-
-  txn_node_t t_node = txns[0];
-  //txn_node_t t_node = txns[node_id];
-  txn_node_t node = NULL;
-
-  //while (t_node->next != NULL && node == NULL) {
-  while (t_node->next != NULL && node == NULL) {
-    if (t_node->next->txn->get_txn_id() == txn_id) {
-      node = t_node->next;
-      t_node->next = t_node->next->next; 
+  while (t_node != NULL) {
+    if (t_node->txn->get_txn_id() == txn_id) {
+      LIST_REMOVE_HT(t_node,head,tail);
       break;
     }
     t_node = t_node->next;
   }
 
-  //assert(node != NULL);
-  if(node != NULL) {
-    assert(!node->txn->spec || node->txn->state == DONE);
-    node->txn->release();
+  if(t_node != NULL) {
+    assert(!t_node->txn->spec || t_node->txn->state == DONE);
+    t_node->txn->release();
 #if WORKLOAD == TPCC
-    mem_allocator.free(node->txn, sizeof(tpcc_txn_man));
-    if(node->qry->txn_id % g_node_cnt != node_id) {
-      mem_allocator.free(node->qry, sizeof(tpcc_query));
+    mem_allocator.free(t_node->txn, sizeof(tpcc_txn_man));
+    if(t_node->qry->txn_id % g_node_cnt != node_id) {
+      mem_allocator.free(t_node->qry, sizeof(tpcc_query));
     }
 #elif WORKLOAD == YCSB
-    mem_allocator.free(node->txn, sizeof(ycsb_txn_man));
+    mem_allocator.free(t_node->txn, sizeof(ycsb_txn_man));
     // FIXME: Why does this break when we free query at this node?
-    if(node->qry->txn_id % g_node_cnt != node_id) {
-      if(((ycsb_query*)node->qry)->requests)
-        //mem_allocator.free(((ycsb_query*)node->qry)->requests, sizeof(ycsb_request)*((ycsb_query*)node->qry)->request_cnt);
-      mem_allocator.free(node->qry, sizeof(ycsb_query));
+    if(t_node->qry->txn_id % g_node_cnt != node_id) {
+      /*
+      if(((ycsb_query*)t_node->qry)->requests)
+        mem_allocator.free(((ycsb_query*)t_node->qry)->requests, sizeof(ycsb_request)*((ycsb_query*)t_node->qry)->request_cnt);
+        */
+      mem_allocator.free(t_node->qry, sizeof(ycsb_query));
     }
 #endif
-    mem_allocator.free(node, sizeof(struct txn_node));
+    mem_allocator.free(t_node, sizeof(struct txn_node));
   }
 
   MODIFY_END()
@@ -229,12 +196,12 @@ void TxnPool::delete_txn(uint64_t node_id, uint64_t txn_id){
 uint64_t TxnPool::get_min_ts() {
   ACCESS_START()
 
-  txn_node_t t_node = txns[0];
+  txn_node_t t_node = head;
   uint64_t min = UINT64_MAX;
 
-  while (t_node->next != NULL) {
-    if(t_node->next->txn->get_ts() < min)
-      min = t_node->next->txn->get_ts();
+  while (t_node != NULL) {
+    if(t_node->txn->get_ts() < min)
+      min = t_node->txn->get_ts();
     t_node = t_node->next;
   }
 
@@ -249,10 +216,9 @@ void TxnPool::spec_next(uint64_t tid) {
 
   MODIFY_START();
 
-  txn_node_t t_node = txns[0];
+  txn_node_t t_node = head;
 
-  while (t_node->next != NULL) {
-    t_node = t_node->next;
+  while (t_node != NULL) {
     if (t_node->txn->get_txn_id() % g_node_cnt == g_node_id  // txn is local to this node
         && t_node->qry->active_part/g_node_cnt == tid // txn is local to this thread's part
         && t_node->qry->part_num == 1  // is a single part txn
@@ -276,6 +242,7 @@ void TxnPool::spec_next(uint64_t tid) {
       work_queue.add_query(0,t_node->qry);
 #endif
     }
+    t_node = t_node->next;
   }
 
   MODIFY_END();
@@ -313,10 +280,10 @@ void TxnPool::commit_spec_ex(int r, uint64_t tid) {
 
   spec_mode[tid] = false;
 
-  txn_node_t t_node = txns[0];
+  txn_node_t t_node = head;
+  //txn_node_t t_node = txns[0];
 
-  while (t_node->next != NULL) {
-    t_node = t_node->next;
+  while (t_node != NULL) {
     if (t_node->txn->get_txn_id() % g_node_cnt == g_node_id && t_node->qry->active_part/g_node_cnt == tid && t_node->qry->part_num == 1 && t_node->txn->state == PREP && t_node->txn->spec && !t_node->txn->spec_done) {
       t_node->txn->validate();
       t_node->txn->finish(rc,t_node->qry->part_to_access,t_node->qry->part_num);
@@ -343,6 +310,7 @@ void TxnPool::commit_spec_ex(int r, uint64_t tid) {
 #endif
     }
     // FIXME: what if txn is already in work queue or is currently being executed?
+    t_node = t_node->next;
   }
 
   ACCESS_END();

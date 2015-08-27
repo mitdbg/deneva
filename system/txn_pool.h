@@ -13,6 +13,7 @@ struct txn_node {
     txn_man * txn;
     base_query * qry;
     struct txn_node * next;
+    struct txn_node * prev;
 };
 
 typedef txn_node * txn_node_t;
@@ -46,8 +47,8 @@ private:
   volatile bool modify;
   int access;
 
-
-  txn_node_t *txns;
+  txn_node_t head;
+  txn_node_t tail;
 };
 
 #endif
