@@ -177,9 +177,8 @@ void TxnPool::delete_txn(uint64_t node_id, uint64_t txn_id){
     }
 #elif WORKLOAD == YCSB
     mem_allocator.free(t_node->txn, sizeof(ycsb_txn_man));
-      if(((ycsb_query*)t_node->qry)->requests)
-        mem_allocator.free(((ycsb_query*)t_node->qry)->requests, sizeof(ycsb_request)*((ycsb_query*)t_node->qry)->request_cnt);
-      mem_allocator.free(t_node->qry, sizeof(ycsb_query));
+    
+    YCSB_QUERY_FREE(t_node->qry)
 #endif
     mem_allocator.free(t_node, sizeof(struct txn_node));
   }

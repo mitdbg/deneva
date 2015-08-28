@@ -241,6 +241,7 @@ void QWorkQueueHelper::remove_query(base_query* qry) {
       if(next->qry == qry) {
         LIST_REMOVE_HT(next,head,tail);
         cnt--;
+        mem_allocator.free(next,sizeof(struct wq_entry));
         break;
       }
       next = next->next;
@@ -273,6 +274,7 @@ base_query * QWorkQueueHelper::get_next_query() {
         LIST_REMOVE_HT(next,head,tail);
         cnt--;
         assert(hash->in_hash(next_qry->txn_id));
+        mem_allocator.free(next,sizeof(struct wq_entry));
         break;
       }
       next = next->next;
@@ -303,8 +305,6 @@ base_query * QWorkQueueHelper::get_next_query() {
   hash->unlock();
 //  if(next_qry)
 //    printf("Get Query %ld %d\n",next_qry->txn_id,next_qry->rtype);
-  if(next)
-    mem_allocator.free(next,sizeof(struct wq_entry));
   pthread_mutex_unlock(&mtx);
   return next_qry;
 }

@@ -342,8 +342,9 @@ RC thread_t::run() {
           m_txn->register_thd(this);
 				  tmp_query = txn_pool.get_qry(m_query->return_id, m_query->txn_id);
           tmp_query = tmp_query->merge(m_query);
-          if(m_query != tmp_query)
-            mem_allocator.free(m_query,sizeof(ycsb_query));
+          if(m_query != tmp_query) {
+            YCSB_QUERY_FREE(m_query)
+          }
           m_query = tmp_query;
           assert(!(CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC) || m_query->home_part != GET_PART_ID_FROM_IDX(_thd_id));
         }
@@ -399,8 +400,9 @@ RC thread_t::run() {
         // FIXME: May be doing twice the work
 				tmp_query = txn_pool.get_qry(m_query->return_id, m_query->txn_id);
         tmp_query = tmp_query->merge(m_query);
-        if(m_query != tmp_query)
-          mem_allocator.free(m_query,sizeof(ycsb_query));
+          if(m_query != tmp_query) {
+            YCSB_QUERY_FREE(m_query)
+          }
         m_query = tmp_query;
 
 				if(m_txn->state != EXEC) {
@@ -443,8 +445,9 @@ RC thread_t::run() {
 
 				tmp_query = txn_pool.get_qry(m_query->return_id, m_query->txn_id);
         tmp_query = tmp_query->merge(m_query);
-        if(m_query != tmp_query)
-          mem_allocator.free(m_query,sizeof(ycsb_query));
+          if(m_query != tmp_query) {
+            YCSB_QUERY_FREE(m_query)
+          }
         m_query = tmp_query;
 
 				outstanding_rwaits--;
@@ -483,8 +486,9 @@ RC thread_t::run() {
           if(GET_NODE_ID(m_query->home_part) != g_node_id || GET_PART_ID_IDX(m_query->home_part) == _thd_id) {
 				    tmp_query = txn_pool.get_qry(m_query->return_id, m_query->txn_id);
           tmp_query = tmp_query->merge(m_query);
-          if(m_query != tmp_query)
-            mem_allocator.free(m_query,sizeof(ycsb_query));
+          if(m_query != tmp_query) {
+            YCSB_QUERY_FREE(m_query)
+          }
           m_query = tmp_query;
         assert(m_query->home_part != GET_PART_ID_FROM_IDX(_thd_id));
           } 
@@ -514,8 +518,9 @@ RC thread_t::run() {
           m_txn->register_thd(this);
 				  tmp_query = txn_pool.get_qry(m_query->return_id, m_query->txn_id);
           tmp_query = tmp_query->merge(m_query);
-          if(m_query != tmp_query)
-            mem_allocator.free(m_query,sizeof(ycsb_query));
+          if(m_query != tmp_query) {
+            YCSB_QUERY_FREE(m_query)
+          }
           m_query = tmp_query;
         }
 				if (finish) {
@@ -543,8 +548,9 @@ RC thread_t::run() {
 
 				tmp_query = txn_pool.get_qry(m_query->return_id, m_query->txn_id);
         tmp_query = tmp_query->merge(m_query);
-        if(m_query != tmp_query)
-          mem_allocator.free(m_query,sizeof(ycsb_query));
+          if(m_query != tmp_query) {
+            YCSB_QUERY_FREE(m_query)
+          }
         m_query = tmp_query;
 
         // returns the current response count for this transaction
