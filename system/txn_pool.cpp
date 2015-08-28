@@ -170,7 +170,6 @@ void TxnPool::delete_txn(uint64_t node_id, uint64_t txn_id){
   if(t_node != NULL) {
     assert(!t_node->txn->spec || t_node->txn->state == DONE);
     t_node->txn->release();
-    printf("FREE %ld\n",t_node->txn->get_txn_id());
 #if WORKLOAD == TPCC
     mem_allocator.free(t_node->txn, sizeof(tpcc_txn_man));
     if(t_node->qry->txn_id % g_node_cnt != node_id) {

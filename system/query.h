@@ -102,6 +102,8 @@ public:
   void remote_prepare(base_query * query, int dest_id);
   void remote_finish(base_query * query, int dest_id);
   void unpack_finish(base_query * query, void *d);
+  void local_rack_query();
+  void local_rinit_query(uint64_t part_id);
 };
 
 // All the queries for a particular thread.

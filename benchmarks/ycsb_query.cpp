@@ -153,7 +153,7 @@ void ycsb_query::unpack(base_query * query, void * d) {
 	ptr += sizeof(YCSBRemTxnType);
 	memcpy(&m_query->pid,&data[ptr],sizeof(uint64_t));
 	ptr += sizeof(uint64_t);
-#if CC_ALG == WAIT_DIE || CC_ALG == TIMESTAMP || CC_ALG == MVCC
+#if CC_ALG == WAIT_DIE || CC_ALG == TIMESTAMP || CC_ALG == MVCC || CC_ALG == VLL
 	memcpy(&m_query->ts,&data[ptr],sizeof(uint64_t));
 	ptr += sizeof(uint64_t);
 #endif
@@ -182,7 +182,7 @@ void ycsb_query::remote_qry(base_query * query, int type, int dest_id) {
 	// NOTE: Adjust if parameters sent is changed
 	int total = 5;
 
-#if CC_ALG == WAIT_DIE | CC_ALG == TIMESTAMP || CC_ALG == MVCC
+#if CC_ALG == WAIT_DIE | CC_ALG == TIMESTAMP || CC_ALG == MVCC || CC_ALG == VLL
   total ++;   // For timestamp
 #endif
 #if CC_ALG == MVCC
@@ -221,7 +221,7 @@ void ycsb_query::remote_qry(base_query * query, int type, int dest_id) {
 	data[num] = &_pid;
 	sizes[num++] = sizeof(uint64_t); 
 
-#if CC_ALG == WAIT_DIE || CC_ALG == TIMESTAMP || CC_ALG == MVCC
+#if CC_ALG == WAIT_DIE || CC_ALG == TIMESTAMP || CC_ALG == MVCC || CC_ALG == VLL
   data[num] = &m_query->ts;
   sizes[num++] = sizeof(uint64_t);   // sizeof ts_t
 #endif

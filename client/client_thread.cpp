@@ -71,6 +71,11 @@ RC Client_thread_t::run_remote() {
 				default:
 					assert(false);
 			}
+#if WORKLOAD == YCSB
+      mem_allocator.free(m_query,sizeof(ycsb_query));
+#elif WORKLOAD == TPCC
+      mem_allocator.free(m_query,sizeof(tpcc_query));
+#endif
 		}
 	}
   }

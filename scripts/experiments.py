@@ -13,16 +13,16 @@ fmt_nt = [["NODE_CNT","CLIENT_NODE_CNT","NETWORK_TEST"]]
 
 def test():
     fmt = fmt_ycsb
-    nnodes = [1,2,4,8,16]
+    nnodes = [2]
     nmpr=[100]
-    nalgos=['WAIT_DIE']
+    nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','VLL','TIMESTAMP']
     #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
     nthreads=[3]
     nrthreads=[1]
-    ncthreads=[2]
-    ncrthreads=[2]
-    ntifs=[2000]
-    nzipf=[0.0]
+    ncthreads=[3]
+    ncrthreads=[1]
+    ntifs=[1500]
+    nzipf=[0.6]
     nwr_perc=[0.5]
     ntxn=[3000000]
     nparts = [2]
@@ -259,18 +259,22 @@ def write_ratio_sweep():
 
 def skew_sweep():
     fmt = fmt_ycsb
-    nnodes = [1,2,4,8]
-    nmpr=[1]
-    nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','TIMESTAMP','HSTORE','HSTORE_SPEC']
-    #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
-    nthreads=[2]
-    ncthreads=[4]
-    ntifs=[1000]
-    nzipf=[0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]
+    nnodes = [2]#,4,8,16]
+    nmpr=[100]
+    nalgos=['WAIT_DIE']
+    #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','TIMESTAMP','VLL','HSTORE']
+    nthreads=[3]
+    nrthreads=[1]
+    ncthreads=[3]
+    ncrthreads=[1]
+    ntifs=[1300]
+    nzipf=[0.0,0.2,0.4,0.6,0.8,0.99]
     nwr_perc=[0.5]
-    ntxn=3000000
-    nparts = [2]
-    exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t if cc!="HSTORE" and cc!= "HSTORE_SPEC" else 1,tif,z,1.0-wp,wp,p if p <= n else 1] for n,ct,t,tif,z,wp,m,cc,p in itertools.product(nnodes,ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts)]
+    ntxn=[3000000]
+    nparts = [2,4,8,16]
+    exp = [[int(math.ceil(n)) if n > 1 else 1,n,txn,'YCSB',cc,m,ct,crt,t,rt,tif,z,1.0-wp,wp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n] for n,ct,crt,t,rt,tif,z,wp,m,cc,p,txn in itertools.product(nnodes,ncthreads,ncrthreads,nthreads,nrthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts,ntxn)]
+    exp.sort()
+    exp = list(k for k,_ in itertools.groupby(exp))
     return fmt[0],exp
 
 #Should do this one on an ISTC machine
@@ -405,7 +409,7 @@ configs = {
     "PROG_TIMER" : "30 * BILLION // in s",
     "NETWORK_TEST" : "false",
     "ABORT_PENALTY": "1 * 1000000UL   // in ns.",
-    "PRT_LAT_DISTR": "true",
+#    "PRT_LAT_DISTR": "true",
 #YCSB
     "INIT_PARALLELISM" : 4, 
     "READ_PERC":0.5,

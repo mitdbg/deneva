@@ -179,3 +179,45 @@ void base_query::unpack_finish(base_query * query, void * d) {
     memcpy(&query->txn_id, &data[ptr], sizeof(uint64_t));
     ptr += sizeof(uint64_t);
 }
+
+// FIXME: HAven't debugged HStore with this
+void base_query::local_rack_query() {
+        // Model after RACK
+#if WORKLOAD == TPCC
+	    base_query * tmp_query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), 0);
+	      tmp_query = new tpcc_query();
+#elif WORKLOAD == YCSB
+	    base_query * tmp_query = (ycsb_query *) mem_allocator.alloc(sizeof(ycsb_query), 0);
+        tmp_query = new ycsb_query();
+#endif
+        tmp_query->txn_id = this->txn_id;
+        tmp_query->ts = this->ts;
+        tmp_query->home_part = this->home_part;
+        tmp_query->pid = this->pid;
+        tmp_query->rtype = RACK;
+        tmp_query->rc = rc;
+        tmp_query->active_part = this->home_part;
+        work_queue.add_query(GET_PART_ID_IDX(tmp_query->active_part),tmp_query);
+
+}
+
+// FIXME: HAven't debugged HStore with this
+void base_query::local_rinit_query(uint64_t part_id) {
+#if WORKLOAD == TPCC
+	    base_query * tmp_query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), 0);
+	      tmp_query = new tpcc_query();
+#elif WORKLOAD == YCSB
+	    base_query * tmp_query = (ycsb_query *) mem_allocator.alloc(sizeof(ycsb_query), 0);
+        tmp_query = new ycsb_query();
+#endif
+        tmp_query->txn_id = this->txn_id;
+        tmp_query->ts = this->ts;
+        tmp_query->home_part = this->home_part;
+        tmp_query->rtype = RINIT;
+        tmp_query->active_part = part_id;
+        tmp_query->part_cnt = 1;
+        tmp_query->parts = new uint64_t[1];
+        tmp_query->parts[0] = part_id;
+        work_queue.add_query(GET_PART_ID_IDX(tmp_query->active_part),tmp_query);
+ 
+}

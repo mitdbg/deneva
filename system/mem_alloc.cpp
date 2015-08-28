@@ -1,6 +1,7 @@
 #include "mem_alloc.h"
 #include "helper.h"
 #include "global.h"
+#include <execinfo.h>
 //#include <jemallloc.h>
 
 // Assume the data is strided across the L2 slices, stride granularity 
@@ -127,6 +128,7 @@ mem_alloc::get_size_id(UInt32 size) {
 
 
 void mem_alloc::free(void * ptr, uint64_t size) {
+  //printf("free %ld\n",size);
 	if (NO_FREE) {} 
 	else if (THREAD_ALLOC) {
 		int arena_id = get_arena_id();
@@ -145,6 +147,8 @@ void mem_alloc::free(void * ptr, uint64_t size) {
 // cause trouble)
 void * mem_alloc::alloc(uint64_t size, uint64_t part_id) {
 	void * ptr;
+  //printf("malloc %ld\n",size);
+
     if (size > BlockSizes[SizeNum - 1])
         ptr = malloc(size);
 	else if (THREAD_ALLOC && (warmup_finish || enable_thread_mem_pool)) {
