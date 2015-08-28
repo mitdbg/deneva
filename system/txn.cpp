@@ -205,9 +205,6 @@ void txn_man::cleanup(RC rc) {
 #if CC_ALG == OCC
   occ_man.finish(rc,this);
 #endif
-#if DEBUG_DISTR
-  printf("CLEANUP %ld %lu\n",get_txn_id(),get_ts());
-#endif
 	ts_t starttime = get_sys_clock();
 	for (int rid = row_cnt - 1; rid >= 0; rid --) {
 #if !NOGRAPHITE

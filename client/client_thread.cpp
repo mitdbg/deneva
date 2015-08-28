@@ -97,11 +97,6 @@ RC Client_thread_t::run_remote() {
 			assert(m_query->rtype == CL_RSP || m_query->rtype == EXP_DONE);
 			assert(m_query->dest_id == g_node_id);
 			//assert(m_query->return_id < g_node_id);
-      /*
-#if DEBUG_DISTR
-			printf("Received query response from %u\n", m_query->return_id);
-#endif
-*/
 			//for (uint64_t l = 0; l < g_node_cnt; ++l)
 			//    printf("Response count for %lu: %d\n", l, rsp_cnts[l]);
 			switch (m_query->rtype) {
@@ -144,9 +139,6 @@ RC Client_thread_t::run_remote() {
 			for (uint32_t i = 0; i < g_servers_per_client; ++i) {
 				// Check if we're still waiting on any txns to finish
 				inf = client_man.get_inflight(i);
-#if DEBUG_DISTR
-				//printf("Wrapping up... Node %u: inflight txns left: %d\n",i,inf);
-#endif
 				if (inf > 0 && done_cnt > 0) {
 					done = false;
 					break;
@@ -226,10 +218,10 @@ RC Client_thread_t::run() {
 			continue;
 		}
 #if DEBUG_DISTR
-		printf("Client: thread %lu sending query to node: %lu\n",
+		DEBUG("Client: thread %lu sending query to node: %lu\n",
 				_thd_id, GET_NODE_ID(m_query->pid));
 		for (uint32_t k = 0; k < g_servers_per_client; ++k) {
-			printf("Node %u: txns in flight: %d\n", 
+			DEBUG("Node %u: txns in flight: %d\n", 
                     k + g_server_start_node, client_man.get_inflight(k));
 		}
 #endif
@@ -253,10 +245,8 @@ RC Client_thread_t::run() {
       break;
     }
 	}
-//#if DEBUG_DISTR
 	for (uint64_t l = 0; l < g_servers_per_client; ++l)
 		printf("Txns sent to node %lu: %d\n", l+g_server_start_node, txns_sent[l]);
-//#endif
 	if( !ATOM_CAS(_wl->sim_done, false, true) )
 		assert( _wl->sim_done);
 

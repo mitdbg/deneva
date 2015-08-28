@@ -165,9 +165,7 @@ void Transport::send_msg(uint64_t dest_id, void ** data, int * sizes, int num) {
   // return_id
 	((uint32_t*)sbuf)[1] = get_node_id();
 
-#if DEBUG_DISTR
-	printf("Sending %ld -> %ld: %ld bytes\n",get_node_id(),dest_id,size);
-#endif
+	DEBUG("Sending %ld -> %ld: %ld bytes\n",get_node_id(),dest_id,size);
 
 	// 3: Add time of message sending for stats purposes
 	ts_t time = get_sys_clock();
@@ -265,10 +263,8 @@ void * Transport::recv_msg() {
 	dest_id = ((base_query *)query)->dest_id;
 #endif
 
-#if DEBUG_DISTR
-	printf("Msg delay: %d->%d, %d bytes, %f s\n",return_id,
+	DEBUG("Msg delay: %d->%d, %d bytes, %f s\n",return_id,
             dest_id,bytes,((float)(time2-time))/BILLION);
-#endif
 	nn::freemsg(buf);	
     assert(dest_id == get_node_id());
 

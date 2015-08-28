@@ -95,9 +95,7 @@ void base_query::remote_prepare(base_query * query, int dest_id) {
   total++; // For home partition id
 #endif
 
-#if DEBUG_DISTR
-  printf("Sending RPREPARE %ld\n",query->txn_id);
-#endif
+  DEBUG("Sending RPREPARE %ld\n",query->txn_id);
   void ** data = new void *[total];
   int * sizes = new int [total];
   int num = 0;
@@ -134,9 +132,7 @@ void base_query::remote_finish(base_query * query, int dest_id) {
   total++; // For home partition id
 #endif
 
-#if DEBUG_DISTR
-  printf("Sending RFIN %ld\n",query->txn_id);
-#endif
+  DEBUG("Sending RFIN %ld\n",query->txn_id);
   void ** data = new void *[total];
   int * sizes = new int [total];
   int num = 0;

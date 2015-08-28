@@ -40,9 +40,7 @@ void Remote_query::ack_response(RC rc, txn_man * txn) {
 
 	// Maximum number of parameters
 	// NOTE: Adjust if parameters sent is changed
-#if DEBUG_DISTR
-  printf("Sending RACK-1 %ld\n",txn->get_txn_id());
-#endif
+  DEBUG("Sending RACK-1 %ld\n",txn->get_txn_id());
   uint64_t total = 3;
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
   total ++; // For home partition id
@@ -80,9 +78,7 @@ void Remote_query::ack_response(base_query * query) {
 
 	// Maximum number of parameters
 	// NOTE: Adjust if parameters sent is changed
-#if DEBUG_DISTR
-  printf("Sending RACK-2 %ld\n",query->txn_id);
-#endif
+  DEBUG("Sending RACK-2 %ld\n",query->txn_id);
   uint64_t total = 3;
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
   total += 1;
@@ -158,9 +154,7 @@ void Remote_query::send_client_rsp(txnid_t txn_id, RC rc, uint64_t client_startt
   assert(!responses[txn_id]);
   responses[txn_id] = true;
   */
-#if DEBUG_DISTR
-    	printf("Sending client response (CL_RSP) %ld\n",txn_id);
-#endif
+   	DEBUG("Sending client response (CL_RSP) %ld\n",txn_id);
     //query->return_id = query->client_id;
     //query->dest_id = g_node_id;
     uint64_t total = 5;
@@ -224,9 +218,7 @@ void Remote_query::send_init(base_query * query,uint64_t dest_part_id) {
 
 	// Maximum number of parameters
 	// NOTE: Adjust if parameters sent is changed
-#if DEBUG_DISTR
-  printf("Sending RINIT %ld\n",query->txn_id);
-#endif
+  DEBUG("Sending RINIT %ld\n",query->txn_id);
 
 #if CC_ALG == VLL || CC_ALG == AVOID
 #if WORKLOAD == TPCC
@@ -556,9 +548,7 @@ base_query * Remote_query::unpack(void * d, int len) {
           INC_STATS(0,client_latency,timespan);
           INC_STATS_ARR(0,all_lat,timespan);
           INC_STATS(0,txn_cnt,1);
-#if DEBUG_DISTR
-			  printf("Received CL_RSP from %u -- %ld %f\n", query->return_id,query->txn_id,(float)timespan/BILLION);
-#endif
+			  DEBUG("Received CL_RSP from %u -- %ld %f\n", query->return_id,query->txn_id,(float)timespan/BILLION);
             	break;
 	    	default:
 		assert(false);

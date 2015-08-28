@@ -301,10 +301,8 @@ RC Seq_thread_t::run_remote() {
 			rq_time = get_sys_clock();
 			//assert(m_query->dest_id == g_node_id);
 			//assert(m_query->return_id < g_node_id);
-#if DEBUG_DISTR
-			printf("Received message from %lu, rtype = %d\n", m_query->return_id,
+			DEBUG("Received message from %lu, rtype = %d\n", m_query->return_id,
 					(int)m_query->rtype);
-#endif
 			switch (m_query->rtype) {
 				case RTXN:
 					// Query from client

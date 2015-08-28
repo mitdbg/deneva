@@ -82,9 +82,7 @@ VLLMan::restartQFront() {
 		front_txn->vll_txn_type = VLL_Free;
     uint64_t t = get_sys_clock() - front_txn->wait_starttime;
     front_txn->txn_time_wait += t;
-#if DEBUG_DISTR
-    printf("FREE %ld\n",front_txn->get_txn_id());
-#endif
+    DEBUG("FREE %ld\n",front_txn->get_txn_id());
     front_txn->rc = RCOK;
     //if(WORKLOAD != YCSB && front_txn->get_txn_id() % g_node_cnt != g_node_id) {
     if(front_txn->get_txn_id() % g_node_cnt != g_node_id) {
