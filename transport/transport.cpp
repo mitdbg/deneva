@@ -187,17 +187,10 @@ void Transport::send_msg(uint64_t dest_id, void ** data, int * sizes, int num) {
 
 #if NETWORK_DELAY > 0
     RemReqType rem_req_type = *(RemReqType*)data[1];
-    if (rem_req_type != INIT_DONE && rem_req_type != RTXN) {
+    if (rem_req_type != INIT_DONE) { // && rem_req_type != RTXN) {
        DelayMessage * msg = new DelayMessage(dest_id, sbuf);
        delay_queue->add_entry(msg);
        return;
-    } else {
-        if (rem_req_type == INIT_DONE) {
-            DEBUG("RRT == INIT_DONE: bypassing delay\n");
-        } else {
-            assert (rem_req_type == RTXN);
-            DEBUG("RRT == RTXN: bypassing delay\n");
-        }
     }
 #endif
 
@@ -217,7 +210,7 @@ void Transport::send_msg(uint64_t dest_id, void ** data, int * sizes, int num) {
 void Transport::check_delayed_messages() {
     assert(NETWORK_DELAY > 0);
     DelayMessage * dmsg = NULL;
-    if ((dmsg = (DelayMessage *) delay_queue->get_next_entry()) != NULL) {
+    while ((dmsg = (DelayMessage *) delay_queue->get_next_entry()) != NULL) {
         DEBUG("In check_delayed_messages : sending message on the delay queue\n");
         send_msg_no_delay(dmsg);
     }
@@ -356,6 +349,7 @@ uint64_t Transport::simple_recv_msg() {
 }
 
 void * DelayQueue::get_next_entry() {
+  assert (NETWORK_DELAY > 0);
   q_entry_t next_entry = NULL;
   DelayMessage * data = NULL;
 

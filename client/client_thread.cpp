@@ -203,6 +203,9 @@ RC Client_thread_t::run() {
 		if(get_sys_clock() - run_starttime >= DONE_TIMER) {
       break;
     }
+#if NETWORK_DELAY > 0
+        tport_man.check_delayed_messages();
+#endif
 		uint32_t next_node = iters++ % g_servers_per_client;
 		// Just in case...
 		if (iters == UINT64_MAX)
@@ -213,7 +216,8 @@ RC Client_thread_t::run() {
 		m_query = client_query_queue.get_next_query(next_node,_thd_id);
 		if (m_query == NULL) {
 			client_man.dec_inflight(next_node);
-      if(client_query_queue.done())
+      if(client_query_queue.done()
+              && (NETWORK_DELAY > 0 && !tport_man.delay_queue->poll_next_entry()))
         break;
 			continue;
 		}
