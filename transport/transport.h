@@ -27,6 +27,23 @@ class Socket {
         char _pad[CL_SIZE - sizeof(nn::socket)];
 };
 
+class DelayQueue : public WorkQueue {
+    public:
+        void * get_next_entry();
+};
+
+class DelayMessage {
+    public:
+        inline DelayMessage(uint64_t dest_id, void * sbuf) {
+            _dest_id = dest_id;
+            _sbuf = sbuf;
+            _start_ts = get_sys_clock();
+        }
+        uint64_t _dest_id;
+        void * _sbuf;
+        uint64_t _start_ts;
+};
+
 class Transport {
 	public:
 		Transport();
@@ -41,6 +58,11 @@ class Transport {
 		void simple_send_msg(int size); 
 		uint64_t simple_recv_msg();
 		//void set_ifaddr(const char * ifaddr, uint64_t n) { this.ifaddr[n] = ifaddr; }
+
+        // For adding network delay
+        DelayQueue * delay_queue;
+        void send_msg_no_delay(DelayMessage * msg);
+        void check_delayed_messages();
 	private:
 		Socket * s;
 

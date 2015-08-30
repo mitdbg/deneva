@@ -24,6 +24,9 @@ Transport::Transport() {
 	_node_cnt++;	// account for the sequencer
 #endif
 	s = new Socket[_node_cnt];
+
+    delay_queue = new DelayQueue();
+    delay_queue->init();
 }
 
 
@@ -182,6 +185,22 @@ void Transport::send_msg(uint64_t dest_id, void ** data, int * sizes, int num) {
     return;
   }
 
+#if NETWORK_DELAY > 0
+    RemReqType rem_req_type = *(RemReqType*)data[1];
+    if (rem_req_type != INIT_DONE && rem_req_type != RTXN) {
+       DelayMessage * msg = new DelayMessage(dest_id, sbuf);
+       delay_queue->add_entry(msg);
+       return;
+    } else {
+        if (rem_req_type == INIT_DONE) {
+            DEBUG("RRT == INIT_DONE: bypassing delay\n");
+        } else {
+            assert (rem_req_type == RTXN);
+            DEBUG("RRT == RTXN: bypassing delay\n");
+        }
+    }
+#endif
+
 	rc= s[dest_id].sock.send(&sbuf,NN_MSG,0);
 
 	// Check for a send error
@@ -193,6 +212,39 @@ void Transport::send_msg(uint64_t dest_id, void ** data, int * sizes, int num) {
     INC_STATS(_thd_id,time_tport_send,get_sys_clock() - starttime);
 	INC_STATS(_thd_id,msg_sent_cnt,1);
 	INC_STATS(_thd_id,msg_bytes,size);
+}
+
+void Transport::check_delayed_messages() {
+    assert(NETWORK_DELAY > 0);
+    DelayMessage * dmsg = NULL;
+    if ((dmsg = (DelayMessage *) delay_queue->get_next_entry()) != NULL) {
+        DEBUG("In check_delayed_messages : sending message on the delay queue\n");
+        send_msg_no_delay(dmsg);
+    }
+}
+
+void Transport::send_msg_no_delay(DelayMessage * msg) {
+    assert(NETWORK_DELAY > 0);
+
+    // dest_id
+	uint64_t dest_id = ((uint32_t*)msg->_sbuf)[0];
+    // return_id
+	uint64_t return_id = ((uint32_t*)msg->_sbuf)[1];
+    DEBUG("In send_msg_no_delay: dest_id = %lu, return_id = %lu\n",dest_id, return_id);
+    assert (dest_id == msg->_dest_id);
+    assert (return_id == get_node_id());
+
+    int rc;
+	rc= s[msg->_dest_id].sock.send(&msg->_sbuf,NN_MSG,0);
+
+	// Check for a send error
+	if(rc < 0) {
+		printf("send Error: %d %s\n",errno,strerror(errno));
+		assert(false);
+	}
+
+	INC_STATS(_thd_id,msg_sent_cnt,1);
+	//INC_STATS(_thd_id,msg_bytes,size);
 }
 
 // Listens to socket for messages from other nodes
@@ -231,11 +283,11 @@ void * Transport::recv_msg() {
 	ts_t time;
 	memcpy(&time,&((char*)buf)[bytes-sizeof(ts_t)],sizeof(ts_t));
 
-#if NETWORK_DELAY > 0 && TPORT_TYPE_IPC
-    // Insert artificial network delay
-    ts_t nd_starttime = time;
-    while( (get_sys_clock() - nd_starttime) < NETWORK_DELAY) {}
-#endif
+//#if NETWORK_DELAY > 0 && TPORT_TYPE_IPC
+//    // Insert artificial network delay
+//    ts_t nd_starttime = time;
+//    while( (get_sys_clock() - nd_starttime) < NETWORK_DELAY) {}
+//#endif
 
 	ts_t time2 = get_sys_clock();
 	INC_STATS(_thd_id,tport_lat,time2 - time);
@@ -303,4 +355,41 @@ uint64_t Transport::simple_recv_msg() {
 	return bytes;
 }
 
+void * DelayQueue::get_next_entry() {
+  q_entry_t next_entry = NULL;
+  DelayMessage * data = NULL;
+
+  pthread_mutex_lock(&mtx);
+
+  assert( ( (cnt == 0) && head == NULL && tail == NULL) || ( (cnt > 0) && head != NULL && tail !=NULL) );
+
+  if(cnt > 0) {
+    next_entry = head;
+	data = (DelayMessage *) next_entry->entry;
+	assert(data != NULL);
+    uint64_t nowtime = get_sys_clock();
+
+    DEBUG("DelayQueue: current delay time for head query: %lu\n",nowtime - data->_start_ts);
+    // Check whether delay ns have passed
+    if (nowtime - data->_start_ts < NETWORK_DELAY) {
+        pthread_mutex_unlock(&mtx);
+        return NULL;
+    }
+    head = head->next;
+	free(next_entry);
+    cnt--;
+
+    if(cnt == 0) {
+      tail = NULL;
+    }
+  }
+
+  if(cnt == 0 && last_add_time != 0) {
+    //INC_STATS(0,qq_full,nowtime - last_add_time);
+    last_add_time = 0;
+  }
+
+  pthread_mutex_unlock(&mtx);
+  return data;
+}
 

@@ -17,10 +17,10 @@ public:
   void init();
   bool poll_next_entry();
   void add_entry(void * data);
-  void * get_next_entry();
+  virtual void * get_next_entry();
   uint64_t size();
 
-private:
+protected:
   pthread_mutex_t mtx;
   q_entry_t head;
   q_entry_t tail;

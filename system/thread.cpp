@@ -208,7 +208,10 @@ RC thread_t::run() {
             }
 		}
 
-		while(!work_queue.poll_next_query(get_thd_id()) && !abort_queue.poll_abort(get_thd_id()) && !_wl->sim_done && !_wl->sim_timeout) { 
+		while(!work_queue.poll_next_query(get_thd_id())
+                && !abort_queue.poll_abort(get_thd_id())
+                && (NETWORK_DELAY > 0 && !tport_man.delay_queue->poll_next_entry())
+                && !_wl->sim_done && !_wl->sim_timeout) {
 #if CC_ALG == HSTORE_SPEC
       txn_pool.spec_next(_thd_id);
 #endif
@@ -256,6 +259,10 @@ RC thread_t::run() {
 		if((m_query = abort_queue.get_next_abort_query(get_thd_id())) != NULL) {
       work_queue.add_query(_thd_id,m_query);
     }
+
+#if NETWORK_DELAY > 0
+    tport_man.check_delayed_messages();
+#endif
 
     // Get next query from work queue
 		if((m_query = work_queue.get_next_query(get_thd_id())) == NULL)
