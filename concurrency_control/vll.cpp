@@ -82,9 +82,7 @@ VLLMan::restartQFront() {
 		front_txn->vll_txn_type = VLL_Free;
     uint64_t t = get_sys_clock() - front_txn->wait_starttime;
     front_txn->txn_time_wait += t;
-#if DEBUG_DISTR
-    printf("FREE %ld\n",front_txn->get_txn_id());
-#endif
+    DEBUG("FREE %ld\n",front_txn->get_txn_id());
     front_txn->rc = RCOK;
     //if(WORKLOAD != YCSB && front_txn->get_txn_id() % g_node_cnt != g_node_id) {
     if(front_txn->get_txn_id() % g_node_cnt != g_node_id) {
@@ -106,6 +104,17 @@ VLLMan::beginTxn(txn_man * txn, base_query * query) {
   txn->read_keys(query);
 
   pthread_mutex_lock(&_mutex);
+
+  TxnQEntry * tmp1 = _txn_queue;
+  if(tmp1) {
+  TxnQEntry * tmp2 = tmp1->next;
+  while(tmp1 && tmp2) {
+    assert(tmp1->txn->get_ts() > 0);
+    assert( tmp1->txn->get_ts() < tmp2->txn->get_ts());
+    tmp1 = tmp1->next;
+    tmp2 = tmp2->next;
+  }
+  }
 
 	TxnQEntry * entry = NULL;
 	TxnQEntry * prev_entry = NULL;
@@ -156,15 +165,11 @@ VLLMan::beginTxn(txn_man * txn, base_query * query) {
 	if (txn->vll_txn_type == VLL_Blocked) {
 		ret = WAIT;
     txn->wait_starttime = get_sys_clock();
-#if DEBUG_DISTR
-    printf("BLOCKED %ld\n",txn->get_txn_id());
-#endif
+    DEBUG("BLOCKED %ld\n",txn->get_txn_id());
   }
 	else {
 		ret = RCOK;
-#if DEBUG_DISTR
-    printf("FREE %ld\n",txn->get_txn_id());
-#endif
+    DEBUG("FREE %ld\n",txn->get_txn_id());
   }
 
 final:
@@ -173,10 +178,11 @@ final:
   //assert(!_txn_queue || _txn_queue->txn->vll_txn_type == VLL_Free);
   assert(entry || ret == Abort);
 
-  TxnQEntry * tmp1 = _txn_queue;
+  tmp1 = _txn_queue;
   if(tmp1) {
   TxnQEntry * tmp2 = tmp1->next;
   while(tmp1 && tmp2) {
+    assert(tmp1->txn->get_ts() > 0);
     assert( tmp1->txn->get_ts() < tmp2->txn->get_ts());
     tmp1 = tmp1->next;
     tmp2 = tmp2->next;

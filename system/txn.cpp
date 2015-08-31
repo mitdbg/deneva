@@ -205,9 +205,6 @@ void txn_man::cleanup(RC rc) {
 #if CC_ALG == OCC
   occ_man.finish(rc,this);
 #endif
-#if DEBUG_DISTR
-  printf("CLEANUP %ld %lu\n",get_txn_id(),get_ts());
-#endif
 	ts_t starttime = get_sys_clock();
 	for (int rid = row_cnt - 1; rid >= 0; rid --) {
 #if !NOGRAPHITE
@@ -593,8 +590,9 @@ RC txn_man::finish(base_query * query, bool fin) {
 
 void
 txn_man::release() {
-	for (int i = 0; i < num_accesses_alloc; i++)
-		mem_allocator.free(accesses[i], 0);
-	mem_allocator.free(accesses, 0);
+	for (int i = 0; i < num_accesses_alloc; i++) {
+		mem_allocator.free(accesses[i], sizeof(Access));
+  }
+	//mem_allocator.free(accesses, 0);
 }
 

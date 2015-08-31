@@ -4,6 +4,7 @@
 #include "wl.h"
 #include "ycsb.h"
 #include "table.h"
+#include "helper.h"
 
 uint64_t ycsb_client_query::the_n = 0;
 double ycsb_client_query::denom = 0;
@@ -153,7 +154,7 @@ void ycsb_query::unpack(base_query * query, void * d) {
 	ptr += sizeof(YCSBRemTxnType);
 	memcpy(&m_query->pid,&data[ptr],sizeof(uint64_t));
 	ptr += sizeof(uint64_t);
-#if CC_ALG == WAIT_DIE || CC_ALG == TIMESTAMP || CC_ALG == MVCC
+#if CC_ALG == WAIT_DIE || CC_ALG == TIMESTAMP || CC_ALG == MVCC || CC_ALG == VLL
 	memcpy(&m_query->ts,&data[ptr],sizeof(uint64_t));
 	ptr += sizeof(uint64_t);
 #endif
@@ -171,9 +172,7 @@ void ycsb_query::unpack(base_query * query, void * d) {
 }
 
 void ycsb_query::remote_qry(base_query * query, int type, int dest_id) {
-#if DEBUG_DISTR
-  printf("Sending RQRY %ld\n",query->txn_id);
-#endif
+  DEBUG("Sending RQRY %ld\n",query->txn_id);
 	ycsb_query * m_query = (ycsb_query *) query;
 	YCSBRemTxnType t = (YCSBRemTxnType) type;
   assert(m_query->txn_rtype != YCSB_FIN);
@@ -182,7 +181,7 @@ void ycsb_query::remote_qry(base_query * query, int type, int dest_id) {
 	// NOTE: Adjust if parameters sent is changed
 	int total = 5;
 
-#if CC_ALG == WAIT_DIE | CC_ALG == TIMESTAMP || CC_ALG == MVCC
+#if CC_ALG == WAIT_DIE | CC_ALG == TIMESTAMP || CC_ALG == MVCC || CC_ALG == VLL
   total ++;   // For timestamp
 #endif
 #if CC_ALG == MVCC
@@ -221,7 +220,7 @@ void ycsb_query::remote_qry(base_query * query, int type, int dest_id) {
 	data[num] = &_pid;
 	sizes[num++] = sizeof(uint64_t); 
 
-#if CC_ALG == WAIT_DIE || CC_ALG == TIMESTAMP || CC_ALG == MVCC
+#if CC_ALG == WAIT_DIE || CC_ALG == TIMESTAMP || CC_ALG == MVCC || CC_ALG == VLL
   data[num] = &m_query->ts;
   sizes[num++] = sizeof(uint64_t);   // sizeof ts_t
 #endif
@@ -246,9 +245,7 @@ void ycsb_query::remote_rsp(base_query * query) {
 
 	// Maximum number of parameters
 	// NOTE: Adjust if parameters sent is changed
-#if DEBUG_DISTR
-  printf("Sending RQRY_RSP %ld\n",query->txn_id);
-#endif
+  DEBUG("Sending RQRY_RSP %ld\n",query->txn_id);
 	int total = 4;
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
   total++; // For dest partition id (same as home)
@@ -360,9 +357,7 @@ void ycsb_client_query::client_query(base_client_query * query, uint64_t dest_id
 void ycsb_client_query::client_query(base_client_query * query, uint64_t dest_id,
 		uint64_t batch_num, txnid_t txn_id) {
 	ycsb_client_query * m_query = (ycsb_client_query *) query;
-#if DEBUG_DISTR
-    	printf("Client: sending RTXN to %ld -- %ld\n",dest_id,m_query->part_to_access[0]);
-#endif
+    	DEBUG("Client: sending RTXN to %ld -- %ld\n",dest_id,m_query->part_to_access[0]);
 
 	// Maximum number of parameters
 	// NOTE: Adjust if parameters sent is changed

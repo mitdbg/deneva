@@ -11,6 +11,14 @@
 //#endif
 #include "global.h"
 
+/************************************************/
+// Debugging
+/************************************************/
+#define DEBUG(...) \
+  if(DEBUG_DISTR) { \
+    fprintf(stdout,__VA_ARGS__); \
+  }
+
 
 /************************************************/
 // atomic operations
@@ -144,6 +152,11 @@
 	for (UInt32 i = 0; i < size; i++) \
 		*name[i] = value; \
 
+#define YCSB_QUERY_FREE(qry) \
+  ycsb_query * query = (ycsb_query*) qry; \
+  mem_allocator.free(query->part_to_access,sizeof(uint64_t)*query->part_num); \
+  mem_allocator.free(query->requests,sizeof(ycsb_query)*query->request_cnt); \
+  mem_allocator.free(query,sizeof(ycsb_query)); 
 enum Data_type {DT_table, DT_page, DT_row };
 
 // TODO currently, only DR_row supported
