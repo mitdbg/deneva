@@ -80,6 +80,7 @@ def run_exps(exps,skip_completed='False',exec_exps='True',dry_run='False',iterat
     ITERS = int(iterations)
     SKIP = skip_completed == 'True'
     EXECUTE_EXPS = exec_exps == 'True'
+    CHECK = check == 'True'
     env.dry_run = dry_run == 'True'
     if env.dry_run:
         with color(level="warn"):
@@ -88,7 +89,7 @@ def run_exps(exps,skip_completed='False',exec_exps='True',dry_run='False',iterat
             puts("running experiment set:{}".format(exps),show_prefix=True)
 
     # Make sure all experiment binaries exist
-    if check:
+    if CHECK:
         execute(check_binaries,exps)
 
     # Run experiments

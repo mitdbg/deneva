@@ -48,7 +48,7 @@ lineconfig = {
     70              : "ls='-', lw=2, color='#faa43a', marker='+', ms=6",
     80              : "ls='-', lw=2, color='#DECF3F', marker='o', ms=6",
     90              : "ls='-', lw=2, color='#60BD68', marker='D', ms=6",
-    100             : "ls='-', lw=2, color='#5DA5DA', marker='s', ms=6",
+    100             : "ls='-', lw=2, color='#B276B2', marker='s', ms=6",
 # Multipartition Rates
     0               : "ls='-', lw=2, color='#ff3333', marker='o', ms=4",
     1               : "ls='-', lw=2, color='#faa43a', marker='D', ms=4",

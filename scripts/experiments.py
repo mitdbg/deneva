@@ -271,7 +271,7 @@ def write_ratio_sweep():
 
 def skew_sweep():
     fmt = fmt_ycsb
-    nnodes = [2]#,4,8,16]
+    nnodes = [1,2,4,8,16]
     nmpr=[100]
     nalgos=['WAIT_DIE']
     #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','TIMESTAMP','VLL','HSTORE']
@@ -280,10 +280,10 @@ def skew_sweep():
     ncthreads=[3]
     ncrthreads=[1]
     ntifs=[1300]
-    nzipf=[0.0,0.2,0.4,0.6,0.8,0.99]
+    nzipf=[0.0,0.6,0.8,0.9,0.99]
     nwr_perc=[0.5]
     ntxn=[3000000]
-    nparts = [2,4,8,16]
+    nparts = [16]
     exp = [[int(math.ceil(n)) if n > 1 else 1,n,txn,'YCSB',cc,m,ct,crt,t,rt,tif,z,1.0-wp,wp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n] for n,ct,crt,t,rt,tif,z,wp,m,cc,p,txn in itertools.product(nnodes,ncthreads,ncrthreads,nthreads,nrthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts,ntxn)]
     exp.sort()
     exp = list(k for k,_ in itertools.groupby(exp))
@@ -292,20 +292,52 @@ def skew_sweep():
 #Should do this one on an ISTC machine
 def network_sweep():
     fmt = [fmt_ycsb[0] + ["NETWORK_DELAY"]]
-    nnodes = [1,2,4,8]
-    nmpr=[1]
-    nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','TIMESTAMP','HSTORE','HSTORE_SPEC']
+    nnodes = [1,2,4,8,16]
+    nmpr=[100]
+    nalgos=['WAIT_DIE']
     #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
-    nthreads=[2]
-    ncthreads=[4]
-    ntifs=[1000]
-    nzipf=[0.6]
+    nthreads=[3]
+    nrthreads=[1]
+    ncthreads=[3]
+    ncrthreads=[1]
+    ntifs=[1300]
+    nzipf=[0.8]
     nwr_perc=[0.5]
-    nparts=[2]
+    nparts=[16]
     network_delay = ["0UL","10000UL","100000UL","1000000UL","10000000UL","100000000UL"]
-    ntxn=3000000
-    exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t if cc!="HSTORE" and cc!= "HSTORE_SPEC" else 1,tif,z,1.0-wp,wp,p if p <= n else 1,nd] for n,ct,t,tif,z,wp,m,cc,p,nd in itertools.product(nnodes,ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts,network_delay)]
+    ntxn=[3000000]
+    exp = [[int(math.ceil(n)) if n > 1 else 1,n,txn,'YCSB',cc,m,ct,crt,t,rt,tif,z,1.0-wp,wp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n,nd] for n,ct,crt,t,rt,tif,z,wp,m,cc,p,txn,nd in itertools.product(nnodes,ncthreads,ncrthreads,nthreads,nrthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts,ntxn,network_delay)]
+    exp.sort()
+    exp = list(k for k,_ in itertools.groupby(exp))
     return fmt[0],exp
+
+def network_sweep_plot(summary,summary_client):
+    from plot_helper import tput
+    fmt,exp = node_sweep()
+    fmt = ["CC_ALG","CLIENT_NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","MPR","CLIENT_THREAD_CNT","CLIENT_REM_THREAD_CNT","THREAD_CNT","REM_THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC","PART_PER_TXN"]
+    nmpr=[100]
+    nnodes=[2]
+    network_delay = ["0UL","10000UL","100000UL","1000000UL","10000000UL","100000000UL"]
+    nalgos=['WAIT_DIE']
+    nthreads=3
+    nrthreads=1
+    ncthreads=3
+    ncrthreads=1
+    ntifs=1300
+    nzipf=[0.8]
+    nwr_perc=[0.5]
+    nparts = 16 
+ 
+    v_vals = network_delay
+    v_name = "NETWORK_DELAY"
+    x_vals = nnodes
+    x_name = "NODE_CNT"
+    for mpr,wr,zipf,alg in itertools.product(nmpr,nwr_perc,nzipf,nalgos):
+        c = [alg,1,3000000,"YCSB",mpr,ncthreads,ncrthreads,nthreads,nrthreads,ntifs,zipf,1.0-wr,wr,nparts]
+        assert(len(c) == len(fmt))
+        title = "YCSB System Throughput {} {}% Writes {} Skew".format(alg,wr*100,zipf);
+        tput(x_vals,v_vals,summary,cfg_fmt=fmt,cfg=c,xname=x_name,vname=v_name,title=title)
+
 
 def tpcc_sweep():
     fmt = fmt_tpcc
@@ -386,6 +418,7 @@ experiment_map = {
     'write_ratio_sweep': write_ratio_sweep,
     'skew_sweep': skew_sweep,
     'network_sweep': network_sweep,
+    'network_sweep_plot': network_sweep_plot,
     'tpcc_sweep': tpcc_sweep,
     'network_experiment' : network_experiment,
     'abort_penalty_sweep': abort_penalty_sweep,
