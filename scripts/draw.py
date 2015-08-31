@@ -146,7 +146,11 @@ def draw_line(fname, data, xticks,
         linenames = sorted(data.keys())
     for i in range(0, len(linenames)) :
         key = linenames[i]
-        intlab = [float(x) for x in xticks]
+        try:
+            intlab = [float(x) for x in xticks]
+        except ValueError:
+            intlab = [float(x[:-2]) for x in xticks]
+
         style = None
         if styles != None :
             style = styles[key]

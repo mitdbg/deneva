@@ -118,6 +118,7 @@ def tput(xval,vval,summary,
 #            my_cfg = cfg
 #            my_cfg[my_cfg_fmt.index(xname)] = x
 #            my_cfg[my_cfg_fmt.index(vname)] = v
+            print my_cfg_fmt
             n_cnt = my_cfg[my_cfg_fmt.index("NODE_CNT")]
             n_clt = my_cfg[my_cfg_fmt.index("CLIENT_NODE_CNT")]
             my_cfg[my_cfg_fmt.index("CLIENT_NODE_CNT")] = n_cnt

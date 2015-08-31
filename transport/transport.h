@@ -34,14 +34,16 @@ class DelayQueue : public WorkQueue {
 
 class DelayMessage {
     public:
-        inline DelayMessage(uint64_t dest_id, void * sbuf) {
+        inline DelayMessage(uint64_t dest_id, void * sbuf, uint64_t size) {
             _dest_id = dest_id;
             _sbuf = sbuf;
             _start_ts = get_sys_clock();
+            _size = size;
         }
         uint64_t _dest_id;
         void * _sbuf;
         uint64_t _start_ts;
+        uint64_t _size;
 };
 
 class Transport {

@@ -4,6 +4,33 @@
 #include "mem_alloc.h"
 #include "client_txn.h"
 
+void StatsArr::quicksort(int low_idx, int high_idx) {
+  int low = low_idx;
+  int high = high_idx;
+  uint64_t pivot = arr[(low+high) / 2];
+  uint64_t tmp;
+
+  while(low < high) {
+    while(arr[low] < pivot)
+      low++;
+    while(arr[high] > pivot)
+      high--;
+    if(low <= high) {
+      tmp = arr[low];
+      arr[low] = arr[high];
+      arr[high] = tmp;
+      low++;
+      high--;
+    }
+  }
+
+  if(low_idx < high)
+    quicksort(low_idx,high);
+  if(low < high_idx)
+    quicksort(low,high_idx);
+
+}
+
 void StatsArr::init(uint64_t size,StatsArrType type) {
 	arr = (uint64_t *)
 		mem_allocator.alloc(sizeof(uint64_t) * (size+1), 0);
@@ -59,6 +86,24 @@ void StatsArr::print(FILE * f) {
 	  }
   }
 }
+
+uint64_t StatsArr::get_idx(uint64_t idx) {
+  assert(idx < cnt);
+  return arr[idx];
+}
+
+uint64_t StatsArr::get_percentile(uint64_t ile) {
+  return arr[ile * cnt / 100];
+}
+
+uint64_t StatsArr::get_avg() {
+  uint64_t sum = 0;
+  for(uint64_t i = 0;i < cnt;i++) {
+    sum+=arr[i];
+  }
+  return sum / cnt;
+}
+
 
 void Stats_thd::init(uint64_t thd_id) {
 	clear();
@@ -427,8 +472,8 @@ void Stats::print_client(bool prog) {
       ",time_tport_send=%f"
       ",time_tport_rcv=%f"
       ",tport_lat=%f"
-			"\n",
-			total_tot_run_time / BILLION,
+			//"\n"
+			,total_tot_run_time / BILLION,
 			total_txn_cnt, 
 			total_txn_sent, 
 			total_time_getqry / BILLION,
@@ -455,6 +500,7 @@ void Stats::print_client(bool prog) {
 		);
     */
     if(prog) {
+      fprintf(outf,"\n");
 		  //for (uint32_t k = 0; k < g_node_id; ++k) {
 		  for (uint32_t k = 0; k < g_servers_per_client; ++k) {
         printf("tif_node%u=%d, "
@@ -464,6 +510,46 @@ void Stats::print_client(bool prog) {
       printf("\n");
     } else {
 
+      uint64_t tid = 0;
+      _stats[tid]->all_lat.quicksort(0,_stats[tid]->all_lat.cnt-1);
+	    fprintf(outf, 
+          ",lat_min=%ld"
+          ",lat_max=%ld"
+          ",lat_mean=%ld"
+          ",lat_99ile=%ld"
+          ",lat_98ile=%ld"
+          ",lat_95ile=%ld"
+          ",lat_90ile=%ld"
+          ",lat_80ile=%ld"
+          ",lat_75ile=%ld"
+          ",lat_70ile=%ld"
+          ",lat_60ile=%ld"
+          ",lat_50ile=%ld"
+          ",lat_40ile=%ld"
+          ",lat_30ile=%ld"
+          ",lat_25ile=%ld"
+          ",lat_20ile=%ld"
+          ",lat_10ile=%ld"
+          ",lat_5ile=%ld\n"
+          ,_stats[tid]->all_lat.get_idx(0)
+          ,_stats[tid]->all_lat.get_idx(_stats[tid]->all_lat.cnt-1)
+          ,_stats[tid]->all_lat.get_avg()
+          ,_stats[tid]->all_lat.get_percentile(99)
+          ,_stats[tid]->all_lat.get_percentile(98)
+          ,_stats[tid]->all_lat.get_percentile(95)
+          ,_stats[tid]->all_lat.get_percentile(90)
+          ,_stats[tid]->all_lat.get_percentile(80)
+          ,_stats[tid]->all_lat.get_percentile(75)
+          ,_stats[tid]->all_lat.get_percentile(70)
+          ,_stats[tid]->all_lat.get_percentile(60)
+          ,_stats[tid]->all_lat.get_percentile(50)
+          ,_stats[tid]->all_lat.get_percentile(40)
+          ,_stats[tid]->all_lat.get_percentile(30)
+          ,_stats[tid]->all_lat.get_percentile(25)
+          ,_stats[tid]->all_lat.get_percentile(20)
+          ,_stats[tid]->all_lat.get_percentile(10)
+          ,_stats[tid]->all_lat.get_percentile(5)
+          );
 	    print_lat_distr();
     }
 
@@ -1043,26 +1129,5 @@ void Stats::print_lat_distr() {
 	for (UInt32 tid = 0; tid < limit; tid ++) 
     _stats[tid]->all_lat.print(stdout);
 #endif
-  /*
-#if PRT_LAT_DISTR
-	FILE * outf;
-	if (output_file != NULL) {
-		outf = fopen(output_file, "a");
-		for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) {
-			fprintf(outf, "[all_lat thd=%d] ", tid);
-			for (UInt32 tnum = 0; tnum < _stats[tid]->txn_cnt; tnum ++) 
-				fprintf(outf, "%f,", (double)_stats[tid]->all_lat[tnum] / BILLION);
-			fprintf(outf, "\n");
-		}
-		fclose(outf);
-	} 
-	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) {
-		printf("[all_lat thd=%d] ", tid);
-		for (UInt32 tnum = 0; tnum < _stats[tid]->txn_cnt; tnum ++) 
-			printf("%f,", (double)_stats[tid]->all_lat[tnum] / BILLION);
-		printf("\n");
-	}
-#endif
-*/
 }
 

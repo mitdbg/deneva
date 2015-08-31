@@ -95,7 +95,25 @@ stat_map = {
  'time_wait_lock_rem': [],
  'spec_commit_cnt': [],
  'time_ts_alloc': [],
- 'txn_time_q_abrt': []
+ 'txn_time_q_abrt': [],
+ 'lat_min': [],
+ 'lat_max': [],
+ 'lat_mean': [],
+ 'lat_99ile': [],
+ 'lat_98ile': [],
+ 'lat_95ile': [],
+ 'lat_90ile': [],
+ 'lat_80ile': [],
+ 'lat_75ile': [],
+ 'lat_70ile': [],
+ 'lat_60ile': [],
+ 'lat_50ile': [],
+ 'lat_40ile': [],
+ 'lat_30ile': [],
+ 'lat_25ile': [],
+ 'lat_20ile': [],
+ 'lat_10ile': [],
+ 'lat_5ile': []
 
 }
 
