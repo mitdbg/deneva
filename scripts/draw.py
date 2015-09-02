@@ -22,12 +22,26 @@ scatterconfig = {
 
 lineconfig_nopreset = [
     "ls='-', lw=2, color='#f15854', marker='o', ms=4",
-    "ls='-', lw=2, color='#faa43a', marker='D', ms=4",
-    "ls='-', lw=2, color='#DECF3F', marker='s', ms=4",
-    "ls='-', lw=2, color='#60BD68', marker='^', ms=4",
+    "ls='-', lw=2, color='#faa43a', marker='o', ms=4",
+    "ls='-', lw=2, color='#DECF3F', marker='o', ms=4",
+    "ls='-', lw=2, color='#60BD68', marker='o', ms=4",
     "ls='--', lw=2, color='#5DA5DA', marker='o', ms=4", #, marker='+', ms=10",
-    "ls='--', lw=2, color='#B276B2', marker='+', ms=6",
-    "ls='-', lw=2, color='#4d4d4d', marker='x', ms=6"
+    "ls='--', lw=2, color='#B276B2', marker='o', ms=6",
+    "ls='-', lw=2, color='#4d4d4d', marker='o', ms=6",
+    "ls='-', lw=2, color='#f15854', marker='D', ms=4",
+    "ls='-', lw=2, color='#faa43a', marker='D', ms=4",
+    "ls='-', lw=2, color='#DECF3F', marker='D', ms=4",
+    "ls='-', lw=2, color='#60BD68', marker='D', ms=4",
+    "ls='--', lw=2, color='#5DA5DA', marker='D', ms=4", #, marker='+', ms=10",
+    "ls='--', lw=2, color='#B276B2', marker='D', ms=6",
+    "ls='-', lw=2, color='#4d4d4d', marker='D', ms=6",
+    "ls='-', lw=2, color='#f15854', marker='^', ms=4",
+    "ls='-', lw=2, color='#faa43a', marker='^', ms=4",
+    "ls='-', lw=2, color='#DECF3F', marker='^', ms=4",
+    "ls='-', lw=2, color='#60BD68', marker='^', ms=4",
+    "ls='--', lw=2, color='#5DA5DA', marker='^', ms=4", #, marker='+', ms=10",
+    "ls='--', lw=2, color='#B276B2', marker='^', ms=6",
+    "ls='-', lw=2, color='#4d4d4d', marker='^', ms=6"
 ]
 
 lineconfig = {
@@ -53,6 +67,19 @@ lineconfig = {
     0               : "ls='-', lw=2, color='#ff3333', marker='o', ms=4",
     1               : "ls='-', lw=2, color='#faa43a', marker='D', ms=4",
     5               : "ls='-', lw=2, color='#DECF3F', marker='s', ms=4",
+#Skew
+    0.0       : "ls='-', lw=2, color='#faa43a', marker='D', ms=4",
+    0.01      : "ls='-', lw=2, color='#DECF3F', marker='s', ms=4",
+    0.1     : "ls='-', lw=2, color='#60BD68', marker='^', ms=4",
+    1.0          : "ls='--', lw=2, color='#5DA5DA', marker='o', ms=4", #, marker='+', ms=10",
+
+#Network delay
+    0.6      : "ls='-', lw=2, color='#DECF3F', marker='s', ms=4",
+    0.8     : "ls='-', lw=2, color='#60BD68', marker='^', ms=4",
+    0.9          : "ls='--', lw=2, color='#5DA5DA', marker='o', ms=4", #, marker='+', ms=10",
+    0.99           : "ls='--', lw=2, color='#B276B2', marker='+', ms=6",
+    10.0           : "ls='--', lw=2, color='#B276B2', marker='+', ms=6",
+    100.0        : "ls='-', lw=2, color='#4d4d4d', marker='x', ms=6",
 #    10              : "ls='-', lw=2, color='#DECF3F', marker='s', ms=4",
 #    20              : "ls='-', lw=2, color='#60BD68', marker='^', ms=4",
 #    30              : "ls='--', lw=2, color='#5DA5DA', marker='o', ms=4", #, marker='+', ms=10",
@@ -146,7 +173,11 @@ def draw_line(fname, data, xticks,
         linenames = sorted(data.keys())
     for i in range(0, len(linenames)) :
         key = linenames[i]
-        intlab = [float(x) for x in xticks]
+        try:
+            intlab = [float(x) for x in xticks]
+        except ValueError:
+            intlab = [float(x[:-2]) for x in xticks]
+
         style = None
         if styles != None :
             style = styles[key]

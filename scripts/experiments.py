@@ -13,19 +13,19 @@ fmt_nt = [["NODE_CNT","CLIENT_NODE_CNT","NETWORK_TEST"]]
 
 def test():
     fmt = fmt_ycsb
-    nnodes = [2]
+    nnodes = [4]
     nmpr=[100]
-    nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','VLL','TIMESTAMP']
+    nalgos=['WAIT_DIE','MVCC']
     #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
     nthreads=[3]
     nrthreads=[1]
     ncthreads=[3]
     ncrthreads=[1]
     ntifs=[1500]
-    nzipf=[0.6]
+    nzipf=[0.8]
     nwr_perc=[0.5]
-    ntxn=[3000000]
-    nparts = [2]
+    ntxn=[10000000]
+    nparts = [4]
     exp = [[int(math.ceil(n)) if n > 1 else 1,n,txn,'YCSB',cc,m,ct,crt,t,rt,tif,z,1.0-wp,wp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n] for n,ct,crt,t,rt,tif,z,wp,m,cc,p,txn in itertools.product(nnodes,ncthreads,ncrthreads,nthreads,nrthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts,ntxn)]
     return fmt[0],exp
 
@@ -289,6 +289,31 @@ def skew_sweep():
     exp = list(k for k,_ in itertools.groupby(exp))
     return fmt[0],exp
 
+def skew_sweep_plot(summary,summary_client):
+    from plot_helper import tput
+    fmt,exp = node_sweep()
+    fmt = ["CC_ALG","CLIENT_NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","MPR","CLIENT_THREAD_CNT","CLIENT_REM_THREAD_CNT","THREAD_CNT","REM_THREAD_CNT","MAX_TXN_IN_FLIGHT","READ_PERC","WRITE_PERC","PART_PER_TXN"]
+    x_name = "NODE_CNT"
+    x_vals = [1,2,4,8,16]
+    nmpr=[100]
+    nalgos=['WAIT_DIE']
+    nthreads=3
+    nrthreads=1
+    ncthreads=3
+    ncrthreads=1
+    ntifs=1300
+    nzipf=[0.0,0.6,0.8,0.9,0.99]
+    nwr_perc=[0.5]
+    nparts = [16]
+ 
+    v_vals = nzipf
+    v_name = "ZIPF_THETA"
+    for mpr,wr,parts in itertools.product(nmpr,nwr_perc,nparts):
+        c = [nalgos[0],1,3000000,"YCSB",mpr,ncthreads,ncrthreads,nthreads,nrthreads,ntifs,1.0-wr,wr,parts]
+        assert(len(c) == len(fmt))
+        title = "YCSB System Throughput {} {}% Writes".format(nalgos[0],wr*100);
+        tput(x_vals,v_vals,summary,cfg_fmt=fmt,cfg=c,xname=x_name,vname=v_name,title=title)
+
 #Should do this one on an ISTC machine
 def network_sweep():
     fmt = [fmt_ycsb[0] + ["NETWORK_DELAY"]]
@@ -316,7 +341,7 @@ def network_sweep_plot(summary,summary_client):
     fmt,exp = node_sweep()
     fmt = ["CC_ALG","CLIENT_NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","MPR","CLIENT_THREAD_CNT","CLIENT_REM_THREAD_CNT","THREAD_CNT","REM_THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC","PART_PER_TXN"]
     nmpr=[100]
-    nnodes=[2]
+    nnodes = [1,2,4,8,16]
     network_delay = ["0UL","10000UL","100000UL","1000000UL","10000000UL","100000000UL"]
     nalgos=['WAIT_DIE']
     nthreads=3
@@ -417,6 +442,7 @@ experiment_map = {
     'tif_sweep': tif_sweep,
     'write_ratio_sweep': write_ratio_sweep,
     'skew_sweep': skew_sweep,
+    'skew_sweep_plot': skew_sweep_plot,
     'network_sweep': network_sweep,
     'network_sweep_plot': network_sweep_plot,
     'tpcc_sweep': tpcc_sweep,
@@ -450,7 +476,9 @@ configs = {
     "NUM_WH": 2,
     "MAX_TXN_IN_FLIGHT": 1,
     "NETWORK_DELAY": '0UL',
-    "DONE_TIMER": "3 * 60 * BILLION // 3 minutes",
+#    "DONE_TIMER": "3 * 60 * BILLION // 3 minutes",
+#    "PROG_TIMER" : "30 * BILLION // in s",
+    "DONE_TIMER": "10 * 60 * BILLION // 3 minutes",
     "PROG_TIMER" : "30 * BILLION // in s",
     "NETWORK_TEST" : "false",
     "ABORT_PENALTY": "1 * 1000000UL   // in ns.",

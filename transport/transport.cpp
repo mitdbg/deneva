@@ -188,8 +188,9 @@ void Transport::send_msg(uint64_t dest_id, void ** data, int * sizes, int num) {
 #if NETWORK_DELAY > 0
     RemReqType rem_req_type = *(RemReqType*)data[1];
     if (rem_req_type != INIT_DONE) { // && rem_req_type != RTXN) {
-       DelayMessage * msg = new DelayMessage(dest_id, sbuf);
+       DelayMessage * msg = new DelayMessage(dest_id, sbuf,size);
        delay_queue->add_entry(msg);
+       INC_STATS(_thd_id,time_tport_send,get_sys_clock() - starttime);
        return;
     }
 #endif
@@ -202,7 +203,7 @@ void Transport::send_msg(uint64_t dest_id, void ** data, int * sizes, int num) {
 		assert(false);
 	}
 
-    INC_STATS(_thd_id,time_tport_send,get_sys_clock() - starttime);
+  INC_STATS(_thd_id,time_tport_send,get_sys_clock() - starttime);
 	INC_STATS(_thd_id,msg_sent_cnt,1);
 	INC_STATS(_thd_id,msg_bytes,size);
 }
@@ -219,6 +220,7 @@ void Transport::check_delayed_messages() {
 void Transport::send_msg_no_delay(DelayMessage * msg) {
     assert(NETWORK_DELAY > 0);
 
+    uint64_t starttime = get_sys_clock();
     // dest_id
 	uint64_t dest_id = ((uint32_t*)msg->_sbuf)[0];
     // return_id
@@ -237,7 +239,8 @@ void Transport::send_msg_no_delay(DelayMessage * msg) {
 	}
 
 	INC_STATS(_thd_id,msg_sent_cnt,1);
-	//INC_STATS(_thd_id,msg_bytes,size);
+  INC_STATS(_thd_id,time_tport_send,get_sys_clock() - starttime);
+	INC_STATS(_thd_id,msg_bytes,msg->_size);
 }
 
 // Listens to socket for messages from other nodes

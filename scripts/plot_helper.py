@@ -118,6 +118,7 @@ def tput(xval,vval,summary,
 #            my_cfg = cfg
 #            my_cfg[my_cfg_fmt.index(xname)] = x
 #            my_cfg[my_cfg_fmt.index(vname)] = v
+            print my_cfg_fmt
             n_cnt = my_cfg[my_cfg_fmt.index("NODE_CNT")]
             n_clt = my_cfg[my_cfg_fmt.index("CLIENT_NODE_CNT")]
             my_cfg[my_cfg_fmt.index("CLIENT_NODE_CNT")] = n_cnt
@@ -161,9 +162,7 @@ def tput(xval,vval,summary,
             tpt[_v][xi] = (tot_txn_cnt/avg_run_time)
             #tpt[v][xi] = (avg_txn_cnt/avg_run_time)
 
-    bbox = [0.9,0.9]
-    if vname == "NETWORK_DELAY":
-        bbox = [0.8,0.2]
+    bbox = [0.4,0.9]
     print("Created plot {}".format(name))
     draw_line(name,tpt,_xval,ylab='Throughput (Txn/sec)',xlab=_xlab,title=_title,bbox=bbox,ncol=2) 
 

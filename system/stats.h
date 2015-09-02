@@ -5,9 +5,13 @@ enum StatsArrType {ArrInsert, ArrIncr};
 class StatsArr {
     public:
       void init(uint64_t size,StatsArrType type);
+      void quicksort(int low_idx, int high_idx);
       void resize();
       void insert(uint64_t item);
       void print(FILE * f);
+      uint64_t get_idx(uint64_t idx); 
+      uint64_t get_percentile(uint64_t ile); 
+      uint64_t get_avg(); 
 
       uint64_t * arr;
       uint64_t size;
