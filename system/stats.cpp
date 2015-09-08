@@ -87,6 +87,15 @@ void StatsArr::print(FILE * f) {
   }
 }
 
+void StatsArr::print(FILE * f,uint64_t min, uint64_t max) {
+  if(type == ArrIncr) {
+	  for (UInt32 i = min * cnt / 100; i < max * cnt / 100; i ++) {
+	    fprintf(f,"%ld,", arr[i]);
+	  }
+  }
+}
+
+
 uint64_t StatsArr::get_idx(uint64_t idx) {
   assert(idx < cnt);
   return arr[idx];
@@ -550,7 +559,7 @@ void Stats::print_client(bool prog) {
           ,_stats[tid]->all_lat.get_percentile(10)
           ,_stats[tid]->all_lat.get_percentile(5)
           );
-	    print_lat_distr();
+	    print_lat_distr(99,100);
     }
 
 	if (output_file != NULL) {
@@ -871,6 +880,7 @@ void Stats::print(bool prog) {
 		outf = fopen(output_file, "w");
   else
     outf = stdout;
+  //txn_pool.snapshot();
   if(prog)
 	  fprintf(outf, "[prog] ");
   else
@@ -1129,5 +1139,12 @@ void Stats::print_lat_distr() {
 	for (UInt32 tid = 0; tid < limit; tid ++) 
     _stats[tid]->all_lat.print(stdout);
 #endif
+}
+
+void Stats::print_lat_distr(uint64_t min, uint64_t max) {
+//#if PRT_LAT_DISTR
+  printf("\n[all_lat] ");
+  _stats[0]->all_lat.print(stdout,min,max);
+//#endif
 }
 

@@ -9,6 +9,7 @@ class StatsArr {
       void resize();
       void insert(uint64_t item);
       void print(FILE * f);
+      void print(FILE * f,uint64_t min, uint64_t max); 
       uint64_t get_idx(uint64_t idx); 
       uint64_t get_percentile(uint64_t ile); 
       uint64_t get_avg(); 
@@ -180,6 +181,7 @@ public:
 	void print(bool prog);
 	void print_cnts();
 	void print_lat_distr();
+  void print_lat_distr(uint64_t min, uint64_t max); 
 	void print_abort_distr();
     uint64_t get_txn_cnts();
 };

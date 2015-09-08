@@ -6,7 +6,6 @@
 // Simulation + Hardware
 /***********************************************/
 #define NODE_CNT 4
-#define NODE_CNT 4
 #define THREAD_CNT 3
 // REM_THREAD_CNT should be at least NODE_CNT*THREAD_CNT to avoid deadlock
 #define REM_THREAD_CNT 1
@@ -79,7 +78,7 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, VOLTDB, OCC, VLL, CALVIN
-#define CC_ALG MVCC
+#define CC_ALG WAIT_DIE
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER         false
@@ -141,14 +140,14 @@
 #define MAX_PART_PER_TXN      16 
 #define MAX_ROW_PER_TXN       64
 #define QUERY_INTVL         1UL
-#define MAX_TXN_PER_PART 10000000
+#define MAX_TXN_PER_PART 3000000
 #define FIRST_PART_LOCAL      true
 #define MAX_TUPLE_SIZE        1024 // in bytes
 #define GEN_BY_MPR false
 // ==== [YCSB] ====
 #define INIT_PARALLELISM 4
 #define SYNTH_TABLE_SIZE 2097152
-#define ZIPF_THETA 0.8
+#define ZIPF_THETA 0.9
 #define READ_PERC 0.5
 #define WRITE_PERC 0.5
 #define SCAN_PERC           0
@@ -270,8 +269,8 @@ extern TestCases          g_test_case;
 // Stats and timeout
 #define BILLION 1000000000UL // in ns => 1 second
 #define STAT_ARR_SIZE 1024
-#define PROG_TIMER 30 * BILLION // in s
-#define DONE_TIMER 10 * 60 * BILLION // 3 minutes
+#define PROG_TIMER 10 * BILLION // in s
+#define DONE_TIMER 3 * 60 * BILLION // 3 minutes
 
 #define SEED 0
 

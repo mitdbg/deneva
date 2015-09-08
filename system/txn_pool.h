@@ -18,6 +18,12 @@ struct txn_node {
 
 typedef txn_node * txn_node_t;
 
+struct pool_node {
+ public:
+   txn_node_t head;
+   txn_node_t tail;
+};
+typedef pool_node * pool_node_t;
 
 class TxnPool {
 public:
@@ -29,6 +35,7 @@ public:
   void restart_txn(uint64_t txn_id);
   void delete_txn(uint64_t node_id, uint64_t txn_id);
   uint64_t get_min_ts(); 
+  void snapshot(); 
 
   void spec_next(uint64_t tid);
   void start_spec_ex(uint64_t tid);
@@ -47,8 +54,8 @@ private:
   volatile bool modify;
   int access;
 
-  txn_node_t head;
-  txn_node_t tail;
+  uint64_t pool_size;
+  pool_node_t pool;
 };
 
 #endif
