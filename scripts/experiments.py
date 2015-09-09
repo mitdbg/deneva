@@ -15,16 +15,15 @@ def test():
     fmt = fmt_ycsb
     nnodes = [4]
     nmpr=[100]
-    nalgos=['WAIT_DIE']
-    #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
+    nalgos=['MVCC']
     nthreads=[3]
     nrthreads=[1]
-    ncthreads=[3]
-    ncrthreads=[1]
+    ncthreads=[8]
+    ncrthreads=[8]
     ntifs=[1500]
     nzipf=[0.9]
     nwr_perc=[0.5]
-    ntxn=[3000000]
+    ntxn=[1000000]
     nparts = [4]
     exp = [[int(math.ceil(n)) if n > 1 else 1,n,txn,'YCSB',cc,m,ct,crt,t,rt,tif,z,1.0-wp,wp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n] for n,ct,crt,t,rt,tif,z,wp,m,cc,p,txn in itertools.product(nnodes,ncthreads,ncrthreads,nthreads,nrthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts,ntxn)]
     return fmt[0],exp
@@ -476,7 +475,7 @@ configs = {
     "NUM_WH": 2,
     "MAX_TXN_IN_FLIGHT": 1,
     "NETWORK_DELAY": '0UL',
-    "DONE_TIMER": "3 * 60 * BILLION // 3 minutes",
+    "DONE_TIMER": "1 * 60 * BILLION // 3 minutes",
     "PROG_TIMER" : "10 * BILLION // in s",
     "NETWORK_TEST" : "false",
     "ABORT_PENALTY": "1 * 1000000UL   // in ns.",

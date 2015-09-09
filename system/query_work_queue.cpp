@@ -333,8 +333,10 @@ void QWorkQueueHelper::add_abort_query(base_query * qry) {
   if(qry->penalty == 0)
     qry->penalty = g_abort_penalty;
 #if BACKOFF
-  else
-    qry->penalty = qry->penalty * 2;
+  else {
+    if(qry->penalty * 2 < g_abort_penalty_max)
+      qry->penalty = qry->penalty * 2;
+  }
 #endif
 
   qry->penalty_end = get_sys_clock() + qry->penalty;

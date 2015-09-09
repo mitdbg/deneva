@@ -241,6 +241,7 @@ RC Row_mvcc::access(txn_man * txn, TsType type, row_t * row) {
 			rc = WAIT;
       txn->rc = rc;
       txn->wait_starttime = get_sys_clock();
+        DEBUG("buf R_REQ %ld %ld\n",txn->get_txn_id(),_row->get_primary_key());
 			buffer_req(R_REQ, txn);
 			txn->ts_ready = false;
 		} else if (conf) { 
@@ -262,6 +263,7 @@ RC Row_mvcc::access(txn_man * txn, TsType type, row_t * row) {
 		if ( conflict(type, ts) ) {
 			rc = Abort;
 		} else if (preq_len < MAX_PRE_REQ){
+        DEBUG("buf P_REQ %ld %ld\n",txn->get_txn_id(),_row->get_primary_key());
 			buffer_req(P_REQ, txn);
 			rc = RCOK;
 		} else  {
@@ -271,11 +273,13 @@ RC Row_mvcc::access(txn_man * txn, TsType type, row_t * row) {
 		rc = RCOK;
 		// the corresponding prewrite request is debuffered.
 		insert_history(ts, row);
+        DEBUG("debuf %ld %ld\n",txn->get_txn_id(),_row->get_primary_key());
 		MVReqEntry * req = debuffer_req(P_REQ, txn);
 		assert(req != NULL);
 		return_req_entry(req);
 		update_buffer(txn);
 	} else if (type == XP_REQ) {
+        DEBUG("debuf %ld %ld\n",txn->get_txn_id(),_row->get_primary_key());
 		MVReqEntry * req = debuffer_req(P_REQ, txn);
 		assert (req != NULL);
 		return_req_entry(req);

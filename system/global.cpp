@@ -44,6 +44,7 @@ carbon_barrier_t enable_barrier;
 #endif
 
 ts_t g_abort_penalty = ABORT_PENALTY;
+ts_t g_abort_penalty_max = ABORT_PENALTY_MAX;
 bool g_central_man = CENTRAL_MAN;
 UInt32 g_ts_alloc = TS_ALLOC;
 bool g_key_order = KEY_ORDER;

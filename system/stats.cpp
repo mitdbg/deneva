@@ -880,7 +880,7 @@ void Stats::print(bool prog) {
 		outf = fopen(output_file, "w");
   else
     outf = stdout;
-  //txn_pool.snapshot();
+  txn_pool.snapshot();
   if(prog)
 	  fprintf(outf, "[prog] ");
   else

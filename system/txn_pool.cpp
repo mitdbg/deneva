@@ -198,37 +198,46 @@ void TxnPool::snapshot() {
   MODIFY_START();
   uint64_t total = 0;
   uint64_t abrt_total = 0;
-  uint64_t n = 0;
-  /*
-  uint64_t wait[10];
-  for(int i = 0; i < 10; i++)
-    wait[i] = 0;
-    */
-  printf("WAIT: ");
+  uint64_t wait_total = 0;
+  uint64_t exec_total = 0;
+  uint64_t abrt_loc = 0;
+  uint64_t wait_loc = 0;
+  uint64_t wait_rem = 0;
+  uint64_t exec_loc = 0;
   for(uint32_t i = 0;i < pool_size; i++) {
     txn_node_t t_node = pool[i].head;
     while (t_node != NULL) {
-      n++;
-      if((t_node->txn->state == EXEC || t_node->txn->state == PREP || t_node->txn->state == DONE) && t_node->txn->rc == RCOK) {
-        total++;
+      total++;
+      if((t_node->txn->state == EXEC || t_node->txn->state == PREP || t_node->txn->state == DONE|| t_node->txn->state == FIN) && t_node->txn->rc == RCOK && (t_node->qry->rc != WAIT &&t_node->qry->rc != WAIT_REM)) {
+        exec_total++;
+        if(t_node->txn->get_txn_id() % g_node_cnt == g_node_id)
+          exec_loc++;
       }
-      else if(t_node->txn->rc == WAIT || t_node->txn->rc == WAIT_REM) {
-        printf("%ld,",((ycsb_query*)t_node->qry)->req.key);
+      else if(t_node->txn->rc == WAIT || t_node->txn->rc == WAIT_REM || t_node->qry->rc == WAIT || t_node->qry->rc == WAIT_REM) {
+        wait_total++;
+        if(t_node->txn->get_txn_id() % g_node_cnt == g_node_id) {
+          wait_loc++;
+          if(t_node->txn->rc == WAIT_REM || t_node->txn->rc == WAIT)
+            wait_rem++;
+        }
       }
-      else if(t_node->txn->rc == Abort) {
+      else if((t_node->txn->rc == Abort || t_node->txn->state == START) && t_node->txn->abort_cnt > 0) {
         abrt_total++;
+        if(t_node->txn->get_txn_id() % g_node_cnt == g_node_id)
+          abrt_loc++;
       }
+      /*
+      else {
+        printf("%d %d %ld %d\n",t_node->txn->state,t_node->txn->rc,((ycsb_query*)t_node->qry)->req.key,t_node->txn->get_txn_id() % g_node_cnt == g_node_id);
+      }
+      */
       t_node = t_node->next;
     }
   }
-  printf("\nEXEC: %ld\n",total);
-  printf("ABORT: %ld\n",abrt_total);
-  printf("TOTAL: %ld\n",n);
-  /*
-  for(int i = 0; i < 10; i++)
-    if(wait[i] > 0)
-      printf("%d=%ld,",i,wait[i]);
-      */
+  printf("TOTAL: %ld\n",total);
+  printf("EXEC: %ld / %ld / %ld\n",exec_total,exec_loc,exec_total-exec_loc);
+  printf("WAIT: %ld / %ld -- %ld / %ld\n",wait_total,wait_loc,wait_rem,wait_total-wait_loc);
+  printf("ABORT/START: %ld/ %ld / %ld\n",abrt_total,abrt_loc,abrt_total-abrt_loc);
   MODIFY_END();
 }
 

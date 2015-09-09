@@ -12,8 +12,8 @@
 // PART_CNT should be at least NODE_CNT
 #define PART_CNT 4
 #define CLIENT_NODE_CNT 4
-#define CLIENT_THREAD_CNT 3
-#define CLIENT_REM_THREAD_CNT 1
+#define CLIENT_THREAD_CNT 8
+#define CLIENT_REM_THREAD_CNT 8
 #define CLIENT_RUNTIME false
 
 // each transaction only accesses only 1 virtual partition. But the lock/ts manager and index are not aware of such partitioning. VIRTUAL_PART_CNT describes the request distribution and is only used to generate queries. For HSTORE, VIRTUAL_PART_CNT should be the same as PART_CNT.
@@ -78,7 +78,7 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, VOLTDB, OCC, VLL, CALVIN
-#define CC_ALG WAIT_DIE
+#define CC_ALG MVCC
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER         false
@@ -88,6 +88,7 @@
 #define CENTRAL_MAN         false
 #define BUCKET_CNT          31
 #define ABORT_PENALTY 1 * 1000000UL   // in ns.
+#define ABORT_PENALTY_MAX 100 * 1000000UL   // in ns.
 #define BACKOFF true
 // [ INDEX ]
 #define ENABLE_LATCH        false
@@ -110,8 +111,8 @@
 // when read/write history is longer than HIS_RECYCLE_LEN
 // the history should be recycled.
 #define HIS_RECYCLE_LEN       10
-#define MAX_PRE_REQ         1024
-#define MAX_READ_REQ        1024
+#define MAX_PRE_REQ         MAX_TXN_IN_FLIGHT * NODE_CNT//1024
+#define MAX_READ_REQ        MAX_TXN_IN_FLIGHT * NODE_CNT//1024
 #define MIN_TS_INTVL        10000000 //10 ms
 // [OCC]
 #define MAX_WRITE_SET       10
@@ -140,7 +141,7 @@
 #define MAX_PART_PER_TXN      16 
 #define MAX_ROW_PER_TXN       64
 #define QUERY_INTVL         1UL
-#define MAX_TXN_PER_PART 3000000
+#define MAX_TXN_PER_PART 1000000
 #define FIRST_PART_LOCAL      true
 #define MAX_TUPLE_SIZE        1024 // in bytes
 #define GEN_BY_MPR false
@@ -270,7 +271,7 @@ extern TestCases          g_test_case;
 #define BILLION 1000000000UL // in ns => 1 second
 #define STAT_ARR_SIZE 1024
 #define PROG_TIMER 10 * BILLION // in s
-#define DONE_TIMER 3 * 60 * BILLION // 3 minutes
+#define DONE_TIMER 1 * 60 * BILLION // 3 minutes
 
 #define SEED 0
 

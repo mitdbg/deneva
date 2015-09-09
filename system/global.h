@@ -112,6 +112,7 @@ extern UInt32 g_virtual_part_cnt;
 extern UInt32 g_thread_cnt;
 extern UInt32 g_rem_thread_cnt;
 extern ts_t g_abort_penalty; 
+extern ts_t g_abort_penalty_max; 
 extern bool g_central_man;
 extern UInt32 g_ts_alloc;
 extern bool g_key_order;
