@@ -104,7 +104,9 @@ VLLMan::beginTxn(txn_man * txn, base_query * query) {
   txn->read_keys(query);
 
   pthread_mutex_lock(&_mutex);
+  uint64_t starttime = get_sys_clock();
 
+  /*
   TxnQEntry * tmp1 = _txn_queue;
   if(tmp1) {
   TxnQEntry * tmp2 = tmp1->next;
@@ -115,6 +117,7 @@ VLLMan::beginTxn(txn_man * txn, base_query * query) {
     tmp2 = tmp2->next;
   }
   }
+  */
 
 	TxnQEntry * entry = NULL;
 	TxnQEntry * prev_entry = NULL;
@@ -136,7 +139,7 @@ VLLMan::beginTxn(txn_man * txn, base_query * query) {
       ycsb_query * m_query = (ycsb_query*) query;
       m_query->txn_rtype = YCSB_FIN;
       goto final;
-  }
+    }
   }
 
 
@@ -148,14 +151,14 @@ VLLMan::beginTxn(txn_man * txn, base_query * query) {
 
 	entry = getQEntry();
   entry->txn = txn;
-	prev_entry = _txn_queue;
-	//LIST_PUT_TAIL(_txn_queue, _txn_queue_tail, entry);
+	prev_entry = _txn_queue_tail;
   // Insert into queue in TS order
-  while(prev_entry && prev_entry->txn->get_ts() < txn->get_ts()) {
-    prev_entry = prev_entry->next;
+  while(prev_entry && prev_entry->txn->get_ts() > txn->get_ts()) {
+    prev_entry = prev_entry->prev;
   }
 
-  if(prev_entry) {
+  if(prev_entry && prev_entry->next) {
+    prev_entry = prev_entry->next;
     LIST_INSERT_BEFORE(prev_entry,entry,_txn_queue);
   }
   else {
@@ -178,16 +181,20 @@ final:
   //assert(!_txn_queue || _txn_queue->txn->vll_txn_type == VLL_Free);
   assert(entry || ret == Abort);
 
-  tmp1 = _txn_queue;
+  /*
+  TxnQEntry *tmp1 = _txn_queue;
   if(tmp1) {
   TxnQEntry * tmp2 = tmp1->next;
   while(tmp1 && tmp2) {
+    assert(tmp1->prev != tmp1->next);
     assert(tmp1->txn->get_ts() > 0);
     assert( tmp1->txn->get_ts() < tmp2->txn->get_ts());
     tmp1 = tmp1->next;
     tmp2 = tmp2->next;
   }
   }
+  */
+  INC_STATS(txn->get_thd_id(),txn_time_begintxn2,get_sys_clock() - starttime);
 	pthread_mutex_unlock(&_mutex);
 	return ret;
 }
