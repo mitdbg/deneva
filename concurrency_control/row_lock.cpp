@@ -122,12 +122,14 @@ RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt
 
 			  waiter_cnt ++;
         txn->lock_ready = false;
+        DEBUG("wait %ld %ld\n",txn->get_txn_id(),_row->get_primary_key());
         rc = WAIT;
         txn->rc = rc;
         txn->cc_wait_cnt++;
         txn->wait_starttime = get_sys_clock();
         //printf("wait \n");
       } else {
+        DEBUG("abort %ld %ld\n",txn->get_txn_id(),_row->get_primary_key());
         rc = Abort;
         //printf("abort \n");
       }
@@ -151,6 +153,7 @@ RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt
 #if DEBUG_TIMELINE
     printf("LOCK %ld %ld\n",entry->txn->get_txn_id(),entry->start_ts);
 #endif
+    DEBUG("1lock %ld %ld\n",txn->get_txn_id(),_row->get_primary_key());
 		STACK_PUSH(owners, entry);
 		owner_cnt ++;
 		lock_type = type;
@@ -210,6 +213,7 @@ RC Row_lock::lock_release(txn_man * txn) {
 		else owners = en->next;
 		return_entry(en);
 		owner_cnt --;
+    DEBUG("unlock %ld %ld\n",txn->get_txn_id(),_row->get_primary_key());
 		if (owner_cnt == 0)
 			lock_type = LOCK_NONE;
 	} else {
@@ -218,6 +222,7 @@ RC Row_lock::lock_release(txn_man * txn) {
 		while (en != NULL && en->txn != txn)
 			en = en->next;
 		ASSERT(en);
+    DEBUG("unwait %ld %ld\n",txn->get_txn_id(),_row->get_primary_key());
     uint64_t t = get_sys_clock() - en->start_ts;
     // Stats
     en->txn->cc_wait_time += t;
@@ -247,6 +252,7 @@ RC Row_lock::lock_release(txn_man * txn) {
 #if DEBUG_TIMELINE
     printf("LOCK %ld %ld\n",entry->txn->get_txn_id(),get_sys_clock());
 #endif
+    DEBUG("2lock %ld %ld\n",entry->txn->get_txn_id(),_row->get_primary_key());
     // Stats
     t = get_sys_clock() - entry->start_ts;
     //INC_STATS(0, time_wait_lock, t);
