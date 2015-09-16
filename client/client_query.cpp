@@ -33,7 +33,7 @@ Client_query_queue::init(int thread_id) {
 
 #if CREATE_TXN_FILE
   char output_file[50];
-  sprintf(output_file,"p%d_%d_mpr%g.txt",thread_id,g_part_cnt,g_mpr);
+  sprintf(output_file,"p%d_%d_skew%d.txt",thread_id,g_part_cnt,(int)(g_zipf_theta*10));
   FILE * outf;
   outf = fopen(output_file,"w");
   //printf("%ld %ld %ld ",request_cnt,part_to_access[0],part_num);
@@ -111,9 +111,9 @@ Client_query_thd::init(workload * h_wl, int thread_id) {
   char input_file[50];
 	char * cpath = getenv("SCHEMA_PATH");
 	if (cpath == NULL) 
-    sprintf(input_file,"./input_txn_files/p%d_%d_mpr%g.txt",thread_id+g_server_start_node,g_part_cnt,g_mpr);
+    sprintf(input_file,"./input_txn_files/p%d_%d_skew%d.txt",thread_id+g_server_start_node,g_part_cnt,(int)(g_zipf_theta*10));
 	else { 
-    sprintf(input_file,"%s/p%d_%d_mpr%g.txt",cpath,thread_id+g_server_start_node,g_part_cnt,g_mpr);
+    sprintf(input_file,"%sp%d_%d_skew%d.txt",cpath,thread_id+g_server_start_node,g_part_cnt,(int)(g_zipf_theta*10));
 	}
   printf("%s\n",input_file);
   init_txns_file( input_file );
@@ -159,7 +159,7 @@ Client_query_thd::init_txns_file(const char * txn_file) {
 		size_t pos = 0;
 		string token;
     while(line.length() != 0) {
-      pos = line.find(" ");
+      pos = line.find(",");
 		  if (pos == string::npos)
 				pos = line.length();
 	    token = line.substr(0, pos);
@@ -178,6 +178,13 @@ Client_query_thd::init_txns_file(const char * txn_file) {
         if(i == part_cnt)
           queries[qid].part_to_access[part_cnt++] = part;
         idx++;
+      }
+      else {
+        if(g_read_perc == 1.0)
+          queries[qid].requests[idx].acctype = RD;
+        else if(g_write_perc == 1.0)
+          queries[qid].requests[idx].acctype = WR;
+
       }
       num = (num + 1) % 2;
 
