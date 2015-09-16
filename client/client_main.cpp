@@ -72,8 +72,8 @@ int main(int argc, char* argv[])
 		default:
 			assert(false);
 	}
-	//m_wl->init();
-	//printf("workload initialized!\n");
+	m_wl->workload::init();
+	printf("workload initialized!\n");
 
   printf("Initializing remote query manager... ");
   fflush(stdout);
