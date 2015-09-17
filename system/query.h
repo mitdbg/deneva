@@ -48,6 +48,7 @@ public:
 	uint64_t * parts;
 
   // For aborts
+  bool abort_restart;
   uint64_t penalty;
   uint64_t penalty_start;
   uint64_t penalty_end;

@@ -77,6 +77,137 @@ def tput_plotter(title,x_name,v_name,fmt,exp,summary,summary_client):
 #        for v in v_vals:
 #            time_breakdown(x_vals,summary,normalized=True,xname=x_name,cfg_fmt=_cfg_fmt+[v_name],cfg=c+[v],title=title2+v_name)
 
+def tput2(xval,vval,summary,
+        cfg={},
+        xname="MPR",
+        vname="CC_ALG",
+        title=""
+        ):
+    global plot_cnt
+    tpt = {}
+    name = 'tput_plot{}'.format(plot_cnt)
+    plot_cnt += 1
+    _title = title
+
+    print "X-axis: " + str(xval)
+    print "Var: " + str(vval)
+    if xname == "ABORT_PENALTY":
+        _xval = [(float(x.replace("UL","")))/1000000000 for x in xval]
+        sort_idxs = sorted(range(len(_xval)),key=lambda x:_xval[x])
+        xval = [xval[i] for i in sort_idxs]
+        _xval = sorted(_xval)
+        _xlab = xname + " (Sec)"
+    else:
+        _xval = xval
+        _xlab = xname
+    for v in vval:
+        if vname == "NETWORK_DELAY":
+            _v = (float(v.replace("UL","")))/1000000
+        else:
+            _v = v
+        tpt[_v] = [0] * len(xval)
+
+        for x,xi in zip(xval,range(len(xval))):
+            my_cfg = cfg
+            my_cfg[xname] = x
+            my_cfg[vname] = v
+            print my_cfg
+
+            cfgs = get_cfgs(my_cfg_fmt, my_cfg)
+            cfgs = get_outfile_name(cfgs,my_cfg_fmt)
+            if cfgs not in summary.keys(): 
+                print("Not in summary: {}".format(cfgs))
+                continue 
+            try:
+                tot_run_time = sum(summary[cfgs]['clock_time'])
+                tot_txn_cnt = sum(summary[cfgs]['txn_cnt'])
+                avg_run_time = avg(summary[cfgs]['clock_time'])
+                avg_txn_cnt = avg(summary[cfgs]['txn_cnt'])
+            except KeyError:
+                print("KeyError: {} {} {} -- {}".format(v,x,cfg,cfgs))
+                tpt[_v][xi] = 0
+                continue
+            # System Throughput: total txn count / average of all node's run time
+            # Per Node Throughput: avg txn count / average of all node's run time
+            # Per txn latency: total of all node's run time / total txn count
+            tpt[_v][xi] = (tot_txn_cnt/avg_run_time)
+            #tpt[v][xi] = (avg_txn_cnt/avg_run_time)
+
+    bbox = [0.4,0.9]
+    print("Created plot {}".format(name))
+    draw_line(name,tpt,_xval,ylab='Throughput (Txn/sec)',xlab=_xlab,title=_title,bbox=bbox,ncol=2) 
+
+def gput(xval,vval,summary,
+        cfg_fmt=[],
+        cfg=[],
+        xname="MPR",
+        vname="CC_ALG",
+        title=""
+        ):
+    global plot_cnt
+    tpt = {}
+    name = 'gput_plot{}'.format(plot_cnt)
+    plot_cnt += 1
+    _title = title
+
+    print "X-axis: " + str(xval)
+    print "Var: " + str(vval)
+    if xname == "ABORT_PENALTY":
+        _xval = [(float(x.replace("UL","")))/1000000000 for x in xval]
+        sort_idxs = sorted(range(len(_xval)),key=lambda x:_xval[x])
+        xval = [xval[i] for i in sort_idxs]
+        _xval = sorted(_xval)
+        _xlab = xname + " (Sec)"
+    else:
+        _xval = xval
+        _xlab = xname
+    for v in vval:
+        if vname == "NETWORK_DELAY":
+            _v = (float(v.replace("UL","")))/1000000
+        else:
+            _v = v
+        tpt[_v] = [0] * len(xval)
+
+        for x,xi in zip(xval,range(len(xval))):
+            my_cfg_fmt = cfg_fmt + [xname] + [vname]
+            my_cfg = cfg + [x] + [v]
+            n_cnt = my_cfg[my_cfg_fmt.index("NODE_CNT")]
+            n_clt = my_cfg[my_cfg_fmt.index("CLIENT_NODE_CNT")]
+            my_cfg[my_cfg_fmt.index("CLIENT_NODE_CNT")] = int(math.ceil(n_cnt/2)) if n_cnt > 1 else 1
+            n_ppt = my_cfg[my_cfg_fmt.index("PART_PER_TXN")]
+            my_cfg[my_cfg_fmt.index("PART_PER_TXN")] = n_ppt if n_ppt <= n_cnt else n_cnt
+            n_thd =  my_cfg[my_cfg_fmt.index("THREAD_CNT")]
+            n_alg =  my_cfg[my_cfg_fmt.index("CC_ALG")]
+            if n_alg == "HSTORE" or n_alg == "HSTORE_SPEC":
+                my_cfg_fmt = my_cfg_fmt + ["PART_CNT"]
+                my_cfg = my_cfg + [n_thd*n_cnt]
+            else:
+                my_cfg_fmt = my_cfg_fmt + ["PART_CNT"]
+
+            cfgs = get_cfgs(my_cfg_fmt, my_cfg)
+            cfgs = get_outfile_name(cfgs,my_cfg_fmt)
+            if cfgs not in summary.keys(): 
+                print("Not in summary: {}".format(cfgs))
+                continue 
+            try:
+                tot_run_time = sum(summary[cfgs]['clock_time'])
+                tot_txn_cnt = sum(summary[cfgs]['txn_cnt']) + sum(summary[cfgs]['abort_cnt'])
+                avg_run_time = avg(summary[cfgs]['clock_time'])
+                avg_txn_cnt = avg(summary[cfgs]['txn_cnt'])
+            except KeyError:
+                print("KeyError: {} {} {} -- {}".format(v,x,cfg,cfgs))
+                tpt[_v][xi] = 0
+                continue
+            # System Throughput: total txn count / average of all node's run time
+            # Per Node Throughput: avg txn count / average of all node's run time
+            # Per txn latency: total of all node's run time / total txn count
+            tpt[_v][xi] = (tot_txn_cnt/avg_run_time)
+            #tpt[v][xi] = (avg_txn_cnt/avg_run_time)
+
+    bbox = [0.4,0.9]
+    print("Created plot {}".format(name))
+    draw_line(name,tpt,_xval,ylab='Goodput (Txn/sec)',xlab=_xlab,title=_title,bbox=bbox,ncol=2) 
+
 
 def tput(xval,vval,summary,
         cfg_fmt=[],
@@ -121,8 +252,8 @@ def tput(xval,vval,summary,
             print my_cfg_fmt
             n_cnt = my_cfg[my_cfg_fmt.index("NODE_CNT")]
             n_clt = my_cfg[my_cfg_fmt.index("CLIENT_NODE_CNT")]
-            my_cfg[my_cfg_fmt.index("CLIENT_NODE_CNT")] = n_cnt
-#            my_cfg[my_cfg_fmt.index("CLIENT_NODE_CNT")] = int(math.ceil(n_cnt/2)) if n_cnt > 1 else 1
+#            my_cfg[my_cfg_fmt.index("CLIENT_NODE_CNT")] = n_cnt
+            my_cfg[my_cfg_fmt.index("CLIENT_NODE_CNT")] = int(math.ceil(n_cnt/2)) if n_cnt > 1 else 1
             n_ppt = my_cfg[my_cfg_fmt.index("PART_PER_TXN")]
             my_cfg[my_cfg_fmt.index("PART_PER_TXN")] = n_ppt if n_ppt <= n_cnt else n_cnt
             n_thd =  my_cfg[my_cfg_fmt.index("THREAD_CNT")]
@@ -162,7 +293,7 @@ def tput(xval,vval,summary,
             tpt[_v][xi] = (tot_txn_cnt/avg_run_time)
             #tpt[v][xi] = (avg_txn_cnt/avg_run_time)
 
-    bbox = [0.4,0.9]
+    bbox = [0.7,0.9]
     print("Created plot {}".format(name))
     draw_line(name,tpt,_xval,ylab='Throughput (Txn/sec)',xlab=_xlab,title=_title,bbox=bbox,ncol=2) 
 

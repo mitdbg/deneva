@@ -211,7 +211,7 @@ RC Client_thread_t::run() {
 #if NETWORK_DELAY > 0
         tport_man.check_delayed_messages();
 #endif
-		uint32_t next_node = iters++ % g_servers_per_client;
+		uint32_t next_node = (((iters++) * g_client_thread_cnt) + _thd_id )% g_servers_per_client;
 		// Just in case...
 		if (iters == UINT64_MAX)
 			iters = 0;

@@ -184,6 +184,9 @@ RC thread_t::run() {
 	int rsp_cnt;
   uint64_t debug1;
   RemReqType debug2;
+#if CC_ALG == VLL
+  uint64_t debug3;
+#endif
 
 	uint64_t run_starttime = get_sys_clock();
 	uint64_t prog_time = run_starttime;
@@ -316,7 +319,9 @@ RC thread_t::run() {
         }
 
 #if CC_ALG == VLL
+        debug3 = get_sys_clock();
         rc = vll_man.beginTxn(m_txn,m_query);
+        INC_STATS(_thd_id,txn_time_begintxn,get_sys_clock() - debug3);
         if(rc == WAIT)
           break;
 				// Send back ACK
@@ -473,6 +478,11 @@ RC thread_t::run() {
 			case RFIN: {
 				DEBUG("%ld Received RFIN %ld\n",GET_PART_ID_FROM_IDX(_thd_id),m_query->txn_id);
 				INC_STATS(0,rfin,1);
+        if(m_query->rc == Abort) {
+          INC_STATS(_thd_id,abort_rem_cnt,1);
+        } else {
+          INC_STATS(_thd_id,txn_rem_cnt,1);
+        }
 				assert(CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || m_query->txn_id % g_node_cnt != g_node_id);
 
 				m_txn = txn_pool.get_txn(m_query->return_id, m_query->txn_id);
@@ -608,7 +618,10 @@ RC thread_t::run() {
                     m_query = NULL;
                     break;
               }
+
+              debug3 = get_sys_clock();
               rc = vll_man.beginTxn(m_txn,m_query);
+              INC_STATS(_thd_id,txn_time_begintxn,get_sys_clock() - debug3);
               if(rc == WAIT)
                 break;
               if(rc == Abort) {
@@ -699,12 +712,13 @@ RC thread_t::run() {
 					txn_pool.add_txn(g_node_id,m_txn,m_query);
 
           m_query->penalty = 0;
+          m_query->abort_restart = false;
 
 					m_txn->starttime = get_sys_clock();
           m_txn->txn_time_misc += m_query->time_q_work;
           m_txn->txn_time_misc += m_query->time_copy;
           m_txn->register_thd(this);
-					DEBUG("START %ld %f\n",m_txn->get_txn_id(),(double)(m_txn->starttime - run_starttime) / BILLION);
+					DEBUG("START %ld %f %lu\n",m_txn->get_txn_id(),(double)(m_txn->starttime - run_starttime) / BILLION,m_txn->get_ts());
 				}
 				else {
 					// Re-executing transaction
@@ -795,7 +809,9 @@ RC thread_t::run() {
               } else {
 							// local init: MPQ Moved to after RINITs return
                 if(m_query->part_num == 1) {
+                  uint64_t debug3 = get_sys_clock();
                   rc = vll_man.beginTxn(m_txn,m_query);
+                  INC_STATS(_thd_id,txn_time_begintxn,get_sys_clock() - debug3);
                   if(rc == WAIT) {
                     break;
                     //m_txn->rc = rc;
@@ -953,6 +969,7 @@ RC thread_t::run() {
         m_query->rc = RCOK;
         m_query->spec = false;
         m_query->spec_done = false;
+        m_query->abort_restart = true;
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
         m_query->active_part = m_query->home_part;
 #endif

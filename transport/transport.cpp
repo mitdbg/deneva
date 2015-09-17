@@ -83,8 +83,11 @@ void Transport::init(uint64_t node_id) {
 	int rc;
 
 	int timeo = 1000; // timeout in ms
+  int opt = 0;
 	for(uint64_t i=0;i<_node_cnt;i++) {
 		s[i].sock.setsockopt(NN_SOL_SOCKET,NN_RCVTIMEO,&timeo,sizeof(timeo));
+    // NN_TCP_NODELAY doesn't cause TCP_NODELAY to be set -- nanomsg issue #118
+		s[i].sock.setsockopt(NN_SOL_SOCKET,NN_TCP_NODELAY,&opt,sizeof(opt));
 	}
 
 	printf("Node ID: %d/%lu\n",g_node_id,_node_cnt);
@@ -168,7 +171,7 @@ void Transport::send_msg(uint64_t dest_id, void ** data, int * sizes, int num) {
   // return_id
 	((uint32_t*)sbuf)[1] = get_node_id();
 
-	DEBUG("Sending %ld -> %ld: %ld bytes\n",get_node_id(),dest_id,size);
+	//DEBUG("Sending %ld -> %ld: %ld bytes\n",get_node_id(),dest_id,size);
 
 	// 3: Add time of message sending for stats purposes
 	ts_t time = get_sys_clock();
@@ -311,8 +314,8 @@ void * Transport::recv_msg() {
 	dest_id = ((base_query *)query)->dest_id;
 #endif
 
-	DEBUG("Msg delay: %d->%d, %d bytes, %f s\n",return_id,
-            dest_id,bytes,((float)(time2-time))/BILLION);
+	//DEBUG("Msg delay: %d->%d, %d bytes, %f s\n",return_id,
+  //          dest_id,bytes,((float)(time2-time))/BILLION);
 	nn::freemsg(buf);	
     assert(dest_id == get_node_id());
 

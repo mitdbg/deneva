@@ -302,6 +302,7 @@ RC txn_man::get_row(row_t * row, access_t type, row_t *& row_rtn) {
     row_rtn = NULL;
 	  timespan = get_sys_clock() - starttime;
 	  INC_STATS(get_thd_id(), time_man, timespan);
+	  INC_STATS(get_thd_id(), txn_time_man, timespan);
     INC_STATS(get_thd_id(), cflt_cnt, 1);
     cflt = true;
 #if DEBUG_TIMELINE
@@ -324,6 +325,7 @@ RC txn_man::get_row(row_t * row, access_t type, row_t *& row_rtn) {
 		wr_cnt ++;
 	timespan = get_sys_clock() - starttime;
 	INC_STATS(get_thd_id(), time_man, timespan);
+	INC_STATS(get_thd_id(), txn_time_man, timespan);
 	row_rtn  = accesses[row_cnt - 1]->data;
   if(CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || CC_ALG == CALVIN)
     assert(rc == RCOK);
@@ -363,6 +365,7 @@ RC txn_man::get_row_post_wait(row_t *& row_rtn) {
 		wr_cnt ++;
 	timespan = get_sys_clock() - starttime;
 	INC_STATS(get_thd_id(), time_man, timespan);
+	INC_STATS(get_thd_id(), txn_time_man, timespan);
 	this->last_row_rtn  = accesses[row_cnt - 1]->data;
 	row_rtn  = accesses[row_cnt - 1]->data;
   return RCOK;

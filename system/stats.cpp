@@ -3,6 +3,9 @@
 #include "stats.h"
 #include "mem_alloc.h"
 #include "client_txn.h"
+#include <time.h>
+#include <sys/times.h>
+#include <sys/vtimes.h>
 
 void StatsArr::quicksort(int low_idx, int high_idx) {
   int low = low_idx;
@@ -141,7 +144,9 @@ void Stats_thd::init(uint64_t thd_id) {
 
 void Stats_thd::clear() {
 	txn_cnt = 0;
+	txn_rem_cnt = 0;
 	abort_cnt = 0;
+	abort_rem_cnt = 0;
 	txn_abort_cnt = 0;
 	rbk_abort_cnt = 0;
 	tot_run_time = 0;
@@ -206,6 +211,8 @@ void Stats_thd::clear() {
 	cc_hold_time = 0;
 	cc_hold_abrt_time = 0;
 
+  txn_time_begintxn = 0;
+  txn_time_begintxn2 = 0;
   txn_time_idx = 0;
   txn_time_man = 0;
   txn_time_ts = 0;
@@ -263,6 +270,17 @@ void Stats::init() {
 	dl_wait_time = 0;
 	deadlock = 0;
 	cycle_detect = 0;
+
+  last_usr = (long long unsigned int*)
+		mem_allocator.alloc(sizeof(long long unsigned int) * (g_thread_cnt + g_rem_thread_cnt), 0);
+  last_usr_low = (long long unsigned int*)
+		mem_allocator.alloc(sizeof(long long unsigned int) * (g_thread_cnt + g_rem_thread_cnt), 0);
+  last_sys = (long long unsigned int*)
+		mem_allocator.alloc(sizeof(long long unsigned int) * (g_thread_cnt + g_rem_thread_cnt), 0);
+  last_idle = (long long unsigned int*)
+		mem_allocator.alloc(sizeof(long long unsigned int) * (g_thread_cnt + g_rem_thread_cnt), 0);
+  util_init();
+
 }
 
 void Stats::init(uint64_t thread_id) {
@@ -495,19 +513,9 @@ void Stats::print_client(bool prog) {
 			total_time_tport_rcv / BILLION,
 			total_tport_lat / BILLION / total_msg_rcv_cnt
 		);
-  /*
-	fprintf(outf, 
-      "clock_time=%f"
-      ",txns_sent=%ld"
-      ",time_getqry=%f"
-      ",latency=%f"
-			"\n",
-			(_stats[tid]->tot_run_time ) / BILLION,
-			_stats[tid]->txn_cnt,
-			_stats[tid]->time_getqry / BILLION,
-			_stats[tid]->client_latency / BILLION / _stats[tid]->txn_cnt
-		);
-    */
+    mem_util(outf);
+    cpu_util(outf);
+
     if(prog) {
       fprintf(outf,"\n");
 		  //for (uint32_t k = 0; k < g_node_id; ++k) {
@@ -694,7 +702,9 @@ void Stats::print(bool prog) {
   fflush(stdout);
 	
 	uint64_t total_txn_cnt = 0;
+	uint64_t total_txn_rem_cnt = 0;
 	uint64_t total_abort_cnt = 0;
+	uint64_t total_abort_rem_cnt = 0;
 	uint64_t total_txn_abort_cnt = 0;
 	uint64_t total_rbk_abort_cnt = 0;
 	double total_tot_run_time = 0;
@@ -750,6 +760,8 @@ void Stats::print(bool prog) {
 	double total_time_msg_sent = 0;
 
 
+  double total_txn_time_begintxn = 0;
+  double total_txn_time_begintxn2 = 0;
   double total_txn_time_idx = 0;
   double total_txn_time_man = 0;
   double total_txn_time_ts = 0;
@@ -780,7 +792,9 @@ void Stats::print(bool prog) {
     limit =  g_client_thread_cnt + g_client_rem_thread_cnt;
 	for (uint64_t tid = 0; tid < limit; tid ++) {
 		total_txn_cnt += _stats[tid]->txn_cnt;
+		total_txn_rem_cnt += _stats[tid]->txn_rem_cnt;
 		total_abort_cnt += _stats[tid]->abort_cnt;
+		total_abort_rem_cnt += _stats[tid]->abort_rem_cnt;
 		total_txn_abort_cnt += _stats[tid]->txn_abort_cnt;
 		total_rbk_abort_cnt += _stats[tid]->rbk_abort_cnt;
     if(!prog)
@@ -844,6 +858,8 @@ void Stats::print(bool prog) {
 		total_msg_rcv_cnt += _stats[tid]->msg_rcv_cnt;
 		total_time_msg_sent += _stats[tid]->time_msg_sent;
 		
+  total_txn_time_begintxn += _stats[tid]->txn_time_begintxn;
+  total_txn_time_begintxn2 += _stats[tid]->txn_time_begintxn2;
   total_txn_time_idx += _stats[tid]->txn_time_idx;
   total_txn_time_man += _stats[tid]->txn_time_man;
   total_txn_time_ts += _stats[tid]->txn_time_ts;
@@ -859,10 +875,12 @@ void Stats::print(bool prog) {
 
   total_qry_cnt += _stats[tid]->rtxn +_stats[tid]->rqry_rsp +_stats[tid]->rack +_stats[tid]->rinit +_stats[tid]->rqry +_stats[tid]->rprep +_stats[tid]->rfin;
 
-		printf("[tid=%ld] txn_cnt=%ld,abort_cnt=%ld\n", 
+		printf("[tid=%ld] txn_cnt=%ld,abort_cnt=%ld,txn_rem_cnt=%ld,abort_rem_cnt=%ld\n", 
 			tid,
 			_stats[tid]->txn_cnt,
-			_stats[tid]->abort_cnt
+			_stats[tid]->abort_cnt,
+			_stats[tid]->txn_rem_cnt,
+			_stats[tid]->abort_rem_cnt
 		);
 	}
 
@@ -887,9 +905,11 @@ void Stats::print(bool prog) {
 	  fprintf(outf, "[summary] ");
 	fprintf(outf, 
       "txn_cnt=%ld"
+      ",txn_rem_cnt=%ld"
 			",clock_time=%f"
       ",abort_cnt=%ld"
       ",txn_abort_cnt=%ld"
+      ",abort_rem_cnt=%ld"
       ",rbk_abort_cnt=%ld"
       ",latency=%f"
       ",run_time=%f"
@@ -939,6 +959,11 @@ void Stats::print(bool prog) {
       ",time_work=%f"
       ",time_rqry=%f"
       ",tport_lat=%f"
+      ",txn_pool_cnt=%ld"
+      ",work_queue_cnt=%ld"
+      ",work_queue_abrt_cnt=%ld"
+  ",txn_time_begintxn=%f"
+  ",txn_time_begintxn2=%f"
   ",txn_time_idx=%f"
   ",txn_time_man=%f"
   ",txn_time_ts=%f"
@@ -950,12 +975,13 @@ void Stats::print(bool prog) {
   ",txn_time_q_abrt=%f"
   ",txn_time_q_work=%f"
   ",txn_time_net=%f"
-  ",txn_time_misc=%f"
-			"\n",
+  ",txn_time_misc=%f",
 			total_txn_cnt, 
+			total_txn_rem_cnt, 
 			total_tot_run_time / BILLION,
 			total_abort_cnt,
 			total_txn_abort_cnt,
+			total_abort_rem_cnt,
 			total_rbk_abort_cnt,
 			total_latency / BILLION / total_txn_cnt,
 			total_run_time / BILLION,
@@ -1005,6 +1031,11 @@ void Stats::print(bool prog) {
 			total_time_work / BILLION,
 			total_time_rqry / BILLION,
 			total_tport_lat / BILLION / total_msg_rcv_cnt,
+      txn_pool.get_cnt(),
+      work_queue.get_cnt(),
+      work_queue.get_abrt_cnt(),
+  total_txn_time_begintxn / BILLION,
+  total_txn_time_begintxn2 / BILLION,
   total_txn_time_idx / BILLION,
   total_txn_time_man / BILLION,
   total_txn_time_ts / BILLION,
@@ -1019,15 +1050,18 @@ void Stats::print(bool prog) {
   total_txn_time_misc / BILLION
 		);
 
+  mem_util(outf);
+  cpu_util(outf);
+
   if(!prog) {
     print_cnts();
 	  //print_lat_distr();
   }
+  fprintf(outf,"\n");
+  fflush(outf);
 	if (output_file != NULL) {
-    fflush(outf);
 		fclose(outf);
   }
-  fflush(stdout);
 
 }
 
@@ -1142,9 +1176,83 @@ void Stats::print_lat_distr() {
 }
 
 void Stats::print_lat_distr(uint64_t min, uint64_t max) {
-//#if PRT_LAT_DISTR
+#if PRT_LAT_DISTR
   printf("\n[all_lat] ");
   _stats[0]->all_lat.print(stdout,min,max);
-//#endif
+#endif
 }
 
+void Stats::util_init() {
+  struct tms timeSample;
+  lastCPU = times(&timeSample);
+  lastSysCPU = timeSample.tms_stime;
+  lastUserCPU = timeSample.tms_utime;
+}
+
+void Stats::print_util() {
+}
+
+int Stats::parseLine(char* line){
+  int i = strlen(line);
+  while (*line < '0' || *line > '9') line++;
+  line[i-3] = '\0';
+  i = atoi(line);
+  return i;
+}
+
+void Stats::mem_util(FILE * outf) {
+  FILE* file = fopen("/proc/self/status", "r");
+  int result = -1;
+  char line[128];
+
+// Physical memory used by current process, in KB
+  while (fgets(line, 128, file) != NULL){
+      if (strncmp(line, "VmRSS:", 6) == 0){
+          result = parseLine(line);
+          fprintf(outf,
+            ",phys_mem_usage=%d"
+            ,result
+            );
+      }
+      if (strncmp(line, "VmSize:", 7) == 0){
+          result = parseLine(line);
+          fprintf(outf,
+            ",virt_mem_usage=%d"
+            ,result
+            );
+      }
+  }
+  fclose(file);
+
+}
+
+void Stats::cpu_util(FILE * outf) {
+  clock_t now;
+  struct tms timeSample;
+  double percent;
+
+  now = times(&timeSample);
+  if (now <= lastCPU || timeSample.tms_stime < lastSysCPU ||
+      timeSample.tms_utime < lastUserCPU){
+      //Overflow detection. Just skip this value.
+      percent = -1.0;
+  }
+  else{
+      percent = (timeSample.tms_stime - lastSysCPU) +
+          (timeSample.tms_utime - lastUserCPU);
+      percent /= (now - lastCPU);
+      if(g_node_id < g_node_cnt) {
+        percent /= (g_thread_cnt + g_rem_thread_cnt);//numProcessors;
+      } else {
+        percent /= (g_client_thread_cnt + g_client_rem_thread_cnt);//numProcessors;
+      }
+      percent *= 100;
+  }
+  fprintf(outf,
+      ",cpu_ttl=%f"
+      ,percent
+    );
+  lastCPU = now;
+  lastSysCPU = timeSample.tms_stime;
+  lastUserCPU = timeSample.tms_utime;
+}

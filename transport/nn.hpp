@@ -24,6 +24,7 @@
 #define NN_HPP_INCLUDED
 
 #include <nanomsg/nn.h>
+#include <nanomsg/tcp.h>
 
 #include <cassert>
 #include <cstring>

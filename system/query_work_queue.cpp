@@ -14,6 +14,8 @@ void QWorkQueue::init() {
   for(int i = 0;i<q_len;i++) {
     queue[i].init(hash); 
   }
+  cnt = 0;
+  abrt_cnt = 0;
 }
 
 int inline QWorkQueue::get_idx(int input) {
@@ -42,17 +44,23 @@ void QWorkQueue::abort_finish(uint64_t time) {
 void QWorkQueue::add_query(int tid, base_query * qry) {
   int idx = get_idx(tid);
     queue[idx].add_query(qry);
+    ATOM_ADD(cnt,1);
 }
 
 // FIXME: Only should abort at 1 partition
 void QWorkQueue::add_abort_query(int tid, base_query * qry) {
   int idx = get_idx(tid);
     queue[idx].add_abort_query(qry);
+    ATOM_ADD(abrt_cnt,1);
 }
 
 base_query * QWorkQueue::get_next_query(int tid) {
   int idx = get_idx(tid);
-    return queue[idx].get_next_query();
+  base_query * rtn_qry = queue[idx].get_next_query();
+  if(rtn_qry) {
+    ATOM_SUB(cnt,1);
+  }
+  return rtn_qry;
 }
 
 void QWorkQueue::remove_query(int tid, base_query * qry) {
@@ -78,7 +86,11 @@ bool QWorkQueue::poll_abort(int tid) {
 } 
 base_query * QWorkQueue::get_next_abort_query(int tid) {
   int idx = get_idx(tid);
-    return queue[idx].get_next_abort_query();
+  base_query * rtn_qry = queue[idx].get_next_abort_query();
+  if(rtn_qry) {
+    ATOM_SUB(abrt_cnt,1);
+  }
+  return rtn_qry;
 }
 
 /**********************
@@ -192,6 +204,9 @@ void QWorkQueueHelper::add_query(base_query * qry) {
 
   //printf("Add Query %ld %d\n",qry->txn_id,qry->rtype);
   wq_entry_t n = head;
+#if !PRIORITY_WORK_QUEUE
+  n = NULL;
+#endif
 
   while(n) {
     assert(CC_ALG==HSTORE_SPEC || n->qry != qry);
@@ -207,6 +222,10 @@ void QWorkQueueHelper::add_query(base_query * qry) {
       break;
 #else
 */
+  if(qry->txn_id == UINT64_MAX || qry->abort_restart) {
+    n = NULL;
+    break;
+  }
     if(n->qry->txn_id > entry->qry->txn_id)
       break;
 //#endif
@@ -274,18 +293,18 @@ base_query * QWorkQueueHelper::get_next_query() {
         LIST_REMOVE_HT(next,head,tail);
         cnt--;
         assert(hash->in_hash(next_qry->txn_id));
+
+      uint64_t t = get_sys_clock() - next->starttime;
+      next_qry->time_q_work += t;
+      INC_STATS(0,qq_cnt,1);
+      INC_STATS(0,qq_lat,t);
+
         mem_allocator.free(next,sizeof(struct wq_entry));
         break;
       }
       next = next->next;
     }
 
-    if(next_qry) {
-      uint64_t t = get_sys_clock() - next->starttime;
-      next_qry->time_q_work += t;
-      INC_STATS(0,qq_cnt,1);
-      INC_STATS(0,qq_lat,t);
-    }
   }
 
   if(cnt == 0 && last_add_time != 0) {
@@ -293,14 +312,15 @@ base_query * QWorkQueueHelper::get_next_query() {
     last_add_time = 0;
   }
 
+  /*
   wq_entry_t n = head;
   while(n) {
     assert(n->qry != next_qry);
     n = n->next;
   }
+  */
 
 
-  INC_STATS(0,time_qq,get_sys_clock() - starttime);
   INC_STATS(0,time_qq,get_sys_clock() - starttime);
   hash->unlock();
 //  if(next_qry)

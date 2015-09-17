@@ -140,7 +140,8 @@ int main(int argc, char* argv[])
 #else
         CPU_SET(cpu_cnt, &cpus);
 #endif
-		cpu_cnt++;
+		cpu_cnt = (cpu_cnt + 1) % g_servers_per_client;
+		//cpu_cnt++;
         pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
 		pthread_create(&p_thds[i], &attr, worker, (void *)vid);
     }

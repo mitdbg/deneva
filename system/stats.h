@@ -27,8 +27,10 @@ public:
 
 	char _pad2[CL_SIZE];
 	uint64_t txn_cnt;
+	uint64_t txn_rem_cnt;
 	uint64_t txn_sent;
 	uint64_t abort_cnt;
+	uint64_t abort_rem_cnt;
 	uint64_t txn_abort_cnt;
 	uint64_t rbk_abort_cnt;
 	double tot_run_time;
@@ -105,6 +107,8 @@ public:
 	uint64_t rinit;
 	uint64_t rtxn;
 
+  double txn_time_begintxn;
+  double txn_time_begintxn2;
   double txn_time_idx;
   double txn_time_man;
   double txn_time_ts;
@@ -169,6 +173,13 @@ public:
 	uint64_t cycle_detect;
 	uint64_t deadlock;	
 
+  // CPU / Mem utilization
+  long long unsigned int last_ttl_usr, last_ttl_usr_low, last_ttl_sys, last_ttl_idle;
+  long long unsigned int * last_usr, *last_usr_low, *last_sys, *last_idle;
+  uint64_t last_total;
+  clock_t last_clock;
+  clock_t lastCPU, lastSysCPU, lastUserCPU;
+
 	void init();
 	void init(uint64_t thread_id);
 	void clear(uint64_t tid);
@@ -183,7 +194,12 @@ public:
 	void print_lat_distr();
   void print_lat_distr(uint64_t min, uint64_t max); 
 	void print_abort_distr();
-    uint64_t get_txn_cnts();
+  uint64_t get_txn_cnts();
+  void util_init();
+  void print_util();
+  int parseLine(char* line);
+  void mem_util(FILE * outf);
+  void cpu_util(FILE * outf);
 };
 
 #endif

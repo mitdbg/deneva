@@ -42,6 +42,7 @@ class QWorkQueueHelper {
 public:
   void init(QHash * hash);
   bool poll_next_query();
+  uint64_t get_cnt() {return cnt;}
   void finish(uint64_t time); 
   void abort_finish(uint64_t time); 
   void add_query(base_query * qry);
@@ -55,6 +56,7 @@ public:
 
 private:
   pthread_mutex_t mtx;
+  pthread_cond_t cond;
   wq_entry_t head;
   wq_entry_t tail;
   uint64_t cnt;
@@ -79,12 +81,16 @@ public:
   void done(int tid, uint64_t id);
   bool poll_abort(int tid); 
   base_query * get_next_abort_query(int tid);
+  uint64_t get_cnt() {return cnt;}
+  uint64_t get_abrt_cnt() {return abrt_cnt;}
 
 
 private:
   QWorkQueueHelper * queue;
   QHash * hash;
   int q_len;
+  uint64_t cnt;
+  uint64_t abrt_cnt;
 
 };
 

@@ -5,15 +5,15 @@
 /***********************************************/
 // Simulation + Hardware
 /***********************************************/
-#define NODE_CNT 4
+#define NODE_CNT 2
 #define THREAD_CNT 3
 // REM_THREAD_CNT should be at least NODE_CNT*THREAD_CNT to avoid deadlock
 #define REM_THREAD_CNT 1
 // PART_CNT should be at least NODE_CNT
-#define PART_CNT 4
-#define CLIENT_NODE_CNT 4
-#define CLIENT_THREAD_CNT 8
-#define CLIENT_REM_THREAD_CNT 8
+#define PART_CNT 2
+#define CLIENT_NODE_CNT 1
+#define CLIENT_THREAD_CNT 2
+#define CLIENT_REM_THREAD_CNT 1
 #define CLIENT_RUNTIME false
 
 // each transaction only accesses only 1 virtual partition. But the lock/ts manager and index are not aware of such partitioning. VIRTUAL_PART_CNT describes the request distribution and is only used to generate queries. For HSTORE, VIRTUAL_PART_CNT should be the same as PART_CNT.
@@ -33,7 +33,7 @@
 #define STATS_ENABLE        true
 #define TIME_ENABLE         true //STATS_ENABLE
 
-#define MAX_TXN_IN_FLIGHT 1500
+#define MAX_TXN_IN_FLIGHT 2500
 
 /***********************************************/
 // Memory System
@@ -72,13 +72,13 @@
 
 #define MAX_QUEUE_LEN NODE_CNT * 2
 
-#define PRIORITY_WORK_QUEUE true
+#define PRIORITY_WORK_QUEUE false
 
 /***********************************************/
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, VOLTDB, OCC, VLL, CALVIN
-#define CC_ALG MVCC
+#define CC_ALG TIMESTAMP
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER         false
@@ -138,24 +138,24 @@
 // Benchmark
 /***********************************************/
 // max number of rows touched per transaction
-#define MAX_PART_PER_TXN      16 
+#define MAX_PART_PER_TXN 2
 #define MAX_ROW_PER_TXN       64
 #define QUERY_INTVL         1UL
 #define MAX_TXN_PER_PART 1000000
 #define FIRST_PART_LOCAL      true
 #define MAX_TUPLE_SIZE        1024 // in bytes
-#define GEN_BY_MPR false
+#define GEN_BY_MPR true
 // ==== [YCSB] ====
 #define INIT_PARALLELISM 4
 #define SYNTH_TABLE_SIZE 2097152
 #define ZIPF_THETA 0.9
-#define READ_PERC 0.5
-#define WRITE_PERC 0.5
+#define READ_PERC 0.0
+#define WRITE_PERC 1.0
 #define SCAN_PERC           0
 #define SCAN_LEN          20
-#define PART_PER_TXN 4
+#define PART_PER_TXN 2
 #define PERC_MULTI_PART     MPR 
-#define REQ_PER_QUERY      16
+#define REQ_PER_QUERY      2//16
 #define FIELD_PER_TUPLE       10
 #define LOAD_TXN_FILE false
 #define CREATE_TXN_FILE false
@@ -172,7 +172,7 @@
 // are not modeled.
 #define TPCC_ACCESS_ALL       false 
 #define WH_UPDATE         true
-#define NUM_WH 4
+#define NUM_WH 2
 // % of transactions that access multiple partitions
 #define MPR 100
 #define MPR_NEWORDER      20 // In %

@@ -49,6 +49,7 @@ void TxnPool::init() {
   pool = (pool_node_t) mem_allocator.alloc(sizeof(pool_node) * pool_size , g_thread_cnt);
   modify = false;
   access = 0;
+  cnt = 0;
   for(uint32_t i = 0; i < pool_size;i++) {
     pool[i].head = NULL;
     pool[i].tail = NULL;
@@ -86,6 +87,7 @@ void TxnPool::add_txn(uint64_t node_id, txn_man * txn, base_query * qry) {
     t_node->txn = txn;
     t_node->qry = qry;
     LIST_PUT_TAIL(pool[txn_id % pool_size].head,pool[txn_id % pool_size].tail,t_node);
+    cnt++;
   }
   else {
     t_node->txn = txn;
@@ -169,6 +171,7 @@ void TxnPool::delete_txn(uint64_t node_id, uint64_t txn_id){
   while (t_node != NULL) {
     if (t_node->txn->get_txn_id() == txn_id) {
       LIST_REMOVE_HT(t_node,pool[txn_id % pool_size].head,pool[txn_id % pool_size].tail);
+      cnt--;
       break;
     }
     t_node = t_node->next;
@@ -204,6 +207,8 @@ void TxnPool::snapshot() {
   uint64_t wait_loc = 0;
   uint64_t wait_rem = 0;
   uint64_t exec_loc = 0;
+  uint64_t other_total = 0;
+  uint64_t other_loc = 0;
   for(uint32_t i = 0;i < pool_size; i++) {
     txn_node_t t_node = pool[i].head;
     while (t_node != NULL) {
@@ -226,6 +231,11 @@ void TxnPool::snapshot() {
         if(t_node->txn->get_txn_id() % g_node_cnt == g_node_id)
           abrt_loc++;
       }
+      else {
+        other_total++;
+        if(t_node->txn->get_txn_id() % g_node_cnt == g_node_id)
+          other_loc++;
+      }
       /*
       else {
         printf("%d %d %ld %d\n",t_node->txn->state,t_node->txn->rc,((ycsb_query*)t_node->qry)->req.key,t_node->txn->get_txn_id() % g_node_cnt == g_node_id);
@@ -238,6 +248,7 @@ void TxnPool::snapshot() {
   printf("EXEC: %ld / %ld / %ld\n",exec_total,exec_loc,exec_total-exec_loc);
   printf("WAIT: %ld / %ld -- %ld / %ld\n",wait_total,wait_loc,wait_rem,wait_total-wait_loc);
   printf("ABORT/START: %ld/ %ld / %ld\n",abrt_total,abrt_loc,abrt_total-abrt_loc);
+  printf("OTHER: %ld/ %ld / %ld\n",other_total,other_loc,other_total-other_loc);
   MODIFY_END();
 }
 

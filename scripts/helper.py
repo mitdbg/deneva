@@ -163,7 +163,8 @@ def get_prog(sfile):
                 line = line[7:] #remove '[prog] ' from start of line 
                 results = re.split(',',line)
                 process_results(summary,results)
-    return summary['txn_cnt'],[int(x) for x in summary['clock_time']]
+    return summary
+#return summary['txn_cnt'],[int(x) for x in summary['clock_time']]
 
 def get_summary(sfile,summary={}):
     with open(sfile,'r') as f:
