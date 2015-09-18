@@ -66,6 +66,7 @@ class Transport {
         void send_msg_no_delay(DelayMessage * msg);
         void check_delayed_messages();
 	private:
+    uint64_t rr;
 		Socket * s;
 
 		uint64_t _node_id;

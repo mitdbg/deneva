@@ -55,6 +55,7 @@ void Transport::read_ifconfig(const char * ifaddr_file) {
 void Transport::init(uint64_t node_id) {
 	printf("Init %ld\n",node_id);
 	_node_id = node_id;
+  rr = 0;
 #if CC_ALG == CALVIN
 	// TODO: fix me. Calvin does not have separate remote and local threads
 	// so the stat updates seg fault if the sequencer thread count is 1
@@ -253,9 +254,11 @@ void * Transport::recv_msg() {
     void * query = NULL;
     uint64_t starttime = get_sys_clock();
 	
-	// FIXME: Currently unfair round robin; prioritizes nodes with low node_id
 	for(uint64_t i=0;i<_node_cnt;i++) {
-		bytes = s[i].sock.recv(&buf, NN_MSG, NN_DONTWAIT);
+		bytes = s[rr++ % _node_cnt].sock.recv(&buf, NN_MSG, NN_DONTWAIT);
+
+    if(rr == UINT64_MAX)
+      rr = 0;
 
 		if(bytes <= 0 && errno != 11) {
 		  printf("Recv Error %d %s\n",errno,strerror(errno));
