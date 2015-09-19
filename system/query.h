@@ -8,8 +8,6 @@ class workload;
 class ycsb_query;
 class tpcc_query;
 
-//enum RemReqType {INIT_DONE,EXP_DONE,RLK, RULK, RQRY, RFIN, RLK_RSP, RULK_RSP, RQRY_RSP, RACK, RTXN, RINIT, RPREPARE,RPASS,CL_RSP,NO_MSG};
-
 class base_client_query {
 public:
   uint64_t pid;
@@ -18,8 +16,6 @@ public:
 	RemReqType rtype;
 	uint64_t part_num;
 	uint64_t * part_to_access;
-  //virtual void client_query(base_client_query * query, uint64_t dest_id) = 0; 
-  //virtual void unpack_client(base_client_query * query, void * d) = 0; 
 
 	// calvin
 	//virtual void client_query(base_client_query * query, uint64_t dest_id,
@@ -30,18 +26,11 @@ class base_query : public base_client_query {
 public:
 	virtual void init(uint64_t thd_id, workload * h_wl) = 0;
   virtual void reset() = 0;
-  //virtual void unpack_rsp(base_query * query, void * d) = 0;
-  //virtual void unpack(base_query * query, void * d) = 0;
-  //virtual void client_query(base_query * query, uint64_t dest_id) = 0; 
-  //virtual void unpack_client(base_query * query, void * d) = 0; 
   virtual base_query * merge(base_query * query) = 0;
 	uint64_t waiting_time;
-	//uint64_t part_num;
-	//uint64_t * part_to_access;
 
 	// Remote query components
 	uint32_t dest_id;
-	//uint32_t return_id;
 	txnid_t txn_id;
 	uint64_t ts;
 	int rem_req_state;
@@ -55,14 +44,13 @@ public:
   uint64_t penalty_start;
   uint64_t penalty_end;
 
-  // FIXME: for debugging;
+  //for debugging;
   uint64_t debug1;
   // CALVIN
   uint64_t batch_num;
 
 	//RemReqType rtype;
 	RC rc;
-	//uint64_t pid;
 
   // HStore specx
   bool spec;
@@ -78,7 +66,6 @@ public:
   uint64_t part_touched[MAX_PART_PER_TXN];
 
   // Client components
-  //uint32_t client_node;
   uint32_t client_id;
 
   // OCC
@@ -87,8 +74,6 @@ public:
 
   // MVCC
   uint64_t thd_id;
-
-  //uint64_t client_startts;
 
   // Stats
   double time_q_abrt;

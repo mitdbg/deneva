@@ -20,7 +20,7 @@ def test():
     nrthreads=[1]
     ncthreads=[2]
     ncrthreads=[1]
-    ntifs=[4000,5000,6000,7000]
+    ntifs=[2000]
     nzipf=[0.0]
     nwr_perc=[0.0]
     ntxn=[1000000]
