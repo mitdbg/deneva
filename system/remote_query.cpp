@@ -26,6 +26,7 @@ txn_man * Remote_query::get_txn_man(uint64_t thd_id, uint64_t node_id, uint64_t 
   return next_txn;
 }
 
+/*
 void Remote_query::remote_qry(base_query * query, int type, int dest_id, txn_man * txn) {
 #if WORKLOAD == TPCC
 	tpcc_query * m_query = (tpcc_query *) query;
@@ -35,7 +36,9 @@ void Remote_query::remote_qry(base_query * query, int type, int dest_id, txn_man
 	m_query->remote_qry(query,type,dest_id);
 #endif
 }
+*/
 
+/*
 void Remote_query::ack_response(RC rc, txn_man * txn) {
 
 	// Maximum number of parameters
@@ -73,7 +76,9 @@ void Remote_query::ack_response(RC rc, txn_man * txn) {
 
   send_remote_query(GET_NODE_ID(txn->get_pid()),data,sizes,num);
 }
+*/
 
+/*
 void Remote_query::ack_response(base_query * query) {
 
 	// Maximum number of parameters
@@ -109,7 +114,9 @@ void Remote_query::ack_response(base_query * query) {
 
   send_remote_query(query->return_id,data,sizes,num);
 }
+*/
 
+/*
 void Remote_query::send_client_rsp(base_query * query) {
 #if 0
 	// Maximum number of parameters
@@ -145,15 +152,13 @@ void Remote_query::send_client_rsp(base_query * query) {
 #endif
 	send_client_rsp(query->txn_id, query->rc, query->client_startts, query->return_id);
 }
+*/
 
+/*
 void Remote_query::send_client_rsp(txnid_t txn_id, RC rc, uint64_t client_startts,
 		uint32_t client_node_id) {
 	// Maximum number of parameters
 	// NOTE: Adjust if parameters sent is changed
-  /*
-  assert(!responses[txn_id]);
-  responses[txn_id] = true;
-  */
    	DEBUG("Sending client response (CL_RSP) %ld\n",txn_id);
     //query->return_id = query->client_id;
     //query->dest_id = g_node_id;
@@ -179,7 +184,9 @@ void Remote_query::send_client_rsp(txnid_t txn_id, RC rc, uint64_t client_startt
 
     send_remote_query(client_node_id,data,sizes,num);
 }
+*/
 
+/*
 void Remote_query::send_init_done(uint64_t dest_id) {
   uint64_t total = 2;
 	void ** data = new void *[total];
@@ -196,6 +203,8 @@ void Remote_query::send_init_done(uint64_t dest_id) {
   send_remote_query(dest_id,data,sizes,num);
 }
 
+*/
+/*
 void Remote_query::send_exp_done(uint64_t dest_id) {
   uint64_t total = 2;
 	void ** data = new void *[total];
@@ -211,9 +220,11 @@ void Remote_query::send_exp_done(uint64_t dest_id) {
 	sizes[num++] = sizeof(RemReqType);
   send_remote_query(dest_id,data,sizes,num);
 }
+*/
 
 
 // TODO: What if in HStore we want to lock multiple partitions at same node?
+/*
 void Remote_query::send_init(base_query * query,uint64_t dest_part_id) {
 
 	// Maximum number of parameters
@@ -315,11 +326,15 @@ void Remote_query::send_init(base_query * query,uint64_t dest_part_id) {
 
   send_remote_query(GET_NODE_ID(dest_part_id),data,sizes,num);
 }
+*/
 
+/*
 void Remote_query::send_remote_query(uint64_t dest_id, void ** data, int * sizes, int num) {
 	tport_man.send_msg(dest_id, data, sizes, num);
 }
+*/
 
+/*
 void Remote_query::remote_rsp(base_query * query, txn_man * txn) {
 
 #if WORKLOAD == TPCC
@@ -331,11 +346,15 @@ void Remote_query::remote_rsp(base_query * query, txn_man * txn) {
 #endif
 
 }
+*/
 
+/*
 void Remote_query::send_remote_rsp(uint64_t dest_id, void ** data, int * sizes, int num) {
 	tport_man.send_msg(dest_id, data, sizes, num);
 }
+*/
 
+// FIXME: unpack batch
 base_client_query * Remote_query::unpack_client_query(void * d, int len) {
   base_client_query * query;
 	char * data = (char *) d;
@@ -385,26 +404,27 @@ base_client_query * Remote_query::unpack_client_query(void * d, int len) {
 }
 
 
-base_query * Remote_query::unpack(void * d, int len) {
+//base_query * Remote_query::unpack(void * d, int len) {
+void Remote_query::unpack(void * d, uint64_t len) {
     base_query * query;
 	char * data = (char *) d;
 	uint64_t ptr = 0;
   uint64_t timespan;
-    uint32_t dest_id;
-    uint32_t return_id;
-    txnid_t txn_id;
+  uint32_t dest_id;
+  uint32_t return_id;
+  txnid_t txn_id;
+  uint32_t txn_cnt;
 	RemReqType rtype;
-    RC rc;
-    uint64_t starttime = get_sys_clock();
+  uint64_t starttime = get_sys_clock();
+  assert(len > sizeof(uint32_t) * 3);
 
-	memcpy(&dest_id,&data[ptr],sizeof(uint32_t));
-	ptr += sizeof(uint32_t);
-	memcpy(&return_id,&data[ptr],sizeof(uint32_t));
-	ptr += sizeof(uint32_t);
-	memcpy(&txn_id,&data[ptr],sizeof(txnid_t));
-	ptr += sizeof(txnid_t);
-	memcpy(&rtype,&data[ptr],sizeof(RemReqType));
-	ptr += sizeof(RemReqType);
+  COPY_VAL(dest_id,data,ptr);
+  COPY_VAL(return_id,data,ptr);
+  COPY_VAL(txn_cnt,data,ptr);
+
+  while(txn_cnt > 0) { 
+  COPY_VAL(txn_id,data,ptr);
+  COPY_VAL(rtype,data,ptr);
 
 #if WORKLOAD == TPCC
 	    query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), 0);
@@ -421,140 +441,130 @@ base_query * Remote_query::unpack(void * d, int len) {
     query->txn_id = txn_id;
     query->rtype = rtype;
 
+    /*
     if(query->rtype == INIT_DONE || query->rtype == EXP_DONE)
       return query;
+      */
 
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
-  if(query->rtype != INIT_DONE && g_node_id < g_node_cnt) {
-    // Set active partition
-	  memcpy(&query->active_part,&data[ptr],sizeof(uint64_t));
-	  ptr += sizeof(uint64_t);
-  if(query->rtype != RTXN) {
-    // Set home partition
-	  memcpy(&query->home_part,&data[ptr],sizeof(uint64_t));
-	  ptr += sizeof(uint64_t);
-  }
-    assert(query->active_part < g_part_cnt && query->active_part % g_node_cnt == g_node_id);
-  }
+  COPY_VAL(active_part,data,ptr);
+  COPY_VAL(home_part,data,ptr);
 #endif
 
 	switch(query->rtype) {
-        case RINIT: {
-	        memcpy(&query->ts,&data[ptr],sizeof(ts_t));
-	        ptr += sizeof(ts_t);
-	        memcpy(&query->pid,&data[ptr],sizeof(query->pid));
-	        ptr += sizeof(query->pid);
+    case RINIT: {
+      COPY_VAL(query->ts,data,ptr);
+      COPY_VAL(query->pid,data,ptr);
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
-	        memcpy(&query->part_cnt,&data[ptr],sizeof(query->part_cnt));
-	        ptr += sizeof(query->part_cnt);
-            assert(query->part_cnt == 1);
-	        query->parts = new uint64_t[query->part_cnt];
-	        for (uint64_t i = 0; i < query->part_cnt; i++) {
-		        memcpy(&query->parts[i],&data[ptr],sizeof(query->parts[i]));
-		        ptr += sizeof(query->parts[i]);
-	        }
-#endif
-#if CC_ALG == AVOID
-	        memcpy(&query->t_type,&data[ptr],sizeof(query->txn_type));
-	        ptr += sizeof(query->txn_type);
-            uint64_t k;
-	        memcpy(&query->num_keys,&data[ptr],sizeof(uint64_t));
-	        ptr += sizeof(uint64_t);
-            query->keys = mem_allocator.alloc(sizeof(uint64_t) * query->num_keys, 0);;
-            for(uint64_t i; i < query->num_keys; i++) {
-	            memcpy(&query->keys[i],&data[ptr],sizeof(uint64_t));
-	            ptr += sizeof(uint64_t);
-            }
+      COPY_VAL(query->part_cnt,data,ptr);
+      assert(query->part_cnt == 1);
+	    query->parts = new uint64_t[query->part_cnt];
+	    for (uint64_t i = 0; i < query->part_cnt; i++) {
+        COPY_VAL(query->parts[i],data,ptr);
+      }
 #endif
 #if CC_ALG == VLL
 #if WORKLOAD == YCSB
-            ycsb_query * m_query = (ycsb_query*) query;
-	        memcpy(&m_query->request_cnt,&data[ptr],sizeof(uint64_t));
-	        ptr += sizeof(uint64_t);
-	        m_query->requests = (ycsb_request *) 
-		        mem_allocator.alloc(sizeof(ycsb_request) * m_query->request_cnt, 0);
-          memcpy(m_query->requests,&data[ptr],sizeof(ycsb_request)*m_query->request_cnt);
-          ptr += sizeof(ycsb_request)*m_query->request_cnt;
+      ycsb_query * m_query = (ycsb_query*) query;
+      COPY_VAL(m_query->request_cnt,data,ptr);
+      m_query->requests = (ycsb_request *) 
+      mem_allocator.alloc(sizeof(ycsb_request) * m_query->request_cnt, 0);
+      COPY_VAL_SIZE(m_query->requests,data,ptr,sizeof(ycsb_request)*m_query->request_cnt);
 #endif
 #endif
-                    }
-            break;
-        case RPREPARE:
-            /*
-#if CC_ALG != HSTORE && CC_ALG != HSTORE_SPEC && CC_ALG != VLL
-			if (handle_init) {
-				query->rc = Abort;
-			}
-#endif
-*/
-            break;
+      }
+      break;
+    case RPREPARE:
+      break;
 		case RQRY: {
 #if WORKLOAD == TPCC
-            tpcc_query * m_query = new tpcc_query;
+      tpcc_query * m_query = (tpcc_query*) query;
 #elif WORKLOAD == YCSB
-            ycsb_query * m_query = new ycsb_query;
+      ycsb_query * m_query = (ycsb_query*) query;
 #endif
-			m_query->unpack(query,data);
-			break;
-		}
+      assert(WORKLOAD == YCSB);
+      COPY_VAL(m_query->txn_rtype,data,ptr);
+      COPY_VAL(m_query->pid,data,ptr);
+#if CC_ALG == WAIT_DIE || CC_ALG == TIMESTAMP || CC_ALG == MVCC || CC_ALG == VLL
+      COPY_VAL(m_query->ts,data,ptr);
+#endif
+#if CC_ALG == MVCC 
+      COPY_VAL(m_query->thd_id,data,ptr);
+#elif CC_ALG == OCC
+      COPY_VAL(m_query->start_ts,data,ptr);
+#endif
+      COPY_VAL(m_query->req,data,ptr);
+      break;
+      }
 		case RQRY_RSP: {
-#if WORKLOAD == TPCC
-            tpcc_query * m_query = new tpcc_query;
-#elif WORKLOAD == YCSB
-            ycsb_query * m_query = new ycsb_query;
-#endif
-		    m_query->unpack_rsp(query,data);
+      COPY_VAL(query->rc,data,ptr);
+      COPY_VAL(query->pid,data,ptr);
 			break;
-		}
-        case RFIN:
-            query->unpack_finish(query, data);
-            break;
-        case RACK:
-	        memcpy(&rc,&data[ptr],sizeof(RC));
-	        ptr += sizeof(RC);
-          // FIXME: Race condition if 2 RACKs received at same time:
-          //  Thread1: Reads query->rc == WAIT .............. writes rc == RCOK to query->rc
-          //  Thread 2: ...................writes query->rc = ABORT ...........
-          /*
-            if(rc == Abort || query->rc == WAIT || query->rc == WAIT_REM) {
-                query->rc = rc;
-            }
-            */
-            query->rc = rc;
-            break;
-        case INIT_DONE:
-            break;
-        case RTXN: {
+      }
+    case RFIN:
+      COPY_VAL(query->pid,data,ptr);
+      COPY_VAL(query->rc,data,ptr);
+      COPY_VAL(query->txn_id,data,ptr);
+      break;
+    case RACK:
+      COPY_VAL(query->rc,data,ptr);
+      break;
+    case RTXN: {
 #if WORKLOAD == TPCC
-            	tpcc_query * m_query = new tpcc_query;
+      tpcc_query * m_query = (tpcc_query*) query;
 #elif WORKLOAD == YCSB
-            	ycsb_query *m_query = new ycsb_query;
+      ycsb_query *m_query = (ycsb_query*) query;
 #endif
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
-              query->home_part = query->active_part;
+      query->home_part = query->active_part;
 #endif
-            	m_query->unpack_client(query, data);
-				assert(GET_NODE_ID(query->pid) == g_node_id);
-            	break;
-        }
-        case CL_RSP:
-          RC rc_tmp;
-	        memcpy(&rc_tmp,&data[ptr],sizeof(RC));
-	        ptr += sizeof(RC);
-          uint64_t client_startts;
-	        memcpy(&client_startts,&data[ptr],sizeof(uint64_t));
-	        ptr += sizeof(uint64_t);
-          timespan = get_sys_clock() - client_startts;
-          INC_STATS(0,client_latency,timespan);
-          INC_STATS_ARR(0,all_lat,timespan);
-          INC_STATS(0,txn_cnt,1);
-			  DEBUG("Received CL_RSP from %u -- %ld %f\n", query->return_id,query->txn_id,(float)timespan/BILLION);
-            	break;
-	    	default:
-		assert(false);
+      assert(WORKLOAD == YCSB);
+      m_query->client_id = m_query->return_id;
+      COPY_VAL(m_query->pid,data,ptr);
+      COPY_VAL(m_query->client_startts,data,ptr);
+#if CC_ALG == CALVIN
+      uint64_t batch_num __attribute__ ((unused));
+      COPY_VAL(batch_num,data,ptr);
+#endif
+      COPY_VAL(m_query->part_num,data,ptr);
+      m_query->part_to_access = (uint64_t *)
+            mem_allocator.alloc(sizeof(uint64_t) * m_query->part_num, 0);
+      for (uint64_t i = 0; i < m_query->part_num; ++i) {
+        COPY_VAL(m_query->part_to_access[i],data,ptr);
+      }
+      COPY_VAL(m_query->request_cnt,data,ptr);
+      m_query->requests = (ycsb_request *) 
+            mem_allocator.alloc(sizeof(ycsb_request) * m_query->request_cnt, 0);
+      for (uint64_t i = 0; i < m_query->request_cnt; ++i) {
+        COPY_VAL_SIZE(m_query->requests[i],data,ptr,sizeof(ycsb_request));
+      }
+      assert(GET_NODE_ID(m_query->pid) == g_node_id);
+      break;
+      }
+    case CL_RSP:
+      RC rc_tmp;
+      COPY_VAL(rc_tmp,data,ptr);
+      uint64_t client_startts;
+      COPY_VAL(client_startts,data,ptr);
+      timespan = get_sys_clock() - client_startts;
+      INC_STATS(0,client_latency,timespan);
+      INC_STATS_ARR(0,all_lat,timespan);
+      INC_STATS(0,txn_cnt,1);
+      DEBUG("Received CL_RSP from %u -- %ld %f\n", query->return_id,query->txn_id,(float)timespan/BILLION);
+      break;
+    case INIT_DONE: break;
+    case EXP_DONE: break;
+    default: assert(false);
 	}
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
+			work_queue.add_query(GET_PART_ID_IDX(query->active_part),query);
+#else
+			work_queue.add_query(0,query);
+#endif
+      txn_cnt--;
+  }
   query->time_copy += get_sys_clock() - starttime;
-    return query;
+  //  return query;
 }
 
 

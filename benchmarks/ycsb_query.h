@@ -35,12 +35,12 @@ class ycsb_client_query : public base_client_query {
 	void init(uint64_t thd_id, workload * h_wl);
   void init(uint64_t thd_id, workload * h_wl, uint64_t node_id);
   void init();
-  void client_query(base_client_query * query, uint64_t dest_id) ;
+  //void client_query(base_client_query * query, uint64_t dest_id) ;
   void unpack_client(base_client_query * query, void * d);
   
   // calvin
-  void client_query(base_client_query * query, uint64_t dest_id, uint64_t batch_num,
-		  txnid_t txn_id);
+  //void client_query(base_client_query * query, uint64_t dest_id, uint64_t batch_num,
+//		  txnid_t txn_id);
 
   //uint64_t pid;
 	uint64_t request_cnt;
@@ -81,9 +81,11 @@ void unpack_client(base_query * query, void * d) ;
 	ycsb_request * requests;
 
 	YCSBRemTxnType txn_rtype;
+	YCSBRemTxnType next_ycsb_txn_rtype;
   uint64_t rid;
 	uint64_t req_i;
   ycsb_request req;
+
 
 private:
 	void gen_requests(uint64_t thd_id, workload * h_wl);

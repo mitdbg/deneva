@@ -11,6 +11,7 @@
 #include "vll.h"
 #include "transport.h"
 #include "query_work_queue.h"
+#include "msg_queue.h"
 #include "remote_query.h"
 #include "txn_pool.h"
 #include "client_txn.h"
@@ -33,6 +34,7 @@ Remote_query rem_qry_man;
 TxnPool txn_pool;
 QWorkQueue work_queue;
 QWorkQueue abort_queue;
+MessageQueue msg_queue;
 Client_txn client_man;
 Sequencer seq_man;
 
@@ -54,6 +56,7 @@ ts_t g_dl_loop_detect = DL_LOOP_DETECT;
 bool g_ts_batch_alloc = TS_BATCH_ALLOC;
 UInt32 g_ts_batch_num = TS_BATCH_NUM;
 int32_t g_inflight_max = MAX_TXN_IN_FLIGHT;
+uint64_t g_msg_size = MSG_SIZE_MAX;
 
 bool g_hw_migrate = HW_MIGRATE;
 
@@ -78,6 +81,7 @@ UInt32 g_thread_cnt = PART_CNT/NODE_CNT;
 UInt32 g_thread_cnt = THREAD_CNT;
 #endif
 UInt32 g_rem_thread_cnt = REM_THREAD_CNT;
+UInt32 g_send_thread_cnt = SEND_THREAD_CNT;
 UInt64 g_synth_table_size = SYNTH_TABLE_SIZE;
 UInt32 g_req_per_query = REQ_PER_QUERY;
 UInt32 g_field_per_tuple = FIELD_PER_TUPLE;
@@ -85,6 +89,7 @@ UInt32 g_init_parallelism = INIT_PARALLELISM;
 UInt32 g_client_node_cnt = CLIENT_NODE_CNT;
 UInt32 g_client_thread_cnt = CLIENT_THREAD_CNT;
 UInt32 g_client_rem_thread_cnt = CLIENT_REM_THREAD_CNT;
+UInt32 g_client_send_thread_cnt = CLIENT_SEND_THREAD_CNT;
 UInt32 g_servers_per_client = 0;
 UInt32 g_server_start_node = 0;
 

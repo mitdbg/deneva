@@ -47,7 +47,7 @@ public:
 	void unpack(base_query * query, void * d);
 	void unpack_rsp(base_query * query, void * d);
 	void pack(base_query * query, void ** data, int * sizes, int * num, RC rc);
-    void client_query(base_query * query, uint64_t dest_id);
+    //void client_query(base_query * query, uint64_t dest_id);
     void unpack_client(base_query * query, void * d); 
   base_query * merge(base_query * query) {return NULL;}
 	//uint64_t rtn_node_id;

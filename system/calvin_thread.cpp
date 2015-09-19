@@ -11,6 +11,7 @@
 #include "transport.h"
 #include "remote_query.h"
 #include "math.h"
+#include "msg_queue.h"
 
 void calvin_thread_t::init(uint64_t thd_id, uint64_t node_id, workload * workload) {
 	_thd_id = thd_id;
@@ -96,12 +97,19 @@ RC calvin_thread_t::run() {
 	}
 	pthread_barrier_wait( &warmup_bar );
 	stats.init(get_thd_id());
+	base_query * m_query = NULL;
+#if WORKLOAD == YCSB
+    m_query = new ycsb_query;
+#elif WORKLOAD == TPCC
+    m_query = new tpcc_query;
+#endif
 
 	if( _thd_id == 0) {
 	  uint64_t rsp_cnt = g_node_cnt + g_client_node_cnt + 1;
 		for(uint64_t i = 0; i < rsp_cnt; i++) {
 			if(i != g_node_id) {
-				rem_qry_man.send_init_done(i);
+				//rem_qry_man.send_init_done(i);
+        msg_queue.enqueue(m_query,INIT_DONE,i);
 			}
 		}
 	}
@@ -118,7 +126,6 @@ RC calvin_thread_t::run() {
 	assert (rc == RCOK);
 	glob_manager.set_txn_man(m_txn);
 
-	base_query * m_query = NULL;
 
 	uint64_t txn_cnt = 0;
 	uint64_t txn_st_cnt = 0;
@@ -198,7 +205,8 @@ RC calvin_thread_t::run() {
 			txn_cnt++;
       // FIXME
 			//rem_qry_man.send_client_rsp(m_query);
-			rem_qry_man.ack_response(m_query);
+			//rem_qry_man.ack_response(m_query);
+      msg_queue.enqueue(m_query,RACK,m_query->return_id);
     }
 
 		timespan = get_sys_clock() - starttime;

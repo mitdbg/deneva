@@ -16,6 +16,8 @@
 #include "math.h"
 #include "specex.h"
 #include "helper.h"
+#include "msg_thread.h"
+#include "msg_queue.h"
 
 void thread_t::init(uint64_t thd_id, uint64_t node_id, workload * workload) {
 	_thd_id = thd_id;
@@ -40,17 +42,20 @@ RC thread_t::run_remote() {
 		mem_allocator.register_thread(_thd_id);
 	}
 
-	base_query * m_query = NULL;
+	//base_query * m_query = NULL;
 
 	pthread_barrier_wait( &warmup_bar );
 	stats.init(get_thd_id());
 	// Send start msg to all nodes; wait for rsp from all nodes before continuing.
 	//#if !TPORT_TYPE_IPC
+  /*
 	int rsp_cnt = g_node_cnt + g_client_node_cnt - 1;
-	int done_cnt = g_node_cnt + g_client_node_cnt - 1;
 #if CC_ALG == CALVIN
 	rsp_cnt++;	// Account for sequencer node
 #endif
+*/
+	int done_cnt = g_node_cnt + g_client_node_cnt - 1;
+    /*
   if(_thd_id == g_thread_cnt) {
 	while(rsp_cnt > 0) {
 		m_query = (base_query *) tport_man.recv_msg();
@@ -64,6 +69,10 @@ RC thread_t::run_remote() {
 #endif
 		}
 	}
+  }
+  */
+  while(!_wl->sim_init_done) {
+    tport_man.recv_msg();
   }
 	//#endif
 	pthread_barrier_wait( &warmup_bar );
@@ -85,6 +94,8 @@ RC thread_t::run_remote() {
 	ts_t rq_time = get_sys_clock();
 
 	while (true) {
+    tport_man.recv_msg();
+    /*
 		m_query = (base_query *) tport_man.recv_msg();
 		if( m_query != NULL ) { 
 			rq_time = get_sys_clock();
@@ -98,6 +109,7 @@ RC thread_t::run_remote() {
 			work_queue.add_query(0,m_query);
 #endif
 		}
+    */
 
 		ts_t tend = get_sys_clock();
 		if (warmup_finish && ((tend - run_starttime >= DONE_TIMER) || (_wl->sim_done && (  ((tend - rq_time) > MSG_TIMEOUT))))) {
@@ -124,6 +136,34 @@ RC thread_t::run_remote() {
 
 }
 
+RC thread_t::run_send() {
+	printf("Run_send %ld:%ld\n",_node_id, _thd_id);
+  fflush(stdout);
+	if (warmup_finish) {
+		mem_allocator.register_thread(_thd_id);
+	}
+	pthread_barrier_wait( &warmup_bar );
+	stats.init(get_thd_id());
+
+  MessageThread messager;
+  messager.init(_thd_id);
+	while (!_wl->sim_init_done) {
+    messager.run();
+  }
+
+	pthread_barrier_wait( &warmup_bar );
+	printf("Run_send %ld:%ld\n",_node_id, _thd_id);
+  fflush(stdout);
+
+	while (true) {
+    messager.run();
+		if (_wl->sim_done && _wl->sim_timeout) {
+			return FINISH;
+    }
+  }
+
+}
+
 RC thread_t::run() {
 	printf("Run %ld:%ld\n",_node_id, _thd_id);
   fflush(stdout);
@@ -135,18 +175,42 @@ RC thread_t::run() {
 	}
 	pthread_barrier_wait( &warmup_bar );
 	stats.init(get_thd_id());
+	base_query * m_query = NULL;
+	int rsp_cnt;
 
 	if( _thd_id == 0) {
+#if WORKLOAD == YCSB
+    m_query = new ycsb_query;
+#elif WORKLOAD == TPCC
+    m_query = new tpcc_query;
+#endif
 		uint64_t total_nodes = g_node_cnt + g_client_node_cnt;
 #if CC_ALG == CALVIN
 		total_nodes++;
 #endif
 		for(uint64_t i = 0; i < total_nodes; i++) {
 			if(i != g_node_id) {
-				rem_qry_man.send_init_done(i);
+				//rem_qry_man.send_init_done(i);
+        msg_queue.enqueue(m_query,INIT_DONE,i);
 			}
 		}
-	}
+	rsp_cnt = g_node_cnt + g_client_node_cnt - 1;
+#if CC_ALG == CALVIN
+	rsp_cnt++;	// Account for sequencer node
+#endif
+    while(!_wl->sim_init_done) {
+      while((m_query = work_queue.get_next_query(get_thd_id())) == NULL) { }
+      if(m_query->rtype == INIT_DONE) {
+        ATOM_SUB(rsp_cnt,1);
+        if(rsp_cnt ==0) {
+			    if( !ATOM_CAS(_wl->sim_init_done, false, true) )
+				    assert( _wl->sim_init_done);
+        }
+      } else {
+        work_queue.add_query(_thd_id,m_query);
+      }
+	  }
+  }
 	pthread_barrier_wait( &warmup_bar );
 	printf("Run %ld:%ld\n",_node_id, _thd_id);
   fflush(stdout);
@@ -168,7 +232,6 @@ RC thread_t::run() {
 	}
 #endif
 
-	base_query * m_query = NULL;
 	base_query * tmp_query = NULL;
 	uint64_t txn_cnt = 0;
 	uint64_t txn_st_cnt = 0;
@@ -181,7 +244,6 @@ RC thread_t::run() {
 	uint64_t last_rwaittime = 0;
 	uint64_t outstanding_waits = 0;
 	uint64_t outstanding_rwaits = 0;
-	int rsp_cnt;
   uint64_t debug1;
   RemReqType debug2;
 #if CC_ALG == VLL
@@ -249,9 +311,13 @@ RC thread_t::run() {
 #if CC_ALG == CALVIN
 		nnodes++;
 #endif
+#if WORKLOAD == YCSB
+    m_query = new ycsb_query;
+#endif
 		for(uint64_t i = 0; i < nnodes; i++) {
 			if(i != g_node_id) {
-				rem_qry_man.send_exp_done(i);
+				//rem_qry_man.send_exp_done(i);
+        msg_queue.enqueue(m_query,EXP_DONE,i);
 			}
 		}
       }
@@ -277,7 +343,7 @@ RC thread_t::run() {
 		starttime = get_sys_clock();
     debug1 = 0;
     debug2 = m_query->rtype;
-    assert(debug2 <= CL_RSP);
+    assert(debug2 <= NO_MSG);
 
 		switch(m_query->rtype) {
 			case RPASS:
@@ -325,7 +391,8 @@ RC thread_t::run() {
         if(rc == WAIT)
           break;
 				// Send back ACK
-				rem_qry_man.ack_response(m_query);
+				//rem_qry_man.ack_response(m_query);
+        msg_queue.enqueue(m_query,RACK,m_query->return_id);
 #endif
 				// HStore: lock partitions at this node
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
@@ -371,14 +438,16 @@ RC thread_t::run() {
         if(GET_NODE_ID(m_query->active_part) != GET_NODE_ID(m_query->home_part)) {
           if(validate)
 					  m_query->rc = rc;
-				  rem_qry_man.ack_response(m_query);
+				  //rem_qry_man.ack_response(m_query);
+          msg_queue.enqueue(m_query,RACK,m_query->return_id);
         } else {
           m_query->local_rack_query();
         }
 #else
         if(validate)
 				  m_query->rc = rc;
-			  rem_qry_man.ack_response(m_query);
+			  //rem_qry_man.ack_response(m_query);
+        msg_queue.enqueue(m_query,RACK,m_query->return_id);
 #endif
 
         m_query = NULL;
@@ -408,6 +477,7 @@ RC thread_t::run() {
 #if CC_ALG == OCC
 				m_txn->set_start_ts(m_query->start_ts);
 #endif
+        //printf("RQRY %ld %f\n",m_txn->get_ts(),(float)(get_sys_clock() - m_txn->get_ts())/ BILLION);
 
         // FIXME: May be doing twice the work
 				tmp_query = txn_pool.get_qry(m_query->return_id, m_query->txn_id);
@@ -434,8 +504,10 @@ RC thread_t::run() {
 				timespan = get_sys_clock() - starttime;
 				INC_STATS(get_thd_id(),time_rqry,timespan);
 
-				if(rc != WAIT)
-					rem_qry_man.remote_rsp(m_query,m_txn);
+				if(rc != WAIT) {
+					//rem_qry_man.remote_rsp(m_query,m_txn);
+          msg_queue.enqueue(m_query,RQRY_RSP,m_query->return_id);
+        }
 #if QRY_ONLY
 				txn_pool.delete_txn(m_query->return_id, m_query->txn_id);
 #endif
@@ -520,7 +592,8 @@ RC thread_t::run() {
           }
         }
         if(GET_NODE_ID(m_query->home_part) != g_node_id) {
-				  rem_qry_man.ack_response(m_query);
+				  //rem_qry_man.ack_response(m_query);
+          msg_queue.enqueue(m_query,RACK,m_query->return_id);
         } else {
           m_query->local_rack_query();
         }
@@ -544,7 +617,8 @@ RC thread_t::run() {
 					m_txn->state = DONE;
 					m_txn->rem_fin_txn(m_query);
         }
-				  rem_qry_man.ack_response(m_query);
+				  //rem_qry_man.ack_response(m_query);
+          msg_queue.enqueue(m_query,RACK,m_query->return_id);
 				if (finish) {
 					txn_pool.delete_txn(m_query->return_id, m_query->txn_id);
         }
@@ -737,6 +811,7 @@ RC thread_t::run() {
 							|| CC_ALG == TIMESTAMP) { 
 						m_txn->set_ts(get_next_ts());
 						m_query->ts = m_txn->get_ts();
+					//printf("START %ld %f %lu\n",m_txn->get_txn_id(),(double)(m_txn->starttime - run_starttime) / BILLION,m_txn->get_ts());
 					}
 
 #if CC_ALG == OCC
@@ -803,7 +878,8 @@ RC thread_t::run() {
                 rc = WAIT;
                 m_txn->rc = rc;
                 m_query->dest_part = part_id;
-                rem_qry_man.send_init(m_query,part_id);
+                //rem_qry_man.send_init(m_query,part_id);
+                msg_queue.enqueue(m_query,RINIT,GET_NODE_ID(part_id));
                 m_txn->wait_starttime = get_sys_clock();
                 m_query->part_touched[m_query->part_touched_cnt++] = part_id;
               } else {
@@ -826,7 +902,8 @@ RC thread_t::run() {
                 rc = WAIT;
                 m_txn->rc = rc;
                 m_query->dest_part = part_id;
-                rem_qry_man.send_init(m_query,part_id);
+                //rem_qry_man.send_init(m_query,part_id);
+                msg_queue.enqueue(m_query,RINIT,GET_NODE_ID(part_id));
                 m_txn->wait_starttime = get_sys_clock();
                 m_query->part_touched[m_query->part_touched_cnt++] = part_id;
               } else {
@@ -933,7 +1010,8 @@ RC thread_t::run() {
 					DEBUG("COMMIT %ld %ld %ld %f -- %f\n",m_txn->get_txn_id(),m_query->part_num,m_txn->abort_cnt,(double)m_txn->txn_time_wait/BILLION,(double)timespan/ BILLION);
 
 					// Send result back to client
-					rem_qry_man.send_client_rsp(m_query);
+					//rem_qry_man.send_client_rsp(m_query);
+          msg_queue.enqueue(m_query,CL_RSP,m_query->client_id);
 					txn_pool.delete_txn(g_node_id,m_query->txn_id);
 					txn_cnt++;
 
@@ -956,7 +1034,8 @@ RC thread_t::run() {
         txn_pool.delete_txn(g_node_id,m_query->txn_id);
         txn_cnt++;
         //ATOM_SUB(txn_pool.inflight_cnt,1);
-					rem_qry_man.send_client_rsp(m_query);
+					//rem_qry_man.send_client_rsp(m_query);
+          msg_queue.enqueue(m_query,CL_RSP,m_query->client_id);
           break;
         
         }
@@ -1032,7 +1111,8 @@ RC thread_t::run() {
           // Stat start for txn_time_net
           m_txn->txn_stat_starttime = get_sys_clock();
 
-					rem_qry_man.remote_qry(m_query,m_query->rem_req_state,m_query->dest_id,m_txn);
+					//rem_qry_man.remote_qry(m_query,m_query->rem_req_state,m_query->dest_id,m_txn);
+          msg_queue.enqueue(m_query,RQRY,m_query->dest_id);
 					break;
 				default:
 					assert(false);

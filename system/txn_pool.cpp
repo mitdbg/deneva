@@ -67,6 +67,7 @@ bool TxnPool::empty(uint64_t node_id) {
 
 void TxnPool::add_txn(uint64_t node_id, txn_man * txn, base_query * qry) {
 
+  txn->set_query(qry);
   MODIFY_START();
 
   uint64_t txn_id = txn->get_txn_id();

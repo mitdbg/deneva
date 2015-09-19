@@ -171,6 +171,7 @@ void ycsb_query::unpack(base_query * query, void * d) {
 
 }
 
+/*
 void ycsb_query::remote_qry(base_query * query, int type, int dest_id) {
   DEBUG("Sending RQRY %ld\n",query->txn_id);
 	ycsb_query * m_query = (ycsb_query *) query;
@@ -239,7 +240,9 @@ void ycsb_query::remote_qry(base_query * query, int type, int dest_id) {
 
 	rem_qry_man.send_remote_query(dest_id, data, sizes, num);
 }
+*/
 
+/*
 void ycsb_query::remote_rsp(base_query * query) {
 	ycsb_query * m_query = (ycsb_query *) query;
 
@@ -278,6 +281,7 @@ void ycsb_query::remote_rsp(base_query * query) {
 	sizes[num++] = sizeof(uint64_t);
 	rem_qry_man.send_remote_rsp(m_query->return_id, data, sizes, num);
 }
+*/
 
 // The following algorithm comes from the paper:
 // Quickly generating billion-record synthetic databases
@@ -350,10 +354,13 @@ void ycsb_client_query::unpack_client(base_client_query * query, void * d) {
 
 }
 
+/*
 void ycsb_client_query::client_query(base_client_query * query, uint64_t dest_id) {
   client_query(query, dest_id, 0, UINT64_MAX);
 }
+*/
 
+/*
 void ycsb_client_query::client_query(base_client_query * query, uint64_t dest_id,
 		uint64_t batch_num, txnid_t txn_id) {
 	ycsb_client_query * m_query = (ycsb_client_query *) query;
@@ -405,10 +412,6 @@ void ycsb_client_query::client_query(base_client_query * query, uint64_t dest_id
         	data[num] = &m_query->part_to_access[i];
         	sizes[num++] = sizeof(uint64_t);
     	}
-      /*
-    	data[num] = &m_query->access_cnt;
-    	sizes[num++] = sizeof(uint64_t);
-      */
     	data[num] = &m_query->request_cnt;
     	sizes[num++] = sizeof(uint64_t);
 
@@ -418,6 +421,7 @@ void ycsb_client_query::client_query(base_client_query * query, uint64_t dest_id
     	}
 	rem_qry_man.send_remote_query(GET_NODE_ID(m_query->pid), data, sizes, num);
 }
+*/
 
 void ycsb_query::unpack_client(base_query * query, void * d) {
 	ycsb_query * m_query = (ycsb_query *) query;
@@ -567,6 +571,10 @@ void ycsb_client_query::gen_requests(uint64_t thd_id, workload * h_wl) {
 		rid ++;
 	}
 	request_cnt = rid;
+  for (int i = request_cnt - 1; i > 0; i--) 
+    for (int j = 0; j < i; j ++)
+      assert(requests[i].key != requests[j].key);
+
 	// Sort the requests in key order.
 	if (g_key_order) {
 		for (int i = request_cnt - 1; i > 0; i--) 

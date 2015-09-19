@@ -7,12 +7,14 @@
 #include "client_query.h"
 #include "transport.h"
 #include "client_txn.h"
+#include "msg_queue.h"
 //#include <jemallloc.h>
 
 void * f(void *);
 void * g(void *);
 void * worker(void *);
 void * nn_worker(void *);
+void * send_worker(void *);
 void network_test();
 void network_test_recv();
 
@@ -86,31 +88,40 @@ int main(int argc, char* argv[])
   printf("Initializing client manager... ");
   client_man.init();
   printf("Done\n");
+  printf("Initializing work queue... ");
+  work_queue.init();
+  printf("Done\n");
   fflush(stdout);
 
 	// 2. spawn multiple threads
 	uint64_t thd_cnt = g_client_thread_cnt;
 	uint64_t rthd_cnt = g_client_rem_thread_cnt;
+	uint64_t sthd_cnt = g_client_send_thread_cnt;
+  uint64_t all_thd_cnt = thd_cnt + rthd_cnt + sthd_cnt;
 
 	pthread_t * p_thds = 
-		(pthread_t *) malloc(sizeof(pthread_t) * (thd_cnt + rthd_cnt));
+		(pthread_t *) malloc(sizeof(pthread_t) * (all_thd_cnt));
 	pthread_attr_t attr;
 	pthread_attr_init(&attr);
 	cpu_set_t cpus;
-	m_thds = new Client_thread_t[thd_cnt + rthd_cnt];
+	m_thds = new Client_thread_t[all_thd_cnt];
 	//// query_queue should be the last one to be initialized!!!
 	// because it collects txn latency
+  printf("Initializing message queue... ");
+  msg_queue.init();
+  printf("Done\n");
   printf("Initializing client query queue... ");
   fflush(stdout);
 	if (WORKLOAD != TEST) {
 		client_query_queue.init(m_wl);
 	}
   printf("Done\n");
+  fflush(stdout);
 
 	pthread_barrier_init( &warmup_bar, NULL, thd_cnt );
   printf("Initializing threads... ");
   fflush(stdout);
-	for (uint32_t i = 0; i < thd_cnt + rthd_cnt; i++) 
+	for (uint32_t i = 0; i < all_thd_cnt; i++) 
 		m_thds[i].init(i, g_node_id, m_wl);
   printf("Done\n");
 #if CREATE_TXN_FILE
@@ -121,11 +132,11 @@ int main(int argc, char* argv[])
   printf("Initialization Time = %ld\n", endtime - starttime);
   fflush(stdout);
 	warmup_finish = true;
-	pthread_barrier_init( &warmup_bar, NULL, thd_cnt + rthd_cnt);
+	pthread_barrier_init( &warmup_bar, NULL, all_thd_cnt);
 #ifndef NOGRAPHITE
-	CarbonBarrierInit(&enable_barrier, thd_cnt+ rthd_cnt);
+	CarbonBarrierInit(&enable_barrier, all_thd_cnt);
 #endif
-	pthread_barrier_init( &warmup_bar, NULL, thd_cnt + rthd_cnt);
+	pthread_barrier_init( &warmup_bar, NULL, all_thd_cnt);
 
 	uint64_t cpu_cnt = 0;
 	// spawn and run txns again.
@@ -146,14 +157,18 @@ int main(int argc, char* argv[])
 		pthread_create(&p_thds[i], &attr, worker, (void *)vid);
     }
 
-	for (; i < thd_cnt + rthd_cnt -1; i++) {
+	for (; i < thd_cnt + sthd_cnt; i++) {
+		uint64_t vid = i;
+		pthread_create(&p_thds[i], &attr, send_worker, (void *)vid);
+  }
+	for (; i < thd_cnt + sthd_cnt + rthd_cnt -1; i++) {
 		uint64_t vid = i;
 		pthread_create(&p_thds[i], &attr, nn_worker, (void *)vid);
   }
 
     nn_worker((void *)(i));
 
-	for (i = 0; i < thd_cnt + rthd_cnt - 1; i++) 
+	for (i = 0; i < all_thd_cnt - 1; i++) 
 		pthread_join(p_thds[i], NULL);
 
 	endtime = get_server_clock();
@@ -170,17 +185,25 @@ int main(int argc, char* argv[])
 
 void * worker(void * id) {
 	uint64_t tid = (uint64_t)id;
-    printf("Starting client worker: %lu\n", tid);
-    fflush(stdout);
+  printf("Starting client worker: %lu\n", tid);
+  fflush(stdout);
 	m_thds[tid].run();
 	return NULL;
 }
 
 void * nn_worker(void * id) {
 	uint64_t tid = (uint64_t)id;
-    printf("Starting client nn_worker: %lu\n", tid);
-    fflush(stdout);
+  printf("Starting client nn_worker: %lu\n", tid);
+  fflush(stdout);
 	m_thds[tid].run_remote();
+	return NULL;
+}
+
+void * send_worker(void * id) {
+	uint64_t tid = (uint64_t)id;
+  printf("Starting client send_worker: %lu\n", tid);
+  fflush(stdout);
+	m_thds[tid].run_send();
 	return NULL;
 }
 

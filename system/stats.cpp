@@ -195,6 +195,8 @@ void Stats_thd::clear() {
 	rtime_proc = 0;
 	time_unpack = 0;
 	lock_diff = 0;
+  mq_full = 0;
+  mbuf_send_time = 0;
   qq_full = 0;
   qq_cnt = 0;
   qq_lat = 0;
@@ -605,6 +607,8 @@ void Stats::print_prog(uint64_t tid) {
       ",msg_bytes=%ld"
       ",msg_rcv=%ld"
       ",msg_sent=%ld"
+      ",mbuf_send_time=%f"
+      ",mq_full=%f"
       ",qq_full=%f"
       ",qq_lat=%f"
       ",qry_cnt=%ld"
@@ -658,6 +662,8 @@ void Stats::print_prog(uint64_t tid) {
 			_stats[tid]->msg_bytes, 
 			_stats[tid]->msg_rcv_cnt, 
 			_stats[tid]->msg_sent_cnt, 
+			_stats[tid]->mbuf_send_time / BILLION,
+			_stats[tid]->mq_full / BILLION,
 			_stats[tid]->qq_full / BILLION,
 			_stats[tid]->qq_lat / _stats[tid]->qq_cnt,
 			qry_cnt,
@@ -721,6 +727,8 @@ void Stats::print(bool prog) {
 	double total_debug3 = 0;
 	double total_debug4 = 0;
 	double total_debug5 = 0;
+	double total_mq_full = 0;
+	double total_mbuf_send_time = 0;
 	double total_qq_full = 0;
 	double total_qq_cnt = 0;
 	double total_qq_lat = 0;
@@ -812,6 +820,8 @@ void Stats::print(bool prog) {
 		total_debug3 += _stats[tid]->debug3;
 		total_debug4 += _stats[tid]->debug4;
 		total_debug5 += _stats[tid]->debug5;
+		total_mbuf_send_time += _stats[tid]->mbuf_send_time;
+		total_mq_full += _stats[tid]->mq_full;
 		total_qq_full += _stats[tid]->qq_full;
 		total_qq_cnt += _stats[tid]->qq_cnt;
 		total_qq_lat += _stats[tid]->qq_lat;
@@ -927,6 +937,8 @@ void Stats::print(bool prog) {
       ",msg_bytes=%ld"
       ",msg_rcv=%ld"
       ",msg_sent=%ld"
+      ",mbuf_send_time=%f"
+      ",mq_full=%f"
       ",qq_full=%f"
       ",qq_lat=%f"
       ",qry_cnt=%ld"
@@ -999,6 +1011,8 @@ void Stats::print(bool prog) {
 			total_msg_bytes, 
 			total_msg_rcv_cnt, 
 			total_msg_sent_cnt, 
+			total_mbuf_send_time / BILLION,
+			total_mq_full / BILLION,
 			total_qq_full / BILLION,
 			total_qq_lat / total_qq_cnt / BILLION,
 			total_qry_cnt,

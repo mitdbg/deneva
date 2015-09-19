@@ -1,4 +1,3 @@
-
 #include "helper.h"
 #include "txn.h"
 #include "row.h"
@@ -19,6 +18,7 @@
 #include "vll.h"
 #include "ycsb_query.h"
 #include "tpcc_query.h"
+#include "msg_queue.h"
 
 void txn_man::init(thread_t * h_thd, workload * h_wl, uint64_t thd_id) {
 	this->h_thd = h_thd;
@@ -149,6 +149,13 @@ workload * txn_man::get_wl() {
 
 uint64_t txn_man::get_thd_id() {
 	return h_thd->get_thd_id();
+}
+
+base_query * txn_man::get_query() {
+	return myquery;
+}
+void txn_man::set_query(base_query * qry) {
+	myquery = qry;
 }
 
 uint64_t txn_man::get_node_id() {
@@ -519,7 +526,8 @@ RC txn_man::finish(base_query * query, bool fin) {
     query->dest_part = part_id;
     if(fin) {
       if(GET_NODE_ID(part_id) != g_node_id) {
-        query->remote_finish(query, part_node_id);    
+        //query->remote_finish(query, part_node_id);    
+        msg_queue.enqueue(query,RFIN,part_node_id);
       } else {
         assert(CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC);
          // Model after RFIN
@@ -547,7 +555,8 @@ RC txn_man::finish(base_query * query, bool fin) {
     } else {
       query->rc = RCOK;
       if(GET_NODE_ID(part_id) != g_node_id) {
-        query->remote_prepare(query, part_node_id);    
+        //query->remote_prepare(query, part_node_id);    
+        msg_queue.enqueue(query,RPREPARE,part_node_id);
       } else {
         assert(CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC);
          // Model after RPREP

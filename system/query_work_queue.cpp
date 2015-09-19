@@ -56,7 +56,12 @@ void QWorkQueue::add_abort_query(int tid, base_query * qry) {
 
 base_query * QWorkQueue::get_next_query(int tid) {
   int idx = get_idx(tid);
-  base_query * rtn_qry = queue[idx].get_next_query();
+  base_query * rtn_qry;
+  if(ISCLIENT) {
+    rtn_qry = queue[idx].get_next_query_client();
+  } else {
+    rtn_qry = queue[idx].get_next_query();
+  }
   if(rtn_qry) {
     ATOM_SUB(cnt,1);
   }
@@ -198,7 +203,7 @@ void QWorkQueueHelper::add_query(base_query * qry) {
   entry->qry = qry;
   entry->next  = NULL;
   entry->starttime = get_sys_clock();
-  assert(qry->rtype <= CL_RSP);
+  assert(qry->rtype <= NO_MSG);
 
   pthread_mutex_lock(&mtx);
 
@@ -272,6 +277,21 @@ void QWorkQueueHelper::remove_query(base_query* qry) {
 
 }
 
+base_query * QWorkQueueHelper::get_next_query_client() {
+  base_query * next_qry = NULL;
+
+  pthread_mutex_lock(&mtx);
+  if(cnt > 0) {
+    wq_entry_t next = head;
+    next_qry = next->qry;
+    LIST_REMOVE_HT(next,head,tail);
+    cnt--;
+
+    mem_allocator.free(next,sizeof(struct wq_entry));
+  }
+  pthread_mutex_unlock(&mtx);
+  return next_qry;
+}
 
 base_query * QWorkQueueHelper::get_next_query() {
   base_query * next_qry = NULL;
@@ -363,7 +383,7 @@ void QWorkQueueHelper::add_abort_query(base_query * qry) {
   entry->qry = qry;
   entry->next  = NULL;
   entry->starttime = get_sys_clock();
-  assert(qry->rtype <= CL_RSP);
+  assert(qry->rtype <= NO_MSG);
 
   pthread_mutex_lock(&mtx);
 

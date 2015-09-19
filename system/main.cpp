@@ -12,12 +12,14 @@
 #include "occ.h"
 #include "vll.h"
 #include "transport.h"
+#include "msg_queue.h"
 //#include <jemalloc.h>
 
 void * f(void *);
 void * g(void *);
 void * worker(void *);
 void * nn_worker(void *);
+void * send_worker(void *);
 void network_test();
 void network_test_recv();
 
@@ -105,6 +107,9 @@ int main(int argc, char* argv[])
   printf("Initializing abort queue... ");
   abort_queue.init();
   printf("Done\n");
+  printf("Initializing message queue... ");
+  msg_queue.init();
+  printf("Done\n");
   printf("Initializing transaction pool... ");
   txn_pool.init();
   printf("Done\n");
@@ -112,16 +117,18 @@ int main(int argc, char* argv[])
 	// 2. spawn multiple threads
 	uint64_t thd_cnt = g_thread_cnt;
 	uint64_t rthd_cnt = g_rem_thread_cnt;
+	uint64_t sthd_cnt = g_send_thread_cnt;
+  uint64_t all_thd_cnt = thd_cnt + rthd_cnt + sthd_cnt;
 	
 	pthread_t * p_thds = 
-		(pthread_t *) malloc(sizeof(pthread_t) * (thd_cnt + rthd_cnt));
+		(pthread_t *) malloc(sizeof(pthread_t) * (all_thd_cnt));
 	pthread_attr_t attr;
 	pthread_attr_init(&attr);
 	cpu_set_t cpus;
 #if CC_ALG == CALVIN
-	m_thds = new calvin_thread_t[thd_cnt + rthd_cnt];
+	m_thds = new calvin_thread_t[all_thd_cnt];
 #else
-	m_thds = new thread_t[thd_cnt + rthd_cnt];
+	m_thds = new thread_t[all_thd_cnt];
 #endif
 	// query_queue should be the last one to be initialized!!!
 	// because it collects txn latency
@@ -145,7 +152,7 @@ int main(int argc, char* argv[])
 
   printf("Initializing threads... ");
   fflush(stdout);
-	for (uint32_t i = 0; i < thd_cnt + rthd_cnt; i++) 
+	for (uint32_t i = 0; i < all_thd_cnt; i++) 
 		m_thds[i].init(i, g_node_id, m_wl);
   printf("Done\n");
   fflush(stdout);
@@ -168,11 +175,10 @@ int main(int argc, char* argv[])
 		printf("WARMUP finished!\n");
 	}
 	warmup_finish = true;
-	pthread_barrier_init( &warmup_bar, NULL, thd_cnt + rthd_cnt);
 #ifndef NOGRAPHITE
-	CarbonBarrierInit(&enable_barrier, thd_cnt+ rthd_cnt);
+	CarbonBarrierInit(&enable_barrier, all_thd_cnt);
 #endif
-	pthread_barrier_init( &warmup_bar, NULL, thd_cnt + rthd_cnt);
+	pthread_barrier_init( &warmup_bar, NULL, all_thd_cnt);
 
 	uint64_t cpu_cnt = 0;
 	// spawn and run txns again.
@@ -192,7 +198,11 @@ int main(int argc, char* argv[])
 		pthread_create(&p_thds[i], &attr, worker, (void *)vid);
   }
 
-	for (; i < thd_cnt + rthd_cnt -1; i++) {
+	for (; i < thd_cnt + sthd_cnt; i++) {
+		uint64_t vid = i;
+		pthread_create(&p_thds[i], &attr, send_worker, (void *)vid);
+  }
+	for (; i < thd_cnt + sthd_cnt + rthd_cnt -1; i++) {
 		uint64_t vid = i;
 		pthread_create(&p_thds[i], &attr, nn_worker, (void *)vid);
   }
@@ -200,7 +210,7 @@ int main(int argc, char* argv[])
 
   nn_worker((void *)(i));
 
-	for (i = 0; i < thd_cnt + rthd_cnt - 1; i++) 
+	for (i = 0; i < all_thd_cnt - 1; i++) 
 		pthread_join(p_thds[i], NULL);
 
 	endtime = get_server_clock();
@@ -228,7 +238,11 @@ void * nn_worker(void * id) {
 	return NULL;
 }
 
-
+void * send_worker(void * id) {
+	uint64_t tid = (uint64_t)id;
+	m_thds[tid].run_send();
+	return NULL;
+}
 
 void network_test() {
 

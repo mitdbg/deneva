@@ -6,6 +6,7 @@
 #include "remote_query.h"
 #include "ycsb_query.h"
 #include "tpcc_query.h"
+#include "msg_queue.h"
 
 /************************************************/
 // per-partition Manager
@@ -246,7 +247,8 @@ void PartMan::remote_rsp(bool l, RC rc, txn_man * txn) {
     txn_pool.restart_txn(txn->get_txn_id());
 #else
 */
-  rem_qry_man.ack_response(rc,txn);
+  //rem_qry_man.ack_response(rc,txn);
+  msg_queue.enqueue(txn->get_query(),RACK,GET_NODE_ID(txn->get_pid()));
 //#endif
   /*
   uint64_t pid = txn->get_pid();
@@ -318,7 +320,8 @@ RC Plock::lock(uint64_t * parts, uint64_t part_cnt, txn_man * txn) {
 			// Increment txn->ready_part; Pass txn to remote thr somehow?
 			// Have some Plock shared object and spin on that instead of txn object?
 			ATOM_ADD(txn->ready_part,1);
-			remote_qry(true, part_id, txn);
+			//remote_qry(true, part_id, txn);
+      msg_queue.enqueue(txn->get_query(),RLK,GET_NODE_ID(part_id));
 		}
 		if (rc == Abort || txn->rc == Abort)
 			break;
@@ -357,7 +360,8 @@ RC Plock::unlock(uint64_t * parts, uint64_t part_cnt, txn_man * txn) {
     }
 		else {
       ATOM_ADD(txn->ready_ulk,1);
-			remote_qry(false,part_id,txn);
+			//remote_qry(false,part_id,txn);
+      msg_queue.enqueue(txn->get_query(),RULK,GET_NODE_ID(part_id));
     }
 	}
   if(txn->ready_ulk > 0) {
@@ -399,6 +403,7 @@ void Plock::unpack(base_query * query, char * data) {
 	}
 }
 
+/*
 void Plock::remote_qry(bool l, uint64_t lid, txn_man * txn) {
 	assert(GET_NODE_ID(lid) != _node_id);
 	int num = 0;
@@ -429,6 +434,7 @@ void Plock::remote_qry(bool l, uint64_t lid, txn_man * txn) {
 
 	rem_qry_man.send_remote_query(GET_NODE_ID(lid),data,sizes,num);
 }
+*/
 
 RC Plock::rem_lock(uint64_t * parts, uint64_t part_cnt, txn_man * txn) {
   RC rc;

@@ -76,6 +76,7 @@ uint64_t tpcc_query::get_keys(uint64_t *& arr) {
 */
 
 // Note: If you ever change the number of parameters sent, change "total"
+/*
 void tpcc_query::remote_qry(base_query * query, int type, int dest_id) {
 
 #if DEBUG_DISTR
@@ -199,8 +200,10 @@ void tpcc_query::remote_qry(base_query * query, int type, int dest_id) {
 	// FIXME: Use tid as param
 	rem_qry_man.send_remote_query(dest_id, data, sizes, num);
 }
+*/
 
 // Note: If you ever change the number of parameters sent, change "total"
+/*
 void tpcc_query::remote_rsp(base_query * query) {
 	tpcc_query * m_query = (tpcc_query *) query;
 
@@ -237,6 +240,7 @@ void tpcc_query::remote_rsp(base_query * query) {
 	sizes[num++] = sizeof(m_query->o_id);
 	rem_qry_man.send_remote_rsp(m_query->return_id, data, sizes, num);
 }
+*/
 
 void tpcc_query::unpack_rsp(base_query * query, void * d) {
 	char * data = (char *) d;
@@ -351,6 +355,7 @@ void tpcc_query::unpack(base_query * query, void * d) {
 	}
 }
 
+/*
 void tpcc_query::client_query(base_query * query, uint64_t dest_id) {
 #if DEBUG_DISTR
     printf("Sending RTXN %lu\n",query->txn_id);
@@ -429,6 +434,7 @@ void tpcc_query::client_query(base_query * query, uint64_t dest_id) {
     }
 	rem_qry_man.send_remote_rsp(dest_id, data, sizes, num);
 }
+*/
 
 void tpcc_query::unpack_client(base_query * query, void * d) {
 	tpcc_query * m_query = (tpcc_query *) query;

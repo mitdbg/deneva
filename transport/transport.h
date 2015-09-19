@@ -54,6 +54,7 @@ class Transport {
 		void read_ifconfig(const char * ifaddr_file);
 		void init(uint64_t node_id);
 		uint64_t get_node_id();
+		void send_msg(uint64_t dest_id, void * sbuf);
 		void send_msg(uint64_t dest_id, void ** data, int * sizes, int num); 
 		//base_query * recv_msg();
 		void * recv_msg();

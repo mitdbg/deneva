@@ -48,6 +48,7 @@ public:
   void add_query(base_query * qry);
   void add_abort_query(base_query * qry);
   base_query * get_next_query();
+  base_query * get_next_query_client();
   void remove_query(base_query * qry);
   void done(uint64_t id);
   bool poll_abort(); 

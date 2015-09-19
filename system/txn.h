@@ -57,6 +57,8 @@ public:
 	workload * 		get_wl();
 	void 			set_txn_id(txnid_t txn_id);
 	txnid_t 		get_txn_id();
+  void set_query(base_query * qry);
+  base_query * get_query();
 
   void      set_pid(uint64_t pid);
   uint64_t get_pid();
@@ -132,6 +134,8 @@ public:
   // For HStore
   bool spec;
   bool spec_done;
+
+  base_query * myquery;
 
   // For performance measurements
   uint64_t starttime;

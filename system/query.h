@@ -8,7 +8,7 @@ class workload;
 class ycsb_query;
 class tpcc_query;
 
-enum RemReqType {INIT_DONE,EXP_DONE,RLK, RULK, RQRY, RFIN, RLK_RSP, RULK_RSP, RQRY_RSP, RACK, RTXN, RINIT, RPREPARE,RPASS,CL_RSP};
+//enum RemReqType {INIT_DONE,EXP_DONE,RLK, RULK, RQRY, RFIN, RLK_RSP, RULK_RSP, RQRY_RSP, RACK, RTXN, RINIT, RPREPARE,RPASS,CL_RSP,NO_MSG};
 
 class base_client_query {
   public:
@@ -16,12 +16,12 @@ class base_client_query {
     uint64_t return_id;
     uint64_t client_startts; // For sequencer
 	RemReqType rtype;
-    virtual void client_query(base_client_query * query, uint64_t dest_id) = 0; 
+    //virtual void client_query(base_client_query * query, uint64_t dest_id) = 0; 
     virtual void unpack_client(base_client_query * query, void * d) = 0; 
 
 	// calvin
-	virtual void client_query(base_client_query * query, uint64_t dest_id,
-			uint64_t batch_num, txnid_t txn_id) = 0;
+	//virtual void client_query(base_client_query * query, uint64_t dest_id,
+//			uint64_t batch_num, txnid_t txn_id) = 0;
 };
 
 class base_query {
@@ -30,7 +30,7 @@ public:
     virtual void reset() = 0;
     virtual void unpack_rsp(base_query * query, void * d) = 0;
     virtual void unpack(base_query * query, void * d) = 0;
-    virtual void client_query(base_query * query, uint64_t dest_id) = 0; 
+    //virtual void client_query(base_query * query, uint64_t dest_id) = 0; 
     virtual void unpack_client(base_query * query, void * d) = 0; 
     virtual base_query * merge(base_query * query) = 0;
 	uint64_t waiting_time;
@@ -69,6 +69,7 @@ public:
   uint64_t home_part;
   uint64_t active_part;
   uint64_t dest_part;
+	uint64_t dest_part_id;
 
   // Prevent unnecessary remote messages
   uint64_t part_touched_cnt;

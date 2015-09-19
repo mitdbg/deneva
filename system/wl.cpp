@@ -10,6 +10,7 @@
 
 RC workload::init() {
 	sim_done = false;
+	sim_init_done = false;
 	sim_timeout = false;
 	return RCOK;
 }

@@ -36,6 +36,8 @@ public:
 	double tot_run_time;
 	double run_time;
     double finish_time;
+  double mbuf_send_time;
+  double mq_full;
   double time_clock_rwait;
   double time_clock_wait;
   double time_work;

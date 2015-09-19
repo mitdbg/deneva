@@ -1,8 +1,0 @@
-R Add 2PC
-R Implement HStore speculative execution
-D Separate client/server nodes
-R Implement coordination avoidance (http://dl.acm.org/citation.cfm?id=2735508.2735509)
-D Implement Calvin CC algo (http://doi.acm.org/10.1145/2213836.2213838)
-Implement VLL CC algo (http://dl.acm.org/citation.cfm?id=2448936.2448947)
-? Implement Deadlock Detection CC algo
-Add more TPCC stored procedures (deliver, order status, stock-level)

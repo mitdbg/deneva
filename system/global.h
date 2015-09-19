@@ -28,6 +28,7 @@
 #include "dl_detect.h"
 #include "query_work_queue.h"
 #include "work_queue.h"
+//#include "msg_queue.h"
 #include "txn_pool.h"
 //#include "sequencer.h"
 #ifndef NOGRAPHITE
@@ -49,6 +50,7 @@ class Transport;
 class Remote_query;
 class TxnPool;
 class QWorkQueue;
+class MessageQueue;
 class Client_query_queue;
 class Client_txn;
 class Sequencer;
@@ -80,12 +82,14 @@ extern Remote_query rem_qry_man;
 extern TxnPool txn_pool;
 extern QWorkQueue work_queue;
 extern QWorkQueue abort_queue;
+extern MessageQueue msg_queue;
 extern Client_txn client_man;
 extern Sequencer seq_man;
 
 extern bool volatile warmup_finish;
 extern bool volatile enable_thread_mem_pool;
 extern pthread_barrier_t warmup_bar;
+extern pthread_barrier_t warmup_bar2;
 #ifndef NOGRAPHITE
 extern carbon_barrier_t enable_barrier;
 #endif
@@ -95,6 +99,7 @@ extern carbon_barrier_t enable_barrier;
 /******************************************/
 extern UInt32 g_client_thread_cnt;
 extern UInt32 g_client_rem_thread_cnt;
+extern UInt32 g_client_send_thread_cnt;
 extern UInt32 g_client_node_cnt;
 extern UInt32 g_servers_per_client;
 extern UInt32 g_server_start_node;
@@ -110,6 +115,7 @@ extern UInt32 g_node_cnt;
 extern UInt32 g_part_cnt;
 extern UInt32 g_virtual_part_cnt;
 extern UInt32 g_thread_cnt;
+extern UInt32 g_send_thread_cnt;
 extern UInt32 g_rem_thread_cnt;
 extern ts_t g_abort_penalty; 
 extern ts_t g_abort_penalty_max; 
@@ -122,6 +128,7 @@ extern ts_t g_dl_loop_detect;
 extern bool g_ts_batch_alloc;
 extern UInt32 g_ts_batch_num;
 extern int32_t g_inflight_max;
+extern uint64_t g_msg_size;
 
 extern bool g_hw_migrate;
 
@@ -151,6 +158,7 @@ extern UInt32 g_cust_per_dist;
 extern UInt32 g_seq_thread_cnt;
 
 enum RC { RCOK, Commit, Abort, WAIT, WAIT_REM, ERROR, FINISH, NONE };
+enum RemReqType {INIT_DONE,EXP_DONE,RLK, RULK, RQRY, RFIN, RLK_RSP, RULK_RSP, RQRY_RSP, RACK, RTXN, RINIT, RPREPARE,RPASS,CL_RSP,NO_MSG};
 
 /* Thread */
 typedef uint64_t txnid_t;
@@ -183,6 +191,8 @@ enum TsType {R_REQ, W_REQ, P_REQ, XP_REQ};
 #define GET_PART_ID(t,n)	(n) 
 #define GET_PART_ID_FROM_IDX(idx)	(g_node_id + idx * g_node_cnt) 
 #define GET_PART_ID_IDX(p)	(p / g_node_cnt) 
+#define ISSEQUENCER (g_node_id == g_node_cnt + g_client_node_cnt ) //FIXME: Is this the right formula?
+#define ISCLIENT (g_node_id >= g_node_cnt && g_node_id < g_node_cnt + g_client_node_cnt)
 
 /*
 #define GET_THREAD_ID(id)	(id % g_thread_cnt)

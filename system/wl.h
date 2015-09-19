@@ -39,6 +39,7 @@ public:
 	// get the global timestamp.
 //	uint64_t get_ts(uint64_t thread_id);
 	//uint64_t cur_txn_id;
+	bool sim_init_done;
 	bool sim_done;
 	bool sim_timeout;
 protected:

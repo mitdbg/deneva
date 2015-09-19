@@ -45,23 +45,23 @@ public:
 	void init(uint64_t node_id, workload * wl);
 	txn_man * get_txn_man(uint64_t thd_id, uint64_t node_id, uint64_t txn_id);
 	txn_man * save_txn_man(uint64_t thd_id, uint64_t node_id, uint64_t txn_id, txn_man * txn_to_save);
-	void remote_qry(base_query * query, int type, int dest_id, txn_man * txn);
-  void ack_response(RC rc, txn_man * txn);
-  void ack_response(base_query * query);
-	void send_init_done(uint64_t dest_part_id);
-	void send_exp_done(uint64_t dest_part_id);
-	void send_init(base_query * query, uint64_t dest_part_id);
-	void send_remote_query(uint64_t dest_id, void ** data, int * sizes, int num);
-  void remote_rsp(base_query * query, txn_man * txn);
-	void send_remote_rsp(uint64_t dest_id, void ** data, int * sizes, int num);
-    void send_client_rsp(base_query * query);
-	void send_client_rsp(txnid_t txn_id, RC rc, uint64_t client_startts,
-		uint32_t client_node_id); 
-	base_query * unpack(void * d, int len);
+	//void remote_qry(base_query * query, int type, int dest_id, txn_man * txn);
+  //void ack_response(RC rc, txn_man * txn);
+  //void ack_response(base_query * query);
+	//void send_init_done(uint64_t dest_part_id);
+	//void send_exp_done(uint64_t dest_part_id);
+	//void send_init(base_query * query, uint64_t dest_part_id);
+	//void send_remote_query(uint64_t dest_id, void ** data, int * sizes, int num);
+  //void remote_rsp(base_query * query, txn_man * txn);
+	//void send_remote_rsp(uint64_t dest_id, void ** data, int * sizes, int num);
+  //void send_client_rsp(base_query * query);
+	//void send_client_rsp(txnid_t txn_id, RC rc, uint64_t client_startts,
+	//uint32_t client_node_id); 
+	void unpack(void * d, uint64_t len);
+	//base_query * unpack(void * d, int len);
 	base_client_query * unpack_client_query(void * d, int len);
   
 	int q_idx;
-  //bool responses[MAX_TXN_PER_PART*2*3];
 	/*
 #if WORKLOAD == TPCC
 	tpcc_query * queries;

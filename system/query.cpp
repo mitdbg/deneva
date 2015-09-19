@@ -87,6 +87,7 @@ void base_query::update_rc(RC rc) {
 
 void base_query::set_txn_id(uint64_t _txn_id) { txn_id = _txn_id; } 
 
+/*
 void base_query::remote_prepare(base_query * query, int dest_id) {
   int total = 5;
 
@@ -125,6 +126,8 @@ void base_query::remote_prepare(base_query * query, int dest_id) {
 
   rem_qry_man.send_remote_query(dest_id, data, sizes, num);
 }
+*/
+/*
 void base_query::remote_finish(base_query * query, int dest_id) {
   int total = 5;
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
@@ -161,6 +164,7 @@ void base_query::remote_finish(base_query * query, int dest_id) {
 
   rem_qry_man.send_remote_query(dest_id, data, sizes, num);
 }
+*/
 
 void base_query::unpack_finish(base_query * query, void * d) {
     char * data = (char *) d;

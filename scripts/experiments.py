@@ -13,17 +13,16 @@ fmt_nt = [["NODE_CNT","CLIENT_NODE_CNT","NETWORK_TEST"]]
 
 def test():
     fmt = fmt_ycsb
-    nnodes = [1,2]
-    nmpr=[0,100]
-#nalgos=['VLL']
-    nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','VLL','TIMESTAMP']
+    nnodes = [1,2,4,8]
+    nmpr=[100]
+    nalgos=['NO_WAIT']
     nthreads=[3]
     nrthreads=[1]
     ncthreads=[2]
     ncrthreads=[1]
-    ntifs=[1500,2500]
-    nzipf=[0.0,0.9]
-    nwr_perc=[0.0,1.0]
+    ntifs=[4000,5000,6000,7000]
+    nzipf=[0.0]
+    nwr_perc=[0.0]
     ntxn=[1000000]
     nparts = [2]
     exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,txn,'YCSB',cc,m,ct,crt,t,rt,tif,z,1.0-wp,wp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n] for n,ct,crt,t,rt,tif,z,wp,m,cc,p,txn in itertools.product(nnodes,ncthreads,ncrthreads,nthreads,nrthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts,ntxn)]
@@ -33,17 +32,19 @@ def test_plot(summary,summary_client):
     from plot_helper import tput
     fmt,exp = test()
     fmt = ["CLIENT_NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","MPR","CLIENT_THREAD_CNT","CLIENT_REM_THREAD_CNT","THREAD_CNT","REM_THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC","PART_PER_TXN"]
+    nnodes = [1,2,4,8]
     x_name = "NODE_CNT"
-    x_vals = [1,2]
+    x_vals = nnodes
     nthreads=3
     nrthreads=1
     ncthreads=2
     ncrthreads=1
-    nmpr=[0,100]
-    ntifs=[1500,2500]
-    nzipf=[0.0,0.9]
-    nwr_perc=[0.0,1.0]
-    nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','VLL','TIMESTAMP']
+    nmpr=[100]
+    nzipf=[0.0]
+    ntifs=[4000,5000,6000,7000]
+    nwr_perc=[0.0]
+    nalgos=['NO_WAIT']
+#nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','VLL','TIMESTAMP']
     nparts = [2]
 
     v_vals = nalgos
@@ -52,6 +53,14 @@ def test_plot(summary,summary_client):
         c = [1,1000000,"YCSB",mpr,ncthreads,ncrthreads,nthreads,nrthreads,ntif,zipf,1.0-wr,wr,parts]
         assert(len(c) == len(fmt))
         title = "YCSB System Throughput {}% Writes, {} Skew {} MPR {}".format(wr*100,zipf,mpr,ntif);
+        tput(x_vals,v_vals,summary,cfg_fmt=fmt,cfg=c,xname=x_name,vname=v_name,title=title)
+    x_vals = ntifs
+    x_name = "MAX_TXN_IN_FLIGHT"
+    fmt = ["CLIENT_NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","MPR","CLIENT_THREAD_CNT","CLIENT_REM_THREAD_CNT","THREAD_CNT","REM_THREAD_CNT","NODE_CNT","ZIPF_THETA","READ_PERC","WRITE_PERC","PART_PER_TXN"]
+    for mpr,wr,zipf,parts,ncc in itertools.product(nmpr,nwr_perc,nzipf,nparts,nnodes):
+        c = [1,1000000,"YCSB",mpr,ncthreads,ncrthreads,nthreads,nrthreads,ncc,zipf,1.0-wr,wr,parts]
+        assert(len(c) == len(fmt))
+        title = "YCSB System Throughput {}% Writes, {} Skew {} MPR {}".format(wr*100,zipf,mpr,ncc);
         tput(x_vals,v_vals,summary,cfg_fmt=fmt,cfg=c,xname=x_name,vname=v_name,title=title)
 
 # Performance: throughput vs. node count

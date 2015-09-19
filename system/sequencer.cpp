@@ -7,6 +7,7 @@
 #include "transport.h"
 #include "wl.h"
 #include "helper.h"
+#include "msg_queue.h"
 
 void Sequencer::init(workload * wl) {
 	fill_queue = new WorkQueue();
@@ -47,8 +48,10 @@ void Sequencer::process_txn_ack(base_client_query *query, uint64_t thd_id) {
 	// If we have all acks for this batch, send qry responses to all clients
 	if (txns_left == 0) {
 		for (uint32_t i = 0; i < wait_list_size; ++i) {
-			qlite next = wait_list[i];
-			rem_qry_man.send_client_rsp(i,RCOK,next.client_startts,next.client_id);	
+			//qlite next = wait_list[i];
+      //FIXME
+			//rem_qry_man.send_client_rsp(i,RCOK,next.client_startts,next.client_id);	
+      //msg_queue.enqueue(m_query,CL_RSP,m_query->client_id);
 		}
 		free(wait_list);
 		wait_list = NULL;
@@ -109,11 +112,11 @@ void Sequencer::prepare_next_batch(uint64_t thd_id) {
 	// TODO: incrementing next_txn_id & next_batch_id is thread-safe
 	// only if a single thread is doing the processing.
 	next_txn_id = 0;
-	uint64_t batch_id = next_batch_id++;
+	//uint64_t batch_id = next_batch_id++;
 	for (uint32_t i = 0; i < wait_list_size; ++i) {
 		query = (base_client_query *) batch_queue->get_next_entry();
 		assert(query != NULL);
-		txnid_t txn_id = next_txn_id++;
+		//txnid_t txn_id = next_txn_id++;
 		uint32_t server_ack_cnt = 0;
 #if WORKLOAD == YCSB
 		// reset request counts
@@ -152,7 +155,8 @@ void Sequencer::prepare_next_batch(uint64_t thd_id) {
 #if DEBUG_DIST
 				printf("sequencer: sending RTXN to %lu\n",j);
 #endif
-				query->client_query(&node_queries[j],j,batch_id,txn_id);
+				//query->client_query(&node_queries[j],j,batch_id,txn_id);
+        msg_queue.enqueue((base_query*)&node_queries[j],RTXN,j);
 			}
 		}
 
@@ -247,6 +251,12 @@ RC Seq_thread_t::run_remote() {
 	}
 	pthread_barrier_wait( &warmup_bar );
 	stats.init(get_thd_id());
+	base_client_query * m_query = NULL;
+#if WORKLOAD == YCSB
+    m_query = new ycsb_client_query;
+#elif WORKLOAD == TPCC
+    m_query = new tpcc_client_query;
+#endif
 
 	// Send init messages
 	if( _thd_id == 0) {
@@ -254,12 +264,12 @@ RC Seq_thread_t::run_remote() {
 
 		for(uint64_t i = 0; i < total_nodes; i++) {
 			if(i != g_node_id) {
-				rem_qry_man.send_init_done(i);
+				//rem_qry_man.send_init_done(i);
+        msg_queue.enqueue((base_query*)m_query,INIT_DONE,i);
 			}
 		}
 	}
 
-	base_client_query * m_query = NULL;
 
 	// Send start msg to all nodes; wait for rsp from all nodes before continuing.
 	//int rsp_cnt = g_node_cnt + g_client_node_cnt;

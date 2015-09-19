@@ -130,6 +130,22 @@ uint64_t Transport::get_node_id() {
 	return _node_id;
 }
 
+void Transport::send_msg(uint64_t dest_id, void * sbuf) {
+  uint64_t starttime = get_sys_clock();
+
+	int rc= s[dest_id].sock.send(&sbuf,NN_MSG,0);
+
+	// Check for a send error
+	if(rc < 0) {
+		printf("send Error: %d %s\n",errno,strerror(errno));
+		assert(false);
+	}
+
+  INC_STATS(_thd_id,time_tport_send,get_sys_clock() - starttime);
+	INC_STATS(_thd_id,msg_sent_cnt,1);
+	INC_STATS(_thd_id,msg_bytes,g_msg_size);
+}
+
 void Transport::send_msg(uint64_t dest_id, void ** data, int * sizes, int num) {
     uint64_t starttime = get_sys_clock();
 #if CC_ALG == CALVIN
@@ -277,28 +293,21 @@ void * Transport::recv_msg() {
 		return 0;
 	}
 
-	// Queue request for thread to execute
-	// Unpack request
-
-
 	// Calculate time of message delay
+  /*
 	ts_t time;
 	memcpy(&time,&((char*)buf)[bytes-sizeof(ts_t)],sizeof(ts_t));
-
-//#if NETWORK_DELAY > 0 && TPORT_TYPE_IPC
-//    // Insert artificial network delay
-//    ts_t nd_starttime = time;
-//    while( (get_sys_clock() - nd_starttime) < NETWORK_DELAY) {}
-//#endif
+  */
 
 	ts_t time2 = get_sys_clock();
-	INC_STATS(_thd_id,tport_lat,time2 - time);
+	//INC_STATS(_thd_id,tport_lat,time2 - time);
 
-    INC_STATS(_thd_id,time_tport_rcv, time2 - starttime);
+  INC_STATS(_thd_id,time_tport_rcv, time2 - starttime);
 
-	ts_t start = get_sys_clock();
+	starttime = get_sys_clock();
 	INC_STATS(_thd_id,msg_rcv_cnt,1);
 
+  /*
 	uint32_t return_id __attribute__ ((unused)); // for debug only
 	uint32_t dest_id;
 #if CC_ALG == CALVIN
@@ -316,13 +325,19 @@ void * Transport::recv_msg() {
 	return_id = ((base_query *)query)->return_id;
 	dest_id = ((base_query *)query)->dest_id;
 #endif
+*/
+  if(CC_ALG == CALVIN && ISSEQUENCER) {
+    rem_qry_man.unpack_client_query(buf,bytes);
+  } else {
+    rem_qry_man.unpack(buf,bytes);
+  }
 
 	//DEBUG("Msg delay: %d->%d, %d bytes, %f s\n",return_id,
   //          dest_id,bytes,((float)(time2-time))/BILLION);
 	nn::freemsg(buf);	
-    assert(dest_id == get_node_id());
+  //assert(dest_id == get_node_id());
 
-	INC_STATS(_thd_id,time_unpack,get_sys_clock()-start);
+	INC_STATS(_thd_id,time_unpack,get_sys_clock()-starttime);
 	return query;
 }
 

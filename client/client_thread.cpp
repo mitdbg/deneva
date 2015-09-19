@@ -8,6 +8,8 @@
 #include "test.h"
 #include "transport.h"
 #include "client_txn.h"
+#include "msg_thread.h"
+#include "msg_queue.h"
 
 void Client_thread_t::init(uint64_t thd_id, uint64_t node_id, workload * workload) {
 	_thd_id = thd_id;
@@ -37,17 +39,32 @@ RC Client_thread_t::run_remote() {
 	stats.init(get_thd_id());
 	// Send start msg to all nodes; wait for rsp from all nodes before continuing.
 	int rsp_cnt = g_node_cnt + g_client_node_cnt - 1;
-	int done_cnt = g_node_cnt + g_client_node_cnt - 1;
 #if CC_ALG == CALVIN
 	rsp_cnt++;	// Account for sequencer node
 #endif
+	int done_cnt = g_node_cnt + g_client_node_cnt - 1;
 	int32_t inf;
-    uint32_t return_node_offset;
+  uint32_t return_node_offset;
 	//int rsp_cnts[g_node_cnt];
 	//memset(rsp_cnts, 0, g_node_cnt * sizeof(int));
 
+  if(_thd_id == g_client_thread_cnt + g_client_rem_thread_cnt + g_client_send_thread_cnt - 1) {
+    while(!_wl->sim_init_done) {
+      tport_man.recv_msg();
+      while((m_query = work_queue.get_next_query(get_thd_id())) != NULL) {
+        assert(m_query->rtype == INIT_DONE);
+        printf("Received INIT_DONE from node %u\n",m_query->return_id);
+        ATOM_SUB(rsp_cnt,1);
+        if(rsp_cnt ==0) {
+          if( !ATOM_CAS(_wl->sim_init_done, false, true) )
+            assert( _wl->sim_init_done);
+        }
+      }
+    }
+  }
 	int rsp_cnts[g_servers_per_client];
 	memset(rsp_cnts, 0, g_servers_per_client * sizeof(int));
+  /*
   if(_thd_id == g_client_thread_cnt) {
 	while(rsp_cnt > 0) {
 		m_query = (base_query *) tport_man.recv_msg();
@@ -79,6 +96,7 @@ RC Client_thread_t::run_remote() {
 		}
 	}
   }
+  */
 	pthread_barrier_wait( &warmup_bar );
 	printf("Run_remote %ld:%ld\n",_node_id, _thd_id);
 
@@ -88,9 +106,41 @@ RC Client_thread_t::run_remote() {
 	uint64_t run_starttime = get_sys_clock();
 
 	while (true) {
-		  if(get_sys_clock() - run_starttime >= DONE_TIMER) {
-			  return FINISH;
-      }
+    if(get_sys_clock() - run_starttime >= DONE_TIMER) {
+      return FINISH;
+    }
+		tport_man.recv_msg();
+    while((m_query = work_queue.get_next_query(get_thd_id())) != NULL) {
+			rq_time = get_sys_clock();
+			assert(m_query->rtype == CL_RSP || m_query->rtype == EXP_DONE);
+			assert(m_query->dest_id == g_node_id);
+			switch (m_query->rtype) {
+				case CL_RSP:
+#if CC_ALG == CALVIN
+					assert(m_query->return_id == g_node_cnt + g_client_node_cnt);
+					return_node_offset = 0;
+#else
+          return_node_offset = m_query->return_id - g_server_start_node;
+          assert(return_node_offset < g_servers_per_client);
+#endif
+		      rsp_cnts[return_node_offset]++;
+					inf = client_man.dec_inflight(return_node_offset);
+          assert(inf >=0);
+					break;
+        case EXP_DONE:
+          done_cnt--;
+          break;
+				default:
+					assert(false);
+			}
+#if WORKLOAD == YCSB
+      mem_allocator.free(m_query,sizeof(ycsb_query));
+#elif WORKLOAD == TPCC
+      mem_allocator.free(m_query,sizeof(tpcc_query));
+#endif
+    }
+
+      /*
 		m_query = (base_query *) tport_man.recv_msg();
 		if( m_query != NULL ) { 
 			rq_time = get_sys_clock();
@@ -124,6 +174,7 @@ RC Client_thread_t::run_remote() {
       mem_allocator.free(m_query,sizeof(tpcc_query));
 #endif
 		}
+    */
 		ts_t tend = get_sys_clock(); 
 		if (warmup_finish && _wl->sim_done && ((tend - rq_time) > MSG_TIMEOUT)) {
 			if( !ATOM_CAS(_wl->sim_timeout, false, true) )
@@ -161,6 +212,30 @@ RC Client_thread_t::run_remote() {
 	}
 }
 
+RC Client_thread_t::run_send() {
+	printf("Run_send %ld:%ld\n",_node_id, _thd_id);
+  fflush(stdout);
+	if (warmup_finish) {
+		mem_allocator.register_thread(_thd_id);
+	}
+	pthread_barrier_wait( &warmup_bar );
+	stats.init(get_thd_id());
+
+  MessageThread messager;
+  messager.init(_thd_id);
+
+	pthread_barrier_wait( &warmup_bar );
+	printf("Run_send %ld:%ld\n",_node_id, _thd_id);
+  fflush(stdout);
+
+	while (true) {
+    messager.run();
+		if (_wl->sim_done && _wl->sim_timeout) {
+			return FINISH;
+    }
+  }
+
+}
 RC Client_thread_t::run() {
 	printf("Run %ld:%ld\n",_node_id, _thd_id);
 #if !NOGRAPHITE
@@ -171,15 +246,22 @@ RC Client_thread_t::run() {
 	}
 	pthread_barrier_wait( &warmup_bar );
 	stats.init(get_thd_id());
+	base_client_query * m_query = NULL;
 
 	if( _thd_id == 0) {
+#if WORKLOAD == YCSB
+    m_query = new ycsb_client_query;
+#elif WORKLOAD == TPCC
+    m_query = new tpcc_client_query;
+#endif
 		uint64_t nnodes = g_node_cnt + g_client_node_cnt;
 #if CC_ALG == CALVIN
 		nnodes++;
 #endif
 		for(uint64_t i = 0; i < nnodes; i++) {
 			if(i != g_node_id) {
-				rem_qry_man.send_init_done(i);
+				//rem_qry_man.send_init_done(i);
+        msg_queue.enqueue((base_query*)m_query,INIT_DONE,i);
 			}
 		}
 	}
@@ -188,7 +270,6 @@ RC Client_thread_t::run() {
 
 	myrand rdm;
 	rdm.init(get_thd_id());
-	base_client_query * m_query = NULL;
 	//base_query * m_query = NULL;
 
 	uint64_t iters = 0;
@@ -235,11 +316,14 @@ RC Client_thread_t::run() {
 		}
 #endif
 
+    /*
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
 		m_query->client_query(m_query, m_query->pid);
 #else
 		m_query->client_query(m_query, GET_NODE_ID(m_query->pid));
 #endif
+*/
+    msg_queue.enqueue((base_query*)m_query,RTXN,GET_NODE_ID(m_query->pid));
 		num_txns_sent++;
 		txns_sent[GET_NODE_ID(m_query->pid)-g_server_start_node]++;
     INC_STATS(get_thd_id(),txn_sent,1);
@@ -268,9 +352,13 @@ RC Client_thread_t::run() {
 #if CC_ALG == CALVIN
 		nnodes++;
 #endif
+#if WORKLOAD == YCSB
+    m_query = new ycsb_client_query;
+#endif
 		for(uint64_t i = 0; i < nnodes; i++) {
 			if(i != g_node_id) {
-				rem_qry_man.send_exp_done(i);
+				//rem_qry_man.send_exp_done(i);
+        msg_queue.enqueue((base_query*)m_query,EXP_DONE,i);
 			}
 		}
   }
