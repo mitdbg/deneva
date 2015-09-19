@@ -54,7 +54,6 @@ RC thread_t::run_remote() {
 	rsp_cnt++;	// Account for sequencer node
 #endif
 */
-	int done_cnt = g_node_cnt + g_client_node_cnt - 1;
     /*
   if(_thd_id == g_thread_cnt) {
 	while(rsp_cnt > 0) {
@@ -94,7 +93,9 @@ RC thread_t::run_remote() {
 	ts_t rq_time = get_sys_clock();
 
 	while (true) {
-    tport_man.recv_msg();
+    if(tport_man.recv_msg()) {
+      rq_time = get_sys_clock();
+    }
     /*
 		m_query = (base_query *) tport_man.recv_msg();
 		if( m_query != NULL ) { 
@@ -116,13 +117,6 @@ RC thread_t::run_remote() {
 			if( !ATOM_CAS(_wl->sim_timeout, false, true) )
 				assert( _wl->sim_timeout);
 		}
-
-    if(warmup_finish && done_cnt == 0) {
-			if( !ATOM_CAS(_wl->sim_timeout, false, true) )
-				assert( _wl->sim_timeout);
-			if( !ATOM_CAS(_wl->sim_done, false, true) )
-				assert( _wl->sim_done);
-    }
 
 		if ((_wl->sim_done && _wl->sim_timeout) || (tend - run_starttime >= DONE_TIMER)) {
 #if !NOGRAPHITE
@@ -233,7 +227,6 @@ RC thread_t::run() {
 #endif
 
 	base_query * tmp_query = NULL;
-	uint64_t txn_cnt = 0;
 	uint64_t txn_st_cnt = 0;
 	uint64_t thd_txn_id = 0;
 	uint64_t starttime;
@@ -264,7 +257,7 @@ RC thread_t::run() {
 
 			    stats.print(true);
             }
-            if (!txns_completed && stats.get_txn_cnts() >= MAX_TXN_PER_PART) {
+            if (!txns_completed && _wl->txn_cnt >= MAX_TXN_PER_PART) {
                 assert (stats._stats[get_thd_id()]->finish_time == 0);
                 txns_completed = true;
                 printf("Setting final finish time\n");
@@ -273,26 +266,31 @@ RC thread_t::run() {
             }
 		}
 
+    if((get_sys_clock() - run_starttime >= DONE_TIMER)
+        || (_wl->txn_cnt >= MAX_TXN_PER_PART 
+          && txn_pool.empty(get_node_id()))) {
+        if( !ATOM_CAS(_wl->sim_done, false, true) )
+          assert( _wl->sim_done);
+        stoptime = get_sys_clock();
+    }
+
 		while(!work_queue.poll_next_query(get_thd_id())
                 && !abort_queue.poll_abort(get_thd_id())
-                && (NETWORK_DELAY > 0 && !tport_man.delay_queue->poll_next_entry())
                 && !_wl->sim_done && !_wl->sim_timeout) {
 #if CC_ALG == HSTORE_SPEC
       txn_pool.spec_next(_thd_id);
 #endif
-      // FIXME: Probably slow.
-		if (warmup_finish && ((get_sys_clock() - run_starttime >= DONE_TIMER) || (txn_st_cnt >= MAX_TXN_PER_PART/g_thread_cnt && txn_pool.empty(get_node_id())))) {
-			if( !ATOM_CAS(_wl->sim_done, false, true) )
-				assert( _wl->sim_done);
-			stoptime = get_sys_clock();
-		}
+      if (warmup_finish && 
+          ((get_sys_clock() - run_starttime >= DONE_TIMER) 
+           || (_wl->txn_cnt >= MAX_TXN_PER_PART
+           && txn_pool.empty(get_node_id())))) {
+        break;
+      }
     }
 
 		// End conditions
-		if ((_wl->sim_done && _wl->sim_timeout) || (get_sys_clock() - run_starttime >= DONE_TIMER)) {
-#if !NOGRAPHITE
-			CarbonDisableModelsBarrier(&enable_barrier);
-#endif
+    if((get_sys_clock() - run_starttime >= DONE_TIMER)
+        ||(_wl->sim_done && _wl->sim_timeout)) { 
 			uint64_t currtime = get_sys_clock();
       if(stoptime == 0)
         stoptime = currtime;
@@ -306,20 +304,19 @@ RC thread_t::run() {
         work_queue.finish(currtime);
         abort_queue.abort_finish(currtime);
 
-      // Send EXP_DONE to all nodes
-		uint64_t nnodes = g_node_cnt + g_client_node_cnt;
+        // Send EXP_DONE to all nodes
+        uint64_t nnodes = g_node_cnt + g_client_node_cnt;
 #if CC_ALG == CALVIN
-		nnodes++;
+        nnodes++;
 #endif
 #if WORKLOAD == YCSB
-    m_query = new ycsb_query;
+        m_query = new ycsb_query;
 #endif
-		for(uint64_t i = 0; i < nnodes; i++) {
-			if(i != g_node_id) {
-				//rem_qry_man.send_exp_done(i);
-        msg_queue.enqueue(NULL,EXP_DONE,i);
-			}
-		}
+        for(uint64_t i = 0; i < nnodes; i++) {
+          if(i != g_node_id) {
+            msg_queue.enqueue(NULL,EXP_DONE,i);
+          }
+        }
       }
 			return FINISH;
 		}
@@ -328,10 +325,6 @@ RC thread_t::run() {
 		if((m_query = abort_queue.get_next_abort_query(get_thd_id())) != NULL) {
       work_queue.add_query(_thd_id,m_query);
     }
-
-#if NETWORK_DELAY > 0
-    tport_man.check_delayed_messages();
-#endif
 
     // Get next query from work queue
 		if((m_query = work_queue.get_next_query(get_thd_id())) == NULL)
@@ -346,6 +339,17 @@ RC thread_t::run() {
     assert(debug2 <= NO_MSG);
 
 		switch(m_query->rtype) {
+      case EXP_DONE:
+        DEBUG("Received EXP_DONE from %ld\n",m_query->return_id)
+        ATOM_SUB(_wl->done_cnt,1);
+        if(_wl->done_cnt == 0) {
+          if( !ATOM_CAS(_wl->sim_timeout, false, true) )
+            assert( _wl->sim_timeout);
+          if( !ATOM_CAS(_wl->sim_done, false, true) )
+            assert( _wl->sim_done);
+        }
+        m_query = NULL;
+        break;
 			case RPASS:
 				m_txn = txn_pool.get_txn(m_query->return_id, m_query->txn_id);
 				assert(m_txn != NULL);
@@ -358,7 +362,7 @@ RC thread_t::run() {
         assert(CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || CC_ALG == VLL);
 				assert( ((CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC) 
               && m_query->home_part != GET_PART_ID_FROM_IDX(_thd_id)) 
-              || m_query->txn_id % g_node_cnt != g_node_id);
+              || IS_REMOTE(m_query->txn_id));
 
 				// Set up txn_pool
         if((CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC) && m_query->txn_id % g_node_cnt == g_node_id) {
@@ -405,7 +409,7 @@ RC thread_t::run() {
 			case RPREPARE: {
         DEBUG("%ld Received RPREPARE %ld\n",GET_PART_ID_FROM_IDX(_thd_id),m_query->txn_id);
 				INC_STATS(0,rprep,1);
-				assert(CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || m_query->txn_id % g_node_cnt != g_node_id);
+				assert(CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || IS_REMOTE(m_query->txn_id));
 
 				m_txn = txn_pool.get_txn(m_query->return_id, m_query->txn_id);
 				bool validate = true;
@@ -439,7 +443,7 @@ RC thread_t::run() {
           if(validate)
 					  m_query->rc = rc;
 				  //rem_qry_man.ack_response(m_query);
-          msg_queue.enqueue((void*)m_query,RACK,m_query->return_id);
+          msg_queue.enqueue(m_query,RACK,m_query->return_id);
         } else {
           m_query->local_rack_query();
         }
@@ -455,7 +459,7 @@ RC thread_t::run() {
 			}
 			case RQRY:
 				INC_STATS(0,rqry,1);
-				assert(CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || m_query->txn_id % g_node_cnt != g_node_id);
+				assert(CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || IS_REMOTE(m_query->txn_id));
         assert(CC_ALG != VLL || m_query->rc != Abort);
 
 				// Theoretically, we could send multiple queries to one node,
@@ -508,15 +512,17 @@ RC thread_t::run() {
 					//rem_qry_man.remote_rsp(m_query,m_txn);
           msg_queue.enqueue(m_query,RQRY_RSP,m_query->return_id);
         }
+        /*
 #if QRY_ONLY
 				txn_pool.delete_txn(m_query->return_id, m_query->txn_id);
 #endif
+*/
         m_query = NULL;
 				break;
 			case RQRY_RSP:
 				DEBUG("%ld Received RQRY_RSP %ld\n",GET_PART_ID_FROM_IDX(_thd_id),m_query->txn_id);
 				INC_STATS(0,rqry_rsp,1);
-				assert(m_query->txn_id % g_node_cnt == g_node_id);
+				assert(IS_LOCAL(m_query->txn_id));
 
 				m_txn = txn_pool.get_txn(g_node_id, m_query->txn_id);
 				assert(m_txn != NULL);
@@ -555,7 +561,7 @@ RC thread_t::run() {
         } else {
           INC_STATS(_thd_id,txn_rem_cnt,1);
         }
-				assert(CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || m_query->txn_id % g_node_cnt != g_node_id);
+				assert(CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || IS_REMOTE(m_query->txn_id));
 
 				m_txn = txn_pool.get_txn(m_query->return_id, m_query->txn_id);
 				bool finish = true;
@@ -598,11 +604,13 @@ RC thread_t::run() {
           m_query->local_rack_query();
         }
 
+        /*
 				if (finish) {
           if(GET_NODE_ID(m_query->home_part) != g_node_id || GET_PART_ID_IDX(m_query->home_part) == _thd_id) {
 					  txn_pool.delete_txn(m_query->return_id, m_query->txn_id);
           } 
         }
+        */
 #else // NOT CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
         if(m_txn) {
           m_txn->register_thd(this);
@@ -618,10 +626,13 @@ RC thread_t::run() {
 					m_txn->rem_fin_txn(m_query);
         }
 				  //rem_qry_man.ack_response(m_query);
+        // m_query is used by send thread; do not free
           msg_queue.enqueue(m_query,RACK,m_query->return_id);
+          /*
 				if (finish) {
 					txn_pool.delete_txn(m_query->return_id, m_query->txn_id);
         }
+        */
 #endif
 
 				m_query = NULL;
@@ -630,7 +641,7 @@ RC thread_t::run() {
 			case RACK:
 				DEBUG("%ld Received RACK %ld\n",GET_PART_ID_FROM_IDX(_thd_id),m_query->txn_id);
 				INC_STATS(0,rack,1);
-				assert(m_query->txn_id % g_node_cnt == g_node_id);
+				assert(IS_LOCAL(m_query->txn_id));
 				assert(!(CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC) || GET_PART_ID_IDX(m_query->home_part) == _thd_id);
 
 				m_txn = txn_pool.get_txn(g_node_id, m_query->txn_id);
@@ -1012,8 +1023,8 @@ RC thread_t::run() {
 					// Send result back to client
 					//rem_qry_man.send_client_rsp(m_query);
           msg_queue.enqueue(m_query,CL_RSP,m_query->client_id);
-					txn_pool.delete_txn(g_node_id,m_query->txn_id);
-					txn_cnt++;
+					//txn_pool.delete_txn(g_node_id,m_query->txn_id);
+					ATOM_ADD(_wl->txn_cnt,1);
 
 					break;
 
@@ -1031,8 +1042,8 @@ RC thread_t::run() {
 		      timespan = get_sys_clock() - m_txn->starttime;
 		      INC_STATS(get_thd_id(), run_time, timespan);
 		      INC_STATS(get_thd_id(), latency, timespan);
-        txn_pool.delete_txn(g_node_id,m_query->txn_id);
-        txn_cnt++;
+        //txn_pool.delete_txn(g_node_id,m_query->txn_id);
+					ATOM_ADD(_wl->txn_cnt,1);
         //ATOM_SUB(txn_pool.inflight_cnt,1);
 					//rem_qry_man.send_client_rsp(m_query);
           msg_queue.enqueue(m_query,CL_RSP,m_query->client_id);
@@ -1124,23 +1135,6 @@ RC thread_t::run() {
 
 		timespan = get_sys_clock() - starttime;
 		INC_STATS(get_thd_id(),time_work,timespan);
-
-		if (!warmup_finish && txn_st_cnt >= WARMUP / g_thread_cnt) 
-		{
-			stats.clear( get_thd_id() );
-#if !NOGRAPHITE
-			CarbonDisableModelsBarrier(&enable_barrier);
-#endif
-			return FINISH;
-		}
-
-		if (warmup_finish && ((get_sys_clock() - run_starttime >= DONE_TIMER) || (txn_st_cnt >= MAX_TXN_PER_PART/g_thread_cnt && txn_pool.empty(get_node_id())))) {
-			//assert(txn_cnt == MAX_TXN_PER_PART);
-			if( !ATOM_CAS(_wl->sim_done, false, true) )
-				assert( _wl->sim_done);
-			stoptime = get_sys_clock();
-		}
-
 
 	}
 

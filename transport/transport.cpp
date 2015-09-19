@@ -264,11 +264,10 @@ void Transport::send_msg_no_delay(DelayMessage * msg) {
 }
 
 // Listens to socket for messages from other nodes
-void * Transport::recv_msg() {
+bool Transport::recv_msg() {
 	int bytes = 0;
 	void * buf;
-    void * query = NULL;
-    uint64_t starttime = get_sys_clock();
+  uint64_t starttime = get_sys_clock();
 	
 	for(uint64_t i=0;i<_node_cnt;i++) {
 		bytes = s[rr++ % _node_cnt].sock.recv(&buf, NN_MSG, NN_DONTWAIT);
@@ -290,7 +289,7 @@ void * Transport::recv_msg() {
 	}
 	// Discard any messages not intended for this node
 	if(bytes <= 0 ) {
-		return 0;
+    return false;
 	}
 
 	// Calculate time of message delay
@@ -338,7 +337,7 @@ void * Transport::recv_msg() {
   //assert(dest_id == get_node_id());
 
 	INC_STATS(_thd_id,time_unpack,get_sys_clock()-starttime);
-	return query;
+  return true;
 }
 
 void Transport::simple_send_msg(int size) {

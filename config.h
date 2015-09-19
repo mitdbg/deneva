@@ -6,7 +6,7 @@
 // Simulation + Hardware
 /***********************************************/
 #define NODE_CNT 2
-#define THREAD_CNT 1
+#define THREAD_CNT 2
 #define REM_THREAD_CNT 1
 #define SEND_THREAD_CNT 1
 // PART_CNT should be at least NODE_CNT
@@ -31,10 +31,10 @@
 #define WORKLOAD YCSB
 // print the transaction latency distribution
 #define PRT_LAT_DISTR false
-#define STATS_ENABLE        false
+#define STATS_ENABLE        true
 #define TIME_ENABLE         true //STATS_ENABLE
 
-#define MAX_TXN_IN_FLIGHT 1
+#define MAX_TXN_IN_FLIGHT 100
 
 /***********************************************/
 // Memory System
@@ -236,7 +236,7 @@ extern TestCases          g_test_case;
 #define DEBUG_TIMESTAMP       false
 #define DEBUG_SYNTH         false
 #define DEBUG_ASSERT        false
-#define DEBUG_DISTR         true 
+#define DEBUG_DISTR         false 
 #define DEBUG_TIMELINE        false
 #define DEBUG_BREAKDOWN       false
 
@@ -273,8 +273,8 @@ extern TestCases          g_test_case;
 // Stats and timeout
 #define BILLION 1000000000UL // in ns => 1 second
 #define STAT_ARR_SIZE 1024
-#define PROG_TIMER 1 * 60 * BILLION // in s
-#define DONE_TIMER 30 * 60 * BILLION // 3 minutes
+#define PROG_TIMER 10 * 1 * BILLION // in s
+#define DONE_TIMER 3 * 60 * BILLION // 3 minutes
 
 #define SEED 0
 

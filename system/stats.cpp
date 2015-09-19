@@ -340,6 +340,8 @@ void Stats::abort(uint64_t thd_id) {
 
 void Stats::print_sequencer(bool prog) {
 	fflush(stdout);
+  if(!STATS_ENABLE)
+    return;
 
 	uint64_t total_txn_cnt = 0;
 	uint64_t total_txn_sent = 0;
@@ -440,6 +442,8 @@ void Stats::print_sequencer(bool prog) {
 
 void Stats::print_client(bool prog) {
   fflush(stdout);
+  if(!STATS_ENABLE)
+    return;
 
 	uint64_t total_txn_cnt = 0;
 	uint64_t total_txn_sent = 0;
@@ -578,134 +582,12 @@ void Stats::print_client(bool prog) {
   }
   fflush(stdout);
 }
- 
-void Stats::print_prog(uint64_t tid) {
-	FILE * outf;
-	if (output_file != NULL) 
-		outf = fopen(output_file, "w");
-  else 
-    outf = stdout;
-  uint64_t qry_cnt = _stats[tid]->rtxn +_stats[tid]->rqry_rsp +_stats[tid]->rack +_stats[tid]->rinit +_stats[tid]->rqry +_stats[tid]->rprep +_stats[tid]->rfin;
-	fprintf(outf, "[prog %ld] "
-      "txn_cnt=%ld"
-			",clock_time=%f"
-      ",abort_cnt=%ld"
-      ",txn_abort_cnt=%ld"
-      ",rbk_abort_cnt=%ld"
-      ",latency=%f"
-      ",run_time=%f"
-      ",aq_full=%f"
-			",cc_wait_cnt=%ld"
-			",cc_wait_time=%f"
-			",cc_hold_time=%f"
-			",cc_wait_abrt_cnt=%ld"
-			",cc_wait_abrt_time=%f"
-			",cc_hold_abrt_time=%f"
-      ",cflt_cnt=%ld"
-      ",cflt_cnt_txn=%ld"
-			",mpq_cnt=%ld"
-      ",msg_bytes=%ld"
-      ",msg_rcv=%ld"
-      ",msg_sent=%ld"
-      ",mbuf_send_time=%f"
-      ",mq_full=%f"
-      ",qq_full=%f"
-      ",qq_lat=%f"
-      ",qry_cnt=%ld"
-      ",qry_rtxn=%ld"
-      ",qry_rqry_rsp=%ld"
-      ",qry_rack=%ld"
-      ",qry_rinit=%ld"
-      ",qry_rqry=%ld"
-      ",qry_rprep=%ld"
-      ",qry_rfin=%ld"
-      ",spec_abort_cnt=%ld"
-      ",spec_commit_cnt=%ld"
-      ",time_abort=%f"
-      ",time_cleanup=%f"
-			",time_index=%f"
-      ",time_lock_man=%f"
-			",time_man=%f"
-			",time_msg_sent=%f"
-      ",time_tport_send=%f"
-      ",time_tport_rcv=%f"
-      ",time_ts_alloc=%f"
-      ",time_clock_wait=%f"
-      ",time_clock_rwait=%f"
-      ",time_validate=%f"
-      ",time_wait=%f"
-      ",time_wait_lock=%f"
-      ",time_wait_lock_rem=%f"
-      ",time_wait_rem=%f"
-      ",time_work=%f"
-      ",time_rqry=%f"
-      ",tport_lat=%f"
-			"\n",
-      tid,
-			_stats[tid]->txn_cnt, 
-			(_stats[tid]->tot_run_time ) / BILLION,
-			_stats[tid]->abort_cnt,
-			_stats[tid]->txn_abort_cnt,
-			_stats[tid]->rbk_abort_cnt,
-			((float)_stats[tid]->latency) / BILLION / _stats[tid]->txn_cnt,
-			_stats[tid]->run_time / BILLION,
-			_stats[tid]->aq_full / BILLION,
-			_stats[tid]->cc_wait_cnt, 
-			_stats[tid]->cc_wait_time / BILLION, 
-			_stats[tid]->cc_hold_time / BILLION, 
-			_stats[tid]->cc_wait_abrt_cnt, 
-			_stats[tid]->cc_wait_abrt_time / BILLION, 
-			_stats[tid]->cc_hold_abrt_time / BILLION, 
-			_stats[tid]->cflt_cnt, 
-			_stats[tid]->cflt_cnt_txn, 
-			_stats[tid]->mpq_cnt, 
-			_stats[tid]->msg_bytes, 
-			_stats[tid]->msg_rcv_cnt, 
-			_stats[tid]->msg_sent_cnt, 
-			_stats[tid]->mbuf_send_time / BILLION,
-			_stats[tid]->mq_full / BILLION,
-			_stats[tid]->qq_full / BILLION,
-			_stats[tid]->qq_lat / _stats[tid]->qq_cnt,
-			qry_cnt,
-			_stats[tid]->rtxn,
-			_stats[tid]->rqry_rsp,
-			_stats[tid]->rack,
-			_stats[tid]->rinit,
-			_stats[tid]->rqry,
-			_stats[tid]->rprep,
-			_stats[tid]->rfin,
-			_stats[tid]->spec_abort_cnt, 
-			_stats[tid]->spec_commit_cnt, 
-			_stats[tid]->time_abort / BILLION,
-			_stats[tid]->time_cleanup / BILLION,
-			_stats[tid]->time_index / BILLION,
-			_stats[tid]->time_lock_man / BILLION,
-			_stats[tid]->time_man / BILLION,
-			_stats[tid]->time_msg_sent / BILLION,
-			_stats[tid]->time_tport_send / BILLION,
-			_stats[tid]->time_tport_rcv / BILLION,
-			((float)_stats[tid]->time_ts_alloc) / BILLION,
-			_stats[tid]->time_clock_wait / BILLION,
-			_stats[tid]->time_clock_rwait / BILLION,
-			_stats[tid]->time_validate / BILLION,
-			_stats[tid]->time_wait / BILLION,
-			_stats[tid]->time_wait_lock / BILLION,
-			_stats[tid]->time_wait_lock_rem / BILLION,
-			_stats[tid]->time_wait_rem / BILLION,
-			_stats[tid]->time_work / BILLION,
-			_stats[tid]->time_rqry / BILLION,
-			_stats[tid]->tport_lat / BILLION / _stats[tid]->msg_rcv_cnt
-		);
-  print_cnts();
-	if (output_file != NULL) 
-		fclose(outf);
-  else
-    fflush(stdout);
-}
 
 void Stats::print(bool prog) {
 
   fflush(stdout);
+  if(!STATS_ENABLE)
+    return;
 	
 	uint64_t total_txn_cnt = 0;
 	uint64_t total_txn_rem_cnt = 0;
@@ -1080,7 +962,7 @@ void Stats::print(bool prog) {
 }
 
 uint64_t Stats::get_txn_cnts() {
-    if(g_node_id >= g_node_cnt)
+    if(!STATS_ENABLE || g_node_id >= g_node_cnt)
         return 0;
     uint64_t limit =  g_thread_cnt + g_rem_thread_cnt;
     uint64_t total_txn_cnt = 0;
@@ -1092,7 +974,7 @@ uint64_t Stats::get_txn_cnts() {
 }
 
 void Stats::print_cnts() {
-  if(g_node_id >= g_node_cnt)
+  if(!STATS_ENABLE || g_node_id >= g_node_cnt)
     return;
   uint64_t all_abort_cnt = 0;
   uint64_t w_cflt_cnt = 0;

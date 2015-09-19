@@ -438,8 +438,8 @@ void Remote_query::unpack(void * d, uint64_t len) {
 		work_queue.add_query(0,query);
 #endif
     txn_cnt--;
+    query->time_copy += get_sys_clock() - starttime;
   }
-  query->time_copy += get_sys_clock() - starttime;
   //  return query;
 }
 

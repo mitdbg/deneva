@@ -151,6 +151,8 @@ void QHash::update_hash(uint64_t id) {
 }
 
 void QHash::remove_hash(uint64_t id) {
+  if(id ==UINT64_MAX)
+    return;
   pthread_mutex_lock(&mtx);
 
   id_entry_t bin = id_hash[id % id_hash_size];
@@ -309,10 +311,12 @@ base_query * QWorkQueueHelper::get_next_query() {
     while(next) {
       if(next->qry->txn_id == UINT64_MAX || !hash->in_hash(next->qry->txn_id)) {
         next_qry = next->qry;
-        hash->add_hash(next_qry->txn_id);
+        if(next_qry->txn_id != UINT64_MAX) {
+          hash->add_hash(next_qry->txn_id);
+          assert(hash->in_hash(next_qry->txn_id));
+        }
         LIST_REMOVE_HT(next,head,tail);
         cnt--;
-        assert(hash->in_hash(next_qry->txn_id));
 
       uint64_t t = get_sys_clock() - next->starttime;
       next_qry->time_q_work += t;

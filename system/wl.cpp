@@ -12,6 +12,8 @@ RC workload::init() {
 	sim_done = false;
 	sim_init_done = false;
 	sim_timeout = false;
+	done_cnt = g_node_cnt + g_client_node_cnt - 1;
+  txn_cnt = 0;
 	return RCOK;
 }
 

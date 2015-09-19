@@ -42,7 +42,6 @@ RC Client_thread_t::run_remote() {
 #if CC_ALG == CALVIN
 	rsp_cnt++;	// Account for sequencer node
 #endif
-	int done_cnt = g_node_cnt + g_client_node_cnt - 1;
 	int32_t inf;
   uint32_t return_node_offset;
 	//int rsp_cnts[g_node_cnt];
@@ -128,7 +127,7 @@ RC Client_thread_t::run_remote() {
           assert(inf >=0);
 					break;
         case EXP_DONE:
-          done_cnt--;
+          ATOM_SUB(_wl->done_cnt,1);
           break;
 				default:
 					assert(false);
@@ -182,7 +181,7 @@ RC Client_thread_t::run_remote() {
 		}
 
     // If all other nodes are done, finish.
-		if (warmup_finish && done_cnt == 0) {
+		if (warmup_finish && _wl->done_cnt == 0) {
 			if( !ATOM_CAS(_wl->sim_done, false, true) )
 				assert( _wl->sim_done);
 			if( !ATOM_CAS(_wl->sim_timeout, false, true) )
@@ -195,7 +194,7 @@ RC Client_thread_t::run_remote() {
 			for (uint32_t i = 0; i < g_servers_per_client; ++i) {
 				// Check if we're still waiting on any txns to finish
 				inf = client_man.get_inflight(i);
-				if (inf > 0 && done_cnt > 0) {
+				if (inf > 0 && _wl->done_cnt > 0) {
 					done = false;
 					break;
 				}

@@ -143,7 +143,7 @@ RC calvin_thread_t::run() {
 			prog_time = get_sys_clock();
 			SET_STATS(get_thd_id(), tot_run_time, prog_time - run_starttime); 
 
-			stats.print_prog(_thd_id);
+			stats.print(true);
 		}
 		while(!work_queue.poll_next_query(_thd_id) && !(_wl->sim_done && _wl->sim_timeout)) { }
 

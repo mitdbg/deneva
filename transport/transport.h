@@ -56,8 +56,7 @@ class Transport {
 		uint64_t get_node_id();
 		void send_msg(uint64_t dest_id, void * sbuf);
 		void send_msg(uint64_t dest_id, void ** data, int * sizes, int num); 
-		//base_query * recv_msg();
-		void * recv_msg();
+		bool recv_msg();
 		void simple_send_msg(int size); 
 		uint64_t simple_recv_msg();
 		//void set_ifaddr(const char * ifaddr, uint64_t n) { this.ifaddr[n] = ifaddr; }
