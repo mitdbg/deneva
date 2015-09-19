@@ -9,14 +9,14 @@
 uint64_t ycsb_client_query::the_n = 0;
 double ycsb_client_query::denom = 0;
 
-uint64_t ycsb_query::the_n = 0;
-double ycsb_query::denom = 0;
+//uint64_t ycsb_query::the_n = 0;
+//double ycsb_query::denom = 0;
 
 void ycsb_query::init(uint64_t thd_id, workload * h_wl) {
     init(thd_id, h_wl, g_node_id);
 }
 
-void ycsb_client_query::init(uint64_t thd_id, workload * h_wl, uint64_t node_id) {
+void ycsb_client_query::client_init(uint64_t thd_id, workload * h_wl, uint64_t node_id) {
 	mrand = (myrand *) mem_allocator.alloc(sizeof(myrand), thd_id);
 	mrand->init(get_sys_clock());
   // FIXME for HSTORE/SPEC, need to generate queries to more than 1 part per node
@@ -50,7 +50,7 @@ void ycsb_client_query::init(uint64_t thd_id, workload * h_wl, uint64_t node_id)
 
 }
 
-void ycsb_client_query::init() {
+void ycsb_client_query::client_init() {
 	requests = (ycsb_request *) 
 		mem_allocator.alloc(sizeof(ycsb_request) * g_req_per_query, 0);
 	part_to_access = (uint64_t *) 
@@ -311,6 +311,7 @@ uint64_t ycsb_client_query::zipf(uint64_t n, double theta) {
 	return 1 + (uint64_t)(n * pow(eta*u -eta + 1, alpha));
 }
 
+/*
 void ycsb_client_query::unpack_client(base_client_query * query, void * d) {
 	ycsb_client_query * m_query = (ycsb_client_query *) query;
 	char * data = (char *) d;
@@ -353,6 +354,7 @@ void ycsb_client_query::unpack_client(base_client_query * query, void * d) {
    }
 
 }
+*/
 
 /*
 void ycsb_client_query::client_query(base_client_query * query, uint64_t dest_id) {
@@ -423,6 +425,7 @@ void ycsb_client_query::client_query(base_client_query * query, uint64_t dest_id
 }
 */
 
+/*
 void ycsb_query::unpack_client(base_query * query, void * d) {
 	ycsb_query * m_query = (ycsb_query *) query;
 	char * data = (char *) d;
@@ -430,12 +433,6 @@ void ycsb_query::unpack_client(base_query * query, void * d) {
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
   ptr += sizeof(uint64_t);
 #endif
-  /*
-    	m_query->part_to_access = (uint64_t *)
-            	mem_allocator.alloc(sizeof(uint64_t) * g_part_cnt, thd_id);
-	m_query->requests = (ycsb_request *) 
-		mem_allocator.alloc(sizeof(ycsb_request) * g_req_per_query, thd_id);
-    */
     	m_query->client_id = m_query->return_id;
     	memcpy(&m_query->pid, &data[ptr], sizeof(uint64_t));
     	ptr += sizeof(uint64_t);
@@ -459,10 +456,6 @@ void ycsb_query::unpack_client(base_query * query, void * d) {
         	ptr += sizeof(uint64_t);
     	}
 
-      /*
-    	memcpy(&m_query->access_cnt, &data[ptr], sizeof(uint64_t));
-    	ptr += sizeof(uint64_t);
-      */
     	memcpy(&m_query->request_cnt, &data[ptr], sizeof(uint64_t));
     	ptr += sizeof(uint64_t);
 
@@ -477,6 +470,7 @@ void ycsb_query::unpack_client(base_query * query, void * d) {
 	m_query->req = m_query->requests[0];
 
 }
+*/
 
 void ycsb_client_query::gen_requests(uint64_t thd_id, workload * h_wl) {
 #if CC_ALG == HSTORE

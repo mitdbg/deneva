@@ -11,35 +11,37 @@ class tpcc_query;
 //enum RemReqType {INIT_DONE,EXP_DONE,RLK, RULK, RQRY, RFIN, RLK_RSP, RULK_RSP, RQRY_RSP, RACK, RTXN, RINIT, RPREPARE,RPASS,CL_RSP,NO_MSG};
 
 class base_client_query {
-  public:
-    uint64_t pid;
-    uint64_t return_id;
-    uint64_t client_startts; // For sequencer
+public:
+  uint64_t pid;
+  uint64_t return_id;
+  uint64_t client_startts; // For sequencer
 	RemReqType rtype;
-    //virtual void client_query(base_client_query * query, uint64_t dest_id) = 0; 
-    virtual void unpack_client(base_client_query * query, void * d) = 0; 
+	uint64_t part_num;
+	uint64_t * part_to_access;
+  //virtual void client_query(base_client_query * query, uint64_t dest_id) = 0; 
+  //virtual void unpack_client(base_client_query * query, void * d) = 0; 
 
 	// calvin
 	//virtual void client_query(base_client_query * query, uint64_t dest_id,
 //			uint64_t batch_num, txnid_t txn_id) = 0;
 };
 
-class base_query {
+class base_query : public base_client_query {
 public:
 	virtual void init(uint64_t thd_id, workload * h_wl) = 0;
-    virtual void reset() = 0;
-    virtual void unpack_rsp(base_query * query, void * d) = 0;
-    virtual void unpack(base_query * query, void * d) = 0;
-    //virtual void client_query(base_query * query, uint64_t dest_id) = 0; 
-    virtual void unpack_client(base_query * query, void * d) = 0; 
-    virtual base_query * merge(base_query * query) = 0;
+  virtual void reset() = 0;
+  //virtual void unpack_rsp(base_query * query, void * d) = 0;
+  //virtual void unpack(base_query * query, void * d) = 0;
+  //virtual void client_query(base_query * query, uint64_t dest_id) = 0; 
+  //virtual void unpack_client(base_query * query, void * d) = 0; 
+  virtual base_query * merge(base_query * query) = 0;
 	uint64_t waiting_time;
-	uint64_t part_num;
-	uint64_t * part_to_access;
+	//uint64_t part_num;
+	//uint64_t * part_to_access;
 
 	// Remote query components
 	uint32_t dest_id;
-	uint32_t return_id;
+	//uint32_t return_id;
 	txnid_t txn_id;
 	uint64_t ts;
 	int rem_req_state;
@@ -58,9 +60,9 @@ public:
   // CALVIN
   uint64_t batch_num;
 
-	RemReqType rtype;
+	//RemReqType rtype;
 	RC rc;
-	uint64_t pid;
+	//uint64_t pid;
 
   // HStore specx
   bool spec;
@@ -75,14 +77,9 @@ public:
   uint64_t part_touched_cnt;
   uint64_t part_touched[MAX_PART_PER_TXN];
 
-    // Client components
-    //uint32_t client_node;
-    uint32_t client_id;
-
-  // Coordination Avoid
-  uint64_t * keys;
-  uint64_t num_keys;
-  uint64_t t_type; // txn_type
+  // Client components
+  //uint32_t client_node;
+  uint32_t client_id;
 
   // OCC
 	uint64_t start_ts;
@@ -91,7 +88,7 @@ public:
   // MVCC
   uint64_t thd_id;
 
-  uint64_t client_startts;
+  //uint64_t client_startts;
 
   // Stats
   double time_q_abrt;

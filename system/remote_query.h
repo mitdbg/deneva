@@ -58,6 +58,7 @@ public:
 	//void send_client_rsp(txnid_t txn_id, RC rc, uint64_t client_startts,
 	//uint32_t client_node_id); 
 	void unpack(void * d, uint64_t len);
+  void unpack_query(base_query *& query,char * data,  uint64_t & ptr,uint64_t dest_id,uint64_t return_id); 
 	//base_query * unpack(void * d, int len);
 	base_client_query * unpack_client_query(void * d, int len);
   

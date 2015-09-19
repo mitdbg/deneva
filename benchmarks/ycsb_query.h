@@ -32,11 +32,11 @@ public:
 
 class ycsb_client_query : public base_client_query {
   public:
-	void init(uint64_t thd_id, workload * h_wl);
-  void init(uint64_t thd_id, workload * h_wl, uint64_t node_id);
-  void init();
+	void client_init(uint64_t thd_id, workload * h_wl);
+  void client_init(uint64_t thd_id, workload * h_wl, uint64_t node_id);
+  void client_init();
   //void client_query(base_client_query * query, uint64_t dest_id) ;
-  void unpack_client(base_client_query * query, void * d);
+  //void unpack_client(base_client_query * query, void * d);
   
   // calvin
   //void client_query(base_client_query * query, uint64_t dest_id, uint64_t batch_num,
@@ -45,8 +45,8 @@ class ycsb_client_query : public base_client_query {
   //uint64_t pid;
 	uint64_t request_cnt;
 	ycsb_request * requests;
-	uint64_t part_num;
-	uint64_t * part_to_access;
+	//uint64_t part_num;
+	//uint64_t * part_to_access;
 
 private:
 	void gen_requests(uint64_t thd_id, workload * h_wl);
@@ -62,6 +62,7 @@ private:
 
 };
 
+// Beware the diamond inheritance...
 class ycsb_query : public base_query {
 public:
 	void init(uint64_t thd_id, workload * h_wl);
@@ -74,19 +75,19 @@ public:
 void unpack(base_query * query, void * d) ;
 void remote_qry(base_query * query, int type, int dest_id) ;
 void remote_rsp(base_query * query) ;
-void unpack_client(base_query * query, void * d) ;
+//void unpack_client(base_query * query, void * d) ;
 
   uint64_t access_cnt;
 	uint64_t request_cnt;
 	ycsb_request * requests;
 
 	YCSBRemTxnType txn_rtype;
-	YCSBRemTxnType next_ycsb_txn_rtype;
   uint64_t rid;
 	uint64_t req_i;
   ycsb_request req;
 
 
+  /*
 private:
 	void gen_requests(uint64_t thd_id, workload * h_wl);
 	// for Zipfian distribution
@@ -97,6 +98,7 @@ private:
 	static uint64_t the_n;
 	static double denom;
 	double zeta_2_theta;
+  */
 };
 
 #endif

@@ -152,7 +152,7 @@ Client_query_thd::init_txns_file(const char * txn_file) {
 #elif WORKLOAD == TPCC
 		new(&queries[qid]) tpcc_query();
 #endif
-    queries[qid].init();
+    queries[qid].client_init();
     int num = 0;
     int idx = 0;
     int part_cnt = 0;
@@ -255,7 +255,7 @@ void Client_query_thd::init_query() {
 		new(&queries[qid]) tpcc_query();
 #endif
 		//queries[qid].init(thread_id, h_wl, qid % g_node_cnt);
-		queries[qid].init(thread_id, h_wl, thread_id+g_server_start_node);
+		queries[qid].client_init(thread_id, h_wl, thread_id+g_server_start_node);
 		// Setup
     /*
 		queries[qid].txn_id = UINT64_MAX;

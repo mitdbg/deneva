@@ -122,7 +122,9 @@ void Sequencer::prepare_next_batch(uint64_t thd_id) {
 		// reset request counts
 		for (uint64_t j = 0; j < g_node_cnt; ++j)
 			node_queries[j].request_cnt = 0;
-		ycsb_client_query * m_query = (ycsb_client_query *) query;
+    //FIXME
+		ycsb_client_query * m_query = new ycsb_client_query;
+		//ycsb_client_query * m_query = (ycsb_client_query *) query;
 		ycsb_request req;
 
 		// add individual query requests to each node's corresponding request list
@@ -156,7 +158,7 @@ void Sequencer::prepare_next_batch(uint64_t thd_id) {
 				printf("sequencer: sending RTXN to %lu\n",j);
 #endif
 				//query->client_query(&node_queries[j],j,batch_id,txn_id);
-        msg_queue.enqueue((base_query*)&node_queries[j],RTXN,j);
+        msg_queue.enqueue((base_query*)((void*)&node_queries[j]),RTXN,j);
 			}
 		}
 
@@ -265,7 +267,8 @@ RC Seq_thread_t::run_remote() {
 		for(uint64_t i = 0; i < total_nodes; i++) {
 			if(i != g_node_id) {
 				//rem_qry_man.send_init_done(i);
-        msg_queue.enqueue((base_query*)m_query,INIT_DONE,i);
+        //FIXME
+        //msg_queue.enqueue((base_query*)m_query,INIT_DONE,i);
 			}
 		}
 	}

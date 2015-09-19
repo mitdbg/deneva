@@ -355,6 +355,7 @@ void Remote_query::send_remote_rsp(uint64_t dest_id, void ** data, int * sizes, 
 */
 
 // FIXME: unpack batch
+/*
 base_client_query * Remote_query::unpack_client_query(void * d, int len) {
   base_client_query * query;
 	char * data = (char *) d;
@@ -402,30 +403,25 @@ base_client_query * Remote_query::unpack_client_query(void * d, int len) {
 
   return query;
 }
-
+*/
 
 //base_query * Remote_query::unpack(void * d, int len) {
 void Remote_query::unpack(void * d, uint64_t len) {
     base_query * query;
 	char * data = (char *) d;
 	uint64_t ptr = 0;
-  uint64_t timespan;
   uint32_t dest_id;
   uint32_t return_id;
-  txnid_t txn_id;
   uint32_t txn_cnt;
-	RemReqType rtype;
   uint64_t starttime = get_sys_clock();
   assert(len > sizeof(uint32_t) * 3);
 
   COPY_VAL(dest_id,data,ptr);
   COPY_VAL(return_id,data,ptr);
   COPY_VAL(txn_cnt,data,ptr);
+  DEBUG("Received batch %d txns from %d\n",txn_cnt,return_id);
 
   while(txn_cnt > 0) { 
-  COPY_VAL(txn_id,data,ptr);
-  COPY_VAL(rtype,data,ptr);
-
 #if WORKLOAD == TPCC
 	    query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), 0);
 	      query = new tpcc_query();
@@ -434,13 +430,29 @@ void Remote_query::unpack(void * d, uint64_t len) {
         query = new ycsb_query();
 #endif
 
+
+    unpack_query(query,data,ptr,dest_id,return_id);
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
+		work_queue.add_query(GET_PART_ID_IDX(query->active_part),query);
+#else
+		work_queue.add_query(0,query);
+#endif
+    txn_cnt--;
+  }
+  query->time_copy += get_sys_clock() - starttime;
+  //  return query;
+}
+
+void Remote_query::unpack_query(base_query *& query,char * data,  uint64_t & ptr,uint64_t dest_id,uint64_t return_id) {
+
+  uint64_t timespan;
 	assert(query != NULL);
 
-    query->dest_id = dest_id;
-    query->return_id = return_id;
-    query->txn_id = txn_id;
-    query->rtype = rtype;
+  query->dest_id = dest_id;
+  query->return_id = return_id;
 
+  COPY_VAL(query->txn_id,data,ptr);
+  COPY_VAL(query->rtype,data,ptr);
     /*
     if(query->rtype == INIT_DONE || query->rtype == EXP_DONE)
       return query;
@@ -475,6 +487,9 @@ void Remote_query::unpack(void * d, uint64_t len) {
       }
       break;
     case RPREPARE:
+      COPY_VAL(query->pid,data,ptr);
+      COPY_VAL(query->rc,data,ptr);
+      COPY_VAL(query->txn_id,data,ptr);
       break;
 		case RQRY: {
 #if WORKLOAD == TPCC
@@ -550,22 +565,17 @@ void Remote_query::unpack(void * d, uint64_t len) {
       INC_STATS(0,client_latency,timespan);
       INC_STATS_ARR(0,all_lat,timespan);
       INC_STATS(0,txn_cnt,1);
-      DEBUG("Received CL_RSP from %u -- %ld %f\n", query->return_id,query->txn_id,(float)timespan/BILLION);
+      DEBUG("Received CL_RSP from %ld -- %ld %f\n", query->return_id,query->txn_id,(float)timespan/BILLION);
       break;
     case INIT_DONE: break;
     case EXP_DONE: break;
+    case RPASS: break;
+    case RLK: break;
+    case RULK: break;
+    case RLK_RSP: break;
+    case RULK_RSP: break;
+    case NO_MSG: assert(false);
     default: assert(false);
 	}
-#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
-			work_queue.add_query(GET_PART_ID_IDX(query->active_part),query);
-#else
-			work_queue.add_query(0,query);
-#endif
-      txn_cnt--;
-  }
-  query->time_copy += get_sys_clock() - starttime;
-  //  return query;
+
 }
-
-
-

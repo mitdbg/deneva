@@ -53,7 +53,7 @@ RC Client_thread_t::run_remote() {
       tport_man.recv_msg();
       while((m_query = work_queue.get_next_query(get_thd_id())) != NULL) {
         assert(m_query->rtype == INIT_DONE);
-        printf("Received INIT_DONE from node %u\n",m_query->return_id);
+        printf("Received INIT_DONE from node %ld\n",m_query->return_id);
         ATOM_SUB(rsp_cnt,1);
         if(rsp_cnt ==0) {
           if( !ATOM_CAS(_wl->sim_init_done, false, true) )
@@ -261,7 +261,8 @@ RC Client_thread_t::run() {
 		for(uint64_t i = 0; i < nnodes; i++) {
 			if(i != g_node_id) {
 				//rem_qry_man.send_init_done(i);
-        msg_queue.enqueue((base_query*)m_query,INIT_DONE,i);
+        //m_query->txn_id = UINT64_MAX;
+        msg_queue.enqueue(NULL,INIT_DONE,i);
 			}
 		}
 	}
@@ -323,7 +324,7 @@ RC Client_thread_t::run() {
 		m_query->client_query(m_query, GET_NODE_ID(m_query->pid));
 #endif
 */
-    msg_queue.enqueue((base_query*)m_query,RTXN,GET_NODE_ID(m_query->pid));
+    msg_queue.enqueue((base_query*)((void*)m_query),RTXN,GET_NODE_ID(m_query->pid));
 		num_txns_sent++;
 		txns_sent[GET_NODE_ID(m_query->pid)-g_server_start_node]++;
     INC_STATS(get_thd_id(),txn_sent,1);
@@ -358,7 +359,8 @@ RC Client_thread_t::run() {
 		for(uint64_t i = 0; i < nnodes; i++) {
 			if(i != g_node_id) {
 				//rem_qry_man.send_exp_done(i);
-        msg_queue.enqueue((base_query*)m_query,EXP_DONE,i);
+        //m_query->txn_id = UINT64_MAX;
+        msg_queue.enqueue(NULL,EXP_DONE,i);
 			}
 		}
   }

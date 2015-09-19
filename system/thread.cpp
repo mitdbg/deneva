@@ -191,7 +191,7 @@ RC thread_t::run() {
 		for(uint64_t i = 0; i < total_nodes; i++) {
 			if(i != g_node_id) {
 				//rem_qry_man.send_init_done(i);
-        msg_queue.enqueue(m_query,INIT_DONE,i);
+        msg_queue.enqueue(NULL,INIT_DONE,i);
 			}
 		}
 	rsp_cnt = g_node_cnt + g_client_node_cnt - 1;
@@ -317,7 +317,7 @@ RC thread_t::run() {
 		for(uint64_t i = 0; i < nnodes; i++) {
 			if(i != g_node_id) {
 				//rem_qry_man.send_exp_done(i);
-        msg_queue.enqueue(m_query,EXP_DONE,i);
+        msg_queue.enqueue(NULL,EXP_DONE,i);
 			}
 		}
       }
@@ -439,7 +439,7 @@ RC thread_t::run() {
           if(validate)
 					  m_query->rc = rc;
 				  //rem_qry_man.ack_response(m_query);
-          msg_queue.enqueue(m_query,RACK,m_query->return_id);
+          msg_queue.enqueue((void*)m_query,RACK,m_query->return_id);
         } else {
           m_query->local_rack_query();
         }

@@ -5,14 +5,14 @@
 /***********************************************/
 // Simulation + Hardware
 /***********************************************/
-#define NODE_CNT 8
-#define THREAD_CNT 3
+#define NODE_CNT 2
+#define THREAD_CNT 1
 #define REM_THREAD_CNT 1
 #define SEND_THREAD_CNT 1
 // PART_CNT should be at least NODE_CNT
-#define PART_CNT 8
-#define CLIENT_NODE_CNT 4
-#define CLIENT_THREAD_CNT 2
+#define PART_CNT 2
+#define CLIENT_NODE_CNT 1
+#define CLIENT_THREAD_CNT 1
 #define CLIENT_REM_THREAD_CNT 1
 #define CLIENT_SEND_THREAD_CNT 1
 #define CLIENT_RUNTIME false
@@ -31,10 +31,10 @@
 #define WORKLOAD YCSB
 // print the transaction latency distribution
 #define PRT_LAT_DISTR false
-#define STATS_ENABLE        true
+#define STATS_ENABLE        false
 #define TIME_ENABLE         true //STATS_ENABLE
 
-#define MAX_TXN_IN_FLIGHT 7000
+#define MAX_TXN_IN_FLIGHT 1
 
 /***********************************************/
 // Memory System
@@ -60,9 +60,9 @@
 /***********************************************/
 // Message Passing
 /***********************************************/
-#define TPORT_TYPE "tcp"
-#define TPORT_TYPE_IPC false
-#define TPORT_PORT 7000
+#define TPORT_TYPE "ipc"
+#define TPORT_TYPE_IPC true
+#define TPORT_PORT ".ipc"
 
 #define MAX_TPORT_NAME 128
 #define MSG_SIZE 128 // in bytes
@@ -144,13 +144,13 @@
 #define MAX_PART_PER_TXN 2
 #define MAX_ROW_PER_TXN       64
 #define QUERY_INTVL         1UL
-#define MAX_TXN_PER_PART 1000000
+#define MAX_TXN_PER_PART 1000
 #define FIRST_PART_LOCAL      true
 #define MAX_TUPLE_SIZE        1024 // in bytes
 #define GEN_BY_MPR true
 // ==== [YCSB] ====
 #define INIT_PARALLELISM 4
-#define SYNTH_TABLE_SIZE 2097152
+#define SYNTH_TABLE_SIZE 1024//2097152
 #define ZIPF_THETA 0.0
 #define READ_PERC 1.0
 #define WRITE_PERC 0.0
@@ -236,7 +236,7 @@ extern TestCases          g_test_case;
 #define DEBUG_TIMESTAMP       false
 #define DEBUG_SYNTH         false
 #define DEBUG_ASSERT        false
-#define DEBUG_DISTR         false 
+#define DEBUG_DISTR         true 
 #define DEBUG_TIMELINE        false
 #define DEBUG_BREAKDOWN       false
 
@@ -273,8 +273,8 @@ extern TestCases          g_test_case;
 // Stats and timeout
 #define BILLION 1000000000UL // in ns => 1 second
 #define STAT_ARR_SIZE 1024
-#define PROG_TIMER 10 * BILLION // in s
-#define DONE_TIMER 1 * 60 * BILLION // 3 minutes
+#define PROG_TIMER 1 * 60 * BILLION // in s
+#define DONE_TIMER 30 * 60 * BILLION // 3 minutes
 
 #define SEED 0
 
