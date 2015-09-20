@@ -4,11 +4,6 @@
 #include <cstdlib>
 #include <iostream>
 #include <stdint.h>
-//#ifdef NOGRAPHITE
-//#include <ctime>
-//#include <ratio>
-//#include <chrono>
-//#endif
 #include "global.h"
 
 /************************************************/

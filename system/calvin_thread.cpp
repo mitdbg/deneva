@@ -79,9 +79,6 @@ RC calvin_thread_t::run_remote() {
 		}
 
 		if (_wl->sim_done && _wl->sim_timeout) {
-#if !NOGRAPHITE
-			CarbonDisableModelsBarrier(&enable_barrier);
-#endif
 			return FINISH;
 		}
 
@@ -215,9 +212,6 @@ RC calvin_thread_t::run() {
 		if (!warmup_finish && txn_st_cnt >= WARMUP / g_thread_cnt) 
 		{
 			stats.clear( get_thd_id() );
-#if !NOGRAPHITE
-			CarbonDisableModelsBarrier(&enable_barrier);
-#endif
 			return FINISH;
 		}
 

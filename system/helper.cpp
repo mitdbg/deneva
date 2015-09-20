@@ -104,18 +104,9 @@ uint64_t get_server_clock() {
 }
 
 uint64_t get_sys_clock() {
-#ifndef NOGRAPHITE
-	static volatile uint64_t fake_clock = 0;
-	if (warmup_finish)
-		return CarbonGetTime();   // in ns
-	else {
-		return ATOM_ADD_FETCH(fake_clock, 100);
-	}
-#else
 	if (TIME_ENABLE) 
 		return get_server_clock();
 	return 0;
-#endif
 }
 
 void myrand::init(uint64_t seed) {

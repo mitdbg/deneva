@@ -214,13 +214,6 @@ void txn_man::cleanup(RC rc) {
 #endif
 	ts_t starttime = get_sys_clock();
 	for (int rid = row_cnt - 1; rid >= 0; rid --) {
-#if !NOGRAPHITE
-		part_id = accesses[rid]->orig_row->get_part_id();
-		if (g_hw_migrate) {
-			if (part_id != CarbonGetHostTileId()) 
-				CarbonMigrateThread(part_id);
-		}
-#endif  
 		row_t * orig_r = accesses[rid]->orig_row;
 		access_t type = accesses[rid]->type;
 		if (type == WR && rc == Abort)

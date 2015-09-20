@@ -35,9 +35,6 @@ void thread_t::set_cur_cid(uint64_t cid) {_cur_cid = cid; }
 RC thread_t::run_remote() {
 	printf("Run_remote %ld:%ld\n",_node_id, _thd_id);
   fflush(stdout);
-#if !NOGRAPHITE
-	_thd_id = CarbonGetTileId();
-#endif
 	if (warmup_finish) {
 		mem_allocator.register_thread(_thd_id);
 	}
@@ -48,7 +45,6 @@ RC thread_t::run_remote() {
   while(!_wl->sim_init_done) {
     tport_man.recv_msg();
   }
-	//#endif
 	pthread_barrier_wait( &warmup_bar );
 	printf("Run_remote %ld:%ld\n",_node_id, _thd_id);
   fflush(stdout);
@@ -57,12 +53,6 @@ RC thread_t::run_remote() {
 	rdm.init(get_thd_id());
 	RC rc = RCOK;
 	assert (rc == RCOK);
-
-#if !NOGRAPHITE
-	if (warmup_finish) {
-		CarbonEnableModelsBarrier(&enable_barrier);
-	}
-#endif
 
 	uint64_t run_starttime = get_sys_clock();
 	ts_t rq_time = get_sys_clock();
@@ -78,9 +68,6 @@ RC thread_t::run_remote() {
 		}
 
 		if ((_wl->sim_done && _wl->sim_timeout) || (tend - run_starttime >= DONE_TIMER)) {
-#if !NOGRAPHITE
-			CarbonDisableModelsBarrier(&enable_barrier);
-#endif
 
 			return FINISH;
 		}
@@ -120,9 +107,6 @@ RC thread_t::run_send() {
 RC thread_t::run() {
 	printf("Run %ld:%ld\n",_node_id, _thd_id);
   fflush(stdout);
-#if !NOGRAPHITE
-	_thd_id = CarbonGetTileId();
-#endif
 	if (warmup_finish) {
 		mem_allocator.register_thread(_thd_id);
 	}
@@ -175,12 +159,6 @@ RC thread_t::run() {
 	rc = _wl->get_txn_man(m_txn, this);
 	assert (rc == RCOK);
 	glob_manager.set_txn_man(m_txn);
-
-#if !NOGRAPHITE
-	if (warmup_finish) {
-		CarbonEnableModelsBarrier(&enable_barrier);
-	}
-#endif
 
 	base_query * tmp_query = NULL;
 	uint64_t txn_st_cnt = 0;

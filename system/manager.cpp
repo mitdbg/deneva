@@ -41,11 +41,7 @@ Manager::get_ts(uint64_t thread_id) {
 			time = ATOM_FETCH_ADD(timestamp, 1);
 		break;
 	case TS_HW :
-#ifndef NOGRAPHITE
-		time = CarbonGetTimestamp();
-#else
 		assert(false);
-#endif
 		break;
 	case TS_CLOCK :
 		time = get_sys_clock() * (g_node_cnt + g_thread_cnt) + (g_node_id * g_thread_cnt + thread_id);

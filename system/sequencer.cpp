@@ -245,9 +245,6 @@ uint64_t Seq_thread_t::get_node_id() { return _node_id; }
 
 RC Seq_thread_t::run_remote() {
 	printf("Run_remote %ld:%ld\n",_node_id, _thd_id);
-#if !NOGRAPHITE
-	_thd_id = CarbonGetTileId();
-#endif
 	if (warmup_finish) {
 		mem_allocator.register_thread(_thd_id);
 	}
@@ -337,9 +334,6 @@ RC Seq_thread_t::run_remote() {
 
 		// End conditions
 //		if (_wl->sim_done && _wl->sim_timeout) {
-//#if !NOGRAPHITE
-//			CarbonDisableModelsBarrier(&enable_barrier);
-//#endif
 //			uint64_t currtime = get_sys_clock();
 //			if(currtime - stoptime > MSG_TIMEOUT) {
 //				SET_STATS(get_thd_id(), tot_run_time, currtime - run_starttime - MSG_TIMEOUT); 
@@ -359,9 +353,6 @@ RC Seq_thread_t::run_remote() {
 			//stoptime = get_sys_clock();
 		}
 		if (_wl->sim_done && _wl->sim_timeout) {
-#if !NOGRAPHITE
-			CarbonDisableModelsBarrier(&enable_barrier);
-#endif
 			return FINISH;
 		}
 	}

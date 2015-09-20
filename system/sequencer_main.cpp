@@ -88,10 +88,6 @@ int main(int argc, char* argv[])
   printf("Initialization Time = %ld\n", endtime - starttime);
 	warmup_finish = true;
 	pthread_barrier_init( &warmup_bar, NULL, thd_cnt);
-#ifndef NOGRAPHITE
-	CarbonBarrierInit(&enable_barrier, thd_cnt);
-#endif
-	pthread_barrier_init( &warmup_bar, NULL, thd_cnt);
 
 	uint64_t cpu_cnt = 0;
 	// spawn and run txns again.

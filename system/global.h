@@ -31,9 +31,6 @@
 //#include "msg_queue.h"
 #include "txn_pool.h"
 //#include "sequencer.h"
-#ifndef NOGRAPHITE
-#include "carbon_user.h"
-#endif
 
 using namespace std;
 
@@ -90,9 +87,6 @@ extern bool volatile warmup_finish;
 extern bool volatile enable_thread_mem_pool;
 extern pthread_barrier_t warmup_bar;
 extern pthread_barrier_t warmup_bar2;
-#ifndef NOGRAPHITE
-extern carbon_barrier_t enable_barrier;
-#endif
 
 /******************************************/
 // Client Global Params 

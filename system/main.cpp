@@ -175,9 +175,6 @@ int main(int argc, char* argv[])
 		printf("WARMUP finished!\n");
 	}
 	warmup_finish = true;
-#ifndef NOGRAPHITE
-	CarbonBarrierInit(&enable_barrier, all_thd_cnt);
-#endif
 	pthread_barrier_init( &warmup_bar, NULL, all_thd_cnt);
 
 	uint64_t cpu_cnt = 0;

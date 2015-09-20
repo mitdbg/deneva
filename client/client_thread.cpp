@@ -26,9 +26,6 @@ void Client_thread_t::set_cur_cid(uint64_t cid) {_cur_cid = cid; }
 
 RC Client_thread_t::run_remote() {
 	printf("Run_remote %ld:%ld\n",_node_id, _thd_id);
-#if !NOGRAPHITE
-	_thd_id = CarbonGetTileId();
-#endif
 	if (warmup_finish) {
 		mem_allocator.register_thread(_thd_id);
 	}
@@ -127,9 +124,6 @@ RC Client_thread_t::run_remote() {
 
 			if (!done)
 				continue;
-#if !NOGRAPHITE
-			CarbonDisableModelsBarrier(&enable_barrier);
-#endif
 			return FINISH;
 		}
 	}
@@ -164,9 +158,6 @@ RC Client_thread_t::run_send() {
 }
 RC Client_thread_t::run() {
 	printf("Run %ld:%ld\n",_node_id, _thd_id);
-#if !NOGRAPHITE
-	_thd_id = CarbonGetTileId();
-#endif
 	if (warmup_finish) {
 		mem_allocator.register_thread(_thd_id);
 	}
