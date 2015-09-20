@@ -240,45 +240,8 @@ final:
 
 
 void PartMan::remote_rsp(bool l, RC rc, txn_man * txn) {
-/*
-           //TODO: Add me for parallel YCSB!
-#if WORKLOAD == YCSB
-    // Start executing txn
-    txn_pool.restart_txn(txn->get_txn_id());
-#else
-*/
-  //rem_qry_man.ack_response(rc,txn);
   msg_queue.enqueue(txn->get_query(),RACK,GET_NODE_ID(txn->get_pid()));
-//#endif
-  /*
-  uint64_t pid = txn->get_pid();
-  uint64_t node_id = GET_NODE_ID(pid);
-  uint64_t ts = txn->get_ts();
-  
-	int max_num = 6;
-	void ** data = new void *[max_num];
-	int * sizes = new int [max_num];
-	int num = 0;
-	uint64_t _pid = pid;
-	uint64_t _ts = ts;
-	RC _rc = rc;
-	RemReqType rtype = l ? RLK_RSP : RULK_RSP;
-  txnid_t tid = txn->get_txn_id(); 
 
-	data[num] = &tid;
-	sizes[num++] = sizeof(txnid_t);
-
-	data[num] = &rtype;
-	sizes[num++] = sizeof(RemReqType);
-	data[num] = &_rc;
-	sizes[num++] = sizeof(RC);
-	data[num] = &_pid;
-	sizes[num++] = sizeof(uint64_t);
-	data[num] = &_ts;
-	sizes[num++] = sizeof(uint64_t);
-
-	rem_qry_man.send_remote_rsp(node_id,data,sizes,num);
-  */
 }
 /************************************************/
 // Partition Lock
@@ -403,38 +366,6 @@ void Plock::unpack(base_query * query, char * data) {
 	}
 }
 
-/*
-void Plock::remote_qry(bool l, uint64_t lid, txn_man * txn) {
-	assert(GET_NODE_ID(lid) != _node_id);
-	int num = 0;
-	int max_num = 6;
-	uint64_t part_cnt = 1;
-	uint64_t _ts = txn->get_ts();
-	uint64_t _pid = txn->get_pid();
-	uint64_t _lid = lid;
-	RemReqType rtype = l ? RLK : RULK;
-	void ** data = new void *[max_num];
-	int * sizes = new int [max_num];
-
-  txnid_t tid = txn->get_txn_id(); 
-
-	data[num] = &tid;
-	sizes[num++] = sizeof(txnid_t);
-
-	data[num] = &rtype;
-	sizes[num++] = sizeof(RemReqType);
-	data[num] = &_pid;
-	sizes[num++] = sizeof(uint64_t);
-	data[num] = &_ts;
-	sizes[num++] = sizeof(uint64_t);
-	data[num] = &part_cnt;
-	sizes[num++] = sizeof(uint64_t);
-	data[num] = &_lid;
-	sizes[num++] = sizeof(uint64_t);
-
-	rem_qry_man.send_remote_query(GET_NODE_ID(lid),data,sizes,num);
-}
-*/
 
 RC Plock::rem_lock(uint64_t * parts, uint64_t part_cnt, txn_man * txn) {
   RC rc;

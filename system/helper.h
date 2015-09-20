@@ -18,6 +18,10 @@
   if(DEBUG_DISTR) { \
     fprintf(stdout,__VA_ARGS__); \
   }
+#define DEBUG_FLUSH() \
+  if(DEBUG_DISTR) { \
+    fflush(stdout); \
+  }
 
 
 /************************************************/

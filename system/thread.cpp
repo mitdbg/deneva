@@ -42,34 +42,9 @@ RC thread_t::run_remote() {
 		mem_allocator.register_thread(_thd_id);
 	}
 
-	//base_query * m_query = NULL;
-
 	pthread_barrier_wait( &warmup_bar );
 	stats.init(get_thd_id());
-	// Send start msg to all nodes; wait for rsp from all nodes before continuing.
-	//#if !TPORT_TYPE_IPC
-  /*
-	int rsp_cnt = g_node_cnt + g_client_node_cnt - 1;
-#if CC_ALG == CALVIN
-	rsp_cnt++;	// Account for sequencer node
-#endif
-*/
-    /*
-  if(_thd_id == g_thread_cnt) {
-	while(rsp_cnt > 0) {
-		m_query = (base_query *) tport_man.recv_msg();
-		if(m_query != NULL && m_query->rtype == INIT_DONE) {
-			rsp_cnt --;
-		} else if(m_query != NULL) {
-#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
-			work_queue.add_query(GET_PART_ID_IDX(m_query->active_part),m_query);
-#else
-			work_queue.add_query(0,m_query);
-#endif
-		}
-	}
-  }
-  */
+
   while(!_wl->sim_init_done) {
     tport_man.recv_msg();
   }
@@ -96,22 +71,6 @@ RC thread_t::run_remote() {
     if(tport_man.recv_msg()) {
       rq_time = get_sys_clock();
     }
-    /*
-		m_query = (base_query *) tport_man.recv_msg();
-		if( m_query != NULL ) { 
-			rq_time = get_sys_clock();
-      if(m_query->rtype == EXP_DONE) {
-        done_cnt--;
-        continue;
-      }
-#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
-			work_queue.add_query(GET_PART_ID_IDX(m_query->active_part),m_query);
-#else
-			work_queue.add_query(0,m_query);
-#endif
-		}
-    */
-
 		ts_t tend = get_sys_clock();
 		if (warmup_finish && ((tend - run_starttime >= DONE_TIMER) || (_wl->sim_done && (  ((tend - rq_time) > MSG_TIMEOUT))))) {
 			if( !ATOM_CAS(_wl->sim_timeout, false, true) )
@@ -170,7 +129,6 @@ RC thread_t::run() {
 	pthread_barrier_wait( &warmup_bar );
 	stats.init(get_thd_id());
 	base_query * m_query = NULL;
-	int rsp_cnt;
 
 	if( _thd_id == 0) {
 #if WORKLOAD == YCSB
@@ -184,23 +142,21 @@ RC thread_t::run() {
 #endif
 		for(uint64_t i = 0; i < total_nodes; i++) {
 			if(i != g_node_id) {
-				//rem_qry_man.send_init_done(i);
         msg_queue.enqueue(NULL,INIT_DONE,i);
 			}
 		}
-	rsp_cnt = g_node_cnt + g_client_node_cnt - 1;
-#if CC_ALG == CALVIN
-	rsp_cnt++;	// Account for sequencer node
-#endif
     while(!_wl->sim_init_done) {
       while((m_query = work_queue.get_next_query(get_thd_id())) == NULL) { }
       if(m_query->rtype == INIT_DONE) {
-        ATOM_SUB(rsp_cnt,1);
-        if(rsp_cnt ==0) {
+        ATOM_SUB(_wl->rsp_cnt,1);
+        DEBUG("Processed INIT_DONE from %ld -- %ld\n",m_query->return_id,_wl->rsp_cnt);
+        DEBUG_FLUSH();
+        if(_wl->rsp_cnt ==0) {
 			    if( !ATOM_CAS(_wl->sim_init_done, false, true) )
 				    assert( _wl->sim_init_done);
         }
       } else {
+        // Put other queries aside until all nodes are ready
         work_queue.add_query(_thd_id,m_query);
       }
 	  }
@@ -238,6 +194,7 @@ RC thread_t::run() {
 	uint64_t outstanding_waits = 0;
 	uint64_t outstanding_rwaits = 0;
   uint64_t debug1;
+  uint64_t rsp_cnt = 0;
   RemReqType debug2;
 #if CC_ALG == VLL
   uint64_t debug3;
@@ -395,7 +352,6 @@ RC thread_t::run() {
         if(rc == WAIT)
           break;
 				// Send back ACK
-				//rem_qry_man.ack_response(m_query);
         msg_queue.enqueue(m_query,RACK,m_query->return_id);
 #endif
 				// HStore: lock partitions at this node
@@ -442,7 +398,6 @@ RC thread_t::run() {
         if(GET_NODE_ID(m_query->active_part) != GET_NODE_ID(m_query->home_part)) {
           if(validate)
 					  m_query->rc = rc;
-				  //rem_qry_man.ack_response(m_query);
           msg_queue.enqueue(m_query,RACK,m_query->return_id);
         } else {
           m_query->local_rack_query();
@@ -450,7 +405,6 @@ RC thread_t::run() {
 #else
         if(validate)
 				  m_query->rc = rc;
-			  //rem_qry_man.ack_response(m_query);
         msg_queue.enqueue(m_query,RACK,m_query->return_id);
 #endif
 
@@ -509,7 +463,6 @@ RC thread_t::run() {
 				INC_STATS(get_thd_id(),time_rqry,timespan);
 
 				if(rc != WAIT) {
-					//rem_qry_man.remote_rsp(m_query,m_txn);
           msg_queue.enqueue(m_query,RQRY_RSP,m_query->return_id);
         }
         /*
@@ -598,7 +551,6 @@ RC thread_t::run() {
           }
         }
         if(GET_NODE_ID(m_query->home_part) != g_node_id) {
-				  //rem_qry_man.ack_response(m_query);
           msg_queue.enqueue(m_query,RACK,m_query->return_id);
         } else {
           m_query->local_rack_query();
@@ -625,7 +577,6 @@ RC thread_t::run() {
 					m_txn->state = DONE;
 					m_txn->rem_fin_txn(m_query);
         }
-				  //rem_qry_man.ack_response(m_query);
         // m_query is used by send thread; do not free
           msg_queue.enqueue(m_query,RACK,m_query->return_id);
           /*
@@ -889,7 +840,6 @@ RC thread_t::run() {
                 rc = WAIT;
                 m_txn->rc = rc;
                 m_query->dest_part = part_id;
-                //rem_qry_man.send_init(m_query,part_id);
                 msg_queue.enqueue(m_query,RINIT,GET_NODE_ID(part_id));
                 m_txn->wait_starttime = get_sys_clock();
                 m_query->part_touched[m_query->part_touched_cnt++] = part_id;
@@ -913,7 +863,6 @@ RC thread_t::run() {
                 rc = WAIT;
                 m_txn->rc = rc;
                 m_query->dest_part = part_id;
-                //rem_qry_man.send_init(m_query,part_id);
                 msg_queue.enqueue(m_query,RINIT,GET_NODE_ID(part_id));
                 m_txn->wait_starttime = get_sys_clock();
                 m_query->part_touched[m_query->part_touched_cnt++] = part_id;
@@ -1021,7 +970,6 @@ RC thread_t::run() {
 					DEBUG("COMMIT %ld %ld %ld %f -- %f\n",m_txn->get_txn_id(),m_query->part_num,m_txn->abort_cnt,(double)m_txn->txn_time_wait/BILLION,(double)timespan/ BILLION);
 
 					// Send result back to client
-					//rem_qry_man.send_client_rsp(m_query);
           msg_queue.enqueue(m_query,CL_RSP,m_query->client_id);
 					//txn_pool.delete_txn(g_node_id,m_query->txn_id);
 					ATOM_ADD(_wl->txn_cnt,1);
@@ -1045,7 +993,6 @@ RC thread_t::run() {
         //txn_pool.delete_txn(g_node_id,m_query->txn_id);
 					ATOM_ADD(_wl->txn_cnt,1);
         //ATOM_SUB(txn_pool.inflight_cnt,1);
-					//rem_qry_man.send_client_rsp(m_query);
           msg_queue.enqueue(m_query,CL_RSP,m_query->client_id);
           break;
         
@@ -1122,7 +1069,6 @@ RC thread_t::run() {
           // Stat start for txn_time_net
           m_txn->txn_stat_starttime = get_sys_clock();
 
-					//rem_qry_man.remote_qry(m_query,m_query->rem_req_state,m_query->dest_id,m_txn);
           msg_queue.enqueue(m_query,RQRY,m_query->dest_id);
 					break;
 				default:
