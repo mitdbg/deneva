@@ -10,32 +10,32 @@
 #include "row.h"
 #include "plock.h"
 
-#define MODIFY_START() {\
-    pthread_mutex_lock(&mtx);\
-    while(modify || access > 0)\
-      pthread_cond_wait(&cond_m,&mtx);\
-    modify = true; \
-    pthread_mutex_unlock(&mtx); }
+#define MODIFY_START(i) {\
+    pthread_mutex_lock(&pool[i].mtx);\
+    while(pool[i].modify || pool[i].access > 0)\
+      pthread_cond_wait(&pool[i].cond_m,&pool[i].mtx);\
+    pool[i].modify = true; \
+    pthread_mutex_unlock(&pool[i].mtx); }
 
-#define MODIFY_END() {\
-  pthread_mutex_lock(&mtx);\
-  modify = false;\
-  pthread_cond_signal(&cond_m); \
-  pthread_cond_broadcast(&cond_a); \
-  pthread_mutex_unlock(&mtx); }
+#define MODIFY_END(i) {\
+  pthread_mutex_lock(&pool[i].mtx);\
+  pool[i].modify = false;\
+  pthread_cond_signal(&pool[i].cond_m); \
+  pthread_cond_broadcast(&pool[i].cond_a); \
+  pthread_mutex_unlock(&pool[i].mtx); }
 
-#define ACCESS_START() {\
-  pthread_mutex_lock(&mtx);\
-  while(modify)\
-      pthread_cond_wait(&cond_a,&mtx);\
-  access++;\
-  pthread_mutex_unlock(&mtx); }
+#define ACCESS_START(i) {\
+  pthread_mutex_lock(&pool[i].mtx);\
+  while(pool[i].modify)\
+      pthread_cond_wait(&pool[i].cond_a,&pool[i].mtx);\
+  pool[i].access++;\
+  pthread_mutex_unlock(&pool[i].mtx); }
 
-#define ACCESS_END() {\
-  pthread_mutex_lock(&mtx);\
-  access--;\
-  pthread_cond_signal(&cond_m);\
-  pthread_mutex_unlock(&mtx); }
+#define ACCESS_END(i) {\
+  pthread_mutex_lock(&pool[i].mtx);\
+  pool[i].access--;\
+  pthread_cond_signal(&pool[i].cond_m);\
+  pthread_mutex_unlock(&pool[i].mtx); }
 
 void TxnPool::init() {
   for(uint64_t i = 0; i < g_part_cnt / g_node_cnt; i++) {
@@ -53,6 +53,9 @@ void TxnPool::init() {
   for(uint32_t i = 0; i < pool_size;i++) {
     pool[i].head = NULL;
     pool[i].tail = NULL;
+    pthread_mutex_init(&pool[i].mtx,NULL);
+    modify = false;
+    access = 0;
   }
 }
 
@@ -68,11 +71,12 @@ bool TxnPool::empty(uint64_t node_id) {
 void TxnPool::add_txn(uint64_t node_id, txn_man * txn, base_query * qry) {
 
   txn->set_query(qry);
-  MODIFY_START();
-
   uint64_t txn_id = txn->get_txn_id();
   assert(txn_id == qry->txn_id);
   txn_man * next_txn = NULL;
+
+  MODIFY_START(txn_id % pool_size);
+
   txn_node_t t_node = pool[txn_id % pool_size].head;
 
   while (t_node != NULL) {
@@ -95,11 +99,11 @@ void TxnPool::add_txn(uint64_t node_id, txn_man * txn, base_query * qry) {
     t_node->qry = qry;
   }
 
-  MODIFY_END();
+  MODIFY_END(txn_id % pool_size);
 }
 void TxnPool::get_txn(uint64_t node_id, uint64_t txn_id,txn_man *& txn,base_query *& qry){
 
-  ACCESS_START();
+  ACCESS_START(txn_id % pool_size);
 
   txn_node_t t_node = pool[txn_id % pool_size].head;
 
@@ -116,7 +120,7 @@ void TxnPool::get_txn(uint64_t node_id, uint64_t txn_id,txn_man *& txn,base_quer
     qry = NULL;
   }
 
-  ACCESS_END();
+  ACCESS_END(txn_id % pool_size);
 
 }
 
@@ -143,7 +147,7 @@ txn_man * TxnPool::get_txn(uint64_t node_id, uint64_t txn_id){
 
 void TxnPool::restart_txn(uint64_t txn_id){
 
-  ACCESS_START();
+  ACCESS_START(txn_id % pool_size);
 
   txn_node_t t_node = pool[txn_id % pool_size].head;
 
@@ -165,7 +169,7 @@ void TxnPool::restart_txn(uint64_t txn_id){
     t_node = t_node->next;
   }
 
-  ACCESS_END();
+  ACCESS_END(txn_id % pool_size);
 
 }
 
@@ -193,7 +197,7 @@ base_query * TxnPool::get_qry(uint64_t node_id, uint64_t txn_id){
 
 
 void TxnPool::delete_txn(uint64_t node_id, uint64_t txn_id){
-  MODIFY_START();
+  MODIFY_START(txn_id % pool_size);
 
   txn_node_t t_node = pool[txn_id % pool_size].head;
 
@@ -222,12 +226,11 @@ void TxnPool::delete_txn(uint64_t node_id, uint64_t txn_id){
     mem_allocator.free(t_node, sizeof(struct txn_node));
   }
 
-  MODIFY_END()
+  MODIFY_END(txn_id % pool_size)
 
 }
 
 void TxnPool::snapshot() {
-  MODIFY_START();
   uint64_t total = 0;
   uint64_t abrt_total = 0;
   uint64_t wait_total = 0;
@@ -239,6 +242,7 @@ void TxnPool::snapshot() {
   uint64_t other_total = 0;
   uint64_t other_loc = 0;
   for(uint32_t i = 0;i < pool_size; i++) {
+    MODIFY_START(i);
     txn_node_t t_node = pool[i].head;
     while (t_node != NULL) {
       total++;
@@ -272,30 +276,30 @@ void TxnPool::snapshot() {
       */
       t_node = t_node->next;
     }
+    MODIFY_END(i);
   }
   printf("TOTAL: %ld\n",total);
   printf("EXEC: %ld / %ld / %ld\n",exec_total,exec_loc,exec_total-exec_loc);
   printf("WAIT: %ld / %ld -- %ld / %ld\n",wait_total,wait_loc,wait_rem,wait_total-wait_loc);
   printf("ABORT/START: %ld/ %ld / %ld\n",abrt_total,abrt_loc,abrt_total-abrt_loc);
   printf("OTHER: %ld/ %ld / %ld\n",other_total,other_loc,other_total-other_loc);
-  MODIFY_END();
 }
 
 uint64_t TxnPool::get_min_ts() {
-  ACCESS_START()
 
   uint64_t min = UINT64_MAX;
 
   for(uint32_t i = 0; i < pool_size; i++) {
+    ACCESS_START(i)
     txn_node_t t_node = pool[i].head;
     while (t_node != NULL) {
       if(t_node->txn->get_ts() < min)
         min = t_node->txn->get_ts();
       t_node = t_node->next;
     }
+    ACCESS_END(i);
   }
 
-  ACCESS_END();
   return min;
 }
 
@@ -304,9 +308,9 @@ void TxnPool::spec_next(uint64_t tid) {
   if(!spec_mode[tid])
     return;
 
-  MODIFY_START();
 
   for(uint32_t i = 0; i < pool_size; i++) {
+  MODIFY_START(i);
   txn_node_t t_node = pool[i].head;
 
   while (t_node != NULL) {
@@ -337,9 +341,9 @@ void TxnPool::spec_next(uint64_t tid) {
     }
     t_node = t_node->next;
   }
+  MODIFY_END(i);
   }
 
-  MODIFY_END();
 }
 
 void TxnPool::start_spec_ex(uint64_t tid) {
@@ -370,11 +374,11 @@ void TxnPool::commit_spec_ex(int r, uint64_t tid) {
   assert(CC_ALG == HSTORE_SPEC);
   RC rc = (RC) r;
 
-  ACCESS_START();
 
   spec_mode[tid] = false;
 
   for(uint32_t i = 0; i < pool_size; i++) {
+  ACCESS_START(i);
   txn_node_t t_node = pool[i].head;
   //txn_node_t t_node = txns[0];
 
@@ -411,9 +415,9 @@ void TxnPool::commit_spec_ex(int r, uint64_t tid) {
     // FIXME: what if txn is already in work queue or is currently being executed?
     t_node = t_node->next;
   }
+  ACCESS_END(i);
   }
 
-  ACCESS_END();
 
 
 }

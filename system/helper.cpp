@@ -66,15 +66,18 @@ void init_client_globals() {
 	g_servers_per_client = 1;
 	g_server_start_node = 0;
 #else
+  if(g_node_cnt > g_client_node_cnt)
     g_servers_per_client = g_node_cnt / g_client_node_cnt;
-    uint32_t client_node_id = g_node_id - g_node_cnt;
-    g_server_start_node = client_node_id * g_servers_per_client; 
-    if (g_node_cnt % g_client_node_cnt != 0 && g_node_id == (g_node_cnt + g_client_node_cnt -1)) {
-        // Have last client pick up any leftover servers if the number of
-        // servers cannot be evenly divided between client nodes
-        // TODO: fix the remainder to be equally distributed among clients
-        g_servers_per_client += g_node_cnt % g_client_node_cnt;
-    }
+  else
+  g_servers_per_client = 1;
+  uint32_t client_node_id = g_node_id - g_node_cnt;
+  g_server_start_node = client_node_id * g_servers_per_client; 
+  if (g_node_cnt % g_client_node_cnt != 0 && g_node_id == (g_node_cnt + g_client_node_cnt -1)) {
+      // Have last client pick up any leftover servers if the number of
+      // servers cannot be evenly divided between client nodes
+      // TODO: fix the remainder to be equally distributed among clients
+      g_servers_per_client += g_node_cnt % g_client_node_cnt;
+  }
 #endif
     printf("Node %u: servicing %u total nodes starting with node %u\n", g_node_id, g_servers_per_client, g_server_start_node);
 }

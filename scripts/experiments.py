@@ -6,52 +6,56 @@ import math
 # Format: [#Nodes,#Txns,Workload,CC_ALG,MPR]
 fmt_tpcc = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","NUM_WH","MAX_TXN_IN_FLIGHT"]]
 fmt_nd = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","NUM_WH","MAX_TXN_IN_FLIGHT","NETWORK_DELAY"]]
-fmt_ycsb = [["CLIENT_NODE_CNT","NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","CLIENT_THREAD_CNT","CLIENT_REM_THREAD_CNT","THREAD_CNT","REM_THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC","PART_PER_TXN","PART_CNT"]]
+fmt_ycsb = [["CLIENT_NODE_CNT","NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","CLIENT_THREAD_CNT","CLIENT_REM_THREAD_CNT","THREAD_CNT","REM_THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC","PART_PER_TXN","PART_CNT","MSG_TIME_LIMIT","MSG_SIZE_MAX"]]
 fmt_ycsb_plot = [["CLIENT_NODE_CNT","NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","CLIENT_THREAD_CNT","THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC","PART_PER_TXN"]]
 fmt_nt = [["NODE_CNT","CLIENT_NODE_CNT","NETWORK_TEST"]]
 
 
 def test():
     fmt = fmt_ycsb
-    nnodes = [2]
+    nnodes = [1,2,4]
     nmpr=[100]
     nalgos=['NO_WAIT']
     nthreads=[3]
     nrthreads=[1]
     ncthreads=[4]
     ncrthreads=[1]
-    ntifs=[15000]
+    ntifs=[50000]
     nzipf=[0.0]
     nwr_perc=[0.0]
-    ntxn=[1000000]
+    ntxn=[3000000]
+    nbtime=[1000] # in ns
+    nbsize=[4096]
     nparts = [2]
-    exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,txn,'YCSB',cc,m,ct,crt,t,rt,tif,z,1.0-wp,wp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n] for n,ct,crt,t,rt,tif,z,wp,m,cc,p,txn in itertools.product(nnodes,ncthreads,ncrthreads,nthreads,nrthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts,ntxn)]
+    exp = [[int(math.ceil(n)*2) if n > 1 else 1,n,txn,'YCSB',cc,m,ct,crt,t,rt,tif,z,1.0-wp,wp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n,str(mt) + '*1000UL',bsize] for n,ct,crt,t,rt,tif,z,wp,m,cc,p,txn,mt,bsize in itertools.product(nnodes,ncthreads,ncrthreads,nthreads,nrthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts,ntxn,nbtime,nbsize)]
     return fmt[0],exp
 
 def test_plot(summary,summary_client):
     from plot_helper import tput
     fmt,exp = test()
-    fmt = ["CLIENT_NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","MPR","CLIENT_THREAD_CNT","CLIENT_REM_THREAD_CNT","THREAD_CNT","REM_THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC","PART_PER_TXN"]
-    nnodes = [1,2,4,8]
+    fmt = ["CLIENT_NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","MPR","CLIENT_THREAD_CNT","CLIENT_REM_THREAD_CNT","THREAD_CNT","REM_THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC","PART_PER_TXN","MSG_TIME_LIMIT","MSG_SIZE_MAX"]
+    nnodes = [1,2,4]
     nthreads=3
     nrthreads=1
     ncthreads=4
     ncrthreads=1
-    nmpr=[5,10,50,100]
+    nmpr=[100]
     nzipf=[0.0]
-    ntifs=[15000]
-    nwr_perc=[0.0,1.0]
+    ntifs=[50000]
+    nwr_perc=[0.0]
     nalgos=['NO_WAIT']
 #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','VLL','TIMESTAMP']
     nparts = [2]
+    nbtime=1000 # in ns
+    nbsize=4096
     x_name = "NODE_CNT"
     x_vals = nnodes
     v_vals = nalgos
     v_name = "CC_ALG"
     for mpr,wr,zipf,parts,ntif in itertools.product(nmpr,nwr_perc,nzipf,nparts,ntifs):
-        c = [1,1000000,"YCSB",mpr,ncthreads,ncrthreads,nthreads,nrthreads,ntif,zipf,1.0-wr,wr,parts]
+        c = [1,3000000,"YCSB",mpr,ncthreads,ncrthreads,nthreads,nrthreads,ntif,zipf,1.0-wr,wr,parts,nbtime,nbsize]
         assert(len(c) == len(fmt))
-        title = "YCSB System Throughput {}% Writes, {} Skew {} MPR {}".format(wr*100,zipf,mpr,ntif);
+        title = "YCSB System Throughput {}% Writes, {} Skew {} MPR {} TIF".format(wr*100,zipf,mpr,ntif);
         tput(x_vals,v_vals,summary,cfg_fmt=fmt,cfg=c,xname=x_name,vname=v_name,title=title)
     x_vals = ntifs
     x_name = "MAX_TXN_IN_FLIGHT"
@@ -480,6 +484,8 @@ configs = {
     "PROG_TIMER" : "10 * BILLION // in s",
     "NETWORK_TEST" : "false",
     "ABORT_PENALTY": "1 * 1000000UL   // in ns.",
+    "MSG_TIME_LIMIT": "10 * 1000000UL",
+    "MSG_SIZE_MAX": 1024,
 #    "PRT_LAT_DISTR": "true",
 #YCSB
     "INIT_PARALLELISM" : 4, 
@@ -489,7 +495,8 @@ configs = {
     "ZIPF_THETA":0.6,
     "PART_PER_TXN": 1,
     "SYNTH_TABLE_SIZE":"2097152",
-    "LOAD_TXN_FILE":"false"
+    "LOAD_TXN_FILE":"false",
+    "DEBUG_DISTR":"false"
 }
 
 config_names = fmt_ycsb[0]

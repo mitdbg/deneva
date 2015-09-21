@@ -78,7 +78,7 @@ public:
   void abort_finish(uint64_t time); 
   void enqueue(base_query * qry); 
   bool dequeue(base_query *& qry);
-  void get_wq_cnt();
+  uint64_t get_wq_cnt();
   void add_query(int tid, base_query * qry);
   void add_abort_query(int tid, base_query * qry);
   base_query * get_next_query(int tid);

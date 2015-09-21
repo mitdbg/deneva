@@ -389,7 +389,10 @@ def get_outfile_name(cfgs,fmt,network_hosts=[]):
             if nkey == "":
                 output_f += "{}_".format(cfgs[key])
             else:
-                output_f += "{}-{}_".format(nkey,cfgs[key])
+                if str(cfgs[key]).find("*") >= 0:
+                    output_f += "{}-{}_".format(nkey,str(cfgs[key])[:str(cfgs[key]).find("*")])
+                else:
+                    output_f += "{}-{}_".format(nkey,cfgs[key])
     return output_f
 
 def get_cfgs(fmt,e):

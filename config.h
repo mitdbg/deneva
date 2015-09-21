@@ -5,14 +5,14 @@
 /***********************************************/
 // Simulation + Hardware
 /***********************************************/
-#define NODE_CNT 2
-#define THREAD_CNT 3
+#define NODE_CNT 1
+#define THREAD_CNT 2
 #define REM_THREAD_CNT 1
 #define SEND_THREAD_CNT 1
 // PART_CNT should be at least NODE_CNT
-#define PART_CNT 2
-#define CLIENT_NODE_CNT 1
-#define CLIENT_THREAD_CNT 4
+#define PART_CNT 1
+#define CLIENT_NODE_CNT 2
+#define CLIENT_THREAD_CNT 1
 #define CLIENT_REM_THREAD_CNT 1
 #define CLIENT_SEND_THREAD_CNT 1
 #define CLIENT_RUNTIME false
@@ -34,7 +34,7 @@
 #define STATS_ENABLE        true
 #define TIME_ENABLE         true //STATS_ENABLE
 
-#define MAX_TXN_IN_FLIGHT 15000
+#define MAX_TXN_IN_FLIGHT 50000
 
 /***********************************************/
 // Memory System
@@ -60,9 +60,9 @@
 /***********************************************/
 // Message Passing
 /***********************************************/
-#define TPORT_TYPE "tcp"
-#define TPORT_TYPE_IPC false
-#define TPORT_PORT 7000
+#define TPORT_TYPE "ipc"
+#define TPORT_TYPE_IPC true
+#define TPORT_PORT ".ipc"
 
 #define MAX_TPORT_NAME 128
 #define MSG_SIZE 128 // in bytes
@@ -74,8 +74,8 @@
 #define MAX_QUEUE_LEN NODE_CNT * 2
 
 #define PRIORITY_WORK_QUEUE false
-#define MSG_SIZE_MAX 1024//in bytes
-#define MSG_TIME_LIMIT 10 * 1000000UL//in ns 
+#define MSG_SIZE_MAX 4096
+#define MSG_TIME_LIMIT 1000*1000UL
 
 /***********************************************/
 // Concurrency Control
@@ -150,7 +150,7 @@
 #define GEN_BY_MPR true
 // ==== [YCSB] ====
 #define INIT_PARALLELISM 4
-#define SYNTH_TABLE_SIZE 2097152
+#define SYNTH_TABLE_SIZE 1024*8//2097152
 #define ZIPF_THETA 0.0
 #define READ_PERC 1.0
 #define WRITE_PERC 0.0
@@ -175,7 +175,7 @@
 // are not modeled.
 #define TPCC_ACCESS_ALL       false 
 #define WH_UPDATE         true
-#define NUM_WH 2
+#define NUM_WH 4
 // % of transactions that access multiple partitions
 #define MPR 100
 #define MPR_NEWORDER      20 // In %
@@ -236,7 +236,7 @@ extern TestCases          g_test_case;
 #define DEBUG_TIMESTAMP       false
 #define DEBUG_SYNTH         false
 #define DEBUG_ASSERT        false
-#define DEBUG_DISTR         false 
+#define DEBUG_DISTR false
 #define DEBUG_TIMELINE        false
 #define DEBUG_BREAKDOWN       false
 

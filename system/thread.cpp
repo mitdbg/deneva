@@ -189,7 +189,8 @@ RC thread_t::run() {
   uint64_t thd_prof_start;
 
 	while(true) {
-    thd_prof_start = get_sys_clock();
+    uint64_t thd_prof_start_thd1 = get_sys_clock();
+    thd_prof_start = thd_prof_start_thd1;
 
 		if(get_thd_id() == 0) {
       uint64_t now_time = get_sys_clock();
@@ -278,7 +279,7 @@ RC thread_t::run() {
 		}
 
     //FIXME: make abort_queue lock free by transferring implementation to concurrentqueue
-		if((tmp_query = abort_queue.get_next_abort_query(get_thd_id())) != NULL) {
+		if(abort_queue.poll_abort(get_thd_id()) && (tmp_query = abort_queue.get_next_abort_query(get_thd_id())) != NULL) {
       //work_queue.add_query(_thd_id,m_query);
       work_queue.enqueue(tmp_query);
     }
@@ -288,7 +289,7 @@ RC thread_t::run() {
     // Get next query from work queue
 		//m_query = work_queue.get_next_query(get_thd_id());
     //bool got_qry = work_queue.dequeue(m_query);
-    INC_STATS(_thd_id,thd_prof_thd1,get_sys_clock() - thd_prof_start);
+    INC_STATS(_thd_id,thd_prof_thd1,get_sys_clock() - thd_prof_start_thd1);
 		if(!got_qry)
 			continue;
     thd_prof_start = get_sys_clock();
@@ -534,6 +535,8 @@ RC thread_t::run() {
 				assert(m_txn != NULL);
 #endif
 
+        INC_STATS(_thd_id,thd_prof_thd_rfin0,get_sys_clock() - thd_prof_rfin_start);
+        thd_prof_rfin_start = get_sys_clock();
 
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
         if(m_txn) {
@@ -616,6 +619,8 @@ RC thread_t::run() {
         }
         m_query = tmp_query;
 
+        INC_STATS(_thd_id,thd_prof_thd_rack0,get_sys_clock() - thd_prof_rack_start);
+        thd_prof_rack_start = get_sys_clock();
         // returns the current response count for this transaction
 				rsp_cnt = m_txn->decr_rsp(1);
         assert(rsp_cnt >=0);

@@ -22,6 +22,12 @@ struct pool_node {
  public:
    txn_node_t head;
    txn_node_t tail;
+   pthread_mutex_t mtx;
+  pthread_cond_t cond_m;
+  pthread_cond_t cond_a;
+  volatile bool modify;
+  int access;
+
 };
 typedef pool_node * pool_node_t;
 
