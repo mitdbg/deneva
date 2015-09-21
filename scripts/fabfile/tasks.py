@@ -131,7 +131,10 @@ def delete_local_results():
 #@hosts('localhost')
 @parallel
 def delete_remote_results():
-    run("rm -f /home/ubuntu/results.out")
+    if env.cluster == "istc":
+        run("rm -f /home/%s/results.out" % env.user)
+    else:
+        run("rm -f /home/ubuntu/results.out")
 
 @task
 @parallel

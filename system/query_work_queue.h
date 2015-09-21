@@ -3,7 +3,9 @@
 
 #include "global.h"
 #include "helper.h"
+#include "concurrentqueue.h"
 
+//template<typename T> class ConcurrentQueue;
 class base_query;
 
 struct wq_entry {
@@ -27,10 +29,10 @@ public:
   void init();
   void lock();
   void unlock();
-  bool in_hash(uint64_t id);
-  void add_hash(uint64_t id);
-  void update_hash(uint64_t id);
-  void remove_hash(uint64_t id);
+  bool in_qhash(uint64_t id);
+  void add_qhash(uint64_t id);
+  void update_qhash(uint64_t id);
+  void remove_qhash(uint64_t id);
 private:
   uint64_t id_hash_size;
   id_entry_t * id_hash;
@@ -47,7 +49,7 @@ public:
   void abort_finish(uint64_t time); 
   void add_query(base_query * qry);
   void add_abort_query(base_query * qry);
-  base_query * get_next_query();
+  base_query * get_next_query(int id);
   base_query * get_next_query_client();
   void remove_query(base_query * qry);
   void done(uint64_t id);
@@ -74,6 +76,9 @@ public:
   bool poll_next_query(int tid);
   void finish(uint64_t time); 
   void abort_finish(uint64_t time); 
+  void enqueue(base_query * qry); 
+  bool dequeue(base_query *& qry);
+  void get_wq_cnt();
   void add_query(int tid, base_query * qry);
   void add_abort_query(int tid, base_query * qry);
   base_query * get_next_query(int tid);
@@ -87,6 +92,7 @@ public:
 
 
 private:
+  moodycamel::ConcurrentQueue<base_query*,moodycamel::ConcurrentQueueDefaultTraits> wq;
   QWorkQueueHelper * queue;
   QHash * hash;
   int q_len;

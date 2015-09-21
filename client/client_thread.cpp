@@ -40,7 +40,8 @@ RC Client_thread_t::run_remote() {
 
   while(!_wl->sim_init_done) {
     tport_man.recv_msg();
-    while((m_query = work_queue.get_next_query(get_thd_id())) != NULL) {
+    //while((m_query = work_queue.get_next_query(get_thd_id())) != NULL) {
+    while(work_queue.dequeue(m_query)) { 
       assert(m_query->rtype == INIT_DONE);
       DEBUG("Received INIT_DONE from node %ld -- %ld\n",m_query->return_id,_wl->rsp_cnt);
       DEBUG_FLUSH();
@@ -63,10 +64,11 @@ RC Client_thread_t::run_remote() {
 
 	while (true) {
     if(get_sys_clock() - run_starttime >= DONE_TIMER) {
-      return FINISH;
+      break;
     }
 		tport_man.recv_msg();
-    while((m_query = work_queue.get_next_query(get_thd_id())) != NULL) {
+    //while((m_query = work_queue.get_next_query(get_thd_id())) != NULL) {
+    while(work_queue.dequeue(m_query)) { 
 			rq_time = get_sys_clock();
 			assert(m_query->rtype == CL_RSP || m_query->rtype == EXP_DONE);
 			assert(m_query->dest_id == g_node_id);
@@ -96,9 +98,10 @@ RC Client_thread_t::run_remote() {
 #endif
     }
 		ts_t tend = get_sys_clock(); 
-		if (warmup_finish && _wl->sim_done && ((tend - rq_time) > MSG_TIMEOUT)) {
-			if( !ATOM_CAS(_wl->sim_timeout, false, true) )
-				assert( _wl->sim_timeout);
+		if (warmup_finish && 
+        ((_wl->sim_done && ((tend - rq_time) > MSG_TIMEOUT))
+        || (get_sys_clock() - run_starttime >= DONE_TIMER))) {
+      break;
 		}
 
     // If all other nodes are done, finish.
@@ -107,8 +110,11 @@ RC Client_thread_t::run_remote() {
 				assert( _wl->sim_done);
 			if( !ATOM_CAS(_wl->sim_timeout, false, true) )
 				assert( _wl->sim_timeout);
+      return FINISH;
 		}
 
+    // This may be causing the client nodes to not finish
+    /*
 		if (_wl->sim_done && _wl->sim_timeout) {
 			bool done = true;
 			//for (uint32_t i = 0; i < g_node_cnt; ++i) {
@@ -120,13 +126,25 @@ RC Client_thread_t::run_remote() {
 					break;
 				}
 			}
+    }
 
 
 			if (!done)
 				continue;
-			return FINISH;
-		}
+        */
+    if (_wl->sim_done && _wl->sim_timeout) {
+      break;
+    }
 	}
+
+  if( !ATOM_CAS(_wl->sim_timeout, false, true) ) {
+    assert( _wl->sim_timeout);
+  } else {
+    printf("_wl->sim_timeout=%d\n",_wl->sim_timeout);
+    fflush(stdout);
+  }
+
+  return FINISH;
 }
 
 RC Client_thread_t::run_send() {
@@ -148,14 +166,12 @@ RC Client_thread_t::run_send() {
 	printf("Run_send %ld:%ld\n",_node_id, _thd_id);
   fflush(stdout);
 
-	while (true) {
+	while (!(_wl->sim_done && _wl->sim_timeout)) {
     messager.run();
-		if (_wl->sim_done && _wl->sim_timeout) {
-			return FINISH;
-    }
   }
-
+	return FINISH;
 }
+
 RC Client_thread_t::run() {
 	printf("Run %ld:%ld\n",_node_id, _thd_id);
 	if (warmup_finish) {
@@ -217,6 +233,7 @@ RC Client_thread_t::run() {
         break;
 			continue;
 		}
+    /*
 #if DEBUG_DISTR
 		DEBUG("Client: thread %lu sending query to node: %lu\n",
 				_thd_id, GET_NODE_ID(m_query->pid));
@@ -225,7 +242,7 @@ RC Client_thread_t::run() {
                     k + g_server_start_node, client_man.get_inflight(k));
 		}
 #endif
-
+*/
 
     msg_queue.enqueue((base_query*)((void*)m_query),RTXN,GET_NODE_ID(m_query->pid));
 		num_txns_sent++;
@@ -242,28 +259,34 @@ RC Client_thread_t::run() {
       break;
     }
 	}
+
+
 	for (uint64_t l = 0; l < g_servers_per_client; ++l)
 		printf("Txns sent to node %lu: %d\n", l+g_server_start_node, txns_sent[l]);
-	if( !ATOM_CAS(_wl->sim_done, false, true) )
-		assert( _wl->sim_done);
 
-	prog_time = get_sys_clock();
-	SET_STATS(get_thd_id(), tot_run_time, prog_time - run_starttime); 
+  prog_time = get_sys_clock();
+  SET_STATS(get_thd_id(), tot_run_time, prog_time - run_starttime); 
 
-	if( _thd_id == 0) {
-      // Send EXP_DONE to all nodes
-		uint64_t nnodes = g_node_cnt + g_client_node_cnt;
+  if( _thd_id == 0) {
+    // Send EXP_DONE to all nodes
+    uint64_t nnodes = g_node_cnt + g_client_node_cnt;
 #if CC_ALG == CALVIN
-		nnodes++;
+    nnodes++;
 #endif
 #if WORKLOAD == YCSB
     m_query = new ycsb_client_query;
 #endif
-		for(uint64_t i = 0; i < nnodes; i++) {
-			if(i != g_node_id) {
+    for(uint64_t i = 0; i < nnodes; i++) {
+      if(i != g_node_id) {
         msg_queue.enqueue(NULL,EXP_DONE,i);
-			}
+      }
 		}
+    if( !ATOM_CAS(_wl->sim_done, false, true) ) {
+      assert( _wl->sim_done);
+    } else {
+      printf("_wl->sim_done=%d\n",_wl->sim_done);
+      fflush(stdout);
+    }
   }
 	return FINISH;
 }

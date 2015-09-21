@@ -7,7 +7,11 @@
 
 void Row_lock::init(row_t * row) {
 	_row = row;
+  owners_size = 1031;
 	owners = NULL;
+  owners = (LockEntry**) mem_allocator.alloc(sizeof(LockEntry*)*owners_size,0);
+  for(uint64_t i = 0; i < owners_size; i++)
+    owners[i] = NULL;
 	waiters_head = NULL;
 	waiters_tail = NULL;
 	owner_cnt = 0;
@@ -30,20 +34,17 @@ RC Row_lock::lock_get(lock_t type, txn_man * txn) {
 RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt) {
 	assert (CC_ALG == DL_DETECT || CC_ALG == NO_WAIT || CC_ALG == WAIT_DIE || CC_ALG == CALVIN);
 	RC rc;
-	int part_id =_row->get_part_id();
+	//int part_id =_row->get_part_id(); // This was for DL_DETECT
 	if (g_central_man)
 		glob_manager.lock_row(_row);
 	else 
 		pthread_mutex_lock( latch );
-  // These asserts are no longer relevant when # of transactions is no longer tied to # nodes or threads
-	//assert(owner_cnt <= g_node_cnt * g_thread_cnt);
-	//assert(waiter_cnt < g_node_cnt * g_thread_cnt);
 #if DEBUG_ASSERT
-	if (owners != NULL)
-		assert(lock_type == owners->type); 
+	if (owners[hash(txn->get_txn_id())] != NULL)
+		assert(lock_type == owners[hash(txn->get_txn_id())]->type); 
 	else 
 		assert(lock_type == LOCK_NONE);
-	LockEntry * en = owners;
+	LockEntry * en = owners[hash(txn->get_txn_id())];
 	UInt32 cnt = 0;
 	while (en) {
 		assert(en->txn->get_thd_id() != txn->get_thd_id());
@@ -97,14 +98,19 @@ RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt
             //////////////////////////////////////////////////////////
 
 			bool canwait = true;
-			LockEntry * en = owners;
-			while (en != NULL) {
-        if (txn->get_ts() > en->txn->get_ts()) {
-					canwait = false;
-					break;
-				}
-				en = en->next;
-			}
+      LockEntry * en;
+      for(uint64_t i = 0; i < owners_size; i++) {
+        en = owners[i];
+        while (en != NULL) {
+          if (txn->get_ts() > en->txn->get_ts()) {
+            canwait = false;
+            break;
+          }
+          en = en->next;
+        }
+        if(!canwait)
+          break;
+      }
 			if (canwait) {
 				// insert txn to the right position
 				// the waiter list is always in timestamp order
@@ -154,7 +160,7 @@ RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt
     printf("LOCK %ld %ld\n",entry->txn->get_txn_id(),entry->start_ts);
 #endif
     DEBUG("1lock %ld %ld\n",txn->get_txn_id(),_row->get_primary_key());
-		STACK_PUSH(owners, entry);
+		STACK_PUSH(owners[hash(txn->get_txn_id())], entry);
 		owner_cnt ++;
 		lock_type = type;
 		if (CC_ALG == DL_DETECT) 
@@ -163,6 +169,7 @@ RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt
 	}
 final:
 	
+  /*
 	if (rc == WAIT && CC_ALG == DL_DETECT) {
 		// Update the waits-for graph
 		ASSERT(waiters_tail->txn == txn);
@@ -182,6 +189,7 @@ final:
 			}
 		ASSERT(txncnt > 0);
 	}
+  */
 
 	if (g_central_man)
 		glob_manager.release_row(_row);
@@ -194,13 +202,14 @@ final:
 
 RC Row_lock::lock_release(txn_man * txn) {	
 
+  uint64_t thd_prof_start = get_sys_clock();
 	if (g_central_man)
 		glob_manager.lock_row(_row);
 	else 
 		pthread_mutex_lock( latch );
 
 	// Try to find the entry in the owners
-	LockEntry * en = owners;
+	LockEntry * en = owners[hash(txn->get_txn_id())];
 	LockEntry * prev = NULL;
 
 	while (en != NULL && en->txn != txn) {
@@ -210,7 +219,7 @@ RC Row_lock::lock_release(txn_man * txn) {
 	if (en) { // find the entry in the owner list
     en->txn->cc_hold_time = get_sys_clock() - en->start_ts;
 		if (prev) prev->next = en->next;
-		else owners = en->next;
+		else owners[hash(txn->get_txn_id())] = en->next;
 		return_entry(en);
 		owner_cnt --;
     DEBUG("unlock %ld %ld\n",txn->get_txn_id(),_row->get_primary_key());
@@ -237,6 +246,8 @@ RC Row_lock::lock_release(txn_man * txn) {
 		waiter_cnt --;
 	}
 
+  INC_STATS(txn->get_thd_id(),thd_prof_cc1,get_sys_clock() - thd_prof_start);
+  thd_prof_start = get_sys_clock();
 	if (owner_cnt == 0)
 		ASSERT(lock_type == LOCK_NONE);
 #if DEBUG_ASSERT && CC_ALG == WAIT_DIE 
@@ -259,7 +270,7 @@ RC Row_lock::lock_release(txn_man * txn) {
     entry->txn->cc_wait_time += t;
     entry->txn->txn_time_wait += t;
 
-		STACK_PUSH(owners, entry);
+		STACK_PUSH(owners[hash(entry->txn->get_txn_id())], entry);
 		owner_cnt ++;
 		waiter_cnt --;
 		ASSERT(entry->txn->lock_ready == false);
@@ -268,13 +279,13 @@ RC Row_lock::lock_release(txn_man * txn) {
     txn_pool.restart_txn(entry->txn->get_txn_id());
 		lock_type = entry->type;
 	} 
-	ASSERT((owners == NULL) == (owner_cnt == 0));
 
 	if (g_central_man)
 		glob_manager.release_row(_row);
 	else
 		pthread_mutex_unlock( latch );
 
+  INC_STATS(txn->get_thd_id(),thd_prof_cc2,get_sys_clock() - thd_prof_start);
 	return RCOK;
 }
 

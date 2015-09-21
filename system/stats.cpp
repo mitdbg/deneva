@@ -202,6 +202,19 @@ void Stats_thd::clear() {
   qq_lat = 0;
   aq_full = 0;
 
+  thd_prof_thd1=0; thd_prof_thd2=0; thd_prof_thd3=0;
+  thd_prof_thd1a=0; thd_prof_thd1b=0; thd_prof_thd1c=0; thd_prof_thd1d=0;
+  thd_prof_thd2_loc=0; thd_prof_thd2_rem=0;
+  thd_prof_thd_rfin1=0; thd_prof_thd_rfin2=0;
+  thd_prof_thd_rack1=0; thd_prof_thd_rack2a=0;thd_prof_thd_rack2=0;thd_prof_thd_rack3=0;thd_prof_thd_rack4=0;
+  for(int i = 0; i < 16;i++)
+    thd_prof_thd2_type[i] = 0;
+  thd_prof_ycsb1=0;
+  thd_prof_row1=0;thd_prof_row2=0;thd_prof_row3=0;
+  thd_prof_cc1=0;thd_prof_cc2=0;
+  thd_prof_wq1=0;thd_prof_wq2=0;thd_prof_wq1=3;thd_prof_wq4=0;
+  thd_prof_txn1=0;thd_prof_txn2=0;
+
   time_getqry = 0;
   client_latency = 0;
   txn_sent = 0;
@@ -783,6 +796,61 @@ void Stats::print(bool prog) {
         if (total_finish_time == 0.0) {
             total_finish_time = total_tot_run_time;
         }
+	for (uint64_t tid = 0; tid < g_thread_cnt; tid ++) {
+    double thd_prof_sum = 
+        _stats[tid]->thd_prof_thd1
+        +_stats[tid]->thd_prof_thd2
+        +_stats[tid]->thd_prof_thd3;
+    printf("prof%ld: thd1=%f,thd2=%f,thd3=%f,sum=%f,clk=%f\n"
+        ",thd1a=%f,thd1b=%f,thd1c=%f,thd1d=%f\n"
+        ",thd2_loc=%f,thd2_rem=%f\n"
+        ",thd_rfin1=%f,thd_rfin2=%f\n"
+        ",thd_rack1=%f,thd_rack2a=%f,thd_rack2=%f,thd_rack3=%f,thd_rack4=%f\n"
+        ",ycsb1=%f\n"
+        ",row1=%f,row2=%f,row3=%f\n"
+        ",cc1=%f,cc2=%f\n"
+        ",wq1=%f,wq2=%f"
+        ",wq3=%f,wq4=%f\n"
+        ",txn1=%f,txn2=%f\n"
+        ,tid
+        ,_stats[tid]->thd_prof_thd1 / BILLION
+        ,_stats[tid]->thd_prof_thd2 / BILLION
+        ,_stats[tid]->thd_prof_thd3 / BILLION
+        ,thd_prof_sum / BILLION
+			  ,_stats[tid]->tot_run_time / BILLION
+
+        ,_stats[tid]->thd_prof_thd1a / BILLION
+        ,_stats[tid]->thd_prof_thd1b / BILLION
+        ,_stats[tid]->thd_prof_thd1c / BILLION
+        ,_stats[tid]->thd_prof_thd1d / BILLION
+        ,_stats[tid]->thd_prof_thd2_loc / BILLION
+        ,_stats[tid]->thd_prof_thd2_rem / BILLION
+        ,_stats[tid]->thd_prof_thd_rfin1 / BILLION
+        ,_stats[tid]->thd_prof_thd_rfin2 / BILLION
+
+        ,_stats[tid]->thd_prof_thd_rack1 / BILLION
+        ,_stats[tid]->thd_prof_thd_rack2a / BILLION
+        ,_stats[tid]->thd_prof_thd_rack2 / BILLION
+        ,_stats[tid]->thd_prof_thd_rack3 / BILLION
+        ,_stats[tid]->thd_prof_thd_rack4 / BILLION
+
+        ,_stats[tid]->thd_prof_ycsb1 / BILLION
+        ,_stats[tid]->thd_prof_row1 / BILLION
+        ,_stats[tid]->thd_prof_row2 / BILLION
+        ,_stats[tid]->thd_prof_row3 / BILLION
+        ,_stats[tid]->thd_prof_cc1 / BILLION
+        ,_stats[tid]->thd_prof_cc2 / BILLION
+        ,_stats[tid]->thd_prof_wq1 / BILLION
+        ,_stats[tid]->thd_prof_wq2 / BILLION
+        ,_stats[tid]->thd_prof_wq3 / BILLION
+        ,_stats[tid]->thd_prof_wq4 / BILLION
+        ,_stats[tid]->thd_prof_txn1 / BILLION
+        ,_stats[tid]->thd_prof_txn2 / BILLION
+        );
+        for(int i = 0; i < 16;i++)
+          printf(",thd2_type%d=%f",i,_stats[tid]->thd_prof_thd2_type[i] / BILLION);
+        printf("\n");
+  }
     }
 
 	FILE * outf;
@@ -927,7 +995,7 @@ void Stats::print(bool prog) {
 			total_time_work / BILLION,
 			total_time_rqry / BILLION,
 			total_tport_lat / BILLION / total_msg_rcv_cnt,
-      txn_pool.get_cnt(),
+      txn_pool.get_wq_cnt(),
       work_queue.get_cnt(),
       work_queue.get_abrt_cnt(),
   total_txn_time_begintxn / BILLION,

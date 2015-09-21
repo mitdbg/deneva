@@ -5,14 +5,14 @@
 /***********************************************/
 // Simulation + Hardware
 /***********************************************/
-#define NODE_CNT 8
+#define NODE_CNT 2
 #define THREAD_CNT 3
 #define REM_THREAD_CNT 1
 #define SEND_THREAD_CNT 1
 // PART_CNT should be at least NODE_CNT
-#define PART_CNT 8
-#define CLIENT_NODE_CNT 4
-#define CLIENT_THREAD_CNT 2
+#define PART_CNT 2
+#define CLIENT_NODE_CNT 1
+#define CLIENT_THREAD_CNT 4
 #define CLIENT_REM_THREAD_CNT 1
 #define CLIENT_SEND_THREAD_CNT 1
 #define CLIENT_RUNTIME false
@@ -34,7 +34,7 @@
 #define STATS_ENABLE        true
 #define TIME_ENABLE         true //STATS_ENABLE
 
-#define MAX_TXN_IN_FLIGHT 5000
+#define MAX_TXN_IN_FLIGHT 15000
 
 /***********************************************/
 // Memory System
@@ -175,7 +175,7 @@
 // are not modeled.
 #define TPCC_ACCESS_ALL       false 
 #define WH_UPDATE         true
-#define NUM_WH 8
+#define NUM_WH 2
 // % of transactions that access multiple partitions
 #define MPR 100
 #define MPR_NEWORDER      20 // In %

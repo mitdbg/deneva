@@ -97,7 +97,30 @@ void TxnPool::add_txn(uint64_t node_id, txn_man * txn, base_query * qry) {
 
   MODIFY_END();
 }
+void TxnPool::get_txn(uint64_t node_id, uint64_t txn_id,txn_man *& txn,base_query *& qry){
 
+  ACCESS_START();
+
+  txn_node_t t_node = pool[txn_id % pool_size].head;
+
+  while (t_node != NULL) {
+    if (t_node->txn->get_txn_id() == txn_id) {
+      txn = t_node->txn;
+      qry = t_node->qry;
+      break;
+    }
+    t_node = t_node->next;
+  }
+  if(!t_node) {
+    txn = NULL;
+    qry = NULL;
+  }
+
+  ACCESS_END();
+
+}
+
+/*
 txn_man * TxnPool::get_txn(uint64_t node_id, uint64_t txn_id){
   txn_man * next_txn = NULL;
 
@@ -116,6 +139,7 @@ txn_man * TxnPool::get_txn(uint64_t node_id, uint64_t txn_id){
   ACCESS_END();
   return next_txn;
 }
+*/
 
 void TxnPool::restart_txn(uint64_t txn_id){
 
@@ -130,9 +154,11 @@ void TxnPool::restart_txn(uint64_t txn_id){
       else
         t_node->qry->rtype = RQRY;
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
-      work_queue.add_query(t_node->qry->active_part/g_node_cnt,t_node->qry);
+      //work_queue.add_query(t_node->qry->active_part/g_node_cnt,t_node->qry);
+      work_queue.enqueue(t_node->qry);
 #else
-      work_queue.add_query(0,t_node->qry);
+      //work_queue.add_query(0,t_node->qry);
+      work_queue.enqueue(t_node->qry);
 #endif
       break;
     }
@@ -143,6 +169,7 @@ void TxnPool::restart_txn(uint64_t txn_id){
 
 }
 
+/*
 base_query * TxnPool::get_qry(uint64_t node_id, uint64_t txn_id){
   base_query * next_qry = NULL;
 
@@ -162,6 +189,7 @@ base_query * TxnPool::get_qry(uint64_t node_id, uint64_t txn_id){
 
   return next_qry;
 }
+*/
 
 
 void TxnPool::delete_txn(uint64_t node_id, uint64_t txn_id){
@@ -300,9 +328,11 @@ void TxnPool::spec_next(uint64_t tid) {
       t_node->txn->rc = RCOK;
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
       //printf("SPEC %ld\n",t_node->qry->txn_id);
-      work_queue.add_query(t_node->qry->active_part/g_node_cnt,t_node->qry);
+      //work_queue.add_query(t_node->qry->active_part/g_node_cnt,t_node->qry);
+      work_queue.enqueue(t_node->qry);
 #else
-      work_queue.add_query(0,t_node->qry);
+      //work_queue.add_query(0,t_node->qry);
+      work_queue.enqueue(t_node->qry);
 #endif
     }
     t_node = t_node->next;
@@ -357,9 +387,11 @@ void TxnPool::commit_spec_ex(int r, uint64_t tid) {
       t_node->txn->spec_done = true;
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
       //printf("SPEC END %ld\n",t_node->qry->txn_id);
-      work_queue.add_query(t_node->qry->active_part/g_node_cnt,t_node->qry);
+      //work_queue.add_query(t_node->qry->active_part/g_node_cnt,t_node->qry);
+      work_queue.enqueue(t_node->qry);
 #else
-      work_queue.add_query(0,t_node->qry);
+      //work_queue.add_query(0,t_node->qry);
+      work_queue.enqueue(t_node->qry);
 #endif
     }
     else if (t_node->txn->get_txn_id() % g_node_cnt == g_node_id && t_node->qry->active_part/g_node_cnt == tid && t_node->qry->part_num == 1 && t_node->txn->state != PREP && t_node->txn->state != DONE && !t_node->txn->spec_done && t_node->txn->spec) {
@@ -369,9 +401,11 @@ void TxnPool::commit_spec_ex(int r, uint64_t tid) {
       t_node->txn->finish(Abort,t_node->qry->part_to_access,t_node->qry->part_num);
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
       //printf("SPEC ABRT %ld\n",t_node->qry->txn_id);
-      work_queue.add_query(t_node->qry->active_part/g_node_cnt,t_node->qry);
+      //work_queue.add_query(t_node->qry->active_part/g_node_cnt,t_node->qry);
+      work_queue.enqueue(t_node->qry);
 #else
-      work_queue.add_query(0,t_node->qry);
+      //work_queue.add_query(0,t_node->qry);
+      work_queue.enqueue(t_node->qry);
 #endif
     }
     // FIXME: what if txn is already in work queue or is currently being executed?

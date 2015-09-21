@@ -104,6 +104,7 @@ void base_query::local_rinit_query(uint64_t part_id) {
         tmp_query->part_cnt = 1;
         tmp_query->parts = new uint64_t[1];
         tmp_query->parts[0] = part_id;
-        work_queue.add_query(GET_PART_ID_IDX(tmp_query->active_part),tmp_query);
+        //work_queue.add_query(GET_PART_ID_IDX(tmp_query->active_part),tmp_query);
+        work_queue.enqueue(tmp_query);
  
 }

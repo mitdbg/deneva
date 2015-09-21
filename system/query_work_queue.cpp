@@ -1,6 +1,8 @@
 #include "query_work_queue.h"
 #include "mem_alloc.h"
 #include "query.h"
+#include "concurrentqueue.h"
+
 
 void QWorkQueue::init() {
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
@@ -16,6 +18,7 @@ void QWorkQueue::init() {
   }
   cnt = 0;
   abrt_cnt = 0;
+  //wq = new ConcurrentQueue<base_query*,moodycamel::ConcurrentQueueDefaultTraits>;
 }
 
 int inline QWorkQueue::get_idx(int input) {
@@ -54,13 +57,28 @@ void QWorkQueue::add_abort_query(int tid, base_query * qry) {
     ATOM_ADD(abrt_cnt,1);
 }
 
+void QWorkQueue::enqueue(base_query * qry) {
+  wq.enqueue(qry);
+}
+//TODO: do we need to has qry id here?
+// If we do, maybe add in check as an atomic var in base_query
+// Current hash implementation requires an expensive mutex
+bool QWorkQueue::dequeue(base_query *& qry) {
+  return wq.try_dequeue(qry);
+}
+
+// Note: this is an **approximate** count
+uint64_t QWorkQueue::get_wq_cnt() {
+  return (uint64_t)wq.size_approx();
+}
+
 base_query * QWorkQueue::get_next_query(int tid) {
   int idx = get_idx(tid);
   base_query * rtn_qry;
   if(ISCLIENT) {
     rtn_qry = queue[idx].get_next_query_client();
   } else {
-    rtn_qry = queue[idx].get_next_query();
+    rtn_qry = queue[idx].get_next_query(tid);
   }
   if(rtn_qry) {
     ATOM_SUB(cnt,1);
@@ -74,11 +92,7 @@ void QWorkQueue::remove_query(int tid, base_query * qry) {
 }
 
 void QWorkQueue::update_hash(int tid, uint64_t id) {
-  hash->update_hash(id);
-  /*
-  int idx = get_idx(tid);
-    queue[idx].update_hash(id);
-    */
+  //hash->update_qhash(id);
 }
 
 void QWorkQueue::done(int tid, uint64_t id) {
@@ -119,7 +133,7 @@ void QHash::unlock() {
   pthread_mutex_unlock(&mtx);
 }
 
-bool QHash::in_hash(uint64_t id) {
+bool QHash::in_qhash(uint64_t id) {
   if( id == UINT64_MAX)
     return true;
   id_entry_t bin = id_hash[id % id_hash_size];
@@ -132,7 +146,7 @@ bool QHash::in_hash(uint64_t id) {
 
 }
 
-void QHash::add_hash(uint64_t id) {
+void QHash::add_qhash(uint64_t id) {
   if(id == UINT64_MAX)
     return;
   id_entry * entry = new id_entry;
@@ -141,7 +155,7 @@ void QHash::add_hash(uint64_t id) {
   id_hash[id % id_hash_size] = entry;
 }
 
-void QHash::update_hash(uint64_t id) {
+void QHash::update_qhash(uint64_t id) {
   pthread_mutex_lock(&mtx);
   id_entry * entry = new id_entry;
   entry->id = id;
@@ -150,7 +164,7 @@ void QHash::update_hash(uint64_t id) {
   pthread_mutex_unlock(&mtx);
 }
 
-void QHash::remove_hash(uint64_t id) {
+void QHash::remove_qhash(uint64_t id) {
   if(id ==UINT64_MAX)
     return;
   pthread_mutex_lock(&mtx);
@@ -295,11 +309,16 @@ base_query * QWorkQueueHelper::get_next_query_client() {
   return next_qry;
 }
 
-base_query * QWorkQueueHelper::get_next_query() {
+base_query * QWorkQueueHelper::get_next_query(int id) {
   base_query * next_qry = NULL;
 
+  uint64_t thd_prof_start = get_sys_clock();
   pthread_mutex_lock(&mtx);
+    INC_STATS(id,thd_prof_wq1,get_sys_clock() - thd_prof_start);
+    thd_prof_start = get_sys_clock();
   hash->lock();
+    INC_STATS(id,thd_prof_wq2,get_sys_clock() - thd_prof_start);
+    thd_prof_start = get_sys_clock();
 
   uint64_t starttime = get_sys_clock();
 
@@ -309,11 +328,11 @@ base_query * QWorkQueueHelper::get_next_query() {
   if(cnt > 0) {
     next = head;
     while(next) {
-      if(next->qry->txn_id == UINT64_MAX || !hash->in_hash(next->qry->txn_id)) {
+      if(next->qry->txn_id == UINT64_MAX || !hash->in_qhash(next->qry->txn_id)) {
         next_qry = next->qry;
         if(next_qry->txn_id != UINT64_MAX) {
-          hash->add_hash(next_qry->txn_id);
-          assert(hash->in_hash(next_qry->txn_id));
+          hash->add_qhash(next_qry->txn_id);
+          assert(hash->in_qhash(next_qry->txn_id));
         }
         LIST_REMOVE_HT(next,head,tail);
         cnt--;
@@ -344,19 +363,22 @@ base_query * QWorkQueueHelper::get_next_query() {
   }
   */
 
+    INC_STATS(id,thd_prof_wq3,get_sys_clock() - thd_prof_start);
+    thd_prof_start = get_sys_clock();
 
   INC_STATS(0,time_qq,get_sys_clock() - starttime);
   hash->unlock();
 //  if(next_qry)
 //    printf("Get Query %ld %d\n",next_qry->txn_id,next_qry->rtype);
   pthread_mutex_unlock(&mtx);
+    INC_STATS(id,thd_prof_wq4,get_sys_clock() - thd_prof_start);
   return next_qry;
 }
 
 
 // Remove hash
 void QWorkQueueHelper::done(uint64_t id) {
-  hash->remove_hash(id);
+  //hash->remove_qhash(id);
 }
 
 bool QWorkQueueHelper::poll_abort() {

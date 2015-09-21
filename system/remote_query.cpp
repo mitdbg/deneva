@@ -55,9 +55,11 @@ void Remote_query::unpack(void * d, uint64_t len) {
 
     unpack_query(query,data,ptr,dest_id,return_id);
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
-		work_queue.add_query(GET_PART_ID_IDX(query->active_part),query);
+		//work_queue.add_query(GET_PART_ID_IDX(query->active_part),query);
+    work_queue.enqueue(query);
 #else
-		work_queue.add_query(0,query);
+		//work_queue.add_query(0,query);
+    work_queue.enqueue(query);
 #endif
     txn_cnt--;
     query->time_copy += get_sys_clock() - starttime;

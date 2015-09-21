@@ -212,7 +212,9 @@ void txn_man::cleanup(RC rc) {
 #if CC_ALG == OCC
   occ_man.finish(rc,this);
 #endif
+
 	ts_t starttime = get_sys_clock();
+  uint64_t thd_prof_start = starttime;
 	for (int rid = row_cnt - 1; rid >= 0; rid --) {
 		row_t * orig_r = accesses[rid]->orig_row;
 		access_t type = accesses[rid]->type;
@@ -239,6 +241,9 @@ void txn_man::cleanup(RC rc) {
 #endif
 		accesses[rid]->data = NULL;
 	}
+
+  INC_STATS(get_thd_id(),thd_prof_txn1,get_sys_clock() - thd_prof_start);
+  thd_prof_start = get_sys_clock();
 
 #if CC_ALG == VLL
   vll_man.finishTxn(this);
@@ -268,6 +273,7 @@ void txn_man::cleanup(RC rc) {
 #if CC_ALG == DL_DETECT
 	dl_detector.clear_dep(get_txn_id());
 #endif
+  INC_STATS(get_thd_id(),thd_prof_txn2,get_sys_clock() - thd_prof_start);
 }
 
 RC txn_man::get_lock(row_t * row, access_t type) {
@@ -541,7 +547,8 @@ RC txn_man::finish(base_query * query, bool fin) {
         tmp_query->part_cnt = 1;
         tmp_query->parts = new uint64_t[1];
         tmp_query->parts[0] = part_id;
-        work_queue.add_query(GET_PART_ID_IDX(tmp_query->active_part),tmp_query);
+        //work_queue.add_query(GET_PART_ID_IDX(tmp_query->active_part),tmp_query);
+        work_queue.enqueue(tmp_query);
 
 
       }
@@ -570,7 +577,8 @@ RC txn_man::finish(base_query * query, bool fin) {
         tmp_query->part_cnt = 1;
         tmp_query->parts = new uint64_t[1];
         tmp_query->parts[0] = part_id;
-        work_queue.add_query(GET_PART_ID_IDX(tmp_query->active_part),tmp_query);
+        //work_queue.add_query(GET_PART_ID_IDX(tmp_query->active_part),tmp_query);
+        work_queue.enqueue(tmp_query);
 
 
       }

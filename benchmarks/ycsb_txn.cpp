@@ -83,6 +83,7 @@ RC ycsb_txn_man::run_txn(base_query * query) {
   RC rc = RCOK;
   rem_done = false;
   fin = false;
+  uint64_t thd_prof_start = get_sys_clock();
 
 #if CC_ALG == CALVIN
   rc = run_ycsb(query);
@@ -110,6 +111,7 @@ RC ycsb_txn_man::run_txn(base_query * query) {
 
   assert(rc != WAIT_REM || GET_NODE_ID(query->pid) == g_node_id);
 
+  INC_STATS(get_thd_id(),thd_prof_ycsb1,get_sys_clock() - thd_prof_start);
   return rc;
 
 }

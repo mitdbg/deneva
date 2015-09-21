@@ -136,6 +136,7 @@ RC row_t::get_lock(access_t type, txn_man * txn) {
 
 RC row_t::get_row(access_t type, txn_man * txn, row_t *& row) {
 	RC rc = RCOK;
+  uint64_t thd_prof_start = get_sys_clock();
 #if CC_ALG == WAIT_DIE || CC_ALG == NO_WAIT || CC_ALG == DL_DETECT 
 	//uint64_t thd_id = txn->get_thd_id();
 	lock_t lt = (type == RD || type == SCAN)? LOCK_SH : LOCK_EX;
@@ -161,7 +162,7 @@ RC row_t::get_row(access_t type, txn_man * txn, row_t *& row) {
 		INC_STATS(0, wait_cnt, 1);
 
 	}
-	return rc;
+	goto end;
 #elif CC_ALG == TIMESTAMP || CC_ALG == MVCC 
 	//uint64_t thd_id = txn->get_thd_id();
 	// For TIMESTAMP RD, a new copy of the row will be returned.
@@ -177,7 +178,7 @@ RC row_t::get_row(access_t type, txn_man * txn, row_t *& row) {
 	if (type == WR) {
 		rc = this->manager->access(txn, P_REQ, NULL);
 		if (rc != RCOK) 
-			return rc;
+			goto end;
 	}
 	if ((type == WR && rc == RCOK) || type == RD || type == SCAN) {
 		rc = this->manager->access(txn, R_REQ, NULL);
@@ -189,7 +190,7 @@ RC row_t::get_row(access_t type, txn_man * txn, row_t *& row) {
 			//while (!txn->ts_ready) {}
 		  INC_STATS(0, wait_cnt, 1);
       rc = WAIT;
-      return rc;
+      goto end;
 
       /*
 			uint64_t t2 = get_sys_clock();
@@ -210,14 +211,14 @@ RC row_t::get_row(access_t type, txn_man * txn, row_t *& row) {
 		newr->copy(row);
 		row = newr;
 	}
-	return rc;
+	goto end;
 #elif CC_ALG == OCC
 	// OCC always make a local copy regardless of read or write
 	txn->cur_row = (row_t *) mem_allocator.alloc(sizeof(row_t), get_part_id());
 	txn->cur_row->init(get_table(), get_part_id());
 	rc = this->manager->access(txn, R_REQ);
 	row = txn->cur_row;
-	return rc;
+	goto end;
 #elif CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || CC_ALG == VLL || CC_ALG == CALVIN
 #if CC_ALG == HSTORE_SPEC
   if(txn_pool.spec_mode) {
@@ -225,19 +226,24 @@ RC row_t::get_row(access_t type, txn_man * txn, row_t *& row) {
 	  txn->cur_row->init(get_table(), get_part_id());
 	  rc = this->manager->access(txn, R_REQ);
 	  row = txn->cur_row;
-	  return rc;
+	  goto end;
   }
 #endif
 	row = this;
-	return rc;
+	goto end;
 #else
 	assert(false);
 #endif
+
+end:
+  INC_STATS(txn->get_thd_id(),thd_prof_row1,get_sys_clock() - thd_prof_start);
+  return rc;
 }
 
 // Return call for get_row if waiting 
 RC row_t::get_row_post_wait(access_t type, txn_man * txn, row_t *& row) {
 
+  uint64_t thd_prof_start = get_sys_clock();
   RC rc = RCOK;
   assert(CC_ALG == WAIT_DIE || CC_ALG == MVCC || CC_ALG == TIMESTAMP);
 #if CC_ALG == WAIT_DIE
@@ -264,6 +270,7 @@ RC row_t::get_row_post_wait(access_t type, txn_man * txn, row_t *& row) {
 		row = newr;
 	}
 #endif
+  INC_STATS(txn->get_thd_id(),thd_prof_row2,get_sys_clock() - thd_prof_start);
   return rc;
 }
 
@@ -275,6 +282,7 @@ RC row_t::get_row_post_wait(access_t type, txn_man * txn, row_t *& row) {
 // For TIMESTAMP, the row will be explicity deleted at the end of access().
 // (c.f. row_ts.cpp)
 void row_t::return_row(access_t type, txn_man * txn, row_t * row) {	
+  uint64_t thd_prof_start = get_sys_clock();
 #if CC_ALG == WAIT_DIE || CC_ALG == NO_WAIT || CC_ALG == DL_DETECT || CC_ALG == CALVIN
 	assert (row == NULL || row == this || type == XP);
 	if (ROLL_BACK && type == XP) {// recover from previous writes.
@@ -317,5 +325,6 @@ void row_t::return_row(access_t type, txn_man * txn, row_t * row) {
 #else 
 	assert(false);
 #endif
+  INC_STATS(txn->get_thd_id(),thd_prof_row3,get_sys_clock() - thd_prof_start);
 }
 

@@ -13,14 +13,14 @@ fmt_nt = [["NODE_CNT","CLIENT_NODE_CNT","NETWORK_TEST"]]
 
 def test():
     fmt = fmt_ycsb
-    nnodes = [1,2,4,8]
+    nnodes = [2]
     nmpr=[100]
     nalgos=['NO_WAIT']
     nthreads=[3]
     nrthreads=[1]
-    ncthreads=[2]
+    ncthreads=[4]
     ncrthreads=[1]
-    ntifs=[2000,5000]
+    ntifs=[15000]
     nzipf=[0.0]
     nwr_perc=[0.0]
     ntxn=[1000000]
@@ -33,20 +33,19 @@ def test_plot(summary,summary_client):
     fmt,exp = test()
     fmt = ["CLIENT_NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","MPR","CLIENT_THREAD_CNT","CLIENT_REM_THREAD_CNT","THREAD_CNT","REM_THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC","PART_PER_TXN"]
     nnodes = [1,2,4,8]
-    x_name = "NODE_CNT"
-    x_vals = nnodes
     nthreads=3
     nrthreads=1
-    ncthreads=2
+    ncthreads=4
     ncrthreads=1
-    nmpr=[100]
+    nmpr=[5,10,50,100]
     nzipf=[0.0]
-    ntifs=[2000,5000]
-    nwr_perc=[0.0]
+    ntifs=[15000]
+    nwr_perc=[0.0,1.0]
     nalgos=['NO_WAIT']
 #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','VLL','TIMESTAMP']
     nparts = [2]
-
+    x_name = "NODE_CNT"
+    x_vals = nnodes
     v_vals = nalgos
     v_name = "CC_ALG"
     for mpr,wr,zipf,parts,ntif in itertools.product(nmpr,nwr_perc,nzipf,nparts,ntifs):
@@ -61,7 +60,7 @@ def test_plot(summary,summary_client):
         c = [1,1000000,"YCSB",mpr,ncthreads,ncrthreads,nthreads,nrthreads,ncc,zipf,1.0-wr,wr,parts]
         assert(len(c) == len(fmt))
         title = "YCSB System Throughput {}% Writes, {} Skew {} MPR {}".format(wr*100,zipf,mpr,ncc);
-        tput(x_vals,v_vals,summary,cfg_fmt=fmt,cfg=c,xname=x_name,vname=v_name,title=title)
+#        tput(x_vals,v_vals,summary,cfg_fmt=fmt,cfg=c,xname=x_name,vname=v_name,title=title)
 
 # Performance: throughput vs. node count
 # Vary: Node count, % writes

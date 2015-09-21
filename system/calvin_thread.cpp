@@ -166,7 +166,8 @@ RC calvin_thread_t::run() {
       case RTXN:
 				INC_STATS(0,rtxn,1);
 
-				m_txn = txn_pool.get_txn(g_node_id,m_query->txn_id);
+        base_query * tmp_query;
+				txn_pool.get_txn(g_node_id,m_query->txn_id,m_txn,tmp_query);
         if(m_txn == NULL) {
 					ATOM_ADD(txn_st_cnt,1);
 					rc = _wl->get_txn_man(m_txn, this);

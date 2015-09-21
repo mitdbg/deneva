@@ -25,6 +25,7 @@ private:
 	LockEntry * get_entry();
 	void 		return_entry(LockEntry * entry);
 	row_t * _row;
+  uint64_t hash(uint64_t id) {return id % owners_size;};
     lock_t lock_type;
     UInt32 owner_cnt;
     UInt32 waiter_cnt;
@@ -33,7 +34,9 @@ private:
 	// waiters is a double linked list 
 	// [waiters] head is the oldest txn, tail is the youngest txn. 
 	//   So new txns are inserted into the tail.
-	LockEntry * owners;	
+    //TODO: change LockEntry * owners; into hash table
+	LockEntry ** owners;	
+  uint64_t owners_size;
 	LockEntry * waiters_head;
 	LockEntry * waiters_tail;
 };
