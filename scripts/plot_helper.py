@@ -253,7 +253,7 @@ def tput(xval,vval,summary,
             n_cnt = my_cfg[my_cfg_fmt.index("NODE_CNT")]
             n_clt = my_cfg[my_cfg_fmt.index("CLIENT_NODE_CNT")]
 #            my_cfg[my_cfg_fmt.index("CLIENT_NODE_CNT")] = n_cnt
-            my_cfg[my_cfg_fmt.index("CLIENT_NODE_CNT")] = int(math.ceil(n_cnt/2)) if n_cnt > 1 else 1
+            my_cfg[my_cfg_fmt.index("CLIENT_NODE_CNT")] = int(math.ceil(n_cnt)) if n_cnt > 1 else 1
             n_ppt = my_cfg[my_cfg_fmt.index("PART_PER_TXN")]
             my_cfg[my_cfg_fmt.index("PART_PER_TXN")] = n_ppt if n_ppt <= n_cnt else n_cnt
             n_thd =  my_cfg[my_cfg_fmt.index("THREAD_CNT")]

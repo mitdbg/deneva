@@ -7,6 +7,7 @@
 #include "query.h"
 #include "transport.h"
 #include "plock.h"
+#include "msg_queue.h"
 
 void Remote_query::init(uint64_t node_id, workload * wl) {
 	q_idx = 0;
@@ -54,11 +55,16 @@ void Remote_query::unpack(void * d, uint64_t len) {
 
 
     unpack_query(query,data,ptr,dest_id,return_id);
-#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
-		//work_queue.add_query(GET_PART_ID_IDX(query->active_part),query);
-    work_queue.enqueue(query);
+#if MODE_SIMPLE
+    if(query->rtype == RTXN) {
+      query->txn_id = g_node_id;
+      msg_queue.enqueue(query,CL_RSP,query->client_id);
+		  INC_STATS(0,txn_cnt,1);
+      ATOM_ADD(_wl->txn_cnt,1);
+    } else {
+      work_queue.enqueue(query);
+    }
 #else
-		//work_queue.add_query(0,query);
     work_queue.enqueue(query);
 #endif
     txn_cnt--;

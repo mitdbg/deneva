@@ -61,6 +61,9 @@ void txn_man::init(thread_t * h_thd, workload * h_wl, uint64_t thd_id) {
 	num_accesses_alloc = 0;
 }
 
+void txn_man::reset() {
+}
+
 void txn_man::clear() {
   cc_wait_cnt = 0;
   cc_wait_time = 0;
@@ -68,6 +71,8 @@ void txn_man::clear() {
   ready_ulk = 0;
   ready_part = 0;
   row_cnt = 0;
+  state = START;
+  rc = RCOK;
 }
 
 void txn_man::update_stats() {
@@ -423,6 +428,9 @@ RC txn_man::finish_local(RC rc, uint64_t * parts, uint64_t part_cnt) {
 }
 
 RC txn_man::finish(RC rc, uint64_t * parts, uint64_t part_cnt) {
+#if MODE_TWOPC
+  return RCOK;
+#endif
   assert(h_thd->_node_id < g_node_cnt);
 	uint64_t starttime = get_sys_clock();
     if(txn_twopc_starttime > 0)
@@ -470,7 +478,7 @@ RC txn_man::finish(base_query * query, bool fin) {
     return query->rc;
   }
 
-#if QRY_ONLY
+#if MODE_QRY
   return RCOK;
 #endif
   //uint64_t starttime = get_sys_clock();

@@ -5,10 +5,14 @@ import glob
 import latency_stats as ls
 
 SHORTNAMES = {
-    "CLIENT_NODE_CNT" : "CNODE_CNT",
-    "CLIENT_THREAD_CNT" : "CTHD_CNT",
-    "NODE_CNT" : "NODE_CNT",
-    "THREAD_CNT" : "THD_CNT",
+    "CLIENT_NODE_CNT" : "CN",
+    "CLIENT_THREAD_CNT" : "CT",
+    "CLIENT_REM_THREAD_CNT" : "CRT",
+    "CLIENT_SEND_THREAD_CNT" : "CST",
+    "NODE_CNT" : "N",
+    "THREAD_CNT" : "T",
+    "REM_THREAD_CNT" : "RT",
+    "SEND_THREAD_CNT" : "ST",
     "CC_ALG" : "",
     "WORKLOAD" : "",
     "MAX_TXN_PER_PART" : "TXNS",
@@ -17,6 +21,8 @@ SHORTNAMES = {
     "READ_PERC" : "RD",
     "WRITE_PERC" : "WR",
     "ZIPF_THETA" : "SKEW",
+    "MSG_TIME_LIMIT" : "BT",
+    "MSG_SIZE_MAX" : "BS",
 }
 
 stat_map = {
@@ -390,7 +396,10 @@ def get_outfile_name(cfgs,fmt,network_hosts=[]):
                 output_f += "{}_".format(cfgs[key])
             else:
                 if str(cfgs[key]).find("*") >= 0:
-                    output_f += "{}-{}_".format(nkey,str(cfgs[key])[:str(cfgs[key]).find("*")])
+                    output_f += "{}-{}_".format(nkey,str(cfgs[key])[:cfgs[key].find("*")])
+#                    output_f += "{}-{}_".format(nkey,str(cfgs[key]).replace('*','-t-'))
+#                elif str(cfgs[key]).find("/") >= 0:
+#                    output_f += "{}-{}_".format(nkey,str(cfgs[key]).replace('/','-d-'))
                 else:
                     output_f += "{}-{}_".format(nkey,cfgs[key])
     return output_f

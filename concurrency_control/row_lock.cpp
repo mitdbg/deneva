@@ -7,7 +7,7 @@
 
 void Row_lock::init(row_t * row) {
 	_row = row;
-  owners_size = 1031;
+  owners_size = 13;//1031;
 	owners = NULL;
   owners = (LockEntry**) mem_allocator.alloc(sizeof(LockEntry*)*owners_size,0);
   for(uint64_t i = 0; i < owners_size; i++)
@@ -16,6 +16,7 @@ void Row_lock::init(row_t * row) {
 	waiters_tail = NULL;
 	owner_cnt = 0;
 	waiter_cnt = 0;
+  max_owner_ts = 0;
 
 	latch = new pthread_mutex_t;
 	pthread_mutex_init(latch, NULL);
@@ -97,6 +98,8 @@ RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt
             //      T should abort
             //////////////////////////////////////////////////////////
 
+      bool canwait = txn->get_ts() > max_owner_ts;
+      /*
 			bool canwait = true;
       LockEntry * en;
       for(uint64_t i = 0; i < owners_size; i++) {
@@ -111,6 +114,7 @@ RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt
         if(!canwait)
           break;
       }
+      */
 			if (canwait) {
 				// insert txn to the right position
 				// the waiter list is always in timestamp order
@@ -118,6 +122,7 @@ RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt
         entry->start_ts = get_sys_clock();
 				entry->txn = txn;
 				entry->type = type;
+        LockEntry * en;
 				en = waiters_head;
 				while (en != NULL && txn->get_ts() < en->txn->get_ts()) 
 					en = en->next;
@@ -141,7 +146,7 @@ RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt
       }
     } else if (CC_ALG == CALVIN){
 			LockEntry * entry = get_entry();
-                entry->start_ts = get_sys_clock();
+      entry->start_ts = get_sys_clock();
 			entry->txn = txn;
 			entry->type = type;
 			LIST_PUT_TAIL(waiters_head, waiters_tail, entry);
@@ -151,16 +156,22 @@ RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt
       txn->rc = rc;
       txn->wait_starttime = get_sys_clock();
     }
-	} else {
+	} else { // NO_WAIT
+    DEBUG("1lock %ld %ld\n",txn->get_txn_id(),_row->get_primary_key());
+#if DEBUG_TIMELINE
+    printf("LOCK %ld %ld\n",entry->txn->get_txn_id(),entry->start_ts);
+#endif
+    /*
+#if CC_ALG != NO_WAIT
 		LockEntry * entry = get_entry();
 		entry->type = type;
     entry->start_ts = get_sys_clock();
 		entry->txn = txn;
-#if DEBUG_TIMELINE
-    printf("LOCK %ld %ld\n",entry->txn->get_txn_id(),entry->start_ts);
-#endif
-    DEBUG("1lock %ld %ld\n",txn->get_txn_id(),_row->get_primary_key());
 		STACK_PUSH(owners[hash(txn->get_txn_id())], entry);
+#endif
+*/
+    if(txn->get_ts() > max_owner_ts)
+      max_owner_ts = txn->get_ts();
 		owner_cnt ++;
 		lock_type = type;
 		if (CC_ALG == DL_DETECT) 
@@ -208,6 +219,21 @@ RC Row_lock::lock_release(txn_man * txn) {
 	else 
 		pthread_mutex_lock( latch );
 
+  INC_STATS(txn->get_thd_id(),thd_prof_cc0,get_sys_clock() - thd_prof_start);
+  thd_prof_start = get_sys_clock();
+
+  // If CC is NO_WAIT or WAIT_DIE, txn should own this lock
+  // What about Calvin?
+//#if CC_ALG == NO_WAIT
+  assert(owner_cnt > 0);
+  owner_cnt--;
+  DEBUG("unlock %ld %ld\n",txn->get_txn_id(),_row->get_primary_key());
+  if (owner_cnt == 0) {
+    lock_type = LOCK_NONE;
+  }
+
+  /*
+#else
 	// Try to find the entry in the owners
 	LockEntry * en = owners[hash(txn->get_txn_id())];
 	LockEntry * prev = NULL;
@@ -216,6 +242,10 @@ RC Row_lock::lock_release(txn_man * txn) {
 		prev = en;
 		en = en->next;
 	}
+
+  INC_STATS(txn->get_thd_id(),thd_prof_cc1,get_sys_clock() - thd_prof_start);
+  thd_prof_start = get_sys_clock();
+
 	if (en) { // find the entry in the owner list
     en->txn->cc_hold_time = get_sys_clock() - en->start_ts;
 		if (prev) prev->next = en->next;
@@ -245,14 +275,18 @@ RC Row_lock::lock_release(txn_man * txn) {
 		return_entry(en);
 		waiter_cnt --;
 	}
+#endif
+*/
 
-  INC_STATS(txn->get_thd_id(),thd_prof_cc1,get_sys_clock() - thd_prof_start);
+  INC_STATS(txn->get_thd_id(),thd_prof_cc2,get_sys_clock() - thd_prof_start);
   thd_prof_start = get_sys_clock();
 	if (owner_cnt == 0)
 		ASSERT(lock_type == LOCK_NONE);
 #if DEBUG_ASSERT && CC_ALG == WAIT_DIE 
-		for (en = waiters_head; en != NULL && en->next != NULL; en = en->next)
-			assert(en->next->txn->get_ts() < en->txn->get_ts());
+  for (en = waiters_head; en != NULL && en->next != NULL; en = en->next)
+    assert(en->next->txn->get_ts() < en->txn->get_ts());
+  for (en = waiters_head; en != NULL && en->next != NULL; en = en->next)
+    assert(en->txn->get_txn_id() !=txn->get_txn_id());
 #endif
 
 	LockEntry * entry;
@@ -270,14 +304,22 @@ RC Row_lock::lock_release(txn_man * txn) {
     entry->txn->cc_wait_time += t;
     entry->txn->txn_time_wait += t;
 
+    /*
+#if CC_ALG != NO_WAIT
 		STACK_PUSH(owners[hash(entry->txn->get_txn_id())], entry);
+#endif 
+*/
 		owner_cnt ++;
 		waiter_cnt --;
+    if(entry->txn->get_ts() > max_owner_ts)
+      max_owner_ts = txn->get_ts();
 		ASSERT(entry->txn->lock_ready == false);
-    // TODO: Add txn back into work queue here
 		entry->txn->lock_ready = true;
     txn_pool.restart_txn(entry->txn->get_txn_id());
 		lock_type = entry->type;
+//#if CC_AlG == NO_WAIT
+		return_entry(entry);
+//#endif
 	} 
 
 	if (g_central_man)
@@ -285,7 +327,7 @@ RC Row_lock::lock_release(txn_man * txn) {
 	else
 		pthread_mutex_unlock( latch );
 
-  INC_STATS(txn->get_thd_id(),thd_prof_cc2,get_sys_clock() - thd_prof_start);
+  INC_STATS(txn->get_thd_id(),thd_prof_cc3,get_sys_clock() - thd_prof_start);
 	return RCOK;
 }
 

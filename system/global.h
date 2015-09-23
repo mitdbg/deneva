@@ -96,6 +96,7 @@ extern UInt32 g_client_rem_thread_cnt;
 extern UInt32 g_client_send_thread_cnt;
 extern UInt32 g_client_node_cnt;
 extern UInt32 g_servers_per_client;
+extern UInt32 g_clients_per_server;
 extern UInt32 g_server_start_node;
 
 /******************************************/
@@ -187,6 +188,7 @@ enum TsType {R_REQ, W_REQ, P_REQ, XP_REQ};
 #define GET_PART_ID_IDX(p)	(p / g_node_cnt) 
 #define ISSEQUENCER (g_node_id == g_node_cnt + g_client_node_cnt ) //FIXME: Is this the right formula?
 #define ISCLIENT (g_node_id >= g_node_cnt && g_node_id < g_node_cnt + g_client_node_cnt)
+#define ISCLIENTN(id) (id >= g_node_cnt && id < g_node_cnt + g_client_node_cnt)
 #define IS_LOCAL(tid) (tid % g_node_cnt == g_node_id)
 #define IS_REMOTE(tid) (tid % g_node_cnt != g_node_id)
 

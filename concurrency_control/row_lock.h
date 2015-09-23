@@ -30,15 +30,15 @@ private:
     UInt32 owner_cnt;
     UInt32 waiter_cnt;
 	
-	// owners is a single linked list
+	// owners is a hash table
 	// waiters is a double linked list 
 	// [waiters] head is the oldest txn, tail is the youngest txn. 
 	//   So new txns are inserted into the tail.
-    //TODO: change LockEntry * owners; into hash table
 	LockEntry ** owners;	
   uint64_t owners_size;
 	LockEntry * waiters_head;
 	LockEntry * waiters_tail;
+  uint64_t max_owner_ts;
 };
 
 #endif

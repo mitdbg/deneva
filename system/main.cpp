@@ -101,6 +101,7 @@ int main(int argc, char* argv[])
   fflush(stdout);
 	tport_man.init(g_node_id);
   printf("Done\n");
+  fflush(stdout);
   printf("Initializing work queue... ");
   work_queue.init();
   printf("Done\n");

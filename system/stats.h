@@ -70,6 +70,7 @@ public:
   double aq_full;
 
   double sthd_prof_1, sthd_prof_2, sthd_prof_3, sthd_prof_4, sthd_prof_5;
+  double rthd_prof_1, rthd_prof_2;
   double thd_prof_thd1, thd_prof_thd2, thd_prof_thd3;
   double thd_prof_thd1a, thd_prof_thd1b, thd_prof_thd1c, thd_prof_thd1d;
   double thd_prof_thd2_loc, thd_prof_thd2_rem;
@@ -78,7 +79,7 @@ public:
   double thd_prof_thd_rack0,thd_prof_thd_rack1, thd_prof_thd_rack2a,thd_prof_thd_rack2,thd_prof_thd_rack3,thd_prof_thd_rack4;
   double thd_prof_ycsb1;
   double thd_prof_row1,thd_prof_row2,thd_prof_row3;
-  double thd_prof_cc1,thd_prof_cc2;
+  double thd_prof_cc0,thd_prof_cc1,thd_prof_cc2,thd_prof_cc3;
   double thd_prof_wq1,thd_prof_wq2;
   double thd_prof_wq3,thd_prof_wq4;
   double thd_prof_txn1,thd_prof_txn2;

@@ -80,6 +80,11 @@ RC ycsb_txn_man::acquire_locks(base_query * query) {
 
 
 RC ycsb_txn_man::run_txn(base_query * query) {
+#if MODE_TWOPC
+  ycsb_query * m_query = (ycsb_query*) query;
+  m_query->rem_req_state = YCSB_FIN;
+	return finish(query,false);
+#endif
   RC rc = RCOK;
   rem_done = false;
   fin = false;
@@ -186,10 +191,6 @@ RC ycsb_txn_man::run_txn_state(base_query * query) {
       if(loc) {
         rc = run_ycsb_0(req,row);
       } else {
-#if TWOPC_ONLY
-        rc = RCOK;
-        break;
-#endif
         assert(GET_NODE_ID(m_query->pid) == g_node_id);
 
         query->dest_part = part_id;
@@ -199,12 +200,6 @@ RC ycsb_txn_man::run_txn_state(base_query * query) {
       }
       break;
 		case YCSB_1 :
-#if TWOPC_ONLY
-      if(!loc) {
-        rc = RCOK;
-        break;
-      }
-#endif
       rc = run_ycsb_1(req->acctype,row);
       break;
     case YCSB_FIN :

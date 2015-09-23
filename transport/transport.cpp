@@ -23,7 +23,14 @@ Transport::Transport() {
 #if CC_ALG == CALVIN
 	_node_cnt++;	// account for the sequencer
 #endif
-	s = new Socket[_node_cnt];
+  uint64_t s_thd;
+  if(g_client_send_thread_cnt > g_send_thread_cnt)
+    s_thd = g_client_send_thread_cnt;
+  else
+    s_thd = g_send_thread_cnt;
+  _sock_cnt = s_thd * (_node_cnt) + g_node_cnt * g_send_thread_cnt + g_client_node_cnt * g_client_send_thread_cnt;
+	//s = new Socket[_node_cnt];
+	s = new Socket[_sock_cnt];
 
     delay_queue = new DelayQueue();
     delay_queue->init();
@@ -42,9 +49,9 @@ void Transport::read_ifconfig(const char * ifaddr_file) {
 	uint64_t cnt = 0;
 	ifstream fin(ifaddr_file);
 	string line;
-    while (getline(fin, line)) {
+  while (getline(fin, line)) {
 		//memcpy(ifaddr[cnt],&line[0],12);
-        strcpy(ifaddr[cnt],&line[0]);
+    strcpy(ifaddr[cnt],&line[0]);
 		cnt++;
 	}
 	for(uint64_t i=0;i<_node_cnt;i++) {
@@ -55,6 +62,10 @@ void Transport::read_ifconfig(const char * ifaddr_file) {
 void Transport::init(uint64_t node_id) {
 	printf("Init %ld\n",node_id);
 	_node_id = node_id;
+  if(ISCLIENT)
+    _sock_cnt = g_client_send_thread_cnt * (_node_cnt-1) + g_node_cnt * g_send_thread_cnt + (g_client_node_cnt-1) * g_client_send_thread_cnt;
+  else
+    _sock_cnt = g_send_thread_cnt  * (_node_cnt-1) + (g_node_cnt-1) * g_send_thread_cnt + g_client_node_cnt * g_client_send_thread_cnt;
   rr = 0;
 #if CC_ALG == CALVIN
 	// TODO: fix me. Calvin does not have separate remote and local threads
@@ -81,11 +92,11 @@ void Transport::init(uint64_t node_id) {
 	read_ifconfig(path.c_str());
 #endif
 
-	int rc;
+	int rc = 0;
 
 	int timeo = 1000; // timeout in ms
   int opt = 0;
-	for(uint64_t i=0;i<_node_cnt;i++) {
+	for(uint64_t i=0;i<_sock_cnt;i++) {
 		s[i].sock.setsockopt(NN_SOL_SOCKET,NN_RCVTIMEO,&timeo,sizeof(timeo));
     // NN_TCP_NODELAY doesn't cause TCP_NODELAY to be set -- nanomsg issue #118
 		s[i].sock.setsockopt(NN_SOL_SOCKET,NN_TCP_NODELAY,&opt,sizeof(opt));
@@ -93,6 +104,7 @@ void Transport::init(uint64_t node_id) {
 
 	printf("Node ID: %d/%lu\n",g_node_id,_node_cnt);
 
+  /*
 	for(uint64_t i=0;i<_node_cnt-1;i++) {
 		for(uint64_t j=i+1;j<_node_cnt;j++) {
 			if(i != g_node_id && j != g_node_id) {
@@ -116,9 +128,61 @@ void Transport::init(uint64_t node_id) {
 				printf("Connecting to %s\n",socket_name);
 				rc = s[i].sock.connect(socket_name);
 			}
+      s_cnt++;
 		}
-
 	}
+	fflush(stdout);
+  */
+
+  uint64_t s_cnt = 0;
+  uint64_t s_thd;
+  if(ISCLIENT)
+    s_thd = g_client_send_thread_cnt;
+  else
+    s_thd = g_send_thread_cnt;
+
+  // Ports for sending
+  for(uint64_t i = 0; i < s_thd; i++) {
+    for(uint64_t j = 0; j < _node_cnt; j++) {
+      if(j == g_node_id)
+        continue;
+			char socket_name[MAX_TPORT_NAME];
+			int port = g_node_id + j * _node_cnt + i * _node_cnt * _node_cnt;
+#if TPORT_TYPE_IPC
+			sprintf(socket_name,"%s://node_%d%s",TPORT_TYPE,port,TPORT_PORT);
+#else
+      port+= TPORT_PORT;
+      sprintf(socket_name,"%s://eth0:%d",TPORT_TYPE,port);
+#endif
+      printf("Sock[%ld] Binding to %s %d -> %ld\n",s_cnt,socket_name,g_node_id,j);
+      rc = s[s_cnt].sock.bind(socket_name);
+      s_cnt++;
+    }
+  }
+
+  // Ports for receiving
+  for(uint64_t i = 0; i < _node_cnt; i++) {
+    if(i == g_node_id)
+      continue;
+    if(ISCLIENTN(i))
+      s_thd = g_client_send_thread_cnt;
+    else
+      s_thd = g_send_thread_cnt;
+    for(uint64_t j = 0; j < s_thd; j++) {
+			char socket_name[MAX_TPORT_NAME];
+			int port = i + (g_node_id * _node_cnt) + j * _node_cnt * _node_cnt;
+#if TPORT_TYPE_IPC
+			sprintf(socket_name,"%s://node_%d%s",TPORT_TYPE,port,TPORT_PORT);
+#else
+      port+= TPORT_PORT;
+			sprintf(socket_name,"%s://eth0;%s:%d",TPORT_TYPE,ifaddr[i],port);
+#endif
+      printf("Sock[%ld] Connecting to %s %ld -> %d\n",s_cnt,socket_name,i,g_node_id);
+      rc = s[s_cnt].sock.connect(socket_name);
+      s_cnt++;
+
+    }
+  }
 	fflush(stdout);
 
 	if(rc < 0) {
@@ -130,10 +194,24 @@ uint64_t Transport::get_node_id() {
 	return _node_id;
 }
 
-void Transport::send_msg(uint64_t dest_id, void * sbuf) {
+void Transport::send_msg(uint64_t sid, uint64_t dest_id, void * sbuf) {
   uint64_t starttime = get_sys_clock();
+  uint64_t id;
+  if(ISCLIENT) {
+    id = sid - g_client_thread_cnt;
+  }
+  else {
+    id = sid - g_thread_cnt;
+  }
+  uint64_t idx = id * (_node_cnt-1) + dest_id;
+  if(g_node_id < dest_id)
+    idx--;
+  /*
+  printf("d:%ld idx:%ld -- %ld * %ld + %ld -- %ld\n",dest_id,idx,id,_node_cnt-1,dest_id,sid);
+  fflush(stdout);
+  */
 
-	int rc= s[dest_id].sock.send(&sbuf,NN_MSG,0);
+	int rc= s[idx].sock.send(&sbuf,NN_MSG,0);
 
 	// Check for a send error
 	if(rc < 0) {
@@ -269,8 +347,8 @@ bool Transport::recv_msg() {
 	void * buf;
   uint64_t starttime = get_sys_clock();
 	
-	for(uint64_t i=0;i<_node_cnt;i++) {
-		bytes = s[rr++ % _node_cnt].sock.recv(&buf, NN_MSG, NN_DONTWAIT);
+	for(uint64_t i=0;i<_sock_cnt;i++) {
+		bytes = s[rr++ % _sock_cnt].sock.recv(&buf, NN_MSG, NN_DONTWAIT);
 
     if(rr == UINT64_MAX)
       rr = 0;

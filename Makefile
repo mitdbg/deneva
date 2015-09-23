@@ -29,8 +29,8 @@ OBJS_UNIT = $(addprefix obj/, $(notdir $(CPPS_UNIT:.cpp=.o)))
 
 #NOGRAPHITE=1
 
-all:rundb runcl runsq unit_test
-#runsq
+all:rundb runcl runsq 
+#unit_test
 
 .PHONY: deps_db
 deps:$(CPPS_DB)

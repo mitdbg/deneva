@@ -212,16 +212,21 @@ void TxnPool::delete_txn(uint64_t node_id, uint64_t txn_id){
 
   if(t_node != NULL) {
     assert(!t_node->txn->spec || t_node->txn->state == DONE);
-    t_node->txn->release();
 #if WORKLOAD == TPCC
+    t_node->txn->release();
     mem_allocator.free(t_node->txn, sizeof(tpcc_txn_man));
     if(t_node->qry->txn_id % g_node_cnt != node_id) {
       mem_allocator.free(t_node->qry, sizeof(tpcc_query));
     }
 #elif WORKLOAD == YCSB
-    mem_allocator.free(t_node->txn, sizeof(ycsb_txn_man));
+    if(t_node->txn) {
+      t_node->txn->release();
+      mem_allocator.free(t_node->txn, sizeof(ycsb_txn_man));
+    }
     
-    YCSB_QUERY_FREE(t_node->qry)
+    if(t_node->qry) {
+      YCSB_QUERY_FREE(t_node->qry)
+    }
 #endif
     mem_allocator.free(t_node, sizeof(struct txn_node));
   }

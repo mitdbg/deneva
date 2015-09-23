@@ -31,6 +31,9 @@ row_t::switch_schema(table_t * host_table) {
 }
 
 void row_t::init_manager(row_t * row) {
+#if MODE_FT || MODE_TWOPC
+  return;
+#endif
 #if CC_ALG == DL_DETECT || CC_ALG == NO_WAIT || CC_ALG == WAIT_DIE || CC_ALG == CALVIN
     manager = (Row_lock *) mem_allocator.alloc(sizeof(Row_lock), _part_id);
 #elif CC_ALG == TIMESTAMP
@@ -136,6 +139,9 @@ RC row_t::get_lock(access_t type, txn_man * txn) {
 
 RC row_t::get_row(access_t type, txn_man * txn, row_t *& row) {
 	RC rc = RCOK;
+#if MODE_FT
+  return rc;
+#endif
   uint64_t thd_prof_start = get_sys_clock();
 #if CC_ALG == WAIT_DIE || CC_ALG == NO_WAIT || CC_ALG == DL_DETECT 
 	//uint64_t thd_id = txn->get_thd_id();
@@ -282,6 +288,9 @@ RC row_t::get_row_post_wait(access_t type, txn_man * txn, row_t *& row) {
 // For TIMESTAMP, the row will be explicity deleted at the end of access().
 // (c.f. row_ts.cpp)
 void row_t::return_row(access_t type, txn_man * txn, row_t * row) {	
+#if MODE_FT
+  return;
+#endif
   uint64_t thd_prof_start = get_sys_clock();
 #if CC_ALG == WAIT_DIE || CC_ALG == NO_WAIT || CC_ALG == DL_DETECT || CC_ALG == CALVIN
 	assert (row == NULL || row == this || type == XP);

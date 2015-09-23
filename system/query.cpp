@@ -80,6 +80,18 @@ void base_query::clear() {
   //time_copy = 0;
 } 
 
+void base_query::base_reset() { 
+  part_touched_cnt = 0;
+  rtype = RTXN;
+  rc = RCOK;
+  spec = false;
+  spec_done = false;
+  abort_restart = true;
+#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
+  active_part = home_part;
+#endif
+}
+
 void base_query::update_rc(RC rc) {
   if(rc == Abort)
     this->rc = rc;

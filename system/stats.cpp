@@ -202,6 +202,7 @@ void Stats_thd::clear() {
   qq_lat = 0;
   aq_full = 0;
 
+  rthd_prof_1=0; rthd_prof_2=0;
   sthd_prof_1=0; sthd_prof_2=0; sthd_prof_3=0; sthd_prof_4=0; sthd_prof_5=0;
   thd_prof_thd1=0; thd_prof_thd2=0; thd_prof_thd3=0;
   thd_prof_thd1a=0; thd_prof_thd1b=0; thd_prof_thd1c=0; thd_prof_thd1d=0;
@@ -213,6 +214,7 @@ void Stats_thd::clear() {
   thd_prof_ycsb1=0;
   thd_prof_row1=0;thd_prof_row2=0;thd_prof_row3=0;
   thd_prof_cc1=0;thd_prof_cc2=0;
+  thd_prof_cc0=0;thd_prof_cc3=0;
   thd_prof_wq1=0;thd_prof_wq2=0;thd_prof_wq1=3;thd_prof_wq4=0;
   thd_prof_txn1=0;thd_prof_txn2=0;
 
@@ -496,6 +498,7 @@ void Stats::print_client(bool prog) {
 	uint64_t total_msg_rcv_cnt = 0;
 	double total_time_msg_sent = 0;
   double total_time_getqry = 0;
+	double total_mq_full = 0;
 
   uint64_t limit;
   if(g_node_id < g_node_cnt)
@@ -520,6 +523,7 @@ void Stats::print_client(bool prog) {
 		total_msg_sent_cnt += _stats[tid]->msg_sent_cnt;
 		total_msg_rcv_cnt += _stats[tid]->msg_rcv_cnt;
 		total_time_msg_sent += _stats[tid]->time_msg_sent;
+		total_mq_full += _stats[tid]->mq_full;
   }
   if(prog)
 		total_tot_run_time += _stats[0]->tot_run_time;
@@ -535,6 +539,14 @@ void Stats::print_client(bool prog) {
        ,_stats[tid]->sthd_prof_5 / BILLION
       );
   }
+	for (uint64_t tid = g_client_thread_cnt+g_client_send_thread_cnt; tid < g_client_thread_cnt + g_client_send_thread_cnt + g_client_rem_thread_cnt; tid ++) {
+  printf(
+      "rthd_prof_1=%f,rthd_prof_2=%f\n"
+      ,_stats[tid]->rthd_prof_1 / BILLION
+      ,_stats[tid]->rthd_prof_2 / BILLION
+      );
+  }
+
 
 
   }
@@ -554,6 +566,7 @@ void Stats::print_client(bool prog) {
       ",txn_sent=%ld"
       ",time_getqry=%f"
       ",latency=%f"
+      ",mq_full=%f"
       ",mbuf_send_time=%f"
       ",msg_batch_size=%ld"
       ",msg_batch_cnt=%ld"
@@ -572,6 +585,7 @@ void Stats::print_client(bool prog) {
 			total_txn_sent, 
 			total_time_getqry / BILLION,
 		  total_client_latency / total_txn_cnt / BILLION,
+			total_mq_full / BILLION,
 			total_mbuf_send_time / BILLION / total_msg_batch_cnt, 
 			total_msg_batch_size, 
 			total_msg_batch_cnt, 
@@ -866,6 +880,14 @@ void Stats::print(bool prog) {
        ,_stats[tid]->sthd_prof_5 / BILLION
       );
   }
+	for (uint64_t tid = g_thread_cnt+g_send_thread_cnt; tid < g_thread_cnt + g_send_thread_cnt + g_rem_thread_cnt; tid ++) {
+  printf(
+      "rthd_prof_1=%f,rthd_prof_2=%f\n"
+      ,_stats[tid]->rthd_prof_1 / BILLION
+      ,_stats[tid]->rthd_prof_2 / BILLION
+      );
+  }
+
 
 	for (uint64_t tid = 0; tid < g_thread_cnt; tid ++) {
     double thd_prof_sum = 
@@ -879,7 +901,7 @@ void Stats::print(bool prog) {
         ",thd_rack0=%f,thd_rack1=%f,thd_rack2a=%f,thd_rack2=%f,thd_rack3=%f,thd_rack4=%f\n"
         ",ycsb1=%f\n"
         ",row1=%f,row2=%f,row3=%f\n"
-        ",cc1=%f,cc2=%f\n"
+        ",cc0=%f,cc1=%f,cc2=%f,cc3=%f\n"
         ",wq1=%f,wq2=%f"
         ",wq3=%f,wq4=%f\n"
         ",txn1=%f,txn2=%f\n"
@@ -911,8 +933,10 @@ void Stats::print(bool prog) {
         ,_stats[tid]->thd_prof_row1 / BILLION
         ,_stats[tid]->thd_prof_row2 / BILLION
         ,_stats[tid]->thd_prof_row3 / BILLION
+        ,_stats[tid]->thd_prof_cc0 / BILLION
         ,_stats[tid]->thd_prof_cc1 / BILLION
         ,_stats[tid]->thd_prof_cc2 / BILLION
+        ,_stats[tid]->thd_prof_cc3 / BILLION
         ,_stats[tid]->thd_prof_wq1 / BILLION
         ,_stats[tid]->thd_prof_wq2 / BILLION
         ,_stats[tid]->thd_prof_wq3 / BILLION

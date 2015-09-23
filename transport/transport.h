@@ -54,7 +54,7 @@ class Transport {
 		void read_ifconfig(const char * ifaddr_file);
 		void init(uint64_t node_id);
 		uint64_t get_node_id();
-		void send_msg(uint64_t dest_id, void * sbuf);
+		void send_msg(uint64_t sid, uint64_t dest_id, void * sbuf);
 		void send_msg(uint64_t dest_id, void ** data, int * sizes, int num); 
 		bool recv_msg();
 		void simple_send_msg(int size); 
@@ -71,6 +71,7 @@ class Transport {
 
 		uint64_t _node_id;
     uint64_t _node_cnt;
+    uint64_t _sock_cnt;
 		char ** ifaddr;
 		uint32_t _thd_id;	// for stats
 
