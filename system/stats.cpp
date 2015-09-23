@@ -222,6 +222,7 @@ void Stats_thd::clear() {
   client_latency = 0;
   txn_sent = 0;
 
+  cc_busy_cnt = 0;
 	cc_wait_cnt = 0;
 	cc_wait_abrt_cnt = 0;
 	cc_wait_time = 0;
@@ -712,6 +713,7 @@ void Stats::print(bool prog) {
 	double total_time_query = 0;
 	double total_rtime_proc = 0;
 	double total_time_unpack = 0;
+	uint64_t total_cc_busy_cnt = 0;
 	uint64_t total_cc_wait_cnt = 0;
 	double total_cc_wait_time = 0;
 	double total_cc_hold_time = 0;
@@ -817,6 +819,7 @@ void Stats::print(bool prog) {
 		total_rtime_proc += _stats[tid]->rtime_proc;
 		total_time_unpack += _stats[tid]->time_unpack;
 
+		total_cc_busy_cnt += _stats[tid]->cc_busy_cnt;
 		total_cc_wait_cnt += _stats[tid]->cc_wait_cnt;
 		total_cc_wait_time += _stats[tid]->cc_wait_time;
 		total_cc_hold_time += _stats[tid]->cc_hold_time;
@@ -972,6 +975,7 @@ void Stats::print(bool prog) {
       ",run_time=%f"
       ",finish_time=%f"
       ",aq_full=%f"
+			",cc_busy_cnt=%ld"
 			",cc_wait_cnt=%ld"
 			",cc_wait_time=%f"
 			",cc_hold_time=%f"
@@ -1050,6 +1054,7 @@ void Stats::print(bool prog) {
 			total_run_time / BILLION,
             total_finish_time / BILLION,
 			total_aq_full / BILLION,
+      total_cc_busy_cnt,
       total_cc_wait_cnt,
       total_cc_wait_time / BILLION,
       total_cc_hold_time / BILLION,

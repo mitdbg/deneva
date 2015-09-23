@@ -69,6 +69,8 @@ public:
   double qq_lat;
   double aq_full;
 
+  uint64_t cc_busy_cnt; // # of accesses when lock was owned (not necessarily a conflict)
+
   double sthd_prof_1, sthd_prof_2, sthd_prof_3, sthd_prof_4, sthd_prof_5;
   double rthd_prof_1, rthd_prof_2;
   double thd_prof_thd1, thd_prof_thd2, thd_prof_thd3;
