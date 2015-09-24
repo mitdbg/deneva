@@ -45,6 +45,7 @@ RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt
 		assert(lock_type == owners[hash(txn->get_txn_id())]->type); 
 	else 
 		assert(lock_type == LOCK_NONE);
+  /*
 	LockEntry * en = owners[hash(txn->get_txn_id())];
 	UInt32 cnt = 0;
 	while (en) {
@@ -53,7 +54,8 @@ RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt
 		en = en->next;
 	}
 	assert(cnt == owner_cnt);
-	en = waiters_head;
+  */
+	LockEntry * en = waiters_head;
 	cnt = 0;
 	while (en) {
 		cnt ++;
@@ -62,6 +64,9 @@ RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt
 	assert(cnt == waiter_cnt);
 #endif
 
+  if(owner_cnt > 0) {
+    INC_STATS(txn->get_thd_id(),cc_busy_cnt,1);
+  }
 	bool conflict = conflict_lock(lock_type, type);
 	if (CC_ALG == WAIT_DIE && !conflict) {
 		if (waiters_head && txn->get_ts() < waiters_head->txn->get_ts()) {

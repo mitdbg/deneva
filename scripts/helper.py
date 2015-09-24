@@ -150,16 +150,16 @@ def find_in_line(key,line,summary,min_time,low_lim,up_lim):
             summary[key]["tid"].append(tid)
     return summary,min_time
 
-def get_timeline(sfile,summary={},low_lim=0,up_lim=sys.maxint,min_time=0):
-    keys = ["START","ABORT","COMMIT","LOCK","UNLOCK"]
-    for k in keys:
-        if k not in summary.keys():
-            summary[k] = {"time":[],"tid":[]}
-    with open(sfile,'r') as f:
-        for line in f:
-            for k in keys:
-                summary,min_time = find_in_line(k,line,summary,min_time,low_lim,up_lim)
-    return summary,min_time
+#def get_timeline(sfile,summary={},low_lim=0,up_lim=sys.maxint,min_time=0):
+#    keys = ["START","ABORT","COMMIT","LOCK","UNLOCK"]
+#    for k in keys:
+#        if k not in summary.keys():
+#            summary[k] = {"time":[],"tid":[]}
+#    with open(sfile,'r') as f:
+#        for line in f:
+#            for k in keys:
+#                summary,min_time = find_in_line(k,line,summary,min_time,low_lim,up_lim)
+#    return summary,min_time
 
 def get_prog(sfile):
     summary = {}
@@ -271,14 +271,14 @@ def merge_results(summary,cnt,drop,gap):
                     if len(summary[k]) > 0 and isinstance(summary[k][0],list):
                         l = []
                         for c in range(cnt):
-                            print "length of summary ", len(summary[k])
+#                            print "length of summary ", len(summary[k])
                             try:
                                 m=summary[k].pop()
-                                print "Length of m ",len(m)
+#                                print "Length of m ",len(m)
                                 l = sorted(l + summary[k].pop())
                                 #l = sorted(l + m)
                             except TypeError:
-                                print "m=",m
+                                print("m={}".format(m))
                         new_summary[k]=l
                 else:
                     l = []
@@ -424,7 +424,7 @@ def print_keys(result_dir="../results",keys=['txn_cnt']):
     missing_results = 0
     
     for base in bases:
-        print base
+#        print base
         node_cnt=int(base.split('NODE_CNT-')[-1].split('_')[0])
         keys_to_print= []
         for n in range(node_cnt):
@@ -433,7 +433,7 @@ def print_keys(result_dir="../results",keys=['txn_cnt']):
                 with open(os.path.join(result_dir,server_file),"r") as f:
                     lines = f.readlines()
             except IOError:
-                print "Error opening file: {}".format(server_file)
+#                print "Error opening file: {}".format(server_file)
                 missing_files += 1
                 continue
             summary_line = [l for l in lines if '[summary]' in l]
@@ -451,8 +451,8 @@ def print_keys(result_dir="../results",keys=['txn_cnt']):
             if res_line:
                 avail_keys = res_line.split(',')
                 keys_to_print=[k for k in avail_keys if k.split('=')[0] in keys]
-            print "\tNode {}: ".format(n),", ".join(keys_to_print)
-        print '\n'
-    print "Total missing files (files not in dir): {}".format(missing_files)
-    print "Total missing server results (no [summary] or [prog]): {}".format(missing_results)
+            print("\tNode {}: ".format(n),", ".join(keys_to_print))
+        print('\n')
+    print("Total missing files (files not in dir): {}".format(missing_files))
+    print("Total missing server results (no [summary] or [prog]): {}".format(missing_results))
 

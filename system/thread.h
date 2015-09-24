@@ -30,6 +30,7 @@ public:
 	RC 			run_send();
 	RC 			run_remote();
 private:
+  uint64_t _thd_txn_id;
 	uint64_t 	_host_cid;
 	uint64_t 	_cur_cid;
 	ts_t 		_curr_ts;

@@ -69,14 +69,22 @@ public:
   double qq_lat;
   double aq_full;
 
+  uint64_t cc_busy_cnt; // # of accesses when lock was owned (not necessarily a conflict)
+
   double sthd_prof_1, sthd_prof_2, sthd_prof_3, sthd_prof_4, sthd_prof_5;
   double rthd_prof_1, rthd_prof_2;
   double thd_prof_thd1, thd_prof_thd2, thd_prof_thd3;
   double thd_prof_thd1a, thd_prof_thd1b, thd_prof_thd1c, thd_prof_thd1d;
   double thd_prof_thd2_loc, thd_prof_thd2_rem;
   double thd_prof_thd2_type[16];
+
   double thd_prof_thd_rfin0,thd_prof_thd_rfin1, thd_prof_thd_rfin2;
+  double thd_prof_thd_rprep0,thd_prof_thd_rprep1, thd_prof_thd_rprep2;
+  double thd_prof_thd_rrqry_rsp0,thd_prof_thd_rrqry_rsp1;
+  double thd_prof_thd_rrqry0,thd_prof_thd_rrqry1,thd_prof_thd_rrqry2;
   double thd_prof_thd_rack0,thd_prof_thd_rack1, thd_prof_thd_rack2a,thd_prof_thd_rack2,thd_prof_thd_rack3,thd_prof_thd_rack4;
+  double thd_prof_thd_rtxn1a,thd_prof_thd_rtxn1b, thd_prof_thd_rtxn2,thd_prof_thd_rtxn3,thd_prof_thd_rtxn4;
+
   double thd_prof_ycsb1;
   double thd_prof_row1,thd_prof_row2,thd_prof_row3;
   double thd_prof_cc0,thd_prof_cc1,thd_prof_cc2,thd_prof_cc3;

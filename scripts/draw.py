@@ -170,6 +170,7 @@ def draw_line(fname, data, xticks,
     if xlabels != None :
         ax.set_xticklabels(xlabels) 
     if linenames == None :
+        print(data.keys())
         linenames = sorted(data.keys())
     for i in range(0, len(linenames)) :
         key = linenames[i]
@@ -185,7 +186,7 @@ def draw_line(fname, data, xticks,
             style = lineconfig[key]
         else :
             style = lineconfig_nopreset[i]
-        exec "lines[n], = plot(intlab, data[key], %s)" % style
+        exec("lines[n], = plot(intlab, data[key], %s)" % style)
         n += 1
     if ylimit != 0:
         ylim(ylimit)
