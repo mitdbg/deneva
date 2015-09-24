@@ -12,70 +12,31 @@ plot_cnt = 0
 
 PATH=os.getcwd()
 
-def tput_plotter(title,x_name,v_name,fmt,exp,summary,summary_client):
-    _cfg_fmt = list(fmt)
-    x_idx = _cfg_fmt.index(x_name)
-    _cfg_fmt.remove(x_name)
-    v_idx = _cfg_fmt.index(v_name)
-    _cfg_fmt.remove(v_name)
-    p_idx = _cfg_fmt.index("PART_CNT")
-    _cfg_fmt.remove("PART_CNT")
-    _cfg = list(exp)
-    x_vals = []
-    v_vals = []
-    for p in _cfg:
-        x_vals.append(p[x_idx])
-        del p[x_idx]
-        v_vals.append(p[v_idx])
-        del p[v_idx]
-        del p[p_idx]
-    x_vals = sorted(list(set(x_vals)))
-    v_vals = sorted(list(set(v_vals)))
-#    if x_name == "NODE_CNT" or v_name == "NODE_CNT":
-#        cl_idx = _cfg_fmt.index("CLIENT_NODE_CNT")
-#        _cfg_fmt.remove("CLIENT_NODE_CNT")
-#        for p in _cfg:
-#            del p[cl_idx]
-        
-    cfg_list = []
-#    print(_cfg)
-#    print(_cfg_fmt)
-    for f in _cfg_fmt:
-        f_idx = _cfg_fmt.index(f)
-        f_vals = []
-        for p in _cfg:
-            f_vals.append(p[f_idx])
-        f_vals = sorted(list(set(f_vals)))
-        if f == "THREAD_CNT": 
-            f_vals = [2] 
-        if f == "PART_PER_TXN": 
-            f_vals = [2] 
-        if f == "CLIENT_NODE_CNT": 
-            f_vals = [1] 
-        cfg_list.append(f_vals)
+def progress(summary,ncnt,stat,name=''):
+    print(stat)
+    output = {}
+    for n in range(ncnt):
+        nint = n
+        n = str(n)
+        clk = [int(x) for x in summary[n]['clock_time']]
+        arr = summary[n][stat]
+        print(arr)
+        output[n] = [arr[i]/clk[i] if i == 0 else (arr[i] - arr[i-1])/(clk[i]-clk[i-1]) for i in range(len(arr))]
+        for j in range(nint):
+            j = str(j)
+            if len(output[j]) < len(output[n]):
+                output[n] = output[n][:len(output[j])]
+                clk = clk[:len(output[j])]
+            if len(output[j]) > len(output[n]):
+                output[j] = output[j][:len(output[n])]
+        print(output[n])
+        xval = [int(c) for c in clk]
 
-    for c in itertools.product(*cfg_list):
-        c = list(c)
-        if c[_cfg_fmt.index("READ_PERC")] + c[_cfg_fmt.index("WRITE_PERC")] != 1.0:
-            continue
-        title2 = ""
-        if x_name != "NODE_CNT" and v_name != "NODE_CNT":
-            cl_idx = _cfg_fmt.index("CLIENT_NODE_CNT")
-            n_idx = _cfg_fmt.index("NODE_CNT")
-            c[cl_idx] = c[n_idx] / 2 if c[n_idx] > 1 else 1
-        print c
-        title2 = get_outfile_name(get_cfgs(_cfg_fmt,c),_cfg_fmt,["*","*"])
-#        for f in sorted(_cfg_fmt):
-#            f_idx = _cfg_fmt.index(f)
-#            title2 = title2 + "_%s-%s" %(f,c[f_idx])
-        title2 = title + title2
-            
-        tput(x_vals,v_vals,summary,cfg_fmt=_cfg_fmt,cfg=c,xname=x_name,vname=v_name,title=title2)
-        abort_rate(x_vals,v_vals,summary,cfg_fmt=_cfg_fmt,cfg=c,xname=x_name,vname=v_name,title=title2)
-        lat(x_vals,v_vals,summary_client,cfg_fmt=_cfg_fmt,cfg=c,xname=x_name,vname=v_name,title=title2,stat_types=["99th"])
-#        lat(x_vals,v_vals,summary_client,cfg_fmt=_cfg_fmt,cfg=c,xname=x_name,vname=v_name,title=title2,stat_types=["99th","90th","mean","max"])
-#        for v in v_vals:
-#            time_breakdown(x_vals,summary,normalized=True,xname=x_name,cfg_fmt=_cfg_fmt+[v_name],cfg=c+[v],title=title2+v_name)
+    output["total"] = [ sum(output[str(n)][i] for n in range(ncnt)) for i in range(len(output["0"])) ]
+    output["avg"] = [ int(float(sum(output["total"])) / float(ncnt) / float(len(output["total"]))) ] * len(output["total"])
+
+    bbox = [0.4,0.9]
+    draw_line(stat+name,output,xval,ylab=stat+'/sec',xlab="Interval",title="Progress "+stat,bbox=bbox,ncol=2) 
 
 def tput2(xval,vval,summary,
         cfg={},
@@ -89,8 +50,8 @@ def tput2(xval,vval,summary,
     plot_cnt += 1
     _title = title
 
-    print "X-axis: " + str(xval)
-    print "Var: " + str(vval)
+#    print "X-axis: " + str(xval)
+#    print "Var: " + str(vval)
     if xname == "ABORT_PENALTY":
         _xval = [(float(x.replace("UL","")))/1000000000 for x in xval]
         sort_idxs = sorted(range(len(_xval)),key=lambda x:_xval[x])
@@ -111,7 +72,7 @@ def tput2(xval,vval,summary,
             my_cfg = cfg
             my_cfg[xname] = x
             my_cfg[vname] = v
-            print my_cfg
+#            print my_cfg
 
             cfgs = get_cfgs(my_cfg_fmt, my_cfg)
             cfgs = get_outfile_name(cfgs,my_cfg_fmt)
@@ -150,8 +111,8 @@ def gput(xval,vval,summary,
     plot_cnt += 1
     _title = title
 
-    print "X-axis: " + str(xval)
-    print "Var: " + str(vval)
+#    print "X-axis: " + str(xval)
+#    print "Var: " + str(vval)
     if xname == "ABORT_PENALTY":
         _xval = [(float(x.replace("UL","")))/1000000000 for x in xval]
         sort_idxs = sorted(range(len(_xval)),key=lambda x:_xval[x])
@@ -224,8 +185,8 @@ def tput(xval,vval,summary,
 #    _title = 'System Throughput {}'.format(title)
     _title = title
 
-    print "X-axis: " + str(xval)
-    print "Var: " + str(vval)
+#    print "X-axis: " + str(xval)
+#    print "Var: " + str(vval)
     if xname == "ABORT_PENALTY":
         _xval = [(float(x.replace("UL","")))/1000000000 for x in xval]
         sort_idxs = sorted(range(len(_xval)),key=lambda x:_xval[x])
@@ -696,7 +657,6 @@ def time_breakdown(xval,summary,
         time_queue,
         time_net, 
         time_work]
-    print data
     draw_stack(data,_xval,stack_names,figname=name,title=_title,ymax=_ymax)
     print("Created plot {}".format(name))
 
