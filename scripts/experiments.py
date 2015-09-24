@@ -37,7 +37,7 @@ def tput_setup(summary,nfmt,nexp,x_name,v_name):
     x_vals = []
     v_vals = []
     exp = nexp
-    fmt = nfmt
+    fmt = list(nfmt)
     print(fmt)
     for e in exp:
         x_vals.append(e[fmt.index(x_name)])

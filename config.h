@@ -244,13 +244,13 @@ extern TestCases          g_test_case;
 // MODES
 /***********************************************/
 // Only do query operations, no 2PC
-#define MODE_QRY false
+#define MODE_QRY true
 // Only do 2PC, no query work
 #define MODE_TWOPC false
 // Immediately send OK back to client
 #define MODE_SIMPLE false
 // Don't do CC
-#define MODE_FT true
+#define MODE_FT false
 
 /***********************************************/
 // Constant
