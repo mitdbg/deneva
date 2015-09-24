@@ -29,12 +29,25 @@ public:
 	RC 			run();
 	RC 			run_send();
 	RC 			run_remote();
+
+  RC process_rfin(base_query *& m_query,txn_man *& m_txn);
+  RC process_rack(base_query *& m_query,txn_man *& m_txn);
+  RC process_rqry_rsp(base_query *& m_query,txn_man *& m_txn);
+  RC process_rqry(base_query *& m_query,txn_man *& m_txn);
+  RC process_rinit(base_query *& m_query,txn_man *& m_txn);
+  RC process_rprepare(base_query *& m_query,txn_man *& m_txn);
+  RC process_rpass(base_query *& m_query,txn_man *& m_txn);
+  RC process_rtxn(base_query *& m_query,txn_man *& m_txn);
+  RC init_phase(base_query * m_query, txn_man * m_txn); 
+
 private:
   uint64_t _thd_txn_id;
 	uint64_t 	_host_cid;
 	uint64_t 	_cur_cid;
 	ts_t 		_curr_ts;
 	ts_t 		get_next_ts();
+  uint64_t run_starttime;
+  uint64_t txn_starttime;
 
 	RC	 		runTest(txn_man * txn);
 };

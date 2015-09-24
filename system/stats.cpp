@@ -210,8 +210,8 @@ void Stats_thd::clear() {
 
   thd_prof_thd_rfin0=0;thd_prof_thd_rfin1=0; thd_prof_thd_rfin2=0;
   thd_prof_thd_rprep0=0;thd_prof_thd_rprep1=0; thd_prof_thd_rprep2=0;
-  thd_prof_thd_rrqry_rsp0=0;thd_prof_thd_rrqry_rsp1=0;
-  thd_prof_thd_rrqry0=0;thd_prof_thd_rrqry1=0;thd_prof_thd_rrqry2=0;
+  thd_prof_thd_rqry_rsp0=0;thd_prof_thd_rqry_rsp1=0;
+  thd_prof_thd_rqry0=0;thd_prof_thd_rqry1=0;thd_prof_thd_rqry2=0;
   thd_prof_thd_rack0=0;thd_prof_thd_rack1=0; thd_prof_thd_rack2a=0;thd_prof_thd_rack2=0;thd_prof_thd_rack3=0;thd_prof_thd_rack4=0;
   thd_prof_thd_rtxn1a=0;thd_prof_thd_rtxn1b=0; thd_prof_thd_rtxn2=0;thd_prof_thd_rtxn3=0;thd_prof_thd_rtxn4=0;
 
@@ -908,8 +908,8 @@ void Stats::print(bool prog) {
         ",thd2_loc=%f,thd2_rem=%f\n"
         ",rfin0=%f,rfin1=%f,rfin2=%f\n"
         ",rprep0=%f,rprep1=%f,rprep2=%f\n"
-        ",rrqry_rsp0=%f,rrqry_rsp1=%f\n"
-        ",rrqry0=%f,rrqry1=%f,rrqry2=%f\n"
+        ",rqry_rsp0=%f,rqry_rsp1=%f\n"
+        ",rqry0=%f,rqry1=%f,rqry2=%f\n"
         ",rack0=%f,rack1=%f,rack2a=%f,rack2=%f,rack3=%f,rack4=%f\n"
         ",rtxn1a=%f,rtxn1b=%f,rtxn2=%f,rtxn3=%f,rtxn4=%f\n"
         ",ycsb1=%f\n"
@@ -938,11 +938,11 @@ void Stats::print(bool prog) {
         ,_stats[tid]->thd_prof_thd_rprep0/BILLION
         ,_stats[tid]->thd_prof_thd_rprep1/BILLION
         ,_stats[tid]->thd_prof_thd_rprep2/BILLION
-        ,_stats[tid]->thd_prof_thd_rrqry_rsp0/BILLION
-        ,_stats[tid]->thd_prof_thd_rrqry_rsp1/BILLION
-        ,_stats[tid]->thd_prof_thd_rrqry0/BILLION
-        ,_stats[tid]->thd_prof_thd_rrqry1/BILLION
-        ,_stats[tid]->thd_prof_thd_rrqry2/BILLION
+        ,_stats[tid]->thd_prof_thd_rqry_rsp0/BILLION
+        ,_stats[tid]->thd_prof_thd_rqry_rsp1/BILLION
+        ,_stats[tid]->thd_prof_thd_rqry0/BILLION
+        ,_stats[tid]->thd_prof_thd_rqry1/BILLION
+        ,_stats[tid]->thd_prof_thd_rqry2/BILLION
         ,_stats[tid]->thd_prof_thd_rack0/BILLION
         ,_stats[tid]->thd_prof_thd_rack1/BILLION
         ,_stats[tid]->thd_prof_thd_rack2a/BILLION

@@ -80,8 +80,8 @@ public:
 
   double thd_prof_thd_rfin0,thd_prof_thd_rfin1, thd_prof_thd_rfin2;
   double thd_prof_thd_rprep0,thd_prof_thd_rprep1, thd_prof_thd_rprep2;
-  double thd_prof_thd_rrqry_rsp0,thd_prof_thd_rrqry_rsp1;
-  double thd_prof_thd_rrqry0,thd_prof_thd_rrqry1,thd_prof_thd_rrqry2;
+  double thd_prof_thd_rqry_rsp0,thd_prof_thd_rqry_rsp1;
+  double thd_prof_thd_rqry0,thd_prof_thd_rqry1,thd_prof_thd_rqry2;
   double thd_prof_thd_rack0,thd_prof_thd_rack1, thd_prof_thd_rack2a,thd_prof_thd_rack2,thd_prof_thd_rack3,thd_prof_thd_rack4;
   double thd_prof_thd_rtxn1a,thd_prof_thd_rtxn1b, thd_prof_thd_rtxn2,thd_prof_thd_rtxn3,thd_prof_thd_rtxn4;
 
