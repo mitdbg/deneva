@@ -91,6 +91,8 @@ public:
   double thd_prof_wq1,thd_prof_wq2;
   double thd_prof_wq3,thd_prof_wq4;
   double thd_prof_txn1,thd_prof_txn2;
+  double thd_prof_txn_pool0a,thd_prof_txn_pool1a,thd_prof_txn_pool2a;
+  double thd_prof_txn_pool0b,thd_prof_txn_pool1b,thd_prof_txn_pool2;
 
   uint64_t msg_batch_size;
   uint64_t msg_batch_bytes;

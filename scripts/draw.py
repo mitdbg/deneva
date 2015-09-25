@@ -149,6 +149,74 @@ def draw_bar(filename, data, label, names=None, dots=None,
     savefig('../figs/' + filename)
     plt.close()
 
+def draw_line2(fname, data, xticks, 
+        title = None,
+        xlabels = None,
+        bbox=(0.9,0.95), ncol=1, 
+        ylab='Throughput', logscale=False, 
+        logscalex = False,
+        ylimit=0, xlimit=None, xlab='Number of Cores',
+        legend=True, linenames = None, figsize=(23/3, 10/3), styles=None) :
+    fig = figure(figsize=figsize)
+    lines = [0] * len(data)
+    ax = plt.axes()
+    if logscale :
+        ax.set_yscale('log')
+    if logscalex:
+        ax.set_xscale('log')
+    n = 0
+    if xlabels != None :
+        ax.set_xticklabels(xlabels) 
+    if linenames == None :
+        print(data.keys())
+        linenames = sorted(data.keys())
+    for i in range(0, len(linenames)) :
+        key = linenames[i]
+        intlab = {}
+        for k in xticks.keys():
+            try:
+                intlab[k] = [float(x) for x in xticks[k]]
+            except ValueError:
+                intlab[k] = [float(x[:-2]) for x in xticks[k]]
+
+        style = None
+        if styles != None :
+            style = styles[key]
+        elif key in lineconfig.keys():
+            style = lineconfig[key]
+        else :
+            style = lineconfig_nopreset[i]
+        exec("lines[n], = plot(intlab[key], data[key], %s)" % style)
+        n += 1
+    if ylimit != 0:
+        ylim(ylimit)
+    if xlimit != None:
+        xlim(xlimit)
+    plt.gca().set_ylim(bottom=0)
+    ylabel(ylab)
+    xlabel(xlab)
+    if not logscale:
+        ticklabel_format(axis='y', style='plain')
+        #ticklabel_format(axis='y', style='sci', scilimits=(-3,5))
+#if logscalex:
+#ax.get_xaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
+    if legend :
+        #fig.legend(lines, linenames, loc='upper right',bbox_to_anchor = (1,1), prop={'size':9}, ncol=ncol)
+        fig.legend(lines, linenames, loc='upper right',bbox_to_anchor = bbox, prop={'size':8},ncol=ncol)
+    subplots_adjust(left=0.18, bottom=0.15, right=0.9, top=None)
+    if title:
+        ax.set_title("\n".join(wrap(title)))
+    axes = ax.get_axes()
+    axes.yaxis.grid(True,
+        linestyle='-',
+        which='major',
+        color='0.75'
+    )
+    ax.set_axisbelow(True)
+
+    savefig('../figs/' + fname +'.pdf', bbox_inches='tight')
+    plt.close()
+
 
 def draw_line(fname, data, xticks, 
         title = None,

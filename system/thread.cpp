@@ -360,13 +360,13 @@ RC thread_t::run() {
           }
 #endif
 					assert(m_txn->get_rsp_cnt() == 0);
-          //assert(MODE_TWOPC || MODE_QRY || m_query->part_num == 1 || ??);
-          assert(MODE_TWOPC ||MODE_QRY || (m_query->part_num == 1 && (m_query->rtype == RTXN || m_query->rtype == RPASS)) || (m_query->part_num > 1 && m_query->rtype == RACK));
+          //assert(MODE==TWOPC || MODE==QRY || m_query->part_num == 1 || ??);
+          assert(MODE==TWOPC ||MODE==QRY || (m_query->part_num == 1 && (m_query->rtype == RTXN || m_query->rtype == RPASS)) || (m_query->part_num > 1 && m_query->rtype == RACK));
 
 					if(m_query->part_num == 1 && !m_txn->spec) {
 						rc = m_txn->finish(rc,m_query->part_to_access,m_query->part_num);
 					} else
-						assert(m_txn->state == DONE || MODE_QRY || MODE_TWOPC);
+						assert(m_txn->state == DONE || MODE==QRY || MODE==TWOPC);
 
 					timespan = get_sys_clock() - m_txn->starttime;
 
@@ -508,7 +508,7 @@ RC thread_t::process_rfin(base_query *& m_query,txn_man *& m_txn) {
         uint64_t thd_prof_thd_rfin_start = get_sys_clock();
 				DEBUG("%ld Received RFIN %ld\n",GET_PART_ID_FROM_IDX(_thd_id),m_query->txn_id);
 				INC_STATS(0,rfin,1);
-#if MODE_TWOPC
+#if MODE==TWOPC
         // Immediate ack back
         msg_queue.enqueue(m_query,RACK,m_query->return_id);
         m_query = NULL;
@@ -842,7 +842,7 @@ RC thread_t::process_rprepare(base_query *& m_query,txn_man *& m_txn) {
 				INC_STATS(0,rprep,1);
 				assert(CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || IS_REMOTE(m_query->txn_id));
 
-#if MODE_TWOPC
+#if MODE==TWOPC
         msg_queue.enqueue(m_query,RACK,m_query->return_id);
         m_query = NULL;
         return RCOK;
@@ -1070,7 +1070,7 @@ RC thread_t::process_rtxn(base_query *& m_query,txn_man *& m_txn) {
 RC thread_t::init_phase(base_query * m_query, txn_man * m_txn) {
   RC rc = RCOK;
 #if CC_ALG != HSTORE && CC_ALG != HSTORE_SPEC && CC_ALG != VLL
-#if MODE_TWOPC
+#if MODE==TWOPC
           // Only 2PC, touch all partitions
           for(uint64_t i = 0; i < m_query->part_num; i++) {
             m_query->part_touched[m_query->part_touched_cnt++] = m_query->part_to_access[i];
@@ -1080,7 +1080,7 @@ RC thread_t::init_phase(base_query * m_query, txn_man * m_txn) {
           m_query->part_touched[m_query->part_touched_cnt++] = m_query->part_to_access[0];
 #endif
 #endif
-#if !MODE_QRY && (CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || CC_ALG == VLL)
+#if !MODE==QRY && (CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || CC_ALG == VLL)
 					m_txn->state = INIT;
 					for(uint64_t i = 0; i < m_query->part_num; i++) {
 						uint64_t part_id = m_query->part_to_access[i];
@@ -1187,6 +1187,6 @@ RC thread_t::init_phase(base_query * m_query, txn_man * m_txn) {
 					} // for(uint64_t i = 0; i < m_query->part_num; i++) 
         }
 
-#endif // !MODE_QRY && (CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || CC_ALG == VLL)
+#endif // !MODE==QRY && (CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || CC_ALG == VLL)
           return rc;
 }

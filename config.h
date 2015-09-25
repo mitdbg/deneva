@@ -5,13 +5,13 @@
 /***********************************************/
 // Simulation + Hardware
 /***********************************************/
-#define NODE_CNT 1
+#define NODE_CNT 2
 #define THREAD_CNT 2
 #define REM_THREAD_CNT 1
-#define SEND_THREAD_CNT 1
+#define SEND_THREAD_CNT 8
 // PART_CNT should be at least NODE_CNT
-#define PART_CNT 1
-#define CLIENT_NODE_CNT 1
+#define PART_CNT 2
+#define CLIENT_NODE_CNT 2
 #define CLIENT_THREAD_CNT 2
 #define CLIENT_REM_THREAD_CNT 1
 #define CLIENT_SEND_THREAD_CNT 4
@@ -34,7 +34,7 @@
 #define STATS_ENABLE        true
 #define TIME_ENABLE         true //STATS_ENABLE
 
-#define MAX_TXN_IN_FLIGHT 100
+#define MAX_TXN_IN_FLIGHT 5000
 
 /***********************************************/
 // Memory System
@@ -156,7 +156,7 @@
 #define WRITE_PERC 0.0
 #define SCAN_PERC           0
 #define SCAN_LEN          20
-#define PART_PER_TXN 1
+#define PART_PER_TXN 2
 #define PERC_MULTI_PART     MPR 
 #define REQ_PER_QUERY      2//16
 #define FIELD_PER_TUPLE       10
@@ -175,7 +175,7 @@
 // are not modeled.
 #define TPCC_ACCESS_ALL       false 
 #define WH_UPDATE         true
-#define NUM_WH 1
+#define NUM_WH 2
 // % of transactions that access multiple partitions
 #define MPR 100
 #define MPR_NEWORDER      20 // In %
@@ -243,14 +243,13 @@ extern TestCases          g_test_case;
 /***********************************************/
 // MODES
 /***********************************************/
-// Only do query operations, no 2PC
-#define MODE_QRY false
-// Only do 2PC, no query work
-#define MODE_TWOPC false
-// Immediately send OK back to client
-#define MODE_SIMPLE false
-// Don't do CC
-#define MODE_FT true
+// QRY Only do query operations, no 2PC
+// TWOPC Only do 2PC, no query work
+// SIMPLE Immediately send OK back to client
+// NOCC Don't do CC
+// NORMAL normal operation
+#define MODE NORMAL
+
 
 /***********************************************/
 // Constant
@@ -278,6 +277,12 @@ extern TestCases          g_test_case;
 #define TS_CAS            2
 #define TS_HW           3
 #define TS_CLOCK          4
+// MODES
+#define NORMAL 1
+#define SIMPLE 2
+#define NOCC 3
+#define QRY 4
+#define TWOPC 5
 
 // Stats and timeout
 #define BILLION 1000000000UL // in ns => 1 second

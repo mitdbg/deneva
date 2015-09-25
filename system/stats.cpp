@@ -223,6 +223,8 @@ void Stats_thd::clear() {
   thd_prof_cc0=0;thd_prof_cc3=0;
   thd_prof_wq1=0;thd_prof_wq2=0;thd_prof_wq1=3;thd_prof_wq4=0;
   thd_prof_txn1=0;thd_prof_txn2=0;
+  thd_prof_txn_pool0a=0;thd_prof_txn_pool1a=0;thd_prof_txn_pool2=0;
+  thd_prof_txn_pool0b=0;thd_prof_txn_pool1b=0;thd_prof_txn_pool2=0;
 
   time_getqry = 0;
   client_latency = 0;
@@ -918,6 +920,8 @@ void Stats::print(bool prog) {
         ",wq1=%f,wq2=%f"
         ",wq3=%f,wq4=%f\n"
         ",txn1=%f,txn2=%f\n"
+        ",txn_pool0a=%f,txn_pool1a=%f"
+        ",txn_pool0b=%f,txn_pool1b=%f,txn_pool2a=%f,txn_pool2=%f\n"
         ,tid
         ,_stats[tid]->thd_prof_thd1 / BILLION
         ,_stats[tid]->thd_prof_thd2 / BILLION
@@ -968,6 +972,12 @@ void Stats::print(bool prog) {
         ,_stats[tid]->thd_prof_wq4 / BILLION
         ,_stats[tid]->thd_prof_txn1 / BILLION
         ,_stats[tid]->thd_prof_txn2 / BILLION
+        ,_stats[tid]->thd_prof_txn_pool0a / BILLION
+        ,_stats[tid]->thd_prof_txn_pool1a / BILLION
+        ,_stats[tid]->thd_prof_txn_pool0b / BILLION
+        ,_stats[tid]->thd_prof_txn_pool1b / BILLION
+        ,_stats[tid]->thd_prof_txn_pool2a / BILLION
+        ,_stats[tid]->thd_prof_txn_pool2 / BILLION
         );
         for(int i = 0; i < 16;i++)
           printf(",thd2_type%d=%f",i,_stats[tid]->thd_prof_thd2_type[i] / BILLION);

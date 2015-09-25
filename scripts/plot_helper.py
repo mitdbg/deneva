@@ -169,7 +169,8 @@ def gput(xval,vval,summary,
     print("Created plot {}".format(name))
     draw_line(name,tpt,_xval,ylab='Goodput (Txn/sec)',xlab=_xlab,title=_title,bbox=bbox,ncol=2) 
 
-def tput_v_lat(xval,vval,summary,
+#Use summary from client nodes
+def tput_v_lat(xval,vval,summary,summary_cl,
         cfg_fmt=[],
         cfg=[],
         xname="MPR",
@@ -178,12 +179,11 @@ def tput_v_lat(xval,vval,summary,
         ):
     global plot_cnt
     tpt = {}
+    _tpt = {}
     name = 'tputvlat_plot{}'.format(plot_cnt)
     plot_cnt += 1
     _title = title
 
-    print "X-axis: " + str(xval)
-    print "Var: " + str(vval)
     if xname == "ABORT_PENALTY":
         _xval = [(float(x.replace("UL","")))/1000000000 for x in xval]
         sort_idxs = sorted(range(len(_xval)),key=lambda x:_xval[x])
@@ -199,30 +199,81 @@ def tput_v_lat(xval,vval,summary,
         else:
             _v = v
         tpt[_v] = [0] * len(xval)
+        _tpt[_v] = [0] * len(xval)
 
         for x,xi in zip(xval,range(len(xval))):
             my_cfg_fmt = cfg_fmt + [xname] + [vname]
             my_cfg = cfg + [x] + [v]
-            n_cnt = my_cfg[my_cfg_fmt.index("NODE_CNT")]
-            n_clt = my_cfg[my_cfg_fmt.index("CLIENT_NODE_CNT")]
-            my_cfg[my_cfg_fmt.index("CLIENT_NODE_CNT")] = int(math.ceil(n_cnt)) if n_cnt > 1 else 1
-            n_ppt = my_cfg[my_cfg_fmt.index("PART_PER_TXN")]
-            my_cfg[my_cfg_fmt.index("PART_PER_TXN")] = n_ppt if n_ppt <= n_cnt else n_cnt
-            n_thd =  my_cfg[my_cfg_fmt.index("THREAD_CNT")]
-            n_alg =  my_cfg[my_cfg_fmt.index("CC_ALG")]
-            if n_alg == "HSTORE" or n_alg == "HSTORE_SPEC":
-#                my_cfg[my_cfg_fmt.index("PART_CNT")] = n_thd*n_cnt
-                my_cfg_fmt = my_cfg_fmt + ["PART_CNT"]
-                my_cfg = my_cfg + [n_thd*n_cnt]
-            else:
-#                my_cfg[my_cfg_fmt.index("PART_CNT")] = n_cnt
-                my_cfg_fmt = my_cfg_fmt + ["PART_CNT"]
-                my_cfg = my_cfg + [n_cnt]
-#                my_cfg.pop(my_cfg_fmt.index("PART_CNT"))
-#                my_cfg_fmt.remove("PART_CNT")
-#            if "CLIENT_NODE_CNT" not in my_cfg_fmt:
-#                my_cfg_fmt = my_cfg_fmt + ["CLIENT_NODE_CNT"]
-#                my_cfg = my_cfg + [int(math.ceil(n_cnt/2)) if n_cnt > 1 else 1]
+
+            print(my_cfg_fmt)
+            print(my_cfg)
+            cfgs = get_cfgs(my_cfg_fmt, my_cfg)
+            cfgs = get_outfile_name(cfgs,my_cfg_fmt)
+            if cfgs not in summary.keys(): 
+                print("Not in summary: {}".format(cfgs))
+                continue 
+            try:
+                tot_run_time = sum(summary[cfgs]['clock_time'])
+                tot_lat = sum(summary_cl[cfgs]['latency'])
+                avg_run_time = avg(summary[cfgs]['clock_time'])
+                avg_txn_lat = avg(summary_cl[cfgs]['latency'])
+                tot_txn_cnt = sum(summary_cl[cfgs]['txn_cnt'])
+            except KeyError:
+                print("KeyError: {} {} {} -- {}".format(v,x,cfg,cfgs))
+                tpt[_v][xi] = 0
+                continue
+            # System Throughput: total txn count / average of all node's run time
+            # Per Node Throughput: avg txn count / average of all node's run time
+            # Per txn latency: total of all node's run time / total txn count
+            tpt[_v][xi] = avg_txn_lat
+            _tpt[_v][xi] = tot_txn_cnt / avg_run_time
+            #tpt[v][xi] = (avg_txn_cnt/avg_run_time)
+
+    bbox = [0.7,0.9]
+    print("Created plot {}".format(name))
+    draw_line2(name,tpt,_tpt,ylab='Latency (s/txn)',xlab='Throughput (txn/sec)',title=_title,bbox=bbox,ncol=2) 
+    
+def tput_modes(xval,vval,summary,
+        cfg_fmt=[],
+        cfg=[],
+        xname="MPR",
+        vname="CC_ALG",
+        title="",
+        modes=[]
+        ):
+    global plot_cnt
+    tpt = {}
+    name = 'tput_plot{}'.format(plot_cnt)
+    plot_cnt += 1
+#    name = 'tput_{}_{}_{}'.format(xname.lower(),vname.lower(),title.replace(" ","_").lower())
+#    _title = 'System Throughput {}'.format(title)
+    _title = title
+
+#    print "X-axis: " + str(xval)
+#    print "Var: " + str(vval)
+    if xname == "ABORT_PENALTY":
+        _xval = [(float(x.replace("UL","")))/1000000000 for x in xval]
+        sort_idxs = sorted(range(len(_xval)),key=lambda x:_xval[x])
+        xval = [xval[i] for i in sort_idxs]
+        _xval = sorted(_xval)
+        _xlab = xname + " (Sec)"
+    else:
+        _xval = xval
+        _xlab = xname
+    v = vval[0]
+    for m in modes:
+        if m=='':
+            _m = 'Normal'
+        else:
+            _m = m
+        tpt[_m] = [0] * len(xval)
+
+        for x,xi in zip(xval,range(len(xval))):
+            my_cfg_fmt = cfg_fmt + [xname] + [vname] 
+            my_cfg = cfg + [x] + [v] 
+            if m != '':
+                my_cfg_fmt = my_cfg_fmt + [m]
+                my_cfg = my_cfg + ['true']
 
             cfgs = get_cfgs(my_cfg_fmt, my_cfg)
             cfgs = get_outfile_name(cfgs,my_cfg_fmt)
@@ -236,12 +287,12 @@ def tput_v_lat(xval,vval,summary,
                 avg_txn_cnt = avg(summary[cfgs]['txn_cnt'])
             except KeyError:
                 print("KeyError: {} {} {} -- {}".format(v,x,cfg,cfgs))
-                tpt[_v][xi] = 0
+                tpt[_m][xi] = 0
                 continue
             # System Throughput: total txn count / average of all node's run time
             # Per Node Throughput: avg txn count / average of all node's run time
             # Per txn latency: total of all node's run time / total txn count
-            tpt[_v][xi] = (tot_txn_cnt/avg_run_time)
+            tpt[_m][xi] = (tot_txn_cnt/avg_run_time)
             #tpt[v][xi] = (avg_txn_cnt/avg_run_time)
 
     bbox = [0.7,0.9]
@@ -249,7 +300,8 @@ def tput_v_lat(xval,vval,summary,
     draw_line(name,tpt,_xval,ylab='Throughput (Txn/sec)',xlab=_xlab,title=_title,bbox=bbox,ncol=2) 
 
 
-def tput(xval,vval,summary,
+
+def tput(xval,vval,summary,summary_cl,
         cfg_fmt=[],
         cfg=[],
         xname="MPR",
@@ -285,33 +337,19 @@ def tput(xval,vval,summary,
         for x,xi in zip(xval,range(len(xval))):
             my_cfg_fmt = cfg_fmt + [xname] + [vname]
             my_cfg = cfg + [x] + [v]
-#            my_cfg_fmt = cfg_fmt
-#            my_cfg = cfg
-#            my_cfg[my_cfg_fmt.index(xname)] = x
-#            my_cfg[my_cfg_fmt.index(vname)] = v
-#            print my_cfg_fmt
-            n_cnt = my_cfg[my_cfg_fmt.index("NODE_CNT")]
-            n_clt = my_cfg[my_cfg_fmt.index("CLIENT_NODE_CNT")]
-#            my_cfg[my_cfg_fmt.index("CLIENT_NODE_CNT")] = n_cnt
-            my_cfg[my_cfg_fmt.index("CLIENT_NODE_CNT")] = int(math.ceil(n_cnt)) if n_cnt > 1 else 1
-            n_ppt = my_cfg[my_cfg_fmt.index("PART_PER_TXN")]
-            my_cfg[my_cfg_fmt.index("PART_PER_TXN")] = n_ppt if n_ppt <= n_cnt else n_cnt
-            n_thd =  my_cfg[my_cfg_fmt.index("THREAD_CNT")]
-            n_alg =  my_cfg[my_cfg_fmt.index("CC_ALG")]
-#            my_cfg[my_cfg_fmt.index("THREAD_CNT")] = 1 if n_alg == "HSTORE" or n_alg == "HSTORE_SPEC" else n_thd
-            if n_alg == "HSTORE" or n_alg == "HSTORE_SPEC":
-#                my_cfg[my_cfg_fmt.index("PART_CNT")] = n_thd*n_cnt
-                my_cfg_fmt = my_cfg_fmt + ["PART_CNT"]
-                my_cfg = my_cfg + [n_thd*n_cnt]
-            else:
-#                my_cfg[my_cfg_fmt.index("PART_CNT")] = n_cnt
-                my_cfg_fmt = my_cfg_fmt + ["PART_CNT"]
-                my_cfg = my_cfg + [n_cnt]
-#                my_cfg.pop(my_cfg_fmt.index("PART_CNT"))
-#                my_cfg_fmt.remove("PART_CNT")
-#            if "CLIENT_NODE_CNT" not in my_cfg_fmt:
-#                my_cfg_fmt = my_cfg_fmt + ["CLIENT_NODE_CNT"]
-#                my_cfg = my_cfg + [int(math.ceil(n_cnt/2)) if n_cnt > 1 else 1]
+#            n_cnt = my_cfg[my_cfg_fmt.index("NODE_CNT")]
+#            n_clt = my_cfg[my_cfg_fmt.index("CLIENT_NODE_CNT")]
+#            my_cfg[my_cfg_fmt.index("CLIENT_NODE_CNT")] = int(math.ceil(n_cnt)) if n_cnt > 1 else 1
+#            n_ppt = my_cfg[my_cfg_fmt.index("PART_PER_TXN")]
+#            my_cfg[my_cfg_fmt.index("PART_PER_TXN")] = n_ppt if n_ppt <= n_cnt else n_cnt
+#            n_thd =  my_cfg[my_cfg_fmt.index("THREAD_CNT")]
+#            n_alg =  my_cfg[my_cfg_fmt.index("CC_ALG")]
+#            if n_alg == "HSTORE" or n_alg == "HSTORE_SPEC":
+#                my_cfg_fmt = my_cfg_fmt + ["PART_CNT"]
+#                my_cfg = my_cfg + [n_thd*n_cnt]
+#            else:
+#                my_cfg_fmt = my_cfg_fmt + ["PART_CNT"]
+#                my_cfg = my_cfg + [n_cnt]
 
             cfgs = get_cfgs(my_cfg_fmt, my_cfg)
             cfgs = get_outfile_name(cfgs,my_cfg_fmt)
@@ -320,9 +358,9 @@ def tput(xval,vval,summary,
                 continue 
             try:
                 tot_run_time = sum(summary[cfgs]['clock_time'])
-                tot_txn_cnt = sum(summary[cfgs]['txn_cnt'])
+                tot_txn_cnt = sum(summary_cl[cfgs]['txn_cnt'])
                 avg_run_time = avg(summary[cfgs]['clock_time'])
-                avg_txn_cnt = avg(summary[cfgs]['txn_cnt'])
+                avg_txn_cnt = avg(summary_cl[cfgs]['txn_cnt'])
             except KeyError:
                 print("KeyError: {} {} {} -- {}".format(v,x,cfg,cfgs))
                 tpt[_v][xi] = 0

@@ -55,7 +55,7 @@ void Remote_query::unpack(void * d, uint64_t len) {
 
 
     unpack_query(query,data,ptr,dest_id,return_id);
-#if MODE_SIMPLE
+#if MODE==SIMPLE
     if(query->rtype == RTXN) {
       query->txn_id = g_node_id;
       msg_queue.enqueue(query,CL_RSP,query->client_id);

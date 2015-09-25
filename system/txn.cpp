@@ -428,7 +428,7 @@ RC txn_man::finish_local(RC rc, uint64_t * parts, uint64_t part_cnt) {
 }
 
 RC txn_man::finish(RC rc, uint64_t * parts, uint64_t part_cnt) {
-#if MODE_TWOPC
+#if MODE==TWOPC
   return RCOK;
 #endif
   assert(h_thd->_node_id < g_node_cnt);
@@ -478,7 +478,7 @@ RC txn_man::finish(base_query * query, bool fin) {
     return query->rc;
   }
 
-#if MODE_QRY
+#if MODE==QRY
   return RCOK;
 #endif
   //uint64_t starttime = get_sys_clock();

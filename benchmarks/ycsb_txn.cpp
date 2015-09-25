@@ -80,7 +80,7 @@ RC ycsb_txn_man::acquire_locks(base_query * query) {
 
 
 RC ycsb_txn_man::run_txn(base_query * query) {
-#if MODE_TWOPC
+#if MODE==TWOPC
   ycsb_query * m_query = (ycsb_query*) query;
   m_query->rem_req_state = YCSB_FIN;
 	return finish(query,false);

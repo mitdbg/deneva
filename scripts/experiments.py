@@ -6,81 +6,93 @@ import math
 # Format: [#Nodes,#Txns,Workload,CC_ALG,MPR]
 fmt_tpcc = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","NUM_WH","MAX_TXN_IN_FLIGHT"]]
 fmt_nd = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","NUM_WH","MAX_TXN_IN_FLIGHT","NETWORK_DELAY"]]
-fmt_ycsb = [["CLIENT_NODE_CNT","NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","CLIENT_THREAD_CNT","CLIENT_REM_THREAD_CNT","CLIENT_SEND_THREAD_CNT","THREAD_CNT","REM_THREAD_CNT","SEND_THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC","PART_PER_TXN","PART_CNT","MSG_TIME_LIMIT","MSG_SIZE_MAX"]]
-fmt_ycsb_plot = [["CLIENT_NODE_CNT","NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","CLIENT_THREAD_CNT","THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC","PART_PER_TXN"]]
+fmt_ycsb = [["CLIENT_NODE_CNT","NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","CLIENT_THREAD_CNT","CLIENT_REM_THREAD_CNT","CLIENT_SEND_THREAD_CNT","THREAD_CNT","REM_THREAD_CNT","SEND_THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC","PART_PER_TXN","PART_CNT","MSG_TIME_LIMIT","MSG_SIZE_MAX","MODE"]]
 fmt_nt = [["NODE_CNT","CLIENT_NODE_CNT","NETWORK_TEST"]]
 fmt_title=["NODE_CNT","MPR","ZIPF_THETA","WRITE_PERC","CC_ALG"]
 
 def test():
     fmt = fmt_ycsb
-    nnodes = [1,2]
+    nnodes = [2]
     nmpr=[100]
     nalgos=['NO_WAIT']
     nthreads=[2]
     nrthreads=[1]
-    nsthreads=[1]
+    nsthreads=[8]
     ncthreads=[2]
     ncrthreads=[1]
     ncsthreads=[4]
-    ntifs=[1,50,100,500,750,1000,2000,3000,5000,7500,10000,15000,20000]
+    ntifs=[5000]
+#ntifs=[1,100,500,1000,2000,3000,5000,7500,10000,15000,20000]
     nzipf=[0.0]
     nwr_perc=[0.0]
     ntxn=[3000000]
     nbtime=[1000] # in ns
     nbsize=[4096]
     nparts = [2]
-    exp = [[n,n,txn,'YCSB',cc,m,ct,crt,cst,t,rt,st,tif,z,1.0-wp,wp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n,str(mt) + '*1000UL',bsize] for n,ct,crt,cst,t,rt,st,tif,z,wp,m,cc,p,txn,mt,bsize in itertools.product(nnodes,ncthreads,ncrthreads,ncsthreads,nthreads,nrthreads,nsthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts,ntxn,nbtime,nbsize)]
+    nmodes = ["NORMAL"]#,"SIMPLE","QRY","TWOPC","NOCC"]
+    exp = [[n,n,txn,'YCSB',cc,m,ct,crt,cst,t,rt,st,tif,z,1.0-wp,wp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n,str(mt) + '*1000UL',bsize,mode] for n,ct,crt,cst,t,rt,st,tif,z,wp,m,cc,p,txn,mt,bsize,mode in itertools.product(nnodes,ncthreads,ncrthreads,ncsthreads,nthreads,nrthreads,nsthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts,ntxn,nbtime,nbsize,nmodes)]
     return fmt[0],exp
 
-def tput_setup(summary,nfmt,nexp,x_name,v_name):
-    from plot_helper import tput
+def tputvlat_setup(summary,summary_cl,nfmt,nexp,x_name,v_name):
+    from plot_helper import tput_v_lat
     x_vals = []
     v_vals = []
-    exp = nexp
+    exp = [list(e) for e in nexp]
     fmt = list(nfmt)
-    print(fmt)
+    print(x_name)
+    print(v_name)
     for e in exp:
         x_vals.append(e[fmt.index(x_name)])
-        v_vals.append(e[fmt.index(v_name)])
         del e[fmt.index(x_name)]
+    fmt.remove(x_name)
+    for e in exp:
+        v_vals.append(e[fmt.index(v_name)])
         del e[fmt.index(v_name)]
+    fmt.remove(v_name)
+    print(fmt)
     x_vals = list(set(x_vals))
     x_vals.sort()
     v_vals = list(set(v_vals))
     v_vals.sort()
     exp.sort()
     exp = list(k for k,_ in itertools.groupby(exp))
+    for e in exp:
+        title = "Tput vs Lat "
+        for t in fmt_title:
+            if t not in fmt: continue
+            title+="{} {}, ".format(t,e[fmt.index(t)])
+        tput_v_lat(x_vals,v_vals,summary,summary_cl,cfg_fmt=fmt,cfg=e,xname=x_name,vname=v_name,title=title)
+
+
+def tput_setup(summary,summary_cl,nfmt,nexp,x_name,v_name):
+    from plot_helper import tput
+    x_vals = []
+    v_vals = []
+    exp = [list(e) for e in nexp]
+    fmt = list(nfmt)
+    for e in exp:
+        x_vals.append(e[fmt.index(x_name)])
+        del e[fmt.index(x_name)]
     fmt.remove(x_name)
+    for e in exp:
+        v_vals.append(e[fmt.index(v_name)])
+        del e[fmt.index(v_name)]
     fmt.remove(v_name)
-    print(fmt)
+    x_vals = list(set(x_vals))
+    x_vals.sort()
+    v_vals = list(set(v_vals))
+    v_vals.sort()
+    exp.sort()
+    exp = list(k for k,_ in itertools.groupby(exp))
     for e in exp:
         title = "System Tput "
         for t in fmt_title:
             if t not in fmt: continue
             title+="{} {}, ".format(t,e[fmt.index(t)])
-        tput(x_vals,v_vals,summary,cfg_fmt=fmt,cfg=e,xname=x_name,vname=v_name,title=title)
-
+        tput(x_vals,v_vals,summary,summary_cl,cfg_fmt=fmt,cfg=e,xname=x_name,vname=v_name,title=title)
 
 def ft_mode_plot(summary,summary_client):
     nfmt,nexp = ft_mode()
-    x_name = "MAX_TXN_IN_FLIGHT"
-    v_name = "CC_ALG"
-    tput_setup(summary,nfmt,nexp,x_name,v_name)
-
-def qry_mode_plot(summary,summary_client):
-    nfmt,nexp = qry_mode()
-    x_name = "MAX_TXN_IN_FLIGHT"
-    v_name = "CC_ALG"
-    tput_setup(summary,nfmt,nexp,x_name,v_name)
-
-def twopc_mode_plot(summary,summary_client):
-    nfmt,nexp = twopc_mode()
-    x_name = "MAX_TXN_IN_FLIGHT"
-    v_name = "CC_ALG"
-    tput_setup(summary,nfmt,nexp,x_name,v_name)
-
-def simple_mode_plot(summary,summary_client):
-    nfmt,nexp = simple_mode()
     x_name = "MAX_TXN_IN_FLIGHT"
     v_name = "CC_ALG"
     tput_setup(summary,nfmt,nexp,x_name,v_name)
@@ -89,261 +101,9 @@ def test_plot(summary,summary_client):
     nfmt,nexp = test()
 #    tput_setup(summary,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG")
 #    nfmt,nexp = test()
-    tput_setup(summary,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",v_name="CC_ALG")
+    tput_setup(summary,summary_client,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",v_name="MODE")
+    tputvlat_setup(summary,summary_client,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",v_name="MODE")
 
-# Performance: throughput vs. node count
-# Vary: Node count, % writes
-def experiment_1():
-    fmt = fmt_ycsb
-    nnodes = [2]
-    nmpr=[0,1,5,10,25]#,50,75,100]
-    nalgos=['HSTORE_SPEC']
-    #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
-    nthreads=[1]
-    ncthreads=[4]
-    ntifs=[1000]
-    nzipf=[0.0]
-    nwr_perc=[0.5]
-    ntxn=2000000
-    nparts = [2]
-    exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t,tif,z,1.0-wp,wp,p if p <= n else 1] for n,ct,t,tif,z,wp,m,cc,p in itertools.product(nnodes,ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts)]
-    return fmt[0],exp
-
-def experiment_1_plot(summary,summary_client):
-    from plot_helper import tput_plotter
-    fmt,exp = experiment_1()
-    x_name = "NODE_CNT"
-    v_name = "CC_ALG"
-    title = "Experiment_1"
-    tput_plotter(title,x_name,v_name,fmt,exp,summary,summary_client);
-
-
-
-def partition_sweep():
-    fmt = fmt_ycsb
-    nnodes = [1,2,4,8]
-    nmpr=[1]
-    nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','TIMESTAMP','HSTORE','HSTORE_SPEC']
-    #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
-    nthreads=[2]
-    ncthreads=[4]
-    ntifs=[1000]
-    nzipf=[0.6]
-    nwr_perc=[0.5]
-    ntxn=2000000
-    exp = []
-    for node in nnodes:
-        nparts = range(2,node,2)
-        tmp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t if cc!="HSTORE" and cc!= "HSTORE_SPEC" else 1,tif,z,1.0-wp,wp,p if p <= n else 1] for n,ct,t,tif,z,wp,m,cc,p in itertools.product(nnodes,ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts)]
-        exp = exp + tmp
-    return fmt[0],exp
-
-def partition_sweep_plot(summary,summary_client):
-    from plot_helper import tput_plotter
-    fmt,exp = partition_sweep()
-    x_name = "NODE_CNT"
-    v_name = "CC_ALG"
-    x_idx = fmt.index(x_name)
-    v_idx = fmt.index(v_name)
-    _cfg_fmt = fmt.remove(x_name).remove(v_name)
-    _cfg = exp
-    x_vals = []
-    v_vals = []
-    for p in _cfg:
-        x_vals.append(p[x_idx])
-        del p[x_idx]
-        v_vals.append(p[v_idx])
-        del p[v_idx]
-    x_vals = sorted(list(set(x_vals)))
-    v_vals = sorted(list(set(v_vals)))
-    tput(x_vals,v_vals,summary,cfg_fmt=_cfg_fmt,cfg=_cfg,xname=x_name,vname=v_name,title=_title)
-
-def node_sweep():
-    fmt = fmt_ycsb
-    nnodes = [1,2,4,8,16]
-#    nmpr=[100]
-    nmpr=[5,25,50]
-#    nmpr=[0,5,25,50,75,100]
-    nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','TIMESTAMP','VLL']
-#nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','TIMESTAMP','VLL','HSTORE']
-    #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
-    nthreads=[3]
-    nrthreads=[1]
-    ncthreads=[3]
-    ncrthreads=[1]
-    ntifs=[2000]
-    nzipf=[0.0]
-#    nzipf=[0.0,0.6,0.8]
-    nwr_perc=[0.5]
-    ntxn=[3000000]
-    nparts = [2]
-    nparts = [2,4,8,16]
-    exp = [[int(math.ceil(n)) if n > 1 else 1,n,txn,'YCSB',cc,m,ct,crt,t,rt,tif,z,1.0-wp,wp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n] for n,ct,crt,t,rt,tif,z,wp,m,cc,p,txn in itertools.product(nnodes,ncthreads,ncrthreads,nthreads,nrthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts,ntxn)]
-    exp.sort()
-    exp = list(k for k,_ in itertools.groupby(exp))
-    return fmt[0],exp
-
-def node_sweep_plot(summary,summary_client):
-    from plot_helper import tput_plotter
-    fmt,exp = node_sweep()
-    x_name = "NODE_CNT"
-    v_name = "CC_ALG"
-    title = "Scalability"
-    tput_plotter(title,x_name,v_name,fmt,exp,summary,summary_client);
-
-def node_sweep_plot2(summary,summary_client):
-    from plot_helper import tput
-    fmt,exp = node_sweep()
-    fmt = ["CLIENT_NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","MPR","CLIENT_THREAD_CNT","CLIENT_REM_THREAD_CNT","THREAD_CNT","REM_THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC","PART_PER_TXN"]
-    x_name = "NODE_CNT"
-    x_vals = [1,2,4,8]
-    nmpr=[5,25,50]
-#    nmpr=[0,5,25,50,75,100]
-    nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','TIMESTAMP','VLL']
-    nthreads=3
-    nrthreads=1
-    ncthreads=3
-    ncrthreads=1
-    ntifs=2000
-    nzipf=[0.0]
-#    nzipf=[0.0,0.6,0.8]
-    nwr_perc=[0.5]
-    nparts = [2,4,8]#,16]
- 
-    v_vals = nalgos
-    v_name = "CC_ALG"
-    for mpr,wr,zipf,parts in itertools.product(nmpr,nwr_perc,nzipf,nparts):
-        c = [1,3000000,"YCSB",mpr,ncthreads,ncrthreads,nthreads,nrthreads,ntifs,zipf,1.0-wr,wr,parts]
-        assert(len(c) == len(fmt))
-        title = "YCSB System Throughput {}% Writes, {}% Multi-part rate {} Skew {} Parts".format(wr*100,mpr,zipf,parts);
-        tput(x_vals,v_vals,summary,cfg_fmt=fmt,cfg=c,xname=x_name,vname=v_name,title=title)
-    v_vals = nparts
-    v_name = "PART_PER_TXN"
-    fmt = ["CLIENT_NODE_CNT","CC_ALG","MAX_TXN_PER_PART","WORKLOAD","CLIENT_THREAD_CNT","THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC","MPR"]
-    for zipf,algo,mpr in itertools.product(nzipf,nalgos,nmpr):
-        print(algo)
-        c = [1,algo,3000000,"YCSB",4,2,1000,zipf,0.5,0.5,2,mpr]
-        title = "YCSB System Throughput {} 50% Writes {} Skew".format(algo,zipf);
-        tput(x_vals,v_vals,summary,cfg_fmt=fmt,cfg=c,xname=x_name,vname=v_name,title=title)
-
-
-#    v_vals = nmpr
-#    v_name = "MPR"
-#    fmt = ["CLIENT_NODE_CNT","CC_ALG","MAX_TXN_PER_PART","WORKLOAD","CLIENT_THREAD_CNT","THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC","PART_PER_TXN"]
-#    for zipf,algo in itertools.product(nzipf,nalgos):
-#        print(algo)
-#        c = [1,algo,3000000,"YCSB",4,2,1000,zipf,0.5,0.5,2]
-#        title = "YCSB System Throughput {} 50% Writes {} Skew".format(algo,zipf);
-#        tput(x_vals,v_vals,summary,cfg_fmt=fmt,cfg=c,xname=x_name,vname=v_name,title=title)
-
-def mpr_sweep():
-    fmt = fmt_ycsb
-    nnodes = [1,2,4,8,16]
-    #nmpr=[0,1,5,10,20,30,40,50,60,70,80,90,100]
-    nmpr=[0,1,5,10,25,50,75,100]
-    nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','TIMESTAMP','VLL']
-    #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
-    nthreads=[2]
-    ncthreads=[4]
-    ntifs=[1000]
-    nzipf=[0.0]
-    nwr_perc=[0.0,0.5]
-    ntxn=3000000
-    nparts = [2]
-    exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t if cc!="HSTORE" and cc!= "HSTORE_SPEC" else 1,tif,z,1.0-wp,wp,p if p <= n else 1] for n,ct,t,tif,z,wp,m,cc,p in itertools.product(nnodes,ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts)]
-    return fmt[0],exp
-
-def mpr_sweep_plot(summary,summary_client):
-    from plot_helper import tput_plotter
-    fmt,exp = mpr_sweep()
-    x_name = "MPR"
-    v_name = "CC_ALG"
-    title = "MPR Sweep"
-    tput_plotter(title,x_name,v_name,fmt,exp,summary,summary_client);
-    fmt,exp = mpr_sweep()
-    x_name = "NODE_CNT"
-    v_name = "CC_ALG"
-    title = "Node Sweep"
-    tput_plotter(title,x_name,v_name,fmt,exp,summary,summary_client);
-
-def tif_sweep():
-    fmt = fmt_ycsb
-    nnodes = [1,2,4,8]
-    nmpr=[1]
-    nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','TIMESTAMP','HSTORE','HSTORE_SPEC']
-    #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
-    nthreads=[2]
-    ncthreads=[4]
-    ntifs=[1,2,10,35,100,1000]
-    nzipf=[0.6]
-    nwr_perc=[0.5]
-    ntxn=3000000
-    nparts = [2]
-    exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t if cc!="HSTORE" and cc!= "HSTORE_SPEC" else 1,tif,z,1.0-wp,wp,p if p <= n else 1] for n,ct,t,tif,z,wp,m,cc,p in itertools.product(nnodes,ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts)]
-    return fmt[0],exp
-
-def write_ratio_sweep():
-    fmt = fmt_ycsb
-    nnodes = [1,2,4,8]
-    nmpr=[1]
-    nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','TIMESTAMP','HSTORE','HSTORE_SPEC']
-    #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
-    nthreads=[2]
-    ncthreads=[4]
-    ntifs=[1000]
-    nzipf=[0.6]
-    nwr_perc=[0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]
-    ntxn=3000000
-    nparts = [2]
-    exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t if cc!="HSTORE" and cc!= "HSTORE_SPEC" else 1,tif,z,1.0-wp,wp,p if p <= n else 1] for n,ct,t,tif,z,wp,m,cc,p in itertools.product(nnodes,ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts)]
-    return fmt[0],exp
-
-def skew_sweep():
-    fmt = fmt_ycsb
-    nnodes = [1,2,4,8,16]
-    nmpr=[100]
-    nalgos=['WAIT_DIE']
-    #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','TIMESTAMP','VLL','HSTORE']
-    nthreads=[3]
-    nrthreads=[1]
-    ncthreads=[3]
-    ncrthreads=[1]
-    ntifs=[1300]
-    nzipf=[0.0,0.6,0.8,0.9,0.99]
-    nwr_perc=[0.5]
-    ntxn=[3000000]
-    nparts = [16]
-    exp = [[int(math.ceil(n)) if n > 1 else 1,n,txn,'YCSB',cc,m,ct,crt,t,rt,tif,z,1.0-wp,wp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n] for n,ct,crt,t,rt,tif,z,wp,m,cc,p,txn in itertools.product(nnodes,ncthreads,ncrthreads,nthreads,nrthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts,ntxn)]
-    exp.sort()
-    exp = list(k for k,_ in itertools.groupby(exp))
-    return fmt[0],exp
-
-def skew_sweep_plot(summary,summary_client):
-    from plot_helper import tput
-    fmt,exp = node_sweep()
-    fmt = ["CC_ALG","CLIENT_NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","MPR","CLIENT_THREAD_CNT","CLIENT_REM_THREAD_CNT","THREAD_CNT","REM_THREAD_CNT","MAX_TXN_IN_FLIGHT","READ_PERC","WRITE_PERC","PART_PER_TXN"]
-    x_name = "NODE_CNT"
-    x_vals = [1,2,4,8,16]
-    nmpr=[100]
-    nalgos=['WAIT_DIE']
-    nthreads=3
-    nrthreads=1
-    ncthreads=3
-    ncrthreads=1
-    ntifs=1300
-    nzipf=[0.0,0.6,0.8,0.9,0.99]
-    nwr_perc=[0.5]
-    nparts = [16]
- 
-    v_vals = nzipf
-    v_name = "ZIPF_THETA"
-    for mpr,wr,parts in itertools.product(nmpr,nwr_perc,nparts):
-        c = [nalgos[0],1,3000000,"YCSB",mpr,ncthreads,ncrthreads,nthreads,nrthreads,ntifs,1.0-wr,wr,parts]
-        assert(len(c) == len(fmt))
-        title = "YCSB System Throughput {} {}% Writes".format(nalgos[0],wr*100);
-        tput(x_vals,v_vals,summary,cfg_fmt=fmt,cfg=c,xname=x_name,vname=v_name,title=title)
-
-#Should do this one on an ISTC machine
 def network_sweep():
     fmt = [fmt_ycsb[0] + ["NETWORK_DELAY"]]
     nnodes = [1,2,4,8,16]
@@ -431,89 +191,22 @@ def network_experiment_plot(all_exps,all_nodes,timestamps):
         lat_node_tbls(exp[:-1],all_nodes[i],exp[0].keys(),timestamps[i])
         lat_tbl(exp[-1],exp[-1].keys(),timestamps[i])
 
-def abort_penalty_sweep():
-    fmt = [fmt_ycsb[0] + ["ABORT_PENALTY"]]
-    global config_names
-    config_names = fmt[0]
-    nnodes = [1,2,4]#,8,16]
-    nmpr=[1]
-    nalgos=['WAIT_DIE']
-    #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
-    nthreads=[1,2,4]
-    #nthreads=[4]
-    ncthreads=[4]
-    ntifs=[1000]
-    nzipf=[0.6]
-    nwr_perc=[0.5]
-    nparts=[2]
-    abt_pen = ["1000000UL","5000000UL","1000000000UL","2000000000UL","4000000000UL","8000000000UL"]
-    ntxn=2000000
-    exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t,tif,z,1.0-wp,wp,p if p <= n else 1,ap] for n,ct,t,tif,z,wp,m,cc,p,ap in itertools.product(nnodes,ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts,abt_pen)]
-    return fmt[0],exp
-
-def abort_penalty_sweep_plot(summary,summary_client):
-    from plot_helper import tput_plotter
-    fmt,exp = abort_penalty_sweep()
-    x_name = "ABORT_PENALTY"
-    v_name = "CC_ALG"
-    title = "Abort Penalty Sweep"
-    tput_plotter(title,x_name,v_name,fmt,exp,summary,summary_client);
-
 def ft_mode():
     fmt,exp = test()
     fmt = fmt+["MODE_FT"]
     exp = [f+["true"] for f in exp]
     return fmt,exp
 
-def qry_mode():
-    fmt,exp = test()
-    fmt = fmt + ["MODE_QRY"]
-    exp = [f+["true"] for f in exp]
-    return fmt,exp
-
-def twopc_mode():
-    fmt,exp = test()
-    fmt = fmt + ["MODE_TWOPC"]
-    exp = [f+["true"] for f in exp]
-    return fmt,exp
-
-def simple_mode():
-    fmt,exp = test()
-    fmt = fmt + ["MODE_SIMPLE"]
-    exp = [f+["true"] for f in exp]
-    return fmt,exp
-
 experiment_map = {
     'test': test,
-    'qry_mode': qry_mode,
-    'qry_mode_plot': qry_mode_plot,
-    'twopc_mode': twopc_mode,
-    'twopc_mode_plot': twopc_mode_plot,
     'ft_mode': ft_mode,
     'ft_mode_plot': ft_mode_plot,
-    'simple_mode': simple_mode,
-    'simple_mode_plot': simple_mode_plot,
     'test_plot': test_plot,
-    'experiment_1': experiment_1,
-    'experiment_1_plot': experiment_1_plot,
-    'partition_sweep': partition_sweep,
-    'node_sweep': node_sweep,
-    'mpr_sweep': mpr_sweep,
-    'tif_sweep': tif_sweep,
-    'write_ratio_sweep': write_ratio_sweep,
-    'skew_sweep': skew_sweep,
-    'skew_sweep_plot': skew_sweep_plot,
     'network_sweep': network_sweep,
     'network_sweep_plot': network_sweep_plot,
     'tpcc_sweep': tpcc_sweep,
     'network_experiment' : network_experiment,
-    'abort_penalty_sweep': abort_penalty_sweep,
     'network_experiment_plot' : network_experiment_plot,
-    'partition_sweep_plot': partition_sweep_plot,
-    'mpr_sweep_plot': mpr_sweep_plot,
-    'node_sweep_plot': node_sweep_plot2,
-#    'node_sweep_plot': node_sweep_plot,
-    'abort_penalty_sweep_plot': abort_penalty_sweep_plot,
 }
 
 
@@ -553,10 +246,7 @@ configs = {
     "SYNTH_TABLE_SIZE":"2097152",
     "LOAD_TXN_FILE":"false",
     "DEBUG_DISTR":"false",
-    "MODE_QRY":"false",
-    "MODE_TWOPC":"false",
-    "MODE_FT":"false",
-    "MODE_SIMPLE":"false",
+    "MODE":"NORMAL",
 }
 
 config_names = fmt_ycsb[0]

@@ -60,10 +60,12 @@ test_dir = ""
 ############################################
 # Compile results into single dictionary
 ############################################
+summary = {}
+summary_client = {}
 
 for exp in exps:
-    summary = {}
-    summary_client = {}
+#    summary = {}
+#    summary_client = {}
     fmt,experiments = experiment_map[exp]()
 
     for e in experiments:

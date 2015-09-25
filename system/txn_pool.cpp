@@ -197,7 +197,13 @@ base_query * TxnPool::get_qry(uint64_t node_id, uint64_t txn_id){
 
 
 void TxnPool::delete_txn(uint64_t node_id, uint64_t txn_id){
+  uint64_t thd_prof_start = get_sys_clock();
+  uint64_t starttime = thd_prof_start;
+  uint64_t thd_prof_tmp;
   MODIFY_START(txn_id % pool_size);
+
+  thd_prof_tmp = get_sys_clock() - thd_prof_start;
+  thd_prof_start = get_sys_clock();
 
   txn_node_t t_node = pool[txn_id % pool_size].head;
 
@@ -210,7 +216,12 @@ void TxnPool::delete_txn(uint64_t node_id, uint64_t txn_id){
     t_node = t_node->next;
   }
 
+  MODIFY_END(txn_id % pool_size)
+
   if(t_node != NULL) {
+    INC_STATS(0,thd_prof_txn_pool1a,get_sys_clock() - thd_prof_start);
+    INC_STATS(0,thd_prof_txn_pool0a,thd_prof_tmp);
+    thd_prof_start = get_sys_clock();
     assert(!t_node->txn->spec || t_node->txn->state == DONE);
 #if WORKLOAD == TPCC
     t_node->txn->release();
@@ -229,9 +240,14 @@ void TxnPool::delete_txn(uint64_t node_id, uint64_t txn_id){
     }
 #endif
     mem_allocator.free(t_node, sizeof(struct txn_node));
+    INC_STATS(0,thd_prof_txn_pool2a,get_sys_clock() - thd_prof_start);
   }
+  else {
 
-  MODIFY_END(txn_id % pool_size)
+    INC_STATS(0,thd_prof_txn_pool1b,get_sys_clock() - thd_prof_start);
+    INC_STATS(0,thd_prof_txn_pool0b,thd_prof_tmp);
+  }
+  INC_STATS(0,thd_prof_txn_pool2,get_sys_clock() - starttime);
 
 }
 
