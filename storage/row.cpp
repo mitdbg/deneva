@@ -227,7 +227,7 @@ RC row_t::get_row(access_t type, txn_man * txn, row_t *& row) {
 	goto end;
 #elif CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || CC_ALG == VLL || CC_ALG == CALVIN
 #if CC_ALG == HSTORE_SPEC
-  if(txn_pool.spec_mode) {
+  if(txn_table.spec_mode) {
 	  txn->cur_row = (row_t *) mem_allocator.alloc(sizeof(row_t), get_part_id());
 	  txn->cur_row->init(get_table(), get_part_id());
 	  rc = this->manager->access(txn, R_REQ);

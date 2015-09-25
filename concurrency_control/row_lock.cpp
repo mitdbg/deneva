@@ -320,7 +320,7 @@ RC Row_lock::lock_release(txn_man * txn) {
       max_owner_ts = txn->get_ts();
 		ASSERT(entry->txn->lock_ready == false);
 		entry->txn->lock_ready = true;
-    txn_pool.restart_txn(entry->txn->get_txn_id());
+    txn_table.restart_txn(entry->txn->get_txn_id());
 		lock_type = entry->type;
 //#if CC_AlG == NO_WAIT
 		return_entry(entry);

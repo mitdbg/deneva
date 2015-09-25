@@ -20,8 +20,7 @@
 #include "tpcc_query.h"
 #include "msg_queue.h"
 
-void txn_man::init(thread_t * h_thd, workload * h_wl, uint64_t thd_id) {
-	this->h_thd = h_thd;
+void txn_man::init(workload * h_wl) {
 	this->h_wl = h_wl;
 	pthread_mutex_init(&txn_lock, NULL);
 	lock_ready = false;
@@ -62,6 +61,37 @@ void txn_man::init(thread_t * h_thd, workload * h_wl, uint64_t thd_id) {
 }
 
 void txn_man::reset() {
+	lock_ready = false;
+	ready_part = 0;
+	row_cnt = 0;
+	wr_cnt = 0;
+	insert_cnt = 0;
+  ack_cnt = 0;
+  rsp_cnt = 0;
+  state = START;
+  cc_wait_abrt_cnt = 0;
+  cc_wait_abrt_time = 0;
+  cc_hold_abrt_time = 0;
+  cflt = false;
+  clear();
+ txn_time_idx = 0;
+  txn_time_man = 0;
+  txn_time_ts = 0;
+  txn_time_abrt = 0;
+  txn_time_clean = 0;
+  txn_time_copy = 0;
+  txn_time_wait = 0;
+  txn_time_twopc = 0;
+  txn_time_q_abrt = 0;
+  txn_time_q_work = 0;
+  txn_time_net = 0;
+  txn_time_misc = 0;
+
+	for (int i = 0; i < MAX_ROW_PER_TXN; i++)
+		accesses[i] = NULL;
+	num_accesses_alloc = 0;
+
+
 }
 
 void txn_man::clear() {
@@ -466,10 +496,10 @@ RC txn_man::finish(base_query * query, bool fin) {
   assert(query->txn_id % g_node_cnt == g_node_id);
 #endif
   if(query->part_num == 1) {
-    if(CC_ALG == HSTORE_SPEC && txn_pool.spec_mode && this->spec) {
+    if(CC_ALG == HSTORE_SPEC && txn_table.spec_mode && this->spec) {
       this->state = PREP;
     }
-    else if (CC_ALG == HSTORE_SPEC && !txn_pool.spec_mode && this->spec) {
+    else if (CC_ALG == HSTORE_SPEC && !txn_table.spec_mode && this->spec) {
       return Abort;
     }
     RC rc = validate();

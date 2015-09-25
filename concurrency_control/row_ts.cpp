@@ -266,7 +266,7 @@ void Row_ts::update_buffer() {
 				rts = req->ts;
       // TODO: Add req->txn to work queue
 			req->txn->ts_ready = true;
-      txn_pool.restart_txn(req->txn->get_txn_id());
+      txn_table.restart_txn(req->txn->get_txn_id());
 			req = req->next;
 		}
 		// return all the req_entry back to freelist

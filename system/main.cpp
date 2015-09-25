@@ -112,7 +112,10 @@ int main(int argc, char* argv[])
   msg_queue.init();
   printf("Done\n");
   printf("Initializing transaction pool... ");
-  txn_pool.init();
+  txn_pool.init(m_wl,g_inflight_max);
+  printf("Done\n");
+  printf("Initializing transaction table... ");
+  txn_table.init();
   printf("Done\n");
 
 	// 2. spawn multiple threads

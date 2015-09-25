@@ -11,7 +11,7 @@ public:
 	RC init();
 	RC init_table();
 	RC init_schema(const char * schema_file);
-	RC get_txn_man(txn_man *& txn_manager, thread_t * h_thd);
+	RC get_txn_man(txn_man *& txn_manager);
 	void summarize();
 	void tick() { time = get_sys_clock(); };
 	INDEX * the_index;
@@ -23,7 +23,7 @@ private:
 class TestTxnMan : public txn_man 
 {
 public:
-	void init(thread_t * h_thd, workload * h_wl, uint64_t part_id); 
+	void init(workload * h_wl); 
 	RC run_txn(int type, int access_num);
 	RC run_txn(base_query * m_query) { assert(false); };
 	RC run_rem_txn(base_query * m_query) {assert(false);};

@@ -27,7 +27,7 @@ void PartMan::start_spec_ex() {
 
   txn_man * tmp_txn;
   base_query * owner_qry;
-  txn_pool.get_txn(GET_NODE_ID(owner->get_pid()), owner->get_txn_id(),tmp_txn,owner_qry);
+  txn_table.get_txn(GET_NODE_ID(owner->get_pid()), owner->get_txn_id(),tmp_txn,owner_qry);
   for (UInt32 i = 0; i < waiter_cnt - 1; i++) {
     if(waiters[i]->spec)
       continue;
@@ -36,11 +36,11 @@ void PartMan::start_spec_ex() {
       //check for conflicts
     // TODO: Check for conflicts with all waiters earlier in queue, not just the plock owner
     base_query * waiter_qry;
-    txn_pool.get_txn(GET_NODE_ID(waiters[i]->get_pid()), waiters[i]->get_txn_id(),tmp_txn,waiter_qry);
+    txn_table.get_txn(GET_NODE_ID(waiters[i]->get_pid()), waiters[i]->get_txn_id(),tmp_txn,waiter_qry);
     if(waiters[i]->conflict(owner_qry,waiter_qry))
       continue;
     waiters[i]->spec = true;
-    txn_pool.restart_txn(waiters[i]->get_txn_id());
+    txn_table.restart_txn(waiters[i]->get_txn_id());
   }
   
 
@@ -179,7 +179,7 @@ void PartMan::unlock(txn_man * txn) {
           if(owner->ready_part == 0 && owner->get_rsp_cnt() == 0) {
             owner->state = EXEC; 
             owner->rc = RCOK;
-            txn_pool.restart_txn(owner->get_txn_id());
+            txn_table.restart_txn(owner->get_txn_id());
           }
         } else {
           // Model after RACK

@@ -119,7 +119,7 @@ RC calvin_thread_t::run() {
 	RC rc = RCOK;
 
 	txn_man * m_txn;
-	rc = _wl->get_txn_man(m_txn, this);
+	rc = _wl->get_txn_man(m_txn);
 	assert (rc == RCOK);
 	glob_manager.set_txn_man(m_txn);
 
@@ -167,13 +167,13 @@ RC calvin_thread_t::run() {
 				INC_STATS(0,rtxn,1);
 
         base_query * tmp_query;
-				txn_pool.get_txn(g_node_id,m_query->txn_id,m_txn,tmp_query);
+				txn_table.get_txn(g_node_id,m_query->txn_id,m_txn,tmp_query);
         if(m_txn == NULL) {
 					ATOM_ADD(txn_st_cnt,1);
-					rc = _wl->get_txn_man(m_txn, this);
+					rc = _wl->get_txn_man(m_txn);
 					assert(rc == RCOK);
 					m_txn->set_txn_id(m_query->txn_id);
-					txn_pool.add_txn(g_node_id,m_txn,m_query);
+					txn_table.add_txn(g_node_id,m_txn,m_query);
         }
 				m_txn->abort_cnt = 0;
         //m_txn->set_txn_id(m_query->txn_id);
@@ -199,7 +199,7 @@ RC calvin_thread_t::run() {
 			timespan = get_sys_clock() - m_txn->starttime;
 			INC_STATS(get_thd_id(), run_time, timespan);
 			INC_STATS(get_thd_id(), latency, timespan);
-			txn_pool.delete_txn(g_node_id,m_query->txn_id);
+			txn_table.delete_txn(g_node_id,m_query->txn_id);
 			txn_cnt++;
       // FIXME
 			//rem_qry_man.send_client_rsp(m_query);
@@ -216,7 +216,7 @@ RC calvin_thread_t::run() {
 			return FINISH;
 		}
 
-		if (warmup_finish && txn_st_cnt >= MAX_TXN_PER_PART/g_thread_cnt && txn_pool.empty(get_node_id())) {
+		if (warmup_finish && txn_st_cnt >= MAX_TXN_PER_PART/g_thread_cnt && txn_table.empty(get_node_id())) {
 			//assert(txn_cnt == MAX_TXN_PER_PART);
 			if( !ATOM_CAS(_wl->sim_done, false, true) )
 				assert( _wl->sim_done);

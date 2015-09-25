@@ -16,7 +16,7 @@ public:
 	RC init();
 	RC init_table();
 	RC init_schema(const char * schema_file);
-	RC get_txn_man(txn_man *& txn_manager, thread_t * h_thd);
+	RC get_txn_man(txn_man *& txn_manager);
 	table_t * 		t_warehouse;
 	table_t * 		t_district;
 	table_t * 		t_customer;
@@ -79,7 +79,7 @@ private:
 class tpcc_txn_man : public txn_man
 {
 public:
-	void init(thread_t * h_thd, workload * h_wl, uint64_t part_id); 
+	void init( workload * h_wl);
   bool conflict(base_query * query1,base_query * query2);
   void read_keys(base_query * query){ assert(false);}; 
   RC acquire_locks(base_query * query){ assert(false);}; 

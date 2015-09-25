@@ -223,8 +223,8 @@ void Stats_thd::clear() {
   thd_prof_cc0=0;thd_prof_cc3=0;
   thd_prof_wq1=0;thd_prof_wq2=0;thd_prof_wq1=3;thd_prof_wq4=0;
   thd_prof_txn1=0;thd_prof_txn2=0;
-  thd_prof_txn_pool0a=0;thd_prof_txn_pool1a=0;thd_prof_txn_pool2=0;
-  thd_prof_txn_pool0b=0;thd_prof_txn_pool1b=0;thd_prof_txn_pool2=0;
+  thd_prof_txn_table0a=0;thd_prof_txn_table1a=0;thd_prof_txn_table2=0;
+  thd_prof_txn_table0b=0;thd_prof_txn_table1b=0;thd_prof_txn_table2=0;
 
   time_getqry = 0;
   client_latency = 0;
@@ -920,8 +920,8 @@ void Stats::print(bool prog) {
         ",wq1=%f,wq2=%f"
         ",wq3=%f,wq4=%f\n"
         ",txn1=%f,txn2=%f\n"
-        ",txn_pool0a=%f,txn_pool1a=%f"
-        ",txn_pool0b=%f,txn_pool1b=%f,txn_pool2a=%f,txn_pool2=%f\n"
+        ",txn_table0a=%f,txn_table1a=%f"
+        ",txn_table0b=%f,txn_table1b=%f,txn_table2a=%f,txn_table2=%f\n"
         ,tid
         ,_stats[tid]->thd_prof_thd1 / BILLION
         ,_stats[tid]->thd_prof_thd2 / BILLION
@@ -972,12 +972,12 @@ void Stats::print(bool prog) {
         ,_stats[tid]->thd_prof_wq4 / BILLION
         ,_stats[tid]->thd_prof_txn1 / BILLION
         ,_stats[tid]->thd_prof_txn2 / BILLION
-        ,_stats[tid]->thd_prof_txn_pool0a / BILLION
-        ,_stats[tid]->thd_prof_txn_pool1a / BILLION
-        ,_stats[tid]->thd_prof_txn_pool0b / BILLION
-        ,_stats[tid]->thd_prof_txn_pool1b / BILLION
-        ,_stats[tid]->thd_prof_txn_pool2a / BILLION
-        ,_stats[tid]->thd_prof_txn_pool2 / BILLION
+        ,_stats[tid]->thd_prof_txn_table0a / BILLION
+        ,_stats[tid]->thd_prof_txn_table1a / BILLION
+        ,_stats[tid]->thd_prof_txn_table0b / BILLION
+        ,_stats[tid]->thd_prof_txn_table1b / BILLION
+        ,_stats[tid]->thd_prof_txn_table2a / BILLION
+        ,_stats[tid]->thd_prof_txn_table2 / BILLION
         );
         for(int i = 0; i < 16;i++)
           printf(",thd2_type%d=%f",i,_stats[tid]->thd_prof_thd2_type[i] / BILLION);
@@ -990,7 +990,7 @@ void Stats::print(bool prog) {
 		outf = fopen(output_file, "w");
   else
     outf = stdout;
-  txn_pool.snapshot();
+  txn_table.snapshot();
   if(prog)
 	  fprintf(outf, "[prog] ");
   else
@@ -1058,7 +1058,7 @@ void Stats::print(bool prog) {
       ",time_work=%f"
       ",time_rqry=%f"
       ",tport_lat=%f"
-      ",txn_pool_cnt=%ld"
+      ",txn_table_cnt=%ld"
       ",work_queue_cnt=%ld"
       ",work_queue_abrt_cnt=%ld"
   ",txn_time_begintxn=%f"
@@ -1137,7 +1137,7 @@ void Stats::print(bool prog) {
 			total_time_work / BILLION,
 			total_time_rqry / BILLION,
 			total_tport_lat / BILLION / total_msg_rcv_cnt,
-      txn_pool.get_cnt(),
+      txn_table.get_cnt(),
       work_queue.get_wq_cnt(),
       work_queue.get_abrt_cnt(),
   total_txn_time_begintxn / BILLION,

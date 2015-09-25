@@ -58,7 +58,7 @@ ts_t Manager::get_min_ts(uint64_t tid) {
 	uint64_t now = get_sys_clock();
 	if (now - last_min_ts_time > MIN_TS_INTVL) { 
 		last_min_ts_time = now;
-    uint64_t min = txn_pool.get_min_ts();
+    uint64_t min = txn_table.get_min_ts();
     /*
     assert(min != UINT64_MAX);
 		assert(min >= min_ts);

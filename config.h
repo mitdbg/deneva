@@ -8,13 +8,13 @@
 #define NODE_CNT 2
 #define THREAD_CNT 2
 #define REM_THREAD_CNT 1
-#define SEND_THREAD_CNT 8
+#define SEND_THREAD_CNT 1
 // PART_CNT should be at least NODE_CNT
 #define PART_CNT 2
-#define CLIENT_NODE_CNT 2
-#define CLIENT_THREAD_CNT 2
+#define CLIENT_NODE_CNT 1
+#define CLIENT_THREAD_CNT 1
 #define CLIENT_REM_THREAD_CNT 1
-#define CLIENT_SEND_THREAD_CNT 4
+#define CLIENT_SEND_THREAD_CNT 1
 #define CLIENT_RUNTIME false
 
 // each transaction only accesses only 1 virtual partition. But the lock/ts manager and index are not aware of such partitioning. VIRTUAL_PART_CNT describes the request distribution and is only used to generate queries. For HSTORE, VIRTUAL_PART_CNT should be the same as PART_CNT.
@@ -34,7 +34,7 @@
 #define STATS_ENABLE        true
 #define TIME_ENABLE         true //STATS_ENABLE
 
-#define MAX_TXN_IN_FLIGHT 5000
+#define MAX_TXN_IN_FLIGHT 10
 
 /***********************************************/
 // Memory System
@@ -60,9 +60,9 @@
 /***********************************************/
 // Message Passing
 /***********************************************/
-#define TPORT_TYPE "tcp"
-#define TPORT_TYPE_IPC false
-#define TPORT_PORT 7000
+#define TPORT_TYPE "ipc"
+#define TPORT_TYPE_IPC true
+#define TPORT_PORT ".ipc"
 
 #define MAX_TPORT_NAME 128
 #define MSG_SIZE 128 // in bytes
@@ -144,13 +144,13 @@
 #define MAX_PART_PER_TXN 2
 #define MAX_ROW_PER_TXN       64
 #define QUERY_INTVL         1UL
-#define MAX_TXN_PER_PART 3000000
+#define MAX_TXN_PER_PART 1000
 #define FIRST_PART_LOCAL      true
 #define MAX_TUPLE_SIZE        1024 // in bytes
 #define GEN_BY_MPR true
 // ==== [YCSB] ====
 #define INIT_PARALLELISM 4
-#define SYNTH_TABLE_SIZE 2097152
+#define SYNTH_TABLE_SIZE 1024 //2097152
 #define ZIPF_THETA 0.0
 #define READ_PERC 1.0
 #define WRITE_PERC 0.0

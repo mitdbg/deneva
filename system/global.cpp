@@ -14,6 +14,7 @@
 #include "msg_queue.h"
 #include "remote_query.h"
 #include "txn_pool.h"
+#include "txn_table.h"
 #include "client_txn.h"
 #include "sequencer.h"
 
@@ -32,6 +33,7 @@ VLLMan vll_man;
 Transport tport_man;
 Remote_query rem_qry_man;
 TxnPool txn_pool;
+TxnTable txn_table;
 QWorkQueue work_queue;
 QWorkQueue abort_queue;
 MessageQueue msg_queue;

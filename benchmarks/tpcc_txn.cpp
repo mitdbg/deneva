@@ -12,8 +12,8 @@
 #include "remote_query.h"
 #include "transport.h"
 
-void tpcc_txn_man::init(thread_t * h_thd, workload * h_wl, uint64_t thd_id) {
-	txn_man::init(h_thd, h_wl, thd_id);
+void tpcc_txn_man::init(workload * h_wl) {
+	txn_man::init(h_wl);
 	_wl = (tpcc_wl *) h_wl;
 	_qry = new tpcc_query;
   rc = RCOK;

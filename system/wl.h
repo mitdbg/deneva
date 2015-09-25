@@ -35,7 +35,7 @@ public:
 	virtual RC init();
 	virtual RC init_schema(const char * schema_file);
 	virtual RC init_table()=0;
-	virtual RC get_txn_man(txn_man *& txn_manager, thread_t * h_thd)=0;
+	virtual RC get_txn_man(txn_man *& txn_manager)=0;
 	// get the global timestamp.
 //	uint64_t get_ts(uint64_t thread_id);
 	//uint64_t cur_txn_id;

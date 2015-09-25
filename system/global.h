@@ -30,6 +30,7 @@
 #include "work_queue.h"
 //#include "msg_queue.h"
 #include "txn_pool.h"
+#include "txn_table.h"
 //#include "sequencer.h"
 
 using namespace std;
@@ -46,6 +47,7 @@ class VLLMan;
 class Transport;
 class Remote_query;
 class TxnPool;
+class TxnTable;
 class QWorkQueue;
 class MessageQueue;
 class Client_query_queue;
@@ -77,6 +79,7 @@ extern VLLMan vll_man;
 extern Transport tport_man;
 extern Remote_query rem_qry_man;
 extern TxnPool txn_pool;
+extern TxnTable txn_table;
 extern QWorkQueue work_queue;
 extern QWorkQueue abort_queue;
 extern MessageQueue msg_queue;

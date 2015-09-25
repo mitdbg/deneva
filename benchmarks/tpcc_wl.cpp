@@ -107,11 +107,11 @@ RC tpcc_wl::init_table() {
 	return RCOK;
 }
 
-RC tpcc_wl::get_txn_man(txn_man *& txn_manager, thread_t * h_thd) {
+RC tpcc_wl::get_txn_man(txn_man *& txn_manager) {
 	txn_manager = (tpcc_txn_man *)
-		mem_allocator.alloc( sizeof(tpcc_txn_man), h_thd->get_thd_id() );
+		mem_allocator.alloc( sizeof(tpcc_txn_man),0);
 	new(txn_manager) tpcc_txn_man();
-	txn_manager->init(h_thd, this, h_thd->get_thd_id());
+	txn_manager->init( this);
 	return RCOK;
 }
 
