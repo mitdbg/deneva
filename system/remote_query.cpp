@@ -45,6 +45,7 @@ void Remote_query::unpack(void * d, uint64_t len) {
   DEBUG_FLUSH();
 
   while(txn_cnt > 0) { 
+        /*
 #if WORKLOAD == TPCC
 	    query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), 0);
 	      query = new tpcc_query();
@@ -52,6 +53,9 @@ void Remote_query::unpack(void * d, uint64_t len) {
 	    query = (ycsb_query *) mem_allocator.alloc(sizeof(ycsb_query), 0);
         query = new ycsb_query();
 #endif
+        */
+    qry_pool.get(query);
+    assert(query);
 
 
     unpack_query(query,data,ptr,dest_id,return_id);
@@ -109,9 +113,10 @@ void Remote_query::unpack_query(base_query *& query,char * data,  uint64_t & ptr
 #if WORKLOAD == YCSB
       ycsb_query * m_query = (ycsb_query*) query;
       COPY_VAL(m_query->request_cnt,data,ptr);
-      m_query->requests = (ycsb_request *) 
-      mem_allocator.alloc(sizeof(ycsb_request) * m_query->request_cnt, 0);
+      //m_query->requests = (ycsb_request *) 
+      //mem_allocator.alloc(sizeof(ycsb_request) * m_query->request_cnt, 0);
       COPY_VAL_SIZE(m_query->requests,data,ptr,sizeof(ycsb_request)*m_query->request_cnt);
+      m_query->req = m_query->requests[0];
 #endif
 #endif
       }
@@ -172,17 +177,18 @@ void Remote_query::unpack_query(base_query *& query,char * data,  uint64_t & ptr
       COPY_VAL(batch_num,data,ptr);
 #endif
       COPY_VAL(m_query->part_num,data,ptr);
-      m_query->part_to_access = (uint64_t *)
-            mem_allocator.alloc(sizeof(uint64_t) * m_query->part_num, 0);
+      //m_query->part_to_access = (uint64_t *)
+      //      mem_allocator.alloc(sizeof(uint64_t) * m_query->part_num, 0);
       for (uint64_t i = 0; i < m_query->part_num; ++i) {
         COPY_VAL(m_query->part_to_access[i],data,ptr);
       }
       COPY_VAL(m_query->request_cnt,data,ptr);
-      m_query->requests = (ycsb_request *) 
-            mem_allocator.alloc(sizeof(ycsb_request) * m_query->request_cnt, 0);
+      //m_query->requests = (ycsb_request *) 
+      //      mem_allocator.alloc(sizeof(ycsb_request) * m_query->request_cnt, 0);
       for (uint64_t i = 0; i < m_query->request_cnt; ++i) {
         COPY_VAL_SIZE(m_query->requests[i],data,ptr,sizeof(ycsb_request));
       }
+      m_query->req = m_query->requests[0];
       assert(GET_NODE_ID(m_query->pid) == g_node_id);
       break;
       }

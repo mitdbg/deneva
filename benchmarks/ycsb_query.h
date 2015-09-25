@@ -61,7 +61,7 @@ private:
 class ycsb_query : public base_query {
 public:
 	void init(uint64_t thd_id, workload * h_wl);
-  void init(uint64_t thd_id, workload * h_wl, uint64_t node_id);
+  void init();
   void reset();
   void unpack_rsp(base_query * query, void * d); 
   void client_query(base_query * query, uint64_t dest_id) {} 

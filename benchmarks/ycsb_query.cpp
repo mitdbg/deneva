@@ -10,7 +10,7 @@ uint64_t ycsb_client_query::the_n = 0;
 double ycsb_client_query::denom = 0;
 
 void ycsb_query::init(uint64_t thd_id, workload * h_wl) {
-    init(thd_id, h_wl, g_node_id);
+    init();
 }
 
 void ycsb_client_query::client_init(uint64_t thd_id, workload * h_wl, uint64_t node_id) {
@@ -54,7 +54,7 @@ void ycsb_client_query::client_init() {
 		mem_allocator.alloc(sizeof(uint64_t) * g_part_per_txn, 0);
 }
 
-void ycsb_query::init(uint64_t thd_id, workload * h_wl, uint64_t node_id) {
+void ycsb_query::init() {
   time_q_abrt = 0;
   time_q_work = 0;
   time_copy = 0;

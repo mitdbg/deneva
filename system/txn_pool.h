@@ -6,6 +6,7 @@
 #include "concurrentqueue.h"
 
 class txn_man;
+class base_query;
 class workload;
 
 class TxnPool {
@@ -20,6 +21,17 @@ private:
 
 };
 
+class QryPool {
+public:
+  void init(workload * wl, uint64_t size);
+  void get(base_query *& item);
+  void put(base_query * items);
+
+private:
+  moodycamel::ConcurrentQueue<base_query*,moodycamel::ConcurrentQueueDefaultTraits> pool;
+  workload * _wl;
+
+};
 
 /*
 template <class T>

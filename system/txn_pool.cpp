@@ -4,6 +4,8 @@
 #include "txn.h"
 #include "mem_alloc.h"
 #include "wl.h"
+#include "ycsb_query.h"
+#include "query.h"
 
 void TxnPool::init(workload * wl, uint64_t size) {
   _wl = wl;
@@ -27,6 +29,46 @@ void TxnPool::get(txn_man *& item) {
 void TxnPool::put(txn_man * item) {
   pool.enqueue(item);
 }
+
+void QryPool::init(workload * wl, uint64_t size) {
+  _wl = wl;
+  base_query * qry=NULL;
+  for(uint64_t i = 0; i < size; i++) {
+    //put(items[i]);
+#if WORKLOAD==YCSB
+    ycsb_query * m_qry = (ycsb_query *) mem_allocator.alloc(sizeof(ycsb_query),0);
+    m_qry = new ycsb_query();
+    m_qry->requests = (ycsb_request*)mem_allocator.alloc(sizeof(ycsb_request)*REQ_PER_QUERY,0);
+    m_qry->part_to_access = (uint64_t*)mem_allocator.alloc(sizeof(uint64_t)*PART_PER_TXN,0);
+    qry = m_qry;
+#endif
+    put(qry);
+  }
+}
+
+void QryPool::get(base_query *& item) {
+  bool r = pool.try_dequeue(item);
+  if(!r) {
+#if WORKLOAD==YCSB
+    ycsb_query * qry = NULL;
+    qry = (ycsb_query *) mem_allocator.alloc(sizeof(ycsb_query),0);
+    qry = new ycsb_query();
+    qry->requests = (ycsb_request*)mem_allocator.alloc(sizeof(ycsb_request)*REQ_PER_QUERY,0);
+    qry->part_to_access = (uint64_t*)mem_allocator.alloc(sizeof(uint64_t)*PART_PER_TXN,0);
+#endif
+    item = (base_query*)qry;
+  }
+  item->clear();
+  item->base_reset();
+  item->reset();
+}
+
+void QryPool::put(base_query * item) {
+  assert(item);
+  pool.enqueue(item);
+}
+
+
 /*
 template <class T>
 void TxnPool::init(uint64_t size) {
