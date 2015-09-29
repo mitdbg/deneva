@@ -36,7 +36,7 @@ void TxnTablePool::init(workload * wl, uint64_t size) {
   //txn_man * items = (txn_man*)mem_allocator.alloc(sizeof(txn_man)*size,0);
     txn_node * t_node = (txn_node *) mem_allocator.alloc(sizeof(struct txn_node) * size, g_thread_cnt);
   for(uint64_t i = 0; i < size; i++) {
-    put(t_node[i]);
+    put(&t_node[i]);
   }
 }
 

@@ -75,7 +75,7 @@ def using_local():
 ##      fab using_istc   run_exps:experiment_1
 @task
 @hosts('localhost')
-def run_exps(exps,skip_completed='False',exec_exps='True',dry_run='False',iterations='1',check='True',delay=''):
+def run_exps(exps,skip_completed='False',exec_exps='True',dry_run='False',iterations='1',check='True',delay='',single_node='False'):
     global SKIP, EXECUTE_EXPS,NOW,STRNOW 
     ITERS = int(iterations)
     SKIP = skip_completed == 'True'

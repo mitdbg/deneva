@@ -90,7 +90,7 @@ void TxnTable::add_txn(uint64_t node_id, txn_man * txn, base_query * qry) {
 
   if(next_txn == NULL) {
     //t_node = (txn_node_t) mem_allocator.alloc(sizeof(struct txn_node), g_thread_cnt);
-    t_node = txn_table_pool.get();
+    txn_table_pool.get(t_node);
     t_node->txn = txn;
     t_node->qry = qry;
     LIST_PUT_TAIL(pool[txn_id % pool_size].head,pool[txn_id % pool_size].tail,t_node);
