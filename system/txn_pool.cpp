@@ -31,6 +31,26 @@ void TxnPool::put(txn_man * item) {
   pool.enqueue(item);
 }
 
+void TxnTablePool::init(workload * wl, uint64_t size) {
+  _wl = wl;
+  //txn_man * items = (txn_man*)mem_allocator.alloc(sizeof(txn_man)*size,0);
+    txn_node * t_node = (txn_node *) mem_allocator.alloc(sizeof(struct txn_node) * size, g_thread_cnt);
+  for(uint64_t i = 0; i < size; i++) {
+    put(t_node[i]);
+  }
+}
+
+void TxnTablePool::get(txn_node *& item) {
+  bool r = pool.try_dequeue(item);
+  if(!r) {
+    item = (txn_node *) mem_allocator.alloc(sizeof(struct txn_node), g_thread_cnt);
+  }
+}
+
+void TxnTablePool::put(txn_node * item) {
+  pool.enqueue(item);
+}
+
 void QryPool::init(workload * wl, uint64_t size) {
   _wl = wl;
   base_query * qry=NULL;

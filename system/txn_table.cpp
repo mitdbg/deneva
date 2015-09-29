@@ -89,7 +89,8 @@ void TxnTable::add_txn(uint64_t node_id, txn_man * txn, base_query * qry) {
   }
 
   if(next_txn == NULL) {
-    t_node = (txn_node_t) mem_allocator.alloc(sizeof(struct txn_node), g_thread_cnt);
+    //t_node = (txn_node_t) mem_allocator.alloc(sizeof(struct txn_node), g_thread_cnt);
+    t_node = txn_table_pool.get();
     t_node->txn = txn;
     t_node->qry = qry;
     LIST_PUT_TAIL(pool[txn_id % pool_size].head,pool[txn_id % pool_size].tail,t_node);
@@ -244,7 +245,8 @@ void TxnTable::delete_txn(uint64_t node_id, uint64_t txn_id){
       qry_pool.put(t_node->qry);
     }
 #endif
-    mem_allocator.free(t_node, sizeof(struct txn_node));
+    //mem_allocator.free(t_node, sizeof(struct txn_node));
+    txn_table_pool.put(t_node);
     INC_STATS(0,thd_prof_txn_table2a,get_sys_clock() - thd_prof_start);
   }
   else {

@@ -9,6 +9,7 @@ class txn_man;
 class base_query;
 class workload;
 struct msg_entry;
+struct txn_node;
 
 class TxnPool {
 public:
@@ -22,6 +23,17 @@ private:
 
 };
 
+class TxnTablePool {
+public:
+  void init(workload * wl, uint64_t size);
+  void get(txn_node *& item);
+  void put(txn_node * items);
+
+private:
+  moodycamel::ConcurrentQueue<txn_node*,moodycamel::ConcurrentQueueDefaultTraits> pool;
+  workload * _wl;
+
+};
 class QryPool {
 public:
   void init(workload * wl, uint64_t size);
