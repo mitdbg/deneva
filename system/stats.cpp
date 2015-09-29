@@ -203,7 +203,7 @@ void Stats_thd::clear() {
   aq_full = 0;
 
   rthd_prof_1=0; rthd_prof_2=0;
-  sthd_prof_1=0; sthd_prof_2=0; sthd_prof_3=0; sthd_prof_4=0; sthd_prof_5=0;
+  sthd_prof_1a=0; sthd_prof_1b=0; sthd_prof_2=0; sthd_prof_3=0; sthd_prof_4=0; sthd_prof_5a=0; sthd_prof_5b=0;
   thd_prof_thd1=0; thd_prof_thd2=0; thd_prof_thd3=0;
   thd_prof_thd1a=0; thd_prof_thd1b=0; thd_prof_thd1c=0; thd_prof_thd1d=0;
   thd_prof_thd2_loc=0; thd_prof_thd2_rem=0;
@@ -540,12 +540,14 @@ void Stats::print_client(bool prog) {
 		total_tot_run_time = total_tot_run_time / g_client_thread_cnt;
 	for (uint64_t tid = g_client_thread_cnt; tid < g_client_thread_cnt + g_client_send_thread_cnt; tid ++) {
   printf(
-      "sthd_prof_1=%f,sthd_prof_2=%f,sthd_prof_3=%f,sthd_prof_4=%f,sthd_prof_5=%f\n"
-      ,_stats[tid]->sthd_prof_1 / BILLION
+      "sthd_prof_1a=%f,sthd_prof_2=%f,sthd_prof_3=%f,sthd_prof_4=%f,sthd_prof_5a=%f,sthd_prof_1b=%f,sthd_prof_5b=%f\n"
+      ,_stats[tid]->sthd_prof_1a / BILLION
       ,_stats[tid]->sthd_prof_2 / BILLION
        ,_stats[tid]->sthd_prof_3 / BILLION
        ,_stats[tid]->sthd_prof_4 / BILLION
-       ,_stats[tid]->sthd_prof_5 / BILLION
+       ,_stats[tid]->sthd_prof_5a / BILLION
+      ,_stats[tid]->sthd_prof_1b / BILLION
+       ,_stats[tid]->sthd_prof_5b / BILLION
       );
   }
 	for (uint64_t tid = g_client_thread_cnt+g_client_send_thread_cnt; tid < g_client_thread_cnt + g_client_send_thread_cnt + g_client_rem_thread_cnt; tid ++) {
@@ -883,12 +885,14 @@ void Stats::print(bool prog) {
 
 	for (uint64_t tid = g_thread_cnt; tid < g_thread_cnt + g_send_thread_cnt; tid ++) {
   printf(
-      "sthd_prof_1=%f,sthd_prof_2=%f,sthd_prof_3=%f,sthd_prof_4=%f,sthd_prof_5=%f\n"
-      ,_stats[tid]->sthd_prof_1 / BILLION
+      "sthd_prof_1a=%f,sthd_prof_2=%f,sthd_prof_3=%f,sthd_prof_4=%f,sthd_prof_5a=%f,sthd_prof_1b=%f,sthd_prof_5b=%f\n"
+      ,_stats[tid]->sthd_prof_1a / BILLION
       ,_stats[tid]->sthd_prof_2 / BILLION
        ,_stats[tid]->sthd_prof_3 / BILLION
        ,_stats[tid]->sthd_prof_4 / BILLION
-       ,_stats[tid]->sthd_prof_5 / BILLION
+       ,_stats[tid]->sthd_prof_5a / BILLION
+      ,_stats[tid]->sthd_prof_1b / BILLION
+       ,_stats[tid]->sthd_prof_5b / BILLION
       );
   }
 	for (uint64_t tid = g_thread_cnt+g_send_thread_cnt; tid < g_thread_cnt + g_send_thread_cnt + g_rem_thread_cnt; tid ++) {

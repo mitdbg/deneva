@@ -8,7 +8,7 @@
 #define NODE_CNT 2
 #define THREAD_CNT 2
 #define REM_THREAD_CNT 1
-#define SEND_THREAD_CNT 8
+#define SEND_THREAD_CNT 4
 // PART_CNT should be at least NODE_CNT
 #define PART_CNT 2
 #define CLIENT_NODE_CNT 2
@@ -34,7 +34,7 @@
 #define STATS_ENABLE        true
 #define TIME_ENABLE         true //STATS_ENABLE
 
-#define MAX_TXN_IN_FLIGHT 5000
+#define MAX_TXN_IN_FLIGHT 350
 
 /***********************************************/
 // Memory System
@@ -248,7 +248,7 @@ extern TestCases          g_test_case;
 // SIMPLE Immediately send OK back to client
 // NOCC Don't do CC
 // NORMAL normal operation
-#define MODE NORMAL
+#define MODE NOCC
 
 
 /***********************************************/

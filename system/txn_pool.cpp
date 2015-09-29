@@ -6,6 +6,7 @@
 #include "wl.h"
 #include "ycsb_query.h"
 #include "query.h"
+#include "msg_queue.h"
 
 void TxnPool::init(workload * wl, uint64_t size) {
   _wl = wl;
@@ -65,6 +66,26 @@ void QryPool::get(base_query *& item) {
 
 void QryPool::put(base_query * item) {
   assert(item);
+  pool.enqueue(item);
+}
+
+void MsgPool::init(workload * wl, uint64_t size) {
+  _wl = wl;
+  msg_entry* entry;
+  for(uint64_t i = 0; i < size; i++) {
+    entry = (msg_entry*) mem_allocator.alloc(sizeof(struct msg_entry), 0);
+    put(entry);
+  }
+}
+
+void MsgPool::get(msg_entry* & item) {
+  bool r = pool.try_dequeue(item);
+  if(!r) {
+    item = (msg_entry*) mem_allocator.alloc(sizeof(struct msg_entry), 0);
+  }
+}
+
+void MsgPool::put(msg_entry* item) {
   pool.enqueue(item);
 }
 

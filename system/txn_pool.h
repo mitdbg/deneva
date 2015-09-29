@@ -8,6 +8,7 @@
 class txn_man;
 class base_query;
 class workload;
+struct msg_entry;
 
 class TxnPool {
 public:
@@ -29,6 +30,18 @@ public:
 
 private:
   moodycamel::ConcurrentQueue<base_query*,moodycamel::ConcurrentQueueDefaultTraits> pool;
+  workload * _wl;
+
+};
+
+class MsgPool {
+public:
+  void init(workload * wl, uint64_t size);
+  void get(msg_entry *& item);
+  void put(msg_entry * items);
+
+private:
+  moodycamel::ConcurrentQueue<msg_entry*,moodycamel::ConcurrentQueueDefaultTraits> pool;
   workload * _wl;
 
 };

@@ -8,28 +8,27 @@ fmt_tpcc = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT
 fmt_nd = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","NUM_WH","MAX_TXN_IN_FLIGHT","NETWORK_DELAY"]]
 fmt_ycsb = [["CLIENT_NODE_CNT","NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","CLIENT_THREAD_CNT","CLIENT_REM_THREAD_CNT","CLIENT_SEND_THREAD_CNT","THREAD_CNT","REM_THREAD_CNT","SEND_THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC","PART_PER_TXN","PART_CNT","MSG_TIME_LIMIT","MSG_SIZE_MAX","MODE"]]
 fmt_nt = [["NODE_CNT","CLIENT_NODE_CNT","NETWORK_TEST"]]
-fmt_title=["NODE_CNT","MPR","ZIPF_THETA","WRITE_PERC","CC_ALG"]
+fmt_title=["NODE_CNT","MPR","ZIPF_THETA","WRITE_PERC","CC_ALG","SEND_THREAD_CNT"]
 
 def test():
     fmt = fmt_ycsb
-    nnodes = [2]
+    nnodes = [1,2]
     nmpr=[100]
     nalgos=['NO_WAIT']
     nthreads=[2]
     nrthreads=[1]
-    nsthreads=[8]
+    nsthreads=[1,2,4]
     ncthreads=[2]
     ncrthreads=[1]
     ncsthreads=[4]
-    ntifs=[5000]
-#ntifs=[1,100,500,1000,2000,3000,5000,7500,10000,15000,20000]
+    ntifs=[1,10,100,250,350,500,2000,5000,7500,10000,15000]
     nzipf=[0.0]
     nwr_perc=[0.0]
     ntxn=[3000000]
     nbtime=[1000] # in ns
     nbsize=[4096]
     nparts = [2]
-    nmodes = ["NORMAL"]#,"SIMPLE","QRY","TWOPC","NOCC"]
+    nmodes = ["NORMAL","SIMPLE","QRY","TWOPC","NOCC"]
     exp = [[n,n,txn,'YCSB',cc,m,ct,crt,cst,t,rt,st,tif,z,1.0-wp,wp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n,str(mt) + '*1000UL',bsize,mode] for n,ct,crt,cst,t,rt,st,tif,z,wp,m,cc,p,txn,mt,bsize,mode in itertools.product(nnodes,ncthreads,ncrthreads,ncsthreads,nthreads,nrthreads,nsthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts,ntxn,nbtime,nbsize,nmodes)]
     return fmt[0],exp
 

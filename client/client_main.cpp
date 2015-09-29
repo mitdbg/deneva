@@ -155,11 +155,13 @@ int main(int argc, char* argv[])
 
 	for (; i < thd_cnt + sthd_cnt; i++) {
 		uint64_t vid = i;
-		pthread_create(&p_thds[i], &attr, send_worker, (void *)vid);
+		pthread_create(&p_thds[i], NULL, send_worker, (void *)vid);
+		//pthread_create(&p_thds[i], &attr, send_worker, (void *)vid);
   }
 	for (; i < thd_cnt + sthd_cnt + rthd_cnt -1; i++) {
 		uint64_t vid = i;
-		pthread_create(&p_thds[i], &attr, nn_worker, (void *)vid);
+		pthread_create(&p_thds[i], NULL, nn_worker, (void *)vid);
+		//pthread_create(&p_thds[i], &attr, nn_worker, (void *)vid);
   }
 
     nn_worker((void *)(i));

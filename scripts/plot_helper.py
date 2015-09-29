@@ -214,10 +214,13 @@ def tput_v_lat(xval,vval,summary,summary_cl,
                 continue 
             try:
                 tot_run_time = sum(summary[cfgs]['clock_time'])
+#                tot_lat = sum(summary[cfgs]['latency'])
                 tot_lat = sum(summary_cl[cfgs]['latency'])
                 avg_run_time = avg(summary[cfgs]['clock_time'])
                 avg_txn_lat = avg(summary_cl[cfgs]['latency'])
                 tot_txn_cnt = sum(summary_cl[cfgs]['txn_cnt'])
+#                avg_txn_lat = avg(summary[cfgs]['latency'])
+#                tot_txn_cnt = sum(summary[cfgs]['txn_cnt'])
             except KeyError:
                 print("KeyError: {} {} {} -- {}".format(v,x,cfg,cfgs))
                 tpt[_v][xi] = 0
@@ -358,9 +361,11 @@ def tput(xval,vval,summary,summary_cl,
                 continue 
             try:
                 tot_run_time = sum(summary[cfgs]['clock_time'])
-                tot_txn_cnt = sum(summary_cl[cfgs]['txn_cnt'])
+                tot_txn_cnt = sum(summary[cfgs]['txn_cnt'])
+#                tot_txn_cnt = sum(summary_cl[cfgs]['txn_cnt'])
                 avg_run_time = avg(summary[cfgs]['clock_time'])
-                avg_txn_cnt = avg(summary_cl[cfgs]['txn_cnt'])
+                avg_txn_cnt = avg(summary[cfgs]['txn_cnt'])
+#                avg_txn_cnt = avg(summary_cl[cfgs]['txn_cnt'])
             except KeyError:
                 print("KeyError: {} {} {} -- {}".format(v,x,cfg,cfgs))
                 tpt[_v][xi] = 0

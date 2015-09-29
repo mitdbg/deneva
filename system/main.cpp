@@ -117,6 +117,9 @@ int main(int argc, char* argv[])
   printf("Initializing query pool... ");
   qry_pool.init(m_wl,g_inflight_max);
   printf("Done\n");
+  printf("Initializing msg pool... ");
+  msg_pool.init(m_wl,g_inflight_max);
+  printf("Done\n");
   printf("Initializing transaction table... ");
   txn_table.init();
   printf("Done\n");
@@ -204,11 +207,13 @@ int main(int argc, char* argv[])
 
 	for (; i < thd_cnt + sthd_cnt; i++) {
 		uint64_t vid = i;
-		pthread_create(&p_thds[i], &attr, send_worker, (void *)vid);
+		pthread_create(&p_thds[i], NULL, send_worker, (void *)vid);
+		//pthread_create(&p_thds[i], &attr, send_worker, (void *)vid);
   }
 	for (; i < thd_cnt + sthd_cnt + rthd_cnt -1; i++) {
 		uint64_t vid = i;
-		pthread_create(&p_thds[i], &attr, nn_worker, (void *)vid);
+		pthread_create(&p_thds[i], NULL, nn_worker, (void *)vid);
+		//pthread_create(&p_thds[i], &attr, nn_worker, (void *)vid);
   }
 
 
