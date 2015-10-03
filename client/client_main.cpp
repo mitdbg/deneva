@@ -91,6 +91,12 @@ int main(int argc, char* argv[])
   printf("Initializing work queue... ");
   work_queue.init();
   printf("Done\n");
+  printf("Initializing query pool... ");
+  qry_pool.init(m_wl,g_inflight_max);
+  printf("Done\n");
+  printf("Initializing msg pool... ");
+  msg_pool.init(m_wl,g_inflight_max);
+  printf("Done\n");
   fflush(stdout);
 
 	// 2. spawn multiple threads
@@ -178,6 +184,9 @@ int main(int argc, char* argv[])
 	} else {
 		((TestWorkload *)m_wl)->summarize();
 	}
+  // Free stuff
+  msg_pool.free_all();
+  qry_pool.free_all();
 	return 0;
 }
 

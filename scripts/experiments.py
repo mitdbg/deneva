@@ -12,7 +12,7 @@ fmt_title=["NODE_CNT","MPR","ZIPF_THETA","WRITE_PERC","CC_ALG","MAX_TXN_IN_FLIGH
 
 def test():
     fmt = fmt_ycsb
-    nnodes = [1]#,2,4]
+    nnodes = [2]
     nmpr=[100]
     nalgos=['NO_WAIT']
 #    nalgos=['NO_WAIT','WAIT_DIE']

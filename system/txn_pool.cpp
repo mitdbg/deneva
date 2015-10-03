@@ -31,6 +31,13 @@ void TxnPool::put(txn_man * item) {
   pool.enqueue(item);
 }
 
+void TxnPool::free_all() {
+  txn_man * item;
+  while(pool.try_dequeue(item)) {
+    mem_allocator.free(item,sizeof(item));
+  }
+}
+
 void AccessPool::init(workload * wl, uint64_t size) {
   _wl = wl;
   Access * items = (Access*)mem_allocator.alloc(sizeof(Access)*size,0);
@@ -50,6 +57,12 @@ void AccessPool::put(Access * item) {
   pool.enqueue(item);
 }
 
+void AccessPool::free_all() {
+  Access * item;
+  while(pool.try_dequeue(item)) {
+    mem_allocator.free(item,sizeof(item));
+  }
+}
 
 void TxnTablePool::init(workload * wl, uint64_t size) {
   _wl = wl;
@@ -69,6 +82,13 @@ void TxnTablePool::get(txn_node *& item) {
 
 void TxnTablePool::put(txn_node * item) {
   pool.enqueue(item);
+}
+
+void TxnTablePool::free_all() {
+  txn_node * item;
+  while(pool.try_dequeue(item)) {
+    mem_allocator.free(item,sizeof(item));
+  }
 }
 
 void QryPool::init(workload * wl, uint64_t size) {
@@ -109,6 +129,13 @@ void QryPool::put(base_query * item) {
   pool.enqueue(item);
 }
 
+void QryPool::free_all() {
+  base_query * item;
+  while(pool.try_dequeue(item)) {
+    mem_allocator.free(item,sizeof(item));
+  }
+}
+
 void MsgPool::init(workload * wl, uint64_t size) {
   _wl = wl;
   msg_entry* entry;
@@ -129,6 +156,12 @@ void MsgPool::put(msg_entry* item) {
   pool.enqueue(item);
 }
 
+void MsgPool::free_all() {
+  msg_entry * item;
+  while(pool.try_dequeue(item)) {
+    mem_allocator.free(item,sizeof(item));
+  }
+}
 
 /*
 template <class T>

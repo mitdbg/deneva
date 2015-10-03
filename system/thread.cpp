@@ -305,6 +305,7 @@ RC thread_t::run() {
           if( !ATOM_CAS(_wl->sim_done, false, true) )
             assert( _wl->sim_done);
         }
+        qry_pool.put(m_query);
         m_query = NULL;
         break;
 			case RPASS:
@@ -617,6 +618,7 @@ RC thread_t::process_rfin(base_query *& m_query,txn_man *& m_txn) {
 
         INC_STATS(_thd_id,thd_prof_thd_rfin2,get_sys_clock() - thd_prof_thd_rfin_start);
         // TODO: change check from null m_query to qry type?
+        //qry_pool.put(m_query);
 				m_query = NULL;
         return RCOK;
 }
@@ -653,6 +655,7 @@ RC thread_t::process_rack(base_query *& m_query,txn_man *& m_txn) {
 				int rsp_cnt = m_txn->decr_rsp(1);
         assert(rsp_cnt >=0);
         if(rsp_cnt > 0) {
+          //qry_pool.put(m_query);
           m_query = NULL;
           return RCOK;
         }
@@ -682,11 +685,13 @@ RC thread_t::process_rack(base_query *& m_query,txn_man *& m_txn) {
         thd_prof_thd_rack_start = get_sys_clock();
 							if(rc == WAIT) {
 								m_txn->rc = rc;
+                //qry_pool.put(m_query);
 					      m_query = NULL;
                 return WAIT;
 							}
 
 							if(m_txn->ready_part > 0) {
+                //qry_pool.put(m_query);
 					      m_query = NULL;
                 return WAIT;
               }
@@ -698,6 +703,7 @@ RC thread_t::process_rack(base_query *& m_query,txn_man *& m_txn) {
                     m_txn->state = FIN;
                     // send rfin messages w/ abort
                     m_txn->finish(m_query,true);
+                    //qry_pool.put(m_query);
                     m_query = NULL;
                     return Abort;
               }
@@ -711,12 +717,14 @@ RC thread_t::process_rack(base_query *& m_query,txn_man *& m_txn) {
                     m_txn->state = FIN;
                     // send rfin messages w/ abort
                     m_txn->finish(m_query,true);
+                    //qry_pool.put(m_query);
                     m_query = NULL;
                     return Abort;
               }
 #endif
 							m_txn->state = EXEC; 
 							txn_table.restart_txn(m_txn->get_txn_id());
+              //qry_pool.put(m_query);
 					    m_query = NULL;
               break;
             case PREP:
@@ -738,6 +746,7 @@ RC thread_t::process_rack(base_query *& m_query,txn_man *& m_txn) {
 							m_txn->finish(m_query,true);
               // Note: can't touch m_txn after this, since all other
               //  RACKs may have been received and FIN processed before this point
+              //qry_pool.put(m_query);
 					    m_query = NULL;
 							break;
 						case FIN:
@@ -859,6 +868,7 @@ RC thread_t::process_rqry(base_query *& m_query,txn_man *& m_txn) {
 */
           msg_queue.enqueue(m_query,RQRY_RSP,m_query->return_id);
         }
+        //qry_pool.put(m_query);
         m_query = NULL;
     INC_STATS(_thd_id,thd_prof_thd_rqry2,get_sys_clock() - thd_prof_start);
         return rc;
@@ -932,6 +942,7 @@ RC thread_t::process_rprepare(base_query *& m_query,txn_man *& m_txn) {
 #endif
 
     INC_STATS(_thd_id,thd_prof_thd_rprep2,get_sys_clock() - thd_prof_start);
+        //qry_pool.put(m_query);
         m_query = NULL;
         return rc;
 }
@@ -989,6 +1000,7 @@ RC thread_t::process_rinit(base_query *& m_query,txn_man *& m_txn) {
 				part_lock_man.rem_lock(m_query->parts, m_query->part_cnt, m_txn);
 #endif
     INC_STATS(_thd_id,thd_prof_thd_rqry2,get_sys_clock() - thd_prof_start);
+        //qry_pool.put(m_query);
         m_query = NULL;
         return rc;
 }
@@ -1086,6 +1098,7 @@ RC thread_t::process_rtxn(base_query *& m_query,txn_man *& m_txn) {
 				} //if(m_txn->rc != WAIT) 
 
 				if(m_query->rc == Abort && rc == WAIT) {
+          //qry_pool.put(m_query);
 					m_query = NULL;
           return rc;
 				}

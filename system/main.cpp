@@ -238,6 +238,13 @@ int main(int argc, char* argv[])
 	} else {
 		((TestWorkload *)m_wl)->summarize();
 	}
+  // Free things
+  txn_table.delete_all();
+  txn_pool.free_all();
+  access_pool.free_all();
+  txn_table_pool.free_all();
+  msg_pool.free_all();
+  qry_pool.free_all();
 	return 0;
 }
 

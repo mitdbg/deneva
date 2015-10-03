@@ -207,6 +207,26 @@ base_query * TxnTable::get_qry(uint64_t node_id, uint64_t txn_id){
 }
 */
 
+void TxnTable::delete_all() {
+  for(uint64_t i=0;i < pool_size;i++) {
+    txn_node_t t_node = pool[i].head;
+
+    while (t_node != NULL) {
+      LIST_REMOVE_HT(t_node,pool[i].head,pool[i].tail);
+      pool[i].cnt--;
+      cnt--;
+      if(t_node->txn) {
+        t_node->txn->release();
+        txn_pool.put(t_node->txn);
+      }
+      if(t_node->qry) {
+        qry_pool.put(t_node->qry);
+      }
+      t_node = t_node->next;
+    }
+
+  }
+}
 
 void TxnTable::delete_txn(uint64_t node_id, uint64_t txn_id){
   uint64_t thd_prof_start = get_sys_clock();

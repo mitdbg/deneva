@@ -42,6 +42,7 @@ public:
   //txn_man * get_txn(uint64_t node_id, uint64_t txn_id);
   //base_query * get_qry(uint64_t node_id, uint64_t txn_id);
   void restart_txn(uint64_t txn_id);
+  void delete_all();
   void delete_txn(uint64_t node_id, uint64_t txn_id);
   uint64_t get_min_ts(); 
   void snapshot(); 
