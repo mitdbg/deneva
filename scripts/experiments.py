@@ -12,7 +12,7 @@ fmt_title=["NODE_CNT","MPR","ZIPF_THETA","WRITE_PERC","CC_ALG","MAX_TXN_IN_FLIGH
 
 def test():
     fmt = fmt_ycsb
-    nnodes = [1,2,4]
+    nnodes = [1]#,2,4]
     nmpr=[100]
     nalgos=['NO_WAIT']
 #    nalgos=['NO_WAIT','WAIT_DIE']
@@ -22,13 +22,12 @@ def test():
     ncthreads=[2]
     ncrthreads=[1]
     ncsthreads=[4]
-    ntifs=[300,500,2500,5000]
-#    ntifs=[100,500,2500,5000]
+    ntifs=[300]#,500,2500,5000]
+#    nzipf=[0.0]
     nzipf=[0.0]
-#    nzipf=[0.0,0.6,0.9]
     nwr_perc=[0.0]
 #    nwr_perc=[0.0,1.0]
-    ntxn=[3000000]
+    ntxn=[1000000]
 #    ntxn=[5000000]
     nbtime=[1000] # in ns
     nbsize=[4096]
@@ -130,8 +129,8 @@ def ft_mode_plot(summary,summary_client):
 def test_plot(summary,summary_client):
     nfmt,nexp = test()
     tput_setup(summary,summary_client,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",v_name="MODE")
-#    tputvlat_setup(summary,summary_client,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",v_name="MODE")
-#    tput_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="MODE")
+    tputvlat_setup(summary,summary_client,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",v_name="MODE")
+    tput_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="MODE")
     stacks_setup(summary,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",keys=['thd1','thd2','thd3'],norm=True)
     stacks_setup(summary,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",keys=['txn_table_add','txn_table_get','txn_table0a','txn_table1a','txn_table0b','txn_table1b','txn_table2a','txn_table2'],norm=True)
     stacks_setup(summary,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",keys=['type4','type8','type10'],norm=True)
@@ -264,7 +263,7 @@ configs = {
     "NUM_WH": 2,
     "MAX_TXN_IN_FLIGHT": 1,
     "NETWORK_DELAY": '0UL',
-    "DONE_TIMER": "1 * 60 * BILLION // 3 minutes",
+    "DONE_TIMER": "1 * 30 * BILLION // 3 minutes",
     "PROG_TIMER" : "10 * BILLION // in s",
     "NETWORK_TEST" : "false",
     "ABORT_PENALTY": "1 * 1000000UL   // in ns.",

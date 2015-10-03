@@ -46,6 +46,7 @@ RC thread_t::run_remote() {
   while(!_wl->sim_init_done) {
     tport_man.recv_msg();
   }
+  warmup_done = true;
 	pthread_barrier_wait( &warmup_bar );
 	printf("Run_remote %ld:%ld\n",_node_id, _thd_id);
   fflush(stdout);

@@ -19,6 +19,7 @@
 #include "ycsb_query.h"
 #include "tpcc_query.h"
 #include "msg_queue.h"
+#include "txn_pool.h"
 
 void txn_man::init(workload * h_wl) {
 	this->h_wl = h_wl;
@@ -323,8 +324,9 @@ RC txn_man::get_row(row_t * row, access_t type, row_t *& row_rtn) {
 //	assert(row_cnt < MAX_ROW_PER_TXN);
 	uint64_t part_id = row->get_part_id();
 	if (accesses[row_cnt] == NULL) {
-		accesses[row_cnt] = (Access *) 
-			mem_allocator.alloc(sizeof(Access), part_id);
+		access_pool.get(accesses[row_cnt]);
+		//accesses[row_cnt] = (Access *) 
+	//		mem_allocator.alloc(sizeof(Access), part_id);
 		num_accesses_alloc ++;
 	}
 
@@ -647,7 +649,8 @@ RC txn_man::finish(base_query * query, bool fin) {
 void
 txn_man::release() {
 	for (int i = 0; i < num_accesses_alloc; i++) {
-		mem_allocator.free(accesses[i], sizeof(Access));
+    access_pool.put(accesses[i]);
+		//mem_allocator.free(accesses[i], sizeof(Access));
   }
 	//mem_allocator.free(accesses, 0);
 }

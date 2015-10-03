@@ -114,6 +114,9 @@ int main(int argc, char* argv[])
   printf("Initializing transaction pool... ");
   txn_pool.init(m_wl,g_inflight_max);
   printf("Done\n");
+  printf("Initializing access pool... ");
+  access_pool.init(m_wl,g_inflight_max * g_req_per_query);
+  printf("Done\n");
   printf("Initializing txn node table pool... ");
   txn_table_pool.init(m_wl,g_inflight_max);
   printf("Done\n");

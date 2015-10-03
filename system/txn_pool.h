@@ -10,6 +10,7 @@ class base_query;
 class workload;
 struct msg_entry;
 struct txn_node;
+class Access;
 
 class TxnPool {
 public:
@@ -22,6 +23,19 @@ private:
   workload * _wl;
 
 };
+
+class AccessPool {
+public:
+  void init(workload * wl, uint64_t size);
+  void get(Access *& item);
+  void put(Access * items);
+
+private:
+  moodycamel::ConcurrentQueue<Access*,moodycamel::ConcurrentQueueDefaultTraits> pool;
+  workload * _wl;
+
+};
+
 
 class TxnTablePool {
 public:

@@ -248,6 +248,7 @@ void TxnTable::delete_txn(uint64_t node_id, uint64_t txn_id){
       t_node->txn->release();
       mem_allocator.free(t_node->txn, sizeof(ycsb_txn_man));
       */
+      t_node->txn->release();
       txn_pool.put(t_node->txn);
     }
     

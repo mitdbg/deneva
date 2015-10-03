@@ -16,7 +16,7 @@ for n in range(ncnt):
     summary[str(n)] = get_prog(fname)
 progress_diff(summary,ncnt,'txn_cnt',name=exp)
 progress(summary,ncnt,'cpu_ttl',name=exp)
-progress(summary,ncnt,'mbuf_send_time',name=exp)
+#progress(summary,ncnt,'mbuf_send_time',name=exp)
 progress(summary,ncnt,'phys_mem_usage',name=exp)
 #progress(exp,ncnt,'abrt_cnt')
 #progress(exp,ncnt,'msg_bytes')

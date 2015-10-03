@@ -154,11 +154,11 @@ Client_query_thd::init_txns_file(const char * txn_file) {
 #endif
     queries[qid].client_init();
     int num = 0;
-    int idx = 0;
+    uint64_t idx = 0;
     int part_cnt = 0;
 		size_t pos = 0;
 		string token;
-    while(line.length() != 0) {
+    while(line.length() != 0 && idx < g_req_per_query) {
       pos = line.find(",");
 		  if (pos == string::npos)
 				pos = line.length();

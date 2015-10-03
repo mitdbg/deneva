@@ -33,6 +33,7 @@ VLLMan vll_man;
 Transport tport_man;
 Remote_query rem_qry_man;
 TxnPool txn_pool;
+AccessPool access_pool;
 TxnTablePool txn_table_pool;
 MsgPool msg_pool;
 QryPool qry_pool;
@@ -43,6 +44,7 @@ MessageQueue msg_queue;
 Client_txn client_man;
 Sequencer seq_man;
 
+bool volatile warmup_done = false;
 bool volatile warmup_finish = false;
 bool volatile enable_thread_mem_pool = false;
 pthread_barrier_t warmup_bar;

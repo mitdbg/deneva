@@ -31,6 +31,26 @@ void TxnPool::put(txn_man * item) {
   pool.enqueue(item);
 }
 
+void AccessPool::init(workload * wl, uint64_t size) {
+  _wl = wl;
+  Access * items = (Access*)mem_allocator.alloc(sizeof(Access)*size,0);
+  for(uint64_t i = 0; i < size; i++) {
+    put(&items[i]);
+  }
+}
+
+void AccessPool::get(Access *& item) {
+  bool r = pool.try_dequeue(item);
+  if(!r) {
+    item = (Access*)mem_allocator.alloc(sizeof(Access),0);
+  }
+}
+
+void AccessPool::put(Access * item) {
+  pool.enqueue(item);
+}
+
+
 void TxnTablePool::init(workload * wl, uint64_t size) {
   _wl = wl;
   //txn_man * items = (txn_man*)mem_allocator.alloc(sizeof(txn_man)*size,0);
