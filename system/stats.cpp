@@ -223,6 +223,7 @@ void Stats_thd::clear() {
   thd_prof_cc0=0;thd_prof_cc3=0;
   thd_prof_wq1=0;thd_prof_wq2=0;thd_prof_wq1=3;thd_prof_wq4=0;
   thd_prof_txn1=0;thd_prof_txn2=0;
+  thd_prof_txn_table_add=0;thd_prof_txn_table_get=0;
   thd_prof_txn_table0a=0;thd_prof_txn_table1a=0;thd_prof_txn_table2=0;
   thd_prof_txn_table0b=0;thd_prof_txn_table1b=0;thd_prof_txn_table2=0;
 
@@ -231,6 +232,8 @@ void Stats_thd::clear() {
   txn_sent = 0;
 
   cc_busy_cnt = 0;
+  txn_table_cflt = 0;
+  txn_table_cflt_size = 0;
 	cc_wait_cnt = 0;
 	cc_wait_abrt_cnt = 0;
 	cc_wait_time = 0;
@@ -724,6 +727,8 @@ void Stats::print(bool prog) {
 	double total_rtime_proc = 0;
 	double total_time_unpack = 0;
 	uint64_t total_cc_busy_cnt = 0;
+	uint64_t total_txn_table_cflt = 0;
+	uint64_t total_txn_table_cflt_size = 0;
 	uint64_t total_cc_wait_cnt = 0;
 	double total_cc_wait_time = 0;
 	double total_cc_hold_time = 0;
@@ -830,6 +835,8 @@ void Stats::print(bool prog) {
 		total_time_unpack += _stats[tid]->time_unpack;
 
 		total_cc_busy_cnt += _stats[tid]->cc_busy_cnt;
+		total_txn_table_cflt += _stats[tid]->txn_table_cflt;
+		total_txn_table_cflt_size += _stats[tid]->txn_table_cflt_size;
 		total_cc_wait_cnt += _stats[tid]->cc_wait_cnt;
 		total_cc_wait_time += _stats[tid]->cc_wait_time;
 		total_cc_hold_time += _stats[tid]->cc_hold_time;
@@ -883,110 +890,6 @@ void Stats::print(bool prog) {
             total_finish_time = total_tot_run_time;
         }
 
-	for (uint64_t tid = g_thread_cnt; tid < g_thread_cnt + g_send_thread_cnt; tid ++) {
-  printf(
-      "sthd_prof_1a=%f,sthd_prof_2=%f,sthd_prof_3=%f,sthd_prof_4=%f,sthd_prof_5a=%f,sthd_prof_1b=%f,sthd_prof_5b=%f\n"
-      ,_stats[tid]->sthd_prof_1a / BILLION
-      ,_stats[tid]->sthd_prof_2 / BILLION
-       ,_stats[tid]->sthd_prof_3 / BILLION
-       ,_stats[tid]->sthd_prof_4 / BILLION
-       ,_stats[tid]->sthd_prof_5a / BILLION
-      ,_stats[tid]->sthd_prof_1b / BILLION
-       ,_stats[tid]->sthd_prof_5b / BILLION
-      );
-  }
-	for (uint64_t tid = g_thread_cnt+g_send_thread_cnt; tid < g_thread_cnt + g_send_thread_cnt + g_rem_thread_cnt; tid ++) {
-  printf(
-      "rthd_prof_1=%f,rthd_prof_2=%f\n"
-      ,_stats[tid]->rthd_prof_1 / BILLION
-      ,_stats[tid]->rthd_prof_2 / BILLION
-      );
-  }
-
-
-	for (uint64_t tid = 0; tid < g_thread_cnt; tid ++) {
-    double thd_prof_sum = 
-        _stats[tid]->thd_prof_thd1
-        +_stats[tid]->thd_prof_thd2
-        +_stats[tid]->thd_prof_thd3;
-    printf("-------\nprof%ld: thd1=%f,thd2=%f,thd3=%f,sum=%f,clk=%f\n"
-        ",thd1a=%f,thd1b=%f,thd1c=%f,thd1d=%f\n"
-        ",thd2_loc=%f,thd2_rem=%f\n"
-        ",rfin0=%f,rfin1=%f,rfin2=%f\n"
-        ",rprep0=%f,rprep1=%f,rprep2=%f\n"
-        ",rqry_rsp0=%f,rqry_rsp1=%f\n"
-        ",rqry0=%f,rqry1=%f,rqry2=%f\n"
-        ",rack0=%f,rack1=%f,rack2a=%f,rack2=%f,rack3=%f,rack4=%f\n"
-        ",rtxn1a=%f,rtxn1b=%f,rtxn2=%f,rtxn3=%f,rtxn4=%f\n"
-        ",ycsb1=%f\n"
-        ",row1=%f,row2=%f,row3=%f\n"
-        ",cc0=%f,cc1=%f,cc2=%f,cc3=%f\n"
-        ",wq1=%f,wq2=%f"
-        ",wq3=%f,wq4=%f\n"
-        ",txn1=%f,txn2=%f\n"
-        ",txn_table0a=%f,txn_table1a=%f"
-        ",txn_table0b=%f,txn_table1b=%f,txn_table2a=%f,txn_table2=%f\n"
-        ,tid
-        ,_stats[tid]->thd_prof_thd1 / BILLION
-        ,_stats[tid]->thd_prof_thd2 / BILLION
-        ,_stats[tid]->thd_prof_thd3 / BILLION
-        ,thd_prof_sum / BILLION
-			  ,_stats[tid]->tot_run_time / BILLION
-
-        ,_stats[tid]->thd_prof_thd1a / BILLION
-        ,_stats[tid]->thd_prof_thd1b / BILLION
-        ,_stats[tid]->thd_prof_thd1c / BILLION
-        ,_stats[tid]->thd_prof_thd1d / BILLION
-        ,_stats[tid]->thd_prof_thd2_loc / BILLION
-        ,_stats[tid]->thd_prof_thd2_rem / BILLION
-
-        ,_stats[tid]->thd_prof_thd_rfin0/BILLION
-        ,_stats[tid]->thd_prof_thd_rfin1/BILLION
-        ,_stats[tid]->thd_prof_thd_rfin2/BILLION
-        ,_stats[tid]->thd_prof_thd_rprep0/BILLION
-        ,_stats[tid]->thd_prof_thd_rprep1/BILLION
-        ,_stats[tid]->thd_prof_thd_rprep2/BILLION
-        ,_stats[tid]->thd_prof_thd_rqry_rsp0/BILLION
-        ,_stats[tid]->thd_prof_thd_rqry_rsp1/BILLION
-        ,_stats[tid]->thd_prof_thd_rqry0/BILLION
-        ,_stats[tid]->thd_prof_thd_rqry1/BILLION
-        ,_stats[tid]->thd_prof_thd_rqry2/BILLION
-        ,_stats[tid]->thd_prof_thd_rack0/BILLION
-        ,_stats[tid]->thd_prof_thd_rack1/BILLION
-        ,_stats[tid]->thd_prof_thd_rack2a/BILLION
-        ,_stats[tid]->thd_prof_thd_rack2/BILLION
-        ,_stats[tid]->thd_prof_thd_rack3/BILLION
-        ,_stats[tid]->thd_prof_thd_rack4/BILLION
-        ,_stats[tid]->thd_prof_thd_rtxn1a/BILLION
-        ,_stats[tid]->thd_prof_thd_rtxn1b/BILLION
-        ,_stats[tid]->thd_prof_thd_rtxn2/BILLION
-        ,_stats[tid]->thd_prof_thd_rtxn3/BILLION
-        ,_stats[tid]->thd_prof_thd_rtxn4/BILLION
-        ,_stats[tid]->thd_prof_ycsb1 / BILLION
-        ,_stats[tid]->thd_prof_row1 / BILLION
-        ,_stats[tid]->thd_prof_row2 / BILLION
-        ,_stats[tid]->thd_prof_row3 / BILLION
-        ,_stats[tid]->thd_prof_cc0 / BILLION
-        ,_stats[tid]->thd_prof_cc1 / BILLION
-        ,_stats[tid]->thd_prof_cc2 / BILLION
-        ,_stats[tid]->thd_prof_cc3 / BILLION
-        ,_stats[tid]->thd_prof_wq1 / BILLION
-        ,_stats[tid]->thd_prof_wq2 / BILLION
-        ,_stats[tid]->thd_prof_wq3 / BILLION
-        ,_stats[tid]->thd_prof_wq4 / BILLION
-        ,_stats[tid]->thd_prof_txn1 / BILLION
-        ,_stats[tid]->thd_prof_txn2 / BILLION
-        ,_stats[tid]->thd_prof_txn_table0a / BILLION
-        ,_stats[tid]->thd_prof_txn_table1a / BILLION
-        ,_stats[tid]->thd_prof_txn_table0b / BILLION
-        ,_stats[tid]->thd_prof_txn_table1b / BILLION
-        ,_stats[tid]->thd_prof_txn_table2a / BILLION
-        ,_stats[tid]->thd_prof_txn_table2 / BILLION
-        );
-        for(int i = 0; i < 16;i++)
-          printf(",thd2_type%d=%f",i,_stats[tid]->thd_prof_thd2_type[i] / BILLION);
-        printf("\n");
-  }
     }
 
 	FILE * outf;
@@ -1011,6 +914,8 @@ void Stats::print(bool prog) {
       ",run_time=%f"
       ",finish_time=%f"
       ",aq_full=%f"
+			",txn_table_cflt=%ld"
+			",txn_table_cflt_size=%ld"
 			",cc_busy_cnt=%ld"
 			",cc_wait_cnt=%ld"
 			",cc_wait_time=%f"
@@ -1090,6 +995,8 @@ void Stats::print(bool prog) {
 			total_run_time / BILLION,
             total_finish_time / BILLION,
 			total_aq_full / BILLION,
+      total_txn_table_cflt,
+      total_txn_table_cflt_size,
       total_cc_busy_cnt,
       total_cc_wait_cnt,
       total_cc_wait_time / BILLION,
@@ -1162,6 +1069,7 @@ void Stats::print(bool prog) {
 
   mem_util(outf);
   cpu_util(outf);
+  print_prof(outf);
 
   if(!prog) {
     print_cnts();
@@ -1352,9 +1260,9 @@ void Stats::cpu_util(FILE * outf) {
           (timeSample.tms_utime - lastUserCPU);
       percent /= (now - lastCPU);
       if(g_node_id < g_node_cnt) {
-        percent /= (g_thread_cnt + g_rem_thread_cnt);//numProcessors;
+        percent /= (g_thread_cnt + g_rem_thread_cnt + g_send_thread_cnt);//numProcessors;
       } else {
-        percent /= (g_client_thread_cnt + g_client_rem_thread_cnt);//numProcessors;
+        percent /= (g_client_thread_cnt + g_client_rem_thread_cnt + g_client_send_thread_cnt);//numProcessors;
       }
       percent *= 100;
   }
@@ -1365,4 +1273,250 @@ void Stats::cpu_util(FILE * outf) {
   lastCPU = now;
   lastSysCPU = timeSample.tms_stime;
   lastUserCPU = timeSample.tms_utime;
+}
+
+void Stats::print_prof(FILE * outf) {
+
+  double total_sthd_prof_1a = 0;
+  double total_sthd_prof_2 = 0;
+  double total_sthd_prof_3 = 0;
+  double total_sthd_prof_4 = 0;
+  double total_sthd_prof_5a = 0;
+  double total_sthd_prof_1b = 0;
+  double total_sthd_prof_5b = 0;
+  double total_rthd_prof_1 = 0;
+  double total_rthd_prof_2 = 0;
+  double total_thd_prof_sum = 0;
+        double total_thd_prof_thd1 =0;
+        double total_thd_prof_thd2 =0;
+        double total_thd_prof_thd3 =0;
+
+        double total_thd_prof_thd1a =0;
+        double total_thd_prof_thd1b =0;
+        double total_thd_prof_thd1c =0;
+        double total_thd_prof_thd1d =0;
+        double total_thd_prof_thd2_loc =0;
+        double total_thd_prof_thd2_rem =0;
+
+        double total_thd_prof_thd_rfin0 =0;
+        double total_thd_prof_thd_rfin1 =0;
+        double total_thd_prof_thd_rfin2 =0;
+        double total_thd_prof_thd_rprep0 =0;
+        double total_thd_prof_thd_rprep1 =0;
+        double total_thd_prof_thd_rprep2 =0;
+        double total_thd_prof_thd_rqry_rsp0 =0;
+        double total_thd_prof_thd_rqry_rsp1 =0;
+        double total_thd_prof_thd_rqry0 =0;
+        double total_thd_prof_thd_rqry1 =0;
+        double total_thd_prof_thd_rqry2 =0;
+        double total_thd_prof_thd_rack0 =0;
+        double total_thd_prof_thd_rack1 =0;
+        double total_thd_prof_thd_rack2a =0;
+        double total_thd_prof_thd_rack2 =0;
+        double total_thd_prof_thd_rack3 =0;
+        double total_thd_prof_thd_rack4 =0;
+        double total_thd_prof_thd_rtxn1a =0;
+        double total_thd_prof_thd_rtxn1b =0;
+        double total_thd_prof_thd_rtxn2 =0;
+        double total_thd_prof_thd_rtxn3 =0;
+        double total_thd_prof_thd_rtxn4 =0;
+        double total_thd_prof_ycsb1 =0;
+        double total_thd_prof_row1 =0;
+        double total_thd_prof_row2 =0;
+        double total_thd_prof_row3 =0;
+        double total_thd_prof_cc0 =0;
+        double total_thd_prof_cc1 =0;
+        double total_thd_prof_cc2 =0;
+        double total_thd_prof_cc3 =0;
+        double total_thd_prof_wq1 =0;
+        double total_thd_prof_wq2 =0;
+        double total_thd_prof_wq3 =0;
+        double total_thd_prof_wq4 =0;
+        double total_thd_prof_txn1 =0;
+        double total_thd_prof_txn2 =0;
+        double total_thd_prof_txn_table_add =0;
+        double total_thd_prof_txn_table_get =0;
+        double total_thd_prof_txn_table0a =0;
+        double total_thd_prof_txn_table1a =0;
+        double total_thd_prof_txn_table0b =0;
+        double total_thd_prof_txn_table1b =0;
+        double total_thd_prof_txn_table2a =0;
+        double total_thd_prof_txn_table2 =0;
+        double total_thd_prof_type[16];
+        for(uint64_t i = 0; i < 16; i++)
+          total_thd_prof_type[i] = 0;
+
+	for (uint64_t tid = g_thread_cnt; tid < g_thread_cnt + g_send_thread_cnt; tid ++) {
+      total_sthd_prof_1a +=_stats[tid]->sthd_prof_1a;
+      total_sthd_prof_2 +=_stats[tid]->sthd_prof_2;
+       total_sthd_prof_3 +=_stats[tid]->sthd_prof_3;
+       total_sthd_prof_4 +=_stats[tid]->sthd_prof_4;
+       total_sthd_prof_5a +=_stats[tid]->sthd_prof_5a;
+      total_sthd_prof_1b +=_stats[tid]->sthd_prof_1b;
+       total_sthd_prof_5b +=_stats[tid]->sthd_prof_5b;
+  }
+	for (uint64_t tid = g_thread_cnt+g_send_thread_cnt; tid < g_thread_cnt + g_send_thread_cnt + g_rem_thread_cnt; tid ++) {
+      total_rthd_prof_1 +=_stats[tid]->rthd_prof_1;
+      total_rthd_prof_2 +=_stats[tid]->rthd_prof_2;
+  }
+
+
+	for (uint64_t tid = 0; tid < g_thread_cnt; tid ++) {
+    total_thd_prof_sum += 
+        _stats[tid]->thd_prof_thd1
+        +_stats[tid]->thd_prof_thd2
+        +_stats[tid]->thd_prof_thd3;
+
+        total_thd_prof_thd1 +=_stats[tid]->thd_prof_thd1;
+        total_thd_prof_thd2 +=_stats[tid]->thd_prof_thd2;
+        total_thd_prof_thd3 +=_stats[tid]->thd_prof_thd3;
+
+        total_thd_prof_thd1a +=_stats[tid]->thd_prof_thd1a;
+        total_thd_prof_thd1b +=_stats[tid]->thd_prof_thd1b;
+        total_thd_prof_thd1c +=_stats[tid]->thd_prof_thd1c;
+        total_thd_prof_thd1d +=_stats[tid]->thd_prof_thd1d;
+        total_thd_prof_thd2_loc +=_stats[tid]->thd_prof_thd2_loc;
+        total_thd_prof_thd2_rem +=_stats[tid]->thd_prof_thd2_rem;
+
+        total_thd_prof_thd_rfin0 +=_stats[tid]->thd_prof_thd_rfin0;
+        total_thd_prof_thd_rfin1 +=_stats[tid]->thd_prof_thd_rfin1;
+        total_thd_prof_thd_rfin2 +=_stats[tid]->thd_prof_thd_rfin2;
+        total_thd_prof_thd_rprep0 +=_stats[tid]->thd_prof_thd_rprep0;
+        total_thd_prof_thd_rprep1 +=_stats[tid]->thd_prof_thd_rprep1;
+        total_thd_prof_thd_rprep2 +=_stats[tid]->thd_prof_thd_rprep2;
+        total_thd_prof_thd_rqry_rsp0 +=_stats[tid]->thd_prof_thd_rqry_rsp0;
+        total_thd_prof_thd_rqry_rsp1 +=_stats[tid]->thd_prof_thd_rqry_rsp1;
+        total_thd_prof_thd_rqry0 +=_stats[tid]->thd_prof_thd_rqry0;
+        total_thd_prof_thd_rqry1 +=_stats[tid]->thd_prof_thd_rqry1;
+        total_thd_prof_thd_rqry2 +=_stats[tid]->thd_prof_thd_rqry2;
+        total_thd_prof_thd_rack0 +=_stats[tid]->thd_prof_thd_rack0;
+        total_thd_prof_thd_rack1 +=_stats[tid]->thd_prof_thd_rack1;
+        total_thd_prof_thd_rack2a +=_stats[tid]->thd_prof_thd_rack2a;
+        total_thd_prof_thd_rack2 +=_stats[tid]->thd_prof_thd_rack2;
+        total_thd_prof_thd_rack3 +=_stats[tid]->thd_prof_thd_rack3;
+        total_thd_prof_thd_rack4 +=_stats[tid]->thd_prof_thd_rack4;
+        total_thd_prof_thd_rtxn1a +=_stats[tid]->thd_prof_thd_rtxn1a;
+        total_thd_prof_thd_rtxn1b +=_stats[tid]->thd_prof_thd_rtxn1b;
+        total_thd_prof_thd_rtxn2 +=_stats[tid]->thd_prof_thd_rtxn2;
+        total_thd_prof_thd_rtxn3 +=_stats[tid]->thd_prof_thd_rtxn3;
+        total_thd_prof_thd_rtxn4 +=_stats[tid]->thd_prof_thd_rtxn4;
+        total_thd_prof_ycsb1 +=_stats[tid]->thd_prof_ycsb1;
+        total_thd_prof_row1 +=_stats[tid]->thd_prof_row1;
+        total_thd_prof_row2 +=_stats[tid]->thd_prof_row2;
+        total_thd_prof_row3 +=_stats[tid]->thd_prof_row3;
+        total_thd_prof_cc0 +=_stats[tid]->thd_prof_cc0;
+        total_thd_prof_cc1 +=_stats[tid]->thd_prof_cc1;
+        total_thd_prof_cc2 +=_stats[tid]->thd_prof_cc2;
+        total_thd_prof_cc3 +=_stats[tid]->thd_prof_cc3;
+        total_thd_prof_wq1 +=_stats[tid]->thd_prof_wq1;
+        total_thd_prof_wq2 +=_stats[tid]->thd_prof_wq2;
+        total_thd_prof_wq3 +=_stats[tid]->thd_prof_wq3;
+        total_thd_prof_wq4 +=_stats[tid]->thd_prof_wq4;
+        total_thd_prof_txn1 +=_stats[tid]->thd_prof_txn1;
+        total_thd_prof_txn2 +=_stats[tid]->thd_prof_txn2;
+        total_thd_prof_txn_table_add +=_stats[tid]->thd_prof_txn_table_add;
+        total_thd_prof_txn_table_get +=_stats[tid]->thd_prof_txn_table_get;
+        total_thd_prof_txn_table0a +=_stats[tid]->thd_prof_txn_table0a;
+        total_thd_prof_txn_table1a +=_stats[tid]->thd_prof_txn_table1a;
+        total_thd_prof_txn_table0b +=_stats[tid]->thd_prof_txn_table0b;
+        total_thd_prof_txn_table1b +=_stats[tid]->thd_prof_txn_table1b;
+        total_thd_prof_txn_table2a +=_stats[tid]->thd_prof_txn_table2a;
+        total_thd_prof_txn_table2 +=_stats[tid]->thd_prof_txn_table2;
+        for(int i = 0; i < 16;i++)
+          total_thd_prof_type[i] +=_stats[tid]->thd_prof_thd2_type[i];
+  }
+
+    fprintf(outf,
+        ",sthd_prof_1a=%f,sthd_prof_2=%f,sthd_prof_3=%f,sthd_prof_4=%f,sthd_prof_5a=%f,sthd_prof_1b=%f,sthd_prof_5b=%f"
+        ",rthd_prof_1=%f,rthd_prof_2=%f"
+        ",thd1=%f,thd2=%f,thd3=%f,thd_sum=%f"
+        ",thd1a=%f,thd1b=%f,thd1c=%f,thd1d=%f"
+        ",thd2_loc=%f,thd2_rem=%f"
+        ",rfin0=%f,rfin1=%f,rfin2=%f"
+        ",rprep0=%f,rprep1=%f,rprep2=%f"
+        ",rqry_rsp0=%f,rqry_rsp1=%f"
+        ",rqry0=%f,rqry1=%f,rqry2=%f"
+        ",rack0=%f,rack1=%f,rack2a=%f,rack2=%f,rack3=%f,rack4=%f"
+        ",rtxn1a=%f,rtxn1b=%f,rtxn2=%f,rtxn3=%f,rtxn4=%f"
+        ",ycsb1=%f"
+        ",row1=%f,row2=%f,row3=%f"
+        ",cc0=%f,cc1=%f,cc2=%f,cc3=%f"
+        ",wq1=%f,wq2=%f"
+        ",wq3=%f,wq4=%f"
+        ",txn1=%f,txn2=%f"
+        ",txn_table_add=%f,txn_table_get=%f"
+        ",txn_table0a=%f,txn_table1a=%f"
+        ",txn_table0b=%f,txn_table1b=%f,txn_table2a=%f,txn_table2=%f"
+  ,total_sthd_prof_1a /BILLION/g_send_thread_cnt
+  ,total_sthd_prof_2 /BILLION/g_send_thread_cnt
+  ,total_sthd_prof_3 /BILLION/g_send_thread_cnt
+  ,total_sthd_prof_4 /BILLION/g_send_thread_cnt
+  ,total_sthd_prof_5a /BILLION/g_send_thread_cnt
+  ,total_sthd_prof_1b /BILLION/g_send_thread_cnt
+  ,total_sthd_prof_5b /BILLION/g_send_thread_cnt
+  ,total_rthd_prof_1 /BILLION/g_rem_thread_cnt
+  ,total_rthd_prof_2 /BILLION/g_rem_thread_cnt
+        ,total_thd_prof_thd1 /BILLION/g_thread_cnt
+        ,total_thd_prof_thd2 /BILLION/g_thread_cnt
+        ,total_thd_prof_thd3 /BILLION/g_thread_cnt
+  ,total_thd_prof_sum /BILLION/g_thread_cnt
+
+        ,total_thd_prof_thd1a /BILLION/g_thread_cnt
+        ,total_thd_prof_thd1b /BILLION/g_thread_cnt
+        ,total_thd_prof_thd1c /BILLION/g_thread_cnt
+        ,total_thd_prof_thd1d /BILLION/g_thread_cnt
+        ,total_thd_prof_thd2_loc /BILLION/g_thread_cnt
+        ,total_thd_prof_thd2_rem /BILLION/g_thread_cnt
+
+        ,total_thd_prof_thd_rfin0 /BILLION/g_thread_cnt
+        ,total_thd_prof_thd_rfin1 /BILLION/g_thread_cnt
+        ,total_thd_prof_thd_rfin2 /BILLION/g_thread_cnt
+        ,total_thd_prof_thd_rprep0 /BILLION/g_thread_cnt
+        ,total_thd_prof_thd_rprep1 /BILLION/g_thread_cnt
+        ,total_thd_prof_thd_rprep2 /BILLION/g_thread_cnt
+        ,total_thd_prof_thd_rqry_rsp0 /BILLION/g_thread_cnt
+        ,total_thd_prof_thd_rqry_rsp1 /BILLION/g_thread_cnt
+        ,total_thd_prof_thd_rqry0 /BILLION/g_thread_cnt
+        ,total_thd_prof_thd_rqry1 /BILLION/g_thread_cnt
+        ,total_thd_prof_thd_rqry2 /BILLION/g_thread_cnt
+        ,total_thd_prof_thd_rack0 /BILLION/g_thread_cnt
+        ,total_thd_prof_thd_rack1 /BILLION/g_thread_cnt
+        ,total_thd_prof_thd_rack2a /BILLION/g_thread_cnt
+        ,total_thd_prof_thd_rack2 /BILLION/g_thread_cnt
+        ,total_thd_prof_thd_rack3 /BILLION/g_thread_cnt
+        ,total_thd_prof_thd_rack4 /BILLION/g_thread_cnt
+        ,total_thd_prof_thd_rtxn1a /BILLION/g_thread_cnt
+        ,total_thd_prof_thd_rtxn1b /BILLION/g_thread_cnt
+        ,total_thd_prof_thd_rtxn2 /BILLION/g_thread_cnt
+        ,total_thd_prof_thd_rtxn3 /BILLION/g_thread_cnt
+        ,total_thd_prof_thd_rtxn4 /BILLION/g_thread_cnt
+        ,total_thd_prof_ycsb1 /BILLION/g_thread_cnt
+        ,total_thd_prof_row1 /BILLION/g_thread_cnt
+        ,total_thd_prof_row2 /BILLION/g_thread_cnt
+        ,total_thd_prof_row3 /BILLION/g_thread_cnt
+        ,total_thd_prof_cc0 /BILLION/g_thread_cnt
+        ,total_thd_prof_cc1 /BILLION/g_thread_cnt
+        ,total_thd_prof_cc2 /BILLION/g_thread_cnt
+        ,total_thd_prof_cc3 /BILLION/g_thread_cnt
+        ,total_thd_prof_wq1 /BILLION/g_thread_cnt
+        ,total_thd_prof_wq2 /BILLION/g_thread_cnt
+        ,total_thd_prof_wq3 /BILLION/g_thread_cnt
+        ,total_thd_prof_wq4 /BILLION/g_thread_cnt
+        ,total_thd_prof_txn1 /BILLION/g_thread_cnt
+        ,total_thd_prof_txn2 /BILLION/g_thread_cnt
+        ,total_thd_prof_txn_table_add /BILLION/g_thread_cnt
+        ,total_thd_prof_txn_table_get /BILLION/g_thread_cnt
+        ,total_thd_prof_txn_table0a /BILLION/g_thread_cnt
+        ,total_thd_prof_txn_table1a /BILLION/g_thread_cnt
+        ,total_thd_prof_txn_table0b /BILLION/g_thread_cnt
+        ,total_thd_prof_txn_table1b /BILLION/g_thread_cnt
+        ,total_thd_prof_txn_table2a /BILLION/g_thread_cnt
+        ,total_thd_prof_txn_table2 /BILLION/g_thread_cnt
+        );
+        for(int i = 0; i < 16;i++)
+          fprintf(outf,
+            ",type%d=%f"
+            ,i
+            ,total_thd_prof_type[i]/BILLION/g_thread_cnt
+            );
 }

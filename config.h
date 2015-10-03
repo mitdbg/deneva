@@ -5,13 +5,13 @@
 /***********************************************/
 // Simulation + Hardware
 /***********************************************/
-#define NODE_CNT 2
+#define NODE_CNT 4
 #define THREAD_CNT 2
 #define REM_THREAD_CNT 1
-#define SEND_THREAD_CNT 4
+#define SEND_THREAD_CNT 1
 // PART_CNT should be at least NODE_CNT
-#define PART_CNT 2
-#define CLIENT_NODE_CNT 2
+#define PART_CNT 4
+#define CLIENT_NODE_CNT 4
 #define CLIENT_THREAD_CNT 2
 #define CLIENT_REM_THREAD_CNT 1
 #define CLIENT_SEND_THREAD_CNT 4
@@ -34,7 +34,8 @@
 #define STATS_ENABLE        true
 #define TIME_ENABLE         true //STATS_ENABLE
 
-#define MAX_TXN_IN_FLIGHT 350
+#define FIN_BY_TIME true
+#define MAX_TXN_IN_FLIGHT 5000
 
 /***********************************************/
 // Memory System
@@ -60,9 +61,9 @@
 /***********************************************/
 // Message Passing
 /***********************************************/
-#define TPORT_TYPE "tcp"
-#define TPORT_TYPE_IPC false
-#define TPORT_PORT 7000
+#define TPORT_TYPE "ipc"
+#define TPORT_TYPE_IPC true
+#define TPORT_PORT "_.ipc"
 
 #define MAX_TPORT_NAME 128
 #define MSG_SIZE 128 // in bytes
@@ -141,7 +142,6 @@
 // Benchmark
 /***********************************************/
 // max number of rows touched per transaction
-#define MAX_PART_PER_TXN 2
 #define MAX_ROW_PER_TXN       64
 #define QUERY_INTVL         1UL
 #define MAX_TXN_PER_PART 3000000
@@ -156,11 +156,11 @@
 #define WRITE_PERC 0.0
 #define SCAN_PERC           0
 #define SCAN_LEN          20
-#define PART_PER_TXN 2
+#define PART_PER_TXN 4
 #define PERC_MULTI_PART     MPR 
-#define REQ_PER_QUERY      2//16
+#define REQ_PER_QUERY 10
 #define FIELD_PER_TUPLE       10
-#define LOAD_TXN_FILE false
+#define LOAD_TXN_FILE true
 #define CREATE_TXN_FILE false
 // ==== [TPCC] ====
 // For large warehouse count, the tables do not fit in memory
@@ -175,7 +175,7 @@
 // are not modeled.
 #define TPCC_ACCESS_ALL       false 
 #define WH_UPDATE         true
-#define NUM_WH 2
+#define NUM_WH 4
 // % of transactions that access multiple partitions
 #define MPR 100
 #define MPR_NEWORDER      20 // In %
@@ -248,7 +248,7 @@ extern TestCases          g_test_case;
 // SIMPLE Immediately send OK back to client
 // NOCC Don't do CC
 // NORMAL normal operation
-#define MODE NOCC
+#define MODE QRY_ONLY_MODE
 
 
 /***********************************************/
@@ -278,11 +278,12 @@ extern TestCases          g_test_case;
 #define TS_HW           3
 #define TS_CLOCK          4
 // MODES
-#define NORMAL 1
-#define SIMPLE 2
-#define NOCC 3
-#define QRY 4
-#define TWOPC 5
+// NORMAL < NOCC < QRY_ONLY < SETUP < SIMPLE
+#define NORMAL_MODE 1
+#define NOCC_MODE 2
+#define QRY_ONLY_MODE 3
+#define SETUP_MODE 4
+#define SIMPLE_MODE 5
 
 // Stats and timeout
 #define BILLION 1000000000UL // in ns => 1 second

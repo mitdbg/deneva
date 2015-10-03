@@ -206,8 +206,16 @@ Client_query_thd::done(){
 
 base_client_query * 
 Client_query_thd::get_next_query(uint64_t tid) {
-	if (q_idx >= MAX_TXN_PER_PART)
-		return NULL;
+	if (q_idx >= MAX_TXN_PER_PART) {
+    if(FIN_BY_TIME) {
+      // Restart transaction cycle
+      //ATOM_CAS(q_idx,MAX_TXN_PER_PART,0);
+      // FIXME: race condition important?
+      q_idx = 0;
+    } else {
+      return NULL;
+    }
+  }
 #if CLIENT_RUNTIME
   /*
 #if WORKLOAD == YCSB	

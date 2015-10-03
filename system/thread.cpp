@@ -332,6 +332,8 @@ RC thread_t::run() {
         rc = process_rtxn(m_query,m_txn);
 				break;
 			default:
+        printf("Msg: %d\n",m_query->rtype);
+        fflush(stdout);
 				assert(false);
 				break;
 		}
@@ -348,6 +350,7 @@ RC thread_t::run() {
 
 		// If m_query was freed just before this, m_query is NULL
 		if(m_query != NULL && IS_LOCAL(m_query->txn_id)) {
+      assert(ISCLIENTN(m_query->client_id));
 			switch(rc) {
 				case RCOK:
 #if CC_ALG == HSTORE_SPEC
@@ -359,14 +362,20 @@ RC thread_t::run() {
             INC_STATS(0,spec_commit_cnt,1);
           }
 #endif
+          /*
+#if MODE==QRY
+          // Release locks
+          rc = m_txn->finish(m_query->rc,m_query->part_to_access,1);
+#endif
+*/
 					assert(m_txn->get_rsp_cnt() == 0);
           //assert(MODE==TWOPC || MODE==QRY || m_query->part_num == 1 || ??);
-          assert(MODE==TWOPC ||MODE==QRY || (m_query->part_num == 1 && (m_query->rtype == RTXN || m_query->rtype == RPASS)) || (m_query->part_num > 1 && m_query->rtype == RACK));
+          assert(MODE!=NORMAL_MODE || (m_query->part_num == 1 && (m_query->rtype == RTXN || m_query->rtype == RPASS)) || (m_query->part_num > 1 && m_query->rtype == RACK));
 
 					if(m_query->part_num == 1 && !m_txn->spec) {
 						rc = m_txn->finish(rc,m_query->part_to_access,m_query->part_num);
 					} else
-						assert(m_txn->state == DONE || MODE==QRY || MODE==TWOPC);
+						assert(m_txn->state == DONE || MODE!= NORMAL_MODE);
 
 					timespan = get_sys_clock() - m_txn->starttime;
 
@@ -391,9 +400,10 @@ RC thread_t::run() {
           m_txn->txn_time_misc += timespan;
           m_txn->update_stats();
 
-					DEBUG("COMMIT %ld %ld %ld %f -- %f\n",m_txn->get_txn_id(),m_query->part_num,m_txn->abort_cnt,(double)m_txn->txn_time_wait/BILLION,(double)timespan/ BILLION);
+					DEBUG("COMMIT %ld %ld %ld %f -- %f -- %d\n",m_txn->get_txn_id(),m_query->part_num,m_txn->abort_cnt,(double)m_txn->txn_time_wait/BILLION,(double)timespan/ BILLION,m_query->client_id);
 
 					// Send result back to client
+          assert(ISCLIENTN(m_query->client_id));
           msg_queue.enqueue(m_query,CL_RSP,m_query->client_id);
 					//txn_table.delete_txn(g_node_id,m_query->txn_id);
 					ATOM_ADD(_wl->txn_cnt,1);
@@ -405,6 +415,12 @@ RC thread_t::run() {
 					assert(m_txn != NULL);
 					assert(m_query->txn_id != UINT64_MAX);
 
+          /*
+#if MODE==QRY
+          // Release locks
+          rc = m_txn->finish(m_query->rc,m_query->part_to_access,1);
+#endif
+*/
 					if(m_query->part_num == 1 && !m_txn->spec)
 						rc = m_txn->finish(rc,m_query->part_to_access,m_query->part_num);
 #if WORKLOAD == TPCC
@@ -508,18 +524,21 @@ RC thread_t::process_rfin(base_query *& m_query,txn_man *& m_txn) {
         uint64_t thd_prof_thd_rfin_start = get_sys_clock();
 				DEBUG("%ld Received RFIN %ld\n",GET_PART_ID_FROM_IDX(_thd_id),m_query->txn_id);
 				INC_STATS(0,rfin,1);
+        /*
 #if MODE==TWOPC
         // Immediate ack back
         msg_queue.enqueue(m_query,RACK,m_query->return_id);
         m_query = NULL;
         return RCOK;
 #endif
+*/
         if(m_query->rc == Abort) {
           INC_STATS(_thd_id,abort_rem_cnt,1);
         } else {
           INC_STATS(_thd_id,txn_rem_cnt,1);
         }
 				assert(CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || IS_REMOTE(m_query->txn_id));
+        assert(MODE == NORMAL_MODE || MODE == NOCC_MODE);
 
         // Retrieve transaction from transaction pool
         // TODO: move outside of process functions?
@@ -618,11 +637,13 @@ RC thread_t::process_rack(base_query *& m_query,txn_man *& m_txn) {
         m_txn->register_thd(this);
 
         // Merge queries
+        assert(ISCLIENTN(tmp_query->client_id));
         tmp_query = tmp_query->merge(m_query);
         if(m_query != tmp_query) {
           YCSB_QUERY_FREE(m_query)
         }
         m_query = tmp_query;
+        assert(ISCLIENTN(m_query->client_id));
 
         INC_STATS(_thd_id,thd_prof_thd_rack0,get_sys_clock() - thd_prof_thd_rack_start);
         thd_prof_thd_rack_start = get_sys_clock();
@@ -828,6 +849,13 @@ RC thread_t::process_rqry(base_query *& m_query,txn_man *& m_txn) {
 
         // Send response
 				if(rc != WAIT) {
+          /*
+#if MODE==QRY
+          // Release locks
+					m_txn->state = DONE;
+					m_txn->rem_fin_txn(m_query);
+#endif
+*/
           msg_queue.enqueue(m_query,RQRY_RSP,m_query->return_id);
         }
         m_query = NULL;
@@ -841,12 +869,15 @@ RC thread_t::process_rprepare(base_query *& m_query,txn_man *& m_txn) {
         DEBUG("%ld Received RPREPARE %ld\n",GET_PART_ID_FROM_IDX(_thd_id),m_query->txn_id);
 				INC_STATS(0,rprep,1);
 				assert(CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || IS_REMOTE(m_query->txn_id));
+        assert(MODE == NORMAL_MODE || MODE == NOCC_MODE);
 
+        /*
 #if MODE==TWOPC
         msg_queue.enqueue(m_query,RACK,m_query->return_id);
         m_query = NULL;
         return RCOK;
 #endif
+*/
         // Retrieve transaction
         base_query * tmp_query;
 				txn_table.get_txn(m_query->return_id, m_query->txn_id,m_txn,tmp_query);
@@ -977,9 +1008,7 @@ RC thread_t::process_rtxn(base_query *& m_query,txn_man *& m_txn) {
 
 				if(m_query->txn_id == UINT64_MAX) {
           // This is a new transaction
-					//rc = _wl->get_txn_man(m_txn, this);
           txn_pool.get(m_txn);
-					//assert(rc == RCOK);
 
 					m_txn->abort_cnt = 0;
 					if (CC_ALG == WAIT_DIE || CC_ALG == VLL) {
@@ -1004,6 +1033,7 @@ RC thread_t::process_rtxn(base_query *& m_query,txn_man *& m_txn) {
           work_queue.update_hash(get_thd_id(),m_txn->get_txn_id());
 
 					// Put txn in txn_table
+          assert(ISCLIENTN(m_query->client_id));
 					txn_table.add_txn(g_node_id,m_txn,m_query);
 
           m_query->penalty = 0;
@@ -1072,17 +1102,19 @@ RC thread_t::process_rtxn(base_query *& m_query,txn_man *& m_txn) {
 RC thread_t::init_phase(base_query * m_query, txn_man * m_txn) {
   RC rc = RCOK;
 #if CC_ALG != HSTORE && CC_ALG != HSTORE_SPEC && CC_ALG != VLL
+  /*
 #if MODE==TWOPC
           // Only 2PC, touch all partitions
           for(uint64_t i = 0; i < m_query->part_num; i++) {
             m_query->part_touched[m_query->part_touched_cnt++] = m_query->part_to_access[i];
           }
 #else
+*/
           // Touch first partition
           m_query->part_touched[m_query->part_touched_cnt++] = m_query->part_to_access[0];
+//#endif
 #endif
-#endif
-#if !MODE==QRY && (CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || CC_ALG == VLL)
+#if (MODE == NOCC_MODE || MODE == NORMAL_MODE) && (CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || CC_ALG == VLL)
 					m_txn->state = INIT;
 					for(uint64_t i = 0; i < m_query->part_num; i++) {
 						uint64_t part_id = m_query->part_to_access[i];
@@ -1189,6 +1221,6 @@ RC thread_t::init_phase(base_query * m_query, txn_man * m_txn) {
 					} // for(uint64_t i = 0; i < m_query->part_num; i++) 
         }
 
-#endif // !MODE==QRY && (CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || CC_ALG == VLL)
+#endif // MODE<QRY && (CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || CC_ALG == VLL)
           return rc;
 }

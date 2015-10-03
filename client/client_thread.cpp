@@ -212,8 +212,8 @@ RC Client_thread_t::run() {
 	uint64_t run_starttime = get_sys_clock();
 	uint64_t prog_time = run_starttime;
 
-	//while (num_txns_sent < g_node_cnt * MAX_TXN_PER_PART) {
-	while (num_txns_sent < g_servers_per_client * MAX_TXN_PER_PART) {
+	//while (num_txns_sent < g_servers_per_client * MAX_TXN_PER_PART) {
+  while(true) {
 		//uint32_t next_node = iters++ % g_node_cnt;
 		if(get_sys_clock() - run_starttime >= DONE_TIMER) {
       break;

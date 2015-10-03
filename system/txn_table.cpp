@@ -46,7 +46,7 @@ void TxnTable::init() {
   pthread_mutex_init(&mtx,NULL);
   pthread_cond_init(&cond_m,NULL);
   pthread_cond_init(&cond_a,NULL);
-  pool_size = g_inflight_max * g_node_cnt + 1;
+  pool_size = g_inflight_max * g_node_cnt * 2 + 1;
   pool = (pool_node_t) mem_allocator.alloc(sizeof(pool_node) * pool_size , g_thread_cnt);
   modify = false;
   access = 0;
@@ -54,6 +54,7 @@ void TxnTable::init() {
   for(uint32_t i = 0; i < pool_size;i++) {
     pool[i].head = NULL;
     pool[i].tail = NULL;
+    pool[i].cnt = 0;
     pthread_mutex_init(&pool[i].mtx,NULL);
     modify = false;
     access = 0;
@@ -71,6 +72,7 @@ bool TxnTable::empty(uint64_t node_id) {
 
 void TxnTable::add_txn(uint64_t node_id, txn_man * txn, base_query * qry) {
 
+  uint64_t thd_prof_start = get_sys_clock();
   txn->set_query(qry);
   uint64_t txn_id = txn->get_txn_id();
   assert(txn_id == qry->txn_id);
@@ -94,6 +96,11 @@ void TxnTable::add_txn(uint64_t node_id, txn_man * txn, base_query * qry) {
     t_node->txn = txn;
     t_node->qry = qry;
     LIST_PUT_TAIL(pool[txn_id % pool_size].head,pool[txn_id % pool_size].tail,t_node);
+    pool[txn_id % pool_size].cnt++;
+    if(pool[txn_id % pool_size].cnt > 1) {
+      INC_STATS(0,txn_table_cflt,1);
+      INC_STATS(0,txn_table_cflt_size,pool[txn_id % pool_size].cnt-1);
+    }
     cnt++;
   }
   else {
@@ -102,9 +109,11 @@ void TxnTable::add_txn(uint64_t node_id, txn_man * txn, base_query * qry) {
   }
 
   MODIFY_END(txn_id % pool_size);
+  INC_STATS(0,thd_prof_txn_table_add,get_sys_clock() - thd_prof_start);
 }
 void TxnTable::get_txn(uint64_t node_id, uint64_t txn_id,txn_man *& txn,base_query *& qry){
 
+  uint64_t thd_prof_start = get_sys_clock();
   ACCESS_START(txn_id % pool_size);
 
   txn_node_t t_node = pool[txn_id % pool_size].head;
@@ -123,6 +132,7 @@ void TxnTable::get_txn(uint64_t node_id, uint64_t txn_id,txn_man *& txn,base_que
   }
 
   ACCESS_END(txn_id % pool_size);
+  INC_STATS(0,thd_prof_txn_table_get,get_sys_clock() - thd_prof_start);
 
 }
 
@@ -212,6 +222,7 @@ void TxnTable::delete_txn(uint64_t node_id, uint64_t txn_id){
   while (t_node != NULL) {
     if (t_node->txn->get_txn_id() == txn_id) {
       LIST_REMOVE_HT(t_node,pool[txn_id % pool_size].head,pool[txn_id % pool_size].tail);
+      pool[txn_id % pool_size].cnt--;
       cnt--;
       break;
     }

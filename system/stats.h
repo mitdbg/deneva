@@ -70,6 +70,8 @@ public:
   double aq_full;
 
   uint64_t cc_busy_cnt; // # of accesses when lock was owned (not necessarily a conflict)
+  uint64_t txn_table_cflt;
+  uint64_t txn_table_cflt_size;
 
   double sthd_prof_1a,sthd_prof_1b, sthd_prof_2, sthd_prof_3, sthd_prof_4, sthd_prof_5a, sthd_prof_5b;
   double rthd_prof_1, rthd_prof_2;
@@ -91,6 +93,7 @@ public:
   double thd_prof_wq1,thd_prof_wq2;
   double thd_prof_wq3,thd_prof_wq4;
   double thd_prof_txn1,thd_prof_txn2;
+  double thd_prof_txn_table_add,thd_prof_txn_table_get;
   double thd_prof_txn_table0a,thd_prof_txn_table1a,thd_prof_txn_table2a;
   double thd_prof_txn_table0b,thd_prof_txn_table1b,thd_prof_txn_table2;
 
@@ -219,7 +222,6 @@ public:
 	void abort(uint64_t thd_id);
 	void print_client(bool prog); 
 	void print_sequencer(bool prog);
-	void print_prog(uint64_t tid);
 	void print(bool prog);
 	void print_cnts();
 	void print_lat_distr();
@@ -231,6 +233,7 @@ public:
   int parseLine(char* line);
   void mem_util(FILE * outf);
   void cpu_util(FILE * outf);
+  void print_prof(FILE * outf);
 };
 
 #endif

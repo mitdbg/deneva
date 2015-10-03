@@ -8,27 +8,34 @@ fmt_tpcc = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT
 fmt_nd = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","NUM_WH","MAX_TXN_IN_FLIGHT","NETWORK_DELAY"]]
 fmt_ycsb = [["CLIENT_NODE_CNT","NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","CLIENT_THREAD_CNT","CLIENT_REM_THREAD_CNT","CLIENT_SEND_THREAD_CNT","THREAD_CNT","REM_THREAD_CNT","SEND_THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC","PART_PER_TXN","PART_CNT","MSG_TIME_LIMIT","MSG_SIZE_MAX","MODE"]]
 fmt_nt = [["NODE_CNT","CLIENT_NODE_CNT","NETWORK_TEST"]]
-fmt_title=["NODE_CNT","MPR","ZIPF_THETA","WRITE_PERC","CC_ALG","SEND_THREAD_CNT"]
+fmt_title=["NODE_CNT","MPR","ZIPF_THETA","WRITE_PERC","CC_ALG","MAX_TXN_IN_FLIGHT"]
 
 def test():
     fmt = fmt_ycsb
-    nnodes = [1,2]
+    nnodes = [1,2,4]
     nmpr=[100]
     nalgos=['NO_WAIT']
+#    nalgos=['NO_WAIT','WAIT_DIE']
     nthreads=[2]
     nrthreads=[1]
-    nsthreads=[1,2,4]
+    nsthreads=[1]
     ncthreads=[2]
     ncrthreads=[1]
     ncsthreads=[4]
-    ntifs=[1,10,100,250,350,500,2000,5000,7500,10000,15000]
+    ntifs=[300,500,2500,5000]
+#    ntifs=[100,500,2500,5000]
     nzipf=[0.0]
+#    nzipf=[0.0,0.6,0.9]
     nwr_perc=[0.0]
+#    nwr_perc=[0.0,1.0]
     ntxn=[3000000]
+#    ntxn=[5000000]
     nbtime=[1000] # in ns
     nbsize=[4096]
-    nparts = [2]
-    nmodes = ["NORMAL","SIMPLE","QRY","TWOPC","NOCC"]
+    nparts = [4]
+#    nmodes = ["NORMAL","NOCC","QRY","TWOPC","SIMPLE"]
+    nmodes = ["NORMAL_MODE","NOCC_MODE","QRY_ONLY_MODE"]#,"SETUP_MODE","SIMPLE_MODE"]
+#    nmodes = ["QRY_ONLY_MODE"]
     exp = [[n,n,txn,'YCSB',cc,m,ct,crt,cst,t,rt,st,tif,z,1.0-wp,wp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n,str(mt) + '*1000UL',bsize,mode] for n,ct,crt,cst,t,rt,st,tif,z,wp,m,cc,p,txn,mt,bsize,mode in itertools.product(nnodes,ncthreads,ncrthreads,ncsthreads,nthreads,nrthreads,nsthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts,ntxn,nbtime,nbsize,nmodes)]
     return fmt[0],exp
 
@@ -48,7 +55,6 @@ def tputvlat_setup(summary,summary_cl,nfmt,nexp,x_name,v_name):
         v_vals.append(e[fmt.index(v_name)])
         del e[fmt.index(v_name)]
     fmt.remove(v_name)
-    print(fmt)
     x_vals = list(set(x_vals))
     x_vals.sort()
     v_vals = list(set(v_vals))
@@ -69,6 +75,8 @@ def tput_setup(summary,summary_cl,nfmt,nexp,x_name,v_name):
     v_vals = []
     exp = [list(e) for e in nexp]
     fmt = list(nfmt)
+    print(x_name)
+    print(v_name)
     for e in exp:
         x_vals.append(e[fmt.index(x_name)])
         del e[fmt.index(x_name)]
@@ -88,7 +96,30 @@ def tput_setup(summary,summary_cl,nfmt,nexp,x_name,v_name):
         for t in fmt_title:
             if t not in fmt: continue
             title+="{} {}, ".format(t,e[fmt.index(t)])
-        tput(x_vals,v_vals,summary,summary_cl,cfg_fmt=fmt,cfg=e,xname=x_name,vname=v_name,title=title)
+        tput(x_vals,v_vals,summary,summary_cl,cfg_fmt=fmt,cfg=e,xname=x_name,vname=v_name,title=title,extras={'PART_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT'})
+        
+def stacks_setup(summary,nfmt,nexp,x_name,keys,norm=False):
+    from plot_helper import stacks_general
+    x_vals = []
+    exp = [list(e) for e in nexp]
+    fmt = list(nfmt)
+    print(x_name)
+    for e in exp:
+        x_vals.append(e[fmt.index(x_name)])
+        del e[fmt.index(x_name)]
+    fmt.remove(x_name)
+    x_vals = list(set(x_vals))
+    x_vals.sort()
+    exp.sort()
+    exp = list(k for k,_ in itertools.groupby(exp))
+    for e in exp:
+        title = "Stacks "
+        for t in fmt_title:
+            if t not in fmt: continue
+            title+="{} {}, ".format(t,e[fmt.index(t)])
+        stacks_general(x_vals,summary,keys,xname=x_name,title=title,cfg_fmt=fmt,cfg=e,
+                extras={'PART_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT'})
+
 
 def ft_mode_plot(summary,summary_client):
     nfmt,nexp = ft_mode()
@@ -98,10 +129,14 @@ def ft_mode_plot(summary,summary_client):
 
 def test_plot(summary,summary_client):
     nfmt,nexp = test()
-#    tput_setup(summary,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG")
-#    nfmt,nexp = test()
     tput_setup(summary,summary_client,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",v_name="MODE")
-    tputvlat_setup(summary,summary_client,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",v_name="MODE")
+#    tputvlat_setup(summary,summary_client,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",v_name="MODE")
+#    tput_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="MODE")
+    stacks_setup(summary,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",keys=['thd1','thd2','thd3'],norm=True)
+    stacks_setup(summary,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",keys=['txn_table_add','txn_table_get','txn_table0a','txn_table1a','txn_table0b','txn_table1b','txn_table2a','txn_table2'],norm=True)
+    stacks_setup(summary,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",keys=['type4','type8','type10'],norm=True)
+    stacks_setup(summary,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",keys=['thd1','thd2','thd3'])
+    stacks_setup(summary,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",keys=['txn_table_add','txn_table_get','txn_table0a','txn_table1a','txn_table0b','txn_table1b','txn_table2a','txn_table2'])
 
 def network_sweep():
     fmt = [fmt_ycsb[0] + ["NETWORK_DELAY"]]
@@ -217,6 +252,7 @@ configs = {
     "CLIENT_REM_THREAD_CNT" : 1,
     "MAX_TXN_PER_PART" : 100,
     "WORKLOAD" : "YCSB",
+    "REQ_PER_QUERY": 10, #16
     "CC_ALG" : "NO_WAIT",
     "MPR" : 0.0,
     "TPORT_TYPE":"\"ipc\"",
@@ -243,7 +279,7 @@ configs = {
     "ZIPF_THETA":0.6,
     "PART_PER_TXN": 1,
     "SYNTH_TABLE_SIZE":"2097152",
-    "LOAD_TXN_FILE":"false",
+    "LOAD_TXN_FILE":"true",
     "DEBUG_DISTR":"false",
     "MODE":"NORMAL",
 }

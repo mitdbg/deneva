@@ -41,7 +41,7 @@ STRNOW=NOW.strftime("%Y%m%d-%H%M%S")
 
 os.chdir('../..')
 
-MAX_TIME_PER_EXP = 60 * 4   # in seconds
+MAX_TIME_PER_EXP = 60 * 15   # in seconds
 
 EXECUTE_EXPS = True
 SKIP = False
@@ -75,13 +75,14 @@ def using_local():
 ##      fab using_istc   run_exps:experiment_1
 @task
 @hosts('localhost')
-def run_exps(exps,skip_completed='False',exec_exps='True',dry_run='False',iterations='1',check='True',delay='',single_node='False'):
+def run_exps(exps,skip_completed='False',exec_exps='True',dry_run='False',iterations='1',check='True',delay='',same_node='False'):
     global SKIP, EXECUTE_EXPS,NOW,STRNOW 
     ITERS = int(iterations)
     SKIP = skip_completed == 'True'
     EXECUTE_EXPS = exec_exps == 'True'
     CHECK = check == 'True'
     env.dry_run = dry_run == 'True'
+    env.same_node = same_node == 'True'
     if env.dry_run:
         with color(level="warn"):
             puts("this will be a dry run!",show_prefix=True)
@@ -247,44 +248,78 @@ def run_cmd(cmd):
 @task
 @parallel
 def deploy(schema_path,nids):
-    nid = nids[env.host]
+    nid = iter(nids[env.host])
     succeeded = True
     with shell_env(SCHEMA_PATH=schema_path):
         with settings(warn_only=True,command_timeout=MAX_TIME_PER_EXP):
-            if env.host in env.roledefs["servers"]:
-                cmd = "./rundb -nid{} >> results.out 2>&1".format(nid)  
-            elif env.host in env.roledefs["clients"]:
-                cmd = "./runcl -nid{} >> results.out 2>&1".format(nid)
-            elif "sequencer" in env.roledefs and env.host in env.roledefs["sequencer"]:
-                cmd = "./runsq -nid{} >> results.out 2>&1".format(nid)
+            if env.same_node:
+                cmd = ''
+                for r in env.roledefs["servers"]:
+                    if r == env.host:
+                        nn = nid.next();
+                        cmd += "(./rundb -nid{} >> results{}.out 2>&1 &);".format(nn,nn)  
+                for r in env.roledefs["clients"]:
+                    if r == env.host:
+                        nn = nid.next();
+                        cmd += "(./runcl -nid{} >> results{}.out 2>&1 &);".format(nn,nn)  
+                cmd = cmd[:-3]
+                cmd += ")"
+                try:
+                    res = run("echo $SCHEMA_PATH")
+                    if not env.dry_run:
+                        run(cmd)
+                except CommandTimeout:
+                    pass
+                except NetworkError:
+                    pass
             else:
-                with color('error'):
-                    puts("host does not belong to any roles",show_prefix=True)
-                    puts("current roles:",show_prefix=True)
-                    puts(pprint.pformat(env.roledefs,depth=3),show_prefix=False)
+                if env.host in env.roledefs["servers"]:
+                    cmd = "./rundb -nid{} >> results.out 2>&1".format(nid.next())  
+                elif env.host in env.roledefs["clients"]:
+                    cmd = "./runcl -nid{} >> results.out 2>&1".format(nid.next())
+                elif "sequencer" in env.roledefs and env.host in env.roledefs["sequencer"]:
+                    cmd = "./runsq -nid{} >> results.out 2>&1".format(nid.next())
+                else:
+                    with color('error'):
+                        puts("host does not belong to any roles",show_prefix=True)
+                        puts("current roles:",show_prefix=True)
+                        puts(pprint.pformat(env.roledefs,depth=3),show_prefix=False)
 
-            try:
-                res = run("echo $SCHEMA_PATH")
-                if not env.dry_run:
-                    run(cmd)
-            except CommandTimeout:
-                pass
-            except NetworkError:
-                pass
+                try:
+                    res = run("echo $SCHEMA_PATH")
+                    if not env.dry_run:
+                        run(cmd)
+                except CommandTimeout:
+                    pass
+                except NetworkError:
+                    pass
     return True
 
 @task
 @parallel
-def get_results(outfiles):
+def get_results(outfiles,nids):
     succeeded = True
-    nid = env.hosts.index(env.host)
-    rem_path=os.path.join(env.rem_homedir,"results.out")
-    loc_path=os.path.join(env.result_dir, outfiles[env.host])
-    with settings(warn_only=True):
-        if not env.dry_run:
-            res1 = get(remote_path=rem_path, local_path=loc_path)
-            res2 = run("rm -f results.out")
-            succeeded = res1.succeeded and res2.succeeded
+    if env.same_node:
+        for n in nids[env.host]:
+            rem_path=os.path.join(env.rem_homedir,"results{}.out".format(n))
+            loc_path=os.path.join(env.result_dir, "{}_{}".format(n,outfiles[env.host]))
+            with settings(warn_only=True):
+                if not env.dry_run:
+                    res1 = get(remote_path=rem_path, local_path=loc_path)
+                    succeeded = succeeded and res1.succeeded
+        with settings(warn_only=True):
+            if not env.dry_run:
+                res2 = run("rm -f results*.out")
+                succeeded = succeeded and res2.succeeded
+    else:
+        nid = env.hosts.index(env.host)
+        rem_path=os.path.join(env.rem_homedir,"results.out")
+        loc_path=os.path.join(env.result_dir, outfiles[env.host])
+        with settings(warn_only=True):
+            if not env.dry_run:
+                res1 = get(remote_path=rem_path, local_path=loc_path)
+                res2 = run("rm -f results.out")
+                succeeded = res1.succeeded and res2.succeeded
     return succeeded
 
 @task
@@ -315,11 +350,17 @@ def write_ifconfig(roles):
     with open("ifconfig.txt",'w') as f:
         for server in roles['servers']:
             f.write(server + "\n")
-            nids[server] = nid
+            if server not in nids:
+                nids[server] = [nid]
+            else:
+                nids[server].append(nid)
             nid += 1
         for client in roles['clients']:
             f.write(client + "\n")
-            nids[client] = nid
+            if server not in nids:
+                nids[server] = [nid]
+            else:
+                nids[server].append(nid)
             nid += 1
         if "sequencer" in roles:
             assert CC_ALG == "CALVIN"
@@ -332,15 +373,19 @@ def write_ifconfig(roles):
 @task
 @hosts('localhost')
 def assign_roles(server_cnt,client_cnt,append=False):
-    if len(env.hosts) < server_cnt+client_cnt:
-        with color("error"):
-            puts("ERROR: not enough hosts to run experiment",show_prefix=True)
-            puts("\tHosts required: {}".format(server_cnt+client_cnt))
-            puts("\tHosts available: {} ({})".format(len(env.hosts),pprint.pformat(env.hosts,depth=3)))
-    assert len(env.hosts) >= server_cnt+client_cnt
+    if not env.same_node:
+        if len(env.hosts) < server_cnt+client_cnt:
+            with color("error"):
+                puts("ERROR: not enough hosts to run experiment",show_prefix=True)
+                puts("\tHosts required: {}".format(server_cnt+client_cnt))
+                puts("\tHosts available: {} ({})".format(len(env.hosts),pprint.pformat(env.hosts,depth=3)))
+        assert len(env.hosts) >= server_cnt+client_cnt
+        servers=env.hosts[0:server_cnt]
+        clients=env.hosts[server_cnt:server_cnt+client_cnt]
+    else:
+        servers=[env.hosts[0]] * server_cnt
+        clients=[env.hosts[0]] * client_cnt
     new_roles = {}
-    servers=env.hosts[0:server_cnt]
-    clients=env.hosts[server_cnt:server_cnt+client_cnt]
     if CC_ALG == 'CALVIN':
         sequencer = env.hosts[server_cnt+client_cnt:server_cnt+client_cnt+1]
     if env.roledefs is None or len(env.roledefs) == 0: 
@@ -388,7 +433,7 @@ def get_good_hosts():
 @hosts('localhost')
 def compile_binary(fmt,e):
     cfgs = get_cfgs(fmt,e)
-    if env.remote:
+    if env.remote and not env.same_node:
         cfgs["TPORT_TYPE"],cfgs["TPORT_TYPE_IPC"],cfgs["TPORT_PORT"]="\"tcp\"","false",7000
 
     execute(write_config,cfgs)
@@ -430,7 +475,7 @@ def check_binaries(exps):
 
     for e in experiments:
         cfgs = get_cfgs(fmt,e)
-        if env.remote:
+        if env.remote and not env.same_node:
             cfgs["TPORT_TYPE"],cfgs["TPORT_TYPE_IPC"],cfgs["TPORT_PORT"]="\"tcp\"","false",7000
         
         output_f = get_outfile_name(cfgs,fmt,env.hosts) 
@@ -488,6 +533,8 @@ def run_exp(exps,network_test=False,delay=''):
             ntotal = nnodes + nclnodes
             if CC_ALG == 'CALVIN':
                 ntotal += 1
+            if env.same_node:
+                ntotal = 1
 
             if env.remote:
                 if not network_test:
@@ -515,7 +562,7 @@ def run_exp(exps,network_test=False,delay=''):
                             puts(pprint.pformat(outfiles,depth=3),show_prefix=False)
                         set_hosts(env.hosts[:batch_size])
                         execute(deploy,schema_path,nids)
-                        execute(get_results,outfiles)
+                        execute(get_results,outfiles,nids)
                         good_hosts = get_good_hosts()
                         env.roledefs = None
                         batch_size = 0
@@ -535,7 +582,11 @@ def run_exp(exps,network_test=False,delay=''):
                 new_nids = execute(write_ifconfig,new_roles)[env.host]
                 nids.update(new_nids)
                 for host,nid in new_nids.iteritems():
-                    outfiles[host] = "{}_{}.out".format(nid,output_f) 
+                    if env.same_node:
+                        outfiles[host] = "{}.out".format(output_f) 
+                    else:
+                        outfiles[host] = "{}_{}.out".format(nid,output_f) 
+                print(nids)
 
                 if cfgs["WORKLOAD"] == "TPCC":
                     schema = "benchmarks/TPCC_short_schema.txt"
@@ -567,7 +618,7 @@ def run_exp(exps,network_test=False,delay=''):
                     if delay != '':
                         execute(reset_delay)
 
-                    execute(get_results,outfiles)
+                    execute(get_results,outfiles,nids)
                     good_hosts = get_good_hosts()
                     set_hosts(good_hosts)
                     batch_size = 0

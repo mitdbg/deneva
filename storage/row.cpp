@@ -31,7 +31,7 @@ row_t::switch_schema(table_t * host_table) {
 }
 
 void row_t::init_manager(row_t * row) {
-#if MODE==NOCC || MODE==TWOPC
+#if MODE==NOCC_MODE || MODE==QRY_ONLY_MODE
   return;
 #endif
 #if CC_ALG == DL_DETECT || CC_ALG == NO_WAIT || CC_ALG == WAIT_DIE || CC_ALG == CALVIN
@@ -139,7 +139,7 @@ RC row_t::get_lock(access_t type, txn_man * txn) {
 
 RC row_t::get_row(access_t type, txn_man * txn, row_t *& row) {
 	RC rc = RCOK;
-#if MODE==NOCC
+#if MODE==NOCC_MODE || MODE==QRY_ONLY_MODE 
   return rc;
 #endif
   uint64_t thd_prof_start = get_sys_clock();
@@ -288,7 +288,7 @@ RC row_t::get_row_post_wait(access_t type, txn_man * txn, row_t *& row) {
 // For TIMESTAMP, the row will be explicity deleted at the end of access().
 // (c.f. row_ts.cpp)
 void row_t::return_row(access_t type, txn_man * txn, row_t * row) {	
-#if MODE==NOCC
+#if MODE==NOCC_MODE || MODE==QRY_ONLY_MODE
   return;
 #endif
   uint64_t thd_prof_start = get_sys_clock();

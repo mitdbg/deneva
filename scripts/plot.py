@@ -6,6 +6,7 @@ import latency_stats as ls
 import glob
 import types
 import pickle
+import pprint
 
 PATH=os.getcwd()
 
@@ -52,6 +53,7 @@ for arg in sys.argv[1:]:
     last_arg = arg
 
 result_dir = PATH + "/../results/"
+#result_dir = PATH + "/../results/20151001_ipc/"
 #result_dir = PATH + "/../results/results_201503pt2/"
 test_dir = ""
 
@@ -173,11 +175,17 @@ for exp in exps:
                 else:
                     merge(s,r)
                     merge(s2,r2)
+                    print(s['txn_cnt'])
 
             if plot:
                 s = merge_results(s,exp_cnt,drop,cfgs["NODE_CNT"])
                 s2 = merge_results(s2,exp_cnt,drop,cfgs["CLIENT_NODE_CNT"])
                 summary[output_f] = s
+                pp = pprint.PrettyPrinter()
+#                pp.pprint(summary[output_f]['txn_cnt'])
+#                pp.pprint(summary[output_f]['thd1'])
+#                pp.pprint(summary[output_f]['thd2'])
+#                pp.pprint(summary[output_f]['thd3'])
                 summary_client[output_f] = s2
 #                print(output_f)
 #                print(summary[output_f])

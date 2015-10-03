@@ -59,7 +59,7 @@ void Remote_query::unpack(void * d, uint64_t len) {
 
 
     unpack_query(query,data,ptr,dest_id,return_id);
-#if MODE==SIMPLE
+#if MODE==SIMPLE_MODE
     if(query->rtype == RTXN) {
       query->txn_id = g_node_id;
       msg_queue.enqueue(query,CL_RSP,query->client_id);
@@ -170,6 +170,7 @@ void Remote_query::unpack_query(base_query *& query,char * data,  uint64_t & ptr
 #endif
       assert(WORKLOAD == YCSB);
       m_query->client_id = m_query->return_id;
+      assert(m_query->client_id >= g_node_cnt);
       COPY_VAL(m_query->pid,data,ptr);
       COPY_VAL(m_query->client_startts,data,ptr);
 #if CC_ALG == CALVIN

@@ -12,6 +12,7 @@
 #define DEBUG(...) \
   if(DEBUG_DISTR) { \
     fprintf(stdout,__VA_ARGS__); \
+    fflush(stdout); \
   }
 #define DEBUG_FLUSH() \
   if(DEBUG_DISTR) { \

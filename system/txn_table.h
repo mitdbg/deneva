@@ -27,6 +27,7 @@ struct pool_node {
   pthread_cond_t cond_a;
   volatile bool modify;
   int access;
+  uint64_t cnt;
 
 };
 typedef pool_node * pool_node_t;

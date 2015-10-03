@@ -67,7 +67,7 @@ void MessageThread::run() {
   sthd_prof_start = get_sys_clock();
   // This is the end for final RACKs and CL_RSP; delete from txn pool
   if((type == RACK && qry->rtype==RFIN) || (type == CL_RSP)) {
-#if MODE==SIMPLE
+#if MODE==SIMPLE_MODE
     // Need to free the original query
     //  that was not placed in txn pool
     //mem_allocator.free(qry,sizeof(ycsb_query));
@@ -76,7 +76,7 @@ void MessageThread::run() {
     txn_table.delete_txn(qry->return_id, qry->txn_id);
 #endif
   }
-#if MODE==QRY
+#if MODE>=QRY_ONLY_MODE
   if(type == RQRY_RSP) {
     txn_table.delete_txn(qry->return_id, qry->txn_id);
   }

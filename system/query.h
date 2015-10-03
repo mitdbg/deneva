@@ -64,7 +64,7 @@ public:
 
   // Prevent unnecessary remote messages
   uint64_t part_touched_cnt;
-  uint64_t part_touched[MAX_PART_PER_TXN];
+  uint64_t part_touched[PART_PER_TXN];
 
   // Client components
   uint32_t client_id;

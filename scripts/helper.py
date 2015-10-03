@@ -2,7 +2,10 @@ import os,re,sys,math
 from experiments import configs
 from experiments import config_names
 import glob
+import pprint
 import latency_stats as ls
+
+
 
 SHORTNAMES = {
     "CLIENT_NODE_CNT" : "CN",
@@ -37,6 +40,7 @@ stat_map = {
  'tport_lat': [],
  'time_tport_send': [],
  'clock_time': [],
+ 'finish_time': [],
  'msg_bytes': [],
  'time_getqry': [],
 'cc_hold_time': [],
@@ -119,8 +123,95 @@ stat_map = {
  'lat_25ile': [],
  'lat_20ile': [],
  'lat_10ile': [],
- 'lat_5ile': []
+ 'lat_5ile': [],
+ 'cpu_ttl':[],
+ 'virt_mem_usage':[],
+ 'phys_mem_usage':[],
+ 'mbuf_send_time':[],
+ 'msg_batch_size':[],
+ 'msg_batch_cnt':[],
+ 'avg_msg_batch':[],
+ 'avg_msg_batch_bytes':[],
 
+'sthd_prof_1a':[],
+'sthd_prof_2':[],
+'sthd_prof_3':[],
+'sthd_prof_4':[],
+'sthd_prof_5a':[],
+'sthd_prof_1b':[],
+'sthd_prof_5b':[],
+'rthd_prof_1':[],
+'rthd_prof_2':[],
+'thd1':[],
+'thd2':[],
+'thd3':[],
+'thd_sum':[],
+'thd1a':[],
+'thd1b':[],
+'thd1c':[],
+'thd1d':[],
+'thd2_loc':[],
+'thd2_rem':[],
+'rfin0':[],
+'rfin1':[],
+'rfin2':[],
+'rprep0':[],
+'rprep1':[],
+'rprep2':[],
+'rqry_rsp0':[],
+'rqry_rsp1':[],
+'rqry0':[],
+'rqry1':[],
+'rqry2':[],
+'rack0':[],
+'rack1':[],
+'rack2a':[],
+'rack2':[],
+'rack3':[],
+'rack4':[],
+'rtxn1a':[],
+'rtxn1b':[],
+'rtxn2':[],
+'rtxn3':[],
+'rtxn4':[],
+'ycsb1':[],
+'row1':[],
+'row2':[],
+'row3':[],
+'cc0':[],
+'cc1':[],
+'cc2':[],
+'cc3':[],
+'wq1':[],
+'wq2':[],
+'wq3':[],
+'wq4':[],
+'txn1':[],
+'txn2':[],
+'txn_table_add':[],
+'txn_table_get':[],
+'txn_table0a':[],
+'txn_table1a':[],
+'txn_table0b':[],
+'txn_table1b':[],
+'txn_table2a':[],
+'txn_table2':[],
+'type0':[],
+'type1':[],
+'type2':[],
+'type3':[],
+'type4':[],
+'type5':[],
+'type6':[],
+'type7':[],
+'type8':[],
+'type9':[],
+'type10':[],
+'type11':[],
+'type12':[],
+'type13':[],
+'type14':[],
+'type15':[],
 }
 
 cnts = ["all_abort"]
@@ -205,6 +296,8 @@ def get_summary(sfile,summary={}):
                 line = line[7:] #remove '[prog] ' from start of line 
                 results = re.split(',',line)
                 process_results(summary,results)
+#    pp = pprint.PrettyPrinter()
+#    pp.pprint(summary['txn_cnt'])
     return summary
 
 def get_network_stats(n_file):
@@ -245,8 +338,9 @@ def merge(summary,tmp):
             if type(summary[k]) is not list:
                 continue
             try:
-                for i in range(len(tmp[k])):
-                    summary[k].append(tmp[k].pop())
+                summary[k] = summary[k] + tmp[k]
+#                for i in range(len(tmp[k])):
+#                    summary[k].append(tmp[k].pop())
             except KeyError:
                 print("KeyError {}".format(k))
         except KeyError:
@@ -294,6 +388,11 @@ def merge_results(summary,cnt,drop,gap):
                     if len(l) == 0:
                         continue
                     new_summary[k].append(avg(l))
+
+#                    pp = pprint.PrettyPrinter()
+#                    if k is 'txn_cnt':
+#                        pp.pprint(l)
+#                        pp.pprint(new_summary[k])
 
         except KeyError:
             continue
