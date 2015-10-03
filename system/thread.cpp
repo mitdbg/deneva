@@ -195,9 +195,10 @@ RC thread_t::run() {
 
     INC_STATS(_thd_id,thd_prof_thd1a,get_sys_clock() - thd_prof_start);
     thd_prof_start = get_sys_clock();
-    if((get_sys_clock() - run_starttime >= DONE_TIMER)
-        || (_wl->txn_cnt >= MAX_TXN_PER_PART 
-          && txn_table.empty(get_node_id()))) {
+    if(((get_sys_clock() - run_starttime >= DONE_TIMER)
+        /*|| (_wl->txn_cnt >= MAX_TXN_PER_PART 
+          && txn_table.empty(get_node_id()))*/)
+        && !_wl->sim_done) {
         if( !ATOM_CAS(_wl->sim_done, false, true) ) {
           assert( _wl->sim_done);
         } else {

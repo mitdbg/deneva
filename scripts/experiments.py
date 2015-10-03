@@ -8,11 +8,11 @@ fmt_tpcc = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT
 fmt_nd = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","NUM_WH","MAX_TXN_IN_FLIGHT","NETWORK_DELAY"]]
 fmt_ycsb = [["CLIENT_NODE_CNT","NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","CLIENT_THREAD_CNT","CLIENT_REM_THREAD_CNT","CLIENT_SEND_THREAD_CNT","THREAD_CNT","REM_THREAD_CNT","SEND_THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC","PART_PER_TXN","PART_CNT","MSG_TIME_LIMIT","MSG_SIZE_MAX","MODE"]]
 fmt_nt = [["NODE_CNT","CLIENT_NODE_CNT","NETWORK_TEST"]]
-fmt_title=["NODE_CNT","MPR","ZIPF_THETA","WRITE_PERC","CC_ALG","MAX_TXN_IN_FLIGHT"]
+fmt_title=["NODE_CNT","MPR","ZIPF_THETA","WRITE_PERC","CC_ALG","MAX_TXN_IN_FLIGHT","MODE"]
 
 def test():
     fmt = fmt_ycsb
-    nnodes = [2]
+    nnodes = [1,2,4]
     nmpr=[100]
     nalgos=['NO_WAIT']
 #    nalgos=['NO_WAIT','WAIT_DIE']
@@ -22,7 +22,7 @@ def test():
     ncthreads=[2]
     ncrthreads=[1]
     ncsthreads=[4]
-    ntifs=[300]#,500,2500,5000]
+    ntifs=[300,500,2500,5000]
 #    nzipf=[0.0]
     nzipf=[0.0]
     nwr_perc=[0.0]
@@ -136,6 +136,7 @@ def test_plot(summary,summary_client):
     stacks_setup(summary,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",keys=['type4','type8','type10'],norm=True)
     stacks_setup(summary,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",keys=['thd1','thd2','thd3'])
     stacks_setup(summary,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",keys=['txn_table_add','txn_table_get','txn_table0a','txn_table1a','txn_table0b','txn_table1b','txn_table2a','txn_table2'])
+    stacks_setup(summary,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",keys=['thd1a','thd1b','thd1c','thd1d'],norm=True)
 
 def network_sweep():
     fmt = [fmt_ycsb[0] + ["NETWORK_DELAY"]]
@@ -263,7 +264,7 @@ configs = {
     "NUM_WH": 2,
     "MAX_TXN_IN_FLIGHT": 1,
     "NETWORK_DELAY": '0UL',
-    "DONE_TIMER": "1 * 30 * BILLION // 3 minutes",
+    "DONE_TIMER": "3 * 60 * BILLION // 3 minutes",
     "PROG_TIMER" : "10 * BILLION // in s",
     "NETWORK_TEST" : "false",
     "ABORT_PENALTY": "1 * 1000000UL   // in ns.",

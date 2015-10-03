@@ -133,7 +133,7 @@ void mem_alloc::free(void * ptr, uint64_t size) {
 		_arenas[arena_id][size_id].free(ptr);
 	} else {
     if(warmup_done) 
-      printf("free %ld\n",size);
+      DEBUG("free %ld\n",size);
 		std::free(ptr);
 	}
 }
@@ -153,7 +153,7 @@ void * mem_alloc::alloc(uint64_t size, uint64_t part_id) {
 		ptr = _arenas[arena_id][size_id].alloc();
 	} else {
     if(warmup_done) 
-      printf("alloc %ld\n",size);
+      DEBUG("alloc %ld\n",size);
 		ptr = malloc(size);
 	}
 	return ptr;
@@ -161,7 +161,7 @@ void * mem_alloc::alloc(uint64_t size, uint64_t part_id) {
 
 void * mem_alloc::realloc(void * ptr, uint64_t size, uint64_t part_id) {
   if(warmup_done) 
-    printf("realloc %ld\n",size);
+    DEBUG("realloc %ld\n",size);
   void * _ptr = std::realloc(ptr,size);
 	return _ptr;
 }

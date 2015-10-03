@@ -194,7 +194,7 @@ uint64_t Transport::get_node_id() {
 	return _node_id;
 }
 
-void Transport::send_msg(uint64_t sid, uint64_t dest_id, void * sbuf) {
+void Transport::send_msg(uint64_t sid, uint64_t dest_id, void * sbuf,int size) {
   uint64_t starttime = get_sys_clock();
   uint64_t id;
   if(ISCLIENT) {
@@ -211,7 +211,13 @@ void Transport::send_msg(uint64_t sid, uint64_t dest_id, void * sbuf) {
   fflush(stdout);
   */
 
-	int rc= s[idx].sock.send(&sbuf,NN_MSG,0);
+	void * buf = nn_allocmsg(size,0);
+	memcpy(buf,sbuf,size);
+
+	int rc= s[idx].sock.send(&buf,NN_MSG,0);
+  assert(rc == size);
+	//int rc= s[idx].sock.send(&sbuf,NN_MSG,0);
+  //nn_freemsg(sbuf);
 
 	// Check for a send error
 	if(rc < 0) {

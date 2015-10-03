@@ -11,6 +11,7 @@ void MessageThread::init(uint64_t thd_id) {
   buffer = (mbuf **) mem_allocator.alloc(sizeof(mbuf*) * buffer_cnt,0);
   for(uint64_t n = 0; n < buffer_cnt; n++) {
     buffer[n] = (mbuf *)mem_allocator.alloc(sizeof(mbuf),0);
+    buffer[n]->init(n);
     buffer[n]->reset(n);
   }
   _thd_id = thd_id;
@@ -47,7 +48,7 @@ void MessageThread::run() {
     INC_STATS(_thd_id,mbuf_send_time,get_sys_clock() - sbuf->starttime);
     //if(_thd_id == g_thread_cnt) 
     //  printf("Sthd Send1 %ld %ld\n",dest,get_sys_clock()-sbuf->starttime);
-    tport_man.send_msg(_thd_id,dest,sbuf->buffer);
+    tport_man.send_msg(_thd_id,dest,sbuf->buffer,sbuf->ptr);
     INC_STATS(_thd_id,msg_batch_size,sbuf->cnt);
     INC_STATS(_thd_id,msg_batch_bytes,sbuf->ptr);
     INC_STATS(_thd_id,msg_batch_cnt,1);
@@ -95,7 +96,7 @@ end:
       INC_STATS(_thd_id,mbuf_send_time,get_sys_clock() - buffer[n]->starttime);
       //if(_thd_id == g_thread_cnt) 
       //  printf("Sthd Send2 %ld %ld\n",n,get_sys_clock()-buffer[n]->starttime);
-      tport_man.send_msg(_thd_id,n,buffer[n]->buffer);
+      tport_man.send_msg(_thd_id,n,buffer[n]->buffer,buffer[n]->ptr);
       INC_STATS(_thd_id,msg_batch_size,buffer[n]->cnt);
       INC_STATS(_thd_id,msg_batch_bytes,buffer[n]->ptr);
       INC_STATS(_thd_id,msg_batch_cnt,1);

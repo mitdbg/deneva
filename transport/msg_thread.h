@@ -7,13 +7,17 @@
 
 struct mbuf {
   char * buffer;
+  //char buffer[MSG_SIZE_MAX];
   uint64_t starttime;
   uint64_t ptr;
   uint64_t cnt;
   bool wait;
 
-  void reset(uint64_t dest_id) {
+  void init(uint64_t dest_id) {
     buffer = (char*)nn_allocmsg(g_msg_size,0);
+  }
+  void reset(uint64_t dest_id) {
+    //buffer = (char*)nn_allocmsg(g_msg_size,0);
     memset(buffer,0,g_msg_size);
     starttime = 0;
     cnt = 0;

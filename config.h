@@ -5,16 +5,16 @@
 /***********************************************/
 // Simulation + Hardware
 /***********************************************/
-#define NODE_CNT 2
+#define NODE_CNT 4
 #define THREAD_CNT 2
 #define REM_THREAD_CNT 1
 #define SEND_THREAD_CNT 1
 // PART_CNT should be at least NODE_CNT
-#define PART_CNT 2
-#define CLIENT_NODE_CNT 2
-#define CLIENT_THREAD_CNT 1
+#define PART_CNT 4
+#define CLIENT_NODE_CNT 4
+#define CLIENT_THREAD_CNT 2
 #define CLIENT_REM_THREAD_CNT 1
-#define CLIENT_SEND_THREAD_CNT 1
+#define CLIENT_SEND_THREAD_CNT 4
 #define CLIENT_RUNTIME false
 
 // each transaction only accesses only 1 virtual partition. But the lock/ts manager and index are not aware of such partitioning. VIRTUAL_PART_CNT describes the request distribution and is only used to generate queries. For HSTORE, VIRTUAL_PART_CNT should be the same as PART_CNT.
@@ -289,7 +289,7 @@ extern TestCases          g_test_case;
 #define BILLION 1000000000UL // in ns => 1 second
 #define STAT_ARR_SIZE 1024
 #define PROG_TIMER 10 * BILLION // in s
-#define DONE_TIMER 5 * 60 * BILLION // 3 minutes
+#define DONE_TIMER 3 * 60 * BILLION // 3 minutes
 
 #define SEED 0
 
