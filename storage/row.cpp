@@ -34,6 +34,7 @@ void row_t::init_manager(row_t * row) {
 #if MODE==NOCC_MODE || MODE==QRY_ONLY_MODE
   return;
 #endif
+  DEBUG_M("row_t::init_manager alloc \n");
 #if CC_ALG == DL_DETECT || CC_ALG == NO_WAIT || CC_ALG == WAIT_DIE || CC_ALG == CALVIN
     manager = (Row_lock *) mem_allocator.alloc(sizeof(Row_lock), _part_id);
 #elif CC_ALG == TIMESTAMP
@@ -124,6 +125,7 @@ void row_t::copy(row_t * src) {
 }
 
 void row_t::free_row() {
+  DEBUG_M("row_t::free_row free\n");
 	mem_allocator.free(data, sizeof(char) * get_tuple_size());
 }
 
@@ -177,6 +179,7 @@ RC row_t::get_row(access_t type, txn_man * txn, row_t *& row) {
 	// row_t * newr = NULL;
 #if CC_ALG == TIMESTAMP
 	// TIMESTAMP makes a whole copy of the row before reading
+  DEBUG_M("row_t::get_row TIMESTAMP alloc \n");
 	txn->cur_row = (row_t *) mem_allocator.alloc(sizeof(row_t), this->get_part_id());
 	txn->cur_row->init(get_table(), this->get_part_id());
 #endif
@@ -212,6 +215,7 @@ RC row_t::get_row(access_t type, txn_man * txn, row_t *& row) {
 		}
 	}
 	if (rc != Abort && CC_ALG == MVCC && type == WR) {
+    DEBUG_M("row_t::get_row MVCC alloc \n");
 		row_t * newr = (row_t *) mem_allocator.alloc(sizeof(row_t), get_part_id());
 		newr->init(this->get_table(), get_part_id());
 		newr->copy(row);
@@ -220,6 +224,7 @@ RC row_t::get_row(access_t type, txn_man * txn, row_t *& row) {
 	goto end;
 #elif CC_ALG == OCC
 	// OCC always make a local copy regardless of read or write
+  DEBUG_M("row_t::get_row OCC alloc \n");
 	txn->cur_row = (row_t *) mem_allocator.alloc(sizeof(row_t), get_part_id());
 	txn->cur_row->init(get_table(), get_part_id());
 	rc = this->manager->access(txn, R_REQ);
@@ -228,6 +233,7 @@ RC row_t::get_row(access_t type, txn_man * txn, row_t *& row) {
 #elif CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || CC_ALG == VLL || CC_ALG == CALVIN
 #if CC_ALG == HSTORE_SPEC
   if(txn_table.spec_mode) {
+    DEBUG_M("row_t::get_row HSTORE_SPEC alloc \n");
 	  txn->cur_row = (row_t *) mem_allocator.alloc(sizeof(row_t), get_part_id());
 	  txn->cur_row->init(get_table(), get_part_id());
 	  rc = this->manager->access(txn, R_REQ);
@@ -269,6 +275,7 @@ RC row_t::get_row_post_wait(access_t type, txn_man * txn, row_t *& row) {
 			assert(row->get_schema() == this->get_schema());
 			assert(row->get_table_name() != NULL);
 	if (CC_ALG == MVCC && type == WR) {
+    DEBUG_M("row_t::get_row_post_wait MVCC alloc \n");
 		row_t * newr = (row_t *) mem_allocator.alloc(sizeof(row_t), get_part_id());
 		newr->init(this->get_table(), get_part_id());
 
@@ -304,10 +311,12 @@ void row_t::return_row(access_t type, txn_man * txn, row_t * row) {
 	// for MVCC RD, the row is not copied, so no need to free. 
 	if (CC_ALG == TIMESTAMP && (type == RD || type == SCAN)) {
 		row->free_row();
+    DEBUG_M("row_t::return_row TIMESTAMP free \n");
 		mem_allocator.free(row, sizeof(row_t));
 	}
 	if (type == XP) {
 		row->free_row();
+    DEBUG_M("row_t::return_row XP free \n");
 		mem_allocator.free(row, sizeof(row_t));
 		this->manager->access(txn, XP_REQ, NULL);
 	} else if (type == WR) {
@@ -321,6 +330,7 @@ void row_t::return_row(access_t type, txn_man * txn, row_t * row) {
 	if (type == WR)
 		manager->write( row, txn->end_ts );
 	row->free_row();
+  DEBUG_M("row_t::return_row OCC free \n");
 	mem_allocator.free(row, sizeof(row_t));
   manager->release();
 	return;

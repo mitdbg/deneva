@@ -346,11 +346,13 @@ bool Row_lock::conflict_lock(lock_t l1, lock_t l2) {
 }
 
 LockEntry * Row_lock::get_entry() {
+  DEBUG_M("row_lock::get_entry alloc\n");
 	LockEntry * entry = (LockEntry *) 
 		mem_allocator.alloc(sizeof(LockEntry), _row->get_part_id());
 	return entry;
 }
 void Row_lock::return_entry(LockEntry * entry) {
+  DEBUG_M("row_lock::return_entry free\n");
 	mem_allocator.free(entry, sizeof(LockEntry));
 }
 

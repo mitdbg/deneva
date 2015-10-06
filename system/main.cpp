@@ -13,7 +13,7 @@
 #include "vll.h"
 #include "transport.h"
 #include "msg_queue.h"
-//#include <jemalloc.h>
+#include "ycsb_query.h"
 
 void * f(void *);
 void * g(void *);
@@ -61,6 +61,11 @@ int main(int argc, char* argv[])
 	int64_t starttime;
 	int64_t endtime;
   starttime = get_server_clock();
+  printf("SIZES:\n");
+  printf("row_t %ld\n",sizeof(row_t));
+  printf("ycsb_query %ld\n",sizeof(ycsb_query));
+  printf("base_query %ld\n",sizeof(base_query));
+  printf("txn_man %ld\n",sizeof(txn_man));
 	// per-partition malloc
   printf("Initializing memory allocator... ");
   fflush(stdout);

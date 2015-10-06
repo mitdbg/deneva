@@ -56,8 +56,10 @@ void TxnTable::init() {
     pool[i].tail = NULL;
     pool[i].cnt = 0;
     pthread_mutex_init(&pool[i].mtx,NULL);
-    modify = false;
-    access = 0;
+    pthread_cond_init(&pool[i].cond_m,NULL);
+    pthread_cond_init(&pool[i].cond_a,NULL);
+    pool[i].modify = false;
+    pool[i].access = 0;
   }
 }
 

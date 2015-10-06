@@ -107,8 +107,6 @@ void txn_man::clear() {
 }
 
 void txn_man::update_stats() {
-  INC_STATS(get_thd_id(), write_cnt, wr_cnt);
-  INC_STATS(get_thd_id(), access_cnt, row_cnt);
   INC_STATS(get_thd_id(), cc_wait_cnt, cc_wait_cnt);
   INC_STATS(get_thd_id(), cc_wait_time, cc_wait_time);
   INC_STATS(get_thd_id(), cc_hold_time, cc_hold_time);
@@ -273,7 +271,9 @@ void txn_man::cleanup(RC rc) {
 		}
 #if ROLL_BACK && (CC_ALG == DL_DETECT || CC_ALG == NO_WAIT || CC_ALG == WAIT_DIE || CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC)
 		if (type == WR) {
+      //printf("free 10 %ld\n",get_txn_id());
 			accesses[rid]->orig_data->free_row();
+      DEBUG_M("txn_man::cleanup WR free\n");
 			mem_allocator.free(accesses[rid]->orig_data, sizeof(row_t));
 		}
 #endif
@@ -293,16 +293,21 @@ void txn_man::cleanup(RC rc) {
 			row_t * row = insert_rows[i];
 			assert(g_part_alloc == false);
 #if CC_ALG != HSTORE && CC_ALG != HSTORE_SPEC && CC_ALG != OCC
+      DEBUG_M("txn_man::cleanup row->manager free\n");
 			mem_allocator.free(row->manager, 0);
 #endif
 			row->free_row();
+      DEBUG_M("txn_man::cleanup row free\n");
 			mem_allocator.free(row, sizeof(row));
 		}
     uint64_t t = get_sys_clock() - starttime;
 		INC_STATS(get_thd_id(), time_abort, t);
     txn_time_abrt += t;
     last_time_abrt = t;
-	}
+	} else {
+    INC_STATS(get_thd_id(), write_cnt, wr_cnt);
+    INC_STATS(get_thd_id(), access_cnt, row_cnt);
+  }
 	row_cnt = 0;
 	wr_cnt = 0;
 	insert_cnt = 0;
@@ -359,6 +364,8 @@ RC txn_man::get_row(row_t * row, access_t type, row_t *& row_rtn) {
 	accesses[row_cnt]->orig_row = row;
 #if ROLL_BACK && (CC_ALG == DL_DETECT || CC_ALG == NO_WAIT || CC_ALG == WAIT_DIE || CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC)
 	if (type == WR) {
+    //printf("alloc 10 %ld\n",get_txn_id());
+    DEBUG_M("txn_man::get_row alloc\n")
 		accesses[row_cnt]->orig_data = (row_t *) 
 			mem_allocator.alloc(sizeof(row_t), part_id);
 		accesses[row_cnt]->orig_data->init(row->get_table(), part_id, 0);
@@ -399,6 +406,8 @@ RC txn_man::get_row_post_wait(row_t *& row_rtn) {
 #if ROLL_BACK && (CC_ALG == DL_DETECT || CC_ALG == NO_WAIT || CC_ALG == WAIT_DIE)
 	if (type == WR) {
 	  uint64_t part_id = row->get_part_id();
+    //printf("alloc 10 %ld\n",get_txn_id());
+    DEBUG_M("txn_man::get_row_post_wait alloc\n");
 		accesses[row_cnt]->orig_data = (row_t *) 
 			mem_allocator.alloc(sizeof(row_t), part_id);
 		accesses[row_cnt]->orig_data->init(row->get_table(), part_id, 0);

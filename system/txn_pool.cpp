@@ -49,6 +49,7 @@ void AccessPool::init(workload * wl, uint64_t size) {
 void AccessPool::get(Access *& item) {
   bool r = pool.try_dequeue(item);
   if(!r) {
+    DEBUG_M("access_pool\n");
     item = (Access*)mem_allocator.alloc(sizeof(Access),0);
   }
 }
@@ -76,6 +77,7 @@ void TxnTablePool::init(workload * wl, uint64_t size) {
 void TxnTablePool::get(txn_node *& item) {
   bool r = pool.try_dequeue(item);
   if(!r) {
+    DEBUG_M("txn_table_pool\n");
     item = (txn_node *) mem_allocator.alloc(sizeof(struct txn_node), g_thread_cnt);
   }
 }
@@ -110,6 +112,7 @@ void QryPool::init(workload * wl, uint64_t size) {
 void QryPool::get(base_query *& item) {
   bool r = pool.try_dequeue(item);
   if(!r) {
+    DEBUG_M("query_pool\n");
 #if WORKLOAD==YCSB
     ycsb_query * qry = NULL;
     qry = (ycsb_query *) mem_allocator.alloc(sizeof(ycsb_query),0);
@@ -148,6 +151,7 @@ void MsgPool::init(workload * wl, uint64_t size) {
 void MsgPool::get(msg_entry* & item) {
   bool r = pool.try_dequeue(item);
   if(!r) {
+    DEBUG_M("msg_pool\n");
     item = (msg_entry*) mem_allocator.alloc(sizeof(struct msg_entry), 0);
   }
 }

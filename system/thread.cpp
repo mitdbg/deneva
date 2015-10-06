@@ -488,7 +488,13 @@ RC thread_t::run() {
 #endif
 					assert((CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC) || m_query->dest_id != g_node_id);
 #if CC_ALG != HSTORE && CC_ALG != HSTORE_SPEC
-          m_query->part_touched[m_query->part_touched_cnt++] = GET_PART_ID(0,m_query->dest_id);
+          uint64_t i;
+          for(i = m_query->part_touched_cnt-1; i > 0;i--) {
+            if(m_query->part_touched[i] == GET_PART_ID(0,m_query->dest_id))
+              break;
+          }
+          if(i == 0)
+            m_query->part_touched[m_query->part_touched_cnt++] = GET_PART_ID(0,m_query->dest_id);
 #endif
           // Stat start for txn_time_net
           m_txn->txn_stat_starttime = get_sys_clock();

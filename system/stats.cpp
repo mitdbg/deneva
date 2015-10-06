@@ -694,8 +694,8 @@ void Stats::print(bool prog) {
 	double total_tot_run_time = 0;
 	double total_run_time = 0;
   double total_finish_time = 0;
-  double total_access_cnt = 0;
-  double total_write_cnt = 0;
+  uint64_t total_access_cnt = 0;
+  uint64_t total_write_cnt = 0;
 	double total_time_work = 0;
 	double total_time_man = 0;
 	double total_time_rqry = 0;
@@ -919,8 +919,8 @@ void Stats::print(bool prog) {
       ",latency=%f"
       ",run_time=%f"
       ",finish_time=%f"
-      ",access_cnt=%f"
-      ",write_cnt=%f"
+      ",access_cnt=%ld"
+      ",write_cnt=%ld"
       ",aq_full=%f"
 			",txn_table_cflt=%ld"
 			",txn_table_cflt_size=%ld"
@@ -1002,8 +1002,8 @@ void Stats::print(bool prog) {
 			total_latency / BILLION / total_txn_cnt,
 			total_run_time / BILLION,
       total_finish_time / BILLION,
-      total_access_cnt / BILLION,
-      total_write_cnt / BILLION,
+      total_access_cnt,
+      total_write_cnt,
 			total_aq_full / BILLION,
       total_txn_table_cflt,
       total_txn_table_cflt_size,
