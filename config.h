@@ -5,13 +5,13 @@
 /***********************************************/
 // Simulation + Hardware
 /***********************************************/
-#define NODE_CNT 8
+#define NODE_CNT 2
 #define THREAD_CNT 2
 #define REM_THREAD_CNT 1
 #define SEND_THREAD_CNT 1
 // PART_CNT should be at least NODE_CNT
-#define PART_CNT 8
-#define CLIENT_NODE_CNT 8
+#define PART_CNT 2
+#define CLIENT_NODE_CNT 2
 #define CLIENT_THREAD_CNT 2
 #define CLIENT_REM_THREAD_CNT 1
 #define CLIENT_SEND_THREAD_CNT 4
@@ -35,7 +35,7 @@
 #define TIME_ENABLE         true //STATS_ENABLE
 
 #define FIN_BY_TIME true
-#define MAX_TXN_IN_FLIGHT 5000
+#define MAX_TXN_IN_FLIGHT 2500
 
 /***********************************************/
 // Memory System
@@ -156,7 +156,7 @@
 #define WRITE_PERC 1.0
 #define SCAN_PERC           0
 #define SCAN_LEN          20
-#define PART_PER_TXN 8
+#define PART_PER_TXN 2
 #define PERC_MULTI_PART     MPR 
 #define REQ_PER_QUERY 10
 #define FIELD_PER_TUPLE       10
@@ -175,7 +175,7 @@
 // are not modeled.
 #define TPCC_ACCESS_ALL       false 
 #define WH_UPDATE         true
-#define NUM_WH 8
+#define NUM_WH 2
 // % of transactions that access multiple partitions
 #define MPR 100
 #define MPR_NEWORDER      20 // In %
@@ -289,7 +289,7 @@ extern TestCases          g_test_case;
 #define BILLION 1000000000UL // in ns => 1 second
 #define STAT_ARR_SIZE 1024
 #define PROG_TIMER 10 * BILLION // in s
-#define DONE_TIMER 3 * 60 * BILLION // 3 minutes
+#define DONE_TIMER 1 * 60 * BILLION // 3 minutes
 
 #define SEED 0
 #define SHMEM_ENV true

@@ -2,7 +2,7 @@
 #include "helper.h"
 #include "global.h"
 #include <execinfo.h>
-//#include <jemallloc.h>
+#include "jemalloc/jemalloc.h"
 
 // Assume the data is strided across the L2 slices, stride granularity 
 // is the size of a page
@@ -134,7 +134,8 @@ void mem_alloc::free(void * ptr, uint64_t size) {
 	} else {
     if(warmup_done) 
       DEBUG("free %ld\n",size);
-		std::free(ptr);
+		je_free(ptr);
+		//std::free(ptr);
 	}
 }
 
@@ -154,7 +155,8 @@ void * mem_alloc::alloc(uint64_t size, uint64_t part_id) {
 	} else {
     if(warmup_done) 
       DEBUG("alloc %ld\n",size);
-		ptr = malloc(size);
+		ptr = je_malloc(size);
+		//ptr = malloc(size);
 	}
 	return ptr;
 }
@@ -162,7 +164,8 @@ void * mem_alloc::alloc(uint64_t size, uint64_t part_id) {
 void * mem_alloc::realloc(void * ptr, uint64_t size, uint64_t part_id) {
   if(warmup_done) 
     DEBUG("realloc %ld\n",size);
-  void * _ptr = std::realloc(ptr,size);
+  void * _ptr = je_realloc(ptr,size);
+  //void * _ptr = std::realloc(ptr,size);
 	return _ptr;
 }
 

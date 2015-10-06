@@ -144,7 +144,7 @@ def line_general(xval,vval,summary,summary_cl,
         ):
     global plot_cnt
     data = {}
-    name = 'extra_plot{}'.format(plot_cnt)
+    name = '{}_plot{}'.format(key,plot_cnt)
     plot_cnt += 1
     _title = title
 

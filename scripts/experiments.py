@@ -12,7 +12,8 @@ fmt_title=["NODE_CNT","MPR","ZIPF_THETA","WRITE_PERC","CC_ALG","MAX_TXN_IN_FLIGH
 
 def test():
     fmt = fmt_ycsb
-    nnodes = [1,2,4,8]
+    nnodes = [2]
+#    nnodes = [1,2,4,8]
     nmpr=[100]
     nalgos=['NO_WAIT']
 #    nalgos=['NO_WAIT','WAIT_DIE']
@@ -22,9 +23,10 @@ def test():
     ncthreads=[2]
     ncrthreads=[1]
     ncsthreads=[4]
-    ntifs=[300,500,2500,5000]
+    ntifs=[2500]
+#    ntifs=[300,500,2500,5000]
     nzipf=[0.0]
-    nwr_perc=[0.0,0.5,1.0]
+    nwr_perc=[1.0]
     ntxn=[1000000]
 #    ntxn=[5000000]
     nbtime=[1000] # in ns
@@ -167,13 +169,21 @@ def test_plot(summary,summary_client):
     tput_setup(summary,summary_client,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",v_name="MODE")
     tputvlat_setup(summary,summary_client,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",v_name="MODE")
     tput_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="MODE")
-    stacks_setup(summary,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",keys=['thd1','thd2','thd3'],norm=True)
-    stacks_setup(summary,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",keys=['txn_table_add','txn_table_get','txn_table0a','txn_table1a','txn_table0b','txn_table1b','txn_table2a','txn_table2'],norm=True)
-    stacks_setup(summary,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",keys=['type4','type8','type10'],norm=True)
-    stacks_setup(summary,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",keys=['thd1','thd2','thd3'])
-    stacks_setup(summary,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",keys=['txn_table_add','txn_table_get','txn_table0a','txn_table1a','txn_table0b','txn_table1b','txn_table2a','txn_table2'])
-    stacks_setup(summary,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",keys=['thd1a','thd1b','thd1c','thd1d'],norm=True)
-    stacks_setup(summary,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",keys=['rtxn1a','rtxn1b','rtxn2','rtxn3','rtxn4'],norm=True)
+    stacks_setup(summary,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",keys=['thd1','thd2','thd3'],norm=False)
+    stacks_setup(summary,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",keys=['txn_table_add','txn_table_get','txn_table0a','txn_table1a','txn_table0b','txn_table1b','txn_table2a','txn_table2'],norm=False)
+    stacks_setup(summary,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT"
+            ,keys=['type1','type2','type3','type4','type5','type6','type7','type8','type9','type10','type11','type12','type13','type14']
+            ,norm=False)
+    stacks_setup(summary,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",keys=['thd1a','thd1b','thd1c','thd1d'],norm=False)
+    stacks_setup(summary,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",keys=['rtxn1a','rtxn1b','rtxn2','rtxn3','rtxn4'],norm=False)
+
+    stacks_setup(summary,nfmt,nexp,x_name="MODE",keys=['thd1','thd2','thd3'],norm=False)
+    stacks_setup(summary,nfmt,nexp,x_name="MODE",keys=['txn_table_add','txn_table_get','txn_table0a','txn_table1a','txn_table0b','txn_table1b','txn_table2a','txn_table2'],norm=False)
+    stacks_setup(summary,nfmt,nexp,x_name="MODE"
+            ,keys=['type1','type2','type3','type4','type5','type6','type7','type8','type9','type10','type11','type12','type13','type14']
+            ,norm=False)
+    stacks_setup(summary,nfmt,nexp,x_name="MODE",keys=['thd1a','thd1b','thd1c','thd1d'],norm=False)
+    stacks_setup(summary,nfmt,nexp,x_name="MODE",keys=['rtxn1a','rtxn1b','rtxn2','rtxn3','rtxn4'],norm=False)
     line_setup(summary,summary_client,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",v_name="MODE",key='mbuf_send_time')
     line_setup(summary,summary_client,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",v_name="MODE",key='avg_msg_batch')
     line_setup(summary,summary_client,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",v_name="MODE",key='txn_cnt')
@@ -307,7 +317,7 @@ configs = {
     "NUM_WH": 2,
     "MAX_TXN_IN_FLIGHT": 1,
     "NETWORK_DELAY": '0UL',
-    "DONE_TIMER": "3 * 60 * BILLION // 3 minutes",
+    "DONE_TIMER": "1 * 60 * BILLION // 3 minutes",
     "PROG_TIMER" : "10 * BILLION // in s",
     "NETWORK_TEST" : "false",
     "ABORT_PENALTY": "1 * 1000000UL   // in ns.",

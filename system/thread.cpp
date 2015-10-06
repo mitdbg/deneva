@@ -195,9 +195,11 @@ RC thread_t::run() {
 
     INC_STATS(_thd_id,thd_prof_thd1a,get_sys_clock() - thd_prof_start);
     thd_prof_start = get_sys_clock();
+    /*
     if(((get_sys_clock() - run_starttime >= DONE_TIMER)
-        /*|| (_wl->txn_cnt >= MAX_TXN_PER_PART 
-          && txn_table.empty(get_node_id()))*/)
+        //|| (_wl->txn_cnt >= MAX_TXN_PER_PART 
+        //  && txn_table.empty(get_node_id()))
+          )
         && !_wl->sim_done) {
         if( !ATOM_CAS(_wl->sim_done, false, true) ) {
           assert( _wl->sim_done);
@@ -214,6 +216,7 @@ RC thread_t::run() {
 
     INC_STATS(_thd_id,thd_prof_thd1b,get_sys_clock() - thd_prof_start);
     thd_prof_start = get_sys_clock();
+    */
     /*
 		while(!work_queue.poll_next_query(get_thd_id())
                 && !abort_queue.poll_abort(get_thd_id())
@@ -229,8 +232,8 @@ RC thread_t::run() {
 
       if (warmup_finish && 
           ((get_sys_clock() - run_starttime >= DONE_TIMER) 
-           || (_wl->txn_cnt >= MAX_TXN_PER_PART
-           && txn_table.empty(get_node_id())))) {
+           /*|| (_wl->txn_cnt >= MAX_TXN_PER_PART
+           && txn_table.empty(get_node_id()))*/)) {
         break;
       }
     }
@@ -240,8 +243,8 @@ RC thread_t::run() {
 		// End conditions
     if((get_sys_clock() - run_starttime >= DONE_TIMER)
         ||(_wl->sim_done && _wl->sim_timeout)) { 
-          if( !ATOM_CAS(_wl->sim_done, false, true) )
-            assert( _wl->sim_done);
+      if( !ATOM_CAS(_wl->sim_done, false, true) )
+        assert( _wl->sim_done);
 			uint64_t currtime = get_sys_clock();
       if(stoptime == 0)
         stoptime = currtime;
@@ -278,7 +281,7 @@ RC thread_t::run() {
       work_queue.enqueue(tmp_query);
     }
 
-    //INC_STATS(_thd_id,thd_prof_thd1d,get_sys_clock() - thd_prof_start);
+    INC_STATS(_thd_id,thd_prof_thd1d,get_sys_clock() - thd_prof_start);
     //thd_prof_start = get_sys_clock();
     // Get next query from work queue
 		//m_query = work_queue.get_next_query(get_thd_id());
@@ -343,7 +346,7 @@ RC thread_t::run() {
 
     uint64_t thd_prof_end = get_sys_clock();
     INC_STATS(_thd_id,thd_prof_thd2,thd_prof_end - thd_prof_start);
-    if(IS_LOCAL(txn_id)) {
+    if(IS_LOCAL(txn_id) || txn_id == UINT64_MAX) {
       INC_STATS(_thd_id,thd_prof_thd2_loc,thd_prof_end - thd_prof_start);
     } else {
       INC_STATS(_thd_id,thd_prof_thd2_rem,thd_prof_end - thd_prof_start);

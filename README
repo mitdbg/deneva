@@ -1,3 +1,10 @@
+SETUP
+-----------------------------
+Dependencies:
+nanomsg (nanomsg.org)
+jemalloc (www.canonware.com/jemalloc)
+
+
 
 DBMS BENCHMARK
 ------------------------------
