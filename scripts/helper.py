@@ -212,6 +212,9 @@ stat_map = {
 'type13':[],
 'type14':[],
 'type15':[],
+
+'txn_table_cflt':[],
+'txn_table_cflt_size':[],
 }
 
 cnts = ["all_abort"]

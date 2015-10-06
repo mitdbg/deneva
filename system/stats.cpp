@@ -151,7 +151,9 @@ void Stats_thd::clear() {
 	rbk_abort_cnt = 0;
 	tot_run_time = 0;
 	run_time = 0;
-    finish_time = 0;
+  finish_time = 0;
+  access_cnt = 0;
+  write_cnt = 0;
 	time_clock_wait = 0;
 	time_clock_rwait = 0;
 	time_work = 0;
@@ -691,7 +693,9 @@ void Stats::print(bool prog) {
 	uint64_t total_rbk_abort_cnt = 0;
 	double total_tot_run_time = 0;
 	double total_run_time = 0;
-    double total_finish_time = 0;
+  double total_finish_time = 0;
+  double total_access_cnt = 0;
+  double total_write_cnt = 0;
 	double total_time_work = 0;
 	double total_time_man = 0;
 	double total_time_rqry = 0;
@@ -790,7 +794,9 @@ void Stats::print(bool prog) {
     if(!prog)
 		  total_tot_run_time += _stats[tid]->tot_run_time;
 		total_run_time += _stats[tid]->run_time;
-        total_finish_time += _stats[tid]->finish_time;
+    total_finish_time += _stats[tid]->finish_time;
+    total_access_cnt += _stats[tid]->access_cnt;
+    total_write_cnt += _stats[tid]->write_cnt;
 		total_time_work += _stats[tid]->time_work;
 		total_time_man += _stats[tid]->time_man;
 		total_time_rqry += _stats[tid]->time_rqry;
@@ -913,6 +919,8 @@ void Stats::print(bool prog) {
       ",latency=%f"
       ",run_time=%f"
       ",finish_time=%f"
+      ",access_cnt=%f"
+      ",write_cnt=%f"
       ",aq_full=%f"
 			",txn_table_cflt=%ld"
 			",txn_table_cflt_size=%ld"
@@ -993,7 +1001,9 @@ void Stats::print(bool prog) {
 			total_rbk_abort_cnt,
 			total_latency / BILLION / total_txn_cnt,
 			total_run_time / BILLION,
-            total_finish_time / BILLION,
+      total_finish_time / BILLION,
+      total_access_cnt / BILLION,
+      total_write_cnt / BILLION,
 			total_aq_full / BILLION,
       total_txn_table_cflt,
       total_txn_table_cflt_size,

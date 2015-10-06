@@ -12,7 +12,7 @@ fmt_title=["NODE_CNT","MPR","ZIPF_THETA","WRITE_PERC","CC_ALG","MAX_TXN_IN_FLIGH
 
 def test():
     fmt = fmt_ycsb
-    nnodes = [1,2,4]
+    nnodes = [1,2,4,8]
     nmpr=[100]
     nalgos=['NO_WAIT']
 #    nalgos=['NO_WAIT','WAIT_DIE']
@@ -23,15 +23,13 @@ def test():
     ncrthreads=[1]
     ncsthreads=[4]
     ntifs=[300,500,2500,5000]
-#    nzipf=[0.0]
     nzipf=[0.0]
-    nwr_perc=[0.0]
-#    nwr_perc=[0.0,1.0]
+    nwr_perc=[0.0,0.5,1.0]
     ntxn=[1000000]
 #    ntxn=[5000000]
     nbtime=[1000] # in ns
     nbsize=[4096]
-    nparts = [4]
+    nparts = [8]
 #    nmodes = ["NORMAL","NOCC","QRY","TWOPC","SIMPLE"]
     nmodes = ["NORMAL_MODE","NOCC_MODE","QRY_ONLY_MODE"]#,"SETUP_MODE","SIMPLE_MODE"]
 #    nmodes = ["QRY_ONLY_MODE"]
@@ -68,8 +66,45 @@ def tputvlat_setup(summary,summary_cl,nfmt,nexp,x_name,v_name):
         tput_v_lat(x_vals,v_vals,summary,summary_cl,cfg_fmt=fmt,cfg=e,xname=x_name,vname=v_name,title=title)
 
 
-def tput_setup(summary,summary_cl,nfmt,nexp,x_name,v_name):
+def tput_setup(summary,summary_cl,nfmt,nexp,x_name,v_name
+        ,extras={'PART_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT'}
+        ):
     from plot_helper import tput
+    x_vals = []
+    v_vals = []
+    exp = [list(e) for e in nexp]
+    fmt = list(nfmt)
+    print(x_name)
+    print(v_name)
+    for e in exp:
+        x_vals.append(e[fmt.index(x_name)])
+        del e[fmt.index(x_name)]
+    fmt.remove(x_name)
+    for e in exp:
+        v_vals.append(e[fmt.index(v_name)])
+        del e[fmt.index(v_name)]
+    fmt.remove(v_name)
+    for x in extras.keys():
+        for e in exp:
+            del e[fmt.index(x)]
+        fmt.remove(x)
+    x_vals = list(set(x_vals))
+    x_vals.sort()
+    v_vals = list(set(v_vals))
+    v_vals.sort()
+    exp.sort()
+    exp = list(k for k,_ in itertools.groupby(exp))
+    for e in exp:
+        title = "System Tput "
+        for t in fmt_title:
+            if t not in fmt: continue
+            title+="{} {}, ".format(t,e[fmt.index(t)])
+        tput(x_vals,v_vals,summary,summary_cl,cfg_fmt=fmt,cfg=e,xname=x_name,vname=v_name,title=title,extras=extras)
+
+def line_setup(summary,summary_cl,nfmt,nexp,x_name,v_name,key
+        ,extras={'PART_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT'}
+        ):
+    from plot_helper import line_general
     x_vals = []
     v_vals = []
     exp = [list(e) for e in nexp]
@@ -91,13 +126,15 @@ def tput_setup(summary,summary_cl,nfmt,nexp,x_name,v_name):
     exp.sort()
     exp = list(k for k,_ in itertools.groupby(exp))
     for e in exp:
-        title = "System Tput "
+        title = key 
         for t in fmt_title:
             if t not in fmt: continue
             title+="{} {}, ".format(t,e[fmt.index(t)])
-        tput(x_vals,v_vals,summary,summary_cl,cfg_fmt=fmt,cfg=e,xname=x_name,vname=v_name,title=title,extras={'PART_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT'})
+        line_general(x_vals,v_vals,summary,summary_cl,key,cfg_fmt=fmt,cfg=e,xname=x_name,vname=v_name,title=title,extras=extras)
         
-def stacks_setup(summary,nfmt,nexp,x_name,keys,norm=False):
+def stacks_setup(summary,nfmt,nexp,x_name,keys,norm=False
+        ,extras={'PART_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT'}
+        ):
     from plot_helper import stacks_general
     x_vals = []
     exp = [list(e) for e in nexp]
@@ -116,8 +153,7 @@ def stacks_setup(summary,nfmt,nexp,x_name,keys,norm=False):
         for t in fmt_title:
             if t not in fmt: continue
             title+="{} {}, ".format(t,e[fmt.index(t)])
-        stacks_general(x_vals,summary,keys,xname=x_name,title=title,cfg_fmt=fmt,cfg=e,
-                extras={'PART_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT'})
+        stacks_general(x_vals,summary,keys,xname=x_name,title=title,cfg_fmt=fmt,cfg=e,extras=extras)
 
 
 def ft_mode_plot(summary,summary_client):
@@ -137,6 +173,13 @@ def test_plot(summary,summary_client):
     stacks_setup(summary,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",keys=['thd1','thd2','thd3'])
     stacks_setup(summary,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",keys=['txn_table_add','txn_table_get','txn_table0a','txn_table1a','txn_table0b','txn_table1b','txn_table2a','txn_table2'])
     stacks_setup(summary,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",keys=['thd1a','thd1b','thd1c','thd1d'],norm=True)
+    stacks_setup(summary,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",keys=['rtxn1a','rtxn1b','rtxn2','rtxn3','rtxn4'],norm=True)
+    line_setup(summary,summary_client,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",v_name="MODE",key='mbuf_send_time')
+    line_setup(summary,summary_client,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",v_name="MODE",key='avg_msg_batch')
+    line_setup(summary,summary_client,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",v_name="MODE",key='txn_cnt')
+    line_setup(summary,summary_client,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",v_name="MODE",key='time_tport_send')
+    line_setup(summary,summary_client,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",v_name="MODE",key='time_tport_rcv')
+    line_setup(summary,summary_client,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",v_name="MODE",key='time_tport_rcv')
 
 def network_sweep():
     fmt = [fmt_ycsb[0] + ["NETWORK_DELAY"]]
@@ -279,9 +322,10 @@ configs = {
     "ZIPF_THETA":0.6,
     "PART_PER_TXN": 1,
     "SYNTH_TABLE_SIZE":"2097152",
-    "LOAD_TXN_FILE":"true",
+    "LOAD_TXN_FILE":"false",
     "DEBUG_DISTR":"false",
     "MODE":"NORMAL",
+    "SHMEM_ENV":"false",
 }
 
 config_names = fmt_ycsb[0]

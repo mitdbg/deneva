@@ -132,7 +132,66 @@ def tput_v_lat(xval,vval,summary,summary_cl,
     bbox = [0.7,0.9]
     print("Created plot {}".format(name))
     draw_line2(name,tpt,_tpt,ylab='Latency (s/txn)',xlab='Throughput (txn/sec)',title=_title,bbox=bbox,ncol=2) 
-    
+
+def line_general(xval,vval,summary,summary_cl,
+        key,
+        cfg_fmt=[],
+        cfg=[],
+        xname="MPR",
+        vname="CC_ALG",
+        title="",
+        extras={}
+        ):
+    global plot_cnt
+    data = {}
+    name = 'extra_plot{}'.format(plot_cnt)
+    plot_cnt += 1
+    _title = title
+
+    if xname == "ABORT_PENALTY":
+        _xval = [(float(x.replace("UL","")))/1000000000 for x in xval]
+        sort_idxs = sorted(range(len(_xval)),key=lambda x:_xval[x])
+        xval = [xval[i] for i in sort_idxs]
+        _xval = sorted(_xval)
+        _xlab = xname + " (Sec)"
+    else:
+        _xval = xval
+        _xlab = xname
+    for v in vval:
+        if vname == "NETWORK_DELAY":
+            _v = (float(v.replace("UL","")))/1000000
+        else:
+            _v = v
+        data[_v] = [0] * len(xval)
+
+        for x,xi in zip(xval,range(len(xval))):
+            my_cfg_fmt = cfg_fmt + [xname] + [vname]
+            my_cfg = cfg + [x] + [v]
+            for e in extras.keys():
+                if e in my_cfg_fmt:
+                    my_cfg[my_cfg_fmt.index(e)] = my_cfg[my_cfg_fmt.index(extras[e])]
+                else:
+                    my_cfg_fmt = my_cfg_fmt + [e]
+                    my_cfg = my_cfg + [my_cfg[my_cfg_fmt.index(extras[e])]]
+
+            cfgs = get_cfgs(my_cfg_fmt, my_cfg)
+            cfgs = get_outfile_name(cfgs,my_cfg_fmt)
+            if cfgs not in summary.keys(): 
+                print("Not in summary: {}".format(cfgs))
+                continue 
+            try:
+                tot = avg(summary[cfgs][key])
+            except KeyError:
+                print("KeyError: {} {} {} -- {}".format(v,x,cfg,cfgs))
+                data[_v][xi] = 0
+                continue
+            data[_v][xi] = tot
+
+    bbox = [0.7,0.9]
+    print("Created plot {}".format(name))
+    draw_line(name,data,_xval,ylab='',xlab=_xlab,title=_title,bbox=bbox,ncol=2) 
+
+   
 def tput(xval,vval,summary,summary_cl,
         cfg_fmt=[],
         cfg=[],
@@ -171,7 +230,11 @@ def tput(xval,vval,summary,summary_cl,
             my_cfg_fmt = cfg_fmt + [xname] + [vname]
             my_cfg = cfg + [x] + [v]
             for e in extras.keys():
-                my_cfg[my_cfg_fmt.index(e)] = my_cfg[my_cfg_fmt.index(extras[e])]
+                if e in my_cfg_fmt:
+                    my_cfg[my_cfg_fmt.index(e)] = my_cfg[my_cfg_fmt.index(extras[e])]
+                else:
+                    my_cfg_fmt = my_cfg_fmt + [e]
+                    my_cfg = my_cfg + [my_cfg[my_cfg_fmt.index(extras[e])]]
 #            n_cnt = my_cfg[my_cfg_fmt.index("NODE_CNT")]
 #            n_clt = my_cfg[my_cfg_fmt.index("CLIENT_NODE_CNT")]
 #            my_cfg[my_cfg_fmt.index("CLIENT_NODE_CNT")] = int(math.ceil(n_cnt)) if n_cnt > 1 else 1
@@ -523,7 +586,11 @@ def stacks_general(xval,summary,
         my_cfg_fmt = cfg_fmt + [xname]
         my_cfg = cfg + [x]
         for e in extras.keys():
-            my_cfg[my_cfg_fmt.index(e)] = my_cfg[my_cfg_fmt.index(extras[e])]
+            if e in my_cfg_fmt:
+                my_cfg[my_cfg_fmt.index(e)] = my_cfg[my_cfg_fmt.index(extras[e])]
+            else:
+                my_cfg_fmt = my_cfg_fmt + [e]
+                my_cfg = my_cfg + [my_cfg[my_cfg_fmt.index(extras[e])]]
 
         cfgs = get_cfgs(my_cfg_fmt, my_cfg)
         cfgs = get_outfile_name(cfgs,my_cfg_fmt)

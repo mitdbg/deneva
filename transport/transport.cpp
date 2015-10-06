@@ -81,12 +81,17 @@ void Transport::init(uint64_t node_id) {
 	for(uint64_t i=0;i<_node_cnt;i++) {
 		ifaddr[i] = new char[MAX_IFADDR_LEN];
 	}
-	char * cpath = getenv("SCHEMA_PATH");
 	string path;
+#if SHMEM_ENV
+  path = "/dev/shm/";
+#else
+	char * cpath
+  cpath = getenv("SCHEMA_PATH");
 	if(cpath == NULL)
 		path = "./";
 	else
 		path = string(cpath);
+#endif
 	path += "ifconfig.txt";
 	cout << "reading ifconfig file: " << path << endl;
 	read_ifconfig(path.c_str());

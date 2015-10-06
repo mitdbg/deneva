@@ -35,7 +35,9 @@ public:
 	uint64_t rbk_abort_cnt;
 	double tot_run_time;
 	double run_time;
-    double finish_time;
+  double finish_time;
+  uint64_t access_cnt;
+  uint64_t write_cnt;
   double mbuf_send_time;
   double mq_full;
   double time_clock_rwait;

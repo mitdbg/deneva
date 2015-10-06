@@ -107,6 +107,8 @@ void txn_man::clear() {
 }
 
 void txn_man::update_stats() {
+  INC_STATS(get_thd_id(), write_cnt, wr_cnt);
+  INC_STATS(get_thd_id(), access_cnt, row_cnt);
   INC_STATS(get_thd_id(), cc_wait_cnt, cc_wait_cnt);
   INC_STATS(get_thd_id(), cc_wait_time, cc_wait_time);
   INC_STATS(get_thd_id(), cc_hold_time, cc_hold_time);

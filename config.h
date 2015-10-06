@@ -5,13 +5,13 @@
 /***********************************************/
 // Simulation + Hardware
 /***********************************************/
-#define NODE_CNT 4
+#define NODE_CNT 8
 #define THREAD_CNT 2
 #define REM_THREAD_CNT 1
 #define SEND_THREAD_CNT 1
 // PART_CNT should be at least NODE_CNT
-#define PART_CNT 4
-#define CLIENT_NODE_CNT 4
+#define PART_CNT 8
+#define CLIENT_NODE_CNT 8
 #define CLIENT_THREAD_CNT 2
 #define CLIENT_REM_THREAD_CNT 1
 #define CLIENT_SEND_THREAD_CNT 4
@@ -61,9 +61,9 @@
 /***********************************************/
 // Message Passing
 /***********************************************/
-#define TPORT_TYPE "ipc"
-#define TPORT_TYPE_IPC true
-#define TPORT_PORT "_.ipc"
+#define TPORT_TYPE "tcp"
+#define TPORT_TYPE_IPC false
+#define TPORT_PORT 7000
 
 #define MAX_TPORT_NAME 128
 #define MSG_SIZE 128 // in bytes
@@ -152,15 +152,15 @@
 #define INIT_PARALLELISM 4
 #define SYNTH_TABLE_SIZE 2097152
 #define ZIPF_THETA 0.0
-#define READ_PERC 1.0
-#define WRITE_PERC 0.0
+#define READ_PERC 0.0
+#define WRITE_PERC 1.0
 #define SCAN_PERC           0
 #define SCAN_LEN          20
-#define PART_PER_TXN 4
+#define PART_PER_TXN 8
 #define PERC_MULTI_PART     MPR 
 #define REQ_PER_QUERY 10
 #define FIELD_PER_TUPLE       10
-#define LOAD_TXN_FILE true
+#define LOAD_TXN_FILE false
 #define CREATE_TXN_FILE false
 // ==== [TPCC] ====
 // For large warehouse count, the tables do not fit in memory
@@ -175,7 +175,7 @@
 // are not modeled.
 #define TPCC_ACCESS_ALL       false 
 #define WH_UPDATE         true
-#define NUM_WH 4
+#define NUM_WH 8
 // % of transactions that access multiple partitions
 #define MPR 100
 #define MPR_NEWORDER      20 // In %
@@ -292,6 +292,7 @@ extern TestCases          g_test_case;
 #define DONE_TIMER 3 * 60 * BILLION // 3 minutes
 
 #define SEED 0
+#define SHMEM_ENV true
 
 #endif
 

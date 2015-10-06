@@ -145,6 +145,9 @@ Client_query_thd::init_txns_file(const char * txn_file) {
   uint64_t request_cnt;
 	request_cnt = MAX_TXN_PER_PART + 4;
 	ifstream fin(txn_file);
+	myrand * mrand = (myrand *) mem_allocator.alloc(sizeof(myrand), 0);
+	mrand->init(get_sys_clock());
+  assert(g_write_perc + g_read_perc == 1.0);
   while (getline(fin, line) && qid < request_cnt) {
 
 #if WORKLOAD == YCSB	
@@ -184,6 +187,14 @@ Client_query_thd::init_txns_file(const char * txn_file) {
           queries[qid].requests[idx].acctype = RD;
         else if(g_write_perc == 1.0)
           queries[qid].requests[idx].acctype = WR;
+        else {
+		      double r = (double)(mrand->next() % 10000) / 10000;		
+          if(r < g_read_perc) {
+            queries[qid].requests[idx].acctype = RD;
+          } else {
+            queries[qid].requests[idx].acctype = WR;
+          }
+        }
 
       }
       num = (num + 1) % 2;
@@ -207,7 +218,7 @@ Client_query_thd::done(){
 base_client_query * 
 Client_query_thd::get_next_query(uint64_t tid) {
 	if (q_idx >= MAX_TXN_PER_PART) {
-    if(FIN_BY_TIME) {
+    if(FIN_BY_TIME && !CREATE_TXN_FILE) {
       // Restart transaction cycle
       //ATOM_CAS(q_idx,MAX_TXN_PER_PART,0);
       // FIXME: race condition important?

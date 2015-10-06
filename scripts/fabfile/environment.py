@@ -17,6 +17,8 @@ def set_env():
     env.local_path = os.getcwd()
     env.result_dir = os.path.join(env.local_path,"results/")
     env.same_node = False
+    env.overlap = False
+    env.shmem = True
 
     # These control the Fabric output
     output.status = False
