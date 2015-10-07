@@ -142,6 +142,8 @@ RC row_t::get_lock(access_t type, txn_man * txn) {
 RC row_t::get_row(access_t type, txn_man * txn, row_t *& row) {
 	RC rc = RCOK;
 #if MODE==NOCC_MODE || MODE==QRY_ONLY_MODE 
+  txn->rc = rc;
+  row = this;
   return rc;
 #endif
   uint64_t thd_prof_start = get_sys_clock();
