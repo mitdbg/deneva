@@ -368,12 +368,10 @@ RC thread_t::run() {
             INC_STATS(0,spec_commit_cnt,1);
           }
 #endif
-          /*
-#if MODE==QRY
+#if MODE==QRY_ONLY_MODE
           // Release locks
           rc = m_txn->finish(m_query->rc,m_query->part_to_access,1);
 #endif
-*/
 					assert(m_txn->get_rsp_cnt() == 0);
           //assert(MODE==TWOPC || MODE==QRY || m_query->part_num == 1 || ??);
           assert(MODE!=NORMAL_MODE || (m_query->part_num == 1 && (m_query->rtype == RTXN || m_query->rtype == RPASS)) || (m_query->part_num > 1 && m_query->rtype == RACK));
@@ -421,12 +419,10 @@ RC thread_t::run() {
 					assert(m_txn != NULL);
 					assert(m_query->txn_id != UINT64_MAX);
 
-          /*
-#if MODE==QRY
+#if MODE==QRY_ONLY_MODE
           // Release locks
           rc = m_txn->finish(m_query->rc,m_query->part_to_access,1);
 #endif
-*/
 					if(m_query->part_num == 1 && !m_txn->spec)
 						rc = m_txn->finish(rc,m_query->part_to_access,m_query->part_num);
 #if WORKLOAD == TPCC
@@ -869,13 +865,11 @@ RC thread_t::process_rqry(base_query *& m_query,txn_man *& m_txn) {
 
         // Send response
 				if(rc != WAIT) {
-          /*
-#if MODE==QRY
+#if MODE==QRY_ONLY_MODE
           // Release locks
 					m_txn->state = DONE;
 					m_txn->rem_fin_txn(m_query);
 #endif
-*/
           msg_queue.enqueue(m_query,RQRY_RSP,m_query->return_id);
         }
         //qry_pool.put(m_query);

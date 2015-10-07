@@ -35,7 +35,7 @@
 #define TIME_ENABLE         true //STATS_ENABLE
 
 #define FIN_BY_TIME true
-#define MAX_TXN_IN_FLIGHT 100
+#define MAX_TXN_IN_FLIGHT 10
 
 /***********************************************/
 // Memory System
@@ -63,7 +63,7 @@
 /***********************************************/
 #define TPORT_TYPE "ipc"
 #define TPORT_TYPE_IPC true
-#define TPORT_PORT ".ipc"
+#define TPORT_PORT "_.ipc"
 
 #define MAX_TPORT_NAME 128
 #define MSG_SIZE 128 // in bytes
@@ -150,7 +150,7 @@
 #define GEN_BY_MPR true
 // ==== [YCSB] ====
 #define INIT_PARALLELISM 4
-#define SYNTH_TABLE_SIZE 1024 //2097152
+#define SYNTH_TABLE_SIZE 1024//2097152
 #define ZIPF_THETA 0.0
 #define READ_PERC 0.0
 #define WRITE_PERC 1.0
@@ -175,7 +175,7 @@
 // are not modeled.
 #define TPCC_ACCESS_ALL       false 
 #define WH_UPDATE         true
-#define NUM_WH 2
+#define NUM_WH 8
 // % of transactions that access multiple partitions
 #define MPR 100
 #define MPR_NEWORDER      20 // In %
@@ -249,7 +249,7 @@ extern TestCases          g_test_case;
 // SIMPLE Immediately send OK back to client
 // NOCC Don't do CC
 // NORMAL normal operation
-#define MODE NORMAL_MODE
+#define MODE QRY_ONLY_MODE
 
 
 /***********************************************/
@@ -290,10 +290,10 @@ extern TestCases          g_test_case;
 #define BILLION 1000000000UL // in ns => 1 second
 #define STAT_ARR_SIZE 1024
 #define PROG_TIMER 10 * BILLION // in s
-#define DONE_TIMER 3 * 60 * BILLION // 3 minutes
+#define DONE_TIMER 2 * 60 * BILLION // 3 minutes
 
 #define SEED 0
-#define SHMEM_ENV false
+#define SHMEM_ENV true
 
 #endif
 

@@ -185,8 +185,10 @@ int main(int argc, char* argv[])
 		((TestWorkload *)m_wl)->summarize();
 	}
   // Free stuff
+  /*
   msg_pool.free_all();
   qry_pool.free_all();
+  */
 	return 0;
 }
 

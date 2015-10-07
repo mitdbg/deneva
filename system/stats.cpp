@@ -55,17 +55,13 @@ void StatsArr::resize() {
 }
 
 void StatsArr::insert(uint64_t item) {
+  /*
   if(type == ArrIncr) {
     if(cnt == size)
       resize();
     arr[cnt++] = item;
   }
   else if(type == ArrInsert) {
-    /*
-    while(item >= size) {
-      resize();
-    }
-    */
     if(item >= size) {
       arr[size-1]++;
     }
@@ -74,6 +70,7 @@ void StatsArr::insert(uint64_t item) {
     }
     cnt++;
   }
+  */
 }
 
 void StatsArr::print(FILE * f) {
@@ -100,7 +97,6 @@ void StatsArr::print(FILE * f,uint64_t min, uint64_t max) {
 
 
 uint64_t StatsArr::get_idx(uint64_t idx) {
-  assert(idx < cnt);
   return arr[idx];
 }
 
@@ -113,7 +109,9 @@ uint64_t StatsArr::get_avg() {
   for(uint64_t i = 0;i < cnt;i++) {
     sum+=arr[i];
   }
-  return sum / cnt;
+  if(cnt > 0)
+    return sum / cnt;
+  return 0;
 }
 
 

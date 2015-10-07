@@ -471,7 +471,7 @@ RC txn_man::finish_local(RC rc, uint64_t * parts, uint64_t part_cnt) {
 }
 
 RC txn_man::finish(RC rc, uint64_t * parts, uint64_t part_cnt) {
-#if MODE == QRY_ONLY_MODE || MODE == SETUP_MODE
+#if MODE == SETUP_MODE
   return RCOK;
 #endif
   assert(h_thd->_node_id < g_node_cnt);

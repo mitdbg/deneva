@@ -61,11 +61,6 @@ int main(int argc, char* argv[])
 	int64_t starttime;
 	int64_t endtime;
   starttime = get_server_clock();
-  printf("SIZES:\n");
-  printf("row_t %ld\n",sizeof(row_t));
-  printf("ycsb_query %ld\n",sizeof(ycsb_query));
-  printf("base_query %ld\n",sizeof(base_query));
-  printf("txn_man %ld\n",sizeof(txn_man));
 	// per-partition malloc
   printf("Initializing memory allocator... ");
   fflush(stdout);
@@ -244,12 +239,14 @@ int main(int argc, char* argv[])
 		((TestWorkload *)m_wl)->summarize();
 	}
   // Free things
+  /*
   txn_table.delete_all();
   txn_pool.free_all();
   access_pool.free_all();
   txn_table_pool.free_all();
   msg_pool.free_all();
   qry_pool.free_all();
+  */
 	return 0;
 }
 
