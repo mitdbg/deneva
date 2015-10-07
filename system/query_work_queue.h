@@ -77,7 +77,9 @@ public:
   void finish(uint64_t time); 
   void abort_finish(uint64_t time); 
   void enqueue(base_query * qry); 
-  bool dequeue(base_query *& qry);
+  bool dequeue(uint64_t thd_id, base_query *& qry);
+  void set_active(uint64_t thd_id, uint64_t txn_id);
+  void delete_active(uint64_t thd_id, uint64_t txn_id);
   uint64_t get_wq_cnt();
   void add_query(int tid, base_query * qry);
   void add_abort_query(int tid, base_query * qry);
@@ -98,6 +100,9 @@ private:
   int q_len;
   uint64_t cnt;
   uint64_t abrt_cnt;
+  uint64_t active_txns[THREAD_CNT];
+  pthread_mutex_t mtx;
+  pthread_cond_t cond;
 
 };
 

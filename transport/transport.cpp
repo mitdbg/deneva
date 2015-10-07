@@ -100,9 +100,11 @@ void Transport::init(uint64_t node_id) {
 	int rc = 0;
 
 	int timeo = 1000; // timeout in ms
+	//int stimeo = 10000; // timeout in ms
   int opt = 0;
 	for(uint64_t i=0;i<_sock_cnt;i++) {
 		s[i].sock.setsockopt(NN_SOL_SOCKET,NN_RCVTIMEO,&timeo,sizeof(timeo));
+		//s[i].sock.setsockopt(NN_SOL_SOCKET,NN_SNDTIMEO,&stimeo,sizeof(stimeo));
     // NN_TCP_NODELAY doesn't cause TCP_NODELAY to be set -- nanomsg issue #118
 		s[i].sock.setsockopt(NN_SOL_SOCKET,NN_TCP_NODELAY,&opt,sizeof(opt));
 	}
@@ -218,21 +220,22 @@ void Transport::send_msg(uint64_t sid, uint64_t dest_id, void * sbuf,int size) {
 
 	void * buf = nn_allocmsg(size,0);
 	memcpy(buf,sbuf,size);
+  int rc = -1;
 
-	int rc= s[idx].sock.send(&buf,NN_MSG,0);
-  assert(rc == size);
+  rc= s[idx].sock.send(&buf,NN_MSG,0);
+  //assert(rc == size);
 	//int rc= s[idx].sock.send(&sbuf,NN_MSG,0);
   //nn_freemsg(sbuf);
 
 	// Check for a send error
-	if(rc < 0) {
+	if(rc < 0 || rc != size) {
 		printf("send Error: %d %s\n",errno,strerror(errno));
-		assert(false);
+		//assert(false);
 	}
 
   INC_STATS(_thd_id,time_tport_send,get_sys_clock() - starttime);
 	INC_STATS(_thd_id,msg_sent_cnt,1);
-	INC_STATS(_thd_id,msg_bytes,g_msg_size);
+	INC_STATS(_thd_id,msg_bytes,size);
 }
 
 void Transport::send_msg(uint64_t dest_id, void ** data, int * sizes, int num) {

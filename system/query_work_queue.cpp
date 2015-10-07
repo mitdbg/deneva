@@ -16,6 +16,11 @@ void QWorkQueue::init() {
   for(int i = 0;i<q_len;i++) {
     queue[i].init(hash); 
   }
+  for(uint64_t i = 0; i < g_thread_cnt; i++) {
+    active_txns[i] = UINT64_MAX;
+  }
+  pthread_mutex_init(&mtx,NULL);
+  pthread_cond_init(&cond,NULL);
   cnt = 0;
   abrt_cnt = 0;
   //wq = new ConcurrentQueue<base_query*,moodycamel::ConcurrentQueueDefaultTraits>;
@@ -63,10 +68,37 @@ void QWorkQueue::enqueue(base_query * qry) {
 //TODO: do we need to has qry id here?
 // If we do, maybe add in check as an atomic var in base_query
 // Current hash implementation requires an expensive mutex
-bool QWorkQueue::dequeue(base_query *& qry) {
-  return wq.try_dequeue(qry);
+bool QWorkQueue::dequeue(uint64_t thd_id, base_query *& qry) {
+  bool valid = wq.try_dequeue(qry);
+  if(!ISCLIENT && valid && qry->txn_id != UINT64_MAX) {
+    set_active(thd_id, qry->txn_id);
+  }
+  return valid;
 }
 
+void QWorkQueue::set_active(uint64_t thd_id, uint64_t txn_id) {
+  pthread_mutex_lock(&mtx);
+  while(true) {
+    uint64_t i = 0;
+    for(i = 0; i < g_thread_cnt; i++) {
+      if(active_txns[i] == txn_id)
+        break;
+    }
+    if(i==g_thread_cnt)
+      break;
+    pthread_cond_wait(&cond,&mtx);
+  }
+  active_txns[thd_id] = txn_id;
+  pthread_mutex_unlock(&mtx);
+}
+
+void QWorkQueue::delete_active(uint64_t thd_id, uint64_t txn_id) {
+  pthread_mutex_lock(&mtx);
+  assert(active_txns[thd_id] == txn_id);
+  active_txns[thd_id] = UINT64_MAX;
+  pthread_cond_broadcast(&cond);
+  pthread_mutex_unlock(&mtx);
+}
 // Note: this is an **approximate** count
 uint64_t QWorkQueue::get_wq_cnt() {
   return (uint64_t)wq.size_approx();
@@ -96,8 +128,11 @@ void QWorkQueue::update_hash(int tid, uint64_t id) {
 }
 
 void QWorkQueue::done(int tid, uint64_t id) {
+  delete_active(tid,id);
+  /*
   int idx = get_idx(tid);
     return queue[idx].done(id);
+    */
 }
 bool QWorkQueue::poll_abort(int tid) {
   int idx = get_idx(tid);

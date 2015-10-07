@@ -41,7 +41,7 @@ RC Client_thread_t::run_remote() {
   while(!_wl->sim_init_done) {
     tport_man.recv_msg();
     //while((m_query = work_queue.get_next_query(get_thd_id())) != NULL) {
-    while(work_queue.dequeue(m_query)) { 
+    while(work_queue.dequeue(0,m_query)) { 
       assert(m_query->rtype == INIT_DONE);
       DEBUG("Received INIT_DONE from node %ld -- %ld\n",m_query->return_id,_wl->rsp_cnt);
       DEBUG_FLUSH();
@@ -69,7 +69,7 @@ RC Client_thread_t::run_remote() {
     }
 		tport_man.recv_msg();
     //while((m_query = work_queue.get_next_query(get_thd_id())) != NULL) {
-    while(work_queue.dequeue(m_query)) { 
+    while(work_queue.dequeue(0,m_query)) { 
 			rq_time = get_sys_clock();
 			assert(m_query->rtype == CL_RSP || m_query->rtype == EXP_DONE);
 			assert(m_query->dest_id == g_node_id);
@@ -273,6 +273,7 @@ RC Client_thread_t::run() {
 
   if( _thd_id == 0) {
     // Send EXP_DONE to all nodes
+    /*
     uint64_t nnodes = g_node_cnt + g_client_node_cnt;
 #if CC_ALG == CALVIN
     nnodes++;
@@ -285,6 +286,7 @@ RC Client_thread_t::run() {
         msg_queue.enqueue(NULL,EXP_DONE,i);
       }
 		}
+    */
     if( !ATOM_CAS(_wl->sim_done, false, true) ) {
       assert( _wl->sim_done);
     } else {

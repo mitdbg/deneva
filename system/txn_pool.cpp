@@ -129,6 +129,16 @@ void QryPool::get(base_query *& item) {
 
 void QryPool::put(base_query * item) {
   assert(item);
+  /*
+  ycsb_query * qry = (ycsb_query *) item;
+  mem_allocator.free(qry->requests,sizeof(ycsb_query)*REQ_PER_QUERY);
+  mem_allocator.free(qry->part_to_access,sizeof(uint64_t)*PART_PER_TXN);
+  printf("freeing %lx\n",(uint64_t)qry);
+  fflush(stdout);
+  assert(qry);
+  mem_allocator.free(qry,sizeof(ycsb_query));
+  */
+
   pool.enqueue(item);
 }
 

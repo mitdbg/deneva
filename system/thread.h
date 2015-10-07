@@ -32,7 +32,7 @@ public:
 
   RC process_rfin(base_query *& m_query,txn_man *& m_txn);
   RC process_rack(base_query *& m_query,txn_man *& m_txn);
-  RC process_rqry_rsp(base_query *& m_query,txn_man *& m_txn);
+  RC process_rqry_rsp(uint64_t tid, base_query *& m_query,txn_man *& m_txn);
   RC process_rqry(base_query *& m_query,txn_man *& m_txn);
   RC process_rinit(base_query *& m_query,txn_man *& m_txn);
   RC process_rprepare(base_query *& m_query,txn_man *& m_txn);

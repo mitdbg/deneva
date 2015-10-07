@@ -79,6 +79,7 @@ void TxnTable::add_txn(uint64_t node_id, txn_man * txn, base_query * qry) {
   uint64_t txn_id = txn->get_txn_id();
   assert(txn_id == qry->txn_id);
   txn_man * next_txn = NULL;
+  assert(txn->get_txn_id() == qry->txn_id);
 
   MODIFY_START(txn_id % pool_size);
 
@@ -116,7 +117,8 @@ void TxnTable::add_txn(uint64_t node_id, txn_man * txn, base_query * qry) {
 void TxnTable::get_txn(uint64_t node_id, uint64_t txn_id,txn_man *& txn,base_query *& qry){
 
   uint64_t thd_prof_start = get_sys_clock();
-  ACCESS_START(txn_id % pool_size);
+  //ACCESS_START(txn_id % pool_size);
+  MODIFY_START(txn_id % pool_size);
 
   txn_node_t t_node = pool[txn_id % pool_size].head;
 
@@ -124,6 +126,7 @@ void TxnTable::get_txn(uint64_t node_id, uint64_t txn_id,txn_man *& txn,base_que
     if (t_node->txn->get_txn_id() == txn_id) {
       txn = t_node->txn;
       qry = t_node->qry;
+      assert(txn->get_txn_id() == qry->txn_id);
       break;
     }
     t_node = t_node->next;
@@ -133,7 +136,8 @@ void TxnTable::get_txn(uint64_t node_id, uint64_t txn_id,txn_man *& txn,base_que
     qry = NULL;
   }
 
-  ACCESS_END(txn_id % pool_size);
+  //ACCESS_END(txn_id % pool_size);
+  MODIFY_END(txn_id % pool_size);
   INC_STATS(0,thd_prof_txn_table_get,get_sys_clock() - thd_prof_start);
 
 }
@@ -161,7 +165,8 @@ txn_man * TxnTable::get_txn(uint64_t node_id, uint64_t txn_id){
 
 void TxnTable::restart_txn(uint64_t txn_id){
 
-  ACCESS_START(txn_id % pool_size);
+  //ACCESS_START(txn_id % pool_size);
+  MODIFY_START(txn_id % pool_size);
 
   txn_node_t t_node = pool[txn_id % pool_size].head;
 
@@ -183,7 +188,8 @@ void TxnTable::restart_txn(uint64_t txn_id){
     t_node = t_node->next;
   }
 
-  ACCESS_END(txn_id % pool_size);
+  MODIFY_END(txn_id % pool_size);
+  //ACCESS_END(txn_id % pool_size);
 
 }
 

@@ -32,9 +32,9 @@ void Remote_query::unpack(void * d, uint64_t len) {
     base_query * query;
 	char * data = (char *) d;
 	uint64_t ptr = 0;
-  uint32_t dest_id;
-  uint32_t return_id;
-  uint32_t txn_cnt;
+  uint32_t dest_id = UINT32_MAX;
+  uint32_t return_id = UINT32_MAX;
+  uint32_t txn_cnt = 0;
   uint64_t starttime = get_sys_clock();
   assert(len > sizeof(uint32_t) * 3);
 
@@ -45,15 +45,6 @@ void Remote_query::unpack(void * d, uint64_t len) {
   DEBUG_FLUSH();
 
   while(txn_cnt > 0) { 
-        /*
-#if WORKLOAD == TPCC
-	    query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), 0);
-	      query = new tpcc_query();
-#elif WORKLOAD == YCSB
-	    query = (ycsb_query *) mem_allocator.alloc(sizeof(ycsb_query), 0);
-        query = new ycsb_query();
-#endif
-        */
     qry_pool.get(query);
     assert(query);
 

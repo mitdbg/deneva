@@ -12,8 +12,8 @@ fmt_title=["NODE_CNT","MPR","ZIPF_THETA","WRITE_PERC","CC_ALG","MAX_TXN_IN_FLIGH
 
 def test():
     fmt = fmt_ycsb
-#    nnodes = [1]
-    nnodes = [1,2,4,8]
+    nnodes = [1,2,4]
+#    nnodes = [2]#,4,8]
     nmpr=[100]
     nalgos=['NO_WAIT']
 #    nalgos=['NO_WAIT','WAIT_DIE']
@@ -24,7 +24,7 @@ def test():
     ncrthreads=[1]
     ncsthreads=[4]
 #    ntifs=[2500]
-    ntifs=[300,500,2500,5000]
+    ntifs=[300]#,500,2500,5000]
     nzipf=[0.0]
     nwr_perc=[0.0]
     ntxn=[1000000]
@@ -33,7 +33,7 @@ def test():
     nbsize=[4096]
     nparts = [8]
     nmodes = ["NORMAL_MODE","NOCC_MODE","QRY_ONLY_MODE"]#,"SETUP_MODE","SIMPLE_MODE"]
-#    nmodes = ["QRY_ONLY_MODE"]
+#    nmodes = ["NOCC_MODE"]
     exp = [[n,n,txn,'YCSB',cc,m,ct,crt,cst,t,rt,st,tif,z,1.0-wp,wp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n,str(mt) + '*1000UL',bsize,mode] for n,ct,crt,cst,t,rt,st,tif,z,wp,m,cc,p,txn,mt,bsize,mode in itertools.product(nnodes,ncthreads,ncrthreads,ncsthreads,nthreads,nrthreads,nsthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts,ntxn,nbtime,nbsize,nmodes)]
     return fmt[0],exp
 
@@ -316,7 +316,7 @@ configs = {
     "NUM_WH": 2,
     "MAX_TXN_IN_FLIGHT": 1,
     "NETWORK_DELAY": '0UL',
-    "DONE_TIMER": "1 * 60 * BILLION // 3 minutes",
+    "DONE_TIMER": "1 * 30 * BILLION // 3 minutes",
     "PROG_TIMER" : "10 * BILLION // in s",
     "NETWORK_TEST" : "false",
     "ABORT_PENALTY": "1 * 1000000UL   // in ns.",
