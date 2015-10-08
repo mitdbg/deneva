@@ -276,7 +276,7 @@ def tput(xval,vval,summary,summary_cl,
 
     pp = pprint.PrettyPrinter()
     pp.pprint(tpt)
-    bbox = [0.7,0.3]
+    bbox = [0.8,0.35]
 #bbox = [0.7,0.9]
     print("Created plot {}".format(name))
     draw_line(name,tpt,_xval,ylab='Throughput (Txn/sec)',xlab=_xlab,title=_title,bbox=bbox,ncol=2) 
@@ -615,7 +615,17 @@ def stacks_general(xval,summary,
             total = 1
         if total > _ymax:
             _ymax = total
+    for k in key_names:
+        ki = key_names.index(k)
+#        pp.pprint(key_names)
+#        pp.pprint(data)
+#        print("{}:{}".format( k, ki))
+        if sum(data[ki]) == 0:
+            del(data[ki])
+            key_names.remove(k)
 
+
+    pp.pprint(key_names)
     pp.pprint(data)
     draw_stack(data,xval,key_names,figname=name,title=_title,ymax=_ymax)
     print("Created plot {}".format(name))
