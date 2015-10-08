@@ -273,6 +273,7 @@ def deploy(schema_path,nids):
                     nn = nid.next();
                     if env.shmem:
                         cmd += "(/dev/shm/rundb -nid{} >> /dev/shm/results{}.out 2>&1 &);".format(nn,nn)  
+#                        cmd += "(/dev/shm/rundb -nid{} >> /dev/shm/results{}.out 2>&1 &);".format(nn,nn)  
                     else:
                         cmd += "(./rundb -nid{} >> results{}.out 2>&1 &);".format(nn,nn)  
             for r in env.roledefs["clients"]:

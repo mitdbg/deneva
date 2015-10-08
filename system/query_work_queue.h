@@ -78,7 +78,7 @@ public:
   void abort_finish(uint64_t time); 
   void enqueue(base_query * qry); 
   bool dequeue(uint64_t thd_id, base_query *& qry);
-  void set_active(uint64_t thd_id, uint64_t txn_id);
+  bool set_active(uint64_t thd_id, uint64_t txn_id);
   void delete_active(uint64_t thd_id, uint64_t txn_id);
   uint64_t get_wq_cnt();
   void add_query(int tid, base_query * qry);

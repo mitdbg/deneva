@@ -49,6 +49,10 @@ public:
   uint64_t debug1;
   // CALVIN
   uint64_t batch_num;
+#if MODE==QRY_ONLY_MODE
+  uint64_t max_access;
+  bool max_done;
+#endif
 
 	//RemReqType rtype;
 	RC rc;

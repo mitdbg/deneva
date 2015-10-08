@@ -94,7 +94,8 @@ RC workload::init_schema(const char * schema_file) {
 			for (int i = 0; i < field_cnt; i++) 
 				fields[i] = atoi(items[i + 1].c_str());
 			INDEX * index = new INDEX;
-			int part_cnt = (CENTRAL_INDEX)? 1 : g_part_cnt;
+	    int part_cnt __attribute__ ((unused));
+			part_cnt = (CENTRAL_INDEX)? 1 : g_part_cnt;
 
       uint64_t table_size = g_synth_table_size;
 #if WORKLOAD == TPCC
@@ -118,7 +119,8 @@ RC workload::init_schema(const char * schema_file) {
 #endif
 
 #if INDEX_STRUCT == IDX_HASH
-			index->init(part_cnt, tables[tname], table_size);
+			index->init(1024, tables[tname], table_size);
+			//index->init(part_cnt*1024, tables[tname], table_size);
 #else
 			index->init(part_cnt, tables[tname]);
 #endif

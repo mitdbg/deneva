@@ -100,7 +100,7 @@ void Transport::init(uint64_t node_id) {
 	int rc = 0;
 
 	int timeo = 1000; // timeout in ms
-	//int stimeo = 10000; // timeout in ms
+	//int stimeo = 60000; // timeout in ms
   int opt = 0;
 	for(uint64_t i=0;i<_sock_cnt;i++) {
 		s[i].sock.setsockopt(NN_SOL_SOCKET,NN_RCVTIMEO,&timeo,sizeof(timeo));

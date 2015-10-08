@@ -78,7 +78,7 @@ void MessageThread::run() {
 #endif
   }
 #if MODE>=QRY_ONLY_MODE
-  if(type == RQRY_RSP) {
+  if(type == RQRY_RSP && qry->max_done) {
     txn_table.delete_txn(qry->return_id, qry->txn_id);
   }
 #endif
@@ -289,7 +289,9 @@ void MessageThread::rqry(mbuf * sbuf, base_query *qry) {
   COPY_BUF(sbuf->buffer,qry->start_ts,sbuf->ptr);
 #endif
   COPY_BUF(sbuf->buffer,m_qry->req,sbuf->ptr);
-
+#if MODE==QRY_ONLY_MODE
+  COPY_BUF(sbuf->buffer,m_qry->max_access,sbuf->ptr);
+#endif
 }
 
 void MessageThread::rqry_rsp(mbuf * sbuf, base_query *qry) {

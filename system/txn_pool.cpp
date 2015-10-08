@@ -178,6 +178,29 @@ void MsgPool::free_all() {
 }
 
 /*
+void BackupRowPool::init(workload * wl, uint64_t size) {
+  _wl = wl;
+  row_t* entry;
+  for(uint64_t i = 0; i < size; i++) {
+    entry = (row_t*) mem_allocator.alloc(sizeof(struct row_t), 0);
+    put(entry);
+  }
+}
+
+void BackupRowPool::get(row_t* & item) {
+  bool r = pool.try_dequeue(item);
+  if(!r) {
+    item = (row_t*) mem_allocator.alloc(sizeof(struct row_t), 0);
+  }
+}
+
+void BackupRowPool::put(row_t* item) {
+  pool.enqueue(item);
+}
+*/
+
+
+/*
 template <class T>
 void TxnPool::init(uint64_t size) {
   T * items = (T*)mem_allocator.alloc(sizeof(T)*size,0);

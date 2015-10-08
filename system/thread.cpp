@@ -81,7 +81,8 @@ RC thread_t::run_remote() {
       }
 		}
 
-		if ((_wl->sim_done && _wl->sim_timeout) || (tend - run_starttime >= DONE_TIMER)) {
+		//if ((_wl->sim_done && _wl->sim_timeout) || (tend - run_starttime >= DONE_TIMER)) {
+		if (_wl->sim_done && _wl->sim_timeout) {
 
 			return FINISH;
 		}
@@ -106,10 +107,11 @@ RC thread_t::run_send() {
 	pthread_barrier_wait( &warmup_bar );
 	printf("Run_send %ld:%ld\n",_node_id, _thd_id);
   fflush(stdout);
+  uint64_t starttime = get_sys_clock();
 
 	while (true) {
     messager.run();
-		if (_wl->sim_done && _wl->sim_timeout) {
+		if ((get_sys_clock() - starttime) >= DONE_TIMER || (_wl->sim_done && _wl->sim_timeout)) {
 			return FINISH;
     }
   }
@@ -246,8 +248,12 @@ RC thread_t::run() {
 		// End conditions
     if((get_sys_clock() - run_starttime >= DONE_TIMER)
         ||(_wl->sim_done && _wl->sim_timeout)) { 
-      if( !ATOM_CAS(_wl->sim_done, false, true) )
+      if( !ATOM_CAS(_wl->sim_done, false, true) ) {
         assert( _wl->sim_done);
+      } else {
+        printf("_wl->sim_done=%d\n",_wl->sim_done);
+        fflush(stdout);
+      }
 			uint64_t currtime = get_sys_clock();
       if(stoptime == 0)
         stoptime = currtime;
@@ -387,7 +393,8 @@ RC thread_t::run() {
 #endif
 #if MODE==QRY_ONLY_MODE
           // Release locks
-          rc = m_txn->finish(m_query->rc,m_query->part_to_access,1);
+          if(m_query->part_num > 1)
+            rc = m_txn->finish(m_query->rc,m_query->part_to_access,1);
 #endif
 					assert(m_txn->get_rsp_cnt() == 0);
           //assert(MODE==TWOPC || MODE==QRY || m_query->part_num == 1 || ??);
@@ -438,7 +445,8 @@ RC thread_t::run() {
 
 #if MODE==QRY_ONLY_MODE
           // Release locks
-          rc = m_txn->finish(m_query->rc,m_query->part_to_access,1);
+					if(m_query->part_num > 1) 
+            rc = m_txn->finish(m_query->rc,m_query->part_to_access,1);
 #endif
 					if(m_query->part_num == 1 && !m_txn->spec)
 						rc = m_txn->finish(rc,m_query->part_to_access,m_query->part_num);
@@ -559,9 +567,7 @@ RC thread_t::process_rfin(base_query *& m_query,txn_man *& m_txn) {
 */
         if(m_query->rc == Abort) {
           INC_STATS(_thd_id,abort_rem_cnt,1);
-        } else {
-          INC_STATS(_thd_id,txn_rem_cnt,1);
-        }
+        } 
 				assert(CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || IS_REMOTE(m_query->txn_id));
         assert(MODE == NORMAL_MODE || MODE == NOCC_MODE);
 
@@ -857,6 +863,7 @@ RC thread_t::process_rqry(base_query *& m_query,txn_man *& m_txn) {
 					m_txn->state = INIT;
 					txn_table.add_txn(m_query->return_id,m_txn,m_query);
           tmp_query = m_query;
+          INC_STATS(_thd_id,txn_rem_cnt,1);
 				}
 				assert(m_txn != NULL);
         m_txn->register_thd(this);
@@ -890,8 +897,13 @@ RC thread_t::process_rqry(base_query *& m_query,txn_man *& m_txn) {
 				if(rc != WAIT) {
 #if MODE==QRY_ONLY_MODE
           // Release locks
-					m_txn->state = DONE;
-					m_txn->rem_fin_txn(m_query);
+          if((uint64_t)m_txn->row_cnt == m_query->max_access) {
+            m_query->max_done = true;
+            m_txn->state = DONE;
+            m_txn->rem_fin_txn(m_query);
+          } else {
+            m_query->max_done = false;
+          }
 #endif
           msg_queue.enqueue(m_query,RQRY_RSP,m_query->return_id);
         }
@@ -993,6 +1005,7 @@ RC thread_t::process_rinit(base_query *& m_query,txn_man *& m_txn) {
         } else {
 				  //rc = _wl->get_txn_man(m_txn, this);
           txn_pool.get(m_txn);
+          INC_STATS(_thd_id,txn_rem_cnt,1);
         }
 				//assert(rc == RCOK);
 				m_txn->set_txn_id(m_query->txn_id);

@@ -78,6 +78,20 @@ private:
 };
 
 /*
+class BackupRowPool {
+public:
+  void init(workload * wl, uint64_t size);
+  void get(row_t *& item);
+  void put(row_t * items);
+  void free_all();
+
+private:
+  moodycamel::ConcurrentQueue<row_t*,moodycamel::ConcurrentQueueDefaultTraits> pool;
+  workload * _wl;
+
+};
+*/
+/*
 template <class T>
 class TxnPool {
 public:

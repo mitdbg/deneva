@@ -112,6 +112,7 @@ base_query * ycsb_query::merge(base_query * query) {
       this->start_ts = m_query->start_ts;
 #endif
       this->req = m_query->req;
+      this->txn_rtype = m_query->txn_rtype;
       break;
     case RQRY_RSP:
       //if(m_query->rc == Abort || this->rc == WAIT || this->rc == WAIT_REM) {

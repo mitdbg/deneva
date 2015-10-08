@@ -560,10 +560,15 @@ void Stats::print_client(bool prog) {
       ,_stats[tid]->rthd_prof_2 / BILLION
       );
   }
-
-
-
   }
+
+  // Prevent division by 0
+  if(total_txn_cnt==0)
+    total_txn_cnt = 1;
+  if(total_msg_batch_cnt == 0)
+    total_msg_batch_cnt = 1;
+  if(total_msg_rcv_cnt == 0)
+    total_msg_rcv_cnt = 1;
 
 	FILE * outf;
 	if (output_file != NULL) 
@@ -884,6 +889,7 @@ void Stats::print(bool prog) {
 			_stats[tid]->txn_rem_cnt,
 			_stats[tid]->abort_rem_cnt
 		);
+    fflush(stdout);
 	}
 
   if(prog)
@@ -895,6 +901,14 @@ void Stats::print(bool prog) {
         }
 
     }
+  // prevent division by 0
+  total_txn_cnt++;
+  if(total_msg_rcv_cnt == 0)
+    total_msg_rcv_cnt = 1;
+  if(total_msg_batch_cnt == 0)
+    total_msg_batch_cnt = 1;
+  if(total_qq_cnt == 0)
+    total_qq_cnt = 1;
 
 	FILE * outf;
 	if (output_file != NULL) 
@@ -917,6 +931,19 @@ void Stats::print(bool prog) {
       ",latency=%f"
       ",run_time=%f"
       ",finish_time=%f"
+			,total_txn_cnt-1
+			,total_txn_rem_cnt 
+			,total_tot_run_time / BILLION
+			,total_abort_cnt
+			,total_txn_abort_cnt
+			,total_abort_rem_cnt
+			,total_rbk_abort_cnt
+			,total_latency / BILLION / total_txn_cnt
+			,total_run_time / BILLION
+      ,total_finish_time / BILLION
+      );
+
+	fprintf(outf, 
       ",access_cnt=%ld"
       ",write_cnt=%ld"
       ",aq_full=%f"
@@ -929,6 +956,21 @@ void Stats::print(bool prog) {
 			",cc_wait_abrt_cnt=%ld"
 			",cc_wait_abrt_time=%f"
 			",cc_hold_abrt_time=%f"
+      ,total_access_cnt
+      ,total_write_cnt
+			,total_aq_full / BILLION
+      ,total_txn_table_cflt
+      ,total_txn_table_cflt_size
+      ,total_cc_busy_cnt
+      ,total_cc_wait_cnt
+      ,total_cc_wait_time / BILLION
+      ,total_cc_hold_time / BILLION
+      ,total_cc_wait_abrt_cnt
+      ,total_cc_wait_abrt_time / BILLION
+      ,total_cc_hold_abrt_time / BILLION
+      );
+
+	fprintf(outf, 
       ",cflt_cnt=%ld"
       ",cflt_cnt_txn=%ld"
 			",mpq_cnt=%ld"
@@ -940,6 +982,20 @@ void Stats::print(bool prog) {
       ",msg_bytes=%ld"
       ",msg_rcv=%ld"
       ",msg_sent=%ld"
+      ,total_cflt_cnt
+      ,total_cflt_cnt_txn
+			,total_mpq_cnt
+			,total_mbuf_send_time / BILLION / total_msg_batch_cnt
+			,total_msg_batch_size 
+			,total_msg_batch_cnt 
+			,total_msg_batch_size / total_msg_batch_cnt 
+			,total_msg_batch_bytes / total_msg_batch_cnt 
+			,total_msg_bytes 
+			,total_msg_rcv_cnt 
+			,total_msg_sent_cnt
+      );
+
+	fprintf(outf, 
       ",mq_full=%f"
       ",qq_full=%f"
       ",qq_lat=%f"
@@ -951,6 +1007,19 @@ void Stats::print(bool prog) {
       ",qry_rqry=%ld"
       ",qry_rprep=%ld"
       ",qry_rfin=%ld"
+			,total_mq_full / BILLION
+			,total_qq_full / BILLION
+			,total_qq_lat / total_qq_cnt / BILLION
+			,total_qry_cnt
+			,total_rtxn
+			,total_rqry_rsp 
+			,total_rack
+			,total_rinit
+			,total_rqry 
+			,total_rprep
+			,total_rfin 
+      );
+	fprintf(outf, 
       ",spec_abort_cnt=%ld"
       ",spec_commit_cnt=%ld"
       ",time_abort=%f"
@@ -976,6 +1045,33 @@ void Stats::print(bool prog) {
       ",txn_table_cnt=%ld"
       ",work_queue_cnt=%ld"
       ",work_queue_abrt_cnt=%ld"
+      ,total_spec_abort_cnt
+      ,total_spec_commit_cnt
+			,total_time_abort / BILLION
+			,total_time_cleanup / BILLION
+			,total_time_index / BILLION
+			,total_time_lock_man / BILLION
+			,total_time_man / BILLION
+      ,total_time_msg_sent / BILLION
+			,total_time_qq / BILLION
+			,total_time_tport_send / BILLION
+			,total_time_tport_rcv / BILLION
+			,total_time_ts_alloc / BILLION
+      ,total_time_clock_wait / BILLION
+      ,total_time_clock_rwait / BILLION
+			,total_time_validate / BILLION
+			,total_time_wait / BILLION
+			,total_time_wait_lock / BILLION
+			,total_time_wait_lock_rem / BILLION
+			,total_time_wait_rem / BILLION
+			,total_time_work / BILLION
+			,total_time_rqry / BILLION
+			,total_tport_lat / BILLION / total_msg_rcv_cnt
+      ,txn_table.get_cnt()
+      ,work_queue.get_wq_cnt()
+      ,work_queue.get_abrt_cnt()
+      );
+	fprintf(outf, 
   ",txn_time_begintxn=%f"
   ",txn_time_begintxn2=%f"
   ",txn_time_idx=%f"
@@ -989,96 +1085,29 @@ void Stats::print(bool prog) {
   ",txn_time_q_abrt=%f"
   ",txn_time_q_work=%f"
   ",txn_time_net=%f"
-  ",txn_time_misc=%f",
-			total_txn_cnt, 
-			total_txn_rem_cnt, 
-			total_tot_run_time / BILLION,
-			total_abort_cnt,
-			total_txn_abort_cnt,
-			total_abort_rem_cnt,
-			total_rbk_abort_cnt,
-			total_latency / BILLION / total_txn_cnt,
-			total_run_time / BILLION,
-      total_finish_time / BILLION,
-      total_access_cnt,
-      total_write_cnt,
-			total_aq_full / BILLION,
-      total_txn_table_cflt,
-      total_txn_table_cflt_size,
-      total_cc_busy_cnt,
-      total_cc_wait_cnt,
-      total_cc_wait_time / BILLION,
-      total_cc_hold_time / BILLION,
-      total_cc_wait_abrt_cnt,
-      total_cc_wait_abrt_time / BILLION,
-      total_cc_hold_abrt_time / BILLION,
-      total_cflt_cnt,
-      total_cflt_cnt_txn,
-			total_mpq_cnt, 
-			total_mbuf_send_time / BILLION / total_msg_batch_cnt, 
-			total_msg_batch_size, 
-			total_msg_batch_cnt, 
-			total_msg_batch_size / total_msg_batch_cnt, 
-			total_msg_batch_bytes / total_msg_batch_cnt, 
-			total_msg_bytes, 
-			total_msg_rcv_cnt, 
-			total_msg_sent_cnt, 
-			total_mq_full / BILLION,
-			total_qq_full / BILLION,
-			total_qq_lat / total_qq_cnt / BILLION,
-			total_qry_cnt,
-			total_rtxn,
-			total_rqry_rsp ,
-			total_rack,
-			total_rinit,
-			total_rqry ,
-			total_rprep,
-			total_rfin ,
-      total_spec_abort_cnt,
-      total_spec_commit_cnt,
-			total_time_abort / BILLION,
-			total_time_cleanup / BILLION,
-			total_time_index / BILLION,
-			total_time_lock_man / BILLION,
-			total_time_man / BILLION,
-      total_time_msg_sent / BILLION,
-			total_time_qq / BILLION,
-			total_time_tport_send / BILLION,
-			total_time_tport_rcv / BILLION,
-			total_time_ts_alloc / BILLION,
-      total_time_clock_wait / BILLION,
-      total_time_clock_rwait / BILLION,
-			total_time_validate / BILLION,
-			total_time_wait / BILLION,
-			total_time_wait_lock / BILLION,
-			total_time_wait_lock_rem / BILLION,
-			total_time_wait_rem / BILLION,
-			total_time_work / BILLION,
-			total_time_rqry / BILLION,
-			total_tport_lat / BILLION / total_msg_rcv_cnt,
-      txn_table.get_cnt(),
-      work_queue.get_wq_cnt(),
-      work_queue.get_abrt_cnt(),
-  total_txn_time_begintxn / BILLION,
-  total_txn_time_begintxn2 / BILLION,
-  total_txn_time_idx / BILLION,
-  total_txn_time_man / BILLION,
-  total_txn_time_ts / BILLION,
-  total_txn_time_abrt / BILLION,
-  total_txn_time_clean / BILLION,
-  total_txn_time_copy / BILLION,
-  total_txn_time_wait / BILLION,
-  total_txn_time_twopc / BILLION,
-  total_txn_time_q_abrt / BILLION,
-  total_txn_time_q_work / BILLION,
-  total_txn_time_net / BILLION,
-  total_txn_time_misc / BILLION
+  ",txn_time_misc=%f"
+  ,total_txn_time_begintxn / BILLION
+  ,total_txn_time_begintxn2 / BILLION
+  ,total_txn_time_idx / BILLION
+  ,total_txn_time_man / BILLION
+  ,total_txn_time_ts / BILLION
+  ,total_txn_time_abrt / BILLION
+  ,total_txn_time_clean / BILLION
+  ,total_txn_time_copy / BILLION
+  ,total_txn_time_wait / BILLION
+  ,total_txn_time_twopc / BILLION
+  ,total_txn_time_q_abrt / BILLION
+  ,total_txn_time_q_work / BILLION
+  ,total_txn_time_net / BILLION
+  ,total_txn_time_misc / BILLION
 		);
 
   mem_util(outf);
   cpu_util(outf);
   print_prof(outf);
 
+  fprintf(outf,"\n");
+  fflush(outf);
   if(!prog) {
     print_cnts();
 	  //print_lat_distr();

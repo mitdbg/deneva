@@ -521,11 +521,6 @@ RC txn_man::finish(base_query * query, bool fin) {
     return query->rc;
   }
 
-  /*
-#if MODE==QRY
-  return RCOK;
-#endif
-*/
 #if MODE == QRY_ONLY_MODE || MODE == SETUP_MODE
   return RCOK;
 #endif

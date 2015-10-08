@@ -198,6 +198,15 @@ RC ycsb_txn_man::run_txn_state(base_query * query) {
       } else {
         assert(GET_NODE_ID(m_query->pid) == g_node_id);
 
+#if MODE==QRY_ONLY_MODE
+
+        query->max_access = 0;
+        for(uint64_t i = 0; i < m_query->request_cnt; i++) {
+          if((uint64_t)_wl->key_to_part(m_query->requests[i].key) == part_id)
+            query->max_access++;
+        }
+#endif
+
         query->dest_part = part_id;
         query->dest_id = GET_NODE_ID(part_id);
         query->rem_req_state = YCSB_0;

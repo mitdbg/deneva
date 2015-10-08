@@ -276,7 +276,8 @@ def tput(xval,vval,summary,summary_cl,
 
     pp = pprint.PrettyPrinter()
     pp.pprint(tpt)
-    bbox = [0.7,0.9]
+    bbox = [0.7,0.3]
+#bbox = [0.7,0.9]
     print("Created plot {}".format(name))
     draw_line(name,tpt,_xval,ylab='Throughput (Txn/sec)',xlab=_xlab,title=_title,bbox=bbox,ncol=2) 
 

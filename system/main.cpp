@@ -231,13 +231,15 @@ int main(int argc, char* argv[])
 	endtime = get_server_clock();
 	
 	if (WORKLOAD != TEST) {
-		printf("PASS! SimTime = %ld\n", endtime - starttime);
+		printf("PASS! SimTime = %f\n", (float)(endtime - starttime) / BILLION);
 		if (STATS_ENABLE)
 			stats.print(false);
     //malloc_stats_print(NULL, NULL, NULL);
 	} else {
 		((TestWorkload *)m_wl)->summarize();
 	}
+  printf("\n");
+  fflush(stdout);
   // Free things
   /*
   txn_table.delete_all();

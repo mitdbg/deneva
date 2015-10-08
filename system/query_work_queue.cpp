@@ -71,30 +71,41 @@ void QWorkQueue::enqueue(base_query * qry) {
 bool QWorkQueue::dequeue(uint64_t thd_id, base_query *& qry) {
   bool valid = wq.try_dequeue(qry);
   if(!ISCLIENT && valid && qry->txn_id != UINT64_MAX) {
-    set_active(thd_id, qry->txn_id);
+    if(set_active(thd_id, qry->txn_id)) {
+      enqueue(qry);
+      qry = NULL;
+      return false;
+    }
   }
   return valid;
 }
 
-void QWorkQueue::set_active(uint64_t thd_id, uint64_t txn_id) {
+bool QWorkQueue::set_active(uint64_t thd_id, uint64_t txn_id) {
+  bool result = false;
   pthread_mutex_lock(&mtx);
   while(true) {
     uint64_t i = 0;
     for(i = 0; i < g_thread_cnt; i++) {
-      if(active_txns[i] == txn_id)
-        break;
+      if(i == thd_id)
+        continue;
+      if(active_txns[i] == txn_id) {
+        result = true;
+        goto end;
+      }
     }
     if(i==g_thread_cnt)
       break;
-    pthread_cond_wait(&cond,&mtx);
+    //pthread_cond_wait(&cond,&mtx);
   }
   active_txns[thd_id] = txn_id;
+  //pthread_cond_broadcast(&cond);
+end:
   pthread_mutex_unlock(&mtx);
-}
-
+  return result;
+} 
 void QWorkQueue::delete_active(uint64_t thd_id, uint64_t txn_id) {
   pthread_mutex_lock(&mtx);
-  assert(active_txns[thd_id] == txn_id);
+  //assert(active_txns[thd_id] == txn_id);
   active_txns[thd_id] = UINT64_MAX;
   pthread_cond_broadcast(&cond);
   pthread_mutex_unlock(&mtx);

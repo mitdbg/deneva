@@ -135,6 +135,9 @@ void Remote_query::unpack_query(base_query *& query,char * data,  uint64_t & ptr
       COPY_VAL(m_query->start_ts,data,ptr);
 #endif
       COPY_VAL(m_query->req,data,ptr);
+#if MODE==QRY_ONLY_MODE
+      COPY_VAL(m_query->max_access,data,ptr);
+#endif
       break;
       }
 		case RQRY_RSP: {
