@@ -39,6 +39,8 @@
   pthread_mutex_unlock(&pool[i].mtx); }
 
 void TxnTable::init() {
+  spec_mode = (bool*) mem_allocator.alloc(sizeof(bool) * g_part_cnt/g_node_cnt , g_thread_cnt);
+
   for(uint64_t i = 0; i < g_part_cnt / g_node_cnt; i++) {
       spec_mode[i] = false;
   }

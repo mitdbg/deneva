@@ -98,6 +98,12 @@ UInt32 g_servers_per_client = 0;
 UInt32 g_clients_per_server = 0;
 UInt32 g_server_start_node = 0;
 
+UInt32 g_max_txn_per_part = MAX_TXN_PER_PART;
+UInt32 g_network_delay = NETWORK_DELAY;
+UInt64 g_done_timer = DONE_TIMER;
+UInt64 g_prog_timer = PROG_TIMER;
+UInt64 g_msg_time_limit = MSG_TIME_LIMIT;
+
 // CALVIN
 UInt32 g_seq_thread_cnt = SEQ_THREAD_CNT;
 
@@ -107,6 +113,8 @@ UInt32 g_num_wh = NUM_WH;
 double g_perc_payment = PERC_PAYMENT;
 bool g_wh_update = WH_UPDATE;
 char * output_file = NULL;
+char * input_file = NULL;
+char * txn_file = NULL;
 
 #if TPCC_SMALL
 UInt32 g_max_items = MAX_ITEMS_SMALL;

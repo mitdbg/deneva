@@ -19,6 +19,7 @@
 
 	 */
 Transport::Transport() {
+  /*
     _node_cnt = g_node_cnt + g_client_node_cnt;
 #if CC_ALG == CALVIN
 	_node_cnt++;	// account for the sequencer
@@ -34,6 +35,7 @@ Transport::Transport() {
 
     delay_queue = new DelayQueue();
     delay_queue->init();
+    */
 }
 
 
@@ -61,11 +63,16 @@ void Transport::read_ifconfig(const char * ifaddr_file) {
 
 void Transport::init(uint64_t node_id) {
 	printf("Init %ld\n",node_id);
+  _node_cnt = g_node_cnt + g_client_node_cnt;
+#if CC_ALG == CALVIN
+	_node_cnt++;	// account for the sequencer
+#endif
 	_node_id = node_id;
   if(ISCLIENT)
     _sock_cnt = g_client_send_thread_cnt * (_node_cnt-1) + g_node_cnt * g_send_thread_cnt + (g_client_node_cnt-1) * g_client_send_thread_cnt;
   else
     _sock_cnt = g_send_thread_cnt  * (_node_cnt-1) + (g_node_cnt-1) * g_send_thread_cnt + g_client_node_cnt * g_client_send_thread_cnt;
+  s = new Socket[_sock_cnt];
   rr = 0;
 #if CC_ALG == CALVIN
 	// TODO: fix me. Calvin does not have separate remote and local threads
@@ -297,7 +304,7 @@ void Transport::send_msg(uint64_t dest_id, void ** data, int * sizes, int num) {
     return;
   }
 
-#if NETWORK_DELAY > 0
+  if(g_network_delay > 0) {
     RemReqType rem_req_type = *(RemReqType*)data[1];
     if (rem_req_type != INIT_DONE) { // && rem_req_type != RTXN) {
        DelayMessage * msg = new DelayMessage(dest_id, sbuf,size);
@@ -305,7 +312,7 @@ void Transport::send_msg(uint64_t dest_id, void ** data, int * sizes, int num) {
        INC_STATS(_thd_id,time_tport_send,get_sys_clock() - starttime);
        return;
     }
-#endif
+  }
 
 	rc= s[dest_id].sock.send(&sbuf,NN_MSG,0);
 
@@ -321,7 +328,7 @@ void Transport::send_msg(uint64_t dest_id, void ** data, int * sizes, int num) {
 }
 
 void Transport::check_delayed_messages() {
-    assert(NETWORK_DELAY > 0);
+    assert(g_network_delay > 0);
     DelayMessage * dmsg = NULL;
     while ((dmsg = (DelayMessage *) delay_queue->get_next_entry()) != NULL) {
         DEBUG("In check_delayed_messages : sending message on the delay queue\n");
@@ -330,7 +337,7 @@ void Transport::check_delayed_messages() {
 }
 
 void Transport::send_msg_no_delay(DelayMessage * msg) {
-    assert(NETWORK_DELAY > 0);
+    assert(g_network_delay > 0);
 
     uint64_t starttime = get_sys_clock();
     // dest_id
@@ -464,7 +471,7 @@ uint64_t Transport::simple_recv_msg() {
 }
 
 void * DelayQueue::get_next_entry() {
-  assert (NETWORK_DELAY > 0);
+  assert (g_network_delay > 0);
   q_entry_t next_entry = NULL;
   DelayMessage * data = NULL;
 
@@ -480,7 +487,7 @@ void * DelayQueue::get_next_entry() {
 
     DEBUG("DelayQueue: current delay time for head query: %lu\n",nowtime - data->_start_ts);
     // Check whether delay ns have passed
-    if (nowtime - data->_start_ts < NETWORK_DELAY) {
+    if (nowtime - data->_start_ts < g_network_delay) {
         pthread_mutex_unlock(&mtx);
         return NULL;
     }

@@ -65,7 +65,7 @@ public:
   void init_txns_file(const char * txn_file);
 	base_client_query * get_next_query(uint64_t tid); 
 	//base_query * get_next_query(uint64_t tid); 
-  volatile int q_idx;
+  volatile uint64_t q_idx;
   static void * threadInitQuery(void * id);
   void init_query();
   int next_tid;

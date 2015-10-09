@@ -12,8 +12,8 @@ fmt_title=["NODE_CNT","MPR","ZIPF_THETA","WRITE_PERC","CC_ALG","MAX_TXN_IN_FLIGH
 
 def test():
     fmt = fmt_ycsb
-#    nnodes = [4]
-    nnodes = [1,2,4,8]
+#    nnodes = [1,2]
+    nnodes = [4,8]
     nmpr=[100]
     nalgos=['NO_WAIT']
 #    nalgos=['NO_WAIT','WAIT_DIE']
@@ -25,16 +25,18 @@ def test():
     ncsthreads=[4]
     ntifs=[1500]
 #    ntifs=[1500,5000,7500]
-    nzipf=[0.0]
+#    nzipf=[0.0]
+    nzipf=[0.0,0.1,0.5,0.7,0.8,0.9]
 #    nwr_perc=[0.0]
-    nwr_perc=[0.0,1.0]
+    nwr_perc=[0.0,0.1,0.5,0.8,1.0]
     ntxn=[1000000]
 #    ntxn=[5000000]
     nbtime=[1000] # in ns
     nbsize=[4096]
-    nparts = [8]
+    nparts = [2]
+#    nparts = [8]
     nmodes = ["NORMAL_MODE","NOCC_MODE","QRY_ONLY_MODE"]#,"SETUP_MODE","SIMPLE_MODE"]
-#    nmodes = ["NOCC_MODE"]
+#    nmodes = ["NORMAL_MODE"]
     exp = [[n,n,txn,'YCSB',cc,m,ct,crt,cst,t,rt,st,tif,z,1.0-wp,wp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n,str(mt) + '*1000UL',bsize,mode] for n,ct,crt,cst,t,rt,st,tif,z,wp,m,cc,p,txn,mt,bsize,mode in itertools.product(nnodes,ncthreads,ncrthreads,ncsthreads,nthreads,nrthreads,nsthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts,ntxn,nbtime,nbsize,nmodes)]
     return fmt[0],exp
 
@@ -69,7 +71,7 @@ def tputvlat_setup(summary,summary_cl,nfmt,nexp,x_name,v_name):
 
 
 def tput_setup(summary,summary_cl,nfmt,nexp,x_name,v_name
-        ,extras={'PART_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT'}
+        ,extras={'PART_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','READ_PERC':'WRITE_PERC'}
         ):
     from plot_helper import tput
     x_vals = []
@@ -104,7 +106,7 @@ def tput_setup(summary,summary_cl,nfmt,nexp,x_name,v_name
         tput(x_vals,v_vals,summary,summary_cl,cfg_fmt=fmt,cfg=e,xname=x_name,vname=v_name,title=title,extras=extras)
 
 def line_setup(summary,summary_cl,nfmt,nexp,x_name,v_name,key
-        ,extras={'PART_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT'}
+        ,extras={'PART_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','READ_PERC':'WRITE_PERC'}
         ):
     from plot_helper import line_general
     x_vals = []
@@ -135,7 +137,7 @@ def line_setup(summary,summary_cl,nfmt,nexp,x_name,v_name,key
         line_general(x_vals,v_vals,summary,summary_cl,key,cfg_fmt=fmt,cfg=e,xname=x_name,vname=v_name,title=title,extras=extras)
         
 def stacks_setup(summary,nfmt,nexp,x_name,keys,key_names=[],norm=False
-        ,extras={'PART_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT'}
+        ,extras={'PART_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','READ_PERC':'WRITE_PERC'}
         ):
     from plot_helper import stacks_general
     x_vals = []
@@ -168,8 +170,10 @@ def ft_mode_plot(summary,summary_client):
 def test_plot(summary,summary_client):
     nfmt,nexp = test()
 #    tput_setup(summary,summary_client,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",v_name="MODE")
-#    tputvlat_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="MODE")
 #    tput_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="MODE")
+#    tput_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="ZIPF_THETA")
+    tput_setup(summary,summary_client,nfmt,nexp,x_name="WRITE_PERC",v_name="ZIPF_THETA")
+#    tputvlat_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="MODE")
 
 #    stacks_setup(summary,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",keys=['thd1','thd2','thd3'],norm=False)
 #    stacks_setup(summary,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",keys=['txn_table_add','txn_table_get','txn_table0a','txn_table1a','txn_table0b','txn_table1b','txn_table2a','txn_table2'],norm=False)
@@ -181,6 +185,7 @@ def test_plot(summary,summary_client):
 #    stacks_setup(summary,nfmt,nexp,x_name="MODE",keys=['txn_table_add','txn_table_get','txn_table0a','txn_table1a','txn_table0b','txn_table1b','txn_table2a'],norm=False)
 #    stacks_setup(summary,nfmt,nexp,x_name="MODE"
 #            ,keys=['type1','type2','type3','type4','type5','type6','type7','type8','type9','type10','type11','type12','type13','type14']
+#            ,key_names=['DONE','LOCK','UNLOCK','Rem QRY','FIN','LOCK RSP','UNLOCK RSP','QRY RSP','ACK','Exec','INIT','PREP','PASS','CLIENT']
 #            ,norm=False)
 #    stacks_setup(summary,nfmt,nexp,x_name="MODE",keys=['thd1a','thd1b','thd1c','thd1d'],norm=False)
 #    stacks_setup(summary,nfmt,nexp,x_name="MODE",keys=['rtxn1a','rtxn1b','rtxn2','rtxn3','rtxn4'],norm=False)
@@ -188,15 +193,13 @@ def test_plot(summary,summary_client):
 
 #    line_setup(summary,summary_client,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",v_name="MODE",key='cpu_ttl')
 
-    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT",keys=['thd1','thd2','thd3'],norm=False,key_names=['Prep work','Execution','Wrap-up'])
+#    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT",keys=['thd1','thd2','thd3'],norm=False,key_names=['Prep work','Execution','Wrap-up'])
 #    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT",keys=['txn_table_add','txn_table_get','txn_table0a','txn_table1a','txn_table0b','txn_table1b','txn_table2a'],norm=False)
 
-    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT"
-            ,keys=['type4','type5','type8','type9','type10','type12']
-            ,key_names=['REM QRY','FIN','QRY RSP','ACK','Exec','PREP']
-            ,norm=False)
-
-
+#    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT"
+#            ,keys=['type4','type5','type8','type9','type10','type12']
+#            ,key_names=['REM QRY','FIN','QRY RSP','ACK','Exec','PREP']
+#            ,norm=False)
 
 #    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT"
 #            ,keys=['type1','type2','type3','type4','type5','type6','type7','type8','type9','type10','type11','type12','type13','type14']
@@ -260,24 +263,6 @@ def network_sweep_plot(summary,summary_client):
         title = "YCSB System Throughput {} {}% Writes {} Skew".format(alg,wr*100,zipf);
         tput(x_vals,v_vals,summary,cfg_fmt=fmt,cfg=c,xname=x_name,vname=v_name,title=title)
 
-
-def tpcc_sweep():
-    fmt = fmt_tpcc
-    nnodes = [1,2,4,8,16]
-    nmpr=[1]
-    nalgos=['WAIT_DIE']
-    #nalgos=['WAIT_DIE','NO_WAIT','OCC','MVCC','HSTORE','HSTORE_SPEC','VLL','TIMESTAMP']
-    nthreads=[1]
-    ncthreads=[4]
-    ntifs=[1000]
-    nzipf=[0.6]
-    nwr_perc=[0.5]
-    ntxn=3000000
-    exp = [[int(math.ceil(n/2)) if n > 1 else 1,n,ntxn,'YCSB',cc,m,ct,t,tif,z,1.0-wp,wp] for n,ct,t,tif,z,wp,m,cc in itertools.product(nnodes,ncthreads,nthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos)]
-    return fmt[0],exp
-
-
-
 def network_experiment():
     fmt = fmt_nt
     nnodes = [1]
@@ -312,7 +297,6 @@ experiment_map = {
     'test_plot': test_plot,
     'network_sweep': network_sweep,
     'network_sweep_plot': network_sweep_plot,
-    'tpcc_sweep': tpcc_sweep,
     'network_experiment' : network_experiment,
     'network_experiment_plot' : network_experiment_plot,
 }
@@ -347,15 +331,13 @@ configs = {
 #    "PRT_LAT_DISTR": "true",
 #YCSB
     "INIT_PARALLELISM" : 4, 
-    "MAX_PART_PER_TXN":2,#16,
     "READ_PERC":0.5,
     "WRITE_PERC":0.5,
     "ZIPF_THETA":0.6,
     "PART_PER_TXN": 1,
     "SYNTH_TABLE_SIZE":"2097152",
-    "LOAD_TXN_FILE":"false",
     "DEBUG_DISTR":"false",
-    "MODE":"NORMAL",
+    "MODE":"NORMAL_MODE",
     "SHMEM_ENV":"false",
 }
 

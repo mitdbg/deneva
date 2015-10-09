@@ -53,7 +53,7 @@ public:
   void commit_spec_ex(int r,uint64_t tid);
 
   //uint64_t inflight_cnt;
-  bool spec_mode[PART_CNT/NODE_CNT];
+  bool * spec_mode;
 
 private:
 	uint64_t _node_id;

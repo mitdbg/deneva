@@ -100,7 +100,7 @@ private:
   int q_len;
   uint64_t cnt;
   uint64_t abrt_cnt;
-  uint64_t active_txns[THREAD_CNT];
+  uint64_t * active_txns;
   pthread_mutex_t mtx;
   pthread_cond_t cond;
 

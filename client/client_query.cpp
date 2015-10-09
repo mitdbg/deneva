@@ -95,8 +95,8 @@ Client_query_thd::init(workload * h_wl, int thread_id) {
 
 #else
 	uint64_t request_cnt;
-	//request_cnt = WARMUP / g_client_thread_cnt + MAX_TXN_PER_PART + 4;
-	request_cnt = MAX_TXN_PER_PART + 4;
+	//request_cnt = WARMUP / g_client_thread_cnt + g_max_txn_per_part + 4;
+	request_cnt = g_max_txn_per_part + 4;
 
 #if WORKLOAD == YCSB	
 	queries = (ycsb_client_query *) 
@@ -106,19 +106,20 @@ Client_query_thd::init(workload * h_wl, int thread_id) {
 		mem_allocator.alloc(sizeof(tpcc_query) * request_cnt, thread_id);
 #endif
 
-#if LOAD_TXN_FILE
-
-  char input_file[50];
-	char * cpath = getenv("SCHEMA_PATH");
-	if (cpath == NULL) 
-    sprintf(input_file,"./input_txn_files/p%d_%d_skew%d.txt",thread_id+g_server_start_node,g_part_cnt,(int)(g_zipf_theta*10));
-	else { 
-    sprintf(input_file,"%sp%d_%d_skew%d.txt",cpath,thread_id+g_server_start_node,g_part_cnt,(int)(g_zipf_theta*10));
-	}
-  printf("%s\n",input_file);
-  init_txns_file( input_file );
-  return;
-#endif
+  if(input_file != NULL) {
+    /*
+    char input_file[50];
+    char * cpath = getenv("SCHEMA_PATH");
+    if (cpath == NULL) 
+      sprintf(input_file,"./input_txn_files/p%d_%d_skew%d.txt",thread_id+g_server_start_node,g_part_cnt,(int)(g_zipf_theta*10));
+    else { 
+      sprintf(input_file,"%sp%d_%d_skew%d.txt",cpath,thread_id+g_server_start_node,g_part_cnt,(int)(g_zipf_theta*10));
+    }
+    */
+    printf("%s\n",input_file);
+    init_txns_file( input_file );
+    return;
+  }
 
 	pthread_t * p_thds = new pthread_t[g_init_parallelism - 1];
 	for (UInt32 i = 0; i < g_init_parallelism - 1; i++) {
@@ -143,7 +144,7 @@ Client_query_thd::init_txns_file(const char * txn_file) {
 	string line;
   uint64_t qid = 0;
   uint64_t request_cnt;
-	request_cnt = MAX_TXN_PER_PART + 4;
+	request_cnt = g_max_txn_per_part + 4;
 	ifstream fin(txn_file);
 	myrand * mrand = (myrand *) mem_allocator.alloc(sizeof(myrand), 0);
 	mrand->init(get_sys_clock());
@@ -212,15 +213,15 @@ Client_query_thd::init_txns_file(const char * txn_file) {
 
 bool
 Client_query_thd::done(){
-  return q_idx >= MAX_TXN_PER_PART;
+  return q_idx >= g_max_txn_per_part;
 }
 
 base_client_query * 
 Client_query_thd::get_next_query(uint64_t tid) {
-	if (q_idx >= MAX_TXN_PER_PART) {
+	if (q_idx >= g_max_txn_per_part) {
     if(FIN_BY_TIME && !CREATE_TXN_FILE) {
       // Restart transaction cycle
-      //ATOM_CAS(q_idx,MAX_TXN_PER_PART,0);
+      //ATOM_CAS(q_idx,g_max_txn_per_part,0);
       // FIXME: race condition important?
       q_idx = 0;
     } else {
@@ -258,11 +259,11 @@ void * Client_query_thd::threadInitQuery(void * This) {
 void Client_query_thd::init_query() {
 	UInt32 tid = ATOM_FETCH_ADD(next_tid, 1);
   uint64_t request_cnt;
-	request_cnt = MAX_TXN_PER_PART + 4;
+	request_cnt = g_max_txn_per_part + 4;
 	
     uint32_t final_request;
     if (tid == g_init_parallelism-1) {
-        final_request = MAX_TXN_PER_PART+4;
+        final_request = g_max_txn_per_part+4;
     } else {
         final_request = request_cnt / g_init_parallelism * (tid+1);
     }

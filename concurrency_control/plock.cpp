@@ -18,7 +18,7 @@ void PartMan::init(uint64_t node_id, uint64_t part_id) {
 	waiter_cnt = 0;
 	owner = NULL;
 	waiters = (txn_man **)
-		mem_allocator.alloc(sizeof(txn_man *) * g_node_cnt * MAX_TXN_IN_FLIGHT, part_id_tmp);
+		mem_allocator.alloc(sizeof(txn_man *) * g_node_cnt * g_inflight_max, part_id_tmp);
 	pthread_mutex_init( &latch, NULL );
 }
 

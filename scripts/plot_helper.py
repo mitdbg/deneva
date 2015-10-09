@@ -234,7 +234,10 @@ def tput(xval,vval,summary,summary_cl,
                     my_cfg[my_cfg_fmt.index(e)] = my_cfg[my_cfg_fmt.index(extras[e])]
                 else:
                     my_cfg_fmt = my_cfg_fmt + [e]
-                    my_cfg = my_cfg + [my_cfg[my_cfg_fmt.index(extras[e])]]
+                    if e == 'READ_PERC':
+                        my_cfg = my_cfg + [1.0-my_cfg[my_cfg_fmt.index(extras[e])]]
+                    else:
+                        my_cfg = my_cfg + [my_cfg[my_cfg_fmt.index(extras[e])]]
 #            n_cnt = my_cfg[my_cfg_fmt.index("NODE_CNT")]
 #            n_clt = my_cfg[my_cfg_fmt.index("CLIENT_NODE_CNT")]
 #            my_cfg[my_cfg_fmt.index("CLIENT_NODE_CNT")] = int(math.ceil(n_cnt)) if n_cnt > 1 else 1
@@ -604,7 +607,8 @@ def stacks_general(xval,summary,
             try:
 #                print("{} {} -- {} {}".format(k,ki,x,xi))
 #                print(summary[cfgs][k])
-                data[ki][xi] = avg(summary[cfgs][k])
+#                data[ki][xi] = avg(summary[cfgs][k])
+                data[ki][xi] = sum(summary[cfgs][k]) / sum(summary[cfgs]['txn_cnt'])
 #                pp.pprint(data)
                 total += data[ki][xi]
             except KeyError:

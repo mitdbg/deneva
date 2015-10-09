@@ -29,8 +29,8 @@ void ycsb_client_query::client_init(uint64_t thd_id, workload * h_wl, uint64_t n
 	zeta_2_theta = zeta(2, g_zipf_theta);
 #if GEN_BY_MPR
 	if (the_n == 0) {
-		//uint64_t table_size = g_synth_table_size / g_part_cnt;
-		uint64_t table_size = g_synth_table_size / g_virtual_part_cnt;
+		uint64_t table_size = g_synth_table_size / g_part_cnt;
+		//uint64_t table_size = g_synth_table_size / g_virtual_part_cnt;
 		the_n = table_size - 1;
 		denom = zeta(the_n, g_zipf_theta);
 	}
@@ -172,9 +172,11 @@ uint64_t ycsb_client_query::zipf(uint64_t n, double theta) {
 
 
 void ycsb_client_query::gen_requests(uint64_t thd_id, workload * h_wl) {
+  /*
 #if CC_ALG == HSTORE
 	assert(g_virtual_part_cnt == g_part_cnt);
 #endif
+*/
 	uint64_t access_cnt = 0;
 	set<uint64_t> all_keys;
 	part_num = 0;
@@ -284,9 +286,11 @@ void ycsb_client_query::gen_requests(uint64_t thd_id, workload * h_wl) {
 }
 
 void ycsb_client_query::gen_requests2(uint64_t thd_id, workload * h_wl) {
+  /*
 #if CC_ALG == HSTORE
 	assert(g_virtual_part_cnt == g_part_cnt);
 #endif
+*/
 	uint64_t access_cnt = 0;
 	set<uint64_t> all_keys;
 	part_num = 0;
@@ -317,7 +321,7 @@ void ycsb_client_query::gen_requests2(uint64_t thd_id, workload * h_wl) {
         }
         if( j < part_num)
           break;
-        if( part_num < PART_PER_TXN ) {
+        if( part_num < g_part_per_txn ) {
           part_to_access[part_num++] = row_id % g_part_cnt;
           break;
         }

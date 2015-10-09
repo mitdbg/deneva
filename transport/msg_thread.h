@@ -7,7 +7,6 @@
 
 struct mbuf {
   char * buffer;
-  //char buffer[MSG_SIZE_MAX];
   uint64_t starttime;
   uint64_t ptr;
   uint64_t cnt;
@@ -40,7 +39,7 @@ struct mbuf {
   bool ready() {
     if(starttime == 0)
       return false;
-    if( (get_sys_clock() - starttime) >= MSG_TIME_LIMIT )
+    if( (get_sys_clock() - starttime) >= g_msg_time_limit )
       return true;
     return false;
   }

@@ -101,8 +101,9 @@ void QryPool::init(workload * wl, uint64_t size) {
 #if WORKLOAD==YCSB
     ycsb_query * m_qry = (ycsb_query *) mem_allocator.alloc(sizeof(ycsb_query),0);
     m_qry = new ycsb_query();
-    m_qry->requests = (ycsb_request*)mem_allocator.alloc(sizeof(ycsb_request)*REQ_PER_QUERY,0);
-    m_qry->part_to_access = (uint64_t*)mem_allocator.alloc(sizeof(uint64_t)*PART_PER_TXN,0);
+    m_qry->requests = (ycsb_request*)mem_allocator.alloc(sizeof(ycsb_request)*g_req_per_query,0);
+    m_qry->part_to_access = (uint64_t*)mem_allocator.alloc(sizeof(uint64_t)*g_part_per_txn,0);
+    m_qry->part_touched = (uint64_t*)mem_allocator.alloc(sizeof(uint64_t)*g_part_per_txn,0);
     qry = m_qry;
 #endif
     put(qry);
@@ -117,8 +118,9 @@ void QryPool::get(base_query *& item) {
     ycsb_query * qry = NULL;
     qry = (ycsb_query *) mem_allocator.alloc(sizeof(ycsb_query),0);
     qry = new ycsb_query();
-    qry->requests = (ycsb_request*)mem_allocator.alloc(sizeof(ycsb_request)*REQ_PER_QUERY,0);
-    qry->part_to_access = (uint64_t*)mem_allocator.alloc(sizeof(uint64_t)*PART_PER_TXN,0);
+    qry->requests = (ycsb_request*)mem_allocator.alloc(sizeof(ycsb_request)*g_req_per_query,0);
+    qry->part_to_access = (uint64_t*)mem_allocator.alloc(sizeof(uint64_t)*g_part_per_txn,0);
+    qry->part_touched = (uint64_t*)mem_allocator.alloc(sizeof(uint64_t)*g_part_per_txn,0);
 #endif
     item = (base_query*)qry;
   }
@@ -131,8 +133,8 @@ void QryPool::put(base_query * item) {
   assert(item);
   /*
   ycsb_query * qry = (ycsb_query *) item;
-  mem_allocator.free(qry->requests,sizeof(ycsb_query)*REQ_PER_QUERY);
-  mem_allocator.free(qry->part_to_access,sizeof(uint64_t)*PART_PER_TXN);
+  mem_allocator.free(qry->requests,sizeof(ycsb_query)*g_req_per_query);
+  mem_allocator.free(qry->part_to_access,sizeof(uint64_t)*g_part_per_txn);
   printf("freeing %lx\n",(uint64_t)qry);
   fflush(stdout);
   assert(qry);

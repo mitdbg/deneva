@@ -19,7 +19,7 @@ sys.path.append('..')
 
 from environment import *
 from experiments import *
-from helper import get_cfgs,get_outfile_name
+from helper import get_cfgs,get_outfile_name,get_execfile_name,get_args
 
 # (see https://github.com/fabric/fabric/issues/51#issuecomment-96341022)
 logging.basicConfig()
@@ -261,8 +261,9 @@ def run_cmd(cmd):
 
 @task
 @parallel
-def deploy(schema_path,nids):
+def deploy(schema_path,nids,exps,fmt):
     nid = iter(nids[env.host])
+    exp = iter(exps[env.host])
     succeeded = True
     with shell_env(SCHEMA_PATH=schema_path):
         with settings(warn_only=True,command_timeout=MAX_TIME_PER_EXP):
@@ -270,19 +271,21 @@ def deploy(schema_path,nids):
             cmd = ''
             for r in env.roledefs["servers"]:
                 if r == env.host:
-                    nn = nid.next();
+                    nn = nid.next()
+                    args = get_args(fmt,exp.next())
                     if env.shmem:
-                        cmd += "(/dev/shm/rundb -nid{} >> /dev/shm/results{}.out 2>&1 &);".format(nn,nn)  
+                        cmd += "(/dev/shm/rundb -nid{} {}>> /dev/shm/results{}.out 2>&1 &);".format(nn,args,nn)  
 #                        cmd += "(/dev/shm/rundb -nid{} >> /dev/shm/results{}.out 2>&1 &);".format(nn,nn)  
                     else:
-                        cmd += "(./rundb -nid{} >> results{}.out 2>&1 &);".format(nn,nn)  
+                        cmd += "(./rundb -nid{} {}>> results{}.out 2>&1 &);".format(nn,args,nn)  
             for r in env.roledefs["clients"]:
                 if r == env.host:
-                    nn = nid.next();
+                    nn = nid.next()
+                    args = get_args(fmt,exp.next())
                     if env.shmem:
-                        cmd += "(/dev/shm/runcl -nid{} >> /dev/shm/results{}.out 2>&1 &);".format(nn,nn)  
+                        cmd += "(/dev/shm/runcl -nid{} {}>> /dev/shm/results{}.out 2>&1 &);".format(nn,args,nn)  
                     else:
-                        cmd += "(./runcl -nid{} >> results{}.out 2>&1 &);".format(nn,nn)  
+                        cmd += "(./runcl -nid{} >> results{}.out 2>&1 &);".format(nn,args,nn)  
             cmd = cmd[:-3]
             cmd += ")"
             try:
@@ -371,11 +374,12 @@ def write_config(cfgs):
 
 @task
 @hosts('localhost')
-def write_ifconfig(roles):
+def write_ifconfig(roles,exp):
     with color():
         puts("writing roles to the ifconfig file:",show_prefix=True)
         puts(pprint.pformat(roles,depth=3),show_prefix=False)
     nids = {}
+    exps = {}
     nid = 0
     print(roles)
     with open("ifconfig.txt",'w') as f:
@@ -383,23 +387,28 @@ def write_ifconfig(roles):
             f.write(server + "\n")
             if server not in nids:
                 nids[server] = [nid]
+                exps[server] = [exp]
             else:
                 nids[server].append(nid)
+                exps[server].append(exp)
             nid += 1
         for client in roles['clients']:
             f.write(client + "\n")
             if client not in nids:
                 nids[client] = [nid]
+                exps[client] = [exp]
             else:
                 nids[client].append(nid)
+                exps[client].append(exp)
             nid += 1
         if "sequencer" in roles:
             assert CC_ALG == "CALVIN"
             sequencer = roles['sequencer'][0]
             f.write(sequencer + "\n")
             nids[sequencer] = [nid]
+            exps[sequencer] = [exp]
             nid += 1
-    return nids
+    return nids,exps
             
 @task
 @hosts('localhost')
@@ -475,7 +484,8 @@ def compile_binary(fmt,e):
     execute(write_config,cfgs)
     execute(compile)
 
-    output_f = get_outfile_name(cfgs,fmt,env.hosts)
+#    output_f = get_outfile_name(cfgs,fmt,env.hosts)
+    output_f = get_execfile_name(cfgs,fmt,env.hosts)
 
     local("cp rundb binaries/{}rundb".format(output_f))
     local("cp runcl binaries/{}runcl".format(output_f))
@@ -494,19 +504,22 @@ def compile_binaries(exps):
     local("mkdir -p binaries")
     local("rm -rf binaries/*")
     fmt,experiments = experiment_map[exps]()
-    for e in experiments:
-        execute(compile_binary,fmt,e)
+#    for e in experiments:
+#        execute(compile_binary,fmt,e)
 
 
 @task
 @hosts('localhost')
 def check_binaries(exps):
-    if not os.path.isdir("binaries"):
-        execute(compile_binaries,exps)
-        return
-    if len(glob.glob("binaries/*")) == 0:
-        execute(compile_binaries,exps)
-        return
+#    if not os.path.isdir("binaries"):
+#        execute(compile_binaries,exps)
+#        return
+#    if len(glob.glob("binaries/*")) == 0:
+#        execute(compile_binaries,exps)
+#        return
+    if not os.path.isdir("binaries") or len(glob.glob("binaries/*")) == 0:
+        local("mkdir -p binaries")
+        local("rm -rf binaries/*")
     fmt,experiments = experiment_map[exps]()
 
     for e in experiments:
@@ -516,7 +529,8 @@ def check_binaries(exps):
         if env.shmem:
             cfgs["SHMEM_ENV"]="true"
         
-        output_f = get_outfile_name(cfgs,fmt,env.hosts) 
+#        output_f = get_outfile_name(cfgs,fmt,env.hosts) 
+        output_f = get_execfile_name(cfgs,fmt,env.hosts) 
 
         executables = glob.glob("{}*".format(os.path.join("binaries",output_f)))
         has_rundb,has_runcl,has_runsq,has_config=False,False,False,False
@@ -549,11 +563,13 @@ def run_exp(exps,network_test=False,delay=''):
     batch_size = 0 
     nids = {} 
     outfiles = {}
+    exps = {}
 
     for e in experiments:
         cfgs = get_cfgs(fmt,e)
         
         output_fbase = get_outfile_name(cfgs,fmt,env.hosts)
+        output_exec_fname = get_execfile_name(cfgs,fmt,env.hosts)
         output_f = output_fbase + STRNOW
 
         # Check whether experiment has been already been run in this batch
@@ -566,8 +582,8 @@ def run_exp(exps,network_test=False,delay=''):
         global CC_ALG
         CC_ALG = cfgs["CC_ALG"]
         if EXECUTE_EXPS:
-            cfg_srcpath = "{}cfg".format(os.path.join("binaries",output_fbase))
-            cfg_destpath = "{}.cfg".format(os.path.join(env.result_dir,output_f))
+            cfg_srcpath = "{}cfg".format(os.path.join("binaries",output_exec_fname))
+            cfg_destpath = "{}.cfg".format(os.path.join(env.result_dir,output_exec_fname+STRNOW))
             local("cp {} {}".format(cfg_srcpath,cfg_destpath))
             nnodes = cfgs["NODE_CNT"]
             nclnodes = cfgs["CLIENT_NODE_CNT"]
@@ -604,12 +620,13 @@ def run_exp(exps,network_test=False,delay=''):
                         with color("debug"):
                             puts(pprint.pformat(outfiles,depth=3),show_prefix=False)
                         set_hosts(env.hosts[:batch_size])
-                        execute(deploy,schema_path,nids)
+                        execute(deploy,schema_path,nids,exps,fmt)
                         execute(get_results,outfiles,nids)
                         good_hosts = get_good_hosts()
                         env.roledefs = None
                         batch_size = 0
                         nids = {}
+                        exps = {}
                         outfiles = {}
                         set_hosts(good_hosts)
                     else:
@@ -622,8 +639,9 @@ def run_exp(exps,network_test=False,delay=''):
 
                 set_hosts(machines)
                 new_roles=execute(assign_roles,nnodes,nclnodes,append=env.batch_mode)[env.host]
-                new_nids = execute(write_ifconfig,new_roles)[env.host]
+                new_nids,new_exps = execute(write_ifconfig,new_roles,e)[env.host]
                 nids.update(new_nids)
+                exps.update(new_exps)
                 for host,nid in new_nids.iteritems():
                     outfiles[host] = "{}.out".format(output_f) 
 #                    if env.same_node:
@@ -641,7 +659,7 @@ def run_exp(exps,network_test=False,delay=''):
                 # flag in environment.py to true to kill these processes. This
                 # is useful for running real experiments but dangerous when both
                 # of us are debugging...
-                execute(copy_files,schema,output_fbase)
+                execute(copy_files,schema,output_exec_fname)
                 
                 last_exp = experiments.index(e) == len(experiments) - 1
                 if not env.batch_mode or last_exp:
@@ -658,7 +676,7 @@ def run_exp(exps,network_test=False,delay=''):
 
                     if delay != '':
                         execute(set_delay,delay=delay)
-                    execute(deploy,schema_path,nids)
+                    execute(deploy,schema_path,nids,exps,fmt)
                     if delay != '':
                         execute(reset_delay)
 
@@ -667,6 +685,7 @@ def run_exp(exps,network_test=False,delay=''):
                     set_hosts(good_hosts)
                     batch_size = 0
                     nids = {}
+                    exps = {}
                     outfiles = {}
                     env.roledefs = None
             else:

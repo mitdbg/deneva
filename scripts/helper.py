@@ -5,7 +5,42 @@ import glob
 import pprint
 import latency_stats as ls
 
+CONFIG_PARAMS = [
+#    "TPORT_TYPE",
+#    "TPORT_TYPE_IPC",
+#    "TPORT_PORT",
+#    "DEBUG_DISTR",
+    "CC_ALG",
+    "MODE",
+    "WORKLOAD"
+#    "SHMEM_ENV"
+    ]
 
+FLAG = {
+    "CLIENT_NODE_CNT" : "-cn",
+    "CLIENT_THREAD_CNT" : "-ct",
+    "CLIENT_REM_THREAD_CNT" : "-ctr",
+    "CLIENT_SEND_THREAD_CNT" : "-cts",
+    "NODE_CNT" : "-n",
+    "PART_CNT" : "-p",
+    "THREAD_CNT" : "-t",
+    "REM_THREAD_CNT" : "-tr",
+    "SEND_THREAD_CNT" : "-ts",
+    "MAX_TXN_PER_PART" : "-tpp",
+    "MAX_TXN_IN_FLIGHT" : "-tif",
+    "PART_PER_TXN" : "-ppt",
+    "READ_PERC" : "-r",
+    "WRITE_PERC" : "-w",
+    "ZIPF_THETA" : "-zipf",
+    "REQ_PER_QUERY": "-rpq",
+    "MPR" : "-mpr",
+    "NUM_WH": "-wh",
+    "DONE_TIMER": "-done",
+    "PROG_TIMER": "-prog",
+    "ABORT_PENALTY": "-abrt",
+    "SYNTH_TABLE_SIZE":"-s",
+    "LOAD_TXN_FILE":"-i",
+}
 
 SHORTNAMES = {
     "CLIENT_NODE_CNT" : "CN",
@@ -472,6 +507,23 @@ def get_lstats(summary):
         summary['all_lat']=ls.LatencyStats(latencies,out_time_unit='ms') 
     except:
         pass
+
+def get_args(fmt,exp):
+    cfgs = get_cfgs(fmt,exp)
+    args = ""
+    for key in fmt:
+        if key not in FLAG or key in CONFIG_PARAMS: continue
+        flag = FLAG[key]
+        args += "{}{} ".format(flag,cfgs[key])
+    return args
+ 
+def get_execfile_name(cfgs,fmt,network_hosts=[]):
+    output_f = ""
+#for key in sorted(cfgs.keys()):
+    for key in CONFIG_PARAMS:
+        output_f += "{}_".format(cfgs[key])
+    return output_f
+
 
 def get_outfile_name(cfgs,fmt,network_hosts=[]):
     output_f = ""

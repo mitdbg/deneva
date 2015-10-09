@@ -15,7 +15,7 @@ void Remote_query::init(uint64_t node_id, workload * wl) {
 	_wl = wl;
   pthread_mutex_init(&mtx,NULL);
   /*
-  for(int i=0;i<MAX_TXN_PER_PART*2*3;i++)
+  for(int i=0;i<g_max_txn_per_part*2*3;i++)
     responses[i] = false;
     */
 }

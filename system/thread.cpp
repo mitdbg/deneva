@@ -71,7 +71,7 @@ RC thread_t::run_remote() {
 
 		ts_t tend = get_sys_clock();
 		if (warmup_finish 
-        && ((tend - run_starttime >= DONE_TIMER) 
+        && ((tend - run_starttime >= g_done_timer) 
           || (_wl->sim_done && ((tend - rq_time) > MSG_TIMEOUT)))) {
 			if( !ATOM_CAS(_wl->sim_timeout, false, true) ) {
 				assert( _wl->sim_timeout);
@@ -81,7 +81,7 @@ RC thread_t::run_remote() {
       }
 		}
 
-		//if ((_wl->sim_done && _wl->sim_timeout) || (tend - run_starttime >= DONE_TIMER)) {
+		//if ((_wl->sim_done && _wl->sim_timeout) || (tend - run_starttime >= g_done_timer)) {
 		if (_wl->sim_done && _wl->sim_timeout) {
 
 			return FINISH;
@@ -111,7 +111,7 @@ RC thread_t::run_send() {
 
 	while (true) {
     messager.run();
-		if ((get_sys_clock() - starttime) >= DONE_TIMER || (_wl->sim_done && _wl->sim_timeout)) {
+		if ((get_sys_clock() - starttime) >= g_done_timer || (_wl->sim_done && _wl->sim_timeout)) {
 			return FINISH;
     }
   }
@@ -190,7 +190,7 @@ RC thread_t::run() {
 
 		if(get_thd_id() == 0) {
       uint64_t now_time = get_sys_clock();
-      if (now_time - prog_time >= PROG_TIMER) {
+      if (now_time - prog_time >= g_prog_timer) {
         prog_time = now_time;
         SET_STATS(get_thd_id(), tot_run_time, prog_time - run_starttime); 
 
@@ -201,8 +201,8 @@ RC thread_t::run() {
     INC_STATS(_thd_id,thd_prof_thd1a,get_sys_clock() - thd_prof_start);
     thd_prof_start = get_sys_clock();
     /*
-    if(((get_sys_clock() - run_starttime >= DONE_TIMER)
-        //|| (_wl->txn_cnt >= MAX_TXN_PER_PART 
+    if(((get_sys_clock() - run_starttime >= g_done_timer)
+        //|| (_wl->txn_cnt >= g_max_txn_per_part 
         //  && txn_table.empty(get_node_id()))
           )
         && !_wl->sim_done) {
@@ -236,8 +236,8 @@ RC thread_t::run() {
 #endif
 
       if (warmup_finish && 
-          ((get_sys_clock() - run_starttime >= DONE_TIMER) 
-           /*|| (_wl->txn_cnt >= MAX_TXN_PER_PART
+          ((get_sys_clock() - run_starttime >= g_done_timer) 
+           /*|| (_wl->txn_cnt >= g_max_txn_per_part
            && txn_table.empty(get_node_id()))*/)) {
         break;
       }
@@ -246,7 +246,7 @@ RC thread_t::run() {
     INC_STATS(_thd_id,thd_prof_thd1c,get_sys_clock() - thd_prof_start);
     thd_prof_start = get_sys_clock();
 		// End conditions
-    if((get_sys_clock() - run_starttime >= DONE_TIMER)
+    if((get_sys_clock() - run_starttime >= g_done_timer)
         ||(_wl->sim_done && _wl->sim_timeout)) { 
       if( !ATOM_CAS(_wl->sim_done, false, true) ) {
         assert( _wl->sim_done);

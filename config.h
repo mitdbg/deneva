@@ -5,13 +5,13 @@
 /***********************************************/
 // Simulation + Hardware
 /***********************************************/
-#define NODE_CNT 8
+#define NODE_CNT 4
 #define THREAD_CNT 2
 #define REM_THREAD_CNT 1
 #define SEND_THREAD_CNT 1
 // PART_CNT should be at least NODE_CNT
-#define PART_CNT 8
-#define CLIENT_NODE_CNT 8
+#define PART_CNT 4
+#define CLIENT_NODE_CNT 4
 #define CLIENT_THREAD_CNT 2
 #define CLIENT_REM_THREAD_CNT 1
 #define CLIENT_SEND_THREAD_CNT 4
@@ -35,7 +35,7 @@
 #define TIME_ENABLE         true //STATS_ENABLE
 
 #define FIN_BY_TIME true
-#define MAX_TXN_IN_FLIGHT 7500
+#define MAX_TXN_IN_FLIGHT 1500
 
 /***********************************************/
 // Memory System
@@ -152,15 +152,14 @@
 #define INIT_PARALLELISM 4
 #define SYNTH_TABLE_SIZE 2097152
 #define ZIPF_THETA 0.0
-#define READ_PERC 0.0
-#define WRITE_PERC 1.0
+#define READ_PERC 1.0
+#define WRITE_PERC 0.0
 #define SCAN_PERC           0
 #define SCAN_LEN          20
-#define PART_PER_TXN 8
+#define PART_PER_TXN 2
 #define PERC_MULTI_PART     MPR 
 #define REQ_PER_QUERY 10
 #define FIELD_PER_TUPLE       10
-#define LOAD_TXN_FILE false
 #define CREATE_TXN_FILE false
 // ==== [TPCC] ====
 // For large warehouse count, the tables do not fit in memory
@@ -175,7 +174,7 @@
 // are not modeled.
 #define TPCC_ACCESS_ALL       false 
 #define WH_UPDATE         true
-#define NUM_WH 8
+#define NUM_WH 4
 // % of transactions that access multiple partitions
 #define MPR 100
 #define MPR_NEWORDER      20 // In %

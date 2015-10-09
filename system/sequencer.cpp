@@ -347,7 +347,7 @@ RC Seq_thread_t::run_remote() {
 		uint64_t txns_fin = ATOM_FETCH_ADD(seq_man.total_txns_finished,0);
 		uint64_t txns_rec = ATOM_FETCH_ADD(seq_man.total_txns_received,0);
 		if (warmup_finish && txns_fin == txns_rec && 
-				txns_fin >= MAX_TXN_PER_PART * g_node_cnt) {
+				txns_fin >= g_max_txn_per_part * g_node_cnt) {
 			if( !ATOM_CAS(_wl->sim_done, false, true) )
 				assert( _wl->sim_done);
 			//stoptime = get_sys_clock();

@@ -6,7 +6,7 @@
 
 void QWorkQueue::init() {
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
-  q_len = PART_CNT / NODE_CNT;
+  q_len = g_part_cnt / g_node_cnt;
 #else
   q_len = 1;
 #endif
@@ -16,6 +16,7 @@ void QWorkQueue::init() {
   for(int i = 0;i<q_len;i++) {
     queue[i].init(hash); 
   }
+  active_txns = (uint64_t*) mem_allocator.alloc(sizeof(uint64_t) * g_thread_cnt,0);
   for(uint64_t i = 0; i < g_thread_cnt; i++) {
     active_txns[i] = UINT64_MAX;
   }
@@ -163,7 +164,7 @@ base_query * QWorkQueue::get_next_abort_query(int tid) {
   *********************/
 void QHash::init() {
   id_hash_size = 1069;
-  //id_hash_size = MAX_TXN_IN_FLIGHT*g_node_cnt;
+  //id_hash_size = g_inflight_max*g_node_cnt;
   id_hash = new id_entry_t[id_hash_size];
   for(uint64_t i = 0; i < id_hash_size; i++) {
     id_hash[i] = NULL;

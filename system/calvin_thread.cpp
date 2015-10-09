@@ -136,7 +136,7 @@ RC calvin_thread_t::run() {
 
 	while(true) {
 
-		if(get_sys_clock() - prog_time >= PROG_TIMER) {
+		if(get_sys_clock() - prog_time >= g_prog_timer) {
 			prog_time = get_sys_clock();
 			SET_STATS(get_thd_id(), tot_run_time, prog_time - run_starttime); 
 
@@ -216,8 +216,8 @@ RC calvin_thread_t::run() {
 			return FINISH;
 		}
 
-		if (warmup_finish && txn_st_cnt >= MAX_TXN_PER_PART/g_thread_cnt && txn_table.empty(get_node_id())) {
-			//assert(txn_cnt == MAX_TXN_PER_PART);
+		if (warmup_finish && txn_st_cnt >= g_max_txn_per_part/g_thread_cnt && txn_table.empty(get_node_id())) {
+			//assert(txn_cnt == g_max_txn_per_part);
 			if( !ATOM_CAS(_wl->sim_done, false, true) )
 				assert( _wl->sim_done);
 			stoptime = get_sys_clock();

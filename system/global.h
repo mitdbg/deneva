@@ -137,7 +137,13 @@ extern UInt32 g_ts_batch_num;
 extern int32_t g_inflight_max;
 extern uint64_t g_msg_size;
 
+extern UInt32 g_max_txn_per_part;
+
 extern bool g_hw_migrate;
+extern UInt32 g_network_delay;
+extern UInt64 g_done_timer;
+extern UInt64 g_prog_timer;
+extern UInt64 g_msg_time_limit;
 
 // YCSB
 extern UInt32 g_cc_alg;
@@ -158,6 +164,8 @@ extern UInt32 g_num_wh;
 extern double g_perc_payment;
 extern bool g_wh_update;
 extern char * output_file;
+extern char * input_file;
+extern char * txn_file;
 extern UInt32 g_max_items;
 extern UInt32 g_cust_per_dist;
 
