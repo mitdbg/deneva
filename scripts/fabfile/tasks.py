@@ -620,7 +620,11 @@ def run_exp(exps,network_test=False,delay=''):
                         with color("debug"):
                             puts(pprint.pformat(outfiles,depth=3),show_prefix=False)
                         set_hosts(env.hosts[:batch_size])
+                        with color():
+                            puts("Starttime: {}".format(datetime.datetime.now().strftime("%H:%M:%S")),show_prefix=True)
                         execute(deploy,schema_path,nids,exps,fmt)
+                        with color():
+                            puts("Endtime: {}".format(datetime.datetime.now().strftime("%H:%M:%S")),show_prefix=True)
                         execute(get_results,outfiles,nids)
                         good_hosts = get_good_hosts()
                         env.roledefs = None
@@ -676,7 +680,11 @@ def run_exp(exps,network_test=False,delay=''):
 
                     if delay != '':
                         execute(set_delay,delay=delay)
+                    with color():
+                        puts("Starttime: {}".format(datetime.datetime.now().strftime("%H:%M:%S")),show_prefix=True)
                     execute(deploy,schema_path,nids,exps,fmt)
+                    with color():
+                        puts("Endtime: {}".format(datetime.datetime.now().strftime("%H:%M:%S")),show_prefix=True)
                     if delay != '':
                         execute(reset_delay)
 

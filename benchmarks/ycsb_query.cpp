@@ -36,13 +36,18 @@ void ycsb_client_query::client_init(uint64_t thd_id, workload * h_wl, uint64_t n
 	}
 	gen_requests(pid, h_wl);
 #else
-	if (the_n == 0) {
-		//uint64_t table_size = g_synth_table_size / g_part_cnt;
-		uint64_t table_size = g_synth_table_size;
-		the_n = table_size - 1;
-		denom = zeta(the_n, g_zipf_theta);
-	}
-	gen_requests2(pid, h_wl);
+  if(SKEW_METHOD == ZIPF) {
+    if (the_n == 0) {
+      //uint64_t table_size = g_synth_table_size / g_part_cnt;
+      uint64_t table_size = g_synth_table_size;
+      the_n = table_size - 1;
+      denom = zeta(the_n, g_zipf_theta);
+    }
+    gen_requests2(pid, h_wl);
+  } else if (SKEW_METHOD == HOT) {
+    gen_requests3(pid, h_wl);
+  } else
+    assert(false);
 #endif
 
 }
@@ -329,6 +334,100 @@ void ycsb_client_query::gen_requests2(uint64_t thd_id, workload * h_wl) {
           continue;
       }
     }
+		assert(row_id < table_size);
+		uint64_t primary_key = row_id;
+		//uint64_t part_id = row_id % g_part_cnt;
+		req->key = primary_key;
+		req->value = mrand->next() % (1<<8);
+		// Make sure a single row is not accessed twice
+		if (all_keys.find(req->key) == all_keys.end()) {
+			all_keys.insert(req->key);
+			access_cnt ++;
+		} else {
+      // Need to have the full g_req_per_query amount
+      i--;
+      continue;
+    }
+		rid ++;
+	}
+	request_cnt = rid;
+	// Sort the requests in key order.
+	if (g_key_order) {
+		for (int i = request_cnt - 1; i > 0; i--) 
+			for (int j = 0; j < i; j ++)
+				if (requests[j].key > requests[j + 1].key) {
+					ycsb_request tmp = requests[j];
+					requests[j] = requests[j + 1];
+					requests[j + 1] = tmp;
+				}
+		for (UInt32 i = 0; i < request_cnt - 1; i++)
+			assert(requests[i].key < requests[i + 1].key);
+	}
+
+}
+
+void ycsb_client_query::gen_requests3(uint64_t thd_id, workload * h_wl) {
+	uint64_t access_cnt = 0;
+	set<uint64_t> all_keys;
+	part_num = 0;
+  //uint64_t hot_key_max = g_synth_table_size * g_data_perc;
+  uint64_t hot_key_max = (uint64_t)g_data_perc;
+  //printf("%ld %f\n",hot_key_max,((float)hot_key_max)/g_synth_table_size);
+
+	int rid = 0;
+	for (UInt32 i = 0; i < g_req_per_query; i ++) {		
+		double r = (double)(mrand->next() % 10000) / 10000;		
+    double hot =  (double)(mrand->next() % 10000) / 10000;
+		ycsb_request * req = &requests[rid];
+		if (r < g_read_perc) 
+			req->acctype = RD;
+		else
+			req->acctype = WR;
+
+    uint64_t row_id;
+		uint64_t table_size = g_synth_table_size;
+    if ( FIRST_PART_LOCAL && rid == 0) {
+      if(hot < g_access_perc) {
+        row_id = (uint64_t)(mrand->next() % (hot_key_max/g_part_cnt)) * g_part_cnt + thd_id;
+      } else {
+        uint64_t nrand = (uint64_t)mrand->next();
+        //row_id = (((uint64_t)(mrand->next() % (g_synth_table_size/g_part_cnt - (hot_key_max/g_part_cnt)))) + hot_key_max/g_part_cnt) * thd_id;
+        row_id = ((nrand % (g_synth_table_size/g_part_cnt - (hot_key_max/g_part_cnt))) + hot_key_max/g_part_cnt) * g_part_cnt + thd_id;
+      }
+      part_to_access[part_num++] = row_id % g_part_cnt;
+      assert(row_id % g_part_cnt == thd_id);
+    }
+    else {
+      while(1) {
+        if(hot < g_access_perc) {
+          row_id = (uint64_t)(mrand->next() % hot_key_max);
+        } else {
+          row_id = ((uint64_t)(mrand->next() % (g_synth_table_size - hot_key_max))) + hot_key_max;
+        }
+        uint32_t j;
+        for(j = 0; j < part_num; j++) {
+          if(part_to_access[j] == row_id % g_part_cnt)
+            break;
+        }
+        if( j < part_num)
+          break;
+        if( part_num < g_part_per_txn ) {
+          part_to_access[part_num++] = row_id % g_part_cnt;
+          break;
+        }
+        else 
+          continue;
+      }
+    }
+    /*
+    if(hot < g_access_perc) {
+        printf("H %ld, ",row_id);
+      assert(row_id < hot_key_max);
+    } else {
+        printf("N %ld, ",row_id);
+      assert(row_id >= hot_key_max);
+    }
+    */
 		assert(row_id < table_size);
 		uint64_t primary_key = row_id;
 		//uint64_t part_id = row_id % g_part_cnt;

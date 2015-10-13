@@ -77,7 +77,7 @@ void MessageThread::run() {
     txn_table.delete_txn(qry->return_id, qry->txn_id);
 #endif
   }
-#if MODE>=QRY_ONLY_MODE
+#if MODE==QRY_ONLY_MODE || MODE == SETUP_MODE || MODE == SIMPLE_MODE
   if(type == RQRY_RSP && qry->max_done) {
     txn_table.delete_txn(qry->return_id, qry->txn_id);
   }
@@ -92,7 +92,7 @@ end:
     if(buffer[n]->ready()) {
       assert(buffer[n]->cnt > 0);
 	    ((uint32_t*)buffer[n]->buffer)[2] = buffer[n]->cnt;
-      DEBUG("Sending batch %ld txns to %ld\n",buffer[n]->cnt,n);
+      //DEBUG("Sending batch %ld txns to %ld\n",buffer[n]->cnt,n);
       INC_STATS(_thd_id,mbuf_send_time,get_sys_clock() - buffer[n]->starttime);
       //if(_thd_id == g_thread_cnt) 
       //  printf("Sthd Send2 %ld %ld\n",n,get_sys_clock()-buffer[n]->starttime);

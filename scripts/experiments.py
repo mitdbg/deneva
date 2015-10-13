@@ -6,14 +6,16 @@ import math
 # Format: [#Nodes,#Txns,Workload,CC_ALG,MPR]
 fmt_tpcc = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","NUM_WH","MAX_TXN_IN_FLIGHT"]]
 fmt_nd = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","NUM_WH","MAX_TXN_IN_FLIGHT","NETWORK_DELAY"]]
-fmt_ycsb = [["CLIENT_NODE_CNT","NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","CLIENT_THREAD_CNT","CLIENT_REM_THREAD_CNT","CLIENT_SEND_THREAD_CNT","THREAD_CNT","REM_THREAD_CNT","SEND_THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC","PART_PER_TXN","PART_CNT","MSG_TIME_LIMIT","MSG_SIZE_MAX","MODE"]]
+#fmt_ycsb = [["CLIENT_NODE_CNT","NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","CLIENT_THREAD_CNT","CLIENT_REM_THREAD_CNT","CLIENT_SEND_THREAD_CNT","THREAD_CNT","REM_THREAD_CNT","SEND_THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC","PART_PER_TXN","PART_CNT","MSG_TIME_LIMIT","MSG_SIZE_MAX","MODE"]]
+fmt_ycsb = [["CLIENT_NODE_CNT","NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","CLIENT_THREAD_CNT","CLIENT_REM_THREAD_CNT","CLIENT_SEND_THREAD_CNT","THREAD_CNT","REM_THREAD_CNT","SEND_THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC","PART_PER_TXN","PART_CNT","MSG_TIME_LIMIT","MSG_SIZE_MAX","MODE","DATA_PERC","ACCESS_PERC"]]
 fmt_nt = [["NODE_CNT","CLIENT_NODE_CNT","NETWORK_TEST"]]
-fmt_title=["NODE_CNT","MPR","ZIPF_THETA","WRITE_PERC","CC_ALG","MAX_TXN_IN_FLIGHT","MODE"]
+#fmt_title=["NODE_CNT","ZIPF_THETA","WRITE_PERC","CC_ALG","MAX_TXN_IN_FLIGHT","MODE"]
+fmt_title=["NODE_CNT","WRITE_PERC","CC_ALG","MAX_TXN_IN_FLIGHT","MODE","DATA_PERC","ACCESS_PERC"]
 
 def test():
     fmt = fmt_ycsb
-#    nnodes = [1,2]
-    nnodes = [4,8]
+#    nnodes = [1]
+    nnodes = [1,2,4,8]
     nmpr=[100]
     nalgos=['NO_WAIT']
 #    nalgos=['NO_WAIT','WAIT_DIE']
@@ -25,19 +27,22 @@ def test():
     ncsthreads=[4]
     ntifs=[1500]
 #    ntifs=[1500,5000,7500]
-#    nzipf=[0.0]
-    nzipf=[0.0,0.1,0.5,0.7,0.8,0.9]
+    nzipf=[0.0]
+#    nzipf=[0.0,0.1,0.5,0.7,0.8,0.9]
+    d_perc=[100,1000]
+    a_perc=[0.1,0.25,0.5,0.75,0.9]
 #    nwr_perc=[0.0]
     nwr_perc=[0.0,0.1,0.5,0.8,1.0]
-    ntxn=[1000000]
+    ntxn=[3000000]
 #    ntxn=[5000000]
     nbtime=[1000] # in ns
     nbsize=[4096]
-    nparts = [2]
+    nparts = [8]
 #    nparts = [8]
-    nmodes = ["NORMAL_MODE","NOCC_MODE","QRY_ONLY_MODE"]#,"SETUP_MODE","SIMPLE_MODE"]
-#    nmodes = ["NORMAL_MODE"]
-    exp = [[n,n,txn,'YCSB',cc,m,ct,crt,cst,t,rt,st,tif,z,1.0-wp,wp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n,str(mt) + '*1000UL',bsize,mode] for n,ct,crt,cst,t,rt,st,tif,z,wp,m,cc,p,txn,mt,bsize,mode in itertools.product(nnodes,ncthreads,ncrthreads,ncsthreads,nthreads,nrthreads,nsthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts,ntxn,nbtime,nbsize,nmodes)]
+#    nmodes = ["NORMAL_MODE","NOCC_MODE","QRY_ONLY_MODE"]#,"SETUP_MODE","SIMPLE_MODE"]
+    nmodes = ["NORMAL_MODE"]
+#    exp = [[n,n,txn,'YCSB',cc,m,ct,crt,cst,t,rt,st,tif,z,1.0-wp,wp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n,str(mt) + '*1000UL',bsize,mode] for n,ct,crt,cst,t,rt,st,tif,z,wp,m,cc,p,txn,mt,bsize,mode in itertools.product(nnodes,ncthreads,ncrthreads,ncsthreads,nthreads,nrthreads,nsthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts,ntxn,nbtime,nbsize,nmodes)]
+    exp = [[n,n,txn,'YCSB',cc,m,ct,crt,cst,t,rt,st,tif,z,1.0-wp,wp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n,str(mt) + '*1000UL',bsize,mode,dp,ap] for n,ct,crt,cst,t,rt,st,tif,z,wp,m,cc,p,txn,mt,bsize,mode,dp,ap in itertools.product(nnodes,ncthreads,ncrthreads,ncsthreads,nthreads,nrthreads,nsthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts,ntxn,nbtime,nbsize,nmodes,d_perc,a_perc)]
     return fmt[0],exp
 
 def tputvlat_setup(summary,summary_cl,nfmt,nexp,x_name,v_name):
@@ -71,7 +76,7 @@ def tputvlat_setup(summary,summary_cl,nfmt,nexp,x_name,v_name):
 
 
 def tput_setup(summary,summary_cl,nfmt,nexp,x_name,v_name
-        ,extras={'PART_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','READ_PERC':'WRITE_PERC'}
+        ,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','READ_PERC':'WRITE_PERC'}
         ):
     from plot_helper import tput
     x_vals = []
@@ -99,6 +104,8 @@ def tput_setup(summary,summary_cl,nfmt,nexp,x_name,v_name
     exp.sort()
     exp = list(k for k,_ in itertools.groupby(exp))
     for e in exp:
+        if "PART_PER_TXN" in fmt and e[fmt.index("PART_PER_TXN")] == 1 and ("NODE_CNT" == x_name or "NODE_CNT" == v_name):
+            continue
         title = "System Tput "
         for t in fmt_title:
             if t not in fmt: continue
@@ -106,7 +113,7 @@ def tput_setup(summary,summary_cl,nfmt,nexp,x_name,v_name
         tput(x_vals,v_vals,summary,summary_cl,cfg_fmt=fmt,cfg=e,xname=x_name,vname=v_name,title=title,extras=extras)
 
 def line_setup(summary,summary_cl,nfmt,nexp,x_name,v_name,key
-        ,extras={'PART_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','READ_PERC':'WRITE_PERC'}
+        ,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','READ_PERC':'WRITE_PERC'}
         ):
     from plot_helper import line_general
     x_vals = []
@@ -137,7 +144,7 @@ def line_setup(summary,summary_cl,nfmt,nexp,x_name,v_name,key
         line_general(x_vals,v_vals,summary,summary_cl,key,cfg_fmt=fmt,cfg=e,xname=x_name,vname=v_name,title=title,extras=extras)
         
 def stacks_setup(summary,nfmt,nexp,x_name,keys,key_names=[],norm=False
-        ,extras={'PART_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','READ_PERC':'WRITE_PERC'}
+        ,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','READ_PERC':'WRITE_PERC'}
         ):
     from plot_helper import stacks_general
     x_vals = []
@@ -171,8 +178,12 @@ def test_plot(summary,summary_client):
     nfmt,nexp = test()
 #    tput_setup(summary,summary_client,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",v_name="MODE")
 #    tput_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="MODE")
+    tput_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="ACCESS_PERC")
 #    tput_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="ZIPF_THETA")
-    tput_setup(summary,summary_client,nfmt,nexp,x_name="WRITE_PERC",v_name="ZIPF_THETA")
+
+#    tput_setup(summary,summary_client,nfmt,nexp,x_name="WRITE_PERC",v_name="ZIPF_THETA")
+    tput_setup(summary,summary_client,nfmt,nexp,x_name="WRITE_PERC",v_name="ACCESS_PERC")
+
 #    tputvlat_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="MODE")
 
 #    stacks_setup(summary,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",keys=['thd1','thd2','thd3'],norm=False)

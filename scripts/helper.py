@@ -40,6 +40,8 @@ FLAG = {
     "ABORT_PENALTY": "-abrt",
     "SYNTH_TABLE_SIZE":"-s",
     "LOAD_TXN_FILE":"-i",
+    "DATA_PERC":"-dp",
+    "ACCESS_PERC":"-ap",
 }
 
 SHORTNAMES = {
@@ -61,6 +63,8 @@ SHORTNAMES = {
     "ZIPF_THETA" : "SKEW",
     "MSG_TIME_LIMIT" : "BT",
     "MSG_SIZE_MAX" : "BS",
+    "DATA_PERC":"D",
+    "ACCESS_PERC":"A",
 }
 
 stat_map = {

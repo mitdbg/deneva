@@ -168,12 +168,16 @@ def line_general(xval,vval,summary,summary_cl,
             my_cfg_fmt = cfg_fmt + [xname] + [vname]
             my_cfg = cfg + [x] + [v]
             for e in extras.keys():
+                if e == xname or e == vname:
+                    continue
                 if e in my_cfg_fmt:
                     my_cfg[my_cfg_fmt.index(e)] = my_cfg[my_cfg_fmt.index(extras[e])]
                 else:
                     my_cfg_fmt = my_cfg_fmt + [e]
                     my_cfg = my_cfg + [my_cfg[my_cfg_fmt.index(extras[e])]]
 
+            if my_cfg[my_cfg_fmt.index("PART_PER_TXN")] > my_cfg[my_cfg_fmt.index("PART_CNT")]:
+                my_cfg[my_cfg_fmt.index("PART_PER_TXN")] = my_cfg[my_cfg_fmt.index("PART_CNT")]
             cfgs = get_cfgs(my_cfg_fmt, my_cfg)
             cfgs = get_outfile_name(cfgs,my_cfg_fmt)
             if cfgs not in summary.keys(): 
@@ -238,6 +242,8 @@ def tput(xval,vval,summary,summary_cl,
                         my_cfg = my_cfg + [1.0-my_cfg[my_cfg_fmt.index(extras[e])]]
                     else:
                         my_cfg = my_cfg + [my_cfg[my_cfg_fmt.index(extras[e])]]
+            if my_cfg[my_cfg_fmt.index("PART_PER_TXN")] > my_cfg[my_cfg_fmt.index("PART_CNT")]:
+                my_cfg[my_cfg_fmt.index("PART_PER_TXN")] = my_cfg[my_cfg_fmt.index("PART_CNT")]
 #            n_cnt = my_cfg[my_cfg_fmt.index("NODE_CNT")]
 #            n_clt = my_cfg[my_cfg_fmt.index("CLIENT_NODE_CNT")]
 #            my_cfg[my_cfg_fmt.index("CLIENT_NODE_CNT")] = int(math.ceil(n_cnt)) if n_cnt > 1 else 1
@@ -596,6 +602,8 @@ def stacks_general(xval,summary,
                 my_cfg_fmt = my_cfg_fmt + [e]
                 my_cfg = my_cfg + [my_cfg[my_cfg_fmt.index(extras[e])]]
 
+        if my_cfg[my_cfg_fmt.index("PART_PER_TXN")] > my_cfg[my_cfg_fmt.index("PART_CNT")]:
+            my_cfg[my_cfg_fmt.index("PART_PER_TXN")] = my_cfg[my_cfg_fmt.index("PART_CNT")]
         cfgs = get_cfgs(my_cfg_fmt, my_cfg)
         cfgs = get_outfile_name(cfgs,my_cfg_fmt)
         if cfgs not in summary.keys(): 

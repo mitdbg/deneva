@@ -47,6 +47,8 @@ void print_usage() {
   */
 	printf("  [YCSB]:\n");
 //	printf("\t-cINT     ; CC_ALG (1:NO_WAIT, 2:WAIT_DIE, 3:DL_DETECT, 4:TIMESTAMP, 5:MVCC, 6:HSTORE)\n");
+	printf("\t-dpFLOAT       ; DATA_PERC\n");
+	printf("\t-apFLOAT       ; ACCESS_PERC\n");
 	printf("\t-pptINT       ; PART_PER_TXN\n");
 	printf("\t-eINT       ; PERC_MULTI_PART\n");
 	printf("\t-rFLOAT     ; READ_PERC\n");
@@ -110,6 +112,10 @@ void parser(int argc, char * argv[]) {
       g_perc_payment = atof( &argv[i][3] );
     else if (argv[i][1] == 'u' && argv[i][2] == 'p')
       g_wh_update = atoi( &argv[i][3] );
+    else if (argv[i][1] == 'd' && argv[i][2] == 'p')
+      g_data_perc = atof( &argv[i][3] );
+    else if (argv[i][1] == 'a' && argv[i][2] == 'p')
+      g_access_perc = atof( &argv[i][3] );
     else if (argv[i][1] == 'p')
       g_part_cnt = atoi( &argv[i][2] );
     else if (argv[i][1] == 'n')
@@ -179,6 +185,8 @@ void parser(int argc, char * argv[]) {
 			printf("g_write_perc %f\n",g_write_perc );
 			printf("g_synth_table_size %ld\n",g_synth_table_size );
 			printf("g_field_per_tuple %d\n",g_field_per_tuple );
+      printf("g_data_perc %f\n",g_access_perc);
+      printf("g_access_perc %f\n",g_access_perc);
 
     // Initialize client-specific globals
     if (g_node_id >= g_node_cnt)

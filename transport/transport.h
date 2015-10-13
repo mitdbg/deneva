@@ -7,6 +7,7 @@
 #include "remote_query.h"
 #include "query.h"
 
+class workload;
 
 /*
 	 Message format:
@@ -48,11 +49,12 @@ class DelayMessage {
 
 class Transport {
 	public:
-		Transport();
-		~Transport();
+		//Transport();
+		//~Transport();
 		//Transport() : s(AF_SP,NN_PAIR) {}
 		void read_ifconfig(const char * ifaddr_file);
-		void init(uint64_t node_id);
+		void init(uint64_t node_id,workload* workload);
+    void shutdown(); 
 		uint64_t get_node_id();
 		void send_msg(uint64_t sid, uint64_t dest_id, void * sbuf,int size);
 		void send_msg(uint64_t dest_id, void ** data, int * sizes, int num); 
@@ -72,8 +74,11 @@ class Transport {
 		uint64_t _node_id;
     uint64_t _node_cnt;
     uint64_t _sock_cnt;
+    uint64_t _s_cnt;
 		char ** ifaddr;
 		uint32_t _thd_id;	// for stats
+    int * endpoint_id;
+    workload * _wl;
 
 };
 

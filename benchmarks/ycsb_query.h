@@ -46,6 +46,7 @@ class ycsb_client_query : public base_client_query {
 private:
 	void gen_requests(uint64_t thd_id, workload * h_wl);
 	void gen_requests2(uint64_t thd_id, workload * h_wl);
+	void gen_requests3(uint64_t thd_id, workload * h_wl);
 	// for Zipfian distribution
 	double zeta(uint64_t n, double theta);
 	uint64_t zipf(uint64_t n, double theta);

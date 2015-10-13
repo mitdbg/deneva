@@ -6,6 +6,7 @@
 #include "remote_query.h"
 #include "tpcc_query.h"
 #include "query.h"
+#include "wl.h"
 
 #define MAX_IFADDR_LEN 20
 
@@ -18,33 +19,12 @@
 	 N?	data
 
 	 */
-Transport::Transport() {
-  /*
-    _node_cnt = g_node_cnt + g_client_node_cnt;
-#if CC_ALG == CALVIN
-	_node_cnt++;	// account for the sequencer
-#endif
-  uint64_t s_thd;
-  if(g_client_send_thread_cnt > g_send_thread_cnt)
-    s_thd = g_client_send_thread_cnt;
-  else
-    s_thd = g_send_thread_cnt;
-  _sock_cnt = s_thd * (_node_cnt) + g_node_cnt * g_send_thread_cnt + g_client_node_cnt * g_client_send_thread_cnt;
-	//s = new Socket[_node_cnt];
-	s = new Socket[_sock_cnt];
-
-    delay_queue = new DelayQueue();
-    delay_queue->init();
-    */
-}
-
-
-Transport::~Transport() {
-	/*
-	for(uint64_t i=0;i<_node_cnt;i++) {
-		delete &s[i];
-	}
-	*/
+void Transport::shutdown() {
+  printf("Shutting down\n");
+  for(uint64_t i=0;i<_s_cnt;i++) {
+    s[i].sock.shutdown(endpoint_id[i]);
+  }
+  mem_allocator.free(endpoint_id,sizeof(int)*_s_cnt);
 }
 
 void Transport::read_ifconfig(const char * ifaddr_file) {
@@ -61,8 +41,8 @@ void Transport::read_ifconfig(const char * ifaddr_file) {
 	}
 }
 
-void Transport::init(uint64_t node_id) {
-	printf("Init %ld\n",node_id);
+void Transport::init(uint64_t node_id,workload * workload) {
+	_wl = workload;
   _node_cnt = g_node_cnt + g_client_node_cnt;
 #if CC_ALG == CALVIN
 	_node_cnt++;	// account for the sequencer
@@ -81,6 +61,8 @@ void Transport::init(uint64_t node_id) {
 #else
 	_thd_id = 1;
 #endif
+  endpoint_id = (int*)mem_allocator.alloc(sizeof(int)*_sock_cnt,0);
+	printf("Tport Init %ld: %ld\n",node_id,_sock_cnt);
 
 #if !TPORT_TYPE_IPC
 	// Read ifconfig file
@@ -107,46 +89,16 @@ void Transport::init(uint64_t node_id) {
 	int rc = 0;
 
 	int timeo = 1000; // timeout in ms
-	//int stimeo = 60000; // timeout in ms
+	int stimeo = 1000; // timeout in ms
   int opt = 0;
 	for(uint64_t i=0;i<_sock_cnt;i++) {
 		s[i].sock.setsockopt(NN_SOL_SOCKET,NN_RCVTIMEO,&timeo,sizeof(timeo));
-		//s[i].sock.setsockopt(NN_SOL_SOCKET,NN_SNDTIMEO,&stimeo,sizeof(stimeo));
+		s[i].sock.setsockopt(NN_SOL_SOCKET,NN_SNDTIMEO,&stimeo,sizeof(stimeo));
     // NN_TCP_NODELAY doesn't cause TCP_NODELAY to be set -- nanomsg issue #118
 		s[i].sock.setsockopt(NN_SOL_SOCKET,NN_TCP_NODELAY,&opt,sizeof(opt));
 	}
 
 	printf("Node ID: %d/%lu\n",g_node_id,_node_cnt);
-
-  /*
-	for(uint64_t i=0;i<_node_cnt-1;i++) {
-		for(uint64_t j=i+1;j<_node_cnt;j++) {
-			if(i != g_node_id && j != g_node_id) {
-				continue;
-			}
-			char socket_name[MAX_TPORT_NAME];
-			// Socket name format: transport://addr
-#if TPORT_TYPE_IPC
-			sprintf(socket_name,"%s://node_%ld_%ld_%s",TPORT_TYPE,i,j,TPORT_PORT);
-#else
-			int port = TPORT_PORT + (i * _node_cnt) + j;
-			if(i == g_node_id)
-				sprintf(socket_name,"%s://eth0:%d",TPORT_TYPE,port);
-			else
-				sprintf(socket_name,"%s://eth0;%s:%d",TPORT_TYPE,ifaddr[i],port);
-#endif
-			if(i == g_node_id) {
-				printf("Binding to %s\n",socket_name);
-				rc = s[j].sock.bind(socket_name);
-			} else {
-				printf("Connecting to %s\n",socket_name);
-				rc = s[i].sock.connect(socket_name);
-			}
-      s_cnt++;
-		}
-	}
-	fflush(stdout);
-  */
 
   uint64_t s_cnt = 0;
   uint64_t s_thd;
@@ -170,6 +122,7 @@ void Transport::init(uint64_t node_id) {
 #endif
       printf("Sock[%ld] Binding to %s %d -> %ld\n",s_cnt,socket_name,g_node_id,j);
       rc = s[s_cnt].sock.bind(socket_name);
+      endpoint_id[s_cnt] = rc;
       s_cnt++;
     }
   }
@@ -193,11 +146,13 @@ void Transport::init(uint64_t node_id) {
 #endif
       printf("Sock[%ld] Connecting to %s %ld -> %d\n",s_cnt,socket_name,i,g_node_id);
       rc = s[s_cnt].sock.connect(socket_name);
+      endpoint_id[s_cnt] = rc;
       s_cnt++;
 
     }
   }
 	fflush(stdout);
+  _s_cnt = s_cnt;
 
 	if(rc < 0) {
 		printf("Bind Error: %d %s\n",errno,strerror(errno));
@@ -220,6 +175,7 @@ void Transport::send_msg(uint64_t sid, uint64_t dest_id, void * sbuf,int size) {
   uint64_t idx = id * (_node_cnt-1) + dest_id;
   if(g_node_id < dest_id)
     idx--;
+  assert(idx < _sock_cnt);
   /*
   printf("d:%ld idx:%ld -- %ld * %ld + %ld -- %ld\n",dest_id,idx,id,_node_cnt-1,dest_id,sid);
   fflush(stdout);
@@ -229,16 +185,17 @@ void Transport::send_msg(uint64_t sid, uint64_t dest_id, void * sbuf,int size) {
 	memcpy(buf,sbuf,size);
   int rc = -1;
 
-  rc= s[idx].sock.send(&buf,NN_MSG,0);
+  while(rc < 0 && !_wl->sim_timeout) {
+    rc= s[idx].sock.send(&buf,NN_MSG,NN_DONTWAIT);
+    // Check for a send error
+    /*
+    if(rc < 0 || rc != size) 
+      printf("send Error: %d %s; Done: %d\n",errno,strerror(errno),_wl->sim_timeout);
+      */
+  }
   //assert(rc == size);
 	//int rc= s[idx].sock.send(&sbuf,NN_MSG,0);
   //nn_freemsg(sbuf);
-
-	// Check for a send error
-	if(rc < 0 || rc != size) {
-		printf("send Error: %d %s\n",errno,strerror(errno));
-		//assert(false);
-	}
 
   INC_STATS(_thd_id,time_tport_send,get_sys_clock() - starttime);
 	INC_STATS(_thd_id,msg_sent_cnt,1);

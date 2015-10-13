@@ -43,9 +43,9 @@ RC Client_thread_t::run_remote() {
     //while((m_query = work_queue.get_next_query(get_thd_id())) != NULL) {
     while(work_queue.dequeue(0,m_query)) { 
       assert(m_query->rtype == INIT_DONE);
-      DEBUG("Received INIT_DONE from node %ld -- %ld\n",m_query->return_id,_wl->rsp_cnt);
-      DEBUG_FLUSH();
       ATOM_SUB(_wl->rsp_cnt,1);
+      printf("Received INIT_DONE from node %ld -- %ld\n",m_query->return_id,_wl->rsp_cnt);
+      fflush(stdout);
       if(_wl->rsp_cnt ==0) {
         if( !ATOM_CAS(_wl->sim_init_done, false, true) )
           assert( _wl->sim_init_done);
@@ -114,6 +114,8 @@ RC Client_thread_t::run_remote() {
 				assert( _wl->sim_done);
 			if( !ATOM_CAS(_wl->sim_timeout, false, true) )
 				assert( _wl->sim_timeout);
+      printf("FINISH %ld:%ld\n",_node_id,_thd_id);
+      fflush(stdout);
       return FINISH;
 		}
 
@@ -148,6 +150,8 @@ RC Client_thread_t::run_remote() {
     fflush(stdout);
   }
 
+  printf("FINISH %ld:%ld\n",_node_id,_thd_id);
+  fflush(stdout);
   return FINISH;
 }
 
@@ -173,6 +177,8 @@ RC Client_thread_t::run_send() {
 	while (!(_wl->sim_done && _wl->sim_timeout)) {
     messager.run();
   }
+  printf("FINISH %ld:%ld\n",_node_id,_thd_id);
+  fflush(stdout);
 	return FINISH;
 }
 
@@ -294,5 +300,7 @@ RC Client_thread_t::run() {
       fflush(stdout);
     }
   }
+  printf("FINISH %ld:%ld\n",_node_id,_thd_id);
+  fflush(stdout);
 	return FINISH;
 }

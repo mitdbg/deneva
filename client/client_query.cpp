@@ -33,7 +33,7 @@ Client_query_queue::init(int thread_id) {
 
 #if CREATE_TXN_FILE
   char output_file[50];
-  sprintf(output_file,"p%d_%d_skew%d.txt",thread_id,g_part_cnt,(int)(g_zipf_theta*10));
+  sprintf(output_file,"p%d_%d_a%d_d%d.txt",thread_id,g_part_cnt,(int)(g_access_perc*100),(int)(g_data_perc*100));
   FILE * outf;
   outf = fopen(output_file,"w");
   //printf("%ld %ld %ld ",request_cnt,part_to_access[0],part_num);

@@ -84,6 +84,8 @@ RC thread_t::run_remote() {
 		//if ((_wl->sim_done && _wl->sim_timeout) || (tend - run_starttime >= g_done_timer)) {
 		if (_wl->sim_done && _wl->sim_timeout) {
 
+      printf("FINISH %ld:%ld\n",_node_id,_thd_id);
+      fflush(stdout);
 			return FINISH;
 		}
 	}
@@ -112,6 +114,8 @@ RC thread_t::run_send() {
 	while (true) {
     messager.run();
 		if ((get_sys_clock() - starttime) >= g_done_timer || (_wl->sim_done && _wl->sim_timeout)) {
+      printf("FINISH %ld:%ld\n",_node_id,_thd_id);
+      fflush(stdout);
 			return FINISH;
     }
   }
@@ -146,8 +150,8 @@ RC thread_t::run() {
       while(!work_queue.dequeue(_thd_id,m_query)) { }
       if(m_query->rtype == INIT_DONE) {
         ATOM_SUB(_wl->rsp_cnt,1);
-        DEBUG("Processed INIT_DONE from %ld -- %ld\n",m_query->return_id,_wl->rsp_cnt);
-        DEBUG_FLUSH();
+        printf("Processed INIT_DONE from %ld -- %ld\n",m_query->return_id,_wl->rsp_cnt);
+        fflush(stdout);
         if(_wl->rsp_cnt ==0) {
 			    if( !ATOM_CAS(_wl->sim_init_done, false, true) )
 				    assert( _wl->sim_init_done);
@@ -284,6 +288,8 @@ RC thread_t::run() {
       */
       }
 
+      printf("FINISH %ld:%ld\n",_node_id,_thd_id);
+      fflush(stdout);
 			return FINISH;
 		}
 

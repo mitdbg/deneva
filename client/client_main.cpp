@@ -37,17 +37,6 @@ int main(int argc, char* argv[])
 	srand(seed);
 	printf("Random seed: %ld\n",seed);
 
-#if NETWORK_TEST
-	tport_man.init(g_node_id);
-	sleep(3);
-	if(g_node_id == 0)
-		network_test();
-	else if(g_node_id == 1)
-		network_test_recv();
-
-	return 0;
-#endif
-
 
 	int64_t starttime;
 	int64_t endtime;
@@ -76,6 +65,17 @@ int main(int argc, char* argv[])
 	}
 	m_wl->workload::init();
 	printf("workload initialized!\n");
+#if NETWORK_TEST
+	tport_man.init(g_node_id);
+	sleep(3);
+	if(g_node_id == 0)
+		network_test();
+	else if(g_node_id == 1)
+		network_test_recv();
+
+	return 0;
+#endif
+
 
   printf("Initializing remote query manager... ");
   fflush(stdout);
@@ -83,7 +83,7 @@ int main(int argc, char* argv[])
   printf("Done\n");
   printf("Initializing transport manager... ");
   fflush(stdout);
-	tport_man.init(g_node_id);
+	tport_man.init(g_node_id,m_wl);
   printf("Done\n");
   printf("Initializing client manager... ");
   client_man.init();
@@ -185,6 +185,7 @@ int main(int argc, char* argv[])
 		((TestWorkload *)m_wl)->summarize();
 	}
   // Free stuff
+	tport_man.shutdown();
   /*
   msg_pool.free_all();
   qry_pool.free_all();

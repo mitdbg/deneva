@@ -34,17 +34,6 @@ int main(int argc, char* argv[])
 	srand(seed);
 	printf("Random seed: %ld\n",seed);
 
-#if NETWORK_TEST
-	tport_man.init(g_node_id);
-	sleep(3);
-	if(g_node_id == 0)
-		network_test();
-	else if(g_node_id == 1)
-		network_test_recv();
-
-	return 0;
-#endif
-
 	int64_t starttime;
 	int64_t endtime;
     starttime = get_server_clock();
@@ -67,9 +56,20 @@ int main(int argc, char* argv[])
 	}
 	m_wl->init();
 	printf("workload initialized!\n");
+#if NETWORK_TEST
+	tport_man.init(g_node_id,m_wl);
+	sleep(3);
+	if(g_node_id == 0)
+		network_test();
+	else if(g_node_id == 1)
+		network_test_recv();
+
+	return 0;
+#endif
+
 
 	rem_qry_man.init(g_node_id,m_wl);
-	tport_man.init(g_node_id);
+	tport_man.init(g_node_id,m_wl);
 	seq_man.init(m_wl);
 
 	// 2. spawn multiple threads
