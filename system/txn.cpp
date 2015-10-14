@@ -329,7 +329,6 @@ RC txn_man::get_row(row_t * row, access_t type, row_t *& row_rtn) {
   uint64_t timespan;
 	RC rc = RCOK;
 //	assert(row_cnt < MAX_ROW_PER_TXN);
-	uint64_t part_id = row->get_part_id();
 	if (accesses[row_cnt] == NULL) {
 		access_pool.get(accesses[row_cnt]);
 		//accesses[row_cnt] = (Access *) 
@@ -365,6 +364,7 @@ RC txn_man::get_row(row_t * row, access_t type, row_t *& row_rtn) {
 #if ROLL_BACK && (CC_ALG == DL_DETECT || CC_ALG == NO_WAIT || CC_ALG == WAIT_DIE || CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC)
 	if (type == WR) {
     //printf("alloc 10 %ld\n",get_txn_id());
+    uint64_t part_id = row->get_part_id();
     DEBUG_M("txn_man::get_row alloc\n")
 		accesses[row_cnt]->orig_data = (row_t *) 
 			mem_allocator.alloc(sizeof(row_t), part_id);
