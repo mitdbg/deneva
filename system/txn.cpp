@@ -28,6 +28,8 @@ void txn_man::init(workload * h_wl) {
 	ready_part = 0;
 	rem_row_cnt = 0;
 	row_cnt = 0;
+	vll_row_cnt = 0;
+  vll_entry = NULL;
 	wr_cnt = 0;
 	insert_cnt = 0;
   ack_cnt = 0;
@@ -67,6 +69,8 @@ void txn_man::reset() {
 	ready_part = 0;
 	rem_row_cnt = 0;
 	row_cnt = 0;
+	vll_row_cnt = 0;
+  vll_entry = NULL;
 	wr_cnt = 0;
 	insert_cnt = 0;
   ack_cnt = 0;
@@ -105,6 +109,7 @@ void txn_man::clear() {
   ready_part = 0;
   rem_row_cnt = 0;
   row_cnt = 0;
+  vll_row_cnt = 0;
   wr_cnt = 0;
   state = START;
   rc = RCOK;
@@ -318,6 +323,7 @@ void txn_man::cleanup(RC rc) {
   }
 	rem_row_cnt = 0;
 	row_cnt = 0;
+	vll_row_cnt = 0;
 	wr_cnt = 0;
 	insert_cnt = 0;
   rsp_cnt = 0;
@@ -590,6 +596,7 @@ RC txn_man::finish(base_query * query, bool fin) {
       } else {
         assert(CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC);
          // Model after RFIN
+        /*
 #if WORKLOAD == TPCC
 	    base_query * tmp_query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), 0);
 	      tmp_query = new tpcc_query();
@@ -597,6 +604,9 @@ RC txn_man::finish(base_query * query, bool fin) {
 	    base_query * tmp_query = (ycsb_query *) mem_allocator.alloc(sizeof(ycsb_query), 0);
         tmp_query = new ycsb_query();
 #endif
+*/
+        base_query * tmp_query; 
+        qry_pool.get(tmp_query);
         tmp_query->txn_id = query->txn_id;
         tmp_query->ts = query->ts;
         tmp_query->home_part = query->home_part;
@@ -620,6 +630,7 @@ RC txn_man::finish(base_query * query, bool fin) {
       } else {
         assert(CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC);
          // Model after RPREP
+        /*
 #if WORKLOAD == TPCC
 	    base_query * tmp_query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), 0);
 	      tmp_query = new tpcc_query();
@@ -627,6 +638,9 @@ RC txn_man::finish(base_query * query, bool fin) {
 	    base_query * tmp_query = (ycsb_query *) mem_allocator.alloc(sizeof(ycsb_query), 0);
         tmp_query = new ycsb_query();
 #endif
+*/
+        base_query * tmp_query; 
+        qry_pool.get(tmp_query);
         tmp_query->txn_id = query->txn_id;
         tmp_query->ts = query->ts;
         tmp_query->home_part = query->home_part;

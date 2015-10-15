@@ -8,6 +8,7 @@
 #include "wl.h"
 #include "catalog.h"
 #include "mem_alloc.h"
+#include "msg_queue.h"
 #if CC_ALG == VLL
 
 void 
@@ -88,7 +89,9 @@ VLLMan::restartQFront() {
     if(front_txn->get_txn_id() % g_node_cnt != g_node_id) {
       //base_query * qry = txn_table.get_qry(g_node_id,front_txn->get_txn_id());
   		//rem_qry_man.ack_response(qry);
-  		rem_qry_man.ack_response(RCOK,front_txn);
+  		//rem_qry_man.ack_response(RCOK,front_txn);
+      base_query * qry = front_txn->get_query();
+      msg_queue.enqueue(qry,RACK,qry->return_id);
     }
     else {
       txn_table.restart_txn(front_txn->get_txn_id());
@@ -145,8 +148,10 @@ VLLMan::beginTxn(txn_man * txn, base_query * query) {
 
 	for (int rid = 0; rid < txn->row_cnt; rid ++ ) {
 		access_t type = txn->accesses[rid]->type;
+    DEBUG("insert_access %d %lx\n",(int)type,(uint64_t)txn->accesses[rid]->orig_row->manager);
 		if (txn->accesses[rid]->orig_row->manager->insert_access(type))
 			txn->vll_txn_type = VLL_Blocked;
+    txn->vll_row_cnt++;
 	}
 
 	entry = getQEntry();
@@ -202,11 +207,13 @@ final:
 void 
 VLLMan::finishTxn(txn_man * txn) {
 	pthread_mutex_lock(&_mutex);
+  DEBUG("finishTxn %ld\n",txn->get_txn_id());
 	TxnQEntry * entry = txn->vll_entry;
   if(entry){
 
-	for (int rid = 0; rid < txn->row_cnt; rid ++ ) {
+	for (int rid = 0; rid < txn->vll_row_cnt; rid ++ ) {
 		access_t type = txn->accesses[rid]->type;
+    DEBUG("remove_access %d %lx\n",(int)type,(uint64_t)txn->accesses[rid]->orig_row->manager);
 		txn->accesses[rid]->orig_row->manager->remove_access(type);
 	}
 	  LIST_REMOVE_HT(entry, _txn_queue, _txn_queue_tail);

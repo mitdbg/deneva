@@ -603,6 +603,7 @@ RC thread_t::process_rfin(base_query *& m_query,txn_man *& m_txn) {
               YCSB_QUERY_FREE(m_query)
             }
             m_query = tmp_query;
+            m_txn->set_query(m_query);
             assert(m_query->home_part != GET_PART_ID_FROM_IDX(_thd_id));
           } 
         }
@@ -637,6 +638,7 @@ RC thread_t::process_rfin(base_query *& m_query,txn_man *& m_txn) {
             YCSB_QUERY_FREE(m_query)
           }
           m_query = tmp_query;
+          m_txn->set_query(m_query);
         }
         // Clean up transaction
 				if (finish) {
@@ -661,6 +663,9 @@ RC thread_t::process_rfin(base_query *& m_query,txn_man *& m_txn) {
 RC thread_t::process_rack(base_query *& m_query,txn_man *& m_txn) {
 
         uint64_t thd_prof_thd_rack_start = get_sys_clock();
+#if CC_ALG == VLL
+        uint64_t thd_prof_thd_rack_vll = get_sys_clock();
+#endif
 				DEBUG("%ld Received RACK %ld\n",GET_PART_ID_FROM_IDX(_thd_id),m_query->txn_id);
 				INC_STATS(0,rack,1);
 				assert(IS_LOCAL(m_query->txn_id));
@@ -681,6 +686,7 @@ RC thread_t::process_rack(base_query *& m_query,txn_man *& m_txn) {
           YCSB_QUERY_FREE(m_query)
         }
         m_query = tmp_query;
+        m_txn->set_query(m_query);
         assert(ISCLIENTN(m_query->client_id));
 
         INC_STATS(_thd_id,thd_prof_thd_rack0,get_sys_clock() - thd_prof_thd_rack_start);
@@ -743,9 +749,9 @@ RC thread_t::process_rack(base_query *& m_query,txn_man *& m_txn) {
                     return Abort;
               }
 
-              uint64_t debug3 = get_sys_clock();
+              thd_prof_thd_rack_vll = get_sys_clock();
               rc = vll_man.beginTxn(m_txn,m_query);
-              INC_STATS(_thd_id,txn_time_begintxn,get_sys_clock() - debug3);
+              INC_STATS(_thd_id,txn_time_begintxn,get_sys_clock() - thd_prof_thd_rack_vll);
               if(rc == WAIT)
                 return WAIT;
               if(rc == Abort) {
@@ -829,6 +835,7 @@ RC thread_t::process_rqry_rsp(uint64_t tid, base_query *& m_query,txn_man *& m_t
           YCSB_QUERY_FREE(m_query)
         }
         m_query = tmp_query;
+        m_txn->set_query(m_query);
 
     INC_STATS(_thd_id,thd_prof_thd_rqry_rsp0,get_sys_clock() - thd_prof_start);
     thd_prof_start = get_sys_clock();
@@ -884,6 +891,7 @@ RC thread_t::process_rqry(base_query *& m_query,txn_man *& m_txn) {
             YCSB_QUERY_FREE(m_query)
           }
         m_query = tmp_query;
+        m_txn->set_query(m_query);
 
 				m_txn->state = EXEC;
 
@@ -957,6 +965,7 @@ RC thread_t::process_rprepare(base_query *& m_query,txn_man *& m_txn) {
             YCSB_QUERY_FREE(m_query)
           }
           m_query = tmp_query;
+          m_txn->set_query(m_query);
           assert(!(CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC) || m_query->home_part != GET_PART_ID_FROM_IDX(_thd_id));
         }
 
@@ -1014,6 +1023,7 @@ RC thread_t::process_rinit(base_query *& m_query,txn_man *& m_txn) {
           INC_STATS(_thd_id,txn_rem_cnt,1);
         }
 				//assert(rc == RCOK);
+        m_txn->register_thd(this);
 				m_txn->set_txn_id(m_query->txn_id);
 				m_txn->set_ts(m_query->ts);
 				m_txn->set_pid(m_query->pid);

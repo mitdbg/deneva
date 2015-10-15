@@ -267,7 +267,10 @@ void MessageThread::rinit(mbuf * sbuf,base_query * qry) {
 #if WORKLOAD == YCSB
   ycsb_query * m_qry = (ycsb_query *)qry;
   COPY_BUF(sbuf->buffer,m_qry->request_cnt,sbuf->ptr);
-  COPY_BUF_SIZE(sbuf->buffer,m_qry->requests,sbuf->ptr,sizeof(ycsb_request) * m_qry->request_cnt);
+	for (uint64_t i = 0; i < m_qry->request_cnt; i++) {
+    COPY_BUF_SIZE(sbuf->buffer,m_qry->requests[i],sbuf->ptr,sizeof(ycsb_request));
+  }
+  //COPY_BUF_SIZE(sbuf->buffer,m_qry->requests,sbuf->ptr,sizeof(ycsb_request) * m_qry->request_cnt);
 #endif
 #endif
 }

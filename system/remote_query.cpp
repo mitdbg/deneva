@@ -106,7 +106,10 @@ void Remote_query::unpack_query(base_query *& query,char * data,  uint64_t & ptr
       COPY_VAL(m_query->request_cnt,data,ptr);
       //m_query->requests = (ycsb_request *) 
       //mem_allocator.alloc(sizeof(ycsb_request) * m_query->request_cnt, 0);
-      COPY_VAL_SIZE(m_query->requests,data,ptr,sizeof(ycsb_request)*m_query->request_cnt);
+	    for (uint64_t i = 0; i < m_query->request_cnt; i++) {
+        COPY_VAL(m_query->requests[i],data,ptr);
+      }
+      //COPY_VAL_SIZE(m_query->requests,data,ptr,sizeof(ycsb_request)*m_query->request_cnt);
       m_query->req = m_query->requests[0];
 #endif
 #endif

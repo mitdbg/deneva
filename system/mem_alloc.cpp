@@ -132,9 +132,12 @@ void mem_alloc::free(void * ptr, uint64_t size) {
 		int size_id = get_size_id(size);
 		_arenas[arena_id][size_id].free(ptr);
 	} else {
+#if TPORT_TYPE_IPC
+		std::free(ptr);
+#else
 		je_free(ptr);
+#endif
     DEBUG_M("free %ld 0x%lx\n",size,(uint64_t)ptr);
-		//std::free(ptr);
 	}
 }
 
@@ -152,17 +155,23 @@ void * mem_alloc::alloc(uint64_t size, uint64_t part_id) {
 		int size_id = get_size_id(size);
 		ptr = _arenas[arena_id][size_id].alloc();
 	} else {
+#if TPORT_TYPE_IPC
+		ptr = malloc(size);
+#else
 		ptr = je_malloc(size);
+#endif
     DEBUG_M("alloc %ld 0x%lx\n",size,(uint64_t)ptr);
-		//ptr = malloc(size);
 	}
 	return ptr;
 }
 
 void * mem_alloc::realloc(void * ptr, uint64_t size, uint64_t part_id) {
+#if TPORT_TYPE_IPC
+  void * _ptr = std::realloc(ptr,size);
+#else
   void * _ptr = je_realloc(ptr,size);
+#endif
   DEBUG_M("realloc %ld 0x%lx\n",size,(uint64_t)_ptr);
-  //void * _ptr = std::realloc(ptr,size);
 	return _ptr;
 }
 

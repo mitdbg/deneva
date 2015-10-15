@@ -109,6 +109,7 @@ public:
 	int 			rem_row_cnt;
 	int 			row_cnt;
 	int	 			wr_cnt;
+	int 			vll_row_cnt;
 //	int * 			row_cnts;
 	Access **		accesses;
 	int 			num_accesses_alloc;
