@@ -154,6 +154,7 @@ void parser(int argc, char * argv[]) {
     }
 	}
 
+    //g_inflight_max = g_inflight_max / g_node_cnt;
       printf("g_done_timer %ld\n",g_done_timer);
 			printf("g_thread_cnt %d\n",g_thread_cnt );
 			printf("g_abort_penalty %ld\n",g_abort_penalty); 

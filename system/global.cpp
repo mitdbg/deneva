@@ -60,6 +60,7 @@ ts_t g_dl_loop_detect = DL_LOOP_DETECT;
 bool g_ts_batch_alloc = TS_BATCH_ALLOC;
 UInt32 g_ts_batch_num = TS_BATCH_NUM;
 int32_t g_inflight_max = MAX_TXN_IN_FLIGHT;
+//int32_t g_inflight_max = MAX_TXN_IN_FLIGHT/NODE_CNT;
 uint64_t g_msg_size = MSG_SIZE_MAX;
 
 bool g_hw_migrate = HW_MIGRATE;

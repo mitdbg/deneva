@@ -70,13 +70,14 @@ lineconfig = {
 #Skew
     0.0       : "ls='-', lw=2, color='#faa43a', marker='D', ms=4",
     0.01      : "ls='-', lw=2, color='#DECF3F', marker='s', ms=4",
-    0.1     : "ls='-', lw=2, color='#60BD68', marker='^', ms=4",
-    1.0          : "ls='--', lw=2, color='#5DA5DA', marker='o', ms=4", #, marker='+', ms=10",
-
-#Network delay
-    0.6      : "ls='-', lw=2, color='#DECF3F', marker='s', ms=4",
-    0.8     : "ls='-', lw=2, color='#60BD68', marker='^', ms=4",
-    0.9          : "ls='--', lw=2, color='#5DA5DA', marker='o', ms=4", #, marker='+', ms=10",
+    0.05      : "ls='-', lw=2, color='#faa43a', marker='s', ms=4",
+    0.075      : "ls='-', lw=2, color='#4d4d4d', marker='s', ms=4",
+    0.1     : "ls='-', lw=2, color='#5DA5DA', marker='^', ms=4",
+    0.5      : "ls='-', lw=2, color='#B276B2', marker='s', ms=4",
+    0.6      : "ls='-', lw=2, color='#DECF3F', marker='^', ms=4",
+    0.8     : "ls='-', lw=2, color='#f15854', marker='D', ms=4",
+    0.9          : "ls='--', lw=2, color='#5DA5DA', marker='o', ms=4",
+    1.0          : "ls='--', lw=2, color='#60BD68', marker='o', ms=4",
     0.99           : "ls='--', lw=2, color='#B276B2', marker='+', ms=6",
     10.0           : "ls='--', lw=2, color='#B276B2', marker='+', ms=6",
     100.0        : "ls='-', lw=2, color='#4d4d4d', marker='x', ms=6",
@@ -96,7 +97,7 @@ def draw_bar(filename, data, label, names=None, dots=None,
         ylabel='Speedup', xlabel='', rotation=30,
         ncol=1, bbox=[0.95, 0.9], colors=None, hatches=None,
         figsize=(9, 3), left=0.1, bottom=0.18, right=0.96, top=None, 
-        ylimit=None, xlimit=None):
+        ylimit=None, xlimit=None,ltitle=''):
 
     index = range(0, len(label))
     m_label = list(label)
@@ -156,7 +157,7 @@ def draw_line2(fname, data, xticks,
         ylab='Throughput', logscale=False, 
         logscalex = False,
         ylimit=0, xlimit=None, xlab='Number of Cores',
-        legend=True, linenames = None, figsize=(23/3, 10/3), styles=None) :
+        legend=True, linenames = None, figsize=(23/3, 10/3), styles=None,ltitle='') :
     fig = figure(figsize=figsize)
     lines = [0] * len(data)
     ax = plt.axes()
@@ -202,7 +203,7 @@ def draw_line2(fname, data, xticks,
 #ax.get_xaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
     if legend :
         #fig.legend(lines, linenames, loc='upper right',bbox_to_anchor = (1,1), prop={'size':9}, ncol=ncol)
-        fig.legend(lines, linenames, loc='upper right',bbox_to_anchor = bbox, prop={'size':8},ncol=ncol)
+        fig.legend(lines, linenames, loc='upper right',bbox_to_anchor = bbox, prop={'size':8},ncol=ncol,title=ltitle)
     subplots_adjust(left=0.18, bottom=0.15, right=0.9, top=None)
     if title:
         ax.set_title("\n".join(wrap(title)))
@@ -225,7 +226,7 @@ def draw_line(fname, data, xticks,
         ylab='Throughput', logscale=False, 
         logscalex = False,
         ylimit=0, xlimit=None, xlab='Number of Cores',
-        legend=True, linenames = None, figsize=(23/3, 10/3), styles=None) :
+        legend=True, linenames = None, figsize=(23/3, 10/3), styles=None,ltitle='') :
     fig = figure(figsize=figsize)
     thr = [0] * len(xticks)
     lines = [0] * len(data)
@@ -270,7 +271,7 @@ def draw_line(fname, data, xticks,
 #ax.get_xaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
     if legend :
         #fig.legend(lines, linenames, loc='upper right',bbox_to_anchor = (1,1), prop={'size':9}, ncol=ncol)
-        fig.legend(lines, linenames, loc='upper right',bbox_to_anchor = bbox, prop={'size':8},ncol=ncol)
+        fig.legend(lines, linenames, loc='upper right',bbox_to_anchor = bbox, prop={'size':8},ncol=ncol,title=ltitle)
     subplots_adjust(left=0.18, bottom=0.15, right=0.9, top=None)
     if title:
         ax.set_title("\n".join(wrap(title)))
@@ -291,7 +292,7 @@ def draw_bars_single(data, xlabels,
         ylab = 'Throughput',
         xlab = 'Time',
         title = None,
-        bbox=[0.95,0.95]):
+        bbox=[0.95,0.95],ltitle=''):
 
     fig = figure(figsize=figsize)
     ind = range(0, len(xlabels))
@@ -322,7 +323,7 @@ def draw_bars_single(data, xlabels,
 
 
 
-def draw_stack(data, xlabels, slabels, figname='stack', title=None, figsize=(8, 3),ymin=0, ymax=1) :
+def draw_stack(data, xlabels, slabels, figname='stack', title=None, figsize=(8, 3),ymin=0, ymax=1,ltitle='') :
     fig = figure(figsize=figsize)
     ind = range(0, len(xlabels))
 
@@ -355,7 +356,7 @@ def draw_bars(data, xlabels,
         ylab = 'Throughput',
         xlab = 'Time',
         title = None,
-        bbox=[0.95,0.95]):
+        bbox=[0.95,0.95],ltitle=''):
 
     fig = figure(figsize=figsize)
     ind = range(0, len(xlabels))
@@ -387,7 +388,7 @@ def draw_bars(data, xlabels,
 
 
 
-def draw_stack(data, xlabels, slabels, figname='stack', title=None, figsize=(8, 3),ymin=0, ymax=1) :
+def draw_stack(data, xlabels, slabels, figname='stack', title=None, figsize=(8, 3),ymin=0, ymax=1,ltitle='') :
     fig = figure(figsize=figsize)
     slabels = list(reversed(slabels))
     ind = range(0, len(xlabels))
@@ -415,7 +416,7 @@ def draw_stack(data, xlabels, slabels, figname='stack', title=None, figsize=(8, 
     plt.close()
 
 
-def draw_2line(x, y1, y2, figname="noname", ylimit=None):
+def draw_2line(x, y1, y2, figname="noname", ylimit=None,ltitle=''):
 #   fig = figure(figsize=(16/3, 9/3))
     fig, ax1 = plt.subplots(figsize=(21/3, 7.0/3))
     if ylimit != None:

@@ -171,13 +171,20 @@ def line_general(xval,vval,summary,summary_cl,
                 if e == xname or e == vname:
                     continue
                 if e in my_cfg_fmt:
-                    my_cfg[my_cfg_fmt.index(e)] = my_cfg[my_cfg_fmt.index(extras[e])]
+                    if e == 'READ_PERC':
+                        my_cfg[my_cfg_fmt.index(e)] = 1-my_cfg[my_cfg_fmt.index(extras[e])]
+                    else:
+                        my_cfg[my_cfg_fmt.index(e)] = my_cfg[my_cfg_fmt.index(extras[e])]
                 else:
                     my_cfg_fmt = my_cfg_fmt + [e]
-                    my_cfg = my_cfg + [my_cfg[my_cfg_fmt.index(extras[e])]]
+                    if e == 'READ_PERC':
+                        my_cfg = my_cfg + [1.0-my_cfg[my_cfg_fmt.index(extras[e])]]
+                    else:
+                        my_cfg = my_cfg + [my_cfg[my_cfg_fmt.index(extras[e])]]
 
             if my_cfg[my_cfg_fmt.index("PART_PER_TXN")] > my_cfg[my_cfg_fmt.index("PART_CNT")]:
                 my_cfg[my_cfg_fmt.index("PART_PER_TXN")] = my_cfg[my_cfg_fmt.index("PART_CNT")]
+#            my_cfg[my_cfg_fmt.index("MAX_TXN_IN_FLIGHT")] /= my_cfg[my_cfg_fmt.index("NODE_CNT")]
             cfgs = get_cfgs(my_cfg_fmt, my_cfg)
             cfgs = get_outfile_name(cfgs,my_cfg_fmt)
             if cfgs not in summary.keys(): 
@@ -193,7 +200,77 @@ def line_general(xval,vval,summary,summary_cl,
 
     bbox = [0.7,0.9]
     print("Created plot {}".format(name))
-    draw_line(name,data,_xval,ylab='',xlab=_xlab,title=_title,bbox=bbox,ncol=2) 
+    draw_line(name,data,_xval,ylab='',xlab=_xlab,title=_title,bbox=bbox,ncol=2,ltitle=vname) 
+
+def line_rate(xval,vval,summary,summary_cl,
+        key,
+        cfg_fmt=[],
+        cfg=[],
+        xname="MPR",
+        vname="CC_ALG",
+        title="",
+        extras={}
+        ):
+    global plot_cnt
+    data = {}
+    name = '{}_rate_plot{}'.format(key,plot_cnt)
+    plot_cnt += 1
+    _title = title
+
+    if xname == "ABORT_PENALTY":
+        _xval = [(float(x.replace("UL","")))/1000000000 for x in xval]
+        sort_idxs = sorted(range(len(_xval)),key=lambda x:_xval[x])
+        xval = [xval[i] for i in sort_idxs]
+        _xval = sorted(_xval)
+        _xlab = xname + " (Sec)"
+    else:
+        _xval = xval
+        _xlab = xname
+    for v in vval:
+        if vname == "NETWORK_DELAY":
+            _v = (float(v.replace("UL","")))/1000000
+        else:
+            _v = v
+        data[_v] = [0] * len(xval)
+
+        for x,xi in zip(xval,range(len(xval))):
+            my_cfg_fmt = cfg_fmt + [xname] + [vname]
+            my_cfg = cfg + [x] + [v]
+            for e in extras.keys():
+                if e == xname or e == vname:
+                    continue
+                if e in my_cfg_fmt:
+                    if e == 'READ_PERC':
+                        my_cfg[my_cfg_fmt.index(e)] = 1-my_cfg[my_cfg_fmt.index(extras[e])]
+                    else:
+                        my_cfg[my_cfg_fmt.index(e)] = my_cfg[my_cfg_fmt.index(extras[e])]
+                else:
+                    my_cfg_fmt = my_cfg_fmt + [e]
+                    if e == 'READ_PERC':
+                        my_cfg = my_cfg + [1.0-my_cfg[my_cfg_fmt.index(extras[e])]]
+                    else:
+                        my_cfg = my_cfg + [my_cfg[my_cfg_fmt.index(extras[e])]]
+
+            if my_cfg[my_cfg_fmt.index("PART_PER_TXN")] > my_cfg[my_cfg_fmt.index("PART_CNT")]:
+                my_cfg[my_cfg_fmt.index("PART_PER_TXN")] = my_cfg[my_cfg_fmt.index("PART_CNT")]
+#            my_cfg[my_cfg_fmt.index("MAX_TXN_IN_FLIGHT")] /= my_cfg[my_cfg_fmt.index("NODE_CNT")]
+            cfgs = get_cfgs(my_cfg_fmt, my_cfg)
+            cfgs = get_outfile_name(cfgs,my_cfg_fmt)
+            if cfgs not in summary.keys(): 
+                print("Not in summary: {}".format(cfgs))
+                continue 
+            try:
+                tot = avg(summary[cfgs][key]) / avg(summary[cfgs]['txn_cnt'])
+            except KeyError:
+                print("KeyError: {} {} {} -- {}".format(v,x,cfg,cfgs))
+                data[_v][xi] = 0
+                continue
+            data[_v][xi] = tot
+
+    bbox = [0.7,0.9]
+    print("Created plot {}".format(name))
+    draw_line(name,data,_xval,ylab='',xlab=_xlab,title=_title,bbox=bbox,ncol=2,ltitle=vname) 
+
 
    
 def tput(xval,vval,summary,summary_cl,
@@ -235,7 +312,10 @@ def tput(xval,vval,summary,summary_cl,
             my_cfg = cfg + [x] + [v]
             for e in extras.keys():
                 if e in my_cfg_fmt:
-                    my_cfg[my_cfg_fmt.index(e)] = my_cfg[my_cfg_fmt.index(extras[e])]
+                    if e == 'READ_PERC':
+                        my_cfg[my_cfg_fmt.index(e)] = 1-my_cfg[my_cfg_fmt.index(extras[e])]
+                    else:
+                        my_cfg[my_cfg_fmt.index(e)] = my_cfg[my_cfg_fmt.index(extras[e])]
                 else:
                     my_cfg_fmt = my_cfg_fmt + [e]
                     if e == 'READ_PERC':
@@ -257,6 +337,7 @@ def tput(xval,vval,summary,summary_cl,
 #            else:
 #                my_cfg_fmt = my_cfg_fmt + ["PART_CNT"]
 #                my_cfg = my_cfg + [n_cnt]
+#            my_cfg[my_cfg_fmt.index("MAX_TXN_IN_FLIGHT")] /= my_cfg[my_cfg_fmt.index("NODE_CNT")]
 
             cfgs = get_cfgs(my_cfg_fmt, my_cfg)
             cfgs = get_outfile_name(cfgs,my_cfg_fmt)
@@ -288,7 +369,7 @@ def tput(xval,vval,summary,summary_cl,
     bbox = [0.8,0.35]
 #bbox = [0.7,0.9]
     print("Created plot {}".format(name))
-    draw_line(name,tpt,_xval,ylab='Throughput (Txn/sec)',xlab=_xlab,title=_title,bbox=bbox,ncol=2) 
+    draw_line(name,tpt,_xval,ylab='Throughput (Txn/sec)',xlab=_xlab,title=_title,bbox=bbox,ncol=2,ltitle=vname) 
 
 
 def lat(xval,vval,summary,
@@ -348,6 +429,7 @@ def lat(xval,vval,summary,
 #            if "CLIENT_NODE_CNT" not in my_cfg_fmt:
 #                my_cfg_fmt = my_cfg_fmt + ["CLIENT_NODE_CNT"]
 #                my_cfg = my_cfg + [int(math.ceil(n_cnt/2)) if n_cnt > 1 else 1]
+#                my_cfg[my_cfg_fmt.index("MAX_TXN_IN_FLIGHT")] /= my_cfg[my_cfg_fmt.index("NODE_CNT")]
 
                 cfgs = get_cfgs(my_cfg_fmt, my_cfg)
                 cfgs = get_outfile_name(cfgs,my_cfg_fmt)
@@ -365,7 +447,7 @@ def lat(xval,vval,summary,
         if vname == "NETWORK_DELAY":
             bbox = [0.8,0.2]
         print("Created plot {}".format(name))
-        draw_line(name,lat,_xval,ylab='Latency-{}% (Sec)'.format(stat),xlab=_xlab,title=_title,bbox=bbox,ncol=2) 
+        draw_line(name,lat,_xval,ylab='Latency-{}% (Sec)'.format(stat),xlab=_xlab,title=_title,bbox=bbox,ncol=2,ltitle=vname) 
 
 
 def lat_node_tbls(exp,nodes,msg_bytes,ts,
@@ -447,6 +529,7 @@ def abort_rate(xval,vval,summary,
 #                my_cfg_fmt = my_cfg_fmt + ["CLIENT_NODE_CNT"]
 #                my_cfg = my_cfg + [int(math.ceil(n_cnt/2)) if n_cnt > 1 else 1]
 
+#            my_cfg[my_cfg_fmt.index("MAX_TXN_IN_FLIGHT")] /= my_cfg[my_cfg_fmt.index("NODE_CNT")]
             cfgs = get_cfgs(my_cfg_fmt, my_cfg)
             cfgs = get_outfile_name(cfgs,my_cfg_fmt)
             if cfgs not in summary.keys(): 
@@ -476,7 +559,7 @@ def abort_rate(xval,vval,summary,
     if vname == "NETWORK_DELAY":
         bbox = [0.8,0.95]
     print("Created plot {}".format(name))
-    draw_line(name,tpt,xval,ylab='Average Aborts / Txn',xlab=xname,title=_title,bbox=bbox,ncol=2) 
+    draw_line(name,tpt,xval,ylab='Average Aborts / Txn',xlab=xname,title=_title,bbox=bbox,ncol=2,ltitle=vname) 
 
 
 
@@ -525,7 +608,7 @@ def tput_mpr(mpr,nodes,algos,max_txn,summary):
                 continue
             tpt[x][i] = (avg_txn_cnt/avg_run_time)
 
-    draw_line(name,tpt,mpr,ylab='Throughput (Txn/sec)',xlab='Multi-Partition Rate',title=_title,bbox=[0.5,0.95]) 
+    draw_line(name,tpt,mpr,ylab='Throughput (Txn/sec)',xlab='Multi-Partition Rate',title=_title,bbox=[0.5,0.95],ltitle=vname) 
 
 # Plots Transport latency vs. MPR 
 # mpr: list of MPR values to plot along the x-axis
@@ -562,7 +645,7 @@ def tportlat_mpr(mpr,nodes,algos,max_txn,summary):
             avg_tport_lat = avg(summary[cfgs]['tport_lat'])
             tport_lat[x][i] = avg_tport_lat
 
-    draw_line(name,tport_lat,mpr,ylab='Latency (s)',xlab='Multi-Partition Rate',title='Average Message Latency',bbox=[0.5,0.95]) 
+    draw_line(name,tport_lat,mpr,ylab='Latency (s)',xlab='Multi-Partition Rate',title='Average Message Latency',bbox=[0.5,0.95],ltitle=vname) 
 
 def stacks_general(xval,summary,
         keys,
@@ -597,13 +680,19 @@ def stacks_general(xval,summary,
         my_cfg = cfg + [x]
         for e in extras.keys():
             if e in my_cfg_fmt:
-                my_cfg[my_cfg_fmt.index(e)] = my_cfg[my_cfg_fmt.index(extras[e])]
+                if e == 'READ_PERC':
+                    my_cfg[my_cfg_fmt.index(e)] = 1-my_cfg[my_cfg_fmt.index(extras[e])]
+                else:
+                    my_cfg[my_cfg_fmt.index(e)] = my_cfg[my_cfg_fmt.index(extras[e])]
             else:
                 my_cfg_fmt = my_cfg_fmt + [e]
-                my_cfg = my_cfg + [my_cfg[my_cfg_fmt.index(extras[e])]]
-
+                if e == 'READ_PERC':
+                    my_cfg = my_cfg + [1.0-my_cfg[my_cfg_fmt.index(extras[e])]]
+                else:
+                    my_cfg = my_cfg + [my_cfg[my_cfg_fmt.index(extras[e])]]
         if my_cfg[my_cfg_fmt.index("PART_PER_TXN")] > my_cfg[my_cfg_fmt.index("PART_CNT")]:
             my_cfg[my_cfg_fmt.index("PART_PER_TXN")] = my_cfg[my_cfg_fmt.index("PART_CNT")]
+#        my_cfg[my_cfg_fmt.index("MAX_TXN_IN_FLIGHT")] /= my_cfg[my_cfg_fmt.index("NODE_CNT")]
         cfgs = get_cfgs(my_cfg_fmt, my_cfg)
         cfgs = get_outfile_name(cfgs,my_cfg_fmt)
         if cfgs not in summary.keys(): 
@@ -879,7 +968,7 @@ def cdf(vval,summary,
                 ys[v][x] = y
 
 
-    draw_line(name,ys,xs,ylab='Percent',xlab=xname,title=_title,bbox=[0.8,0.6],ylimit=1.0) 
+    draw_line(name,ys,xs,ylab='Percent',xlab=xname,title=_title,bbox=[0.8,0.6],ylimit=1.0,ltitle=vname) 
 
 
 # Bar graph of total number of aborts per transaction
@@ -1000,6 +1089,6 @@ def plot_avg(mpr,nodes,algos,max_txn,summary,value='run_time'):
                 continue
             avgs[x][i] = avg_
 
-    draw_line(name,avgs,mpr,ylab='average ' + value,xlab='Multi-Partition Rate',title='Per Node Throughput',bbox=[0.5,0.95]) 
+    draw_line(name,avgs,mpr,ylab='average ' + value,xlab='Multi-Partition Rate',title='Per Node Throughput',bbox=[0.5,0.95],ltitle=vname) 
 
 

@@ -304,6 +304,8 @@ void txn_man::cleanup(RC rc) {
 		INC_STATS(get_thd_id(), time_abort, t);
     txn_time_abrt += t;
     last_time_abrt = t;
+    INC_STATS(get_thd_id(), abort_row_cnt, row_cnt);
+    INC_STATS(get_thd_id(), abort_wr_cnt, wr_cnt);
 	} else {
     INC_STATS(get_thd_id(), write_cnt, wr_cnt);
     INC_STATS(get_thd_id(), access_cnt, row_cnt);

@@ -84,6 +84,8 @@ stat_map = {
  'time_getqry': [],
 'cc_hold_time': [],
  'abort_cnt': [],
+ 'abort_row_cnt': [],
+ 'avg_abort_row_cnt': [],
  'time_abort': [],
  'txn_time_wait': [],
  'time_validate': [],

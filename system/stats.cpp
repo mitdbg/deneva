@@ -144,6 +144,8 @@ void Stats_thd::clear() {
 	txn_cnt = 0;
 	txn_rem_cnt = 0;
 	abort_cnt = 0;
+	abort_row_cnt = 0;
+	abort_wr_cnt = 0;
 	abort_rem_cnt = 0;
 	txn_abort_cnt = 0;
 	rbk_abort_cnt = 0;
@@ -691,6 +693,8 @@ void Stats::print(bool prog) {
 	uint64_t total_txn_cnt = 0;
 	uint64_t total_txn_rem_cnt = 0;
 	uint64_t total_abort_cnt = 0;
+	uint64_t total_abort_row_cnt = 0;
+	uint64_t total_abort_wr_cnt = 0;
 	uint64_t total_abort_rem_cnt = 0;
 	uint64_t total_txn_abort_cnt = 0;
 	uint64_t total_rbk_abort_cnt = 0;
@@ -791,6 +795,8 @@ void Stats::print(bool prog) {
 		total_txn_cnt += _stats[tid]->txn_cnt;
 		total_txn_rem_cnt += _stats[tid]->txn_rem_cnt;
 		total_abort_cnt += _stats[tid]->abort_cnt;
+		total_abort_row_cnt += _stats[tid]->abort_row_cnt;
+		total_abort_wr_cnt += _stats[tid]->abort_wr_cnt;
 		total_abort_rem_cnt += _stats[tid]->abort_rem_cnt;
 		total_txn_abort_cnt += _stats[tid]->txn_abort_cnt;
 		total_rbk_abort_cnt += _stats[tid]->rbk_abort_cnt;
@@ -926,6 +932,10 @@ void Stats::print(bool prog) {
 			",clock_time=%f"
       ",abort_cnt=%ld"
       ",txn_abort_cnt=%ld"
+      ",abort_row_cnt=%ld"
+      ",avg_abort_row_cnt=%f"
+      ",abort_wr_cnt=%ld"
+      ",avg_abort_wr_cnt=%f"
       ",abort_rem_cnt=%ld"
       ",rbk_abort_cnt=%ld"
       ",latency=%f"
@@ -936,6 +946,10 @@ void Stats::print(bool prog) {
 			,total_tot_run_time / BILLION
 			,total_abort_cnt
 			,total_txn_abort_cnt
+			,total_abort_row_cnt
+			,(float)total_abort_row_cnt / total_abort_cnt
+			,total_abort_wr_cnt
+			,(float)total_abort_wr_cnt / total_abort_cnt
 			,total_abort_rem_cnt
 			,total_rbk_abort_cnt
 			,total_latency / BILLION / total_txn_cnt
