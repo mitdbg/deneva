@@ -208,6 +208,7 @@ RC ycsb_txn_man::run_txn_state(base_query * query) {
             query->max_access++;
         }
 #endif
+        this->rem_row_cnt++;
 
         query->dest_part = part_id;
         query->dest_id = GET_NODE_ID(part_id);

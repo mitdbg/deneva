@@ -26,6 +26,7 @@ void txn_man::init(workload * h_wl) {
 	pthread_mutex_init(&txn_lock, NULL);
 	lock_ready = false;
 	ready_part = 0;
+	rem_row_cnt = 0;
 	row_cnt = 0;
 	wr_cnt = 0;
 	insert_cnt = 0;
@@ -64,6 +65,7 @@ void txn_man::init(workload * h_wl) {
 void txn_man::reset() {
 	lock_ready = false;
 	ready_part = 0;
+	rem_row_cnt = 0;
 	row_cnt = 0;
 	wr_cnt = 0;
 	insert_cnt = 0;
@@ -101,7 +103,9 @@ void txn_man::clear() {
   cc_hold_time = 0;
   ready_ulk = 0;
   ready_part = 0;
+  rem_row_cnt = 0;
   row_cnt = 0;
+  wr_cnt = 0;
   state = START;
   rc = RCOK;
 }
@@ -304,12 +308,15 @@ void txn_man::cleanup(RC rc) {
 		INC_STATS(get_thd_id(), time_abort, t);
     txn_time_abrt += t;
     last_time_abrt = t;
+    INC_STATS(get_thd_id(), abort_rem_row_cnt, rem_row_cnt);
     INC_STATS(get_thd_id(), abort_row_cnt, row_cnt);
     INC_STATS(get_thd_id(), abort_wr_cnt, wr_cnt);
 	} else {
+    INC_STATS(get_thd_id(), rem_row_cnt, rem_row_cnt);
     INC_STATS(get_thd_id(), write_cnt, wr_cnt);
     INC_STATS(get_thd_id(), access_cnt, row_cnt);
   }
+	rem_row_cnt = 0;
 	row_cnt = 0;
 	wr_cnt = 0;
 	insert_cnt = 0;

@@ -144,6 +144,8 @@ void Stats_thd::clear() {
 	txn_cnt = 0;
 	txn_rem_cnt = 0;
 	abort_cnt = 0;
+	abort_rem_row_cnt = 0;
+	rem_row_cnt = 0;
 	abort_row_cnt = 0;
 	abort_wr_cnt = 0;
 	abort_rem_cnt = 0;
@@ -693,6 +695,8 @@ void Stats::print(bool prog) {
 	uint64_t total_txn_cnt = 0;
 	uint64_t total_txn_rem_cnt = 0;
 	uint64_t total_abort_cnt = 0;
+	uint64_t total_abort_rem_row_cnt = 0;
+	uint64_t total_rem_row_cnt = 0;
 	uint64_t total_abort_row_cnt = 0;
 	uint64_t total_abort_wr_cnt = 0;
 	uint64_t total_abort_rem_cnt = 0;
@@ -795,6 +799,8 @@ void Stats::print(bool prog) {
 		total_txn_cnt += _stats[tid]->txn_cnt;
 		total_txn_rem_cnt += _stats[tid]->txn_rem_cnt;
 		total_abort_cnt += _stats[tid]->abort_cnt;
+		total_rem_row_cnt += _stats[tid]->rem_row_cnt;
+		total_abort_rem_row_cnt += _stats[tid]->abort_rem_row_cnt;
 		total_abort_row_cnt += _stats[tid]->abort_row_cnt;
 		total_abort_wr_cnt += _stats[tid]->abort_wr_cnt;
 		total_abort_rem_cnt += _stats[tid]->abort_rem_cnt;
@@ -936,6 +942,8 @@ void Stats::print(bool prog) {
       ",avg_abort_row_cnt=%f"
       ",abort_wr_cnt=%ld"
       ",avg_abort_wr_cnt=%f"
+      ",abort_rem_row_cnt=%ld"
+      ",avg_abort_rem_row_cnt=%f"
       ",abort_rem_cnt=%ld"
       ",rbk_abort_cnt=%ld"
       ",latency=%f"
@@ -950,6 +958,8 @@ void Stats::print(bool prog) {
 			,(float)total_abort_row_cnt / total_abort_cnt
 			,total_abort_wr_cnt
 			,(float)total_abort_wr_cnt / total_abort_cnt
+			,total_abort_rem_row_cnt
+			,(float)total_abort_rem_row_cnt / total_abort_cnt
 			,total_abort_rem_cnt
 			,total_rbk_abort_cnt
 			,total_latency / BILLION / total_txn_cnt
@@ -960,6 +970,7 @@ void Stats::print(bool prog) {
 	fprintf(outf, 
       ",access_cnt=%ld"
       ",write_cnt=%ld"
+      ",rem_row_cnt=%ld"
       ",aq_full=%f"
 			",txn_table_cflt=%ld"
 			",txn_table_cflt_size=%ld"
@@ -972,6 +983,7 @@ void Stats::print(bool prog) {
 			",cc_hold_abrt_time=%f"
       ,total_access_cnt
       ,total_write_cnt
+      ,total_rem_row_cnt
 			,total_aq_full / BILLION
       ,total_txn_table_cflt
       ,total_txn_table_cflt_size

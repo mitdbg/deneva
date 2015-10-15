@@ -15,7 +15,7 @@ fmt_title=["NODE_CNT","WRITE_PERC","CC_ALG","MAX_TXN_IN_FLIGHT","MODE","DATA_PER
 def test():
     fmt = fmt_ycsb
 #    nnodes = [1]
-    nnodes = [8]
+    nnodes = [4]
 #    nnodes = [1,2,4,8]
     nmpr=[100]
 #    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC']
@@ -32,8 +32,8 @@ def test():
 #    nzipf=[0.0,0.1,0.5,0.7,0.8,0.9]
     d_perc=[100]#,1000]
 #    a_perc=[0.0,0.01,0.05]
-    a_perc=[0.25]
-#    a_perc=[0.0,0.05,0.075,0.1,0.15,0.2,0.25,0.3]
+#    a_perc=[0.25]
+    a_perc=[0.0,0.05,0.075,0.1,0.15,0.2,0.25,0.3]
 #    a_perc=[0.0,0.01,0.05,0.1,0.25,0.5,0.75,0.9]
 #    nwr_perc=[0.0]
     nwr_perc=[0.1,0.8,1.0]

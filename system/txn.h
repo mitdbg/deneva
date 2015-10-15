@@ -106,6 +106,7 @@ public:
 	uint64_t 		start_ts;
 	uint64_t 		end_ts;
 	// following are public for OCC
+	int 			rem_row_cnt;
 	int 			row_cnt;
 	int	 			wr_cnt;
 //	int * 			row_cnts;
