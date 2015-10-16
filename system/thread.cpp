@@ -1073,7 +1073,7 @@ RC thread_t::process_rtxn(base_query *& m_query,txn_man *& m_txn) {
     uint64_t thd_prof_start = get_sys_clock();
 				INC_STATS(0,rtxn,1);
 				assert(m_query->txn_id == UINT64_MAX || IS_LOCAL(m_query->txn_id) );
-        RC rc;
+        RC rc = RCOK;
 
 				if(m_query->txn_id == UINT64_MAX) {
           // This is a new transaction
@@ -1184,7 +1184,12 @@ RC thread_t::init_phase(base_query * m_query, txn_man * m_txn) {
           m_query->part_touched[m_query->part_touched_cnt++] = m_query->part_to_access[0];
 //#endif
 #endif
-#if (MODE == NOCC_MODE || MODE == NORMAL_MODE) && (CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || CC_ALG == VLL)
+#if (CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || CC_ALG == VLL)
+#if MODE != NORMAL_MODE
+					for(uint64_t i = 0; i < m_query->part_num; i++) {
+            m_query->part_touched[m_query->part_touched_cnt++] = m_query->part_to_access[i];
+          }
+#else
 					m_txn->state = INIT;
 					for(uint64_t i = 0; i < m_query->part_num; i++) {
 						uint64_t part_id = m_query->part_to_access[i];
@@ -1291,6 +1296,7 @@ RC thread_t::init_phase(base_query * m_query, txn_man * m_txn) {
 					} // for(uint64_t i = 0; i < m_query->part_num; i++) 
         }
 
+#endif
 #endif // MODE<QRY && (CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || CC_ALG == VLL)
           return rc;
 }
