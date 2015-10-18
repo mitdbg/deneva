@@ -313,13 +313,19 @@ void txn_man::cleanup(RC rc) {
 		INC_STATS(get_thd_id(), time_abort, t);
     txn_time_abrt += t;
     last_time_abrt = t;
-    INC_STATS(get_thd_id(), abort_rem_row_cnt, rem_row_cnt);
-    INC_STATS(get_thd_id(), abort_row_cnt, row_cnt);
-    INC_STATS(get_thd_id(), abort_wr_cnt, wr_cnt);
+    if(IS_LOCAL(get_txn_id())) {
+      INC_STATS(get_thd_id(), abort_row_cnt, row_cnt);
+      INC_STATS(get_thd_id(), abort_wr_cnt, wr_cnt);
+    } else {
+      INC_STATS(get_thd_id(), abort_rem_row_cnt, row_cnt);
+    }
 	} else {
-    INC_STATS(get_thd_id(), rem_row_cnt, rem_row_cnt);
-    INC_STATS(get_thd_id(), write_cnt, wr_cnt);
-    INC_STATS(get_thd_id(), access_cnt, row_cnt);
+    if(IS_LOCAL(get_txn_id())) {
+      INC_STATS(get_thd_id(), write_cnt, wr_cnt);
+      INC_STATS(get_thd_id(), access_cnt, row_cnt);
+    } else {
+      INC_STATS(get_thd_id(), rem_row_cnt, row_cnt);
+    }
   }
 	rem_row_cnt = 0;
 	row_cnt = 0;
