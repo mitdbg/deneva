@@ -463,6 +463,9 @@ txn_man::index_read(INDEX * index, idx_key_t key, int part_id) {
 }
 
 RC txn_man::validate() {
+#if MODE != NORMAL_MODE
+  return RCOK;
+#endif
   assert(h_thd->_node_id < g_node_cnt);
   if(rc == WAIT && !this->spec) {
     rc = Abort;

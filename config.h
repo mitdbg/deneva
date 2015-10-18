@@ -6,7 +6,7 @@
 // Simulation + Hardware
 /***********************************************/
 #define NODE_CNT 2
-#define THREAD_CNT 2
+#define THREAD_CNT 1
 #define REM_THREAD_CNT 1
 #define SEND_THREAD_CNT 1
 // PART_CNT should be at least NODE_CNT
@@ -35,7 +35,7 @@
 #define TIME_ENABLE         true //STATS_ENABLE
 
 #define FIN_BY_TIME true
-#define MAX_TXN_IN_FLIGHT 100 
+#define MAX_TXN_IN_FLIGHT 1
 
 /***********************************************/
 // Memory System
@@ -82,7 +82,7 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, VOLTDB, OCC, VLL, CALVIN
-#define CC_ALG MVCC
+#define CC_ALG OCC
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER         false
@@ -156,10 +156,10 @@
 #define DATA_PERC 100
 #define ACCESS_PERC 0.0
 #define INIT_PARALLELISM 4
-#define SYNTH_TABLE_SIZE 1024//2097152
+#define SYNTH_TABLE_SIZE 10024//2097152
 #define ZIPF_THETA 0.0
-#define READ_PERC 0.5
-#define WRITE_PERC 0.5
+#define READ_PERC 0.0
+#define WRITE_PERC 1.0
 #define SCAN_PERC           0
 #define SCAN_LEN          20
 #define PART_PER_TXN 2
@@ -241,7 +241,7 @@ extern TestCases          g_test_case;
 #define DEBUG_TIMESTAMP       false
 #define DEBUG_SYNTH         false
 #define DEBUG_ASSERT        false
-#define DEBUG_DISTR false
+#define DEBUG_DISTR true
 #define DEBUG_ALLOC false
 #define DEBUG_TIMELINE        false
 #define DEBUG_BREAKDOWN       false
@@ -254,7 +254,7 @@ extern TestCases          g_test_case;
 // SIMPLE Immediately send OK back to client
 // NOCC Don't do CC
 // NORMAL normal operation
-#define MODE NORMAL_MODE
+#define MODE NOCC_MODE
 
 
 /***********************************************/
@@ -297,7 +297,7 @@ extern TestCases          g_test_case;
 // Stats and timeout
 #define BILLION 1000000000UL // in ns => 1 second
 #define STAT_ARR_SIZE 1024
-#define PROG_TIMER 10 * BILLION // in s
+#define PROG_TIMER 30 * BILLION // in s
 #define DONE_TIMER 10 * 100 * BILLION // 3 minutes
 
 #define SEED 0
