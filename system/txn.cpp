@@ -29,6 +29,7 @@ void txn_man::init(workload * h_wl) {
 	rem_row_cnt = 0;
 	row_cnt = 0;
 	vll_row_cnt = 0;
+	vll_row_cnt2 = 0;
   vll_entry = NULL;
 	wr_cnt = 0;
 	insert_cnt = 0;
@@ -70,6 +71,7 @@ void txn_man::reset() {
 	rem_row_cnt = 0;
 	row_cnt = 0;
 	vll_row_cnt = 0;
+	vll_row_cnt2 = 0;
   vll_entry = NULL;
 	wr_cnt = 0;
 	insert_cnt = 0;
@@ -110,6 +112,7 @@ void txn_man::clear() {
   rem_row_cnt = 0;
   row_cnt = 0;
   vll_row_cnt = 0;
+	vll_row_cnt2 = 0;
   wr_cnt = 0;
   state = START;
   rc = RCOK;
@@ -330,6 +333,7 @@ void txn_man::cleanup(RC rc) {
 	rem_row_cnt = 0;
 	row_cnt = 0;
 	vll_row_cnt = 0;
+	vll_row_cnt2 = 0;
 	wr_cnt = 0;
 	insert_cnt = 0;
   rsp_cnt = 0;
@@ -343,6 +347,16 @@ void txn_man::cleanup(RC rc) {
 RC txn_man::get_lock(row_t * row, access_t type) {
   rc = row->get_lock(type, this);
   return rc;
+}
+
+RC txn_man::get_row_vll(access_t type, row_t *& row_rtn) {
+  assert(vll_row_cnt2 < row_cnt);
+  assert(accesses[vll_row_cnt2] != NULL);
+  vll_row_cnt2++;
+
+	row_rtn  = accesses[vll_row_cnt2 - 1]->data;
+  return RCOK;
+
 }
 
 RC txn_man::get_row(row_t * row, access_t type, row_t *& row_rtn) {

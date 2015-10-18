@@ -105,6 +105,9 @@ RC
 VLLMan::beginTxn(txn_man * txn, base_query * query) {
 
   txn->read_keys(query);
+#if MODE != NORMAL_MODE
+  return RCOK;
+#endif
 
   pthread_mutex_lock(&_mutex);
   DEBUG("beginTxn %ld\n",txn->get_txn_id());

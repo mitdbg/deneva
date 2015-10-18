@@ -110,6 +110,7 @@ public:
 	int 			row_cnt;
 	int	 			wr_cnt;
 	int 			vll_row_cnt;
+	int 			vll_row_cnt2;
 //	int * 			row_cnts;
 	Access **		accesses;
 	int 			num_accesses_alloc;
@@ -125,6 +126,7 @@ public:
 
 	itemid_t *		index_read(INDEX * index, idx_key_t key, int part_id);
   RC get_lock(row_t * row, access_t type);
+  RC get_row_vll(access_t type, row_t *& row_rtn); 
 	RC get_row(row_t * row, access_t type, row_t *& row_rtn);
   RC get_row_post_wait(row_t *& row_rtn);
 

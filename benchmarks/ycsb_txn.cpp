@@ -131,6 +131,7 @@ void ycsb_txn_man::next_ycsb_state(base_query * query) {
   switch(m_query->txn_rtype) {
     case YCSB_0:
       m_query->txn_rtype = YCSB_1;
+      break;
       //m_query->req = m_query->requests[m_query->rid];
     case YCSB_1:
       if(GET_NODE_ID(m_query->pid) != g_node_id) {
@@ -245,15 +246,16 @@ RC ycsb_txn_man::run_txn_state(base_query * query) {
 RC ycsb_txn_man::run_ycsb_0(ycsb_request * req,row_t *& row_local) {
     RC rc = RCOK;
 		int part_id = _wl->key_to_part( req->key );
+		access_t type = req->acctype;
     // TODO: remove for parallel YCSB!
 #if CC_ALG == VLL
+    get_row_vll(type,row_local);
     return rc;
 #endif
 	  itemid_t * m_item;
 		m_item = index_read(_wl->the_index, req->key, part_id);
 
 		row_t * row = ((row_t *)m_item->location);
-		access_t type = req->acctype;
 			
 		rc = get_row(row, type,row_local);
     return rc;
@@ -264,8 +266,9 @@ RC ycsb_txn_man::run_ycsb_1(access_t acctype, row_t * row_local) {
   if (acctype == RD || acctype == SCAN) {
     int fid = 0;
 		char * data = row_local->get_data();
-		uint64_t fval = *(uint64_t *)(&data[fid * 100]);
-    INC_STATS(get_thd_id(), debug1, fval);
+		uint64_t fval __attribute__ ((unused));
+    fval = *(uint64_t *)(&data[fid * 100]);
+    //INC_STATS(get_thd_id(), debug1, fval);
 
   } else {
     assert(acctype == WR);

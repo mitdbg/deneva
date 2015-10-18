@@ -857,6 +857,10 @@ RC thread_t::process_rqry(base_query *& m_query,txn_man *& m_txn) {
   uint64_t thd_prof_start = get_sys_clock();
 				DEBUG("%ld Received RQRY %ld\n",GET_PART_ID_FROM_IDX(_thd_id),m_query->txn_id);
 				INC_STATS(0,rqry,1);
+#if MODE == QRY_ONLY_MODE
+        uint64_t max_access = m_query->max_access;
+        assert(max_access > 0);
+#endif
 				assert(CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || IS_REMOTE(m_query->txn_id));
         assert(CC_ALG != VLL || m_query->rc != Abort);
         RC rc = RCOK;
@@ -897,8 +901,9 @@ RC thread_t::process_rqry(base_query *& m_query,txn_man *& m_txn) {
 
     INC_STATS(_thd_id,thd_prof_thd_rqry0,get_sys_clock() - thd_prof_start);
     thd_prof_start = get_sys_clock();
-        // Execute transaction
-				rc = m_txn->run_txn(m_query);
+
+    // Execute transaction
+    rc = m_txn->run_txn(m_query);
 
     INC_STATS(_thd_id,thd_prof_thd_rqry1,get_sys_clock() - thd_prof_start);
     thd_prof_start = get_sys_clock();
@@ -911,7 +916,11 @@ RC thread_t::process_rqry(base_query *& m_query,txn_man *& m_txn) {
 				if(rc != WAIT) {
 #if MODE==QRY_ONLY_MODE
           // Release locks
-          if((uint64_t)m_txn->row_cnt == m_query->max_access) {
+#if CC_ALG == VLL
+          if((uint64_t)m_txn->vll_row_cnt2 == max_access) {
+#else
+          if((uint64_t)m_txn->row_cnt == max_access) {
+#endif
             m_query->max_done = true;
             m_txn->state = DONE;
             m_txn->rem_fin_txn(m_query);
@@ -1195,11 +1204,13 @@ RC thread_t::init_phase(base_query * m_query, txn_man * m_txn) {
 //#endif
 #endif
 #if (CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || CC_ALG == VLL)
+          /*
 #if MODE != NORMAL_MODE
 					for(uint64_t i = 0; i < m_query->part_num; i++) {
             m_query->part_touched[m_query->part_touched_cnt++] = m_query->part_to_access[i];
           }
 #else
+*/
 					m_txn->state = INIT;
 					for(uint64_t i = 0; i < m_query->part_num; i++) {
 						uint64_t part_id = m_query->part_to_access[i];
@@ -1306,7 +1317,7 @@ RC thread_t::init_phase(base_query * m_query, txn_man * m_txn) {
 					} // for(uint64_t i = 0; i < m_query->part_num; i++) 
         }
 
-#endif
+//#endif
 #endif // MODE<QRY && (CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || CC_ALG == VLL)
           return rc;
 }
