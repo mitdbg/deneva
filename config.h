@@ -82,7 +82,7 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, VOLTDB, OCC, VLL, CALVIN
-#define CC_ALG VLL
+#define CC_ALG OCC
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER         false
@@ -158,8 +158,8 @@
 #define INIT_PARALLELISM 4
 #define SYNTH_TABLE_SIZE 10024//2097152
 #define ZIPF_THETA 0.0
-#define READ_PERC 1.0
-#define WRITE_PERC 0.0
+#define READ_PERC 0.0
+#define WRITE_PERC 1.0
 #define SCAN_PERC           0
 #define SCAN_LEN          20
 #define PART_PER_TXN 2

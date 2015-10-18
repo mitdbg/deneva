@@ -973,10 +973,13 @@ RC thread_t::process_rprepare(base_query *& m_query,txn_man *& m_txn) {
     thd_prof_start = get_sys_clock();
 
 			  // Validate transaction
-				if (validate) {
+				if (validate && m_query->rc == RCOK) {
 					m_txn->state = PREP;
 					rc  = m_txn->validate();
-				}
+				} else {
+          assert(m_query->rc == Abort);
+          rc = m_query->rc;
+        }
     INC_STATS(_thd_id,thd_prof_thd_rprep1,get_sys_clock() - thd_prof_start);
     thd_prof_start = get_sys_clock();
 				// Send ACK w/ commit/abort
