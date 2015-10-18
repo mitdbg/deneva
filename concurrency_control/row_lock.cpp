@@ -149,6 +149,7 @@ RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt
         txn->wait_starttime = get_sys_clock();
         //printf("wait \n");
       } else {
+        INC_STATS(txn->get_thd_id(),abort_from_ts,1);
         DEBUG("abort %ld %ld\n",txn->get_txn_id(),_row->get_primary_key());
         rc = Abort;
         //printf("abort \n");

@@ -21,8 +21,10 @@ Row_occ::access(txn_man * txn, TsType type) {
 	//pthread_mutex_lock( _latch );
   sem_wait(&_semaphore);
 	if (type == R_REQ) {
-		if (txn->start_ts < wts)
+		if (txn->start_ts < wts) {
+      INC_STATS(txn->get_thd_id(),abort_from_ts,1);
 			rc = Abort;
+    }
 		else { 
 			txn->cur_row->copy(_row);
 			rc = RCOK;

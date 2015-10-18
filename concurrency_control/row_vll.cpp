@@ -12,6 +12,9 @@ Row_vll::init(row_t * row) {
 
 bool 
 Row_vll::insert_access(access_t type) {
+  if(cs > 0 || cx > 0) {
+      INC_STATS(0,cc_busy_cnt,1);
+  }
 	if (type == RD) {
 		cs ++;
 		return (cx > 0);

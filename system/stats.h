@@ -37,6 +37,7 @@ public:
 	uint64_t abort_rem_cnt;
 	uint64_t txn_abort_cnt;
 	uint64_t rbk_abort_cnt;
+  uint64_t abort_from_ts;
 	double tot_run_time;
 	double run_time;
   double finish_time;

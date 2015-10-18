@@ -107,6 +107,7 @@ VLLMan::beginTxn(txn_man * txn, base_query * query) {
   txn->read_keys(query);
 
   pthread_mutex_lock(&_mutex);
+  DEBUG("beginTxn %ld\n",txn->get_txn_id());
   uint64_t starttime = get_sys_clock();
 
   /*
@@ -136,6 +137,7 @@ VLLMan::beginTxn(txn_man * txn, base_query * query) {
 	TxnQEntry * front = _txn_queue;
 	if (front) {
     if(txn->get_ts() < front->txn->get_ts()) {
+      INC_STATS(txn->get_thd_id(),abort_from_ts,1);
       ret = Abort;
       txn->rc = Abort;
       query->rc = Abort;
@@ -149,8 +151,10 @@ VLLMan::beginTxn(txn_man * txn, base_query * query) {
 	for (int rid = 0; rid < txn->row_cnt; rid ++ ) {
 		access_t type = txn->accesses[rid]->type;
     DEBUG("insert_access %d %lx\n",(int)type,(uint64_t)txn->accesses[rid]->orig_row->manager);
-		if (txn->accesses[rid]->orig_row->manager->insert_access(type))
+		if (txn->accesses[rid]->orig_row->manager->insert_access(type)) {
 			txn->vll_txn_type = VLL_Blocked;
+      INC_STATS(txn->get_thd_id(),cflt_cnt,1);
+    }
     txn->vll_row_cnt++;
 	}
 
