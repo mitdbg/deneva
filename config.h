@@ -35,7 +35,7 @@
 #define TIME_ENABLE         true //STATS_ENABLE
 
 #define FIN_BY_TIME true
-#define MAX_TXN_IN_FLIGHT 10
+#define MAX_TXN_IN_FLIGHT 100 
 
 /***********************************************/
 // Memory System
@@ -82,7 +82,7 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, VOLTDB, OCC, VLL, CALVIN
-#define CC_ALG NO_WAIT
+#define CC_ALG MVCC
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER         false
@@ -254,7 +254,7 @@ extern TestCases          g_test_case;
 // SIMPLE Immediately send OK back to client
 // NOCC Don't do CC
 // NORMAL normal operation
-#define MODE NOCC_MODE
+#define MODE NORMAL_MODE
 
 
 /***********************************************/
@@ -301,7 +301,7 @@ extern TestCases          g_test_case;
 #define DONE_TIMER 10 * 100 * BILLION // 3 minutes
 
 #define SEED 0
-#define SHMEM_ENV true
+#define SHMEM_ENV false
 
 #endif
 

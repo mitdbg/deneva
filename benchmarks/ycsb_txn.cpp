@@ -138,10 +138,10 @@ void ycsb_txn_man::next_ycsb_state(base_query * query) {
         break;
       }
       m_query->rid++;
-      m_query->rc = RCOK;
-      if(m_query->rid < m_query->request_cnt) {
+      if(m_query->rid < m_query->request_cnt && m_query->rc !=Abort ) {
         m_query->txn_rtype = YCSB_0;
         m_query->req = m_query->requests[m_query->rid];
+        m_query->rc = RCOK;
       }
       else {
         m_query->txn_rtype = YCSB_FIN;
@@ -158,9 +158,9 @@ void ycsb_txn_man::rtn_ycsb_state(base_query * query) {
 
   switch(m_query->txn_rtype) {
     case YCSB_0:
-      m_query->rc = RCOK;
       m_query->rid++;
-      if(m_query->rid < m_query->request_cnt) {
+      if(m_query->rid < m_query->request_cnt && m_query->rc != Abort) {
+        m_query->rc = RCOK;
         m_query->txn_rtype = YCSB_0;
         m_query->req = m_query->requests[m_query->rid];
       }

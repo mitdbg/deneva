@@ -254,7 +254,7 @@ uint64_t txn_man::decr_rsp(int i) {
 }
 
 void txn_man::cleanup(RC rc) {
-#if CC_ALG == OCC
+#if CC_ALG == OCC && MODE == NORMAL_MODE
   occ_man.finish(rc,this);
 #endif
 
@@ -292,7 +292,7 @@ void txn_man::cleanup(RC rc) {
   INC_STATS(get_thd_id(),thd_prof_txn1,get_sys_clock() - thd_prof_start);
   thd_prof_start = get_sys_clock();
 
-#if CC_ALG == VLL
+#if CC_ALG == VLL && MODE == NORMAL_MODE
   vll_man.finishTxn(this);
   //vll_man.restartQFront();
 #endif
@@ -301,7 +301,7 @@ void txn_man::cleanup(RC rc) {
 		for (UInt32 i = 0; i < insert_cnt; i ++) {
 			row_t * row = insert_rows[i];
 			assert(g_part_alloc == false);
-#if CC_ALG != HSTORE && CC_ALG != HSTORE_SPEC && CC_ALG != OCC
+#if CC_ALG != HSTORE && CC_ALG != HSTORE_SPEC && CC_ALG != OCC && MODE == NORMAL_MODE
       DEBUG_M("txn_man::cleanup row->manager free\n");
 			mem_allocator.free(row->manager, 0);
 #endif
@@ -623,7 +623,7 @@ RC txn_man::finish(base_query * query, bool fin) {
 
       }
     } else {
-      query->rc = RCOK;
+      //query->rc = RCOK;
       if(GET_NODE_ID(part_id) != g_node_id) {
         //query->remote_prepare(query, part_node_id);    
         msg_queue.enqueue(query,RPREPARE,part_node_id);

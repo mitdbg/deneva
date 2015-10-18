@@ -807,7 +807,7 @@ RC thread_t::process_rack(base_query *& m_query,txn_man *& m_txn) {
         }
 
         INC_STATS(_thd_id,thd_prof_thd_rack2,get_sys_clock() - thd_prof_thd_rack_start);
-        return RCOK;
+        return rc;
 }
 
 RC thread_t::process_rqry_rsp(uint64_t tid, base_query *& m_query,txn_man *& m_txn) {
