@@ -1074,6 +1074,7 @@ RC thread_t::process_rpass(base_query *& m_query,txn_man *& m_txn) {
 
 RC thread_t::process_rtxn(base_query *& m_query,txn_man *& m_txn) {
     uint64_t thd_prof_start = get_sys_clock();
+    uint64_t thd_prof_start1 = thd_prof_start;
 				INC_STATS(0,rtxn,1);
 				assert(m_query->txn_id == UINT64_MAX || IS_LOCAL(m_query->txn_id) );
         RC rc = RCOK;
@@ -1081,6 +1082,8 @@ RC thread_t::process_rtxn(base_query *& m_query,txn_man *& m_txn) {
 				if(m_query->txn_id == UINT64_MAX) {
           // This is a new transaction
           txn_pool.get(m_txn);
+          INC_STATS(_thd_id,debug1, get_sys_clock()-thd_prof_start1);
+          thd_prof_start1 = get_sys_clock();
 
 					m_txn->abort_cnt = 0;
 					if (CC_ALG == WAIT_DIE || CC_ALG == VLL) {
@@ -1102,11 +1105,15 @@ RC thread_t::process_rtxn(base_query *& m_query,txn_man *& m_txn) {
 							+ (g_thread_cnt * g_node_cnt * _thd_txn_id));
 					_thd_txn_id ++;
 					m_query->set_txn_id(m_txn->get_txn_id());
+          INC_STATS(_thd_id,debug2, get_sys_clock()-thd_prof_start1);
+          thd_prof_start1 = get_sys_clock();
           work_queue.update_hash(get_thd_id(),m_txn->get_txn_id());
 
 					// Put txn in txn_table
           assert(ISCLIENTN(m_query->client_id));
 					txn_table.add_txn(g_node_id,m_txn,m_query);
+          INC_STATS(_thd_id,debug3, get_sys_clock()-thd_prof_start1);
+          thd_prof_start1 = get_sys_clock();
 
           m_query->penalty = 0;
           m_query->abort_restart = false;

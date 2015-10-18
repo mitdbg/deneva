@@ -1137,6 +1137,18 @@ void Stats::print(bool prog) {
   cpu_util(outf);
   print_prof(outf);
 
+	fprintf(outf, 
+  ",debug1=%f"
+  ",debug2=%f"
+  ",debug3=%f"
+  ",debug4=%f"
+  ",debug5=%f"
+  ,(float)total_debug1 / BILLION
+  ,(float)total_debug2 / BILLION
+  ,(float)total_debug3 / BILLION
+  ,(float)total_debug4 / BILLION
+  ,(float)total_debug5 / BILLION
+  );
   fprintf(outf,"\n");
   fflush(outf);
   if(!prog) {
