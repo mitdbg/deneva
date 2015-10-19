@@ -160,7 +160,7 @@ final:
     */
 	mem_allocator.free(rset->rows, sizeof(row_t *) * rset->set_size);
 	mem_allocator.free(rset, sizeof(set_ent));
-	mem_allocator.free(finish_active, sizeof(set_ent*)* f_active_len);
+	//mem_allocator.free(finish_active, sizeof(set_ent*)* f_active_len);
 
 
 	if (valid) {

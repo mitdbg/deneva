@@ -6,7 +6,7 @@
 // Simulation + Hardware
 /***********************************************/
 #define NODE_CNT 2
-#define THREAD_CNT 1
+#define THREAD_CNT 2
 #define REM_THREAD_CNT 1
 #define SEND_THREAD_CNT 1
 // PART_CNT should be at least NODE_CNT
@@ -154,7 +154,7 @@
 //    HOT: use ACCESS_PERC of the accesses go to DATA_PERC of the data
 #define SKEW_METHOD HOT
 #define DATA_PERC 100
-#define ACCESS_PERC 0.2
+#define ACCESS_PERC 0.0
 #define INIT_PARALLELISM 4
 #define SYNTH_TABLE_SIZE 10024//2097152
 #define ZIPF_THETA 0.0
