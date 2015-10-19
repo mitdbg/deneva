@@ -14,9 +14,12 @@ summary = {}
 for n in range(ncnt):
     fname = result_dir + "{}_{}".format(n,exp)
     summary[str(n)] = get_prog(fname)
-progress_diff(summary,ncnt,'txn_cnt',name=exp)
-progress(summary,ncnt,'cpu_ttl',name=exp)
+_name = exp
+progress_diff(summary,ncnt,'txn_cnt',name=_name)
+progress_diff(summary,ncnt,'time_validate',name=_name)
+progress(summary,ncnt,'cpu_ttl',name=_name)
 #progress(summary,ncnt,'mbuf_send_time',name=exp)
-progress(summary,ncnt,'phys_mem_usage',name=exp)
-#progress(exp,ncnt,'abrt_cnt')
+progress(summary,ncnt,'phys_mem_usage',name=_name)
+progress(summary,ncnt,'abort_cnt',name=_name)
+progress(summary,ncnt,'avg_abort_row_cnt',name=_name)
 #progress(exp,ncnt,'msg_bytes')

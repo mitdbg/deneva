@@ -32,11 +32,15 @@ def progress_diff(summary,ncnt,stat,name=''):
         print(output[n])
         xval = [int(c) for c in clk]
 
-    output["total"] = [ sum(output[str(n)][i] for n in range(ncnt)) for i in range(len(output["0"])) ]
-    output["avg"] = [ int(float(sum(output["total"])) / float(ncnt) / float(len(output["total"]))) ] * len(output["total"])
+    try:
+        output["total"] = [ sum(output[str(n)][i] for n in range(ncnt)) for i in range(len(output["0"])) ]
+        output["avg"] = [ int(float(sum(output["total"])) / float(ncnt) / float(len(output["total"]))) ] * len(output["total"])
+    except ValueError:
+        output["total"] = [0] * len(output["0"])
+        output["avg"] = [0] * len(output["0"])
 
     bbox = [0.4,0.9]
-    draw_line(stat+name,output,xval,ylab=stat+'/sec',xlab="Interval",title="Progress "+stat,bbox=bbox,ncol=2) 
+    draw_line('prog_'+stat+name,output,xval,ylab=stat+'/sec',xlab="Interval",title="Progress "+stat,bbox=bbox,ncol=2) 
 
 
 def progress(summary,ncnt,stat,name=''):
@@ -60,11 +64,15 @@ def progress(summary,ncnt,stat,name=''):
         print(output[n])
         xval = [int(c) for c in clk]
 
-    output["total"] = [ sum(output[str(n)][i] for n in range(ncnt)) for i in range(len(output["0"])) ]
-    output["avg"] = [ int(float(sum(output["total"])) / float(ncnt) / float(len(output["total"]))) ] * len(output["total"])
+    try:
+        output["total"] = [ sum(output[str(n)][i] for n in range(ncnt)) for i in range(len(output["0"])) ]
+        output["avg"] = [ int(float(sum(output["total"])) / float(ncnt) / float(len(output["total"]))) ] * len(output["total"])
+    except ValueError:
+        output["total"] = [0] * len(output["0"])
+        output["avg"] = [0] * len(output["0"])
 
     bbox = [0.4,0.9]
-    draw_line(stat+name,output,xval,ylab=stat+'/sec',xlab="Interval",title="Progress "+stat,bbox=bbox,ncol=2) 
+    draw_line('prog_'+stat+name,output,xval,ylab=stat+'/sec',xlab="Interval",title="Progress "+stat,bbox=bbox,ncol=2) 
 
 #Use summary from client nodes
 def tput_v_lat(xval,vval,summary,summary_cl,
@@ -743,27 +751,24 @@ def time_breakdown(xval,summary,
         xname="MPR",
         cfg_fmt=[],
         cfg=[],
-        title=''
+        title='',
+        extras = {}
         ):
     stack_names = [
     'Index',
     'Abort',
-    'Cleanup',
-    'Wait',
     '2PC',
-    'Backoff',
-    'Queue',
-    'Remote',
-    'Work'
+    'CC Manager',
+    'Useful Work'
     ]
-#stack_names = ['Useful Work','Abort','Timestamp','Index','Lock Wait','Remote Wait','Manager']
-    _title = ''
+    global plot_cnt
+    name = 'breakdown_{}'.format(plot_cnt)
+    plot_cnt += 1
     _ymax=1.0
     if normalized:
-        _title = 'Time Breakdown Normalized {}'.format(title)
+        _title = 'Normalized {}'.format(title)
     else:
-        _title = 'Time Breakdown {}'.format(title)
-    name = '{}'.format(_title.replace(" ","_").lower())
+        _title = title
 
     if xname == "ABORT_PENALTY":
         _xval = [(float(x.replace("UL","")))/1000000000 for x in xval]
@@ -775,87 +780,71 @@ def time_breakdown(xval,summary,
         _xval = xval
         _xlab = xname
 
-    time_wait = [0] * len(xval)
     time_index = [0] * len(xval)
     time_abort = [0] * len(xval)
-    time_queue = [0] * len(xval)
-    time_net = [0] * len(xval)
     time_twopc = [0] * len(xval)
-    time_backoff = [0] * len(xval)
+    time_ccman = [0] * len(xval)
     time_work = [0] * len(xval)
-    time_cleanup = [0] * len(xval)
     total = [1] * len(xval)
 
     for x,i in zip(xval,range(len(xval))):
         my_cfg_fmt = cfg_fmt + [xname]
         my_cfg = cfg + [x]
-#            my_cfg_fmt = cfg_fmt
-#            my_cfg = cfg
-#            my_cfg[my_cfg_fmt.index(xname)] = x
-#            my_cfg[my_cfg_fmt.index(vname)] = v
-        n_cnt = my_cfg[my_cfg_fmt.index("NODE_CNT")]
-        n_clt = my_cfg[my_cfg_fmt.index("CLIENT_NODE_CNT")]
-        my_cfg[my_cfg_fmt.index("CLIENT_NODE_CNT")] = int(math.ceil(n_cnt/2)) if n_cnt > 1 else 1
-        n_ppt = my_cfg[my_cfg_fmt.index("PART_PER_TXN")]
-        my_cfg[my_cfg_fmt.index("PART_PER_TXN")] = n_ppt if n_ppt <= n_cnt else 1
+        for e in extras.keys():
+            if e in my_cfg_fmt:
+                if e == 'READ_PERC':
+                    my_cfg[my_cfg_fmt.index(e)] = 1-my_cfg[my_cfg_fmt.index(extras[e])]
+                else:
+                    my_cfg[my_cfg_fmt.index(e)] = my_cfg[my_cfg_fmt.index(extras[e])]
+            else:
+                my_cfg_fmt = my_cfg_fmt + [e]
+                if e == 'READ_PERC':
+                    my_cfg = my_cfg + [1.0-my_cfg[my_cfg_fmt.index(extras[e])]]
+                else:
+                    my_cfg = my_cfg + [my_cfg[my_cfg_fmt.index(extras[e])]]
+        if my_cfg[my_cfg_fmt.index("PART_PER_TXN")] > my_cfg[my_cfg_fmt.index("PART_CNT")]:
+            my_cfg[my_cfg_fmt.index("PART_PER_TXN")] = my_cfg[my_cfg_fmt.index("PART_CNT")]
         n_thd =  my_cfg[my_cfg_fmt.index("THREAD_CNT")]
-        n_alg =  my_cfg[my_cfg_fmt.index("CC_ALG")]
-#            my_cfg[my_cfg_fmt.index("THREAD_CNT")] = 1 if n_alg == "HSTORE" or n_alg == "HSTORE_SPEC" else n_thd
-        if n_alg == "HSTORE" or n_alg == "HSTORE_SPEC":
-#                my_cfg[my_cfg_fmt.index("PART_CNT")] = n_thd*n_cnt
-            my_cfg_fmt = my_cfg_fmt + ["PART_CNT"]
-            my_cfg = my_cfg + [n_thd*n_cnt]
-        else:
-#                my_cfg[my_cfg_fmt.index("PART_CNT")] = n_cnt
-            my_cfg_fmt = my_cfg_fmt + ["PART_CNT"]
-            my_cfg = my_cfg + [n_cnt]
-#                my_cfg.pop(my_cfg_fmt.index("PART_CNT"))
-#                my_cfg_fmt.remove("PART_CNT")
-#            if "CLIENT_NODE_CNT" not in my_cfg_fmt:
-#                my_cfg_fmt = my_cfg_fmt + ["CLIENT_NODE_CNT"]
-#                my_cfg = my_cfg + [int(math.ceil(n_cnt/2)) if n_cnt > 1 else 1]
 
         cfgs = get_cfgs(my_cfg_fmt, my_cfg)
         cfgs = get_outfile_name(cfgs,my_cfg_fmt)
         if cfgs not in summary.keys(): break
+        tmp=0
         try:
-            time_index[i] = avg(summary[cfgs]['txn_time_idx'])
-            time_abort[i] = avg(summary[cfgs]['txn_time_abrt'])
-            time_cleanup[i] = avg(summary[cfgs]['txn_time_clean'])
-            time_wait[i] = avg(summary[cfgs]['txn_time_wait'])
-            time_twopc[i] = avg(summary[cfgs]['txn_time_twopc'])
-            time_backoff[i] = avg(summary[cfgs]['txn_time_q_abrt'])
-            time_queue[i] = avg(summary[cfgs]['txn_time_q_work'])
-            time_net[i] = avg(summary[cfgs]['txn_time_net'])
-            time_work[i] = avg(summary[cfgs]['txn_time_misc']) + avg(summary[cfgs]['txn_time_copy'])
-            total[i] = sum(time_index[i] + time_abort[i] + time_cleanup[i] + time_wait[i] + time_twopc[i] + time_backoff[i] + time_queue[i] + time_net[i] + time_work[i] )
+            time_index[i] = avg(summary[cfgs]['time_index'])
+            tmp = tmp+1
+            time_abort[i] = avg(summary[cfgs]['time_abort'])
+            tmp = tmp+1
+            time_ccman[i] = avg(summary[cfgs]['time_man']) + avg(summary[cfgs]['txn_time_begintxn']) + avg(summary[cfgs]['time_validate'])
+            tmp = tmp+1
+            time_twopc[i] = avg(summary[cfgs]['type9']) + avg(summary[cfgs]['type12']) +avg(summary[cfgs]['type5']) + avg(summary[cfgs]['time_msg_sent'])
+            tmp = tmp+1
+            time_work[i] = avg(summary[cfgs]['type10']) + avg(summary[cfgs]['type8'])
+#            time_work[i] = avg(summary[cfgs]['type10']) + avg(summary[cfgs]['type8']) - time_index[i] - avg(summary[cfgs]['time_msg_sent']) - time_ccman[i]
+            tmp = tmp+1
+            total[i] = sum(time_index[i] + time_abort[i] + time_ccman[i] + time_twopc[i] + time_work[i] )
+            tmp = tmp+1
 
         except KeyError:
-            print("KeyError: {} {}".format(x,cfg))
+            print("KeyError: {} err:{}".format(cfgs,tmp))
 
 
     if normalized:
         time_index = [i / j for i,j in zip(time_index,total)]
         time_abort =  [i / j for i,j in zip(time_abort,total)]
-        time_cleanup =  [i / j for i,j in zip(time_cleanup,total)]
-        time_wait =  [i / j for i,j in zip(time_wait,total)]
         time_twopc =  [i / j for i,j in zip(time_twopc,total)]
-        time_backoff =  [i / j for i,j in zip(time_backoff,total)]
-        time_queue =  [i / j for i,j in zip(time_queue,total)]
-        time_net =  [i / j for i,j in zip(time_net,total)]
+        time_ccman =  [i / j for i,j in zip(time_ccman,total)]
         time_work =  [i / j for i,j in zip(time_work,total)]
         _ymax = 1
     else:
         _ymax = max(total)
     data = [time_index,
         time_abort,
-        time_cleanup,
-        time_wait,
         time_twopc,
-        time_backoff, 
-        time_queue,
-        time_net, 
+        time_ccman, 
         time_work]
+    pp = pprint.PrettyPrinter()
+    pp.pprint(data)
     draw_stack(data,_xval,stack_names,figname=name,title=_title,ymax=_ymax)
     print("Created plot {}".format(name))
 

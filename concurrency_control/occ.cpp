@@ -128,10 +128,13 @@ RC OptCC::central_validate(txn_man * txn) {
 	}
 	his = history;
 	pthread_mutex_unlock( &latch );
+
+  uint64_t checked = 0;
 	if (finish_tn > start_tn) {
 		while (his && his->tn > finish_tn) 
 			his = his->next;
 		while (his && his->tn > start_tn) {
+      checked++;
 			valid = test_valid(his, rset);
 			if (!valid) 
 				goto final;
@@ -141,10 +144,13 @@ RC OptCC::central_validate(txn_man * txn) {
 
 	for (UInt32 i = 0; i < f_active_len; i++) {
 		set_ent * wact = finish_active[i];
+    checked++;
 		valid = test_valid(wact, rset);
 		if (valid) {
+      checked++;
 			valid = test_valid(wact, wset);
-		} if (!valid)
+		} 
+    if (!valid)
 			goto final;
 	}
 final:
@@ -152,40 +158,17 @@ final:
 	if (valid) 
 		txn->cleanup(RCOK);
     */
+	mem_allocator.free(rset->rows, sizeof(row_t *) * rset->set_size);
 	mem_allocator.free(rset, sizeof(set_ent));
+	mem_allocator.free(finish_active, sizeof(set_ent*)* f_active_len);
 
-  /*
-	if (!readonly) {
-		// only update active & tnc for non-readonly transactions
-		pthread_mutex_lock( &latch );
-		set_ent * act = active;
-		set_ent * prev = NULL;
-		while (act->txn != txn) {
-			prev = act;
-			act = act->next;
-		}
-		assert(act->txn == txn);
-		if (prev != NULL)
-			prev->next = act->next;
-		else
-			active = act->next;
-		active_len --;
-		if (valid) {
-			// TODO remove the assert for performance
-			if (history)
-				assert(history->tn == tnc);
-			tnc ++;
-			wset->tn = tnc;
-			STACK_PUSH(history, wset);
-			his_len ++;
-		}
-		pthread_mutex_unlock( &latch );
-	}
-  */
+
 	if (valid) {
 		rc = RCOK;
+    INC_STATS(txn->get_thd_id(),occ_check_cnt,checked);
 	} else {
 		//txn->cleanup(Abort);
+    INC_STATS(txn->get_thd_id(),occ_abort_check_cnt,checked);
 		rc = Abort;
 	}
 	return rc;
@@ -232,6 +215,8 @@ void OptCC::central_finish(RC rc, txn_man * txn) {
 			wset->tn = tnc;
 			STACK_PUSH(history, wset);
 			his_len ++;
+      //mem_allocator.free(wset->rows, sizeof(row_t *) * wset->set_size);
+      //mem_allocator.free(wset, sizeof(set_ent));
 		}
 		pthread_mutex_unlock( &latch );
 	}

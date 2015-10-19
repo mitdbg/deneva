@@ -29,6 +29,8 @@ public:
 	uint64_t txn_cnt;
 	uint64_t txn_rem_cnt;
 	uint64_t txn_sent;
+	uint64_t occ_abort_check_cnt;
+	uint64_t occ_check_cnt;
 	uint64_t abort_cnt;
 	uint64_t rem_row_cnt;
 	uint64_t abort_rem_row_cnt;

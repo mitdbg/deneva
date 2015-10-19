@@ -543,6 +543,7 @@ RC txn_man::loc_fin_txn(base_query * query) {
 
 RC txn_man::finish(base_query * query, bool fin) {
   // Only home node should execute
+  uint64_t starttime = get_sys_clock();
 #if CC_ALG != CALVIN
   assert(query->txn_id % g_node_cnt == g_node_id);
 #endif
@@ -562,7 +563,6 @@ RC txn_man::finish(base_query * query, bool fin) {
 #if MODE == QRY_ONLY_MODE || MODE == SETUP_MODE
   return RCOK;
 #endif
-  //uint64_t starttime = get_sys_clock();
 
   // Stats start
   txn_twopc_starttime = get_sys_clock();
@@ -681,15 +681,10 @@ RC txn_man::finish(base_query * query, bool fin) {
       }
     }
   }
-  // After all requests are sent, it's possible that all responses will come back
-  //  before we execute the next instructions and this txn will be deleted.
-  //  Can't touch anything related to this txn now.
 
-  /*
   uint64_t timespan = get_sys_clock() - starttime;
-  assert(h_thd->_node_id < g_node_cnt);
   INC_STATS(get_thd_id(),time_msg_sent,timespan);
-  */
+
 
   if(rsp_cnt >0) 
     return WAIT_REM;

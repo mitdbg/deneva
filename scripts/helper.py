@@ -113,6 +113,7 @@ stat_map = {
  'qq_lat': [],
  'txn_cnt': [],
  'time_man': [],
+ 'txn_time_begintxn': [],
  'time_rqry': [],
  'qry_rfin': [],
  'aq_full': [],
