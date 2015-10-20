@@ -48,11 +48,14 @@ void TxnTable::init() {
   pthread_mutex_init(&mtx,NULL);
   pthread_cond_init(&cond_m,NULL);
   pthread_cond_init(&cond_a,NULL);
-  pool_size = g_inflight_max * g_node_cnt * 2 + 1;
+//  pool_size = g_inflight_max * g_node_cnt * 2 + 1;
+  pool_size = g_inflight_max/2+1;
   pool = (pool_node_t) mem_allocator.alloc(sizeof(pool_node) * pool_size , g_thread_cnt);
   modify = false;
   access = 0;
   cnt = 0;
+  table_min_ts = UINT64_MAX;
+  last_min_ts_time = 0;
   for(uint32_t i = 0; i < pool_size;i++) {
     pool[i].head = NULL;
     pool[i].tail = NULL;
@@ -62,6 +65,7 @@ void TxnTable::init() {
     pthread_cond_init(&pool[i].cond_a,NULL);
     pool[i].modify = false;
     pool[i].access = 0;
+    pool[i].min_ts = UINT64_MAX;
   }
 }
 
@@ -112,6 +116,12 @@ void TxnTable::add_txn(uint64_t node_id, txn_man * txn, base_query * qry) {
     t_node->txn = txn;
     t_node->qry = qry;
   }
+
+#if CC_ALG == MVCC
+  if(txn->get_ts() < pool[txn_id % pool_size].min_ts) {
+    pool[txn_id % pool_size].min_ts = txn->get_ts();
+  }
+#endif
 
   MODIFY_END(txn_id % pool_size);
   INC_STATS(0,thd_prof_txn_table_add,get_sys_clock() - thd_prof_start);
@@ -248,17 +258,37 @@ void TxnTable::delete_txn(uint64_t node_id, uint64_t txn_id){
   thd_prof_start = get_sys_clock();
 
   txn_node_t t_node = pool[txn_id % pool_size].head;
+  txn_node_t t_node_del = NULL;
+  uint64_t min_ts = UINT64_MAX;
 
   while (t_node != NULL) {
     if (t_node->txn->get_txn_id() == txn_id) {
       LIST_REMOVE_HT(t_node,pool[txn_id % pool_size].head,pool[txn_id % pool_size].tail);
       pool[txn_id % pool_size].cnt--;
       cnt--;
+      t_node_del = t_node;
+#if CC_ALG == MVCC
+      if(pool[txn_id % pool_size].min_ts != t_node->txn->get_ts()) {
+        min_ts = pool[txn_id % pool_size].min_ts;
+        break;
+      }
+    } else {
+      if(t_node->txn->get_ts() < min_ts)
+        min_ts = t_node->txn->get_ts();
+    }
+#else
       break;
     }
+#endif
     t_node = t_node->next;
   }
+  t_node = t_node_del;
 
+#if CC_ALG == MVCC
+  if(pool[txn_id % pool_size].min_ts == t_node->txn->get_ts()) {
+    pool[txn_id % pool_size].min_ts = min_ts;
+  }
+#endif
   MODIFY_END(txn_id % pool_size)
 
   if(t_node != NULL) {
@@ -357,18 +387,32 @@ void TxnTable::snapshot() {
 
 uint64_t TxnTable::get_min_ts() {
 
+  assert(CC_ALG == MVCC);
   uint64_t min = UINT64_MAX;
+  uint64_t thd_prof_start;
 
   for(uint32_t i = 0; i < pool_size; i++) {
+    thd_prof_start = get_sys_clock();
+
     ACCESS_START(i)
-    txn_node_t t_node = pool[i].head;
-    while (t_node != NULL) {
-      if(t_node->txn->get_ts() < min)
-        min = t_node->txn->get_ts();
-      t_node = t_node->next;
-    }
+
+    INC_STATS(0,thd_prof_txn_table_mints1,get_sys_clock() - thd_prof_start);
+    thd_prof_start = get_sys_clock();
+
+    //txn_node_t t_node = pool[i].head;
+    //while (t_node != NULL) {
+     // if(t_node->txn->get_ts() < min)
+      //  min = t_node->txn->get_ts();
+      //t_node = t_node->next;
+    //}
+    
+    if(pool[i].min_ts < min)
+      min = pool[i].min_ts;
+
     ACCESS_END(i);
+    INC_STATS(0,thd_prof_txn_table_mints2,get_sys_clock() - thd_prof_start);
   }
+  table_min_ts = min;
 
   return min;
 }

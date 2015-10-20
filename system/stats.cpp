@@ -229,10 +229,14 @@ void Stats_thd::clear() {
   thd_prof_wq1=0;thd_prof_wq2=0;thd_prof_wq1=3;thd_prof_wq4=0;
   thd_prof_txn1=0;thd_prof_txn2=0;
   thd_prof_txn_table_add=0;thd_prof_txn_table_get=0;
+  thd_prof_txn_table_mints1=0;thd_prof_txn_table_mints2=0;
   thd_prof_txn_table0a=0;thd_prof_txn_table1a=0;thd_prof_txn_table2=0;
   thd_prof_txn_table0b=0;thd_prof_txn_table1b=0;thd_prof_txn_table2=0;
   thd_prof_occ_val2a=0;thd_prof_occ_val1=0;thd_prof_occ_val2=0;
   thd_prof_occ_val5=0;thd_prof_occ_val4=0;thd_prof_occ_val3=0;
+  thd_prof_mvcc1=0;thd_prof_mvcc2=0;thd_prof_mvcc3=0;
+  thd_prof_mvcc4=0;thd_prof_mvcc5=0;thd_prof_mvcc6=0;thd_prof_mvcc7=0;thd_prof_mvcc8=0;thd_prof_mvcc9=0;
+
 
   time_getqry = 0;
   client_latency = 0;
@@ -1420,6 +1424,15 @@ void Stats::print_prof(FILE * outf) {
         double total_thd_prof_cc1 =0;
         double total_thd_prof_cc2 =0;
         double total_thd_prof_cc3 =0;
+        double total_thd_prof_mvcc1 =0;
+        double total_thd_prof_mvcc2 =0;
+        double total_thd_prof_mvcc3 =0;
+        double total_thd_prof_mvcc4 =0;
+        double total_thd_prof_mvcc5 =0;
+        double total_thd_prof_mvcc6 =0;
+        double total_thd_prof_mvcc7 =0;
+        double total_thd_prof_mvcc8 =0;
+        double total_thd_prof_mvcc9 =0;
         double total_thd_prof_occ_val1 =0;
         double total_thd_prof_occ_val2 =0;
         double total_thd_prof_occ_val2a =0;
@@ -1434,6 +1447,8 @@ void Stats::print_prof(FILE * outf) {
         double total_thd_prof_txn2 =0;
         double total_thd_prof_txn_table_add =0;
         double total_thd_prof_txn_table_get =0;
+        double total_thd_prof_txn_table_mints1 =0;
+        double total_thd_prof_txn_table_mints2 =0;
         double total_thd_prof_txn_table0a =0;
         double total_thd_prof_txn_table1a =0;
         double total_thd_prof_txn_table0b =0;
@@ -1506,6 +1521,15 @@ void Stats::print_prof(FILE * outf) {
         total_thd_prof_cc1 +=_stats[tid]->thd_prof_cc1;
         total_thd_prof_cc2 +=_stats[tid]->thd_prof_cc2;
         total_thd_prof_cc3 +=_stats[tid]->thd_prof_cc3;
+        total_thd_prof_mvcc1 +=_stats[tid]->thd_prof_mvcc1;
+        total_thd_prof_mvcc2 +=_stats[tid]->thd_prof_mvcc2;
+        total_thd_prof_mvcc3 +=_stats[tid]->thd_prof_mvcc3;
+        total_thd_prof_mvcc4 +=_stats[tid]->thd_prof_mvcc4;
+        total_thd_prof_mvcc5 +=_stats[tid]->thd_prof_mvcc5;
+        total_thd_prof_mvcc6 +=_stats[tid]->thd_prof_mvcc6;
+        total_thd_prof_mvcc7 +=_stats[tid]->thd_prof_mvcc7;
+        total_thd_prof_mvcc8 +=_stats[tid]->thd_prof_mvcc8;
+        total_thd_prof_mvcc9 +=_stats[tid]->thd_prof_mvcc9;
         total_thd_prof_occ_val1 +=_stats[tid]->thd_prof_occ_val1;
         total_thd_prof_occ_val2 +=_stats[tid]->thd_prof_occ_val2;
         total_thd_prof_occ_val2a +=_stats[tid]->thd_prof_occ_val2a;
@@ -1520,6 +1544,8 @@ void Stats::print_prof(FILE * outf) {
         total_thd_prof_txn2 +=_stats[tid]->thd_prof_txn2;
         total_thd_prof_txn_table_add +=_stats[tid]->thd_prof_txn_table_add;
         total_thd_prof_txn_table_get +=_stats[tid]->thd_prof_txn_table_get;
+        total_thd_prof_txn_table_mints1 +=_stats[tid]->thd_prof_txn_table_mints1;
+        total_thd_prof_txn_table_mints2 +=_stats[tid]->thd_prof_txn_table_mints2;
         total_thd_prof_txn_table0a +=_stats[tid]->thd_prof_txn_table0a;
         total_thd_prof_txn_table1a +=_stats[tid]->thd_prof_txn_table1a;
         total_thd_prof_txn_table0b +=_stats[tid]->thd_prof_txn_table0b;
@@ -1546,10 +1572,12 @@ void Stats::print_prof(FILE * outf) {
         ",row1=%f,row2=%f,row3=%f"
         ",cc0=%f,cc1=%f,cc2=%f,cc3=%f"
         ",occ_val1=%f,occ_val2a=%f,occ_val2=%f,occ_val3=%f,occ_val4=%f,occ_val5=%f"
+        ",mvcc1=%f,mvcc2=%f,mvcc3=%f,mvcc4=%f,mvcc5=%f,mvcc6=%f,mvcc7=%f,mvcc8=%f,mvcc9=%f"
         ",wq1=%f,wq2=%f"
         ",wq3=%f,wq4=%f"
         ",txn1=%f,txn2=%f"
         ",txn_table_add=%f,txn_table_get=%f"
+        ",txn_table_mints1=%f,txn_table_mints2=%f"
         ",txn_table0a=%f,txn_table1a=%f"
         ",txn_table0b=%f,txn_table1b=%f,txn_table2a=%f,txn_table2=%f"
   ,total_sthd_prof_1a /BILLION/g_send_thread_cnt
@@ -1609,6 +1637,15 @@ void Stats::print_prof(FILE * outf) {
         ,total_thd_prof_occ_val3 /BILLION/g_thread_cnt
         ,total_thd_prof_occ_val4 /BILLION/g_thread_cnt
         ,total_thd_prof_occ_val5 /BILLION/g_thread_cnt
+        ,total_thd_prof_mvcc1 /BILLION/g_thread_cnt
+        ,total_thd_prof_mvcc2 /BILLION/g_thread_cnt
+        ,total_thd_prof_mvcc3 /BILLION/g_thread_cnt
+        ,total_thd_prof_mvcc4 /BILLION/g_thread_cnt
+        ,total_thd_prof_mvcc5 /BILLION/g_thread_cnt
+        ,total_thd_prof_mvcc6 /BILLION/g_thread_cnt
+        ,total_thd_prof_mvcc7 /BILLION/g_thread_cnt
+        ,total_thd_prof_mvcc8 /BILLION/g_thread_cnt
+        ,total_thd_prof_mvcc9 /BILLION/g_thread_cnt
         ,total_thd_prof_wq1 /BILLION/g_thread_cnt
         ,total_thd_prof_wq2 /BILLION/g_thread_cnt
         ,total_thd_prof_wq3 /BILLION/g_thread_cnt
@@ -1617,6 +1654,8 @@ void Stats::print_prof(FILE * outf) {
         ,total_thd_prof_txn2 /BILLION/g_thread_cnt
         ,total_thd_prof_txn_table_add /BILLION/g_thread_cnt
         ,total_thd_prof_txn_table_get /BILLION/g_thread_cnt
+        ,total_thd_prof_txn_table_mints1 /BILLION/g_thread_cnt
+        ,total_thd_prof_txn_table_mints2 /BILLION/g_thread_cnt
         ,total_thd_prof_txn_table0a /BILLION/g_thread_cnt
         ,total_thd_prof_txn_table1a /BILLION/g_thread_cnt
         ,total_thd_prof_txn_table0b /BILLION/g_thread_cnt

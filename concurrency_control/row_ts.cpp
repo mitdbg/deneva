@@ -49,6 +49,7 @@ void Row_ts::return_req_list(TsReqEntry * list) {
 
 void Row_ts::buffer_req(TsType type, txn_man * txn, row_t * row)
 {
+  uint64_t starttime = get_sys_clock();
 	TsReqEntry * req_entry = get_req_entry();
 	assert(req_entry != NULL);
 	req_entry->txn = txn;
@@ -72,6 +73,7 @@ void Row_ts::buffer_req(TsType type, txn_man * txn, row_t * row)
 		if (req_entry->ts < min_pts)
 			min_pts = req_entry->ts;
 	}
+  INC_STATS(0,thd_prof_mvcc1,get_sys_clock() - starttime);
 }
 
 TsReqEntry * Row_ts::debuffer_req(TsType type, txn_man * txn) {
@@ -91,6 +93,7 @@ TsReqEntry * Row_ts::debuffer_req( TsType type, txn_man * txn, ts_t ts ) {
 		case W_REQ : queue = &writereq; break;
 		default: assert(false);
 	}
+  uint64_t starttime = get_sys_clock();
 
 	TsReqEntry * req = *queue;
 	TsReqEntry * prev_req = NULL;
@@ -127,6 +130,7 @@ TsReqEntry * Row_ts::debuffer_req( TsType type, txn_man * txn, ts_t ts ) {
 			}
 		}
 	}
+  INC_STATS(0,thd_prof_mvcc2,get_sys_clock() - starttime);
 	return return_queue;
 }
 
@@ -152,10 +156,13 @@ ts_t Row_ts::cal_min(TsType type) {
 RC Row_ts::access(txn_man * txn, TsType type, row_t * row) {
 	RC rc;
 	ts_t ts = txn->get_ts();
+  uint64_t starttime = get_sys_clock();
 	if (g_central_man)
 		glob_manager.lock_row(_row);
 	else
 		pthread_mutex_lock( latch );
+  INC_STATS(0,thd_prof_mvcc3,get_sys_clock() - starttime);
+  starttime = get_sys_clock();
 	if (type == R_REQ) {
 		if (ts < wts) { // read would occur before most recent write
 			rc = Abort;
@@ -240,6 +247,7 @@ RC Row_ts::access(txn_man * txn, TsType type, row_t * row) {
 		assert(false);
 	
 final:
+  INC_STATS(0,thd_prof_mvcc4,get_sys_clock() - starttime);
 	if (g_central_man)
 		glob_manager.release_row(_row);
 	else
@@ -249,6 +257,7 @@ final:
 
 void Row_ts::update_buffer() {
 
+  uint64_t starttime = get_sys_clock();
 	while (true) {
 		ts_t new_min_pts = cal_min(P_REQ);
 		assert(new_min_pts >= min_pts);
@@ -299,5 +308,6 @@ void Row_ts::update_buffer() {
 		return_req_list(ready_write);
 
 	}
+  INC_STATS(0,thd_prof_mvcc5,get_sys_clock() - starttime);
 }
 

@@ -35,6 +35,7 @@ row_t * Row_mvcc::clear_history(TsType type, ts_t ts) {
 	MVHisEntry * his = *tail;
 	MVHisEntry * prev = NULL;
 	row_t * row = NULL;
+  uint64_t starttime = get_sys_clock();
 	while (his && his->prev && his->prev->ts < ts) {
 		prev = his->prev;
 		assert(prev->ts >= his->ts);
@@ -54,6 +55,7 @@ row_t * Row_mvcc::clear_history(TsType type, ts_t ts) {
 		(*tail)->next = NULL;
 	if (his == NULL) 
 		*queue = NULL;
+  INC_STATS(0,thd_prof_mvcc9,get_sys_clock() - starttime);
 	return row;
 }
 
@@ -81,6 +83,7 @@ void Row_mvcc::return_his_entry(MVHisEntry * entry) {
 
 void Row_mvcc::buffer_req(TsType type, txn_man * txn)
 {
+  uint64_t starttime = get_sys_clock();
 	MVReqEntry * req_entry = get_req_entry();
 	assert(req_entry != NULL);
 	req_entry->txn = txn;
@@ -93,6 +96,7 @@ void Row_mvcc::buffer_req(TsType type, txn_man * txn)
 		preq_len ++;
 		STACK_PUSH(prereq_mvcc, req_entry);
 	}
+  INC_STATS(0,thd_prof_mvcc4,get_sys_clock() - starttime);
 }
 
 // for type == R_REQ 
@@ -108,6 +112,7 @@ MVReqEntry * Row_mvcc::debuffer_req( TsType type, txn_man * txn) {
 	default: assert(false);
 	}
 	
+  uint64_t starttime = get_sys_clock();
 	MVReqEntry * req = *queue;
 	MVReqEntry * prev_req = NULL;
 	if (txn != NULL) {
@@ -117,6 +122,7 @@ MVReqEntry * Row_mvcc::debuffer_req( TsType type, txn_man * txn) {
 			req = req->next;
 		}
 		assert(req != NULL);
+  INC_STATS(0,thd_prof_mvcc1,get_sys_clock() - starttime);
 		if (prev_req != NULL)
 			prev_req->next = req->next;
 		else {
@@ -152,6 +158,7 @@ MVReqEntry * Row_mvcc::debuffer_req( TsType type, txn_man * txn) {
 				req = req->next;
 			}
 		}
+  INC_STATS(0,thd_prof_mvcc2,get_sys_clock() - starttime);
 	}
 	
 	return return_queue;
@@ -188,6 +195,7 @@ bool Row_mvcc::conflict(TsType type, ts_t ts) {
 	// else 
 	// 	 if exists writehis between them, NO conflict!!!!
 	// 	 else, CONFLICT!!!
+  uint64_t starttime = get_sys_clock();
 	ts_t rts;
 	ts_t pts;
 	if (type == R_REQ) {	
@@ -223,6 +231,7 @@ bool Row_mvcc::conflict(TsType type, ts_t ts) {
 			return false;
 		whis = whis->next;
 	}
+  INC_STATS(0,thd_prof_mvcc5,get_sys_clock() - starttime);
 	return true;
 }
 
@@ -230,10 +239,13 @@ RC Row_mvcc::access(txn_man * txn, TsType type, row_t * row) {
 	RC rc = RCOK;
 	ts_t ts = txn->get_ts();
 
+  uint64_t starttime = get_sys_clock();
 	if (g_central_man)
 		glob_manager.lock_row(_row);
 	else
 		pthread_mutex_lock( latch );
+  INC_STATS(0,thd_prof_mvcc3,get_sys_clock() - starttime);
+  starttime = get_sys_clock();
   if (type == R_REQ) {
 		// figure out if ts is in interval(prewrite(x))
 		bool conf = conflict(type, ts);
@@ -287,6 +299,8 @@ RC Row_mvcc::access(txn_man * txn, TsType type, row_t * row) {
 	} else 
 		assert(false);
 	
+  INC_STATS(0,thd_prof_mvcc7,get_sys_clock() - starttime);
+  starttime = get_sys_clock();
 	if (rc == RCOK) {
 		if (whis_len > HIS_RECYCLE_LEN || rhis_len > HIS_RECYCLE_LEN) {
 			ts_t t_th = glob_manager.get_min_ts(txn->get_thd_id());
@@ -308,6 +322,7 @@ RC Row_mvcc::access(txn_man * txn, TsType type, row_t * row) {
 		}
 	}
 	
+  INC_STATS(0,thd_prof_mvcc8,get_sys_clock() - starttime);
 	if (g_central_man)
 		glob_manager.release_row(_row);
 	else
@@ -321,6 +336,7 @@ void Row_mvcc::update_buffer(txn_man * txn) {
 	MVReqEntry * req = ready_read;
 	MVReqEntry * tofree = NULL;
 
+  uint64_t starttime = get_sys_clock();
 	while (req != NULL) {
 		// find the version for the request
 		MVHisEntry * whis = writehis;
@@ -342,4 +358,5 @@ void Row_mvcc::update_buffer(txn_man * txn) {
 		// free ready_read
 		return_req_entry(tofree);
 	}
+  INC_STATS(0,thd_prof_mvcc6,get_sys_clock() - starttime);
 }

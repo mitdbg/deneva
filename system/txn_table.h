@@ -28,6 +28,7 @@ struct pool_node {
   volatile bool modify;
   int access;
   uint64_t cnt;
+  uint64_t min_ts;
 
 };
 typedef pool_node * pool_node_t;
@@ -67,6 +68,8 @@ private:
 
   uint64_t pool_size;
   pool_node_t pool;
+  uint64_t last_min_ts_time;
+  uint64_t table_min_ts;
 };
 
 #endif

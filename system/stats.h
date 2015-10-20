@@ -103,9 +103,11 @@ public:
   double thd_prof_wq3,thd_prof_wq4;
   double thd_prof_txn1,thd_prof_txn2;
   double thd_prof_txn_table_add,thd_prof_txn_table_get;
+  double thd_prof_txn_table_mints1,thd_prof_txn_table_mints2;
   double thd_prof_txn_table0a,thd_prof_txn_table1a,thd_prof_txn_table2a;
   double thd_prof_txn_table0b,thd_prof_txn_table1b,thd_prof_txn_table2;
   double thd_prof_occ_val4,thd_prof_occ_val1,thd_prof_occ_val2a,thd_prof_occ_val2,thd_prof_occ_val3,thd_prof_occ_val5;
+  double thd_prof_mvcc1,thd_prof_mvcc2,thd_prof_mvcc3,thd_prof_mvcc4,thd_prof_mvcc5,thd_prof_mvcc6,thd_prof_mvcc7,thd_prof_mvcc8,thd_prof_mvcc9;
 
   uint64_t msg_batch_size;
   uint64_t msg_batch_bytes;
