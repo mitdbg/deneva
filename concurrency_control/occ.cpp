@@ -101,7 +101,8 @@ RC OptCC::central_validate(txn_man * txn) {
 	RC rc;
 	uint64_t start_tn = txn->start_ts;
 	uint64_t finish_tn;
-	set_ent ** finish_active;
+	//set_ent ** finish_active;
+	//set_ent * finish_active[f_active_len];
 	uint64_t f_active_len;
 	bool valid = true;
 	// OptCC is centralized. No need to do per partition malloc.
@@ -112,12 +113,18 @@ RC OptCC::central_validate(txn_man * txn) {
 	set_ent * his;
 	set_ent * ent;
 	int n = 0;
+  uint64_t starttime = get_sys_clock();
 
 	pthread_mutex_lock( &latch );
+  INC_STATS(txn->get_thd_id(),thd_prof_occ_val1,get_sys_clock() - starttime);
+  starttime = get_sys_clock();
 	finish_tn = tnc;
 	ent = active;
 	f_active_len = active_len;
-	finish_active = (set_ent**) mem_allocator.alloc(sizeof(set_ent *) * f_active_len, 0);
+	set_ent * finish_active[f_active_len];
+	//finish_active = (set_ent**) mem_allocator.alloc(sizeof(set_ent *) * f_active_len, 0);
+  INC_STATS(txn->get_thd_id(),thd_prof_occ_val2a,get_sys_clock() - starttime);
+  starttime = get_sys_clock();
 	while (ent != NULL) {
 		finish_active[n++] = ent;
 		ent = ent->next;
@@ -128,6 +135,8 @@ RC OptCC::central_validate(txn_man * txn) {
 	}
 	his = history;
 	pthread_mutex_unlock( &latch );
+  INC_STATS(txn->get_thd_id(),thd_prof_occ_val2,get_sys_clock() - starttime);
+  starttime = get_sys_clock();
 
   uint64_t checked = 0;
 	if (finish_tn > start_tn) {
@@ -142,6 +151,8 @@ RC OptCC::central_validate(txn_man * txn) {
 		}
 	}
 
+  INC_STATS(txn->get_thd_id(),thd_prof_occ_val3,get_sys_clock() - starttime);
+  starttime = get_sys_clock();
 	for (UInt32 i = 0; i < f_active_len; i++) {
 		set_ent * wact = finish_active[i];
     checked++;
@@ -153,7 +164,11 @@ RC OptCC::central_validate(txn_man * txn) {
     if (!valid)
 			goto final;
 	}
+  INC_STATS(txn->get_thd_id(),thd_prof_occ_val4,get_sys_clock() - starttime);
+  starttime = get_sys_clock();
 final:
+  INC_STATS(txn->get_thd_id(),thd_prof_occ_val5,get_sys_clock() - starttime);
+  starttime = get_sys_clock();
   /*
 	if (valid) 
 		txn->cleanup(RCOK);

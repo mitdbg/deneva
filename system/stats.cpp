@@ -231,6 +231,8 @@ void Stats_thd::clear() {
   thd_prof_txn_table_add=0;thd_prof_txn_table_get=0;
   thd_prof_txn_table0a=0;thd_prof_txn_table1a=0;thd_prof_txn_table2=0;
   thd_prof_txn_table0b=0;thd_prof_txn_table1b=0;thd_prof_txn_table2=0;
+  thd_prof_occ_val2a=0;thd_prof_occ_val1=0;thd_prof_occ_val2=0;
+  thd_prof_occ_val5=0;thd_prof_occ_val4=0;thd_prof_occ_val3=0;
 
   time_getqry = 0;
   client_latency = 0;
@@ -1418,6 +1420,12 @@ void Stats::print_prof(FILE * outf) {
         double total_thd_prof_cc1 =0;
         double total_thd_prof_cc2 =0;
         double total_thd_prof_cc3 =0;
+        double total_thd_prof_occ_val1 =0;
+        double total_thd_prof_occ_val2 =0;
+        double total_thd_prof_occ_val2a =0;
+        double total_thd_prof_occ_val3 =0;
+        double total_thd_prof_occ_val4 =0;
+        double total_thd_prof_occ_val5 =0;
         double total_thd_prof_wq1 =0;
         double total_thd_prof_wq2 =0;
         double total_thd_prof_wq3 =0;
@@ -1498,6 +1506,12 @@ void Stats::print_prof(FILE * outf) {
         total_thd_prof_cc1 +=_stats[tid]->thd_prof_cc1;
         total_thd_prof_cc2 +=_stats[tid]->thd_prof_cc2;
         total_thd_prof_cc3 +=_stats[tid]->thd_prof_cc3;
+        total_thd_prof_occ_val1 +=_stats[tid]->thd_prof_occ_val1;
+        total_thd_prof_occ_val2 +=_stats[tid]->thd_prof_occ_val2;
+        total_thd_prof_occ_val2a +=_stats[tid]->thd_prof_occ_val2a;
+        total_thd_prof_occ_val3 +=_stats[tid]->thd_prof_occ_val3;
+        total_thd_prof_occ_val4 +=_stats[tid]->thd_prof_occ_val4;
+        total_thd_prof_occ_val5 +=_stats[tid]->thd_prof_occ_val5;
         total_thd_prof_wq1 +=_stats[tid]->thd_prof_wq1;
         total_thd_prof_wq2 +=_stats[tid]->thd_prof_wq2;
         total_thd_prof_wq3 +=_stats[tid]->thd_prof_wq3;
@@ -1531,6 +1545,7 @@ void Stats::print_prof(FILE * outf) {
         ",ycsb1=%f"
         ",row1=%f,row2=%f,row3=%f"
         ",cc0=%f,cc1=%f,cc2=%f,cc3=%f"
+        ",occ_val1=%f,occ_val2a=%f,occ_val2=%f,occ_val3=%f,occ_val4=%f,occ_val5=%f"
         ",wq1=%f,wq2=%f"
         ",wq3=%f,wq4=%f"
         ",txn1=%f,txn2=%f"
@@ -1588,6 +1603,12 @@ void Stats::print_prof(FILE * outf) {
         ,total_thd_prof_cc1 /BILLION/g_thread_cnt
         ,total_thd_prof_cc2 /BILLION/g_thread_cnt
         ,total_thd_prof_cc3 /BILLION/g_thread_cnt
+        ,total_thd_prof_occ_val1 /BILLION/g_thread_cnt
+        ,total_thd_prof_occ_val2a /BILLION/g_thread_cnt
+        ,total_thd_prof_occ_val2 /BILLION/g_thread_cnt
+        ,total_thd_prof_occ_val3 /BILLION/g_thread_cnt
+        ,total_thd_prof_occ_val4 /BILLION/g_thread_cnt
+        ,total_thd_prof_occ_val5 /BILLION/g_thread_cnt
         ,total_thd_prof_wq1 /BILLION/g_thread_cnt
         ,total_thd_prof_wq2 /BILLION/g_thread_cnt
         ,total_thd_prof_wq3 /BILLION/g_thread_cnt
