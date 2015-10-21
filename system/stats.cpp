@@ -207,6 +207,7 @@ void Stats_thd::clear() {
   qq_lat = 0;
   aq_full = 0;
 
+  thd_prof_get_txn_cnt = 0;
   rthd_prof_1=0; rthd_prof_2=0;
   sthd_prof_1a=0; sthd_prof_1b=0; sthd_prof_2=0; sthd_prof_3=0; sthd_prof_4=0; sthd_prof_5a=0; sthd_prof_5b=0;
   thd_prof_thd1=0; thd_prof_thd2=0; thd_prof_thd3=0;
@@ -1373,6 +1374,7 @@ void Stats::cpu_util(FILE * outf) {
 
 void Stats::print_prof(FILE * outf) {
 
+  uint64_t total_thd_prof_get_txn_cnt = 0;
   double total_sthd_prof_1a = 0;
   double total_sthd_prof_2 = 0;
   double total_sthd_prof_3 = 0;
@@ -1480,6 +1482,7 @@ void Stats::print_prof(FILE * outf) {
         +_stats[tid]->thd_prof_thd2
         +_stats[tid]->thd_prof_thd3;
 
+        total_thd_prof_get_txn_cnt += _stats[tid]->thd_prof_get_txn_cnt;
         total_thd_prof_thd1 +=_stats[tid]->thd_prof_thd1;
         total_thd_prof_thd2 +=_stats[tid]->thd_prof_thd2;
         total_thd_prof_thd3 +=_stats[tid]->thd_prof_thd3;
@@ -1580,6 +1583,7 @@ void Stats::print_prof(FILE * outf) {
         ",txn_table_mints1=%f,txn_table_mints2=%f"
         ",txn_table0a=%f,txn_table1a=%f"
         ",txn_table0b=%f,txn_table1b=%f,txn_table2a=%f,txn_table2=%f"
+        ",get_txn_cnt=%ld"
   ,total_sthd_prof_1a /BILLION/g_send_thread_cnt
   ,total_sthd_prof_2 /BILLION/g_send_thread_cnt
   ,total_sthd_prof_3 /BILLION/g_send_thread_cnt
@@ -1662,6 +1666,7 @@ void Stats::print_prof(FILE * outf) {
         ,total_thd_prof_txn_table1b /BILLION/g_thread_cnt
         ,total_thd_prof_txn_table2a /BILLION/g_thread_cnt
         ,total_thd_prof_txn_table2 /BILLION/g_thread_cnt
+        ,total_thd_prof_get_txn_cnt
         );
         for(int i = 0; i < 16;i++)
           fprintf(outf,

@@ -88,13 +88,13 @@ void TxnTable::get_txn(uint64_t node_id, uint64_t txn_id,txn_man *& txn,base_que
   txn_node_t t_node;
   txn = NULL;
   qry = NULL;
+  INC_STATS(0,thd_prof_get_txn_cnt,1);
   ACCESS_START(0);
   TxnMap::iterator it = pool.find(txn_id);
   if(it != pool.end()) {
     t_node = it->second;
     txn = t_node->txn;
     qry = t_node->qry;
-    assert(txn->get_txn_id() == qry->txn_id);
   }
   ACCESS_END(0);
   INC_STATS(0,thd_prof_txn_table_get,get_sys_clock() - thd_prof_start);
