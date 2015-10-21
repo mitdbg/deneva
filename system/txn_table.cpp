@@ -12,31 +12,31 @@
 #include "txn_pool.h"
 
 #define MODIFY_START(i) {\
-    pthread_mutex_lock(&mtx);\
-    while(modify || access > 0)\
-      pthread_cond_wait(&cond_m,&mtx);\
-    modify = true; \
-    pthread_mutex_unlock(&mtx); }
+    pthread_mutex_lock(&pool[i].mtx);\
+    while(pool[i].modify || pool[i].access > 0)\
+      pthread_cond_wait(&pool[i].cond_m,&pool[i].mtx);\
+    pool[i].modify = true; \
+    pthread_mutex_unlock(&pool[i].mtx); }
 
 #define MODIFY_END(i) {\
-  pthread_mutex_lock(&mtx);\
-  modify = false;\
-  pthread_cond_signal(&cond_m); \
-  pthread_cond_broadcast(&cond_a); \
-  pthread_mutex_unlock(&mtx); }
+  pthread_mutex_lock(&pool[i].mtx);\
+  pool[i].modify = false;\
+  pthread_cond_signal(&pool[i].cond_m); \
+  pthread_cond_broadcast(&pool[i].cond_a); \
+  pthread_mutex_unlock(&pool[i].mtx); }
 
 #define ACCESS_START(i) {\
-  pthread_mutex_lock(&mtx);\
-  while(modify)\
-      pthread_cond_wait(&cond_a,&mtx);\
-  access++;\
-  pthread_mutex_unlock(&mtx); }
+  pthread_mutex_lock(&pool[i].mtx);\
+  while(pool[i].modify)\
+      pthread_cond_wait(&pool[i].cond_a,&pool[i].mtx);\
+  pool[i].access++;\
+  pthread_mutex_unlock(&pool[i].mtx); }
 
 #define ACCESS_END(i) {\
-  pthread_mutex_lock(&mtx);\
-  access--;\
-  pthread_cond_signal(&cond_m);\
-  pthread_mutex_unlock(&mtx); }
+  pthread_mutex_lock(&pool[i].mtx);\
+  pool[i].access--;\
+  pthread_cond_signal(&pool[i].cond_m);\
+  pthread_mutex_unlock(&pool[i].mtx); }
 
 void TxnTable::init() {
   pthread_mutex_init(&mtx,NULL);
@@ -46,10 +46,23 @@ void TxnTable::init() {
   access = 0;
   cnt = 0;
   table_min_ts = UINT64_MAX;
+  pool_size = g_inflight_max * g_node_cnt * 2 + 1;
+  pool = (pool_node_t) mem_allocator.alloc(sizeof(pool_node) * pool_size , g_thread_cnt);
+  for(uint32_t i = 0; i < pool_size;i++) {
+    pool[i].head = NULL;
+    pool[i].tail = NULL;
+    pool[i].cnt = 0;
+    pthread_mutex_init(&pool[i].mtx,NULL);
+    pthread_cond_init(&pool[i].cond_m,NULL);
+    pthread_cond_init(&pool[i].cond_a,NULL);
+    pool[i].modify = false;
+    pool[i].access = 0;
+    pool[i].min_ts = UINT64_MAX;
+  }
 }
 
 bool TxnTable::empty(uint64_t node_id) {
-  return pool.empty();
+  return ts_pool.empty();
 }
 
 void TxnTable::add_txn(uint64_t node_id, txn_man * txn, base_query * qry) {
@@ -58,80 +71,122 @@ void TxnTable::add_txn(uint64_t node_id, txn_man * txn, base_query * qry) {
   txn->set_query(qry);
   uint64_t txn_id = txn->get_txn_id();
   assert(txn_id == qry->txn_id);
-  txn_node_t t_node;
 
-  txn_table_pool.get(t_node);
-  t_node->txn = txn;
-  t_node->qry = qry;
-  MODIFY_START(0);
-  std::pair<TxnMap::iterator,bool> tp = pool.insert(TxnMapPair(txn_id,t_node));
-  
-  if(!tp.second) {
-    txn_table_pool.put(t_node);
-    t_node = tp.first->second;
+  txn_man * next_txn = NULL;
+  assert(txn->get_txn_id() == qry->txn_id);
+
+  MODIFY_START(txn_id % pool_size);
+
+  txn_node_t t_node = pool[txn_id % pool_size].head;
+
+  while (t_node != NULL) {
+    if (t_node->txn->get_txn_id() == txn_id) {
+      next_txn = t_node->txn;
+      break;
+    }
+    t_node = t_node->next;
+  }
+
+  if(next_txn == NULL) {
+    //t_node = (txn_node_t) mem_allocator.alloc(sizeof(struct txn_node), g_thread_cnt);
+    ts_pool.insert(TsMapPair(txn->get_ts(),NULL));
+    txn_table_pool.get(t_node);
+    t_node->txn = txn;
+    t_node->qry = qry;
+    LIST_PUT_TAIL(pool[txn_id % pool_size].head,pool[txn_id % pool_size].tail,t_node);
+    pool[txn_id % pool_size].cnt++;
+    if(pool[txn_id % pool_size].cnt > 1) {
+      INC_STATS(0,txn_table_cflt,1);
+      INC_STATS(0,txn_table_cflt_size,pool[txn_id % pool_size].cnt-1);
+    }
+    cnt++;
+  }
+  else {
     if(txn->get_ts() != t_node->txn->get_ts()) {
       ts_pool.erase(t_node->txn->get_ts());
       ts_pool.insert(TsMapPair(txn->get_ts(),NULL));
     }
-    t_node->qry = qry;
     t_node->txn = txn;
-  } else {
-    ts_pool.insert(TsMapPair(txn->get_ts(),NULL));
+    t_node->qry = qry;
   }
 
-  MODIFY_END(0);
+#if CC_ALG == MVCC
+  if(txn->get_ts() < pool[txn_id % pool_size].min_ts) {
+    pool[txn_id % pool_size].min_ts = txn->get_ts();
+  }
+#endif
+
+  MODIFY_END(txn_id % pool_size);
   INC_STATS(0,thd_prof_txn_table_add,get_sys_clock() - thd_prof_start);
 }
 void TxnTable::get_txn(uint64_t node_id, uint64_t txn_id,txn_man *& txn,base_query *& qry){
 
   uint64_t thd_prof_start = get_sys_clock();
-  txn_node_t t_node;
   txn = NULL;
   qry = NULL;
   INC_STATS(0,thd_prof_get_txn_cnt,1);
-  ACCESS_START(0);
-  TxnMap::iterator it = pool.find(txn_id);
-  if(it != pool.end()) {
-    t_node = it->second;
-    txn = t_node->txn;
-    qry = t_node->qry;
+  ACCESS_START(txn_id % pool_size);
+
+  txn_node_t t_node = pool[txn_id % pool_size].head;
+
+  while (t_node != NULL) {
+    if (t_node->txn->get_txn_id() == txn_id) {
+      txn = t_node->txn;
+      qry = t_node->qry;
+      assert(txn->get_txn_id() == qry->txn_id);
+      break;
+    }
+    t_node = t_node->next;
   }
-  ACCESS_END(0);
+
+  ACCESS_END(txn_id % pool_size);
   INC_STATS(0,thd_prof_txn_table_get,get_sys_clock() - thd_prof_start);
 
 }
 
 void TxnTable::restart_txn(uint64_t txn_id){
-  txn_node_t t_node;
-  MODIFY_START(0);
-  TxnMap::iterator it = pool.find(txn_id);
-  if(it != pool.end()) {
-    t_node = it->second;
-    if(txn_id % g_node_cnt == g_node_id)
-      t_node->qry->rtype = RTXN;
-    else
-      t_node->qry->rtype = RQRY;
-    work_queue.enqueue(t_node->qry);
-  }
-  MODIFY_END(0);
+  MODIFY_START(txn_id % pool_size);
 
+  txn_node_t t_node = pool[txn_id % pool_size].head;
+
+  while (t_node != NULL) {
+    if (t_node->txn->get_txn_id() == txn_id) {
+      if(txn_id % g_node_cnt == g_node_id)
+        t_node->qry->rtype = RTXN;
+      else
+        t_node->qry->rtype = RQRY;
+      work_queue.enqueue(t_node->qry);
+      break;
+    }
+    t_node = t_node->next;
+  }
+
+  MODIFY_END(txn_id % pool_size);
 
 }
 
 void TxnTable::delete_txn(uint64_t node_id, uint64_t txn_id){
-  txn_node_t t_node;
   uint64_t thd_prof_start = get_sys_clock();
   uint64_t starttime = thd_prof_start;
-  MODIFY_START(0);
-  TxnMap::iterator it = pool.find(txn_id);
-  if(it != pool.end()) {
-    t_node = it->second;
-    pool.erase(it);
+
+  MODIFY_START(txn_id % pool_size);
+
+  txn_node_t t_node = pool[txn_id % pool_size].head;
+
+  while (t_node != NULL) {
+    if (t_node->txn->get_txn_id() == txn_id) {
+      LIST_REMOVE_HT(t_node,pool[txn_id % pool_size].head,pool[txn_id % pool_size].tail);
+      pool[txn_id % pool_size].cnt--;
+      cnt--;
+      break;
+    }
+    t_node = t_node->next;
   }
   TsMap::iterator it2 = ts_pool.find(t_node->txn->get_ts());
   if(it2 != ts_pool.end())
     ts_pool.erase(it2);
-  MODIFY_END(0);
+
+  MODIFY_END(txn_id % pool_size)
 
   if(t_node != NULL) {
     INC_STATS(0,thd_prof_txn_table1a,get_sys_clock() - thd_prof_start);

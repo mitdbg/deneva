@@ -73,7 +73,9 @@ private:
   uint64_t cnt;
 
   uint64_t table_min_ts;
-  TxnMap pool;
+//  TxnMap pool;
+  uint64_t pool_size;
+  pool_node * pool;
   TsMap ts_pool;
 
 };
