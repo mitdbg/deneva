@@ -433,6 +433,7 @@ RC thread_t::run() {
           m_txn->txn_time_copy += m_query->time_copy;
           m_txn->txn_time_misc += timespan;
           m_txn->update_stats();
+          INC_STATS(get_thd_id(),part_cnt[m_query->part_touched_cnt-1],1);
 
 					DEBUG("COMMIT %ld %ld %ld %f -- %f -- %d\n",m_txn->get_txn_id(),m_query->part_num,m_txn->abort_cnt,(double)m_txn->txn_time_wait/BILLION,(double)timespan/ BILLION,m_query->client_id);
 

@@ -82,7 +82,7 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, VOLTDB, OCC, VLL, CALVIN
-#define CC_ALG MVCC
+#define CC_ALG NO_WAIT
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER         false
@@ -154,7 +154,7 @@
 //    HOT: use ACCESS_PERC of the accesses go to DATA_PERC of the data
 #define SKEW_METHOD HOT
 #define DATA_PERC 100
-#define ACCESS_PERC 0.0
+#define ACCESS_PERC 0.05
 #define INIT_PARALLELISM 4
 #define SYNTH_TABLE_SIZE 10024//2097152
 #define ZIPF_THETA 0.0
