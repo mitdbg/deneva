@@ -74,7 +74,7 @@ void Transport::init(uint64_t node_id,workload * workload) {
 #if SHMEM_ENV
   path = "/dev/shm/";
 #else
-	char * cpath
+	char * cpath;
   cpath = getenv("SCHEMA_PATH");
 	if(cpath == NULL)
 		path = "./";

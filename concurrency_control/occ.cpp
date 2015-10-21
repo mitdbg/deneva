@@ -15,6 +15,7 @@ set_ent::set_ent() {
 }
 
 void OptCC::init() {
+  sem_init(&_semaphore, 0, 1);
 	tnc = 0;
 	his_len = 0;
 	active_len = 0;
@@ -115,7 +116,8 @@ RC OptCC::central_validate(txn_man * txn) {
 	int n = 0;
   uint64_t starttime = get_sys_clock();
 
-	pthread_mutex_lock( &latch );
+	//pthread_mutex_lock( &latch );
+  sem_wait(&_semaphore);
   INC_STATS(txn->get_thd_id(),thd_prof_mvcc1,get_sys_clock() - starttime);
   starttime = get_sys_clock();
 	finish_tn = tnc;
@@ -134,7 +136,8 @@ RC OptCC::central_validate(txn_man * txn) {
 		STACK_PUSH(active, wset);
 	}
 	his = history;
-	pthread_mutex_unlock( &latch );
+	//pthread_mutex_unlock( &latch );
+  sem_post(&_semaphore);
   INC_STATS(txn->get_thd_id(),thd_prof_mvcc3,get_sys_clock() - starttime);
   starttime = get_sys_clock();
 
@@ -205,7 +208,8 @@ void OptCC::central_finish(RC rc, txn_man * txn) {
 	if (!readonly) {
 		// only update active & tnc for non-readonly transactions
   uint64_t starttime = get_sys_clock();
-		pthread_mutex_lock( &latch );
+//		pthread_mutex_lock( &latch );
+  sem_wait(&_semaphore);
   INC_STATS(txn->get_thd_id(),thd_prof_mvcc7,get_sys_clock() - starttime);
   starttime = get_sys_clock();
 		set_ent * act = active;
@@ -216,8 +220,9 @@ void OptCC::central_finish(RC rc, txn_man * txn) {
 		}
     if(act == NULL) {
       assert(rc == Abort);
-		  pthread_mutex_unlock( &latch );
-  INC_STATS(txn->get_thd_id(),thd_prof_mvcc8,get_sys_clock() - starttime);
+		  //pthread_mutex_unlock( &latch );
+      sem_post(&_semaphore);
+      INC_STATS(txn->get_thd_id(),thd_prof_mvcc8,get_sys_clock() - starttime);
       return;
     }
 		assert(act->txn == txn);
@@ -237,7 +242,8 @@ void OptCC::central_finish(RC rc, txn_man * txn) {
       //mem_allocator.free(wset->rows, sizeof(row_t *) * wset->set_size);
       //mem_allocator.free(wset, sizeof(set_ent));
 		}
-		pthread_mutex_unlock( &latch );
+	//	pthread_mutex_unlock( &latch );
+  sem_post(&_semaphore);
   INC_STATS(txn->get_thd_id(),thd_prof_mvcc9,get_sys_clock() - starttime);
 	}
 }

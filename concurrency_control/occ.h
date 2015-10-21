@@ -2,6 +2,7 @@
 #define _OCC_H_
 
 #include "row.h"
+#include "semaphore.h"
 
 
 // TODO For simplicity, the txn hisotry for OCC is oganized as follows:
@@ -49,6 +50,7 @@ private:
 	uint64_t active_len;
 	volatile uint64_t tnc; // transaction number counter
 	pthread_mutex_t latch;
+ 	sem_t 	_semaphore;
 };
 
 #endif
