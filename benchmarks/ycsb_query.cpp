@@ -217,13 +217,14 @@ void ycsb_client_query::gen_requests(uint64_t thd_id, workload * h_wl) {
 	}
 
 	int rid = 0;
+  double r_twr = (double)(mrand->next() % 10000) / 10000;		
 	for (UInt32 tmp = 0; tmp < g_req_per_query; tmp ++) {		
 		double r = (double)(mrand->next() % 10000) / 10000;		
 		ycsb_request * req = &requests[rid];
 		//req->table_name = "SYNTH_TABLE";
-		if (r < g_read_perc) {
+		if (r_twr < g_txn_read_perc || r < g_tup_read_perc) {
 			req->acctype = RD;
-		} else if (r >= g_read_perc && r <= g_write_perc + g_read_perc) {
+		} else if (r >= g_tup_read_perc && r <= g_tup_write_perc + g_tup_read_perc) {
 			req->acctype = WR;
 		} else {
 			req->acctype = SCAN;
@@ -301,10 +302,11 @@ void ycsb_client_query::gen_requests2(uint64_t thd_id, workload * h_wl) {
 	part_num = 0;
 
 	int rid = 0;
+  double r_twr = (double)(mrand->next() % 10000) / 10000;		
 	for (UInt32 i = 0; i < g_req_per_query; i ++) {		
 		double r = (double)(mrand->next() % 10000) / 10000;		
 		ycsb_request * req = &requests[rid];
-		if (r < g_read_perc) 
+		if (r_twr < g_txn_read_perc ||r < g_tup_read_perc) 
 			req->acctype = RD;
 		else
 			req->acctype = WR;
@@ -372,6 +374,7 @@ void ycsb_client_query::gen_requests3(uint64_t thd_id, workload * h_wl) {
 	part_num = 0;
   //uint64_t hot_key_max = g_synth_table_size * g_data_perc;
   uint64_t hot_key_max = (uint64_t)g_data_perc;
+  double r_twr = (double)(mrand->next() % 10000) / 10000;		
   //printf("%ld %f\n",hot_key_max,((float)hot_key_max)/g_synth_table_size);
 
 	int rid = 0;
@@ -379,7 +382,7 @@ void ycsb_client_query::gen_requests3(uint64_t thd_id, workload * h_wl) {
 		double r = (double)(mrand->next() % 10000) / 10000;		
     double hot =  (double)(mrand->next() % 10000) / 10000;
 		ycsb_request * req = &requests[rid];
-		if (r < g_read_perc) 
+		if (r_twr < g_txn_read_perc || r < g_tup_read_perc) 
 			req->acctype = RD;
 		else
 			req->acctype = WR;

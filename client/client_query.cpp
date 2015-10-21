@@ -148,7 +148,8 @@ Client_query_thd::init_txns_file(const char * txn_file) {
 	ifstream fin(txn_file);
 	myrand * mrand = (myrand *) mem_allocator.alloc(sizeof(myrand), 0);
 	mrand->init(get_sys_clock());
-  assert(g_write_perc + g_read_perc == 1.0);
+  assert(g_tup_write_perc + g_tup_read_perc == 1.0);
+  assert(g_txn_write_perc + g_txn_read_perc == 1.0);
   while (getline(fin, line) && qid < request_cnt) {
 
 #if WORKLOAD == YCSB	
@@ -184,13 +185,13 @@ Client_query_thd::init_txns_file(const char * txn_file) {
         idx++;
       }
       else {
-        if(g_read_perc == 1.0)
+        if(g_tup_read_perc == 1.0)
           queries[qid].requests[idx].acctype = RD;
-        else if(g_write_perc == 1.0)
+        else if(g_tup_write_perc == 1.0)
           queries[qid].requests[idx].acctype = WR;
         else {
 		      double r = (double)(mrand->next() % 10000) / 10000;		
-          if(r < g_read_perc) {
+          if(r < g_tup_read_perc) {
             queries[qid].requests[idx].acctype = RD;
           } else {
             queries[qid].requests[idx].acctype = WR;

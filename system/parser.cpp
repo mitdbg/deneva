@@ -51,7 +51,7 @@ void print_usage() {
 	printf("\t-apFLOAT       ; ACCESS_PERC\n");
 	printf("\t-pptINT       ; PART_PER_TXN\n");
 	printf("\t-eINT       ; PERC_MULTI_PART\n");
-	printf("\t-rFLOAT     ; READ_PERC\n");
+	//printf("\t-rFLOAT     ; READ_PERC\n");
 	printf("\t-wFLOAT     ; WRITE_PERC\n");
 	printf("\t-zipfFLOAT     ; ZIPF_THETA\n");
 	printf("\t-sINT       ; SYNTH_TABLE_SIZE\n");
@@ -116,6 +116,10 @@ void parser(int argc, char * argv[]) {
       g_data_perc = atof( &argv[i][3] );
     else if (argv[i][1] == 'a' && argv[i][2] == 'p')
       g_access_perc = atof( &argv[i][3] );
+    else if (argv[i][1] == 't'&& argv[i][2] == 'w') {
+			g_txn_write_perc = atof( &argv[i][2] );
+			g_txn_read_perc = 1.0 - atof( &argv[i][2] );
+    }
     else if (argv[i][1] == 'p')
       g_part_cnt = atoi( &argv[i][2] );
     else if (argv[i][1] == 'n')
@@ -136,10 +140,15 @@ void parser(int argc, char * argv[]) {
 			input_file = argv[++i];
     else if (argv[i][1] == 'e')
 			g_perc_multi_part = atof( &argv[i][2] );
+    /*
     else if (argv[i][1] == 'r')
 			g_read_perc = atof( &argv[i][2] );
-    else if (argv[i][1] == 'w')
-			g_write_perc = atof( &argv[i][2] );
+			g_write_perc = 1.0 - atof( &argv[i][2] );
+      */
+    else if (argv[i][1] == 'w') {
+			g_tup_write_perc = atof( &argv[i][2] );
+			g_tup_read_perc = 1.0 - atof( &argv[i][2] );
+    }
     else if (argv[i][1] == 's')
 			g_synth_table_size = atoi( &argv[i][2] );
     else if (argv[i][1] == 'f')
@@ -155,6 +164,7 @@ void parser(int argc, char * argv[]) {
 	}
 
     //g_inflight_max = g_inflight_max / g_node_cnt;
+      printf("CC Alg %d\n",CC_ALG);
       printf("g_done_timer %ld\n",g_done_timer);
 			printf("g_thread_cnt %d\n",g_thread_cnt );
 			printf("g_abort_penalty %ld\n",g_abort_penalty); 
@@ -182,8 +192,10 @@ void parser(int argc, char * argv[]) {
 			printf("g_part_alloc %d\n",g_part_alloc );
 			printf("g_mem_pad %d\n",g_mem_pad );
 			printf("g_perc_multi_part %f\n",g_perc_multi_part );
-			printf("g_read_perc %f\n",g_read_perc );
-			printf("g_write_perc %f\n",g_write_perc );
+			printf("g_tup_read_perc %f\n",g_tup_read_perc );
+			printf("g_tup_write_perc %f\n",g_tup_write_perc );
+			printf("g_txn_read_perc %f\n",g_txn_read_perc );
+			printf("g_txn_write_perc %f\n",g_txn_write_perc );
 			printf("g_synth_table_size %ld\n",g_synth_table_size );
 			printf("g_field_per_tuple %d\n",g_field_per_tuple );
       printf("g_data_perc %f\n",g_access_perc);
