@@ -185,7 +185,7 @@ void ycsb_client_query::gen_requests(uint64_t thd_id, workload * h_wl) {
 	uint64_t access_cnt = 0;
 	set<uint64_t> all_keys;
 	part_num = 0;
-	double r = (double)(mrand->next() % 1000000) / 10000;
+	double r = (double)(mrand->next() % 10000) / 10000;
 	//UInt32 r = mrand->next() % 100;
 	//if (r < g_perc_multi_part) {
 	if (r < g_mpr && g_part_cnt > 1) {
@@ -372,6 +372,12 @@ void ycsb_client_query::gen_requests3(uint64_t thd_id, workload * h_wl) {
 	uint64_t access_cnt = 0;
 	set<uint64_t> all_keys;
 	part_num = 0;
+  double r_mpt = (double)(mrand->next() % 10000) / 10000;		
+  uint64_t part_limit;
+  if(r_mpt < g_mpr)
+    part_limit = g_part_per_txn;
+  else
+    part_limit = 1;
   //uint64_t hot_key_max = g_synth_table_size * g_data_perc;
   uint64_t hot_key_max = (uint64_t)g_data_perc;
   double r_twr = (double)(mrand->next() % 10000) / 10000;		
@@ -414,7 +420,7 @@ void ycsb_client_query::gen_requests3(uint64_t thd_id, workload * h_wl) {
         }
         if( j < part_num)
           break;
-        if( part_num < g_part_per_txn ) {
+        if( part_num < part_limit ) {
           part_to_access[part_num++] = row_id % g_part_cnt;
           break;
         }

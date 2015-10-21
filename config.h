@@ -166,7 +166,7 @@
 #define PERC_MULTI_PART     MPR 
 #define REQ_PER_QUERY 10
 #define FIELD_PER_TUPLE       10
-#define CREATE_TXN_FILE false
+#define CREATE_TXN_FILE true
 // ==== [TPCC] ====
 // For large warehouse count, the tables do not fit in memory
 // small tpcc schemas shrink the table size.
@@ -182,7 +182,7 @@
 #define WH_UPDATE         true
 #define NUM_WH 1
 // % of transactions that access multiple partitions
-#define MPR 100
+#define MPR 0.1 
 #define MPR_NEWORDER      20 // In %
 // Smaller item selection to model contention
 #define CONTENTION false
