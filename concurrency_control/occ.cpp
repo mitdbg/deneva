@@ -116,14 +116,14 @@ RC OptCC::central_validate(txn_man * txn) {
   uint64_t starttime = get_sys_clock();
 
 	pthread_mutex_lock( &latch );
-  INC_STATS(txn->get_thd_id(),thd_prof_occ_val1,get_sys_clock() - starttime);
+  INC_STATS(txn->get_thd_id(),thd_prof_mvcc1,get_sys_clock() - starttime);
   starttime = get_sys_clock();
 	finish_tn = tnc;
 	ent = active;
 	f_active_len = active_len;
 	set_ent * finish_active[f_active_len];
 	//finish_active = (set_ent**) mem_allocator.alloc(sizeof(set_ent *) * f_active_len, 0);
-  INC_STATS(txn->get_thd_id(),thd_prof_occ_val2a,get_sys_clock() - starttime);
+  INC_STATS(txn->get_thd_id(),thd_prof_mvcc2,get_sys_clock() - starttime);
   starttime = get_sys_clock();
 	while (ent != NULL) {
 		finish_active[n++] = ent;
@@ -135,7 +135,7 @@ RC OptCC::central_validate(txn_man * txn) {
 	}
 	his = history;
 	pthread_mutex_unlock( &latch );
-  INC_STATS(txn->get_thd_id(),thd_prof_occ_val2,get_sys_clock() - starttime);
+  INC_STATS(txn->get_thd_id(),thd_prof_mvcc3,get_sys_clock() - starttime);
   starttime = get_sys_clock();
 
   uint64_t checked = 0;
@@ -151,7 +151,7 @@ RC OptCC::central_validate(txn_man * txn) {
 		}
 	}
 
-  INC_STATS(txn->get_thd_id(),thd_prof_occ_val3,get_sys_clock() - starttime);
+  INC_STATS(txn->get_thd_id(),thd_prof_mvcc4,get_sys_clock() - starttime);
   starttime = get_sys_clock();
 	for (UInt32 i = 0; i < f_active_len; i++) {
 		set_ent * wact = finish_active[i];
@@ -164,10 +164,10 @@ RC OptCC::central_validate(txn_man * txn) {
     if (!valid)
 			goto final;
 	}
-  INC_STATS(txn->get_thd_id(),thd_prof_occ_val4,get_sys_clock() - starttime);
+  INC_STATS(txn->get_thd_id(),thd_prof_mvcc5,get_sys_clock() - starttime);
   starttime = get_sys_clock();
 final:
-  INC_STATS(txn->get_thd_id(),thd_prof_occ_val5,get_sys_clock() - starttime);
+  INC_STATS(txn->get_thd_id(),thd_prof_mvcc6,get_sys_clock() - starttime);
   starttime = get_sys_clock();
   /*
 	if (valid) 
@@ -204,7 +204,10 @@ void OptCC::central_finish(RC rc, txn_man * txn) {
 
 	if (!readonly) {
 		// only update active & tnc for non-readonly transactions
+  uint64_t starttime = get_sys_clock();
 		pthread_mutex_lock( &latch );
+  INC_STATS(txn->get_thd_id(),thd_prof_mvcc7,get_sys_clock() - starttime);
+  starttime = get_sys_clock();
 		set_ent * act = active;
 		set_ent * prev = NULL;
 		while (act != NULL && act->txn != txn) {
@@ -214,6 +217,7 @@ void OptCC::central_finish(RC rc, txn_man * txn) {
     if(act == NULL) {
       assert(rc == Abort);
 		  pthread_mutex_unlock( &latch );
+  INC_STATS(txn->get_thd_id(),thd_prof_mvcc8,get_sys_clock() - starttime);
       return;
     }
 		assert(act->txn == txn);
@@ -234,6 +238,7 @@ void OptCC::central_finish(RC rc, txn_man * txn) {
       //mem_allocator.free(wset, sizeof(set_ent));
 		}
 		pthread_mutex_unlock( &latch );
+  INC_STATS(txn->get_thd_id(),thd_prof_mvcc9,get_sys_clock() - starttime);
 	}
 }
 

@@ -114,12 +114,6 @@ void TxnTable::add_txn(uint64_t node_id, txn_man * txn, base_query * qry) {
     t_node->qry = qry;
   }
 
-#if CC_ALG == MVCC
-  if(txn->get_ts() < pool[txn_id % pool_size].min_ts) {
-    pool[txn_id % pool_size].min_ts = txn->get_ts();
-  }
-#endif
-
   MODIFY_END(txn_id % pool_size);
   INC_STATS(0,thd_prof_txn_table_add,get_sys_clock() - thd_prof_start);
 }
