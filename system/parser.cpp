@@ -117,8 +117,8 @@ void parser(int argc, char * argv[]) {
     else if (argv[i][1] == 'a' && argv[i][2] == 'p')
       g_access_perc = atof( &argv[i][3] );
     else if (argv[i][1] == 't'&& argv[i][2] == 'w') {
-			g_txn_write_perc = atof( &argv[i][2] );
-			g_txn_read_perc = 1.0 - atof( &argv[i][2] );
+			g_txn_write_perc = atof( &argv[i][3] );
+			g_txn_read_perc = 1.0 - atof( &argv[i][3] );
     }
     else if (argv[i][1] == 'p')
       g_part_cnt = atoi( &argv[i][2] );

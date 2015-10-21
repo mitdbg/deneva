@@ -58,6 +58,7 @@ def set_env_ec2():
     env.key_filename = "~/.ssh/devenv-key.pem"
     env.ifconfig = os.path.join(env.local_path,"ec2_ifconfig.txt")
     env.rem_homedir = os.path.join("/home/",env.uname)
+    env.shmem = False
     set_hosts()
 
 def set_env_local():

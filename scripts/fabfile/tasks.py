@@ -285,7 +285,7 @@ def deploy(schema_path,nids,exps,fmt):
                     if env.shmem:
                         cmd += "(/dev/shm/runcl -nid{} {}>> /dev/shm/results{}.out 2>&1 &);".format(nn,args,nn)  
                     else:
-                        cmd += "(./runcl -nid{} >> results{}.out 2>&1 &);".format(nn,args,nn)  
+                        cmd += "(./runcl -nid{} {}>> results{}.out 2>&1 &);".format(nn,args,nn)  
             cmd = cmd[:-3]
             cmd += ")"
             try:
