@@ -60,22 +60,22 @@ void TxnTable::add_txn(uint64_t node_id, txn_man * txn, base_query * qry) {
   assert(txn_id == qry->txn_id);
   txn_node_t t_node;
 
+  txn_table_pool.get(t_node);
+  t_node->txn = txn;
+  t_node->qry = qry;
   MODIFY_START(0);
-  TxnMap::iterator it = pool.find(txn_id);
-
-  if(it != pool.end()) {
-    t_node = it->second;
-    TsMap::iterator it2 = ts_pool.find(t_node->txn->get_ts());
-    if(it2 != ts_pool.end())
-      ts_pool.erase(it2);
-    ts_pool.insert(TsMapPair(txn->get_ts(),NULL));
-    t_node->txn = txn;
+  std::pair<TxnMap::iterator,bool> tp = pool.insert(TxnMapPair(txn_id,t_node));
+  
+  if(!tp.second) {
+    txn_table_pool.put(t_node);
+    t_node = tp.first->second;
+    if(txn->get_ts() != t_node->txn->get_ts()) {
+      ts_pool.erase(t_node->txn->get_ts());
+      ts_pool.insert(TsMapPair(txn->get_ts(),NULL));
+    }
     t_node->qry = qry;
+    t_node->txn = txn;
   } else {
-    txn_table_pool.get(t_node);
-    t_node->txn = txn;
-    t_node->qry = qry;
-    pool.insert(TxnMapPair(txn_id,t_node));
     ts_pool.insert(TsMapPair(txn->get_ts(),NULL));
   }
 
