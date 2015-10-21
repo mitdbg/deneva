@@ -33,6 +33,11 @@ struct pool_node {
 };
 typedef pool_node * pool_node_t;
 
+typedef std::map<uint64_t,txn_node_t> TxnMap;
+typedef std::map<uint64_t,void*> TsMap;
+typedef std::pair<uint64_t,txn_node_t> TxnMapPair;
+typedef std::pair<uint64_t,void*> TsMapPair;
+
 class TxnTable {
 public:
   void init();
@@ -55,6 +60,7 @@ public:
 
   //uint64_t inflight_cnt;
   bool * spec_mode;
+  int (*compare_uint64)(void* leftp,void* rightp);
 
 private:
 	uint64_t _node_id;
@@ -66,10 +72,10 @@ private:
   int access;
   uint64_t cnt;
 
-  uint64_t pool_size;
-  pool_node_t pool;
-  uint64_t last_min_ts_time;
   uint64_t table_min_ts;
+  TxnMap pool;
+  TsMap ts_pool;
+
 };
 
 #endif
