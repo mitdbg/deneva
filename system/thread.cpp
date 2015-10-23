@@ -1094,8 +1094,10 @@ RC thread_t::process_rtxn(base_query *& m_query,txn_man *& m_txn) {
 				INC_STATS(0,rtxn,1);
 				assert(m_query->txn_id == UINT64_MAX || IS_LOCAL(m_query->txn_id) );
         RC rc = RCOK;
+        bool restart = true;
 
 				if(m_query->txn_id == UINT64_MAX) {
+          restart = false;
           // This is a new transaction
           txn_pool.get(m_txn);
           INC_STATS(_thd_id,debug1, get_sys_clock()-thd_prof_start1);
@@ -1138,7 +1140,6 @@ RC thread_t::process_rtxn(base_query *& m_query,txn_man *& m_txn) {
           m_txn->txn_time_misc += m_query->time_q_work;
           m_txn->txn_time_misc += m_query->time_copy;
           m_txn->register_thd(this);
-					DEBUG("START %ld %f %lu\n",m_txn->get_txn_id(),(double)(m_txn->starttime - run_starttime) / BILLION,m_txn->get_ts());
     INC_STATS(_thd_id,thd_prof_thd_rtxn1a,get_sys_clock() - thd_prof_start);
 				}
 				else {
@@ -1167,6 +1168,11 @@ RC thread_t::process_rtxn(base_query *& m_query,txn_man *& m_txn) {
 					m_txn->start_ts = get_next_ts(); 
 					m_query->start_ts = m_txn->get_start_ts();
 #endif
+    if(restart) {
+					DEBUG("RESTART %ld %f %lu\n",m_txn->get_txn_id(),(double)(m_txn->starttime - run_starttime) / BILLION,m_txn->get_ts());
+    } else {
+					DEBUG("START %ld %f %lu\n",m_txn->get_txn_id(),(double)(m_txn->starttime - run_starttime) / BILLION,m_txn->get_ts());
+    }
 
     INC_STATS(_thd_id,thd_prof_thd_rtxn2,get_sys_clock() - thd_prof_start);
     thd_prof_start = get_sys_clock();

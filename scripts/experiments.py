@@ -20,7 +20,7 @@ def test():
     nnodes = [1,2,4]
 #    nnodes = [1,2,4,8]
     nmpr=[1.0]
-    nalgos=['NO_WAIT']#,'WAIT_DIE','OCC','MVCC','TIMESTAMP']
+    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
 #    nalgos=['OCC']
     nthreads=[2]
     nrthreads=[1]
@@ -30,7 +30,7 @@ def test():
     ncsthreads=[2]
     ntxn=[1500000]
 #    ntxn=[5000000]
-    nbtime=[1000] # in ns
+    nbtime=[1000,2000] # in ns
     nbsize=[4096]
     nparts = [8]
 #    nparts = [8]

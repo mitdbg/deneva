@@ -127,6 +127,12 @@ base_query * tpcc_query::merge(base_query * query) {
 }
 
 void tpcc_query::reset() {
+
+  if(txn_type == TPCC_PAYMENT) {
+    txn_rtype = TPCC_PAYMENT0;
+  } else if(txn_type == TPCC_NEW_ORDER) {
+    txn_rtype = TPCC_NEWORDER0;
+  }
   /*
   switch(txn_type) {
     case TPCC_PAYMENT:
