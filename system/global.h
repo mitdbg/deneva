@@ -171,6 +171,7 @@ extern char * output_file;
 extern char * input_file;
 extern char * txn_file;
 extern UInt32 g_max_items;
+extern UInt32 g_dist_per_wh;
 extern UInt32 g_cust_per_dist;
 extern UInt32 g_max_items_per_txn;
 

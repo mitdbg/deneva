@@ -4,7 +4,7 @@ import math
 # Go to end of file to fill in experiments 
 
 # Format: [#Nodes,#Txns,Workload,CC_ALG,MPR]
-fmt_tpcc = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","NUM_WH","MAX_TXN_IN_FLIGHT"]]
+fmt_tpcc = [["CLIENT_NODE_CNT","NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","CLIENT_THREAD_CNT","CLIENT_REM_THREAD_CNT","CLIENT_SEND_THREAD_CNT","THREAD_CNT","REM_THREAD_CNT","SEND_THREAD_CNT","MAX_TXN_IN_FLIGHT","NUM_WH","PERC_PAYMENT","PART_PER_TXN","PART_CNT","MSG_TIME_LIMIT","MSG_SIZE_MAX","MODE"]]
 fmt_nd = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","NUM_WH","MAX_TXN_IN_FLIGHT","NETWORK_DELAY"]]
 #fmt_ycsb = [["CLIENT_NODE_CNT","NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","CLIENT_THREAD_CNT","CLIENT_REM_THREAD_CNT","CLIENT_SEND_THREAD_CNT","THREAD_CNT","REM_THREAD_CNT","SEND_THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC","PART_PER_TXN","PART_CNT","MSG_TIME_LIMIT","MSG_SIZE_MAX","MODE"]]
 fmt_ycsb = [["CLIENT_NODE_CNT","NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","CLIENT_THREAD_CNT","CLIENT_REM_THREAD_CNT","CLIENT_SEND_THREAD_CNT","THREAD_CNT","REM_THREAD_CNT","SEND_THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","TXN_WRITE_PERC","TUP_WRITE_PERC","PART_PER_TXN","PART_CNT","MSG_TIME_LIMIT","MSG_SIZE_MAX","MODE","DATA_PERC","ACCESS_PERC"]]
@@ -14,33 +14,20 @@ fmt_nt = [["NODE_CNT","CLIENT_NODE_CNT","NETWORK_TEST"]]
 fmt_title=["NODE_CNT","CC_ALG","ACCESS_PERC","TXN_WRITE_PERC"]
 
 def test():
-    fmt = fmt_ycsb
+#    wl = 'YCSB'
+    wl = 'TPCC'
 #    nnodes = [1]
-    nnodes = [8]
+    nnodes = [1,2,4]
 #    nnodes = [1,2,4,8]
     nmpr=[1.0]
-#    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
-    nalgos=['OCC']
+    nalgos=['NO_WAIT']#,'WAIT_DIE','OCC','MVCC','TIMESTAMP']
+#    nalgos=['OCC']
     nthreads=[2]
     nrthreads=[1]
     nsthreads=[1]
     ncthreads=[2]
     ncrthreads=[1]
     ncsthreads=[2]
-    ntifs=[1000]
-#    ntifs=[1500,5000,7500]
-    nzipf=[0.0]
-#    nzipf=[0.0,0.1,0.5,0.7,0.8,0.9]
-    d_perc=[100]#,1000]
-    a_perc=[0.05]
-#    a_perc=[0.0,0.05,0.2]
-#    a_perc=[0.0,0.05,0.075,0.1,0.15,0.2,0.25,0.3]
-#    a_perc=[0.0,0.01,0.05,0.1,0.25,0.5,0.75,0.9]
-    ntwr_perc=[0.5]
-    nwr_perc=[0.5]
-#    nwr_perc=[0.0,0.2,0.5]
-#    nwr_perc=[0.0,0.1,0.5,0.8,1.0]
-#    nwr_perc=[0.0,0.01,0.05,0.1,0.5,0.8,1.0]
     ntxn=[1500000]
 #    ntxn=[5000000]
     nbtime=[1000] # in ns
@@ -49,8 +36,30 @@ def test():
 #    nparts = [8]
 #    nmodes = ["NORMAL_MODE","NOCC_MODE","QRY_ONLY_MODE"]#,"SETUP_MODE","SIMPLE_MODE"]
     nmodes = ["NORMAL_MODE"]
+    ntifs=[1000]
+#    ntifs=[1500,5000,7500]
+#TPCC
+    npercpay=[1.0]
+#YCSB
+    nzipf=[0.0]
+#    nzipf=[0.0,0.1,0.5,0.7,0.8,0.9]
+    d_perc=[100]#,1000]
+    a_perc=[0.0]
+#    a_perc=[0.0,0.05,0.2]
+#    a_perc=[0.0,0.05,0.075,0.1,0.15,0.2,0.25,0.3]
+#    a_perc=[0.0,0.01,0.05,0.1,0.25,0.5,0.75,0.9]
+    ntwr_perc=[0.0]
+    nwr_perc=[0.0]
+#    nwr_perc=[0.0,0.2,0.5]
+#    nwr_perc=[0.0,0.1,0.5,0.8,1.0]
+#    nwr_perc=[0.0,0.01,0.05,0.1,0.5,0.8,1.0]
 #    exp = [[n,n,txn,'YCSB',cc,m,ct,crt,cst,t,rt,st,tif,z,1.0-wp,wp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n,str(mt) + '*1000UL',bsize,mode] for n,ct,crt,cst,t,rt,st,tif,z,wp,m,cc,p,txn,mt,bsize,mode in itertools.product(nnodes,ncthreads,ncrthreads,ncsthreads,nthreads,nrthreads,nsthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts,ntxn,nbtime,nbsize,nmodes)]
-    exp = [[n,n,txn,'YCSB',cc,m,ct,crt,cst,t,rt,st,tif,z,twp,wp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n,str(mt) + '*1000UL',bsize,mode,dp,ap] for n,ct,crt,cst,t,rt,st,tif,z,twp,wp,m,cc,p,txn,mt,bsize,mode,dp,ap in itertools.product(nnodes,ncthreads,ncrthreads,ncsthreads,nthreads,nrthreads,nsthreads,ntifs,nzipf,ntwr_perc,nwr_perc,nmpr,nalgos,nparts,ntxn,nbtime,nbsize,nmodes,d_perc,a_perc)]
+    if wl == "TPCC":
+        fmt = fmt_tpcc
+        exp = [[n,n,txn,wl,cc,m,ct,crt,cst,t,rt,st,tif,n,pp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n,str(mt) + '*1000UL',bsize,mode] for n,ct,crt,cst,t,rt,st,tif,m,cc,p,txn,mt,bsize,mode,pp in itertools.product(nnodes,ncthreads,ncrthreads,ncsthreads,nthreads,nrthreads,nsthreads,ntifs,nmpr,nalgos,nparts,ntxn,nbtime,nbsize,nmodes,npercpay)]
+    elif wl == "YCSB":
+        fmt = fmt_ycsb
+        exp = [[n,n,txn,wl,cc,m,ct,crt,cst,t,rt,st,tif,z,twp,wp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n,str(mt) + '*1000UL',bsize,mode,dp,ap] for n,ct,crt,cst,t,rt,st,tif,z,twp,wp,m,cc,p,txn,mt,bsize,mode,dp,ap in itertools.product(nnodes,ncthreads,ncrthreads,ncsthreads,nthreads,nrthreads,nsthreads,ntifs,nzipf,ntwr_perc,nwr_perc,nmpr,nalgos,nparts,ntxn,nbtime,nbsize,nmodes,d_perc,a_perc)]
     return fmt[0],exp
 
 def tputvlat_setup(summary,summary_cl,nfmt,nexp,x_name,v_name):
@@ -84,7 +93,7 @@ def tputvlat_setup(summary,summary_cl,nfmt,nexp,x_name,v_name):
 
 
 def tput_setup(summary,summary_cl,nfmt,nexp,x_name,v_name
-        ,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT'}
+        ,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':'NODE_CNT'}
         ):
     from plot_helper import tput
     x_vals = []
@@ -102,6 +111,7 @@ def tput_setup(summary,summary_cl,nfmt,nexp,x_name,v_name
         del e[fmt.index(v_name)]
     fmt.remove(v_name)
     for x in extras.keys():
+        if x not in fmt: continue
         for e in exp:
             del e[fmt.index(x)]
         fmt.remove(x)
@@ -121,7 +131,7 @@ def tput_setup(summary,summary_cl,nfmt,nexp,x_name,v_name
         tput(x_vals,v_vals,summary,summary_cl,cfg_fmt=fmt,cfg=list(e),xname=x_name,vname=v_name,title=title,extras=extras)
 
 def line_rate_setup(summary,summary_cl,nfmt,nexp,x_name,v_name,key
-        ,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT'}
+        ,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':'NODE_CNT'}
         ):
     from plot_helper import line_rate
     x_vals = []
@@ -139,6 +149,7 @@ def line_rate_setup(summary,summary_cl,nfmt,nexp,x_name,v_name,key
         del e[fmt.index(v_name)]
     fmt.remove(v_name)
     for x in extras.keys():
+        if x not in fmt: continue
         for e in exp:
             del e[fmt.index(x)]
         fmt.remove(x)
@@ -156,7 +167,7 @@ def line_rate_setup(summary,summary_cl,nfmt,nexp,x_name,v_name,key
         line_rate(x_vals,v_vals,summary,summary_cl,key,cfg_fmt=fmt,cfg=list(e),xname=x_name,vname=v_name,title=title,extras=extras)
      
 def line_setup(summary,summary_cl,nfmt,nexp,x_name,v_name,key
-        ,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT'}
+        ,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':'NODE_CNT'}
         ):
     from plot_helper import line_general
     x_vals = []
@@ -174,6 +185,7 @@ def line_setup(summary,summary_cl,nfmt,nexp,x_name,v_name,key
         del e[fmt.index(v_name)]
     fmt.remove(v_name)
     for x in extras.keys():
+        if x not in fmt: continue
         for e in exp:
             del e[fmt.index(x)]
         fmt.remove(x)
@@ -191,7 +203,7 @@ def line_setup(summary,summary_cl,nfmt,nexp,x_name,v_name,key
         line_general(x_vals,v_vals,summary,summary_cl,key,cfg_fmt=fmt,cfg=list(e),xname=x_name,vname=v_name,title=title,extras=extras)
         
 def stacks_setup(summary,nfmt,nexp,x_name,keys,key_names=[],norm=False
-        ,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT'}
+        ,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':'NODE_CNT'}
         ):
     from plot_helper import stacks_general
     x_vals = []
@@ -204,6 +216,7 @@ def stacks_setup(summary,nfmt,nexp,x_name,keys,key_names=[],norm=False
         del e[fmt.index(x_name)]
     fmt.remove(x_name)
     for x in extras.keys():
+        if x not in fmt: continue
         for e in exp:
             del e[fmt.index(x)]
         fmt.remove(x)
@@ -219,7 +232,7 @@ def stacks_setup(summary,nfmt,nexp,x_name,keys,key_names=[],norm=False
         stacks_general(x_vals,summary,list(keys),xname=x_name,key_names=list(key_names),title=title,cfg_fmt=fmt,cfg=list(e),extras=extras)
 
 def breakdown_setup(summary,nfmt,nexp,x_name,key_names=[],norm=False
-        ,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT'}
+        ,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':'NODE_CNT'}
         ):
     from plot_helper import time_breakdown
     x_vals = []
@@ -231,6 +244,7 @@ def breakdown_setup(summary,nfmt,nexp,x_name,key_names=[],norm=False
         del e[fmt.index(x_name)]
     fmt.remove(x_name)
     for x in extras.keys():
+        if x not in fmt: continue
         for e in exp:
             del e[fmt.index(x)]
         fmt.remove(x)
@@ -268,8 +282,8 @@ def test_plot(summary,summary_client):
 
 #    line_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="ACCESS_PERC",key='cpu_ttl')
 #    line_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="NODE_CNT",key='abort_cnt')
-    line_rate_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="ACCESS_PERC",key='abort_cnt')
-    line_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="ACCESS_PERC",key='avg_abort_row_cnt')
+    line_rate_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",key='abort_cnt')
+    line_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",key='avg_abort_row_cnt')
 #    line_rate_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="NODE_CNT",key='abort_cnt')
 #    line_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="NODE_CNT",key='latency')
 #    line_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="ACCESS_PERC",key='cflt_cnt')
@@ -427,23 +441,25 @@ configs = {
     "REM_THREAD_CNT": 1,
     "THREAD_CNT": 1,
     "PART_CNT": "NODE_CNT", #2,
-    "NUM_WH": 2,
+    "NUM_WH": 'PART_CNT',
     "MAX_TXN_IN_FLIGHT": 1,
     "NETWORK_DELAY": '0UL',
-    "DONE_TIMER": "1 * 100 * BILLION // ~2 minutes",
+    "DONE_TIMER": "1 * 50 * BILLION // ~2 minutes",
     "PROG_TIMER" : "10 * BILLION // in s",
     "NETWORK_TEST" : "false",
     "ABORT_PENALTY": "1 * 1000000UL   // in ns.",
     "MSG_TIME_LIMIT": "10 * 1000000UL",
     "MSG_SIZE_MAX": 4096,
 #    "PRT_LAT_DISTR": "true",
-#YCSB
     "INIT_PARALLELISM" : 4, 
-#    "READ_PERC":0.5,
-    "WRITE_PERC":0.5,
+    "TXN_WRITE_PERC":0.0,
+#YCSB
+    "TUP_WRITE_PERC":0.5,
     "ZIPF_THETA":0.6,
     "PART_PER_TXN": 1,
     "SYNTH_TABLE_SIZE":"2097152",
+#TPCC
+    "PERC_PAYMENT":1.0,
     "DEBUG_DISTR":"false",
     "MODE":"NORMAL_MODE",
     "SHMEM_ENV":"false",

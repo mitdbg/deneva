@@ -91,6 +91,7 @@ void tpcc_txn_man::rtn_tpcc_state(base_query * query) {
     case TPCC_NEWORDER3:
     case TPCC_NEWORDER4:
     case TPCC_NEWORDER5:
+      m_query->ol_number = m_query->ol_number+1;
       if(m_query->ol_number < m_query->ol_cnt) {
         m_query->txn_rtype = TPCC_NEWORDER6;
 		    m_query->ol_i_id = m_query->items[m_query->ol_number].ol_i_id;

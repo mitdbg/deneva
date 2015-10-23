@@ -1,7 +1,7 @@
 #include "tpcc_helper.h"
 
 uint64_t distKey(uint64_t d_id, uint64_t d_w_id)  {
-	return d_w_id * DIST_PER_WARE + d_id; 
+	return d_w_id * g_dist_per_wh + d_id; 
 }
 
 uint64_t custKey(uint64_t c_id, uint64_t c_d_id, uint64_t c_w_id) {
@@ -22,7 +22,7 @@ uint64_t custNPKey(char * c_last, uint64_t c_d_id, uint64_t c_w_id) {
 	for (uint32_t i = 0; i < strlen(c_last); i++) 
 		key = (key << 1) + (c_last[i] - offset);
 	key = key << 10;
-	key += c_w_id * DIST_PER_WARE + c_d_id;
+	key += c_w_id * g_dist_per_wh + c_d_id;
 	return key;
 }
 
@@ -31,7 +31,7 @@ uint64_t stockKey(uint64_t s_i_id, uint64_t s_w_id) {
 }
 
 uint64_t w_from_distKey(uint64_t d_key) {
-  return d_key / DIST_PER_WARE;
+  return d_key / g_dist_per_wh;
 }
 
 uint64_t w_from_custKey(uint64_t c_key) {
@@ -47,7 +47,7 @@ uint64_t w_from_orderPrimaryKey(uint64_t s_key) {
 }
 
 uint64_t w_from_custNPKey(uint64_t cnp_key) {
-  return (cnp_key / DIST_PER_WARE) & 0x3ff;
+  return (cnp_key / g_dist_per_wh) & 0x3ff;
 }
 
 uint64_t w_from_stockKey(uint64_t s_key) {
@@ -55,12 +55,12 @@ uint64_t w_from_stockKey(uint64_t s_key) {
 }
 /*
 uint64_t orderKey(uint64_t o_id, uint64_t o_d_id, uint64_t o_w_id) {
-	return ((o_w_id * DIST_PER_WARE + o_d_id) * ORD_PER_DIST + o_id);
+	return ((o_w_id * g_dist_per_wh + o_d_id) * ORD_PER_DIST + o_id);
 }
 // the max of ol_number is 15. That's why there is a 15 here	
 uint64_t olKey(uint64_t ol_o_id, uint64_t ol_d_id, 
 	uint64_t ol_w_id, uint64_t ol_number) {
-	return ((ol_w_id * DIST_PER_WARE + ol_d_id) * ORD_PER_DIST + ol_o_id) * 15
+	return ((ol_w_id * g_dist_per_wh + ol_d_id) * ORD_PER_DIST + ol_o_id) * 15
 		+ ol_number;
 }
 */

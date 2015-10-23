@@ -35,8 +35,15 @@ RC tpcc_wl::init() {
 	for (UInt32 wid = 1; wid <= g_num_wh; wid ++)
 		delivering[wid] = (bool *) mem_allocator.alloc(CL_SIZE, wid);
 	
+  printf("Initializing schema... ");
+  fflush(stdout);
 	init_schema( path.c_str() );
+  printf("Done\n");
+  printf("Initializing table... ");
+  fflush(stdout);
 	init_table();
+  printf("Done\n");
+  fflush(stdout);
 	return RCOK;
 }
 
@@ -79,7 +86,7 @@ RC tpcc_wl::init_table() {
 //		- order line
 /**********************************/
 
-  UInt32 cust_thr_cnt = DIST_PER_WARE/2;
+  UInt32 cust_thr_cnt = g_dist_per_wh/2;
   thr_args * tt = new thr_args[cust_thr_cnt];
 	pthread_t * p_thds = new pthread_t[2+cust_thr_cnt];
 	pthread_create(&p_thds[0], NULL, threadInitStock, this);
@@ -180,7 +187,7 @@ void tpcc_wl::init_tab_wh() {
 }
 
 void tpcc_wl::init_tab_dist(uint64_t wid) {
-	for (uint64_t did = 1; did <= DIST_PER_WARE; did++) {
+	for (uint64_t did = 1; did <= g_dist_per_wh; did++) {
 		row_t * row;
 		uint64_t row_id;
 		t_district->get_new_row(row, 0, row_id);
@@ -483,7 +490,7 @@ void * tpcc_wl::threadInitCust(void * This) {
 	for (uint64_t wid = 1; wid <= g_num_wh; wid ++) {
     if(GET_NODE_ID(wh_to_part(wid)) != g_node_id) 
       continue;
-		for (uint64_t did = 1; did <= DIST_PER_WARE; did++) {
+		for (uint64_t did = 1; did <= g_dist_per_wh; did++) {
       if( did % ((thr_args *)This)->tot != ((thr_args *)This)->id)
         continue;
 			((thr_args *)This)->wl->init_tab_cust(did, wid);
@@ -497,7 +504,7 @@ void * tpcc_wl::threadInitHist(void * This) {
 	for (uint64_t wid = 1; wid <= g_num_wh; wid ++) {
     if(GET_NODE_ID(wh_to_part(wid)) != g_node_id) 
       continue;
-		for (uint64_t did = 1; did <= DIST_PER_WARE; did++)
+		for (uint64_t did = 1; did <= g_dist_per_wh; did++)
 			for (uint64_t cid = 1; cid <= g_cust_per_dist; cid++) 
 				((tpcc_wl *)This)->init_tab_hist(cid, did, wid);
   }
@@ -509,7 +516,7 @@ void * tpcc_wl::threadInitOrder(void * This) {
 	for (uint64_t wid = 1; wid <= g_num_wh; wid ++) {
     if(GET_NODE_ID(wh_to_part(wid)) != g_node_id) 
       continue;
-		for (uint64_t did = 1; did <= DIST_PER_WARE; did++)
+		for (uint64_t did = 1; did <= g_dist_per_wh; did++)
 			((tpcc_wl *)This)->init_tab_order(did, wid);
   }
 	printf("ORDER Done\n");

@@ -126,6 +126,7 @@ void Stats_thd::init(uint64_t thd_id) {
     */
 
   all_abort.init(STAT_ARR_SIZE,ArrInsert);
+  /*
   w_cflt.init(WH_TAB_SIZE,ArrInsert);
   d_cflt.init(DIST_TAB_SIZE,ArrInsert);
   cnp_cflt.init(CUST_TAB_SIZE,ArrInsert);
@@ -138,6 +139,7 @@ void Stats_thd::init(uint64_t thd_id) {
   c_abrt.init(CUST_TAB_SIZE,ArrInsert);
   ol_abrt.init(ITEM_TAB_SIZE,ArrInsert);
   s_abrt.init(STOC_TAB_SIZE,ArrInsert);
+  */
 
 }
 

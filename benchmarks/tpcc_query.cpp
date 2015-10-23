@@ -185,7 +185,7 @@ void tpcc_client_query::gen_payment(uint64_t thd_id) {
 	part_to_access[0] = part_id;
 	part_num = 1;
 
-	d_id = URand(1, DIST_PER_WARE);
+	d_id = URand(1, g_dist_per_wh);
 	h_amount = URand(1, 5000);
   rbk = false;
 	double x = (double)(rand() % 1000000) / 10000;
@@ -197,7 +197,7 @@ void tpcc_client_query::gen_payment(uint64_t thd_id) {
 		c_w_id = w_id;
 	} else {	
 		// remote warehouse
-		c_d_id = URand(1, DIST_PER_WARE);
+		c_d_id = URand(1, g_dist_per_wh);
 		if(g_num_wh > 1) {
 			while((c_w_id = URand(1, g_num_wh)) == w_id) {}
 			if (wh_to_part(w_id) != wh_to_part(c_w_id)) {
@@ -224,7 +224,7 @@ void tpcc_client_query::gen_new_order(uint64_t thd_id) {
 		w_id = thd_id % g_num_wh + 1;
 	else
 		w_id = URand(1, g_num_wh);
-	d_id = URand(1, DIST_PER_WARE);
+	d_id = URand(1, g_dist_per_wh);
 	c_id = NURand(1023, 1, g_cust_per_dist);
 	rbk = URand(1, 100) == 1 ? true : false;
 	ol_cnt = URand(5, g_max_items_per_txn);
@@ -327,7 +327,7 @@ tpcc_query::gen_order_status(uint64_t thd_id) {
 		w_id = thd_id % g_num_wh + 1;
 	else
 		w_id = URand(1, g_num_wh);
-	d_id = URand(1, DIST_PER_WARE);
+	d_id = URand(1, g_dist_per_wh);
 	c_w_id = w_id;
 	c_d_id = d_id;
 	int y = URand(1, 100);
