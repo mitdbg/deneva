@@ -101,15 +101,6 @@ void base_query::set_txn_id(uint64_t _txn_id) { txn_id = _txn_id; }
 
 // FIXME: Haven't debugged HStore with this
 void base_query::local_rinit_query(uint64_t part_id) {
-  /*
-#if WORKLOAD == TPCC
-	    base_query * tmp_query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), 0);
-	      tmp_query = new tpcc_query();
-#elif WORKLOAD == YCSB
-	    base_query * tmp_query = (ycsb_query *) mem_allocator.alloc(sizeof(ycsb_query), 0);
-        tmp_query = new ycsb_query();
-#endif
-*/
         base_query * tmp_query; 
         qry_pool.get(tmp_query);
         tmp_query->txn_id = this->txn_id;

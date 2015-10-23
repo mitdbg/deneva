@@ -33,12 +33,32 @@ Client_query_queue::init(int thread_id) {
 
 #if CREATE_TXN_FILE
   char output_file[50];
-  sprintf(output_file,"p%d_%d_a%d_d%d.txt",thread_id,g_part_cnt,(int)(g_access_perc*100),(int)(g_data_perc*100));
+#if WORKLOAD == YCSB
+  sprintf(output_file,"p%d_%d_a%d_d%d_w%d_m%d.txt",thread_id,g_part_cnt,(int)(g_access_perc*100),(int)(g_data_perc*100),(int)(g_txn_write_perc*100),(int)(g_mpr*100));
+#elif WORKLOAD == TPCC 
+  sprintf(output_file,"p%d_%d_m%d_p%d.txt",thread_id,g_part_cnt,(int)(g_mpr*100),(int)(g_perc_payment*100));
+#endif
   FILE * outf;
   outf = fopen(output_file,"w");
   //printf("%ld %ld %ld ",request_cnt,part_to_access[0],part_num);
 
   for(uint64_t j = 0; j < g_client_thread_cnt; j++) {
+#if WORKLOAD == TPCC
+	tpcc_client_query * query = (tpcc_client_query*)all_queries[thread_id]->get_next_query(j);
+  while(query) {
+    fprintf(outf,"%d %ld %ld %ld ",query->txn_type,query->w_id,query->d_id,query->c_id);
+    if(query->txn_type == TPCC_PAYMENT) {
+      fprintf(outf,"%ld %ld %ld %s %f %d ",query->d_w_id,query->c_w_id,query->c_d_id,query->c_last,query->h_amount,query->by_last_name);
+    } else if(query->txn_type == TPCC_NEW_ORDER) {
+      fprintf(outf,"%ld ",query->ol_cnt);
+      for(uint64_t i = 0; i < query->ol_cnt;i++)
+        fprintf(outf,"%ld %ld %ld ",query->items[i].ol_i_id,query->items[i].ol_supply_w_id,query->items[i].ol_quantity);
+      fprintf(outf,"%d %d %ld %ld %ld ",query->rbk,query->remote,query->o_entry_d,query->o_carrier_id,query->ol_delivery_d);
+    }
+    fprintf(outf,"\n");
+	  query = (tpcc_client_query*)all_queries[thread_id]->get_next_query(j);
+  }
+#elif WORKLOAD == YCSB
 	ycsb_client_query * query = (ycsb_client_query*)all_queries[thread_id]->get_next_query(j);
   while(query) {
     for(uint64_t i = 0; i < query->request_cnt; i++) {
@@ -48,6 +68,7 @@ Client_query_queue::init(int thread_id) {
 	  query = (ycsb_client_query*)all_queries[thread_id]->get_next_query(j);
     //printf("%d %d %ld | ",requests[i].acctype,((ycsb_wl*)h_wl)->key_to_part(requests[i].key),requests[i].key);
   }
+#endif
   }
   fclose(outf);
 #endif
@@ -87,10 +108,10 @@ Client_query_thd::init(workload * h_wl, int thread_id) {
   for(uint64_t i=0;i<g_client_thread_cnt;i++)
 	  new(&queries[i]) ycsb_client_query();
 #elif WORKLOAD == TPCC
-	queries = (tpcc_query *) 
-		mem_allocator.alloc(sizeof(tpcc_query) * g_client_thread_cnt, thread_id);
+	queries = (tpcc_client_query *) 
+		mem_allocator.alloc(sizeof(tpcc_client_query) * g_client_thread_cnt, thread_id);
   for(uint64_t i=0;i<g_client_thread_cnt;i++)
-    new(&queries[i]) tpcc_query();
+    new(&queries[i]) tpcc_client_query();
 #endif
 
 #else
@@ -102,8 +123,8 @@ Client_query_thd::init(workload * h_wl, int thread_id) {
 	queries = (ycsb_client_query *) 
 		mem_allocator.alloc(sizeof(ycsb_client_query) * request_cnt, thread_id);
 #elif WORKLOAD == TPCC
-	queries = (tpcc_query *) 
-		mem_allocator.alloc(sizeof(tpcc_query) * request_cnt, thread_id);
+	queries = (tpcc_client_query *) 
+		mem_allocator.alloc(sizeof(tpcc_client_query) * request_cnt, thread_id);
 #endif
 
   if(input_file != NULL) {
@@ -154,9 +175,6 @@ Client_query_thd::init_txns_file(const char * txn_file) {
 
 #if WORKLOAD == YCSB	
 		new(&queries[qid]) ycsb_client_query();
-#elif WORKLOAD == TPCC
-		new(&queries[qid]) tpcc_query();
-#endif
     queries[qid].client_init();
     int num = 0;
     uint64_t idx = 0;
@@ -206,6 +224,9 @@ Client_query_thd::init_txns_file(const char * txn_file) {
     queries[qid].part_num = part_cnt;
     queries[qid].pid = queries[qid].part_to_access[0];
     qid++;
+#elif WORKLOAD == TPCC
+		new(&queries[qid]) tpcc_client_query();
+#endif
   }
 
 	fin.close();
@@ -273,7 +294,7 @@ void Client_query_thd::init_query() {
 #if WORKLOAD == YCSB	
 		new(&queries[qid]) ycsb_client_query();
 #elif WORKLOAD == TPCC
-		new(&queries[qid]) tpcc_query();
+		new(&queries[qid]) tpcc_client_query();
 #endif
 		//queries[qid].init(thread_id, h_wl, qid % g_node_cnt);
 		queries[qid].client_init(thread_id, h_wl, thread_id+g_server_start_node);

@@ -5,6 +5,7 @@
 #include "mem_alloc.h"
 #include "wl.h"
 #include "ycsb_query.h"
+#include "tpcc_query.h"
 #include "query.h"
 #include "msg_queue.h"
 
@@ -98,14 +99,18 @@ void QryPool::init(workload * wl, uint64_t size) {
   base_query * qry=NULL;
   for(uint64_t i = 0; i < size; i++) {
     //put(items[i]);
-#if WORKLOAD==YCSB
+#if WORKLOAD==TPCC
+    tpcc_query * m_qry = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query),0);
+    m_qry = new tpcc_query();
+    m_qry->items = (Item_no*) mem_allocator.alloc(sizeof(Item_no)*g_max_items_per_txn,0);
+#elif WORKLOAD==YCSB
     ycsb_query * m_qry = (ycsb_query *) mem_allocator.alloc(sizeof(ycsb_query),0);
     m_qry = new ycsb_query();
     m_qry->requests = (ycsb_request*)mem_allocator.alloc(sizeof(ycsb_request)*g_req_per_query,0);
-    m_qry->part_to_access = (uint64_t*)mem_allocator.alloc(sizeof(uint64_t)*g_part_per_txn,0);
-    m_qry->part_touched = (uint64_t*)mem_allocator.alloc(sizeof(uint64_t)*g_part_per_txn,0);
-    qry = m_qry;
 #endif
+    qry = m_qry;
+    qry->part_to_access = (uint64_t*)mem_allocator.alloc(sizeof(uint64_t)*g_part_per_txn,0);
+    qry->part_touched = (uint64_t*)mem_allocator.alloc(sizeof(uint64_t)*g_part_per_txn,0);
     put(qry);
   }
 }
@@ -114,14 +119,18 @@ void QryPool::get(base_query *& item) {
   bool r = pool.try_dequeue(item);
   if(!r) {
     DEBUG_M("query_pool\n");
-#if WORKLOAD==YCSB
+#if WORKLOAD==TPCC
+    tpcc_query * qry = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query),0);
+    qry = new tpcc_query();
+    qry->items = (Item_no*) mem_allocator.alloc(sizeof(Item_no)*g_max_items_per_txn,0);
+#elif WORKLOAD==YCSB
     ycsb_query * qry = NULL;
     qry = (ycsb_query *) mem_allocator.alloc(sizeof(ycsb_query),0);
     qry = new ycsb_query();
     qry->requests = (ycsb_request*)mem_allocator.alloc(sizeof(ycsb_request)*g_req_per_query,0);
+#endif
     qry->part_to_access = (uint64_t*)mem_allocator.alloc(sizeof(uint64_t)*g_part_per_txn,0);
     qry->part_touched = (uint64_t*)mem_allocator.alloc(sizeof(uint64_t)*g_part_per_txn,0);
-#endif
     item = (base_query*)qry;
   }
   item->clear();
@@ -131,16 +140,6 @@ void QryPool::get(base_query *& item) {
 
 void QryPool::put(base_query * item) {
   assert(item);
-  /*
-  ycsb_query * qry = (ycsb_query *) item;
-  mem_allocator.free(qry->requests,sizeof(ycsb_query)*g_req_per_query);
-  mem_allocator.free(qry->part_to_access,sizeof(uint64_t)*g_part_per_txn);
-  printf("freeing %lx\n",(uint64_t)qry);
-  fflush(stdout);
-  assert(qry);
-  mem_allocator.free(qry,sizeof(ycsb_query));
-  */
-
   pool.enqueue(item);
 }
 

@@ -228,7 +228,7 @@ void Stats_thd::clear() {
 
   for(int i = 0; i < 16;i++)
     thd_prof_thd2_type[i] = 0;
-  thd_prof_ycsb1=0;
+  thd_prof_wl1=0;
   thd_prof_row1=0;thd_prof_row2=0;thd_prof_row3=0;
   thd_prof_cc1=0;thd_prof_cc2=0;
   thd_prof_cc0=0;thd_prof_cc3=0;
@@ -1435,7 +1435,7 @@ void Stats::print_prof(FILE * outf) {
         double total_thd_prof_thd_rtxn2 =0;
         double total_thd_prof_thd_rtxn3 =0;
         double total_thd_prof_thd_rtxn4 =0;
-        double total_thd_prof_ycsb1 =0;
+        double total_thd_prof_wl1 =0;
         double total_thd_prof_row1 =0;
         double total_thd_prof_row2 =0;
         double total_thd_prof_row3 =0;
@@ -1533,7 +1533,7 @@ void Stats::print_prof(FILE * outf) {
         total_thd_prof_thd_rtxn2 +=_stats[tid]->thd_prof_thd_rtxn2;
         total_thd_prof_thd_rtxn3 +=_stats[tid]->thd_prof_thd_rtxn3;
         total_thd_prof_thd_rtxn4 +=_stats[tid]->thd_prof_thd_rtxn4;
-        total_thd_prof_ycsb1 +=_stats[tid]->thd_prof_ycsb1;
+        total_thd_prof_wl1 +=_stats[tid]->thd_prof_wl1;
         total_thd_prof_row1 +=_stats[tid]->thd_prof_row1;
         total_thd_prof_row2 +=_stats[tid]->thd_prof_row2;
         total_thd_prof_row3 +=_stats[tid]->thd_prof_row3;
@@ -1588,7 +1588,7 @@ void Stats::print_prof(FILE * outf) {
         ",rqry0=%f,rqry1=%f,rqry2=%f"
         ",rack0=%f,rack1=%f,rack2a=%f,rack2=%f,rack3=%f,rack4=%f"
         ",rtxn1a=%f,rtxn1b=%f,rtxn2=%f,rtxn3=%f,rtxn4=%f"
-        ",ycsb1=%f"
+        ",wl1=%f"
         ",row1=%f,row2=%f,row3=%f"
         ",cc0=%f,cc1=%f,cc2=%f,cc3=%f"
         ",occ_val1=%f,occ_val2a=%f,occ_val2=%f,occ_val3=%f,occ_val4=%f,occ_val5=%f"
@@ -1644,7 +1644,7 @@ void Stats::print_prof(FILE * outf) {
         ,total_thd_prof_thd_rtxn2 /BILLION/g_thread_cnt
         ,total_thd_prof_thd_rtxn3 /BILLION/g_thread_cnt
         ,total_thd_prof_thd_rtxn4 /BILLION/g_thread_cnt
-        ,total_thd_prof_ycsb1 /BILLION/g_thread_cnt
+        ,total_thd_prof_wl1 /BILLION/g_thread_cnt
         ,total_thd_prof_row1 /BILLION/g_thread_cnt
         ,total_thd_prof_row2 /BILLION/g_thread_cnt
         ,total_thd_prof_row3 /BILLION/g_thread_cnt
