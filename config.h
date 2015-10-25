@@ -157,7 +157,7 @@
 #define ACCESS_PERC 0.0
 #define INIT_PARALLELISM 4
 #define SYNTH_TABLE_SIZE 2097152
-#define ZIPF_THETA 0.6
+#define ZIPF_THETA 0.0
 #define TXN_WRITE_PERC 0.0
 #define TUP_WRITE_PERC 0.5
 #define SCAN_PERC           0
@@ -255,7 +255,7 @@ extern TestCases          g_test_case;
 // SIMPLE Immediately send OK back to client
 // NOCC Don't do CC
 // NORMAL normal operation
-#define MODE NORMAL_MODE
+#define MODE NOCC_MODE
 
 
 /***********************************************/

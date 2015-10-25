@@ -2,7 +2,30 @@ import itertools
 import math
 # Experiments to run and analyze
 # Go to end of file to fill in experiments 
-
+SHORTNAMES = {
+    "CLIENT_NODE_CNT" : "CN",
+    "CLIENT_THREAD_CNT" : "CT",
+    "CLIENT_REM_THREAD_CNT" : "CRT",
+    "CLIENT_SEND_THREAD_CNT" : "CST",
+    "NODE_CNT" : "N",
+    "THREAD_CNT" : "T",
+    "REM_THREAD_CNT" : "RT",
+    "SEND_THREAD_CNT" : "ST",
+    "CC_ALG" : "",
+    "WORKLOAD" : "",
+    "MAX_TXN_PER_PART" : "TXNS",
+    "MAX_TXN_IN_FLIGHT" : "TIF",
+    "PART_PER_TXN" : "PPT",
+    "TUP_READ_PERC" : "TRD",
+    "TUP_WRITE_PERC" : "TWR",
+    "TXN_READ_PERC" : "RD",
+    "TXN_WRITE_PERC" : "WR",
+    "ZIPF_THETA" : "SKEW",
+    "MSG_TIME_LIMIT" : "BT",
+    "MSG_SIZE_MAX" : "BS",
+    "DATA_PERC":"D",
+    "ACCESS_PERC":"A",
+}
 # Format: [#Nodes,#Txns,Workload,CC_ALG,MPR]
 fmt_tpcc = [["CLIENT_NODE_CNT","NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","CLIENT_THREAD_CNT","CLIENT_REM_THREAD_CNT","CLIENT_SEND_THREAD_CNT","THREAD_CNT","REM_THREAD_CNT","SEND_THREAD_CNT","MAX_TXN_IN_FLIGHT","NUM_WH","PERC_PAYMENT","PART_PER_TXN","PART_CNT","MSG_TIME_LIMIT","MSG_SIZE_MAX","MODE"]]
 fmt_nd = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","NUM_WH","MAX_TXN_IN_FLIGHT","NETWORK_DELAY"]]
@@ -88,7 +111,7 @@ def tputvlat_setup(summary,summary_cl,nfmt,nexp,x_name,v_name):
         title = "Tput vs Lat "
         for t in fmt_title:
             if t not in fmt: continue
-            title+="{} {}, ".format(t,e[fmt.index(t)])
+            title+="{} {}, ".format(SHORTNAMES[t],e[fmt.index(t)])
         tput_v_lat(x_vals,v_vals,summary,summary_cl,cfg_fmt=fmt,cfg=e,xname=x_name,vname=v_name,title=title)
 
 
@@ -124,10 +147,11 @@ def tput_setup(summary,summary_cl,nfmt,nexp,x_name,v_name
     for e in exp:
         if "PART_PER_TXN" in fmt and e[fmt.index("PART_PER_TXN")] == 1 and ("NODE_CNT" == x_name or "NODE_CNT" == v_name):
             continue
-        title = "System Tput "
+#title = "System Tput "
+        title = ""
         for t in fmt_title:
             if t not in fmt: continue
-            title+="{} {}, ".format(t,e[fmt.index(t)])
+            title+="{} {} ".format(SHORTNAMES[t],e[fmt.index(t)])
         tput(x_vals,v_vals,summary,summary_cl,cfg_fmt=fmt,cfg=list(e),xname=x_name,vname=v_name,title=title,extras=extras)
 
 def line_rate_setup(summary,summary_cl,nfmt,nexp,x_name,v_name,key
@@ -274,6 +298,7 @@ def test_plot(summary,summary_client):
 #    tput_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG")
     tput_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="MPR")
 #    tput_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="MAX_TXN_IN_FLIGHT")
+    tput_setup(summary,summary_client,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",v_name="CC_ALG")
 
 #    breakdown_setup(summary,nfmt,nexp,x_name="NODE_CNT",norm=True)
 #    tput_setup(summary,summary_client,nfmt,nexp,x_name="WRITE_PERC",v_name="ZIPF_THETA")
@@ -281,10 +306,16 @@ def test_plot(summary,summary_client):
 #    tput_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="WRITE_PERC")
 #    tput_setup(summary,summary_client,nfmt,nexp,x_name="ACCESS_PERC",v_name="WRITE_PERC")
 
+    line_rate_setup(summary,summary_client,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",v_name="CC_ALG",key='abort_cnt')
+    line_setup(summary,summary_client,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",v_name="CC_ALG",key='avg_abort_row_cnt')
 #    line_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="ACCESS_PERC",key='cpu_ttl')
 #    line_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="NODE_CNT",key='abort_cnt')
 #    line_rate_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",key='abort_cnt')
  #   line_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",key='avg_abort_row_cnt')
+#    line_rate_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="ACCESS_PERC",key='abort_cnt')
+#    line_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="ACCESS_PERC",key='avg_abort_row_cnt')
+    line_rate_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",key='abort_cnt')
+    line_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",key='avg_abort_row_cnt')
 #    line_rate_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="NODE_CNT",key='abort_cnt')
 #    line_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="NODE_CNT",key='latency')
 #    line_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="ACCESS_PERC",key='cflt_cnt')
@@ -310,6 +341,11 @@ def test_plot(summary,summary_client):
  #           ,norm=False)
 #    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT",keys=['occ_val1','occ_val2a','occ_val2','occ_val3','occ_val4','occ_val5'],norm=False)
  #   stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT",keys=['mvcc1','mvcc2','mvcc3','mvcc4','mvcc5','mvcc6','mvcc7','mvcc8'],norm=False)
+#    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT",keys=['thd1','thd2','thd3'],norm=False,key_names=['Getting work','Execution','Wrap-up'])
+#    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT",keys=['txn_table_add','txn_table_get','txn_table_mints1','txn_table_mints2','txn_table0a','txn_table1a','txn_table0b','txn_table1b','txn_table2a'],norm=False)
+#    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT",keys=['type1','type2','type3','type4','type5','type6','type7','type8','type9','type10','type11','type12','type13','type14'],key_names=['DONE','LOCK','UNLOCK','Rem QRY','FIN','LOCK RSP','UNLOCK RSP','QRY RSP','ACK','Exec','INIT','PREP','PASS','CLIENT'],norm=False)
+#    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT",keys=['occ_val1','occ_val2a','occ_val2','occ_val3','occ_val4','occ_val5'],norm=False)
+#    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT",keys=['mvcc1','mvcc2','mvcc3','mvcc4','mvcc5','mvcc6','mvcc7','mvcc8'],norm=False)
 #    stacks_setup(summary,nfmt,nexp,x_name="WRITE_PERC",keys=['thd1a','thd1c','thd1d'],key_names=['Prog stats','Spinning','Abort queue'],norm=False)
 #    stacks_setup(summary,nfmt,nexp,x_name="MODE",keys=['rtxn1a','rtxn1b','rtxn2','rtxn3','rtxn4'],norm=False)
 #    stacks_setup(summary,nfmt,nexp,x_name="MODE",keys=['row1','row2','row3'],norm=False)
@@ -431,9 +467,8 @@ configs = {
     "CLIENT_NODE_CNT" : 1,
     "CLIENT_THREAD_CNT" : 2,
     "CLIENT_REM_THREAD_CNT" : 1,
-    "MAX_TXN_PER_PART" : 100,
+    "MAX_TXN_PER_PART" : 1000000,
     "WORKLOAD" : "YCSB",
-    "REQ_PER_QUERY": 10, #16
     "CC_ALG" : "NO_WAIT",
     "MPR" : 0.0,
     "TPORT_TYPE":"\"ipc\"",
@@ -443,7 +478,7 @@ configs = {
     "THREAD_CNT": 1,
     "PART_CNT": "NODE_CNT", #2,
     "NUM_WH": 'PART_CNT',
-    "MAX_TXN_IN_FLIGHT": 1,
+    "MAX_TXN_IN_FLIGHT": 1000,
     "NETWORK_DELAY": '0UL',
     "DONE_TIMER": "1 * 50 * BILLION // ~2 minutes",
     "PROG_TIMER" : "10 * BILLION // in s",
@@ -452,12 +487,16 @@ configs = {
     "MSG_TIME_LIMIT": "10 * 1000000UL",
     "MSG_SIZE_MAX": 4096,
 #    "PRT_LAT_DISTR": "true",
-    "INIT_PARALLELISM" : 4, 
-    "TXN_WRITE_PERC":0.0,
+    "TXN_WRITE_PERC":0.5,
 #YCSB
+    "INIT_PARALLELISM" : 4, 
+#    "READ_PERC":0.5,
     "TUP_WRITE_PERC":0.5,
     "ZIPF_THETA":0.6,
     "PART_PER_TXN": 1,
+    "ACCESS_PERC":0.3,
+    "DATA_PERC": 100,
+    "REQ_PER_QUERY": 10, #16
     "SYNTH_TABLE_SIZE":"2097152",
 #TPCC
     "PERC_PAYMENT":1.0,

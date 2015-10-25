@@ -21,8 +21,19 @@
 	 */
 void Transport::shutdown() {
   printf("Shutting down\n");
-  for(uint64_t i=0;i<_s_cnt;i++) {
-    s[i].sock.shutdown(endpoint_id[i]);
+//  for(uint64_t i=0;i<_s_cnt;i++) 
+    //s[i].sock.shutdown(endpoint_id[i]);
+  uint64_t s_thd;
+  if(ISCLIENT)
+    s_thd = g_client_send_thread_cnt;
+  else
+    s_thd = g_send_thread_cnt;
+  for(uint64_t i = 0; i < s_thd; i++) {
+    for(uint64_t j = 0; j < _node_cnt; j++) {
+      if(j == g_node_id)
+        continue;
+      delete &s[i];
+    }
   }
   mem_allocator.free(endpoint_id,sizeof(int)*_s_cnt);
 }
@@ -122,6 +133,10 @@ void Transport::init(uint64_t node_id,workload * workload) {
 #endif
       printf("Sock[%ld] Binding to %s %d -> %ld\n",s_cnt,socket_name,g_node_id,j);
       rc = s[s_cnt].sock.bind(socket_name);
+      if(rc < 0) {
+        printf("Bind Error: %d %s\n",errno,strerror(errno));
+        assert(false);
+      }
       endpoint_id[s_cnt] = rc;
       s_cnt++;
     }
@@ -146,6 +161,10 @@ void Transport::init(uint64_t node_id,workload * workload) {
 #endif
       printf("Sock[%ld] Connecting to %s %ld -> %d\n",s_cnt,socket_name,i,g_node_id);
       rc = s[s_cnt].sock.connect(socket_name);
+      if(rc < 0) {
+        printf("Connect Error: %d %s\n",errno,strerror(errno));
+        assert(false);
+      }
       endpoint_id[s_cnt] = rc;
       s_cnt++;
 
