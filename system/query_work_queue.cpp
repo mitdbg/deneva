@@ -79,10 +79,12 @@ bool QWorkQueue::dequeue(uint64_t thd_id, base_query *& qry) {
       return false;
     }
   }
-  uint64_t t = get_sys_clock() - qry->q_starttime;
-  qry->time_q_work += t;
-  INC_STATS(0,qq_cnt,1);
-  INC_STATS(0,qq_lat,t);
+  if(valid) {
+    uint64_t t = get_sys_clock() - qry->q_starttime;
+    qry->time_q_work += t;
+    INC_STATS(0,qq_cnt,1);
+    INC_STATS(0,qq_lat,t);
+  }
   return valid;
 }
 
