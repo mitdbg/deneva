@@ -572,12 +572,18 @@ def run_exp(exps,network_test=False,delay=''):
         output_exec_fname = get_execfile_name(cfgs,fmt,env.hosts)
         output_f = output_fbase + STRNOW
 
+        last_exp = experiments.index(e) == len(experiments) - 1
+        skip_exp = False
+
         # Check whether experiment has been already been run in this batch
         if SKIP:
             if len(glob.glob('{}*{}*.out'.format(env.result_dir,output_fbase))) > 0:
                 with color("warn"):
                     puts("experiment exists in results folder... skipping",show_prefix=True)
-                continue
+                if last_exp:
+                    skip_exp = True
+                else:
+                    continue
 
         global CC_ALG
         CC_ALG = cfgs["CC_ALG"]
@@ -608,64 +614,64 @@ def run_exp(exps,network_test=False,delay=''):
 #                    local(cmd)
 #                    continue
                     
-                if env.batch_mode:
-                    # If full, execute all exps in batch and reset everything
-                    full = (batch_size + ntotal) > len(env.hosts)
-                    if full:
-                        if env.cluster != 'istc':
-                            # Sync clocks before each experiment
-                            execute(sync_clocks)
-                        with color():
-                            puts("Batch is full, deploying batch...",show_prefix=True)
-                        with color("debug"):
-                            puts(pprint.pformat(outfiles,depth=3),show_prefix=False)
-                        set_hosts(env.hosts[:batch_size])
-                        with color():
-                            puts("Starttime: {}".format(datetime.datetime.now().strftime("%H:%M:%S")),show_prefix=True)
-                        execute(deploy,schema_path,nids,exps,fmt)
-                        with color():
-                            puts("Endtime: {}".format(datetime.datetime.now().strftime("%H:%M:%S")),show_prefix=True)
-                        execute(get_results,outfiles,nids)
-                        good_hosts = get_good_hosts()
-                        env.roledefs = None
-                        batch_size = 0
-                        nids = {}
-                        exps = {}
-                        outfiles = {}
-                        set_hosts(good_hosts)
+                if not skip_exp:
+                    if env.batch_mode:
+                        # If full, execute all exps in batch and reset everything
+                        full = (batch_size + ntotal) > len(env.hosts)
+                        if full:
+                            if env.cluster != 'istc':
+                                # Sync clocks before each experiment
+                                execute(sync_clocks)
+                            with color():
+                                puts("Batch is full, deploying batch...",show_prefix=True)
+                            with color("debug"):
+                                puts(pprint.pformat(outfiles,depth=3),show_prefix=False)
+                            set_hosts(env.hosts[:batch_size])
+                            with color():
+                                puts("Starttime: {}".format(datetime.datetime.now().strftime("%H:%M:%S")),show_prefix=True)
+                            execute(deploy,schema_path,nids,exps,fmt)
+                            with color():
+                                puts("Endtime: {}".format(datetime.datetime.now().strftime("%H:%M:%S")),show_prefix=True)
+                            execute(get_results,outfiles,nids)
+                            good_hosts = get_good_hosts()
+                            env.roledefs = None
+                            batch_size = 0
+                            nids = {}
+                            exps = {}
+                            outfiles = {}
+                            set_hosts(good_hosts)
+                        else:
+                            with color():
+                                puts("Adding experiment to current batch: {}".format(output_f), show_prefix=True)
+                        machines = env.hosts[batch_size : batch_size + ntotal]
+                        batch_size += ntotal
                     else:
-                        with color():
-                            puts("Adding experiment to current batch: {}".format(output_f), show_prefix=True)
-                    machines = env.hosts[batch_size : batch_size + ntotal]
-                    batch_size += ntotal
-                else:
-                    machines = env.hosts[:ntotal]
+                        machines = env.hosts[:ntotal]
 
-                set_hosts(machines)
-                new_roles=execute(assign_roles,nnodes,nclnodes,append=env.batch_mode)[env.host]
-                new_nids,new_exps = execute(write_ifconfig,new_roles,e)[env.host]
-                nids.update(new_nids)
-                exps.update(new_exps)
-                for host,nid in new_nids.iteritems():
-                    outfiles[host] = "{}.out".format(output_f) 
+                    set_hosts(machines)
+                    new_roles=execute(assign_roles,nnodes,nclnodes,append=env.batch_mode)[env.host]
+                    new_nids,new_exps = execute(write_ifconfig,new_roles,e)[env.host]
+                    nids.update(new_nids)
+                    exps.update(new_exps)
+                    for host,nid in new_nids.iteritems():
+                        outfiles[host] = "{}.out".format(output_f) 
 #                    if env.same_node:
 #                        outfiles[host] = "{}.out".format(output_f) 
 #                    else:
 #                        outfiles[host] = "{}_{}.out".format(nid[0],output_f) 
-                print(nids)
+                    print(nids)
 
-                if cfgs["WORKLOAD"] == "TPCC":
-                    schema = "benchmarks/TPCC_short_schema.txt"
-                elif cfgs["WORKLOAD"] == "YCSB":
-                    schema = "benchmarks/YCSB_schema.txt"
-                # NOTE: copy_files will fail if any (possibly) stray processes
-                # are still running one of the executables. Setting the 'kill'
-                # flag in environment.py to true to kill these processes. This
-                # is useful for running real experiments but dangerous when both
-                # of us are debugging...
-                execute(copy_files,schema,output_exec_fname)
-                
-                last_exp = experiments.index(e) == len(experiments) - 1
+                    if cfgs["WORKLOAD"] == "TPCC":
+                        schema = "benchmarks/TPCC_short_schema.txt"
+                    elif cfgs["WORKLOAD"] == "YCSB":
+                        schema = "benchmarks/YCSB_schema.txt"
+                    # NOTE: copy_files will fail if any (possibly) stray processes
+                    # are still running one of the executables. Setting the 'kill'
+                    # flag in environment.py to true to kill these processes. This
+                    # is useful for running real experiments but dangerous when both
+                    # of us are debugging...
+                    execute(copy_files,schema,output_exec_fname)
+                    
                 if not env.batch_mode or last_exp:
                     if env.batch_mode:
                         set_hosts(good_hosts[:batch_size])

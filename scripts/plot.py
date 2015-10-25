@@ -127,6 +127,7 @@ for exp in exps:
                     continue
                 for x in range(exp_cnt):
                     if x >= len(res_list):
+                        print(output_f)
                         print("Exceeded experiment limit")
                         continue
                     timedate.append(re.search("(\d{8}-\d{6})",res_list[x]).group(0))

@@ -137,7 +137,8 @@ def tput_v_lat(xval,vval,summary,summary_cl,
             _tpt[_v][xi] = tot_txn_cnt / avg_run_time
             #tpt[v][xi] = (avg_txn_cnt/avg_run_time)
 
-    bbox = [0.7,0.9]
+#    bbox = [0.7,0.9]
+    bbox = [1.0,0.95]
     print("Created plot {}".format(name))
     draw_line2(name,tpt,_tpt,ylab='Latency (s/txn)',xlab='Throughput (txn/sec)',title=_title,bbox=bbox,ncol=2) 
 
@@ -206,7 +207,8 @@ def line_general(xval,vval,summary,summary_cl,
                 continue
             data[_v][xi] = tot
 
-    bbox = [0.7,0.9]
+#    bbox = [0.7,0.9]
+    bbox = [1.0,0.95]
     print("Created plot {}".format(name))
     draw_line(name,data,_xval,ylab='',xlab=_xlab,title=_title,bbox=bbox,ncol=2,ltitle=vname) 
 
@@ -275,7 +277,8 @@ def line_rate(xval,vval,summary,summary_cl,
                 continue
             data[_v][xi] = tot
 
-    bbox = [0.7,0.9]
+#    bbox = [0.7,0.9]
+    bbox = [1.0,0.95]
     print("Created plot {}".format(name))
     draw_line(name,data,_xval,ylab='',xlab=_xlab,title=_title,bbox=bbox,ncol=2,ltitle=vname) 
 
@@ -293,7 +296,7 @@ def tput(xval,vval,summary,summary_cl,
     tpt = {}
     name = 'tput_plot{}'.format(plot_cnt)
     plot_cnt += 1
-#    name = 'tput_{}_{}_{}'.format(xname.lower(),vname.lower(),title.replace(" ","_").lower())
+    name += '_{}'.format(title.replace(" ","_").lower())
 #    _title = 'System Throughput {}'.format(title)
     _title = title
 
@@ -374,7 +377,8 @@ def tput(xval,vval,summary,summary_cl,
 
     pp = pprint.PrettyPrinter()
     pp.pprint(tpt)
-    bbox = [0.8,0.35]
+#    bbox = [0.8,0.35]
+    bbox = [1.0,0.95]
 #bbox = [0.7,0.9]
     print("Created plot {}".format(name))
     draw_line(name,tpt,_xval,ylab='Throughput (Txn/sec)',xlab=_xlab,title=_title,bbox=bbox,ncol=2,ltitle=vname) 
