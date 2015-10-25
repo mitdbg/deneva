@@ -34,6 +34,7 @@ FLAG = {
     "ZIPF_THETA" : "-zipf",
     "REQ_PER_QUERY": "-rpq",
     "MPR" : "-mpr",
+    "MPIR" : "-mpi",
     "NUM_WH": "-wh",
     "DONE_TIMER": "-done",
     "PROG_TIMER": "-prog",

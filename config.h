@@ -5,13 +5,13 @@
 /***********************************************/
 // Simulation + Hardware
 /***********************************************/
-#define NODE_CNT 1
+#define NODE_CNT 2
 #define THREAD_CNT 2
 #define REM_THREAD_CNT 1
 #define SEND_THREAD_CNT 1
 // PART_CNT should be at least NODE_CNT
-#define PART_CNT 1
-#define CLIENT_NODE_CNT 1
+#define PART_CNT 2
+#define CLIENT_NODE_CNT 2
 #define CLIENT_THREAD_CNT 2
 #define CLIENT_REM_THREAD_CNT 1
 #define CLIENT_SEND_THREAD_CNT 2
@@ -82,7 +82,7 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, VOLTDB, OCC, VLL, CALVIN
-#define CC_ALG TIMESTAMP
+#define CC_ALG NO_WAIT
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER         false
@@ -154,15 +154,15 @@
 //    HOT: use ACCESS_PERC of the accesses go to DATA_PERC of the data
 #define SKEW_METHOD HOT
 #define DATA_PERC 100
-#define ACCESS_PERC 0.0
+#define ACCESS_PERC 0.03
 #define INIT_PARALLELISM 4
 #define SYNTH_TABLE_SIZE 2097152
-#define ZIPF_THETA 0.0
-#define TXN_WRITE_PERC 0.0
+#define ZIPF_THETA 0.6
+#define TXN_WRITE_PERC 0.5
 #define TUP_WRITE_PERC 0.5
 #define SCAN_PERC           0
 #define SCAN_LEN          20
-#define PART_PER_TXN 1
+#define PART_PER_TXN 2
 #define PERC_MULTI_PART     MPR 
 #define REQ_PER_QUERY 10
 #define FIELD_PER_TUPLE       10
@@ -181,9 +181,10 @@
 // are not modeled.
 #define TPCC_ACCESS_ALL       false 
 #define WH_UPDATE         true
-#define NUM_WH 1
+#define NUM_WH 2
 // % of transactions that access multiple partitions
-#define MPR 0.0
+#define MPR 1.0
+#define MPIR 0.01
 #define MPR_NEWORDER      20 // In %
 // Smaller item selection to model contention
 #define CONTENTION false
@@ -255,7 +256,7 @@ extern TestCases          g_test_case;
 // SIMPLE Immediately send OK back to client
 // NOCC Don't do CC
 // NORMAL normal operation
-#define MODE NOCC_MODE
+#define MODE NORMAL_MODE
 
 
 /***********************************************/

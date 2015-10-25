@@ -64,6 +64,7 @@ void QWorkQueue::add_abort_query(int tid, base_query * qry) {
 }
 
 void QWorkQueue::enqueue(base_query * qry) {
+  qry->q_starttime = get_sys_clock();
   wq.enqueue(qry);
 }
 //TODO: do we need to has qry id here?
@@ -78,6 +79,10 @@ bool QWorkQueue::dequeue(uint64_t thd_id, base_query *& qry) {
       return false;
     }
   }
+  uint64_t t = get_sys_clock() - qry->q_starttime;
+  qry->time_q_work += t;
+  INC_STATS(0,qq_cnt,1);
+  INC_STATS(0,qq_lat,t);
   return valid;
 }
 

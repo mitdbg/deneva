@@ -162,6 +162,7 @@ extern UInt32 g_req_per_query;
 extern UInt32 g_field_per_tuple;
 extern UInt32 g_init_parallelism;
 extern double g_mpr;
+extern double g_mpitem;
 
 // TPCC
 extern UInt32 g_num_wh;

@@ -113,6 +113,7 @@ UInt64 g_msg_time_limit = MSG_TIME_LIMIT;
 UInt32 g_seq_thread_cnt = SEQ_THREAD_CNT;
 
 double g_mpr = MPR;
+double g_mpitem = MPIR;
 
 UInt32 g_num_wh = NUM_WH;
 double g_perc_payment = PERC_PAYMENT;

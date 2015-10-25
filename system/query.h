@@ -44,6 +44,7 @@ public:
   uint64_t penalty;
   uint64_t penalty_start;
   uint64_t penalty_end;
+  uint64_t q_starttime;
 
   //for debugging;
   uint64_t debug1;

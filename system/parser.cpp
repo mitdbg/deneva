@@ -20,6 +20,7 @@ void print_usage() {
 	printf("\t-tppINT       ; MAX_TXN_PER_PART\n");
 	printf("\t-tifINT       ; MAX_TXN_IN_FLIGHT\n");
 	printf("\t-mprINT       ; MPR\n");
+	printf("\t-mpiINT       ; MPIR\n");
 	printf("\t-doneINT       ; DONE_TIMER\n");
 	printf("\t-progINT       ; PROG_TIMER\n");
 	printf("\t-abrtINT       ; ABORT_PENALTY (ms)\n");
@@ -92,6 +93,8 @@ void parser(int argc, char * argv[]) {
 			g_inflight_max = atoi( &argv[i][4] );
     else if (argv[i][1] == 'm' && argv[i][2] == 'p' && argv[i][3] == 'r')
 			g_mpr = atof( &argv[i][4] );
+    else if (argv[i][1] == 'm' && argv[i][2] == 'p' && argv[i][3] == 'i')
+			g_mpitem = atof( &argv[i][4] );
     else if (argv[i][1] == 'p' && argv[i][2] == 'p' && argv[i][3] == 't')
       g_part_per_txn = atoi( &argv[i][4] );
     else if (argv[i][1] == 'r' && argv[i][2] == 'p' && argv[i][3] == 'q')
@@ -175,6 +178,7 @@ void parser(int argc, char * argv[]) {
 			printf("g_max_txn_per_part %d\n",g_max_txn_per_part );
 			printf("g_inflight_max %d\n",g_inflight_max );
 			printf("g_mpr %f\n",g_mpr );
+			printf("g_mpitem %f\n",g_mpitem );
       printf("g_part_per_txn %d\n",g_part_per_txn );
       printf("g_req_per_query %d\n",g_req_per_query );
       printf("g_client_node_cnt %d\n",g_client_node_cnt );

@@ -268,13 +268,16 @@ void tpcc_client_query::gen_new_order(uint64_t thd_id) {
 
 		//UInt32 x = URand(1, 100);
 
-		if (r_mpr > g_mpr || g_num_wh == 1) {
+    double r_rem = (double)(rand() % 10000) / 10000;
+		if (r_rem > g_mpitem || r_mpr > g_mpr || g_num_wh == 1) {
 			// home warehouse
 			items[oid].ol_supply_w_id = w_id;
 		}
 		else  {
       while(1) {
         items[oid].ol_supply_w_id = URand(1, g_num_wh);
+        if(wh_to_part(items[oid].ol_supply_w_id) == w_id)
+          continue;
         //printf("%d: %ld,",oid,items[oid].ol_supply_w_id);
         uint32_t j;
         for(j = 0; j < part_num; j++) {
