@@ -55,7 +55,6 @@ void StatsArr::resize() {
 }
 
 void StatsArr::insert(uint64_t item) {
-  /*
   if(type == ArrIncr) {
     if(cnt == size)
       resize();
@@ -70,7 +69,6 @@ void StatsArr::insert(uint64_t item) {
     }
     cnt++;
   }
-  */
 }
 
 void StatsArr::print(FILE * f) {
@@ -126,20 +124,18 @@ void Stats_thd::init(uint64_t thd_id) {
     */
 
   all_abort.init(STAT_ARR_SIZE,ArrInsert);
-  /*
-  w_cflt.init(WH_TAB_SIZE,ArrInsert);
-  d_cflt.init(DIST_TAB_SIZE,ArrInsert);
-  cnp_cflt.init(CUST_TAB_SIZE,ArrInsert);
-  c_cflt.init(CUST_TAB_SIZE,ArrInsert);
-  ol_cflt.init(ITEM_TAB_SIZE,ArrInsert);
-  s_cflt.init(STOC_TAB_SIZE,ArrInsert);
-  w_abrt.init(WH_TAB_SIZE,ArrInsert);
-  d_abrt.init(DIST_TAB_SIZE,ArrInsert);
-  cnp_abrt.init(CUST_TAB_SIZE,ArrInsert);
-  c_abrt.init(CUST_TAB_SIZE,ArrInsert);
-  ol_abrt.init(ITEM_TAB_SIZE,ArrInsert);
-  s_abrt.init(STOC_TAB_SIZE,ArrInsert);
-  */
+  w_cflt.init(g_num_wh,ArrInsert);
+  d_cflt.init(g_num_wh*g_dist_per_wh,ArrInsert);
+  cnp_cflt.init(g_num_wh * g_dist_per_wh * g_cust_per_dist,ArrInsert);
+  c_cflt.init(g_num_wh * g_dist_per_wh * g_cust_per_dist,ArrInsert);
+  ol_cflt.init(g_max_items,ArrInsert);
+  s_cflt.init(g_num_wh * g_max_items,ArrInsert);
+  w_abrt.init(g_num_wh,ArrInsert);
+  d_abrt.init(g_num_wh*g_dist_per_wh,ArrInsert);
+  cnp_abrt.init(g_num_wh * g_dist_per_wh * g_cust_per_dist,ArrInsert);
+  c_abrt.init(g_num_wh * g_dist_per_wh * g_cust_per_dist,ArrInsert);
+  ol_abrt.init(g_max_items,ArrInsert);
+  s_abrt.init(g_num_wh * g_max_items,ArrInsert);
 
 }
 

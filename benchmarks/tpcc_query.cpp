@@ -194,7 +194,7 @@ void tpcc_client_query::gen_payment(uint64_t thd_id) {
 	d_id = URand(1, g_dist_per_wh);
 	h_amount = URand(1, 5000);
   rbk = false;
-	double x = (double)(rand() % 1000000) / 10000;
+	double x = (double)(rand() % 10000) / 10000;
 	int y = URand(1, 100);
 
 	if(x > g_mpr) { 
@@ -239,14 +239,14 @@ void tpcc_client_query::gen_new_order(uint64_t thd_id) {
 	part_to_access[0] = wh_to_part(w_id);
 	part_num = 1;
 
-  double r_mpt = (double)(rand() % 10000) / 10000;		
+  double r_mpr = (double)(rand() % 10000) / 10000;
   uint64_t part_limit;
-  if(r_mpt < g_mpr)
+  if(r_mpr < g_mpr)
     part_limit = g_part_per_txn;
   else
     part_limit = 1;
+//  printf("\nr_mpr: %f, limit: %ld\n",r_mpr,part_limit);
 
-  double r_mpr = (double)(rand() % 10000) / 10000;
 
 	for (UInt32 oid = 0; oid < ol_cnt; oid ++) {
 
@@ -275,6 +275,7 @@ void tpcc_client_query::gen_new_order(uint64_t thd_id) {
 		else  {
       while(1) {
         items[oid].ol_supply_w_id = URand(1, g_num_wh);
+        //printf("%d: %ld,",oid,items[oid].ol_supply_w_id);
         uint32_t j;
         for(j = 0; j < part_num; j++) {
           if(part_to_access[j] == wh_to_part(items[oid].ol_supply_w_id))

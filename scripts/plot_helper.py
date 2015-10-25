@@ -268,7 +268,10 @@ def line_rate(xval,vval,summary,summary_cl,
                 print("Not in summary: {}".format(cfgs))
                 continue 
             try:
-                tot = avg(summary[cfgs][key]) / avg(summary[cfgs]['txn_cnt'])
+                tcnt = avg(summary[cfgs]['txn_cnt'])
+                if tcnt == 0:
+                    tcnt = 1
+                tot = avg(summary[cfgs][key]) / tcnt
             except KeyError:
                 print("KeyError: {} {} {} -- {}".format(v,x,cfg,cfgs))
                 data[_v][xi] = 0
