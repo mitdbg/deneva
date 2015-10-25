@@ -43,7 +43,7 @@ def test():
     nnodes = [1,2,4,8]
 #    nmpr=[0.95]
     nmpr=[0.0,0.1,0.25,0.5,0.75,0.95,1.0]
-    nalgos=['WAIT_DIE','OCC','MVCC','TIMESTAMP']
+    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
 #    nalgos=['NO_WAIT']
     nthreads=[2]
     nrthreads=[1]
@@ -463,22 +463,24 @@ experiment_map = {
 
 # Default values for variable configurations
 configs = {
-    "NODE_CNT" : 2,
-    "CLIENT_NODE_CNT" : 1,
+    "NODE_CNT" : 8,
+    "THREAD_CNT": 2,
+    "REM_THREAD_CNT": 1,
+    "SEND_THREAD_CNT": 1,
+    "CLIENT_NODE_CNT" : 8,
     "CLIENT_THREAD_CNT" : 2,
     "CLIENT_REM_THREAD_CNT" : 1,
+    "CLIENT_SEND_THREAD_CNT" : 4,
     "MAX_TXN_PER_PART" : 1000000,
     "WORKLOAD" : "YCSB",
     "CC_ALG" : "NO_WAIT",
-    "MPR" : 0.0,
+    "MPR" : 1.0,
     "TPORT_TYPE":"\"ipc\"",
     "TPORT_TYPE_IPC":"true",
     "TPORT_PORT":"\"_.ipc\"",
-    "REM_THREAD_CNT": 1,
-    "THREAD_CNT": 1,
     "PART_CNT": "NODE_CNT", #2,
-    "NUM_WH": 'PART_CNT',
-    "MAX_TXN_IN_FLIGHT": 1000,
+    "PART_PER_TXN": "NODE_CNT",
+    "MAX_TXN_IN_FLIGHT": 500,
     "NETWORK_DELAY": '0UL',
     "DONE_TIMER": "1 * 50 * BILLION // ~2 minutes",
     "PROG_TIMER" : "10 * BILLION // in s",
@@ -493,12 +495,12 @@ configs = {
 #    "READ_PERC":0.5,
     "TUP_WRITE_PERC":0.5,
     "ZIPF_THETA":0.6,
-    "PART_PER_TXN": 1,
-    "ACCESS_PERC":0.3,
+    "ACCESS_PERC":0.03,
     "DATA_PERC": 100,
     "REQ_PER_QUERY": 10, #16
     "SYNTH_TABLE_SIZE":"2097152",
 #TPCC
+    "NUM_WH": 'PART_CNT',
     "PERC_PAYMENT":1.0,
     "DEBUG_DISTR":"false",
     "MODE":"NORMAL_MODE",
