@@ -91,7 +91,7 @@ void parser(int argc, char * argv[]) {
     else if (argv[i][1] == 't' && argv[i][2] == 'i' && argv[i][3] == 'f')
 			g_inflight_max = atoi( &argv[i][4] );
     else if (argv[i][1] == 'm' && argv[i][2] == 'p' && argv[i][3] == 'r')
-			g_mpr = atoi( &argv[i][4] );
+			g_mpr = atof( &argv[i][4] );
     else if (argv[i][1] == 'p' && argv[i][2] == 'p' && argv[i][3] == 't')
       g_part_per_txn = atoi( &argv[i][4] );
     else if (argv[i][1] == 'r' && argv[i][2] == 'p' && argv[i][3] == 'q')
