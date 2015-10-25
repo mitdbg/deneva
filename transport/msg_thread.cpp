@@ -4,6 +4,7 @@
 #include "transport.h"
 #include "query.h"
 #include "ycsb_query.h"
+#include "tpcc_query.h"
 #include "txn_pool.h"
 
 void MessageThread::init(uint64_t thd_id) { 
@@ -158,11 +159,15 @@ void MessageThread::copy_to_buffer(mbuf * sbuf, RemReqType type, base_query * qr
 }
 
 uint64_t MessageThread::get_msg_size(RemReqType type,base_query * qry) {
-  assert(WORKLOAD == YCSB);
   uint64_t size = 0;
+#if WORKLOAD == TPCC
+  tpcc_client_query * m_qry2 = (tpcc_client_query*) qry;
+  tpcc_query * m_qry = (tpcc_query *)qry;
+#elif WORKLOAD == YCSB
   ycsb_client_query * m_qry2 = (ycsb_client_query*) qry;
-#if CC_ALG == VLL && WORKLOAD == YCSB
+#if CC_ALG == VLL
   ycsb_query * m_qry = (ycsb_query *)qry;
+#endif
 #endif
   size += sizeof(txnid_t) + sizeof(RemReqType);
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
@@ -175,14 +180,38 @@ uint64_t MessageThread::get_msg_size(RemReqType type,base_query * qry) {
         case RLK:         /* TODO */ break;
         case  RULK:       /* TODO */ break;
         case  RQRY:       
-                          size +=sizeof(YCSBRemTxnType) + sizeof(uint64_t);
+#if WORKLOAD == TPCC
+                          size +=sizeof(TPCCRemTxnType);
+                          size +=sizeof(TPCCTxnType);
+  switch(m_qry->txn_rtype) {
+    case TPCC_PAYMENT0 :
+      size += sizeof(uint64_t)*3 + sizeof(double);
+      break;
+    case TPCC_PAYMENT4 :
+      size += sizeof(uint64_t)*5 + sizeof(char)*LASTNAME_LEN + sizeof(double) + sizeof(bool);
+      break;
+    case TPCC_NEWORDER0 :
+      size += sizeof(uint64_t)*4 + sizeof(bool);
+      break;
+    case TPCC_NEWORDER6 :
+      size += sizeof(uint64_t);
+      break;
+    case TPCC_NEWORDER8 :
+      size += sizeof(uint64_t)*7 + sizeof(bool);
+      break;
+    default: assert(false);
+  }
+#elif WORKLOAD == YCSB
+                          size +=sizeof(YCSBRemTxnType);
+                          size += sizeof(ycsb_request);
+#endif
+                          size +=sizeof(uint64_t);
 #if CC_ALG == WAIT_DIE || CC_ALG == TIMESTAMP || CC_ALG == MVCC || CC_ALG == VLL
                           size += sizeof(uint64_t);
 #endif
 #if CC_ALG == MVCC  || CC_ALG == OCC
                           size += sizeof(uint64_t);
 #endif
-                          size += sizeof(ycsb_request);
                           break;
         case  RFIN:       size +=sizeof(uint64_t) + sizeof(RC) + sizeof(uint64_t);break;
         case  RLK_RSP:    /* TODO */ break;
@@ -199,15 +228,34 @@ uint64_t MessageThread::get_msg_size(RemReqType type,base_query * qry) {
 #endif
                           size += sizeof(uint64_t) * (m_qry2->part_num + 1);
                           size += sizeof(uint64_t);
+
+#if WORKLOAD == TPCC
+                          size += sizeof(TPCCTxnType);
+                          size += sizeof(uint64_t)*3;
+  switch (m_qry2->txn_type) {
+    case TPCC_PAYMENT:
+      size += sizeof(uint64_t)*3 + sizeof(char)*LASTNAME_LEN+ sizeof(double) + sizeof(bool);
+      break;
+    case TPCC_NEW_ORDER:
+      size += sizeof(uint64_t)*4 + sizeof(Item_no)*m_qry2->ol_cnt + sizeof(bool)*2;
+      break;
+    default:
+      assert(false);
+  }
+#elif WORKLOAD == YCSB
                           size += sizeof(ycsb_request) * (m_qry2->request_cnt);
+#endif
                           break;
         case  RINIT:      
                           size +=sizeof(ts_t) + sizeof(uint64_t);
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
                           size += sizeof(uint64_t) + sizeof(uint64_t);
 #endif
-#if CC_ALG == VLL && WORKLOAD == YCSB
+#if CC_ALG == VLL 
+#if WORKLOAD == TPCC
+#elif WORKLOAD == YCSB
                           size += sizeof(uint64_t) + sizeof(ycsb_request) * m_qry->request_cnt;
+#endif
 #endif
                           break;
         case  RPREPARE:   size +=sizeof(uint64_t) + sizeof(RC) + sizeof(uint64_t);break;
@@ -264,7 +312,9 @@ void MessageThread::rinit(mbuf * sbuf,base_query * qry) {
   COPY_BUF(sbuf->buffer,qry->dest_part_id,sbuf->ptr);
   COPY_BUF(sbuf->buffer,part_cnt,sbuf->ptr);
 #elif CC_ALG == VLL
-#if WORKLOAD == YCSB
+#if WORKLOAD == TPCC
+  //tpcc_query * m_qry = (tpcc_query *)qry;
+#elif WORKLOAD == YCSB
   ycsb_query * m_qry = (ycsb_query *)qry;
   COPY_BUF(sbuf->buffer,m_qry->request_cnt,sbuf->ptr);
 	for (uint64_t i = 0; i < m_qry->request_cnt; i++) {
@@ -278,10 +328,13 @@ void MessageThread::rinit(mbuf * sbuf,base_query * qry) {
 void MessageThread::rqry(mbuf * sbuf, base_query *qry) {
   DEBUG("Sending RQRY %ld\n",qry->txn_id);
   assert(IS_LOCAL(qry->txn_id));
-  assert(WORKLOAD == YCSB);
+#if WORKLOAD == TPCC
+  tpcc_query * m_qry = (tpcc_query *)qry;
+#elif WORKLOAD == YCSB
   ycsb_query * m_qry = (ycsb_query *)qry;
+#endif
 
-  COPY_BUF(sbuf->buffer,m_qry->rem_req_state,sbuf->ptr);
+  COPY_BUF(sbuf->buffer,m_qry->txn_rtype,sbuf->ptr);
   COPY_BUF(sbuf->buffer,qry->pid,sbuf->ptr);
 #if CC_ALG == WAIT_DIE || CC_ALG == TIMESTAMP || CC_ALG == MVCC || CC_ALG == VLL
   COPY_BUF(sbuf->buffer,qry->ts,sbuf->ptr);
@@ -291,7 +344,54 @@ void MessageThread::rqry(mbuf * sbuf, base_query *qry) {
 #elif CC_ALG == OCC 
   COPY_BUF(sbuf->buffer,qry->start_ts,sbuf->ptr);
 #endif
+
+#if WORKLOAD == TPCC
+  switch(m_qry->txn_rtype) {
+    case TPCC_PAYMENT0 :
+      COPY_BUF(sbuf->buffer,m_qry->w_id,sbuf->ptr);
+      COPY_BUF(sbuf->buffer,m_qry->d_id,sbuf->ptr);
+      COPY_BUF(sbuf->buffer,m_qry->d_w_id,sbuf->ptr);
+      COPY_BUF(sbuf->buffer,m_qry->h_amount,sbuf->ptr);
+      break;
+    case TPCC_PAYMENT4 :
+      COPY_BUF(sbuf->buffer,m_qry->w_id,sbuf->ptr);
+      COPY_BUF(sbuf->buffer,m_qry->d_id,sbuf->ptr);
+      COPY_BUF(sbuf->buffer,m_qry->c_id,sbuf->ptr);
+      COPY_BUF(sbuf->buffer,m_qry->c_w_id,sbuf->ptr);
+      COPY_BUF(sbuf->buffer,m_qry->c_d_id,sbuf->ptr);
+      COPY_BUF(sbuf->buffer,m_qry->c_last,sbuf->ptr);
+      COPY_BUF(sbuf->buffer,m_qry->h_amount,sbuf->ptr);
+      COPY_BUF(sbuf->buffer,m_qry->by_last_name,sbuf->ptr);
+      break;
+    case TPCC_NEWORDER0 :
+      COPY_BUF(sbuf->buffer,m_qry->w_id,sbuf->ptr);
+      COPY_BUF(sbuf->buffer,m_qry->d_id,sbuf->ptr);
+      COPY_BUF(sbuf->buffer,m_qry->c_id,sbuf->ptr);
+      COPY_BUF(sbuf->buffer,m_qry->remote,sbuf->ptr);
+      COPY_BUF(sbuf->buffer,m_qry->ol_cnt,sbuf->ptr);
+      break;
+    case TPCC_NEWORDER6 :
+      COPY_BUF(sbuf->buffer,m_qry->ol_i_id,sbuf->ptr);
+      break;
+    case TPCC_NEWORDER8 :
+      COPY_BUF(sbuf->buffer,m_qry->w_id,sbuf->ptr);
+      COPY_BUF(sbuf->buffer,m_qry->d_id,sbuf->ptr);
+      COPY_BUF(sbuf->buffer,m_qry->remote,sbuf->ptr);
+      COPY_BUF(sbuf->buffer,m_qry->ol_i_id,sbuf->ptr);
+      COPY_BUF(sbuf->buffer,m_qry->ol_supply_w_id,sbuf->ptr);
+      COPY_BUF(sbuf->buffer,m_qry->ol_quantity,sbuf->ptr);
+      COPY_BUF(sbuf->buffer,m_qry->ol_number,sbuf->ptr);
+      COPY_BUF(sbuf->buffer,m_qry->o_id,sbuf->ptr);
+      break;
+    default: assert(false);
+
+  }
+#elif WORKLOAD == YCSB
   COPY_BUF(sbuf->buffer,m_qry->req,sbuf->ptr);
+#endif
+
+
+
 #if MODE==QRY_ONLY_MODE
   COPY_BUF(sbuf->buffer,m_qry->max_access,sbuf->ptr);
 #endif
@@ -306,9 +406,12 @@ void MessageThread::rqry_rsp(mbuf * sbuf, base_query *qry) {
 
 void MessageThread::rtxn(mbuf * sbuf, base_query *qry) {
   DEBUG("Sending RTXN\n");
-  assert(WORKLOAD == YCSB);
   //assert(ISCLIENT);
+#if WORKLOAD == TPCC
+  tpcc_client_query * m_qry = (tpcc_client_query *)qry;
+#elif WORKLOAD == YCSB
   ycsb_client_query * m_qry = (ycsb_client_query *)qry;
+#endif
   uint64_t ts = get_sys_clock();
 
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
@@ -324,8 +427,40 @@ void MessageThread::rtxn(mbuf * sbuf, base_query *qry) {
   for (uint64_t i = 0; i < m_qry->part_num; ++i) {
     COPY_BUF(sbuf->buffer,m_qry->part_to_access[i],sbuf->ptr);
   }
+
+#if WORKLOAD == TPCC
+	COPY_BUF(sbuf->buffer,m_qry->txn_type,sbuf->ptr);
+  COPY_BUF(sbuf->buffer,m_qry->w_id,sbuf->ptr);
+  COPY_BUF(sbuf->buffer,m_qry->d_id,sbuf->ptr);
+  COPY_BUF(sbuf->buffer,m_qry->c_id,sbuf->ptr);
+  switch (m_qry->txn_type) {
+    case TPCC_PAYMENT:
+      COPY_BUF(sbuf->buffer,m_qry->d_w_id,sbuf->ptr);
+      COPY_BUF(sbuf->buffer,m_qry->c_w_id,sbuf->ptr);
+      COPY_BUF(sbuf->buffer,m_qry->c_d_id,sbuf->ptr);
+      COPY_BUF(sbuf->buffer,m_qry->c_last,sbuf->ptr);
+      COPY_BUF(sbuf->buffer,m_qry->h_amount,sbuf->ptr);
+      COPY_BUF(sbuf->buffer,m_qry->by_last_name,sbuf->ptr);
+      break;
+    case TPCC_NEW_ORDER:
+      COPY_BUF(sbuf->buffer,m_qry->ol_cnt,sbuf->ptr);
+      for (uint64_t j = 0; j < m_qry->ol_cnt; ++j) {
+          COPY_BUF(sbuf->buffer,m_qry->items[j],sbuf->ptr);
+      }
+      COPY_BUF(sbuf->buffer,m_qry->rbk,sbuf->ptr);
+      COPY_BUF(sbuf->buffer,m_qry->remote,sbuf->ptr);
+      COPY_BUF(sbuf->buffer,m_qry->o_entry_d,sbuf->ptr);
+      COPY_BUF(sbuf->buffer,m_qry->o_carrier_id,sbuf->ptr);
+      COPY_BUF(sbuf->buffer,m_qry->ol_delivery_d,sbuf->ptr);
+      break;
+    default:
+      assert(false);
+  }
+#elif WORKLOAD == YCSB
   COPY_BUF(sbuf->buffer,m_qry->request_cnt,sbuf->ptr);
   for (uint64_t i = 0; i < m_qry->request_cnt; ++i) {
     COPY_BUF_SIZE(sbuf->buffer,m_qry->requests[i],sbuf->ptr,sizeof(ycsb_request));
   }
+#endif
+
 }

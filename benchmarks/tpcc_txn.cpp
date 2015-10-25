@@ -30,204 +30,21 @@ void tpcc_txn_man::merge_txn_rsp(base_query * query1, base_query * query2) {
 
 }
 
-/*
-void tpcc_txn_man::read_keys(base_query * query) {
-	tpcc_query * m_query = (tpcc_query *) query;
-  m_query->txn_type = query->t_type;
-  uint64_t w_key;
-  uint64_t d_key;
-  uint64_t cnp_key;
-  uint64_t c_key;
-  int num_skeys = query->num_keys - 4;
-  if(num_skeys < 0)
-    num_skeys = 0;
-  uint64_t s_key[num_skeys];
-
-  uint64_t wr_set_size = 1+num_skeys;
-  uint64_t wr_set[wr_set_size];
-  uint64_t w = 0;
-  
-  uint64_t n = 0;
-
-  w_key = query->keys[n++];
-  d_key = query->keys[n++];
-  wr_set[w++] = d_key;
-  if((TPCCTxnType)query->t_type == TPCC_PAYMENT)
-    cnp_key = query->keys[n++];
-  c_key = query->keys[n++];
-  for(int i = 0; i < num_skeys; i++) {
-    s_key[i] = keys[n++];
-    wr_set[w++] = s_key[i];
-  }
-
-  uint64_t w_part = wh_to_part(w_key);
-  bool w_loc = GET_NODE_ID(w_part) == get_node_id();
-  bool d_loc = GET_NODE_ID(wh_to_part(w_from_distKey(d_key))) == get_node_id();
-  bool c_loc = GET_NODE_ID(wh_to_part(w_from_custKey(c_key))) == get_node_id();
-  bool cnp_loc = GET_NODE_ID(wh_to_part(w_from_custNPKey(c_key))) == get_node_id();
-  n = 0;
-  void * data[];
-  uint64_t sizes[];
-  uint64_t wr_set_size;
-
-  if(w_loc) {
-    // index read, get row
-		INDEX * index = _wl->i_warehouse;
-		item = index_read(index, w_key, w_part);
-	  assert(item != NULL);
-	  row_t * r_wh = ((row_t *)item->location);
-    RC rc = get_row(r_wh, RD, r_wh_local, wr_set, wr_set_size);
-    assert(rc == RCOK);
-    double w_tax;
-	  r_wh_local->get_value(W_TAX, w_tax); 
-    data[n] = w_tax;
-    sizes[n++] = sizeof(double); 
-    wr_set_size = r_wh_local->manager->get_wr_set_size();
-    data[n] = wr_set_size;
-    sizes[n++] = sizeof(double); 
-    data[n] = r_wh_local->manager->get_wr_set();
-    sizes[n++] = sizeof(double); 
-  }
-  if(d_loc) {
-    // index read, get row
-	  item = index_read(_wl->i_district, d_key, w_part);
-	  assert(item != NULL);
-	  row_t * r_dist = ((row_t *)item->location);
-    RC rc = get_row(r_dist, WR, r_dist_local, wr_set, wr_set_size);
-    // In Coordination Avoidance, this record must be protected!
-	  *o_id = *(int64_t *) r_dist_local->get_value(D_NEXT_O_ID);
-  }
-  if(c_loc) {
-    // index read, get row
-	  INDEX * index = _wl->i_customer_id;
-	  item = index_read(index, c_key, w_part);
-	  assert(item != NULL);
-	  row_t * r_cust = (row_t *) item->location;
-    RC rc = get_row(r_cust, RD, r_cust_local, wr_set, wr_set_size);
-	  uint64_t c_discount;
-	  r_cust_local->get_value(C_DISCOUNT, c_discount);
-    data[n] = c_discount;
-    sizes[n++] = sizeof(uint64_t); 
-  }
-  if(m_query->txn_type == TPCC_PAYMENT && cnp_loc) {
-    // index read, get row
-  }
-  for(int i = 0; i < num_skeys; i++) {
-    uint64_t s_part = wh_to_part(w_from_stockKey(s_key[i]));
-    bool s_loc = GET_NODE_ID(s_part) == get_node_id();
-    if(s_loc) {
-      // index read, get row
-		  INDEX * index = _wl->i_stock;
-		  item = index_read(index, s_key[i], s_part);
-		  assert(item != NULL);
-		  row_t * r_stock = ((row_t *)item->location);
-      RC rc = get_row(r_stock, WR, r_stock_local, wr_set, wr_set_size);
-		  UInt64 s_quantity;
-		  s_quantity = *(int64_t *)r_stock_local->get_value(S_QUANTITY);
-		  r_stock_local->get_value(S_YTD, s_ytd);
-		  r_stock_local->get_value(S_ORDER_CNT, s_order_cnt);
-		  s_data = r_stock_local->get_value(S_DATA);
-		  if (remote) {
-			  s_remote_cnt = *(int64_t*)r_stock_local->get_value(S_REMOTE_CNT);
-        data[n] = s_remote_cnt;
-        sizes[n++] = sizeof(int64_t); 
-      }
-      data[n] = s_quantity;
-      sizes[n++] = sizeof(int64_t); 
-      data[n] = s_ytd;
-      sizes[n++] = sizeof(double); 
-      data[n] = s_order_cnt;
-    }
-  }
-
-  // Send data back with ts and write sets
-}
-
-void tpcc_txn_man::read_keys_again(base_query * query) {
-	tpcc_query * m_query = (tpcc_query *) query;
-}
-*/
-
-/*
-void tpcc_txn_man::get_keys(base_query * query) {
-	tpcc_query * m_query = (tpcc_query *) query;
-  uint64_t num_keys = m_query->txn_type == TPCC_PAYMENT ? 4 : 3 + m_query->ol_cnt;
-  uint64_t keys[num_keys];
-  uint64_t n = 0;
-
-  uint64_t w_key = m_query->w_id;
-  keys[n++] = w_key;
-  uint64_t d_key = m_query->txn_type == TPCC_PAYMENT ? distKey(m_query->d_id, m_query->d_w_id) : distKey(m_query->d_id, m_query->w_id);
-  keys[n++] = d_key;
-  uint64_t cnp_key = m_query->txn_type == TPCC_PAYMENT ? custNPKey(m_query->c_last, m_query->c_d_id, m_query->c_w_id) : UINT64_MAX;
-  if(m_query->txn_type == TPCC_PAYMENT)
-    keys[n++] = cnp_key;
-  uint64_t c_key =  m_query->txn_type == TPCC_PAYMENT ? custKey(m_query->c_id, m_query->c_d_id, m_query->c_w_id) : custKey(m_query->c_id, m_query->d_id, m_query->w_id);
-  keys[n++] = c_key;
-
-  if(m_query->txn_type == TPCC_NEWORDER) {
-    for(uint64_t i = 0; i < m_query->ol_cnt; i++) {
-      // item table is replicated at every node
-      //uint64_t ol_key = m_query->items[i].ol_i_id;
-      uint64_t s_key = stockKey(m_query->items[i].ol_i_id, m_query->items[i].ol_supply_w_id);
-      keys[n++] = s_key;
-    }
-  }
-
-  // return keys and n
-
-}
-*/
-
-// Check for potential conflict for same row by comparing keys
-bool tpcc_txn_man::conflict(base_query * query1,base_query * query2) {
-	tpcc_query * m_query1 = (tpcc_query *) query1;
-	tpcc_query * m_query2 = (tpcc_query *) query2;
-
-  uint64_t q1_w_key = m_query1->w_id;
-  uint64_t q1_d_key = m_query1->txn_type == TPCC_PAYMENT ? distKey(m_query1->d_id, m_query1->d_w_id) : distKey(m_query1->d_id, m_query1->w_id);
-  uint64_t q1_cnp_key = m_query1->txn_type == TPCC_PAYMENT ? custNPKey(m_query1->c_last, m_query1->c_d_id, m_query1->c_w_id) : UINT64_MAX;
-  uint64_t q1_c_key =  m_query1->txn_type == TPCC_PAYMENT ? custKey(m_query1->c_id, m_query1->c_d_id, m_query1->c_w_id) : custKey(m_query1->c_id, m_query1->d_id, m_query1->w_id);
-  uint64_t q2_w_key = m_query2->w_id;
-  uint64_t q2_d_key = m_query2->txn_type == TPCC_PAYMENT ? distKey(m_query2->d_id, m_query2->d_w_id) : distKey(m_query2->d_id, m_query2->w_id);
-  uint64_t q2_cnp_key = m_query2->txn_type == TPCC_PAYMENT ? custNPKey(m_query2->c_last, m_query2->c_d_id, m_query2->c_w_id) : UINT64_MAX;
-  uint64_t q2_c_key =  m_query2->txn_type == TPCC_PAYMENT ? custKey(m_query2->c_id, m_query2->c_d_id, m_query2->c_w_id) : custKey(m_query2->c_id, m_query2->d_id, m_query2->w_id);
-
-  if(q1_w_key == q2_w_key)
-    return true;
-  if(q1_d_key == q2_d_key)
-    return true;
-  if(q1_cnp_key == q2_cnp_key)
-    return true;
-  if(q1_c_key == q2_c_key)
-    return true;
-
-  if(m_query1->txn_type == TPCC_PAYMENT || m_query2->txn_type == TPCC_PAYMENT)
-    return false;
-
-  for(uint64_t i = 0; i < m_query1->ol_cnt; i++) {
-    uint64_t q1_ol_key = m_query1->items[i].ol_i_id;
-    uint64_t q1_s_key = stockKey(m_query1->items[i].ol_i_id, m_query1->items[i].ol_supply_w_id);
-    for(uint64_t j = 0; j < m_query2->ol_cnt; j++) {
-      uint64_t q2_ol_key = m_query2->items[j].ol_i_id;
-      uint64_t q2_s_key = stockKey(m_query2->items[j].ol_i_id, m_query2->items[j].ol_supply_w_id);
-      if(q1_ol_key == q2_ol_key)
-        return true;
-      if(q1_s_key == q2_s_key)
-        return true;
-    }
-  }
-
-  return false;
-}
-
 RC tpcc_txn_man::run_txn(base_query * query) {
 	//tpcc_query * m_query = (tpcc_query *) query;
   //assert(query->rc == RCOK);
+#if MODE == SETUP_MODE
+  return RCOK;
+#endif
   RC rc = RCOK;
   rem_done = false;
   fin = false;
+  uint64_t thd_prof_start = get_sys_clock();
 
+#if CC_ALG == CALVIN
+  assert(false);
+  return rc;
+#endif
   // Resume query after hold
   if(query->rc == WAIT_REM) {
     rtn_tpcc_state(query);
@@ -248,6 +65,7 @@ RC tpcc_txn_man::run_txn(base_query * query) {
   } while(!fin && !rem_done);
 
   assert(rc != WAIT_REM || GET_NODE_ID(query->pid) == g_node_id);
+  INC_STATS(get_thd_id(),thd_prof_wl1,get_sys_clock() - thd_prof_start);
 
   return rc;
 
@@ -273,6 +91,8 @@ void tpcc_txn_man::rtn_tpcc_state(base_query * query) {
     case TPCC_NEWORDER3:
     case TPCC_NEWORDER4:
     case TPCC_NEWORDER5:
+      m_query->ol_number = 0;
+      //m_query->ol_number = m_query->ol_number+1;
       if(m_query->ol_number < m_query->ol_cnt) {
         m_query->txn_rtype = TPCC_NEWORDER6;
 		    m_query->ol_i_id = m_query->items[m_query->ol_number].ol_i_id;
@@ -326,16 +146,20 @@ void tpcc_txn_man::next_tpcc_state(base_query * query) {
       m_query->txn_rtype = TPCC_PAYMENT3;
       break;
     case TPCC_PAYMENT3:
-      if(GET_NODE_ID(m_query->pid) != g_node_id)
+      if(GET_NODE_ID(m_query->pid) != g_node_id) {
         rem_done = true;
+        break;
+      }
       m_query->txn_rtype = TPCC_PAYMENT4;
       break;
     case TPCC_PAYMENT4:
       m_query->txn_rtype = TPCC_PAYMENT5;
       break;
     case TPCC_PAYMENT5:
-      if(GET_NODE_ID(m_query->pid) != g_node_id)
+      if(GET_NODE_ID(m_query->pid) != g_node_id) {
         rem_done = true;
+        break;
+      }
       m_query->txn_rtype = TPCC_FIN;
       break;
     case TPCC_NEWORDER_S:
@@ -364,6 +188,7 @@ void tpcc_txn_man::next_tpcc_state(base_query * query) {
         rem_done = true;
         break;
       }
+      m_query->ol_number = 0;
       if(m_query->ol_number < m_query->ol_cnt) {
         m_query->txn_rtype = TPCC_NEWORDER6;
 		    m_query->ol_i_id = m_query->items[m_query->ol_number].ol_i_id;
@@ -396,6 +221,7 @@ void tpcc_txn_man::next_tpcc_state(base_query * query) {
 		    m_query->ol_i_id = m_query->items[m_query->ol_number].ol_i_id;
 		    m_query->ol_supply_w_id = m_query->items[m_query->ol_number].ol_supply_w_id;
 		    m_query->ol_quantity = m_query->items[m_query->ol_number].ol_quantity;
+        //m_query->rc = RCOK; // ??
       }
       else {
         m_query->txn_rtype = TPCC_FIN;
@@ -444,6 +270,9 @@ RC tpcc_txn_man::run_txn_state(base_query * query) {
 			  rc = run_payment_0(w_id, d_id, d_w_id, h_amount, row);
       else {
         assert(GET_NODE_ID(m_query->pid) == g_node_id);
+
+        this->rem_row_cnt++;
+
         query->dest_id = GET_NODE_ID(part_id_w);
         query->rem_req_state = TPCC_PAYMENT0;
         rc = WAIT_REM;
@@ -463,6 +292,7 @@ RC tpcc_txn_man::run_txn_state(base_query * query) {
 			  rc = run_payment_4( w_id,  d_id, c_id, c_w_id,  c_d_id, c_last, h_amount, by_last_name, row); 
       else {
         assert(GET_NODE_ID(m_query->pid) == g_node_id);
+        this->rem_row_cnt++;
         query->dest_id = GET_NODE_ID(part_id_c_w);
         query->rem_req_state = TPCC_PAYMENT4;
         rc = WAIT_REM;
@@ -477,6 +307,7 @@ RC tpcc_txn_man::run_txn_state(base_query * query) {
       else {
 		    //rem_qry_man.remote_qry(query,TPCC_NEWORDER0,GET_NODE_ID(part_id_w),this);
         assert(GET_NODE_ID(m_query->pid) == g_node_id);
+        this->rem_row_cnt++;
         query->dest_id = GET_NODE_ID(part_id_w);
         query->rem_req_state = TPCC_NEWORDER0;
         rc = WAIT_REM;
@@ -510,6 +341,7 @@ RC tpcc_txn_man::run_txn_state(base_query * query) {
       else {
 			  //rem_qry_man.remote_qry(query,TPCC_NEWORDER8,GET_NODE_ID(part_id_ol_supply_w),this);
         assert(GET_NODE_ID(m_query->pid) == g_node_id);
+        this->rem_row_cnt++;
         query->dest_id = GET_NODE_ID(part_id_ol_supply_w);
         query->rem_req_state = TPCC_NEWORDER8;
         rc = WAIT_REM;
@@ -536,7 +368,9 @@ RC tpcc_txn_man::run_txn_state(base_query * query) {
 	m_query->rc = rc;
   if(rc == Abort && !fin && GET_NODE_ID(m_query->pid) == g_node_id) {
     query->rem_req_state = TPCC_FIN;
-    return finish(m_query,false);
+    rc = finish(m_query,false);
+    if(rc == RCOK)
+      rc = m_query->rc;
   }
   return rc;
 }
@@ -1017,6 +851,197 @@ inline RC tpcc_txn_man::new_order_9(uint64_t w_id,uint64_t  d_id,bool remote, ui
 		insert_row(r_ol, _wl->t_orderline);
 
 	return RCOK;
+}
+
+/*
+void tpcc_txn_man::read_keys(base_query * query) {
+	tpcc_query * m_query = (tpcc_query *) query;
+  m_query->txn_type = query->t_type;
+  uint64_t w_key;
+  uint64_t d_key;
+  uint64_t cnp_key;
+  uint64_t c_key;
+  int num_skeys = query->num_keys - 4;
+  if(num_skeys < 0)
+    num_skeys = 0;
+  uint64_t s_key[num_skeys];
+
+  uint64_t wr_set_size = 1+num_skeys;
+  uint64_t wr_set[wr_set_size];
+  uint64_t w = 0;
+  
+  uint64_t n = 0;
+
+  w_key = query->keys[n++];
+  d_key = query->keys[n++];
+  wr_set[w++] = d_key;
+  if((TPCCTxnType)query->t_type == TPCC_PAYMENT)
+    cnp_key = query->keys[n++];
+  c_key = query->keys[n++];
+  for(int i = 0; i < num_skeys; i++) {
+    s_key[i] = keys[n++];
+    wr_set[w++] = s_key[i];
+  }
+
+  uint64_t w_part = wh_to_part(w_key);
+  bool w_loc = GET_NODE_ID(w_part) == get_node_id();
+  bool d_loc = GET_NODE_ID(wh_to_part(w_from_distKey(d_key))) == get_node_id();
+  bool c_loc = GET_NODE_ID(wh_to_part(w_from_custKey(c_key))) == get_node_id();
+  bool cnp_loc = GET_NODE_ID(wh_to_part(w_from_custNPKey(c_key))) == get_node_id();
+  n = 0;
+  void * data[];
+  uint64_t sizes[];
+  uint64_t wr_set_size;
+
+  if(w_loc) {
+    // index read, get row
+		INDEX * index = _wl->i_warehouse;
+		item = index_read(index, w_key, w_part);
+	  assert(item != NULL);
+	  row_t * r_wh = ((row_t *)item->location);
+    RC rc = get_row(r_wh, RD, r_wh_local, wr_set, wr_set_size);
+    assert(rc == RCOK);
+    double w_tax;
+	  r_wh_local->get_value(W_TAX, w_tax); 
+    data[n] = w_tax;
+    sizes[n++] = sizeof(double); 
+    wr_set_size = r_wh_local->manager->get_wr_set_size();
+    data[n] = wr_set_size;
+    sizes[n++] = sizeof(double); 
+    data[n] = r_wh_local->manager->get_wr_set();
+    sizes[n++] = sizeof(double); 
+  }
+  if(d_loc) {
+    // index read, get row
+	  item = index_read(_wl->i_district, d_key, w_part);
+	  assert(item != NULL);
+	  row_t * r_dist = ((row_t *)item->location);
+    RC rc = get_row(r_dist, WR, r_dist_local, wr_set, wr_set_size);
+    // In Coordination Avoidance, this record must be protected!
+	  *o_id = *(int64_t *) r_dist_local->get_value(D_NEXT_O_ID);
+  }
+  if(c_loc) {
+    // index read, get row
+	  INDEX * index = _wl->i_customer_id;
+	  item = index_read(index, c_key, w_part);
+	  assert(item != NULL);
+	  row_t * r_cust = (row_t *) item->location;
+    RC rc = get_row(r_cust, RD, r_cust_local, wr_set, wr_set_size);
+	  uint64_t c_discount;
+	  r_cust_local->get_value(C_DISCOUNT, c_discount);
+    data[n] = c_discount;
+    sizes[n++] = sizeof(uint64_t); 
+  }
+  if(m_query->txn_type == TPCC_PAYMENT && cnp_loc) {
+    // index read, get row
+  }
+  for(int i = 0; i < num_skeys; i++) {
+    uint64_t s_part = wh_to_part(w_from_stockKey(s_key[i]));
+    bool s_loc = GET_NODE_ID(s_part) == get_node_id();
+    if(s_loc) {
+      // index read, get row
+		  INDEX * index = _wl->i_stock;
+		  item = index_read(index, s_key[i], s_part);
+		  assert(item != NULL);
+		  row_t * r_stock = ((row_t *)item->location);
+      RC rc = get_row(r_stock, WR, r_stock_local, wr_set, wr_set_size);
+		  UInt64 s_quantity;
+		  s_quantity = *(int64_t *)r_stock_local->get_value(S_QUANTITY);
+		  r_stock_local->get_value(S_YTD, s_ytd);
+		  r_stock_local->get_value(S_ORDER_CNT, s_order_cnt);
+		  s_data = r_stock_local->get_value(S_DATA);
+		  if (remote) {
+			  s_remote_cnt = *(int64_t*)r_stock_local->get_value(S_REMOTE_CNT);
+        data[n] = s_remote_cnt;
+        sizes[n++] = sizeof(int64_t); 
+      }
+      data[n] = s_quantity;
+      sizes[n++] = sizeof(int64_t); 
+      data[n] = s_ytd;
+      sizes[n++] = sizeof(double); 
+      data[n] = s_order_cnt;
+    }
+  }
+
+  // Send data back with ts and write sets
+}
+
+void tpcc_txn_man::read_keys_again(base_query * query) {
+	tpcc_query * m_query = (tpcc_query *) query;
+}
+*/
+
+/*
+void tpcc_txn_man::get_keys(base_query * query) {
+	tpcc_query * m_query = (tpcc_query *) query;
+  uint64_t num_keys = m_query->txn_type == TPCC_PAYMENT ? 4 : 3 + m_query->ol_cnt;
+  uint64_t keys[num_keys];
+  uint64_t n = 0;
+
+  uint64_t w_key = m_query->w_id;
+  keys[n++] = w_key;
+  uint64_t d_key = m_query->txn_type == TPCC_PAYMENT ? distKey(m_query->d_id, m_query->d_w_id) : distKey(m_query->d_id, m_query->w_id);
+  keys[n++] = d_key;
+  uint64_t cnp_key = m_query->txn_type == TPCC_PAYMENT ? custNPKey(m_query->c_last, m_query->c_d_id, m_query->c_w_id) : UINT64_MAX;
+  if(m_query->txn_type == TPCC_PAYMENT)
+    keys[n++] = cnp_key;
+  uint64_t c_key =  m_query->txn_type == TPCC_PAYMENT ? custKey(m_query->c_id, m_query->c_d_id, m_query->c_w_id) : custKey(m_query->c_id, m_query->d_id, m_query->w_id);
+  keys[n++] = c_key;
+
+  if(m_query->txn_type == TPCC_NEWORDER) {
+    for(uint64_t i = 0; i < m_query->ol_cnt; i++) {
+      // item table is replicated at every node
+      //uint64_t ol_key = m_query->items[i].ol_i_id;
+      uint64_t s_key = stockKey(m_query->items[i].ol_i_id, m_query->items[i].ol_supply_w_id);
+      keys[n++] = s_key;
+    }
+  }
+
+  // return keys and n
+
+}
+*/
+
+// Check for potential conflict for same row by comparing keys
+bool tpcc_txn_man::conflict(base_query * query1,base_query * query2) {
+	tpcc_query * m_query1 = (tpcc_query *) query1;
+	tpcc_query * m_query2 = (tpcc_query *) query2;
+
+  uint64_t q1_w_key = m_query1->w_id;
+  uint64_t q1_d_key = m_query1->txn_type == TPCC_PAYMENT ? distKey(m_query1->d_id, m_query1->d_w_id) : distKey(m_query1->d_id, m_query1->w_id);
+  uint64_t q1_cnp_key = m_query1->txn_type == TPCC_PAYMENT ? custNPKey(m_query1->c_last, m_query1->c_d_id, m_query1->c_w_id) : UINT64_MAX;
+  uint64_t q1_c_key =  m_query1->txn_type == TPCC_PAYMENT ? custKey(m_query1->c_id, m_query1->c_d_id, m_query1->c_w_id) : custKey(m_query1->c_id, m_query1->d_id, m_query1->w_id);
+  uint64_t q2_w_key = m_query2->w_id;
+  uint64_t q2_d_key = m_query2->txn_type == TPCC_PAYMENT ? distKey(m_query2->d_id, m_query2->d_w_id) : distKey(m_query2->d_id, m_query2->w_id);
+  uint64_t q2_cnp_key = m_query2->txn_type == TPCC_PAYMENT ? custNPKey(m_query2->c_last, m_query2->c_d_id, m_query2->c_w_id) : UINT64_MAX;
+  uint64_t q2_c_key =  m_query2->txn_type == TPCC_PAYMENT ? custKey(m_query2->c_id, m_query2->c_d_id, m_query2->c_w_id) : custKey(m_query2->c_id, m_query2->d_id, m_query2->w_id);
+
+  if(q1_w_key == q2_w_key)
+    return true;
+  if(q1_d_key == q2_d_key)
+    return true;
+  if(q1_cnp_key == q2_cnp_key)
+    return true;
+  if(q1_c_key == q2_c_key)
+    return true;
+
+  if(m_query1->txn_type == TPCC_PAYMENT || m_query2->txn_type == TPCC_PAYMENT)
+    return false;
+
+  for(uint64_t i = 0; i < m_query1->ol_cnt; i++) {
+    uint64_t q1_ol_key = m_query1->items[i].ol_i_id;
+    uint64_t q1_s_key = stockKey(m_query1->items[i].ol_i_id, m_query1->items[i].ol_supply_w_id);
+    for(uint64_t j = 0; j < m_query2->ol_cnt; j++) {
+      uint64_t q2_ol_key = m_query2->items[j].ol_i_id;
+      uint64_t q2_s_key = stockKey(m_query2->items[j].ol_i_id, m_query2->items[j].ol_supply_w_id);
+      if(q1_ol_key == q2_ol_key)
+        return true;
+      if(q1_s_key == q2_s_key)
+        return true;
+    }
+  }
+
+  return false;
 }
 
 

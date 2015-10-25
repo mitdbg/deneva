@@ -601,7 +601,8 @@ RC thread_t::process_rfin(base_query *& m_query,txn_man *& m_txn) {
           if(GET_NODE_ID(m_query->home_part) != g_node_id || GET_PART_ID_IDX(m_query->home_part) == _thd_id) {
             tmp_query = tmp_query->merge(m_query);
             if(m_query != tmp_query) {
-              YCSB_QUERY_FREE(m_query)
+              //YCSB_QUERY_FREE(m_query)
+              qry_pool.put(m_query);
             }
             m_query = tmp_query;
             m_txn->set_query(m_query);
@@ -636,7 +637,8 @@ RC thread_t::process_rfin(base_query *& m_query,txn_man *& m_txn) {
           m_txn->register_thd(this);
           tmp_query = tmp_query->merge(m_query);
           if(m_query != tmp_query) {
-            YCSB_QUERY_FREE(m_query)
+            //YCSB_QUERY_FREE(m_query)
+            qry_pool.put(m_query);
           }
           m_query = tmp_query;
           m_txn->set_query(m_query);
@@ -684,7 +686,8 @@ RC thread_t::process_rack(base_query *& m_query,txn_man *& m_txn) {
         assert(ISCLIENTN(tmp_query->client_id));
         tmp_query = tmp_query->merge(m_query);
         if(m_query != tmp_query) {
-          YCSB_QUERY_FREE(m_query)
+          //YCSB_QUERY_FREE(m_query)
+          qry_pool.put(m_query);
         }
         m_query = tmp_query;
         m_txn->set_query(m_query);
@@ -833,7 +836,8 @@ RC thread_t::process_rqry_rsp(uint64_t tid, base_query *& m_query,txn_man *& m_t
         // Merge queries
         tmp_query = tmp_query->merge(m_query);
         if(m_query != tmp_query) {
-          YCSB_QUERY_FREE(m_query)
+          //YCSB_QUERY_FREE(m_query)
+          qry_pool.put(m_query);
         }
         m_query = tmp_query;
         m_txn->set_query(m_query);
@@ -893,7 +897,8 @@ RC thread_t::process_rqry(base_query *& m_query,txn_man *& m_txn) {
         // merge queries
         tmp_query = tmp_query->merge(m_query);
           if(m_query != tmp_query) {
-            YCSB_QUERY_FREE(m_query)
+            //YCSB_QUERY_FREE(m_query)
+            qry_pool.put(m_query);
           }
         m_query = tmp_query;
         m_txn->set_query(m_query);
@@ -972,7 +977,8 @@ RC thread_t::process_rprepare(base_query *& m_query,txn_man *& m_txn) {
           // Merge queries
           tmp_query = tmp_query->merge(m_query);
           if(m_query != tmp_query) {
-            YCSB_QUERY_FREE(m_query)
+            //YCSB_QUERY_FREE(m_query)
+            qry_pool.put(m_query);
           }
           m_query = tmp_query;
           m_txn->set_query(m_query);
@@ -1088,8 +1094,10 @@ RC thread_t::process_rtxn(base_query *& m_query,txn_man *& m_txn) {
 				INC_STATS(0,rtxn,1);
 				assert(m_query->txn_id == UINT64_MAX || IS_LOCAL(m_query->txn_id) );
         RC rc = RCOK;
+        bool restart = true;
 
 				if(m_query->txn_id == UINT64_MAX) {
+          restart = false;
           // This is a new transaction
           txn_pool.get(m_txn);
           INC_STATS(_thd_id,debug1, get_sys_clock()-thd_prof_start1);
@@ -1132,7 +1140,6 @@ RC thread_t::process_rtxn(base_query *& m_query,txn_man *& m_txn) {
           m_txn->txn_time_misc += m_query->time_q_work;
           m_txn->txn_time_misc += m_query->time_copy;
           m_txn->register_thd(this);
-					DEBUG("START %ld %f %lu\n",m_txn->get_txn_id(),(double)(m_txn->starttime - run_starttime) / BILLION,m_txn->get_ts());
     INC_STATS(_thd_id,thd_prof_thd_rtxn1a,get_sys_clock() - thd_prof_start);
 				}
 				else {
@@ -1161,6 +1168,11 @@ RC thread_t::process_rtxn(base_query *& m_query,txn_man *& m_txn) {
 					m_txn->start_ts = get_next_ts(); 
 					m_query->start_ts = m_txn->get_start_ts();
 #endif
+    if(restart) {
+					DEBUG("RESTART %ld %f %lu\n",m_txn->get_txn_id(),(double)(m_txn->starttime - run_starttime) / BILLION,m_txn->get_ts());
+    } else {
+					DEBUG("START %ld %f %lu\n",m_txn->get_txn_id(),(double)(m_txn->starttime - run_starttime) / BILLION,m_txn->get_ts());
+    }
 
     INC_STATS(_thd_id,thd_prof_thd_rtxn2,get_sys_clock() - thd_prof_start);
     thd_prof_start = get_sys_clock();

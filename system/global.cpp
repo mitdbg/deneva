@@ -128,3 +128,5 @@ UInt32 g_cust_per_dist = CUST_PER_DIST_SMALL;
 UInt32 g_max_items = MAX_ITEMS_NORM;
 UInt32 g_cust_per_dist = CUST_PER_DIST_NORM;
 #endif
+UInt32 g_max_items_per_txn = MAX_ITEMS_PER_TXN;
+UInt32 g_dist_per_wh = DIST_PER_WH;

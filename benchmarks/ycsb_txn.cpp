@@ -121,7 +121,7 @@ RC ycsb_txn_man::run_txn(base_query * query) {
 
   assert(rc != WAIT_REM || GET_NODE_ID(query->pid) == g_node_id);
 
-  INC_STATS(get_thd_id(),thd_prof_ycsb1,get_sys_clock() - thd_prof_start);
+  INC_STATS(get_thd_id(),thd_prof_wl1,get_sys_clock() - thd_prof_start);
   return rc;
 
 }

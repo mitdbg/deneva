@@ -3,6 +3,8 @@
 #include "table.h"
 #include "row.h"
 #include "row_vll.h"
+#include "tpcc_query.h"
+#include "tpcc.h"
 #include "ycsb_query.h"
 #include "ycsb.h"
 #include "wl.h"
@@ -135,7 +137,6 @@ VLLMan::beginTxn(txn_man * txn, base_query * query) {
     */
 
 	txn->vll_txn_type = VLL_Free;
-	assert(WORKLOAD == YCSB);
 	
 	TxnQEntry * front = _txn_queue;
 	if (front) {
@@ -144,8 +145,13 @@ VLLMan::beginTxn(txn_man * txn, base_query * query) {
       ret = Abort;
       txn->rc = Abort;
       query->rc = Abort;
+#if WORKLOAD == TPCC
+      tpcc_query * m_query = (tpcc_query*) query;
+      m_query->txn_rtype = TPCC_FIN;
+#elif WORKLOAD == YCSB
       ycsb_query * m_query = (ycsb_query*) query;
       m_query->txn_rtype = YCSB_FIN;
+#endif
       goto final;
     }
   }

@@ -10,11 +10,11 @@
 #define REM_THREAD_CNT 1
 #define SEND_THREAD_CNT 1
 // PART_CNT should be at least NODE_CNT
-#define PART_CNT 1
+#define PART_CNT 2
 #define CLIENT_NODE_CNT 1
-#define CLIENT_THREAD_CNT 2
+#define CLIENT_THREAD_CNT 1
 #define CLIENT_REM_THREAD_CNT 1
-#define CLIENT_SEND_THREAD_CNT 2
+#define CLIENT_SEND_THREAD_CNT 1
 #define CLIENT_RUNTIME false
 
 // each transaction only accesses only 1 virtual partition. But the lock/ts manager and index are not aware of such partitioning. VIRTUAL_PART_CNT describes the request distribution and is only used to generate queries. For HSTORE, VIRTUAL_PART_CNT should be the same as PART_CNT.
@@ -28,14 +28,14 @@
 // # of transactions to run for warmup
 #define WARMUP            0
 // YCSB or TPCC
-#define WORKLOAD YCSB
+#define WORKLOAD TPCC
 // print the transaction latency distribution
 #define PRT_LAT_DISTR false
 #define STATS_ENABLE        true
 #define TIME_ENABLE         true //STATS_ENABLE
 
 #define FIN_BY_TIME true
-#define MAX_TXN_IN_FLIGHT 1000
+#define MAX_TXN_IN_FLIGHT 4
 
 /***********************************************/
 // Memory System
@@ -61,9 +61,9 @@
 /***********************************************/
 // Message Passing
 /***********************************************/
-#define TPORT_TYPE "tcp"
-#define TPORT_TYPE_IPC false
-#define TPORT_PORT 7000
+#define TPORT_TYPE "ipc"
+#define TPORT_TYPE_IPC true
+#define TPORT_PORT ".ipc"
 
 #define MAX_TPORT_NAME 128
 #define MSG_SIZE 128 // in bytes
@@ -175,6 +175,7 @@
 #define CUST_PER_DIST_SMALL 2000
 #define MAX_ITEMS_NORM 100000
 #define CUST_PER_DIST_NORM 3000
+#define MAX_ITEMS_PER_TXN 15
 // Some of the transactions read the data but never use them. 
 // If TPCC_ACCESS_ALL == fales, then these parts of the transactions
 // are not modeled.
@@ -190,26 +191,26 @@
 //
 enum TPCCTxnType {TPCC_ALL, 
           TPCC_PAYMENT, 
-                  TPCC_NEW_ORDER, 
-                          TPCC_ORDER_STATUS, 
-                                  TPCC_DELIVERY, 
-                                          TPCC_STOCK_LEVEL};
+          TPCC_NEW_ORDER, 
+          TPCC_ORDER_STATUS, 
+          TPCC_DELIVERY, 
+          TPCC_STOCK_LEVEL};
 extern TPCCTxnType          g_tpcc_txn_type;
 
 //#define TXN_TYPE          TPCC_ALL
-#define PERC_PAYMENT        0 //0.5
+#define PERC_PAYMENT 0.0
 #define FIRSTNAME_MINLEN      8
 #define FIRSTNAME_LEN         16
 #define LASTNAME_LEN        16
 
-#define DIST_PER_WARE       10
-#define WH_TAB_SIZE NUM_WH
-#define ITEM_TAB_SIZE MAX_ITEMS_SMALL
-#define DIST_TAB_SIZE NUM_WH * DIST_PER_WARE
-#define STOC_TAB_SIZE NUM_WH * MAX_ITEMS_SMALL
-#define CUST_TAB_SIZE NUM_WH * DIST_PER_WARE * CUST_PER_DIST_SMALL
-#define HIST_TAB_SIZE NUM_WH * DIST_PER_WARE * CUST_PER_DIST_SMALL
-#define ORDE_TAB_SIZE NUM_WH * DIST_PER_WARE * CUST_PER_DIST_SMALL
+#define DIST_PER_WH       10
+//#define WH_TAB_SIZE NUM_WH
+//#define ITEM_TAB_SIZE MAX_ITEMS_SMALL
+//#define DIST_TAB_SIZE NUM_WH * DIST_PER_WH
+//#define STOC_TAB_SIZE NUM_WH * MAX_ITEMS_SMALL
+//#define CUST_TAB_SIZE NUM_WH * DIST_PER_WH * CUST_PER_DIST_SMALL
+//#define HIST_TAB_SIZE NUM_WH * DIST_PER_WH * CUST_PER_DIST_SMALL
+//#define ORDE_TAB_SIZE NUM_WH * DIST_PER_WH * CUST_PER_DIST_SMALL
 
 /***********************************************/
 // TODO centralized CC management. 
@@ -298,10 +299,10 @@ extern TestCases          g_test_case;
 #define BILLION 1000000000UL // in ns => 1 second
 #define STAT_ARR_SIZE 1024
 #define PROG_TIMER 10 * BILLION // in s
-#define DONE_TIMER 1 * 100 * BILLION // ~2 minutes
+#define DONE_TIMER 1 * 50 * BILLION // ~2 minutes
 
 #define SEED 0
-#define SHMEM_ENV true
+#define SHMEM_ENV false
 
 #endif
 

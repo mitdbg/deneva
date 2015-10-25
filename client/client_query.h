@@ -9,6 +9,7 @@ class workload;
 class ycsb_query;
 class ycsb_client_query;
 class tpcc_query;
+class tpcc_client_query;
 
 //enum RemReqType {INIT_DONE,RLK, RULK, RQRY, RFIN, RLK_RSP, RULK_RSP, RQRY_RSP, RACK, RTXN, RINIT, RPREPARE,RPASS};
 
@@ -75,7 +76,7 @@ public:
 	ycsb_client_query * queries;
 	//ycsb_query * queries;
 #else 
-	tpcc_query * queries;
+	tpcc_client_query * queries;
 #endif
 	char pad[CL_SIZE - sizeof(void *) - sizeof(int)];
 };

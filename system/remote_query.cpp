@@ -101,7 +101,8 @@ void Remote_query::unpack_query(base_query *& query,char * data,  uint64_t & ptr
       }
 #endif
 #if CC_ALG == VLL
-#if WORKLOAD == YCSB
+#if WORKLOAD == TPCC
+#elif WORKLOAD == YCSB
       ycsb_query * m_query = (ycsb_query*) query;
       COPY_VAL(m_query->request_cnt,data,ptr);
       //m_query->requests = (ycsb_request *) 
@@ -126,7 +127,6 @@ void Remote_query::unpack_query(base_query *& query,char * data,  uint64_t & ptr
 #elif WORKLOAD == YCSB
       ycsb_query * m_query = (ycsb_query*) query;
 #endif
-      assert(WORKLOAD == YCSB);
       COPY_VAL(m_query->txn_rtype,data,ptr);
       COPY_VAL(m_query->pid,data,ptr);
 #if CC_ALG == WAIT_DIE || CC_ALG == TIMESTAMP || CC_ALG == MVCC || CC_ALG == VLL
@@ -137,7 +137,52 @@ void Remote_query::unpack_query(base_query *& query,char * data,  uint64_t & ptr
 #elif CC_ALG == OCC
       COPY_VAL(m_query->start_ts,data,ptr);
 #endif
+
+#if WORKLOAD == TPCC
+      switch(m_query->txn_rtype) {
+        case TPCC_PAYMENT0 :
+          COPY_VAL(m_query->w_id,data,ptr);
+          COPY_VAL(m_query->d_id,data,ptr);
+          COPY_VAL(m_query->d_w_id,data,ptr);
+          COPY_VAL(m_query->h_amount,data,ptr);
+          break;
+        case TPCC_PAYMENT4 :
+          COPY_VAL(m_query->w_id,data,ptr);
+          COPY_VAL(m_query->d_id,data,ptr);
+          COPY_VAL(m_query->c_id,data,ptr);
+          COPY_VAL(m_query->c_w_id,data,ptr);
+          COPY_VAL(m_query->c_d_id,data,ptr);
+          COPY_VAL(m_query->c_last,data,ptr);
+          COPY_VAL(m_query->h_amount,data,ptr);
+          COPY_VAL(m_query->by_last_name,data,ptr);
+          break;
+        case TPCC_NEWORDER0 :
+          COPY_VAL(m_query->w_id,data,ptr);
+          COPY_VAL(m_query->d_id,data,ptr);
+          COPY_VAL(m_query->c_id,data,ptr);
+          COPY_VAL(m_query->remote,data,ptr);
+          COPY_VAL(m_query->ol_cnt,data,ptr);
+          break;
+        case TPCC_NEWORDER6 :
+          COPY_VAL(m_query->ol_i_id,data,ptr);
+          break;
+        case TPCC_NEWORDER8 :
+          COPY_VAL(m_query->w_id,data,ptr);
+          COPY_VAL(m_query->d_id,data,ptr);
+          COPY_VAL(m_query->remote,data,ptr);
+          COPY_VAL(m_query->ol_i_id,data,ptr);
+          COPY_VAL(m_query->ol_supply_w_id,data,ptr);
+          COPY_VAL(m_query->ol_quantity,data,ptr);
+          COPY_VAL(m_query->ol_number,data,ptr);
+          COPY_VAL(m_query->o_id,data,ptr);
+          break;
+        default: assert(false);
+          
+      }
+#elif WORKLOAD == YCSB
       COPY_VAL(m_query->req,data,ptr);
+#endif
+
 #if MODE==QRY_ONLY_MODE
       COPY_VAL(m_query->max_access,data,ptr);
 #endif
@@ -165,7 +210,6 @@ void Remote_query::unpack_query(base_query *& query,char * data,  uint64_t & ptr
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
       query->home_part = query->active_part;
 #endif
-      assert(WORKLOAD == YCSB);
       m_query->client_id = m_query->return_id;
       assert(m_query->client_id >= g_node_cnt);
       COPY_VAL(m_query->pid,data,ptr);
@@ -180,13 +224,43 @@ void Remote_query::unpack_query(base_query *& query,char * data,  uint64_t & ptr
       for (uint64_t i = 0; i < m_query->part_num; ++i) {
         COPY_VAL(m_query->part_to_access[i],data,ptr);
       }
+#if WORKLOAD == TPCC
+	COPY_VAL(m_query->txn_type,data,ptr);
+  COPY_VAL(m_query->w_id,data,ptr);
+  COPY_VAL(m_query->d_id,data,ptr);
+  COPY_VAL(m_query->c_id,data,ptr);
+  switch (m_query->txn_type) {
+    case TPCC_PAYMENT:
+      COPY_VAL(m_query->d_w_id,data,ptr);
+      COPY_VAL(m_query->c_w_id,data,ptr);
+      COPY_VAL(m_query->c_d_id,data,ptr);
+      COPY_VAL(m_query->c_last,data,ptr);
+      COPY_VAL(m_query->h_amount,data,ptr);
+      COPY_VAL(m_query->by_last_name,data,ptr);
+      m_query->txn_rtype = TPCC_PAYMENT0;
+      break;
+    case TPCC_NEW_ORDER:
+      COPY_VAL(m_query->ol_cnt,data,ptr);
+      for (uint64_t j = 0; j < m_query->ol_cnt; ++j) {
+          COPY_VAL(m_query->items[j],data,ptr);
+      }
+      COPY_VAL(m_query->rbk,data,ptr);
+      COPY_VAL(m_query->remote,data,ptr);
+      COPY_VAL(m_query->o_entry_d,data,ptr);
+      COPY_VAL(m_query->o_carrier_id,data,ptr);
+      COPY_VAL(m_query->ol_delivery_d,data,ptr);
+      m_query->txn_rtype = TPCC_NEWORDER0;
+      break;
+    default:
+      assert(false);
+  }
+#elif WORKLOAD == YCSB
       COPY_VAL(m_query->request_cnt,data,ptr);
-      //m_query->requests = (ycsb_request *) 
-      //      mem_allocator.alloc(sizeof(ycsb_request) * m_query->request_cnt, 0);
       for (uint64_t i = 0; i < m_query->request_cnt; ++i) {
         COPY_VAL_SIZE(m_query->requests[i],data,ptr,sizeof(ycsb_request));
       }
       m_query->req = m_query->requests[0];
+#endif
       assert(GET_NODE_ID(m_query->pid) == g_node_id);
       break;
       }

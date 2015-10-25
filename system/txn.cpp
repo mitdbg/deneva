@@ -16,8 +16,6 @@
 #include "remote_query.h"
 #include "plock.h"
 #include "vll.h"
-#include "ycsb_query.h"
-#include "tpcc_query.h"
 #include "msg_queue.h"
 #include "txn_pool.h"
 
@@ -619,15 +617,6 @@ RC txn_man::finish(base_query * query, bool fin) {
       } else {
         assert(CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC);
          // Model after RFIN
-        /*
-#if WORKLOAD == TPCC
-	    base_query * tmp_query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), 0);
-	      tmp_query = new tpcc_query();
-#elif WORKLOAD == YCSB
-	    base_query * tmp_query = (ycsb_query *) mem_allocator.alloc(sizeof(ycsb_query), 0);
-        tmp_query = new ycsb_query();
-#endif
-*/
         base_query * tmp_query; 
         qry_pool.get(tmp_query);
         tmp_query->txn_id = query->txn_id;
@@ -653,15 +642,6 @@ RC txn_man::finish(base_query * query, bool fin) {
       } else {
         assert(CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC);
          // Model after RPREP
-        /*
-#if WORKLOAD == TPCC
-	    base_query * tmp_query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), 0);
-	      tmp_query = new tpcc_query();
-#elif WORKLOAD == YCSB
-	    base_query * tmp_query = (ycsb_query *) mem_allocator.alloc(sizeof(ycsb_query), 0);
-        tmp_query = new ycsb_query();
-#endif
-*/
         base_query * tmp_query; 
         qry_pool.get(tmp_query);
         tmp_query->txn_id = query->txn_id;

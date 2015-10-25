@@ -100,19 +100,19 @@ RC workload::init_schema(const char * schema_file) {
       uint64_t table_size = g_synth_table_size;
 #if WORKLOAD == TPCC
       if ( !tname.compare(1, 9, "WAREHOUSE") ) {
-        table_size = WH_TAB_SIZE;
+        table_size = g_num_wh;
       } else if ( !tname.compare(1, 8, "DISTRICT") ) {
-        table_size = DIST_TAB_SIZE;
+        table_size = g_num_wh * g_dist_per_wh;
       } else if ( !tname.compare(1, 8, "CUSTOMER") ) {
-        table_size = CUST_TAB_SIZE;
+        table_size = g_num_wh * g_dist_per_wh * g_cust_per_dist;
       } else if ( !tname.compare(1, 7, "HISTORY") ) {
-        table_size = HIST_TAB_SIZE;
+        table_size = g_num_wh * g_dist_per_wh * g_cust_per_dist;
       } else if ( !tname.compare(1, 5, "ORDER") ) {
-        table_size = ORDE_TAB_SIZE;
+        table_size = g_num_wh * g_dist_per_wh * g_cust_per_dist;
       } else if ( !tname.compare(1, 4, "ITEM") ) {
-        table_size = ITEM_TAB_SIZE;
+        table_size = g_max_items;
       } else if ( !tname.compare(1, 5, "STOCK") ) {
-        table_size = STOC_TAB_SIZE;
+        table_size = g_num_wh * g_max_items;
       }
 #else
       table_size = g_synth_table_size;
