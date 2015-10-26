@@ -245,7 +245,7 @@ void tpcc_client_query::gen_new_order(uint64_t thd_id) {
     part_limit = g_part_per_txn;
   else
     part_limit = 1;
-//  printf("\nr_mpr: %f, limit: %ld\n",r_mpr,part_limit);
+  //printf("\nr_mpr: %f/%f,g_mpitem: %f, limit: %ld\n",r_mpr,g_mpr,g_mpitem,part_limit);
 
 
 	for (UInt32 oid = 0; oid < ol_cnt; oid ++) {
@@ -268,7 +268,8 @@ void tpcc_client_query::gen_new_order(uint64_t thd_id) {
 
 		//UInt32 x = URand(1, 100);
 
-    double r_rem = (double)(rand() % 10000) / 10000;
+    double r_rem = (double)(rand() % 100000) / 100000;
+    //printf("rr: %f, ",r_rem);
 		if (r_rem > g_mpitem || r_mpr > g_mpr || g_num_wh == 1) {
 			// home warehouse
 			items[oid].ol_supply_w_id = w_id;
@@ -276,9 +277,9 @@ void tpcc_client_query::gen_new_order(uint64_t thd_id) {
 		else  {
       while(1) {
         items[oid].ol_supply_w_id = URand(1, g_num_wh);
-        if(wh_to_part(items[oid].ol_supply_w_id) == w_id)
-          continue;
         //printf("%d: %ld,",oid,items[oid].ol_supply_w_id);
+        if(items[oid].ol_supply_w_id == w_id)
+          continue;
         uint32_t j;
         for(j = 0; j < part_num; j++) {
           if(part_to_access[j] == wh_to_part(items[oid].ol_supply_w_id))
