@@ -966,6 +966,7 @@ void Stats::print(bool prog) {
 			",clock_time=%f"
       ",abort_cnt=%ld"
       ",txn_abort_cnt=%ld"
+      ",tot_avg_abort_row_cnt=%f"
       ",abort_row_cnt=%ld"
       ",avg_abort_row_cnt=%f"
       ",abort_wr_cnt=%ld"
