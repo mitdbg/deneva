@@ -145,6 +145,11 @@ extern UInt64 g_done_timer;
 extern UInt64 g_prog_timer;
 extern UInt64 g_msg_time_limit;
 
+// MVCC
+extern UInt64 g_max_read_req;
+extern UInt64 g_max_pre_req;
+extern UInt64 g_his_recycle_len;
+
 // YCSB
 extern UInt32 g_cc_alg;
 extern ts_t g_query_intvl;

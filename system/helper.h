@@ -215,6 +215,7 @@ uint64_t merge_idx_key(uint64_t key1, uint64_t key2);
 uint64_t merge_idx_key(uint64_t key1, uint64_t key2, uint64_t key3);
 
 void init_client_globals(); 
+void init_globals(); 
 
 extern timespec * res;
 uint64_t get_server_clock();

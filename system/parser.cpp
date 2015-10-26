@@ -208,4 +208,5 @@ void parser(int argc, char * argv[]) {
     // Initialize client-specific globals
     if (g_node_id >= g_node_cnt)
         init_client_globals();
+    init_globals();
 }

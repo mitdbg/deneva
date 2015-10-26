@@ -60,6 +60,11 @@ uint64_t merge_idx_key(uint64_t key1, uint64_t key2, uint64_t key3) {
 	return key1 << 42 | key2 << 21 | key3;
 }
 
+void init_globals() {
+  g_max_read_req = g_node_cnt * g_inflight_max;
+  g_max_pre_req = g_node_cnt * g_inflight_max;
+}
+
 void init_client_globals() {
 #if CC_ALG == CALVIN
 	// Sequencer is the only node

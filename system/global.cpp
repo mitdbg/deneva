@@ -109,6 +109,11 @@ UInt64 g_done_timer = DONE_TIMER;
 UInt64 g_prog_timer = PROG_TIMER;
 UInt64 g_msg_time_limit = MSG_TIME_LIMIT;
 
+// MVCC
+UInt64 g_max_read_req = MAX_READ_REQ;
+UInt64 g_max_pre_req = MAX_PRE_REQ;
+UInt64 g_his_recycle_len = HIS_RECYCLE_LEN;
+
 // CALVIN
 UInt32 g_seq_thread_cnt = SEQ_THREAD_CNT;
 

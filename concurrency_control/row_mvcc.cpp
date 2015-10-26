@@ -249,7 +249,7 @@ RC Row_mvcc::access(txn_man * txn, TsType type, row_t * row) {
   if (type == R_REQ) {
 		// figure out if ts is in interval(prewrite(x))
 		bool conf = conflict(type, ts);
-		if ( conf && rreq_len < MAX_READ_REQ) {
+		if ( conf && rreq_len < g_max_read_req) {
 			rc = WAIT;
       txn->rc = rc;
       txn->wait_starttime = get_sys_clock();
@@ -274,7 +274,7 @@ RC Row_mvcc::access(txn_man * txn, TsType type, row_t * row) {
 	} else if (type == P_REQ) {
 		if ( conflict(type, ts) ) {
 			rc = Abort;
-		} else if (preq_len < MAX_PRE_REQ){
+		} else if (preq_len < g_max_pre_req){
         DEBUG("buf P_REQ %ld %ld\n",txn->get_txn_id(),_row->get_primary_key());
 			buffer_req(P_REQ, txn);
 			rc = RCOK;
@@ -302,7 +302,7 @@ RC Row_mvcc::access(txn_man * txn, TsType type, row_t * row) {
   INC_STATS(0,thd_prof_mvcc7,get_sys_clock() - starttime);
   starttime = get_sys_clock();
 	if (rc == RCOK) {
-		if (whis_len > HIS_RECYCLE_LEN || rhis_len > HIS_RECYCLE_LEN) {
+		if (whis_len > g_his_recycle_len || rhis_len > g_his_recycle_len) {
 			ts_t t_th = glob_manager.get_min_ts(txn->get_thd_id());
 			if (readhistail && readhistail->ts < t_th)
 				clear_history(R_REQ, t_th);
