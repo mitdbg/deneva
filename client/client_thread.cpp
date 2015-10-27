@@ -107,6 +107,8 @@ RC Client_thread_t::run_remote() {
 				assert( _wl->sim_done);
 			if( !ATOM_CAS(_wl->sim_timeout, false, true) )
 				assert( _wl->sim_timeout);
+      printf("starting FINISH %ld:%ld\n",_node_id,_thd_id);
+      fflush(stdout);
       printf("FINISH %ld:%ld\n",_node_id,_thd_id);
       fflush(stdout);
       return FINISH;
@@ -143,6 +145,8 @@ RC Client_thread_t::run_remote() {
     fflush(stdout);
   }
 
+      printf("starting FINISH %ld:%ld\n",_node_id,_thd_id);
+      fflush(stdout);
   printf("FINISH %ld:%ld\n",_node_id,_thd_id);
   fflush(stdout);
   return FINISH;
@@ -170,6 +174,8 @@ RC Client_thread_t::run_send() {
 	while (!(_wl->sim_done && _wl->sim_timeout)) {
     messager.run();
   }
+      printf("starting FINISH %ld:%ld\n",_node_id,_thd_id);
+      fflush(stdout);
   printf("FINISH %ld:%ld\n",_node_id,_thd_id);
   fflush(stdout);
 	return FINISH;
@@ -293,6 +299,8 @@ RC Client_thread_t::run() {
       fflush(stdout);
     }
   }
+      printf("starting FINISH %ld:%ld\n",_node_id,_thd_id);
+      fflush(stdout);
   printf("FINISH %ld:%ld\n",_node_id,_thd_id);
   fflush(stdout);
 	return FINISH;

@@ -328,12 +328,16 @@ def tput(xval,vval,summary,summary_cl,
                 if e in my_cfg_fmt:
                     if e == 'READ_PERC':
                         my_cfg[my_cfg_fmt.index(e)] = 1-my_cfg[my_cfg_fmt.index(extras[e])]
+                    elif e == 'PART_PER_TXN':
+                        my_cfg[my_cfg_fmt.index(e)] = min(my_cfg[my_cfg_fmt.index(extras[e])],8)
                     else:
                         my_cfg[my_cfg_fmt.index(e)] = my_cfg[my_cfg_fmt.index(extras[e])]
                 else:
                     my_cfg_fmt = my_cfg_fmt + [e]
                     if e == 'READ_PERC':
                         my_cfg = my_cfg + [1.0-my_cfg[my_cfg_fmt.index(extras[e])]]
+                    elif e == 'PART_PER_TXN':
+                        my_cfg = my_cfg + [min(my_cfg[my_cfg_fmt.index(extras[e])],8)]
                     else:
                         my_cfg = my_cfg + [my_cfg[my_cfg_fmt.index(extras[e])]]
             if my_cfg[my_cfg_fmt.index("PART_PER_TXN")] > my_cfg[my_cfg_fmt.index("PART_CNT")]:

@@ -41,7 +41,7 @@ STRNOW=NOW.strftime("%Y%m%d-%H%M%S")
 
 os.chdir('../..')
 
-MAX_TIME_PER_EXP = 60 * 10   # in seconds
+MAX_TIME_PER_EXP = 60 * 4   # in seconds
 
 EXECUTE_EXPS = True
 SKIP = False
@@ -84,7 +84,8 @@ def run_exps(exps,skip_completed='False',exec_exps='True',dry_run='False',iterat
     env.dry_run = dry_run == 'True'
     env.same_node = same_node == 'True'
     env.overlap = overlap == 'True'
-    env.shmem = shmem == 'True'
+    if env.cluster != "ec2":
+        env.shmem = shmem == 'True'
     if env.dry_run:
         with color(level="warn"):
             puts("this will be a dry run!",show_prefix=True)
@@ -204,9 +205,10 @@ def set_delay(delay='10'):
 def reset_delay():
     run("sudo tc qdisc del dev eth0 root") 
  
+#FIXME: max_attempts=3
 @task
 @parallel
-def sync_clocks(max_offset=0.01,max_attempts=5,delay=15):
+def sync_clocks(max_offset=0.01,max_attempts=0,delay=15):
     if env.dry_run:
         return True
     offset = sys.float_info.max
@@ -746,7 +748,8 @@ def ec2_run_instances(
             image_id="ami-d05e75b8",
             count="12",
             security_group="dist-sg",
-            instance_type="m4.xlarge",
+            instance_type="m4.2xlarge",
+#            instance_type="m4.xlarge",
             key_name="devenv-key",
         ):
     opt = "--{k} {v} ".format
@@ -759,6 +762,32 @@ def ec2_run_instances(
     cmd += opt(k="instance-type",v=instance_type)
     cmd += opt(k="key-name",v=key_name)
     local(cmd)
+
+@task
+@hosts('localhost')
+def ec2_run_spot_instances(
+            dry_run="False",
+            image_id="ami-d05e75b8",
+            price="0.10",
+            count="12",
+            security_group="dist-sg",
+            instance_type="m4.2xlarge",
+#            instance_type="m4.xlarge",
+            key_name="devenv-key",
+        ):
+    opt = "--{k} {v} ".format
+    cmd = "aws ec2 request-spot-instances "
+    if dry_run == "True":
+        cmd += "--dry-run "
+#    cmd += opt(k="ami-id",v=image_id)
+    cmd += opt(k="spot-price",v=price)
+    cmd += opt(k="instance-count",v=count)
+#    cmd += opt(k="instance-type",v=instance_type)
+#    cmd += opt(k="group",v=security_group)
+#    cmd += opt(k="key",v=key_name)
+    cmd += opt(k="launch-specification",v="file://ec2_specification.json")
+    local(cmd)
+
 
 @task
 @hosts('localhost')
@@ -778,7 +807,6 @@ def ec2_get_status():
             sys.exit(1)
     print("READY!")
     return 0
-
 
 @task
 @hosts('localhost')

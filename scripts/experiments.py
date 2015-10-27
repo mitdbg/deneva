@@ -41,28 +41,29 @@ fmt_title=["NODE_CNT","CC_ALG","ACCESS_PERC","TXN_WRITE_PERC","PERC_PAYMENT","MP
 def test():
     wl = 'YCSB'
 #    wl = 'TPCC'
-    nnodes = [8]
-#    nnodes = [1,2,4,8]
+#    nnodes = [64]
+    nnodes = [1,2,4,8,16,32,64]
     nmpr=[1.0]
     nmpir=[0.01]
 #    nmpr=[0.0,0.1,0.25,0.5,0.75,0.95,1.0]
-    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
+#    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
+    nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','MVCC','OCC']
 #    nalgos=['MVCC']
     nthreads=[6]
     nrthreads=[1]
     nsthreads=[1]
     ncthreads=[2]
     ncrthreads=[1]
-    ncsthreads=[4]
-    ntxn=[1500000]
+    ncsthreads=[2]
+    ntxn=[1000000]
 #    ntxn=[5000000]
     nbtime=[1000] # in ns
     nbsize=[4096]
     nparts = [8]
 #    nmodes = ["NORMAL_MODE","NOCC_MODE","QRY_ONLY_MODE"]#,"SETUP_MODE","SIMPLE_MODE"]
     nmodes = ["NORMAL_MODE"]
-#    ntifs=[1000]
-    ntifs=[10,100,250,500,750,1000]#,2500,5000,7500,10000]
+    ntifs=[250]
+#    ntifs=[10,100,250,500,750,1000]#,2500,5000,7500,10000]
 #TPCC
     npercpay=[0.0]
 #    npercpay=[0.0,0.5,1.0]
@@ -303,10 +304,10 @@ def test_plot(summary,summary_client):
 #    tput_setup(summary,summary_client,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",v_name="MODE")
 #    tput_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="MODE")
 #    tput_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="ZIPF_THETA")
-#    tput_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG")
+    tput_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG")
 #    tput_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="MPR")
 #    tput_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="MAX_TXN_IN_FLIGHT")
-    tput_setup(summary,summary_client,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",v_name="CC_ALG")
+#    tput_setup(summary,summary_client,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",v_name="CC_ALG")
 
 #    breakdown_setup(summary,nfmt,nexp,x_name="NODE_CNT",norm=True)
 #    tput_setup(summary,summary_client,nfmt,nexp,x_name="WRITE_PERC",v_name="ZIPF_THETA")
@@ -488,7 +489,7 @@ configs = {
     "PART_PER_TXN": "NODE_CNT",
     "MAX_TXN_IN_FLIGHT": 250,
     "NETWORK_DELAY": '0UL',
-    "DONE_TIMER": "1 * 50 * BILLION // ~2 minutes",
+    "DONE_TIMER": "1 * 60 * BILLION // ~2 minutes",
     "PROG_TIMER" : "10 * BILLION // in s",
     "NETWORK_TEST" : "false",
     "ABORT_PENALTY": "1 * 1000000UL   // in ns.",
