@@ -27,12 +27,13 @@ SHORTNAMES = {
     "ACCESS_PERC":"A",
     "PERC_PAYMENT":"PP",
     "MPR":"MPR",
+    "REQ_PER_QUERY": "RPQ",
 }
 # Format: [#Nodes,#Txns,Workload,CC_ALG,MPR]
 fmt_tpcc = [["CLIENT_NODE_CNT","NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","MPIR","CLIENT_THREAD_CNT","CLIENT_REM_THREAD_CNT","CLIENT_SEND_THREAD_CNT","THREAD_CNT","REM_THREAD_CNT","SEND_THREAD_CNT","MAX_TXN_IN_FLIGHT","NUM_WH","PERC_PAYMENT","PART_PER_TXN","PART_CNT","MSG_TIME_LIMIT","MSG_SIZE_MAX","MODE"]]
 fmt_nd = [["NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","THREAD_CNT","NUM_WH","MAX_TXN_IN_FLIGHT","NETWORK_DELAY"]]
 #fmt_ycsb = [["CLIENT_NODE_CNT","NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","CLIENT_THREAD_CNT","CLIENT_REM_THREAD_CNT","CLIENT_SEND_THREAD_CNT","THREAD_CNT","REM_THREAD_CNT","SEND_THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC","PART_PER_TXN","PART_CNT","MSG_TIME_LIMIT","MSG_SIZE_MAX","MODE"]]
-fmt_ycsb = [["CLIENT_NODE_CNT","NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","CLIENT_THREAD_CNT","CLIENT_REM_THREAD_CNT","CLIENT_SEND_THREAD_CNT","THREAD_CNT","REM_THREAD_CNT","SEND_THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","TXN_WRITE_PERC","TUP_WRITE_PERC","PART_PER_TXN","PART_CNT","MSG_TIME_LIMIT","MSG_SIZE_MAX","MODE","DATA_PERC","ACCESS_PERC"]]
+fmt_ycsb = [["CLIENT_NODE_CNT","NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","CLIENT_THREAD_CNT","CLIENT_REM_THREAD_CNT","CLIENT_SEND_THREAD_CNT","THREAD_CNT","REM_THREAD_CNT","SEND_THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","TXN_WRITE_PERC","TUP_WRITE_PERC","PART_PER_TXN","PART_CNT","MSG_TIME_LIMIT","MSG_SIZE_MAX","MODE","DATA_PERC","ACCESS_PERC","REQ_PER_QUERY"]]
 fmt_nt = [["NODE_CNT","CLIENT_NODE_CNT","NETWORK_TEST"]]
 #fmt_title=["NODE_CNT","ZIPF_THETA","WRITE_PERC","CC_ALG","MAX_TXN_IN_FLIGHT","MODE"]
 #fmt_title=["NODE_CNT","WRITE_PERC","CC_ALG","MAX_TXN_IN_FLIGHT","MODE","DATA_PERC","ACCESS_PERC"]
@@ -54,7 +55,7 @@ def test():
     nsthreads=[1]
     ncthreads=[2]
     ncrthreads=[1]
-    ncsthreads=[2]
+    ncsthreads=[4]
     ntxn=[1000000]
 #    ntxn=[5000000]
     nbtime=[1000] # in ns
@@ -66,6 +67,7 @@ def test():
 #    ntifs=[10,100,250,500,750,1000]#,2500,5000,7500,10000]
 #TPCC
     npercpay=[0.0]
+    nwh=[0]
 #    npercpay=[0.0,0.5,1.0]
 #YCSB
     nzipf=[0.0]
@@ -77,17 +79,170 @@ def test():
 #    a_perc=[0.0,0.01,0.05,0.1,0.25,0.5,0.75,0.9]
     ntwr_perc=[0.5]
     nwr_perc=[0.5]
+    nrpq=[10]
 #    nwr_perc=[0.0,0.2,0.5]
 #    nwr_perc=[0.0,0.1,0.5,0.8,1.0]
 #    nwr_perc=[0.0,0.01,0.05,0.1,0.5,0.8,1.0]
 #    exp = [[n,n,txn,'YCSB',cc,m,ct,crt,cst,t,rt,st,tif,z,1.0-wp,wp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n,str(mt) + '*1000UL',bsize,mode] for n,ct,crt,cst,t,rt,st,tif,z,wp,m,cc,p,txn,mt,bsize,mode in itertools.product(nnodes,ncthreads,ncrthreads,ncsthreads,nthreads,nrthreads,nsthreads,ntifs,nzipf,nwr_perc,nmpr,nalgos,nparts,ntxn,nbtime,nbsize,nmodes)]
     if wl == "TPCC":
         fmt = fmt_tpcc
+        exp = [[n,n,txn,wl,cc,m,mi,ct,crt,cst,t,rt,st,tif,n if wh<n else wh,pp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n,str(mt) + '*1000UL',bsize,mode] for n,ct,crt,cst,t,rt,st,tif,m,mi,cc,p,txn,mt,bsize,mode,pp,wh in itertools.product(nnodes,ncthreads,ncrthreads,ncsthreads,nthreads,nrthreads,nsthreads,ntifs,nmpr,nmpir,nalgos,nparts,ntxn,nbtime,nbsize,nmodes,npercpay,nwh)]
+    elif wl == "YCSB":
+        fmt = fmt_ycsb
+        exp = [[n,n,txn,wl,cc,m,ct,crt,cst,t,rt,st,tif,z,twp,wp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n,str(mt) + '*1000UL',bsize,mode,dp,ap,rpq] for n,ct,crt,cst,t,rt,st,tif,z,twp,wp,m,cc,p,txn,mt,bsize,mode,dp,ap,rpq in itertools.product(nnodes,ncthreads,ncrthreads,ncsthreads,nthreads,nrthreads,nsthreads,ntifs,nzipf,ntwr_perc,nwr_perc,nmpr,nalgos,nparts,ntxn,nbtime,nbsize,nmodes,d_perc,a_perc,nrpq)]
+    return fmt[0],exp
+
+def tpcc_scaling():
+#    wl = 'YCSB'
+    wl = 'TPCC'
+    nnodes = [1,2,4,8,16,32,64]
+    nmpr=[1.0]
+    nmpir=[0.01]
+    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
+    nthreads=[6]
+    nrthreads=[1]
+    nsthreads=[1]
+    ncthreads=[2]
+    ncrthreads=[1]
+    ncsthreads=[4]
+    ntxn=[1000000]
+    nbtime=[1000] # in ns
+    nbsize=[4096]
+    nparts = [64]
+#    nmodes = ["NORMAL_MODE","NOCC_MODE","QRY_ONLY_MODE"]#,"SETUP_MODE","SIMPLE_MODE"]
+    nmodes = ["NORMAL_MODE","NOCC_MODE"]
+    ntifs=[250]
+#TPCC
+    npercpay=[1.0]
+    nwh=[0,128]
+#YCSB
+    nzipf=[0.0]
+    d_perc=[100]
+    a_perc=[0.0]
+    ntwr_perc=[0.5]
+    nwr_perc=[0.5]
+    if wl == "TPCC":
+        fmt = fmt_tpcc
+        exp = [[n,n,txn,wl,cc,m,mi,ct,crt,cst,t,rt,st,tif,n if wh<n else wh,pp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n,str(mt) + '*1000UL',bsize,mode] for n,ct,crt,cst,t,rt,st,tif,m,mi,cc,p,txn,mt,bsize,mode,pp,wh in itertools.product(nnodes,ncthreads,ncrthreads,ncsthreads,nthreads,nrthreads,nsthreads,ntifs,nmpr,nmpir,nalgos,nparts,ntxn,nbtime,nbsize,nmodes,npercpay,nwh)]
+    elif wl == "YCSB":
+        fmt = fmt_ycsb
+        exp = [[n,n,txn,wl,cc,m,ct,crt,cst,t,rt,st,tif,z,twp,wp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n,str(mt) + '*1000UL',bsize,mode,dp,ap,rpq] for n,ct,crt,cst,t,rt,st,tif,z,twp,wp,m,cc,p,txn,mt,bsize,mode,dp,ap,rpq in itertools.product(nnodes,ncthreads,ncrthreads,ncsthreads,nthreads,nrthreads,nsthreads,ntifs,nzipf,ntwr_perc,nwr_perc,nmpr,nalgos,nparts,ntxn,nbtime,nbsize,nmodes,d_perc,a_perc,nrpq)]
+    return fmt[0],exp
+
+
+def ycsb_scaling():
+    wl = 'YCSB'
+#    wl = 'TPCC'
+    nnodes = [1,2,4,8,16,32,64]
+    nmpr=[1.0]
+    nmpir=[0.01]
+    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
+    nthreads=[6]
+    nrthreads=[1]
+    nsthreads=[1]
+    ncthreads=[2]
+    ncrthreads=[1]
+    ncsthreads=[4]
+    ntxn=[1000000]
+    nbtime=[1000] # in ns
+    nbsize=[4096]
+    nparts = [2,64]
+#    nmodes = ["NORMAL_MODE","NOCC_MODE","QRY_ONLY_MODE"]#,"SETUP_MODE","SIMPLE_MODE"]
+    nmodes = ["NORMAL_MODE","NOCC_MODE"]
+    ntifs=[250]
+#TPCC
+    npercpay=[0.0]
+#YCSB
+    nzipf=[0.0]
+    d_perc=[100]
+    a_perc=[0.03]
+    ntwr_perc=[0.5]
+    nwr_perc=[0.5]
+    nrpq=[10]
+    if wl == "TPCC":
+        fmt = fmt_tpcc
         exp = [[n,n,txn,wl,cc,m,mi,ct,crt,cst,t,rt,st,tif,n,pp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n,str(mt) + '*1000UL',bsize,mode] for n,ct,crt,cst,t,rt,st,tif,m,mi,cc,p,txn,mt,bsize,mode,pp in itertools.product(nnodes,ncthreads,ncrthreads,ncsthreads,nthreads,nrthreads,nsthreads,ntifs,nmpr,nmpir,nalgos,nparts,ntxn,nbtime,nbsize,nmodes,npercpay)]
     elif wl == "YCSB":
         fmt = fmt_ycsb
-        exp = [[n,n,txn,wl,cc,m,ct,crt,cst,t,rt,st,tif,z,twp,wp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n,str(mt) + '*1000UL',bsize,mode,dp,ap] for n,ct,crt,cst,t,rt,st,tif,z,twp,wp,m,cc,p,txn,mt,bsize,mode,dp,ap in itertools.product(nnodes,ncthreads,ncrthreads,ncsthreads,nthreads,nrthreads,nsthreads,ntifs,nzipf,ntwr_perc,nwr_perc,nmpr,nalgos,nparts,ntxn,nbtime,nbsize,nmodes,d_perc,a_perc)]
+        exp = [[n,n,txn,wl,cc,m,ct,crt,cst,t,rt,st,tif,z,twp,wp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n,str(mt) + '*1000UL',bsize,mode,dp,ap,rpq] for n,ct,crt,cst,t,rt,st,tif,z,twp,wp,m,cc,p,txn,mt,bsize,mode,dp,ap,rpq in itertools.product(nnodes,ncthreads,ncrthreads,ncsthreads,nthreads,nrthreads,nsthreads,ntifs,nzipf,ntwr_perc,nwr_perc,nmpr,nalgos,nparts,ntxn,nbtime,nbsize,nmodes,d_perc,a_perc,nrpq)]
     return fmt[0],exp
+
+
+def ycsb_parts():
+    wl = 'YCSB'
+#    wl = 'TPCC'
+    nnodes = [8,16]
+    nmpr=[1.0]
+    nmpir=[0.01]
+    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
+    nthreads=[6]
+    nrthreads=[1]
+    nsthreads=[1]
+    ncthreads=[2]
+    ncrthreads=[1]
+    ncsthreads=[4]
+    ntxn=[1000000]
+    nbtime=[1000] # in ns
+    nbsize=[4096]
+    nparts = [1,2,4,6,8,10,12,14,16]
+#    nmodes = ["NORMAL_MODE","NOCC_MODE","QRY_ONLY_MODE"]#,"SETUP_MODE","SIMPLE_MODE"]
+    nmodes = ["NORMAL_MODE","NOCC_MODE"]
+    ntifs=[250]
+#TPCC
+    npercpay=[0.0]
+#YCSB
+    nzipf=[0.0]
+    d_perc=[100]
+    a_perc=[0.03]
+    ntwr_perc=[0.5]
+    nwr_perc=[0.5]
+    nrpq=[16]
+    if wl == "TPCC":
+        fmt = fmt_tpcc
+        exp = [[n,n,txn,wl,cc,m,mi,ct,crt,cst,t,rt,st,tif,n,pp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n,str(mt) + '*1000UL',bsize,mode] for n,ct,crt,cst,t,rt,st,tif,m,mi,cc,p,txn,mt,bsize,mode,pp in itertools.product(nnodes,ncthreads,ncrthreads,ncsthreads,nthreads,nrthreads,nsthreads,ntifs,nmpr,nmpir,nalgos,nparts,ntxn,nbtime,nbsize,nmodes,npercpay)]
+    elif wl == "YCSB":
+        fmt = fmt_ycsb
+        exp = [[n,n,txn,wl,cc,m,ct,crt,cst,t,rt,st,tif,z,twp,wp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n,str(mt) + '*1000UL',bsize,mode,dp,ap,rpq] for n,ct,crt,cst,t,rt,st,tif,z,twp,wp,m,cc,p,txn,mt,bsize,mode,dp,ap,rpq in itertools.product(nnodes,ncthreads,ncrthreads,ncsthreads,nthreads,nrthreads,nsthreads,ntifs,nzipf,ntwr_perc,nwr_perc,nmpr,nalgos,nparts,ntxn,nbtime,nbsize,nmodes,d_perc,a_perc,nrpq)]
+    return fmt[0],exp
+
+
+def ycsb_contention():
+    wl = 'YCSB'
+#    wl = 'TPCC'
+    nnodes = [8,16]
+    nmpr=[1.0]
+    nmpir=[0.01]
+    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
+    nthreads=[6]
+    nrthreads=[1]
+    nsthreads=[1]
+    ncthreads=[2]
+    ncrthreads=[1]
+    ncsthreads=[4]
+    ntxn=[1000000]
+    nbtime=[1000] # in ns
+    nbsize=[4096]
+    nparts = [16]
+#    nmodes = ["NORMAL_MODE","NOCC_MODE","QRY_ONLY_MODE"]#,"SETUP_MODE","SIMPLE_MODE"]
+    nmodes = ["NORMAL_MODE","NOCC_MODE"]
+    ntifs=[250]
+#TPCC
+    npercpay=[0.0]
+#YCSB
+    nzipf=[0.0]
+    d_perc=[100]
+    a_perc=[0.0,0.01,0.02,0.03,0.05,0.06,0.07]
+    ntwr_perc=[0.5]
+    nwr_perc=[0.5]
+    nrpq=[10]
+    if wl == "TPCC":
+        fmt = fmt_tpcc
+        exp = [[n,n,txn,wl,cc,m,mi,ct,crt,cst,t,rt,st,tif,n,pp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n,str(mt) + '*1000UL',bsize,mode] for n,ct,crt,cst,t,rt,st,tif,m,mi,cc,p,txn,mt,bsize,mode,pp in itertools.product(nnodes,ncthreads,ncrthreads,ncsthreads,nthreads,nrthreads,nsthreads,ntifs,nmpr,nmpir,nalgos,nparts,ntxn,nbtime,nbsize,nmodes,npercpay)]
+    elif wl == "YCSB":
+        fmt = fmt_ycsb
+        exp = [[n,n,txn,wl,cc,m,ct,crt,cst,t,rt,st,tif,z,twp,wp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n,str(mt) + '*1000UL',bsize,mode,dp,ap,rpq] for n,ct,crt,cst,t,rt,st,tif,z,twp,wp,m,cc,p,txn,mt,bsize,mode,dp,ap,rpq in itertools.product(nnodes,ncthreads,ncrthreads,ncsthreads,nthreads,nrthreads,nsthreads,ntifs,nzipf,ntwr_perc,nwr_perc,nmpr,nalgos,nparts,ntxn,nbtime,nbsize,nmodes,d_perc,a_perc,nrpq)]
+    return fmt[0],exp
+
 
 def tputvlat_setup(summary,summary_cl,nfmt,nexp,x_name,v_name):
     from plot_helper import tput_v_lat
@@ -395,6 +550,7 @@ def network_sweep():
     ntifs=[1300]
     nzipf=[0.8]
     nwr_perc=[0.5]
+    nrpq=[10]
     nparts=[16]
     network_delay = ["0UL","10000UL","100000UL","1000000UL","10000000UL","100000000UL"]
     ntxn=[3000000]
@@ -459,6 +615,10 @@ def ft_mode():
 
 experiment_map = {
     'test': test,
+    'ycsb_scaling': ycsb_scaling,
+    'tpcc_scaling': tpcc_scaling,
+    'ycsb_parts': ycsb_parts,
+    'ycsb_contention': ycsb_contention,
     'ft_mode': ft_mode,
     'ft_mode_plot': ft_mode_plot,
     'test_plot': test_plot,

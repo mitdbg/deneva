@@ -1,0 +1,9 @@
+{
+  "ImageId": "ami-d05e75b8",
+  "KeyName": "devenv-key",
+  "SecurityGroupIds": ["sg-f0831497"],
+  "InstanceType": "m4.2xlarge",
+  "Placement": {
+    "AvailabilityZone": "us-east-1c"
+  }
+}
