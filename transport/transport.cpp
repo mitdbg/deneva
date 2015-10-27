@@ -35,7 +35,7 @@ void Transport::shutdown() {
       delete &s[i];
     }
   }
-  mem_allocator.free(endpoint_id,sizeof(int)*_s_cnt);
+  //mem_allocator.free(endpoint_id,sizeof(int)*_s_cnt);
 }
 
 void Transport::read_ifconfig(const char * ifaddr_file) {
@@ -60,9 +60,13 @@ void Transport::init(uint64_t node_id,workload * workload) {
 #endif
 	_node_id = node_id;
   if(ISCLIENT)
-    _sock_cnt = g_client_send_thread_cnt * (_node_cnt-1) + g_node_cnt * g_send_thread_cnt + (g_client_node_cnt-1) * g_client_send_thread_cnt;
+    _sock_cnt = g_client_send_thread_cnt * g_servers_per_client + (_node_cnt)*2;
+    //_sock_cnt = 1 + g_client_send_thread_cnt * g_servers_per_client + (_node_cnt-1-g_servers_per_client);
+    //_sock_cnt = g_client_send_thread_cnt * (_node_cnt-1) + g_node_cnt * g_send_thread_cnt + (g_client_node_cnt-1) * g_client_send_thread_cnt;
   else
-    _sock_cnt = g_send_thread_cnt  * (_node_cnt-1) + (g_node_cnt-1) * g_send_thread_cnt + g_client_node_cnt * g_client_send_thread_cnt;
+    _sock_cnt = (_node_cnt)*2 + g_client_send_thread_cnt;
+    //_sock_cnt = 1 + (_node_cnt - 1);
+    //_sock_cnt = g_send_thread_cnt  * (_node_cnt-1) + (g_node_cnt-1) * g_send_thread_cnt + g_client_node_cnt * g_client_send_thread_cnt;
   s = new Socket[_sock_cnt];
   rr = 0;
 #if CC_ALG == CALVIN
@@ -72,7 +76,7 @@ void Transport::init(uint64_t node_id,workload * workload) {
 #else
 	_thd_id = 1;
 #endif
-  endpoint_id = (int*)mem_allocator.alloc(sizeof(int)*_sock_cnt,0);
+  //endpoint_id = (int*)mem_allocator.alloc(sizeof(int)*_sock_cnt,0);
 	printf("Tport Init %ld: %ld\n",node_id,_sock_cnt);
 
 #if !TPORT_TYPE_IPC
@@ -118,60 +122,97 @@ void Transport::init(uint64_t node_id,workload * workload) {
   else
     s_thd = g_send_thread_cnt;
 
-  // Ports for sending
-  for(uint64_t i = 0; i < s_thd; i++) {
+  // Listening port
+  char socket_name[MAX_TPORT_NAME];
+  int port;
+
     for(uint64_t j = 0; j < _node_cnt; j++) {
-      if(j == g_node_id)
+      if(j == g_node_id) {
+        s_cnt++;
         continue;
-			char socket_name[MAX_TPORT_NAME];
-			int port = g_node_id + j * _node_cnt + i * _node_cnt * _node_cnt;
+      }
 #if TPORT_TYPE_IPC
-			sprintf(socket_name,"%s://node_%d%s",TPORT_TYPE,port,TPORT_PORT);
+      port = j;
+      sprintf(socket_name,"%s://node_%d%s",TPORT_TYPE,port,TPORT_PORT);
 #else
-      port+= TPORT_PORT;
+      if(ISCLIENT)
+        port = TPORT_PORT + j + _node_cnt;
+      else
+        port = TPORT_PORT + j;
       sprintf(socket_name,"%s://eth0:%d",TPORT_TYPE,port);
 #endif
-      printf("Sock[%ld] Binding to %s %d -> %ld\n",s_cnt,socket_name,g_node_id,j);
-      rc = s[s_cnt].sock.bind(socket_name);
+      printf("Sock[%ld] Binding to %s %d\n",s_cnt,socket_name,g_node_id);
+      rc = s[s_cnt++].sock.bind(socket_name);
       if(rc < 0) {
         printf("Bind Error: %d %s\n",errno,strerror(errno));
         assert(false);
       }
-      endpoint_id[s_cnt] = rc;
-      s_cnt++;
+    }
+
+  if(!ISCLIENT) {
+    for(uint64_t j = 0; j < g_client_send_thread_cnt; j++) {
+#if TPORT_TYPE_IPC
+      port = j + _node_cnt;
+      sprintf(socket_name,"%s://node_%d%s",TPORT_TYPE,port,TPORT_PORT);
+#else
+      port = TPORT_PORT + j + _node_cnt*2;
+      sprintf(socket_name,"%s://eth0:%d",TPORT_TYPE,port);
+#endif
+      printf("Sock[%ld] Binding to %s %d\n",s_cnt,socket_name,g_node_id);
+      rc = s[s_cnt++].sock.bind(socket_name);
+      if(rc < 0) {
+        printf("Bind Error: %d %s\n",errno,strerror(errno));
+        assert(false);
+      }
+
     }
   }
-
-  // Ports for receiving
-  for(uint64_t i = 0; i < _node_cnt; i++) {
-    if(i == g_node_id)
-      continue;
-    if(ISCLIENTN(i))
-      s_thd = g_client_send_thread_cnt;
-    else
-      s_thd = g_send_thread_cnt;
-    for(uint64_t j = 0; j < s_thd; j++) {
-			char socket_name[MAX_TPORT_NAME];
-			int port = i + (g_node_id * _node_cnt) + j * _node_cnt * _node_cnt;
+  // Sending ports
+    for(uint64_t j = 0; j < _node_cnt; j++) {
+      if(j == g_node_id) {
+        s_cnt++;
+        continue;
+      }
 #if TPORT_TYPE_IPC
-			sprintf(socket_name,"%s://node_%d%s",TPORT_TYPE,port,TPORT_PORT);
+      port = g_node_id;
+      sprintf(socket_name,"%s://node_%d%s",TPORT_TYPE,port,TPORT_PORT);
 #else
-      port+= TPORT_PORT;
-			sprintf(socket_name,"%s://eth0;%s:%d",TPORT_TYPE,ifaddr[i],port);
+      if(ISCLIENTN(j))
+        port = TPORT_PORT + g_node_id + _node_cnt;
+      else
+        port = TPORT_PORT + g_node_id;
+			sprintf(socket_name,"%s://eth0;%s:%d",TPORT_TYPE,ifaddr[j],port);
 #endif
-      printf("Sock[%ld] Connecting to %s %ld -> %d\n",s_cnt,socket_name,i,g_node_id);
-      rc = s[s_cnt].sock.connect(socket_name);
+      printf("Sock[%ld] Connecting to %s %d -> %ld\n",s_cnt,socket_name,g_node_id,j);
+      rc = s[s_cnt++].sock.connect(socket_name);
       if(rc < 0) {
         printf("Connect Error: %d %s\n",errno,strerror(errno));
         assert(false);
       }
-      endpoint_id[s_cnt] = rc;
-      s_cnt++;
-
     }
-  }
+
+  if(ISCLIENT) {
+    for(uint64_t i = 0; i < s_thd; i++) {
+      for(uint64_t j = g_server_start_node; j < g_server_start_node + g_servers_per_client; j++) {
+#if TPORT_TYPE_IPC
+        port = _node_cnt + i;
+        sprintf(socket_name,"%s://node_%d%s",TPORT_TYPE,port,TPORT_PORT);
+#else
+        port = TPORT_PORT + _node_cnt*2 + i;
+        sprintf(socket_name,"%s://eth0;%s:%d",TPORT_TYPE,ifaddr[j],port);
+#endif
+        printf("Sock[%ld] Connecting to %s %d -> %ld\n",s_cnt,socket_name,g_node_id,j);
+        rc = s[s_cnt++].sock.connect(socket_name);
+        if(rc < 0) {
+          printf("Connect Error: %d %s\n",errno,strerror(errno));
+          assert(false);
+        }
+      }
+    }
+  } 
+
 	fflush(stdout);
-  _s_cnt = s_cnt;
+  assert(s_cnt == _sock_cnt);
 
 	if(rc < 0) {
 		printf("Bind Error: %d %s\n",errno,strerror(errno));
@@ -186,31 +227,36 @@ void Transport::send_msg(uint64_t sid, uint64_t dest_id, void * sbuf,int size) {
   uint64_t starttime = get_sys_clock();
   uint64_t id;
   if(ISCLIENT) {
-    id = sid - g_client_thread_cnt;
+    if(dest_id >= g_server_start_node && dest_id < g_server_start_node + g_servers_per_client) {
+      id = _node_cnt * 2 + (sid-g_client_thread_cnt) * g_servers_per_client + (dest_id - g_server_start_node);
+    } else {
+        id = _node_cnt + dest_id;
+    }
   }
   else {
-    id = sid - g_thread_cnt;
+      id = g_client_send_thread_cnt + _node_cnt + dest_id;
   }
-  uint64_t idx = id * (_node_cnt-1) + dest_id;
-  if(g_node_id < dest_id)
-    idx--;
+  uint64_t idx = id; 
+  //printf("d:%ld idx:%ld -- %ld: %ld, %ld, %ld\n",dest_id,idx,id,_node_cnt,dest_id,sid);
+  //fflush(stdout);
   assert(idx < _sock_cnt);
-  /*
-  printf("d:%ld idx:%ld -- %ld * %ld + %ld -- %ld\n",dest_id,idx,id,_node_cnt-1,dest_id,sid);
-  fflush(stdout);
-  */
 
 	void * buf = nn_allocmsg(size,0);
 	memcpy(buf,sbuf,size);
   int rc = -1;
+  //int attempts = 0;
 
+  //while(attempts < 10 && rc < 0 && !_wl->sim_timeout) {
   while(rc < 0 && !_wl->sim_timeout) {
     rc= s[idx].sock.send(&buf,NN_MSG,NN_DONTWAIT);
     // Check for a send error
     /*
-    if(rc < 0 || rc != size) 
+    if(rc < 0 || rc != size) {
       printf("send Error: %d %s; Done: %d\n",errno,strerror(errno),_wl->sim_timeout);
-      */
+      sleep(10);
+    }
+    */
+    //attempts++;
   }
   //assert(rc == size);
 	//int rc= s[idx].sock.send(&sbuf,NN_MSG,0);
@@ -359,9 +405,11 @@ bool Transport::recv_msg() {
 			break;
 	}
 
+    /*
 	if(bytes < 0 && errno != 11) {
 		printf("Recv Error %d %s\n",errno,strerror(errno));
 	}
+  */
 	// Discard any messages not intended for this node
 	if(bytes <= 0 ) {
     return false;

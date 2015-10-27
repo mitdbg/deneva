@@ -41,13 +41,13 @@ fmt_title=["NODE_CNT","CC_ALG","ACCESS_PERC","TXN_WRITE_PERC","PERC_PAYMENT","MP
 def test():
 #    wl = 'YCSB'
     wl = 'TPCC'
-#    nnodes = [8]
-    nnodes = [1,2,4,8]
+    nnodes = [8]
+#    nnodes = [1,2,4,8]
     nmpr=[1.0]
     nmpir=[0.01]
 #    nmpr=[0.0,0.1,0.25,0.5,0.75,0.95,1.0]
-    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
-#    nalgos=['OCC']
+#    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
+    nalgos=['OCC']
     nthreads=[6]
     nrthreads=[1]
     nsthreads=[1]
@@ -66,7 +66,7 @@ def test():
 #    ntifs=[250,300,350,400,450,500]#,2500,5000,7500,10000]
 #    ntifs=[10,100,250,500,750,1000,2500,5000,7500,10000]
 #TPCC
-    npercpay=[0.0,0.5,1.0]
+    npercpay=[0.0]
 #    npercpay=[0.0,0.5,1.0]
 #YCSB
     nzipf=[0.0]

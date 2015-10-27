@@ -5,13 +5,13 @@
 /***********************************************/
 // Simulation + Hardware
 /***********************************************/
-#define NODE_CNT 1
+#define NODE_CNT 8
 #define THREAD_CNT 6
 #define REM_THREAD_CNT 1
 #define SEND_THREAD_CNT 1
 // PART_CNT should be at least NODE_CNT
-#define PART_CNT 1
-#define CLIENT_NODE_CNT 1
+#define PART_CNT 8
+#define CLIENT_NODE_CNT 8
 #define CLIENT_THREAD_CNT 2
 #define CLIENT_REM_THREAD_CNT 1
 #define CLIENT_SEND_THREAD_CNT 4
@@ -35,7 +35,7 @@
 #define TIME_ENABLE         true //STATS_ENABLE
 
 #define FIN_BY_TIME true
-#define MAX_TXN_IN_FLIGHT 10
+#define MAX_TXN_IN_FLIGHT 250
 
 /***********************************************/
 // Memory System
@@ -82,7 +82,7 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, VOLTDB, OCC, VLL, CALVIN
-#define CC_ALG TIMESTAMP
+#define CC_ALG OCC
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER         false
@@ -162,7 +162,7 @@
 #define TUP_WRITE_PERC 0.5
 #define SCAN_PERC           0
 #define SCAN_LEN          20
-#define PART_PER_TXN 1
+#define PART_PER_TXN 8
 #define PERC_MULTI_PART     MPR 
 #define REQ_PER_QUERY 10
 #define FIELD_PER_TUPLE       10
@@ -181,7 +181,7 @@
 // are not modeled.
 #define TPCC_ACCESS_ALL       false 
 #define WH_UPDATE         true
-#define NUM_WH 1
+#define NUM_WH 8
 // % of transactions that access multiple partitions
 #define MPR 1.0
 #define MPIR 0.01
