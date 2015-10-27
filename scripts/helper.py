@@ -97,6 +97,7 @@ stat_map = {
  'avg_abort_rem_row_cnt': [],
  'abort_row_cnt': [],
  'avg_abort_row_cnt': [],
+ 'tot_avg_abort_row_cnt': [],
  'time_abort': [],
  'txn_time_wait': [],
  'time_validate': [],

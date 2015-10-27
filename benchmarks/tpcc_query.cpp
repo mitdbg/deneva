@@ -197,7 +197,8 @@ void tpcc_client_query::gen_payment(uint64_t thd_id) {
 	double x = (double)(rand() % 10000) / 10000;
 	int y = URand(1, 100);
 
-	if(x > g_mpr) { 
+	//if(x > g_mpr) { 
+	if(x > 0.15) { 
 		// home warehouse
 		c_d_id = d_id;
 		c_w_id = w_id;
