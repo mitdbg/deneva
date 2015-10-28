@@ -71,29 +71,18 @@ void ycsb_query::reset() {
   req = requests[0];
 }
 
-void ycsb_query::unpack_rsp(base_query * query, void * d) {
-	char * data = (char *) d;
-  RC rc;
+uint64_t ycsb_query::participants(bool *& pps,workload * wl) {
+  int n = 0;
+  for(uint64_t i = 0; i < g_node_cnt; i++)
+    pps[i] = false;
 
-	ycsb_query * m_query = (ycsb_query *) query;
-	uint64_t ptr = HEADER_SIZE + sizeof(txnid_t) + sizeof(RemReqType);
-#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
-  ptr += 2*sizeof(uint64_t);
-#endif
-	//memcpy(&m_query->txn_rtype,&data[ptr],sizeof(YCSBRemTxnType));
-	//ptr += sizeof(YCSBRemTxnType);
-	memcpy(&rc,&data[ptr],sizeof(RC));
-	ptr += sizeof(RC);
-	memcpy(&m_query->pid,&data[ptr],sizeof(uint64_t));
-	ptr += sizeof(uint64_t);
-
-  m_query->rc = rc;
-  /*
-  if(rc == Abort || m_query->rc == WAIT || m_query->rc == WAIT_REM) {
-    m_query->rc = rc;
-    m_query->txn_rtype = YCSB_FIN;
+  for(uint64_t i = 0; i < request_cnt; i++) {
+    uint64_t req_nid = GET_NODE_ID(((ycsb_wl*)wl)->key_to_part(requests[i].key));
+    if(!pps[req_nid])
+      n++;
+    pps[req_nid] = true;
   }
-  */
+  return n;
 }
 
 base_query * ycsb_query::merge(base_query * query) {

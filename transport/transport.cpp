@@ -133,7 +133,7 @@ void Transport::init(uint64_t node_id,workload * workload) {
       }
 #if TPORT_TYPE_IPC
       port = j;
-      sprintf(socket_name,"%s://node_%d%s",TPORT_TYPE,port,TPORT_PORT);
+      sprintf(socket_name,"%s://node_%d_%d%s",TPORT_TYPE,port,g_node_id,TPORT_PORT);
 #else
       if(ISCLIENT)
         port = TPORT_PORT + j + _node_cnt;
@@ -153,7 +153,7 @@ void Transport::init(uint64_t node_id,workload * workload) {
     for(uint64_t j = 0; j < g_client_send_thread_cnt; j++) {
 #if TPORT_TYPE_IPC
       port = j + _node_cnt;
-      sprintf(socket_name,"%s://node_%d%s",TPORT_TYPE,port,TPORT_PORT);
+      sprintf(socket_name,"%s://node_%d_%d%s",TPORT_TYPE,port,g_node_id,TPORT_PORT);
 #else
       port = TPORT_PORT + j + _node_cnt*2;
       sprintf(socket_name,"%s://eth0:%d",TPORT_TYPE,port);
@@ -175,7 +175,7 @@ void Transport::init(uint64_t node_id,workload * workload) {
       }
 #if TPORT_TYPE_IPC
       port = g_node_id;
-      sprintf(socket_name,"%s://node_%d%s",TPORT_TYPE,port,TPORT_PORT);
+      sprintf(socket_name,"%s://node_%d_%ld%s",TPORT_TYPE,port,j,TPORT_PORT);
 #else
       if(ISCLIENTN(j))
         port = TPORT_PORT + g_node_id + _node_cnt;
@@ -196,7 +196,7 @@ void Transport::init(uint64_t node_id,workload * workload) {
       for(uint64_t j = g_server_start_node; j < g_server_start_node + g_servers_per_client; j++) {
 #if TPORT_TYPE_IPC
         port = _node_cnt + i;
-        sprintf(socket_name,"%s://node_%d%s",TPORT_TYPE,port,TPORT_PORT);
+        sprintf(socket_name,"%s://node_%d_%ld%s",TPORT_TYPE,port,j,TPORT_PORT);
 #else
         port = TPORT_PORT + _node_cnt*2 + i;
         sprintf(socket_name,"%s://eth0;%s:%d",TPORT_TYPE,ifaddr[j],port);
@@ -237,8 +237,10 @@ void Transport::send_msg(uint64_t sid, uint64_t dest_id, void * sbuf,int size) {
       id = g_client_send_thread_cnt + _node_cnt + dest_id;
   }
   uint64_t idx = id; 
-  //printf("d:%ld idx:%ld -- %ld: %ld, %ld, %ld\n",dest_id,idx,id,_node_cnt,dest_id,sid);
-  //fflush(stdout);
+  if(!_wl->sim_init_done) {
+    printf("d:%ld idx:%ld -- %ld: %ld, %ld, %ld\n",dest_id,idx,id,_node_cnt,dest_id,sid);
+    fflush(stdout);
+  }
   assert(idx < _sock_cnt);
 
 	void * buf = nn_allocmsg(size,0);
@@ -448,11 +450,7 @@ bool Transport::recv_msg() {
 	dest_id = ((base_query *)query)->dest_id;
 #endif
 */
-  if(CC_ALG == CALVIN && ISSEQUENCER) {
-    rem_qry_man.unpack_client_query(buf,bytes);
-  } else {
-    rem_qry_man.unpack(buf,bytes);
-  }
+  rem_qry_man.unpack(buf,bytes);
 
 	//DEBUG("Msg delay: %d->%d, %d bytes, %f s\n",return_id,
   //          dest_id,bytes,((float)(time2-time))/BILLION);

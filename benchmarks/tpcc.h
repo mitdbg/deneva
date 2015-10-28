@@ -84,6 +84,7 @@ public:
   void read_keys(base_query * query){ assert(false);}; 
   RC acquire_locks(base_query * query){ assert(false);}; 
 	RC run_txn(base_query * query);
+	RC run_calvin_txn(base_query * query) {assert(false);};
 	RC run_rem_txn(base_query * query);
 	void rem_txn_rsp(base_query * rtn_query,base_query * loc_query); 
 	void rem_txn_rsp(base_query * query); 

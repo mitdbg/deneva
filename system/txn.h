@@ -46,6 +46,7 @@ public:
     volatile uint64_t ack_cnt;
 
 	virtual RC 		run_txn(base_query * m_query) = 0;
+  virtual RC run_calvin_txn(base_query * qry) = 0; 
 	//virtual RC 		run_rem_txn(base_query * m_query) = 0;
 	virtual void 		merge_txn_rsp(base_query * m_query1, base_query *m_query2) = 0;
   virtual bool  conflict(base_query * query1,base_query * query2) = 0;
@@ -86,8 +87,10 @@ public:
 	RC 				finish_local(RC rc, uint64_t * parts, uint64_t part_cnt);
 	RC 				finish(base_query * query,bool fin);
 	void 			cleanup(RC rc);
-    RC              rem_fin_txn(base_query * query);
-    RC              loc_fin_txn(base_query * query);
+  RC              rem_fin_txn(base_query * query);
+  RC              loc_fin_txn(base_query * query);
+  RC send_remote_reads(base_query * qry); 
+  RC calvin_finish(base_query * qry); 
 
 	////////////////////////////////
 	// LOGGING
@@ -123,6 +126,13 @@ public:
 	// For VLL
 	TxnType 		vll_txn_type;
   TxnQEntry * vll_entry;
+
+  // For Calvin
+  int phase;
+  int participant_cnt;
+  int active_cnt;
+  bool * participant_nodes;
+  bool * active_nodes;
 
 	itemid_t *		index_read(INDEX * index, idx_key_t key, int part_id);
   RC get_lock(row_t * row, access_t type);

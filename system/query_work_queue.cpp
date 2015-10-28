@@ -63,15 +63,26 @@ void QWorkQueue::add_abort_query(int tid, base_query * qry) {
     ATOM_ADD(abrt_cnt,1);
 }
 
+void QWorkQueue::enqueue(base_client_query * qry) {
+  wq.enqueue((void*)qry);
+}
 void QWorkQueue::enqueue(base_query * qry) {
   qry->q_starttime = get_sys_clock();
-  wq.enqueue(qry);
+  wq.enqueue((void*)qry);
+}
+bool QWorkQueue::dequeue(uint64_t thd_id, base_client_query *& qry) {
+  void * ptr;
+  bool valid = wq.try_dequeue(ptr);
+  qry = (base_query*) ptr;
+  return valid;
 }
 //TODO: do we need to has qry id here?
 // If we do, maybe add in check as an atomic var in base_query
 // Current hash implementation requires an expensive mutex
 bool QWorkQueue::dequeue(uint64_t thd_id, base_query *& qry) {
-  bool valid = wq.try_dequeue(qry);
+  void * ptr;
+  bool valid = wq.try_dequeue(ptr);
+  qry = (base_query*) ptr;
   if(!ISCLIENT && valid && qry->txn_id != UINT64_MAX) {
     if(set_active(thd_id, qry->txn_id)) {
       enqueue(qry);

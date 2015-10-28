@@ -1334,3 +1334,240 @@ RC thread_t::init_phase(base_query * m_query, txn_man * m_txn) {
 #endif // MODE<QRY && (CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || CC_ALG == VLL)
           return rc;
 }
+
+RC thread_t::run_calvin() {
+	printf("RunCalvin %ld:%ld\n",_node_id, _thd_id);
+  fflush(stdout);
+	if (warmup_finish) {
+		mem_allocator.register_thread(_thd_id);
+	}
+	pthread_barrier_wait( &warmup_bar );
+	stats.init(get_thd_id());
+	base_query * m_query = NULL;
+
+	if( _thd_id == 0) {
+#if WORKLOAD == YCSB
+    m_query = new ycsb_query;
+#elif WORKLOAD == TPCC
+    m_query = new tpcc_query;
+#endif
+		uint64_t total_nodes = g_node_cnt + g_client_node_cnt;
+#if CC_ALG == CALVIN
+		total_nodes++;
+#endif
+		for(uint64_t i = 0; i < total_nodes; i++) {
+			if(i != g_node_id) {
+        msg_queue.enqueue(NULL,INIT_DONE,i);
+			}
+		}
+    while(!_wl->sim_init_done) {
+      while(!work_queue.dequeue(_thd_id,m_query)) { }
+      if(m_query->rtype == INIT_DONE) {
+        ATOM_SUB(_wl->rsp_cnt,1);
+        printf("Processed INIT_DONE from %ld -- %ld\n",m_query->return_id,_wl->rsp_cnt);
+        fflush(stdout);
+        if(_wl->rsp_cnt ==0) {
+			    if( !ATOM_CAS(_wl->sim_init_done, false, true) )
+				    assert( _wl->sim_init_done);
+        }
+      } else {
+        // Put other queries aside until all nodes are ready
+        //work_queue.add_query(_thd_id,m_query);
+        work_queue.enqueue(m_query);
+      }
+	  }
+  }
+	pthread_barrier_wait( &warmup_bar );
+	printf("RunCalvin %ld:%ld\n",_node_id, _thd_id);
+  fflush(stdout);
+
+	myrand rdm;
+	rdm.init(get_thd_id());
+	RC rc = RCOK;
+	txn_man * m_txn;
+  /*
+	rc = _wl->get_txn_man(m_txn);
+	assert (rc == RCOK);
+	glob_manager.set_txn_man(m_txn);
+  */
+
+  base_query * tmp_query;
+	uint64_t starttime;
+	uint64_t stoptime = 0;
+	uint64_t timespan;
+
+	uint64_t run_starttime = get_sys_clock();
+	uint64_t prog_time = run_starttime;
+  uint64_t thd_prof_start;
+
+	while(true) {
+    m_query = NULL;
+    tmp_query = NULL;
+    m_txn = NULL;
+    uint64_t thd_prof_start_thd1 = get_sys_clock();
+    thd_prof_start = thd_prof_start_thd1;
+
+		if(get_thd_id() == 0) {
+      uint64_t now_time = get_sys_clock();
+      if (now_time - prog_time >= g_prog_timer) {
+        prog_time = now_time;
+        SET_STATS(get_thd_id(), tot_run_time, prog_time - run_starttime); 
+
+        stats.print(true);
+      }
+		}
+
+    INC_STATS(_thd_id,thd_prof_thd1a,get_sys_clock() - thd_prof_start);
+    thd_prof_start = get_sys_clock();
+    bool got_qry = false;
+		while(!(got_qry = work_queue.dequeue(_thd_id, m_query))
+                && !abort_queue.poll_abort(get_thd_id())
+                && !_wl->sim_done && !_wl->sim_timeout) {
+#if CC_ALG == HSTORE_SPEC
+      txn_table.spec_next(_thd_id);
+#endif
+
+      if (warmup_finish && 
+          ((get_sys_clock() - run_starttime >= g_done_timer) )) {
+        break;
+      }
+    }
+
+    INC_STATS(_thd_id,thd_prof_thd1c,get_sys_clock() - thd_prof_start);
+    thd_prof_start = get_sys_clock();
+		// End conditions
+    if((get_sys_clock() - run_starttime >= g_done_timer)
+        ||(_wl->sim_done && _wl->sim_timeout)) { 
+      if( !ATOM_CAS(_wl->sim_done, false, true) ) {
+        assert( _wl->sim_done);
+      } else {
+        printf("_wl->sim_done=%d\n",_wl->sim_done);
+        fflush(stdout);
+      }
+			uint64_t currtime = get_sys_clock();
+      if(stoptime == 0)
+        stoptime = currtime;
+			if(currtime - stoptime > MSG_TIMEOUT) {
+				SET_STATS(get_thd_id(), tot_run_time, currtime - run_starttime - MSG_TIMEOUT); 
+			}
+			else {
+				SET_STATS(get_thd_id(), tot_run_time, stoptime - run_starttime); 
+			}
+      if(get_thd_id() == 0) {
+        work_queue.finish(currtime);
+        abort_queue.abort_finish(currtime);
+      }
+
+      printf("FINISH %ld:%ld\n",_node_id,_thd_id);
+      fflush(stdout);
+			return FINISH;
+		}
+
+    //FIXME: make abort_queue lock free by transferring implementation to concurrentqueue
+		if(abort_queue.poll_abort(get_thd_id()) && (tmp_query = abort_queue.get_next_abort_query(get_thd_id())) != NULL) {
+      //work_queue.add_query(_thd_id,m_query);
+      work_queue.enqueue(tmp_query);
+      tmp_query = NULL;
+    }
+
+    INC_STATS(_thd_id,thd_prof_thd1d,get_sys_clock() - thd_prof_start);
+    INC_STATS(_thd_id,thd_prof_thd1,get_sys_clock() - thd_prof_start_thd1);
+		if(!got_qry)
+			continue;
+    thd_prof_start = get_sys_clock();
+    starttime = get_sys_clock();
+
+    assert(m_query);
+
+		rc = RCOK;
+		txn_starttime = get_sys_clock();
+    assert(m_query->rtype <= NO_MSG);
+
+		switch(m_query->rtype) {
+      case RACK:
+        /*
+				INC_STATS(0,rack,1);
+        base_query * tmp_query;
+				txn_table.get_txn(g_node_id,m_query->txn_id,m_txn,tmp_query);
+        if(m_txn == NULL) {
+					rc = _wl->get_txn_man(m_txn);
+					assert(rc == RCOK);
+					m_txn->set_txn_id(m_query->txn_id);
+					txn_table.add_txn(g_node_id,m_txn,m_query);
+        }
+          tmp_query = tmp_query->merge(m_query);
+          if(m_query != tmp_query) {
+            qry_pool.put(m_query);
+          }
+          m_query = tmp_query;
+          m_txn->set_query(m_query);
+          int rsp_cnt = m_txn->incr_rsp(1);
+          if(m_txn->phase == 4 && rsp_cnt == participant_cnt) {
+            m_txn->phase = 5;
+            // Execute
+            rc = m_txn->run_txn(m_query);
+          }
+          if(m_txn->phase == 2 && rsp_cnt == participant_cnt + active_cnt) {
+            // finish
+            msg_queue.enqueue(m_query,RACK,m_query->return_id);
+          }
+          */
+          break;
+      case RTXN:
+				INC_STATS(0,rtxn,1);
+
+        base_query * tmp_query;
+				txn_table.get_txn(g_node_id,m_query->txn_id,m_txn,tmp_query);
+        if(m_txn == NULL) {
+					//rc = _wl->get_txn_man(m_txn);
+          txn_pool.get(m_txn);
+					assert(rc == RCOK);
+					m_txn->set_txn_id(m_query->txn_id);
+					txn_table.add_txn(g_node_id,m_txn,m_query);
+        } else {
+          tmp_query = tmp_query->merge(m_query);
+          if(m_query != tmp_query) {
+            qry_pool.put(m_query);
+          }
+          m_query = tmp_query;
+        }
+          m_txn->set_query(m_query);
+          m_txn->register_thd(this);
+
+				m_txn->abort_cnt = 0;
+        //m_txn->set_txn_id(m_query->txn_id);
+				m_txn->starttime = get_sys_clock();
+#if DEBUG_TIMELINE
+					printf("START %ld %ld\n",m_txn->get_txn_id(),m_txn->starttime);
+#endif
+        // Acquire locks
+        rc = m_txn->acquire_locks(m_query);
+        if(rc != RCOK)
+          break;
+        // Execute
+				rc = m_txn->run_calvin_txn(m_query);
+        // Release locks
+        //rc = m_txn->release_locks(m_query);
+        assert(rc == RCOK);
+				break;
+		  default:
+			  assert(false);
+    }
+
+    if(rc == RCOK) {
+			INC_STATS(get_thd_id(),txn_cnt,1);
+			timespan = get_sys_clock() - m_txn->starttime;
+			INC_STATS(get_thd_id(), run_time, timespan);
+			INC_STATS(get_thd_id(), latency, timespan);
+      // FIXME
+			//rem_qry_man.send_client_rsp(m_query);
+			//rem_qry_man.ack_response(m_query);
+      msg_queue.enqueue(m_query,RACK,m_query->return_id);
+    }
+
+		timespan = get_sys_clock() - starttime;
+		INC_STATS(get_thd_id(),time_work,timespan);
+
+  }
+}
+

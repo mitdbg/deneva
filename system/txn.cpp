@@ -61,9 +61,12 @@ void txn_man::init(workload * h_wl) {
 	for (int i = 0; i < MAX_ROW_PER_TXN; i++)
 		accesses[i] = NULL;
 	num_accesses_alloc = 0;
+  participant_nodes = (bool*)mem_allocator.alloc(sizeof(bool)*g_node_cnt,0);
+  active_nodes = (bool*)mem_allocator.alloc(sizeof(bool)*g_node_cnt,0);
 }
 
 void txn_man::reset() {
+  phase = 1;
 	lock_ready = false;
 	ready_part = 0;
 	rem_row_cnt = 0;
@@ -114,6 +117,7 @@ void txn_man::clear() {
   wr_cnt = 0;
   state = START;
   rc = RCOK;
+  phase = 1;
 }
 
 void txn_man::update_stats() {
@@ -683,3 +687,41 @@ txn_man::release() {
 	//mem_allocator.free(accesses, 0);
 }
 
+RC
+txn_man::send_remote_reads(base_query * qry) {
+  assert(CC_ALG == CALVIN);
+  if(WORKLOAD == YCSB)
+    return RCOK;
+  int n = 0;
+  for(uint64_t i = 0; i < g_node_cnt; i++) {
+    if(i == g_node_id)
+      continue;
+    if(active_nodes[i]) {
+      msg_queue.enqueue(qry,RACK,i);
+      n++;
+    }
+  }
+  if(n>0)
+    return WAIT_REM;
+  return RCOK;
+
+}
+
+RC
+txn_man::calvin_finish(base_query * qry) {
+  assert(CC_ALG == CALVIN);
+  if(WORKLOAD == YCSB)
+    return RCOK;
+  int n = 0;
+  for(uint64_t i = 0; i < g_node_cnt; i++) {
+    if(i == g_node_id)
+      continue;
+    if(active_nodes[i]) {
+      msg_queue.enqueue(qry,RACK,i);
+      n++;
+    }
+  }
+  if(n>0)
+    return WAIT_REM;
+  return RCOK;
+}

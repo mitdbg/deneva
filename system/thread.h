@@ -29,6 +29,7 @@ public:
 	RC 			run();
 	RC 			run_send();
 	RC 			run_remote();
+	RC 			run_calvin();
 
   RC process_rfin(base_query *& m_query,txn_man *& m_txn);
   RC process_rack(base_query *& m_query,txn_man *& m_txn);

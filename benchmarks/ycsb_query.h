@@ -66,6 +66,7 @@ public:
   void reset();
   void unpack_rsp(base_query * query, void * d); 
   void client_query(base_query * query, uint64_t dest_id) {} 
+  uint64_t participants(bool *& pps,workload * wl); 
 	
   base_query * merge(base_query * query); 
 void unpack(base_query * query, void * d) ;

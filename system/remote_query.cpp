@@ -217,6 +217,7 @@ void Remote_query::unpack_query(base_query *& query,char * data,  uint64_t & ptr
 #if CC_ALG == CALVIN
       uint64_t batch_num __attribute__ ((unused));
       COPY_VAL(batch_num,data,ptr);
+      COPY_VAL(m_query->txn_id,data,ptr);
 #endif
       COPY_VAL(m_query->part_num,data,ptr);
       //m_query->part_to_access = (uint64_t *)
@@ -261,7 +262,7 @@ void Remote_query::unpack_query(base_query *& query,char * data,  uint64_t & ptr
       }
       m_query->req = m_query->requests[0];
 #endif
-      assert(GET_NODE_ID(m_query->pid) == g_node_id);
+      assert(CC_ALG == CALVIN || GET_NODE_ID(m_query->pid) == g_node_id);
       break;
       }
     case CL_RSP:

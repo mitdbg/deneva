@@ -15,6 +15,7 @@
 #include "row_mvcc.h"
 #include "mem_alloc.h"
 #include "query.h"
+#include "msg_queue.h"
 
 void ycsb_txn_man::init(workload * h_wl) {
 	txn_man::init(h_wl);
@@ -59,8 +60,8 @@ void ycsb_txn_man::read_keys(base_query * query) {
 
 RC ycsb_txn_man::acquire_locks(base_query * query) {
   assert(CC_ALG == VLL || CC_ALG == CALVIN);
-#if CC_ALG == VLL || CC_ALG == CALVIN
 	ycsb_query * m_query = (ycsb_query *) query;
+  RC rc = RCOK;
 	for (uint32_t rid = 0; rid < m_query->request_cnt; rid ++) {
 		ycsb_request * req = &m_query->requests[rid];
 		uint64_t part_id = _wl->key_to_part( req->key );
@@ -70,11 +71,10 @@ RC ycsb_txn_man::acquire_locks(base_query * query) {
 		itemid_t * item;
 		item = index_read(index, req->key, part_id);
 		row_t * row = ((row_t *)item->location);
-		rc = get_lock(row,req->acctype);
-    if(rc != RCOK)
-      break;
+		RC rc2 = get_lock(row,req->acctype);
+    if(rc2 != RCOK)
+      rc = rc2;
 	}
-#endif
   return rc;
 }
 
@@ -279,6 +279,62 @@ RC ycsb_txn_man::run_ycsb_1(access_t acctype, row_t * row_local) {
   } 
   return RCOK;
 }
+RC ycsb_txn_man::run_calvin_txn(base_query * query) {
+	ycsb_query * m_query = (ycsb_query *) query;
+  RC rc = RCOK;
+  while(rc == RCOK && this->phase < 6) {
+    switch(this->phase) {
+      case 1:
+        // Phase 1: Read/write set analysis
+        participant_cnt = 0;
+        active_cnt = 0;
+        for(uint64_t i = 0; i < g_node_cnt; i++) {
+          participant_nodes[i] = false;
+          active_nodes[i] = false;
+        }
+
+        for(uint64_t i = 0; i < m_query->request_cnt; i++) {
+          uint64_t req_nid = GET_NODE_ID(_wl->key_to_part(m_query->requests[i].key));
+          if(!participant_nodes[req_nid]) {
+            participant_cnt++;
+            participant_nodes[req_nid] = true;
+          }
+          if(m_query->requests[i].acctype == WR && !active_nodes[req_nid]) {
+            active_cnt++;
+            active_nodes[req_nid] = true;
+          }
+        }
+        this->phase = 2;
+        break;
+      case 2:
+        // Phase 2: Perform local reads
+        rc = run_ycsb(query);
+        //release_read_locks(query);
+
+        this->phase = 3;
+        break;
+      case 3:
+        // Phase 3: Serve remote reads
+        rc = send_remote_reads(query);
+        this->phase = 4;
+        break;
+      case 4:
+        // Phase 4: Collect remote reads
+        this->phase = 5;
+        break;
+      case 5:
+        // Phase 5: Execute transaction / perform local writes
+        rc = run_ycsb(query);
+        query->rc = rc;
+        rc = calvin_finish(query);
+        this->phase = 6;
+        break;
+      default:
+        assert(false);
+    }
+  }
+  return rc;
+}
 
 RC ycsb_txn_man::run_ycsb(base_query * query) {
   RC rc = RCOK;
@@ -287,10 +343,13 @@ RC ycsb_txn_man::run_ycsb(base_query * query) {
   
   for (uint64_t i = 0; i < m_query->request_cnt; i++) {
 	  ycsb_request * req = &m_query->requests[i];
+    if(this->phase == 2 && req->acctype == WR)
+      continue;
+    if(this->phase == 5 && req->acctype == RD)
+      continue;
 
 		uint64_t part_id = _wl->key_to_part( req->key );
     bool loc = GET_NODE_ID(part_id) == get_node_id();
-    assert(loc);
 
     if(!loc)
       continue;
@@ -303,8 +362,7 @@ RC ycsb_txn_man::run_ycsb(base_query * query) {
     assert(rc == RCOK);
   }
 	m_query->rc = rc;
+  return rc;
 
-  // Sends ack back to Calvin sequencer
-  return finish(m_query,false);
 }
 

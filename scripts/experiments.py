@@ -36,13 +36,14 @@ fmt_ycsb = [["CLIENT_NODE_CNT","NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG"
 fmt_nt = [["NODE_CNT","CLIENT_NODE_CNT","NETWORK_TEST"]]
 #fmt_title=["NODE_CNT","ZIPF_THETA","WRITE_PERC","CC_ALG","MAX_TXN_IN_FLIGHT","MODE"]
 #fmt_title=["NODE_CNT","WRITE_PERC","CC_ALG","MAX_TXN_IN_FLIGHT","MODE","DATA_PERC","ACCESS_PERC"]
-fmt_title=["NODE_CNT","CC_ALG","ACCESS_PERC","TXN_WRITE_PERC","PERC_PAYMENT","MPR"]
+fmt_title=["NODE_CNT","CC_ALG","ACCESS_PERC","TXN_WRITE_PERC","PERC_PAYMENT","MPR","MAX_TXN_IN_FLIGHT"]
 
 def test():
-    wl = 'YCSB'
-#    wl = 'TPCC'
-#    nnodes = [64]
-    nnodes = [1,2,4,8,16,32,64]
+#    wl = 'YCSB'
+    wl = 'TPCC'
+#    nnodes = [4]
+    nnodes = [1,2,4,8]
+#    nnodes = [1,2,4,8,16,32,64]
     nmpr=[1.0]
     nmpir=[0.01]
 #    nmpr=[0.0,0.1,0.25,0.5,0.75,0.95,1.0]
@@ -54,15 +55,16 @@ def test():
     nsthreads=[1]
     ncthreads=[2]
     ncrthreads=[1]
-    ncsthreads=[2]
-    ntxn=[1000000]
+    ncsthreads=[4]
+    ntxn=[1500000]
 #    ntxn=[5000000]
     nbtime=[1000] # in ns
     nbsize=[4096]
     nparts = [8]
 #    nmodes = ["NORMAL_MODE","NOCC_MODE","QRY_ONLY_MODE"]#,"SETUP_MODE","SIMPLE_MODE"]
     nmodes = ["NORMAL_MODE"]
-    ntifs=[250]
+    ntifs=[150]
+#    ntifs=[10,25,50,75,100,150,200,250,500,750,1000]
 #    ntifs=[10,100,250,500,750,1000]#,2500,5000,7500,10000]
 #TPCC
     npercpay=[0.0]
@@ -319,7 +321,7 @@ def test_plot(summary,summary_client):
 #    line_setup(summary,summary_client,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",v_name="CC_ALG",key='tot_avg_abort_row_cnt')
 #    line_setup(summary,summary_client,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",v_name="CC_ALG",key='time_validate')
 #    line_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="ACCESS_PERC",key='cpu_ttl')
-#    line_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="NODE_CNT",key='abort_cnt')
+    line_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",key='latency')
     line_rate_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",key='abort_cnt')
     line_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",key='avg_abort_row_cnt')
 #    line_rate_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="ACCESS_PERC",key='abort_cnt')
@@ -349,9 +351,9 @@ def test_plot(summary,summary_client):
 #    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT",keys=['type1','type2','type3','type4','type5','type6','type7','type8','type9','type10','type11','type12','type13','type14'],key_names=['DONE','LOCK','UNLOCK','Rem QRY','FIN','LOCK RSP','UNLOCK RSP','QRY RSP','ACK','Exec','INIT','PREP','PASS','CLIENT'],norm=False)
 #    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT",keys=['occ_val1','occ_val2a','occ_val2','occ_val3','occ_val4','occ_val5'],norm=False)
  #   stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT",keys=['mvcc1','mvcc2','mvcc3','mvcc4','mvcc5','mvcc6','mvcc7','mvcc8'],norm=False)
-    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT",keys=['thd1','thd2','thd3'],norm=False,key_names=['Getting work','Execution','Wrap-up'])
-#    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT",keys=['txn_table_add','txn_table_get','txn_table_mints1','txn_table_mints2','txn_table0a','txn_table1a','txn_table0b','txn_table1b','txn_table2a'],norm=False)
-#    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT",keys=['type1','type2','type3','type4','type5','type6','type7','type8','type9','type10','type11','type12','type13','type14'],key_names=['DONE','LOCK','UNLOCK','Rem QRY','FIN','LOCK RSP','UNLOCK RSP','QRY RSP','ACK','Exec','INIT','PREP','PASS','CLIENT'],norm=False)
+    stacks_setup(summary,nfmt,nexp,x_name="CC_ALG",keys=['thd1','thd2','thd3'],norm=False,key_names=['Getting work','Execution','Wrap-up'])
+    stacks_setup(summary,nfmt,nexp,x_name="CC_ALG",keys=['txn_table_add','txn_table_get','txn_table_mints1','txn_table_mints2','txn_table0a','txn_table1a','txn_table0b','txn_table1b','txn_table2a'],norm=False)
+    stacks_setup(summary,nfmt,nexp,x_name="CC_ALG",keys=['type1','type2','type3','type4','type5','type6','type7','type8','type9','type10','type11','type12','type13','type14'],key_names=['DONE','LOCK','UNLOCK','Rem QRY','FIN','LOCK RSP','UNLOCK RSP','QRY RSP','ACK','Exec','INIT','PREP','PASS','CLIENT'],norm=False)
 #    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT",keys=['occ_val1','occ_val2a','occ_val2','occ_val3','occ_val4','occ_val5'],norm=False)
 #    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT",keys=['mvcc1','mvcc2','mvcc3','mvcc4','mvcc5','mvcc6','mvcc7','mvcc8'],norm=False)
 #    stacks_setup(summary,nfmt,nexp,x_name="WRITE_PERC",keys=['thd1a','thd1c','thd1d'],key_names=['Prog stats','Spinning','Abort queue'],norm=False)
@@ -372,7 +374,7 @@ def test_plot(summary,summary_client):
 #            ,keys=['type1','type2','type3','type4','type5','type6','type7','type8','type9','type10','type11','type12','type13','type14']
 #            ,key_names=['DONE','LOCK','UNLOCK','Rem QRY','FIN','LOCK RSP','UNLOCK RSP','QRY RSP','ACK','Exec','INIT','PREP','PASS','CLIENT']
 #            ,norm=False)
-#    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT",keys=['thd1a','thd1b','thd1c','thd1d'],norm=False)
+    stacks_setup(summary,nfmt,nexp,x_name="CC_ALG",keys=['thd1a','thd1b','thd1c','thd1d'],norm=False)
 #    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT",keys=['rtxn1a','rtxn1b','rtxn2','rtxn3','rtxn4'],norm=False)
 #    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT",keys=['row1','row2','row3'],norm=False)
 #    line_setup(summary,summary_client,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",v_name="MODE",key='mbuf_send_time')

@@ -20,16 +20,12 @@ void * g(void *);
 void * worker(void *);
 void * nn_worker(void *);
 void * send_worker(void *);
+void * calvin_worker(void * id); 
 void network_test();
 void network_test_recv();
 
 
-// TODO the following global variables are HACK
-#if CC_ALG == CALVIN
-calvin_thread_t * m_thds;
-#else
 thread_t * m_thds;
-#endif
 
 // defined in parser.cpp
 void parser(int argc, char * argv[]);
@@ -141,17 +137,13 @@ int main(int argc, char* argv[])
 	pthread_attr_t attr;
 	pthread_attr_init(&attr);
 	cpu_set_t cpus;
-#if CC_ALG == CALVIN
-	m_thds = new calvin_thread_t[all_thd_cnt];
-#else
 	m_thds = new thread_t[all_thd_cnt];
-#endif
 	// query_queue should be the last one to be initialized!!!
 	// because it collects txn latency
 	//if (WORKLOAD != TEST) {
 	//	query_queue.init(m_wl);
 	//}
-	pthread_barrier_init( &warmup_bar, NULL, g_thread_cnt );
+	//pthread_barrier_init( &warmup_bar, NULL, g_thread_cnt );
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
   printf("Initializing partition lock manager... ");
 	part_lock_man.init(g_node_id);
@@ -208,7 +200,11 @@ int main(int argc, char* argv[])
 #endif
 		cpu_cnt++;
     pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
+#if CC_ALG == CALVIN
+		pthread_create(&p_thds[i], &attr, calvin_worker, (void *)vid);
+#else
 		pthread_create(&p_thds[i], &attr, worker, (void *)vid);
+#endif
   }
 
 	for (; i < thd_cnt + sthd_cnt; i++) {
@@ -269,6 +265,12 @@ void * nn_worker(void * id) {
 void * send_worker(void * id) {
 	uint64_t tid = (uint64_t)id;
 	m_thds[tid].run_send();
+	return NULL;
+}
+
+void * calvin_worker(void * id) {
+	uint64_t tid = (uint64_t)id;
+	m_thds[tid].run_calvin();
 	return NULL;
 }
 

@@ -59,6 +59,7 @@ public:
   void rqry( mbuf * sbuf, base_query *qry);
   void rqry_rsp( mbuf * sbuf, base_query *qry);
   void rtxn(mbuf * sbuf, base_query *qry);
+  void rtxn_seq(mbuf * sbuf, base_query *qry);
 private:
   mbuf ** buffer;
   uint64_t buffer_cnt;

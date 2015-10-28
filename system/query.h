@@ -18,6 +18,7 @@ public:
 	uint64_t * part_to_access;
 
 	// calvin
+	txnid_t txn_id;
 	//virtual void client_query(base_client_query * query, uint64_t dest_id,
 //			uint64_t batch_num, txnid_t txn_id) = 0;
 };
@@ -32,7 +33,7 @@ public:
 
 	// Remote query components
 	uint32_t dest_id;
-	txnid_t txn_id;
+	//txnid_t txn_id;
 	uint64_t ts;
 	int rem_req_state;
 
