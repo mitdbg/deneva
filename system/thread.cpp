@@ -434,6 +434,9 @@ RC thread_t::run() {
           m_txn->txn_time_misc += timespan;
           m_txn->update_stats();
           INC_STATS(get_thd_id(),part_cnt[m_query->part_touched_cnt-1],1);
+          for(uint64_t i = 0 ; i < m_query->part_num; i++) {
+            INC_STATS(get_thd_id(),part_acc[m_query->part_to_access[i]],1);
+          }
 
 					DEBUG("COMMIT %ld %ld %ld %f -- %f -- %d\n",m_txn->get_txn_id(),m_query->part_num,m_txn->abort_cnt,(double)m_txn->txn_time_wait/BILLION,(double)timespan/ BILLION,m_query->client_id);
 

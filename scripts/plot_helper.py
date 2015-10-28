@@ -10,8 +10,39 @@ import pprint
 #from experiments import configs
 
 plot_cnt = 0
-
 PATH=os.getcwd()
+
+def apply_extras(my_cfg_fmt,my_cfg,extras,xname,vname):
+    for e in extras.keys():
+        if e in my_cfg_fmt:
+            if extras[e] in my_cfg_fmt:
+                new_val = my_cfg[my_cfg_fmt.index(extras[e])]
+            else:
+                new_val = extras[e]
+            if e == 'READ_PERC':
+                my_cfg[my_cfg_fmt.index(e)] = 1-new_val
+            elif e == 'PART_PER_TXN':
+                my_cfg[my_cfg_fmt.index(e)] = new_val
+#                        my_cfg[my_cfg_fmt.index(e)] = min(my_cfg[my_cfg_fmt.index(extras[e])],8)
+            else:
+                my_cfg[my_cfg_fmt.index(e)] = new_val
+        else:
+            if extras[e] in my_cfg_fmt:
+                new_val = my_cfg[my_cfg_fmt.index(extras[e])]
+            else:
+                new_val = extras[e]
+            my_cfg_fmt = my_cfg_fmt + [e]
+            if e == 'READ_PERC':
+                my_cfg = my_cfg + [1.0-new_val]
+            elif e == 'PART_PER_TXN':
+#                        my_cfg = my_cfg + [min(my_cfg[my_cfg_fmt.index(extras[e])],8)]
+                my_cfg = my_cfg + [new_val]
+            else:
+                my_cfg = my_cfg + [new_val]
+    if my_cfg[my_cfg_fmt.index("PART_PER_TXN")] > my_cfg[my_cfg_fmt.index("PART_CNT")]:
+        my_cfg[my_cfg_fmt.index("PART_PER_TXN")] = my_cfg[my_cfg_fmt.index("PART_CNT")]
+    return my_cfg,my_cfg_fmt
+
 def progress_diff(summary,ncnt,stat,name=''):
     print(stat)
     output = {}
@@ -32,12 +63,12 @@ def progress_diff(summary,ncnt,stat,name=''):
         print(output[n])
         xval = [int(c) for c in clk]
 
-    try:
-        output["total"] = [ sum(output[str(n)][i] for n in range(ncnt)) for i in range(len(output["0"])) ]
-        output["avg"] = [ int(float(sum(output["total"])) / float(ncnt) / float(len(output["total"]))) ] * len(output["total"])
-    except ValueError:
-        output["total"] = [0] * len(output["0"])
-        output["avg"] = [0] * len(output["0"])
+#    try:
+#        output["total"] = [ sum(output[str(n)][i] for n in range(ncnt)) for i in range(len(output["0"])) ]
+#        output["avg"] = [ int(float(sum(output["total"])) / float(ncnt) / float(len(output["total"]))) ] * len(output["total"])
+#    except ValueError:
+#        output["total"] = [0] * len(output["0"])
+#        output["avg"] = [0] * len(output["0"])
 
     bbox = [0.4,0.9]
     draw_line('prog_'+stat+name,output,xval,ylab=stat+'/sec',xlab="Interval",title="Progress "+stat,bbox=bbox,ncol=2) 
@@ -64,12 +95,12 @@ def progress(summary,ncnt,stat,name=''):
         print(output[n])
         xval = [int(c) for c in clk]
 
-    try:
-        output["total"] = [ sum(output[str(n)][i] for n in range(ncnt)) for i in range(len(output["0"])) ]
-        output["avg"] = [ int(float(sum(output["total"])) / float(ncnt) / float(len(output["total"]))) ] * len(output["total"])
-    except ValueError:
-        output["total"] = [0] * len(output["0"])
-        output["avg"] = [0] * len(output["0"])
+#    try:
+#        output["total"] = [ sum(output[str(n)][i] for n in range(ncnt)) for i in range(len(output["0"])) ]
+#        output["avg"] = [ int(float(sum(output["total"])) / float(ncnt) / float(len(output["total"]))) ] * len(output["total"])
+#    except ValueError:
+#        output["total"] = [0] * len(output["0"])
+#        output["avg"] = [0] * len(output["0"])
 
     bbox = [0.4,0.9]
     draw_line('prog_'+stat+name,output,xval,ylab=stat+'/sec',xlab="Interval",title="Progress "+stat,bbox=bbox,ncol=2) 
@@ -176,24 +207,8 @@ def line_general(xval,vval,summary,summary_cl,
         for x,xi in zip(xval,range(len(xval))):
             my_cfg_fmt = cfg_fmt + [xname] + [vname]
             my_cfg = cfg + [x] + [v]
-            for e in extras.keys():
-                if e == xname or e == vname:
-                    continue
-                if e in my_cfg_fmt:
-                    if e == 'READ_PERC':
-                        my_cfg[my_cfg_fmt.index(e)] = 1-my_cfg[my_cfg_fmt.index(extras[e])]
-                    else:
-                        my_cfg[my_cfg_fmt.index(e)] = my_cfg[my_cfg_fmt.index(extras[e])]
-                else:
-                    my_cfg_fmt = my_cfg_fmt + [e]
-                    if e == 'READ_PERC':
-                        my_cfg = my_cfg + [1.0-my_cfg[my_cfg_fmt.index(extras[e])]]
-                    else:
-                        my_cfg = my_cfg + [my_cfg[my_cfg_fmt.index(extras[e])]]
+            my_cfg,my_cfg_fmt = apply_extras(my_cfg_fmt,my_cfg,extras,xname,vname)
 
-            if my_cfg[my_cfg_fmt.index("PART_PER_TXN")] > my_cfg[my_cfg_fmt.index("PART_CNT")]:
-                my_cfg[my_cfg_fmt.index("PART_PER_TXN")] = my_cfg[my_cfg_fmt.index("PART_CNT")]
-#            my_cfg[my_cfg_fmt.index("MAX_TXN_IN_FLIGHT")] /= my_cfg[my_cfg_fmt.index("NODE_CNT")]
             cfgs = get_cfgs(my_cfg_fmt, my_cfg)
             cfgs = get_outfile_name(cfgs,my_cfg_fmt)
             if cfgs not in summary.keys(): 
@@ -246,24 +261,8 @@ def line_rate(xval,vval,summary,summary_cl,
         for x,xi in zip(xval,range(len(xval))):
             my_cfg_fmt = cfg_fmt + [xname] + [vname]
             my_cfg = cfg + [x] + [v]
-            for e in extras.keys():
-                if e == xname or e == vname:
-                    continue
-                if e in my_cfg_fmt:
-                    if e == 'READ_PERC':
-                        my_cfg[my_cfg_fmt.index(e)] = 1-my_cfg[my_cfg_fmt.index(extras[e])]
-                    else:
-                        my_cfg[my_cfg_fmt.index(e)] = my_cfg[my_cfg_fmt.index(extras[e])]
-                else:
-                    my_cfg_fmt = my_cfg_fmt + [e]
-                    if e == 'READ_PERC':
-                        my_cfg = my_cfg + [1.0-my_cfg[my_cfg_fmt.index(extras[e])]]
-                    else:
-                        my_cfg = my_cfg + [my_cfg[my_cfg_fmt.index(extras[e])]]
+            my_cfg,my_cfg_fmt = apply_extras(my_cfg_fmt,my_cfg,extras,xname,vname)
 
-            if my_cfg[my_cfg_fmt.index("PART_PER_TXN")] > my_cfg[my_cfg_fmt.index("PART_CNT")]:
-                my_cfg[my_cfg_fmt.index("PART_PER_TXN")] = my_cfg[my_cfg_fmt.index("PART_CNT")]
-#            my_cfg[my_cfg_fmt.index("MAX_TXN_IN_FLIGHT")] /= my_cfg[my_cfg_fmt.index("NODE_CNT")]
             cfgs = get_cfgs(my_cfg_fmt, my_cfg)
             cfgs = get_outfile_name(cfgs,my_cfg_fmt)
             if cfgs not in summary.keys(): 
@@ -299,7 +298,7 @@ def tput(xval,vval,summary,summary_cl,
     tpt = {}
     name = 'tput_plot{}'.format(plot_cnt)
     plot_cnt += 1
-    name += '_{}'.format(title.replace(" ","_").lower())
+#    name += '_{}'.format(title.replace(" ","_").lower())
 #    _title = 'System Throughput {}'.format(title)
     _title = title
 
@@ -324,38 +323,9 @@ def tput(xval,vval,summary,summary_cl,
         for x,xi in zip(xval,range(len(xval))):
             my_cfg_fmt = cfg_fmt + [xname] + [vname]
             my_cfg = cfg + [x] + [v]
-            for e in extras.keys():
-                if e in my_cfg_fmt:
-                    if e == 'READ_PERC':
-                        my_cfg[my_cfg_fmt.index(e)] = 1-my_cfg[my_cfg_fmt.index(extras[e])]
-                    elif e == 'PART_PER_TXN':
-                        my_cfg[my_cfg_fmt.index(e)] = min(my_cfg[my_cfg_fmt.index(extras[e])],8)
-                    else:
-                        my_cfg[my_cfg_fmt.index(e)] = my_cfg[my_cfg_fmt.index(extras[e])]
-                else:
-                    my_cfg_fmt = my_cfg_fmt + [e]
-                    if e == 'READ_PERC':
-                        my_cfg = my_cfg + [1.0-my_cfg[my_cfg_fmt.index(extras[e])]]
-                    elif e == 'PART_PER_TXN':
-                        my_cfg = my_cfg + [min(my_cfg[my_cfg_fmt.index(extras[e])],8)]
-                    else:
-                        my_cfg = my_cfg + [my_cfg[my_cfg_fmt.index(extras[e])]]
-            if my_cfg[my_cfg_fmt.index("PART_PER_TXN")] > my_cfg[my_cfg_fmt.index("PART_CNT")]:
-                my_cfg[my_cfg_fmt.index("PART_PER_TXN")] = my_cfg[my_cfg_fmt.index("PART_CNT")]
-#            n_cnt = my_cfg[my_cfg_fmt.index("NODE_CNT")]
-#            n_clt = my_cfg[my_cfg_fmt.index("CLIENT_NODE_CNT")]
-#            my_cfg[my_cfg_fmt.index("CLIENT_NODE_CNT")] = int(math.ceil(n_cnt)) if n_cnt > 1 else 1
-#            n_ppt = my_cfg[my_cfg_fmt.index("PART_PER_TXN")]
-#            my_cfg[my_cfg_fmt.index("PART_PER_TXN")] = n_ppt if n_ppt <= n_cnt else n_cnt
+            my_cfg,my_cfg_fmt = apply_extras(my_cfg_fmt,my_cfg,extras,xname,vname)
+
             n_thd =  my_cfg[my_cfg_fmt.index("THREAD_CNT")]
-#            n_alg =  my_cfg[my_cfg_fmt.index("CC_ALG")]
-#            if n_alg == "HSTORE" or n_alg == "HSTORE_SPEC":
-#                my_cfg_fmt = my_cfg_fmt + ["PART_CNT"]
-#                my_cfg = my_cfg + [n_thd*n_cnt]
-#            else:
-#                my_cfg_fmt = my_cfg_fmt + ["PART_CNT"]
-#                my_cfg = my_cfg + [n_cnt]
-#            my_cfg[my_cfg_fmt.index("MAX_TXN_IN_FLIGHT")] /= my_cfg[my_cfg_fmt.index("NODE_CNT")]
 
             cfgs = get_cfgs(my_cfg_fmt, my_cfg)
             cfgs = get_outfile_name(cfgs,my_cfg_fmt)
@@ -697,21 +667,8 @@ def stacks_general(xval,summary,
     for x,xi in zip(xval,range(len(xval))):
         my_cfg_fmt = cfg_fmt + [xname]
         my_cfg = cfg + [x]
-        for e in extras.keys():
-            if e in my_cfg_fmt:
-                if e == 'READ_PERC':
-                    my_cfg[my_cfg_fmt.index(e)] = 1-my_cfg[my_cfg_fmt.index(extras[e])]
-                else:
-                    my_cfg[my_cfg_fmt.index(e)] = my_cfg[my_cfg_fmt.index(extras[e])]
-            else:
-                my_cfg_fmt = my_cfg_fmt + [e]
-                if e == 'READ_PERC':
-                    my_cfg = my_cfg + [1.0-my_cfg[my_cfg_fmt.index(extras[e])]]
-                else:
-                    my_cfg = my_cfg + [my_cfg[my_cfg_fmt.index(extras[e])]]
-        if my_cfg[my_cfg_fmt.index("PART_PER_TXN")] > my_cfg[my_cfg_fmt.index("PART_CNT")]:
-            my_cfg[my_cfg_fmt.index("PART_PER_TXN")] = my_cfg[my_cfg_fmt.index("PART_CNT")]
-#        my_cfg[my_cfg_fmt.index("MAX_TXN_IN_FLIGHT")] /= my_cfg[my_cfg_fmt.index("NODE_CNT")]
+        my_cfg,my_cfg_fmt = apply_extras(my_cfg_fmt,my_cfg,extras,xname,'')
+
         cfgs = get_cfgs(my_cfg_fmt, my_cfg)
         cfgs = get_outfile_name(cfgs,my_cfg_fmt)
         if cfgs not in summary.keys(): 
@@ -801,20 +758,7 @@ def time_breakdown(xval,summary,
     for x,i in zip(xval,range(len(xval))):
         my_cfg_fmt = cfg_fmt + [xname]
         my_cfg = cfg + [x]
-        for e in extras.keys():
-            if e in my_cfg_fmt:
-                if e == 'READ_PERC':
-                    my_cfg[my_cfg_fmt.index(e)] = 1-my_cfg[my_cfg_fmt.index(extras[e])]
-                else:
-                    my_cfg[my_cfg_fmt.index(e)] = my_cfg[my_cfg_fmt.index(extras[e])]
-            else:
-                my_cfg_fmt = my_cfg_fmt + [e]
-                if e == 'READ_PERC':
-                    my_cfg = my_cfg + [1.0-my_cfg[my_cfg_fmt.index(extras[e])]]
-                else:
-                    my_cfg = my_cfg + [my_cfg[my_cfg_fmt.index(extras[e])]]
-        if my_cfg[my_cfg_fmt.index("PART_PER_TXN")] > my_cfg[my_cfg_fmt.index("PART_CNT")]:
-            my_cfg[my_cfg_fmt.index("PART_PER_TXN")] = my_cfg[my_cfg_fmt.index("PART_CNT")]
+        my_cfg,my_cfg_fmt = apply_extras(my_cfg_fmt,my_cfg,extras,xname,vname)
         n_thd =  my_cfg[my_cfg_fmt.index("THREAD_CNT")]
 
         cfgs = get_cfgs(my_cfg_fmt, my_cfg)

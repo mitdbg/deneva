@@ -52,8 +52,8 @@ for arg in sys.argv[1:]:
         exps.append(arg)
     last_arg = arg
 
-result_dir = PATH + "/../results/"
-#result_dir = PATH + "/../results/1010_zipf/"
+#result_dir = PATH + "/../results/"
+result_dir = PATH + "/../results/1027_ec2_full_experiments/"
 #result_dir = PATH + "/../results/results_201503pt2/"
 test_dir = ""
 
