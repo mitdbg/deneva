@@ -35,7 +35,7 @@
 #define TIME_ENABLE         true //STATS_ENABLE
 
 #define FIN_BY_TIME true
-#define MAX_TXN_IN_FLIGHT 1
+#define MAX_TXN_IN_FLIGHT 1000
 
 /***********************************************/
 // Memory System
@@ -82,7 +82,7 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, VOLTDB, OCC, VLL, CALVIN
-#define CC_ALG NO_WAIT
+#define CC_ALG CALVIN
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER         false
@@ -128,7 +128,7 @@
 // [VLL] 
 #define TXN_QUEUE_SIZE_LIMIT    THREAD_CNT
 // [CALVIN]
-#define SEQ_THREAD_CNT 4 // Must be > 1 until bug is fixed
+#define SEQ_THREAD_CNT 2 
 #define MAX_BATCH_WAITTIME 5000000  //5ms, currently unused
 
 

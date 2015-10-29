@@ -83,7 +83,7 @@ bool QWorkQueue::dequeue(uint64_t thd_id, base_query *& qry) {
   void * ptr;
   bool valid = wq.try_dequeue(ptr);
   qry = (base_query*) ptr;
-  if(!ISCLIENT && valid && qry->txn_id != UINT64_MAX) {
+  if(!ISCLIENT && !ISSEQUENCER && valid && qry->txn_id != UINT64_MAX) {
     if(set_active(thd_id, qry->txn_id)) {
       enqueue(qry);
       qry = NULL;

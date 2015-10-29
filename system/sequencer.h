@@ -17,11 +17,13 @@ typedef struct qlite_entry {
 	uint32_t server_ack_cnt;
 } qlite;
 
+
 class Sequencer {
  public:
 	void init(workload * wl);	
 	void process_txn_ack(base_query * query, uint64_t thd_id);
 	void process_new_txn(base_query * query);
+	void prepare_next_batch(uint64_t thd_id);
 	//void start_batch_timer();
 	void send_first_batch(uint64_t thd_id); 
 	//WorkQueue * fill_queue;		// queue currently being filled with new txns
@@ -30,21 +32,21 @@ class Sequencer {
 	volatile uint64_t total_txns_received;
 	volatile bool sent_first_batch;
 	volatile uint32_t rsp_cnt;
+	volatile uint64_t next_batch_id;
 #if WORKLOAD == YCSB
 	ycsb_query* node_queries;
 #elif WORKLOAD == TPCC
 	tpcc_query* node_queries;
 #endif
+  volatile bool send_batch;
  private:
   uint64_t batch_size;
   uint64_t next_batch_size;
-	void prepare_next_batch(uint64_t thd_id);
 	void reset_participating_nodes(bool * part_nodes);
 	qlite * wait_list;		// list of txns in batch being executed
 	uint64_t wait_list_size;
 	uint32_t wait_txns_left;
 	volatile uint32_t next_txn_id;
-	volatile uint64_t next_batch_id;
 	pthread_mutex_t mtx;
 	pthread_cond_t swap_cv;	// thread is swapping fill and batch queues
 	pthread_cond_t access_cv;	// thread(s) are accessing fill and/or batch queues

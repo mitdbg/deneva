@@ -215,8 +215,7 @@ void Remote_query::unpack_query(base_query *& query,char * data,  uint64_t & ptr
       COPY_VAL(m_query->pid,data,ptr);
       COPY_VAL(m_query->client_startts,data,ptr);
 #if CC_ALG == CALVIN
-      uint64_t batch_num __attribute__ ((unused));
-      COPY_VAL(batch_num,data,ptr);
+      COPY_VAL(m_query->batch_id,data,ptr);
       COPY_VAL(m_query->txn_id,data,ptr);
 #endif
       COPY_VAL(m_query->part_num,data,ptr);

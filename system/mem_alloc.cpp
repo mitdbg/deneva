@@ -132,12 +132,12 @@ void mem_alloc::free(void * ptr, uint64_t size) {
 		int size_id = get_size_id(size);
 		_arenas[arena_id][size_id].free(ptr);
 	} else {
+    DEBUG_M("free %ld 0x%lx\n",size,(uint64_t)ptr);
 #if TPORT_TYPE_IPC
 		std::free(ptr);
 #else
 		je_free(ptr);
 #endif
-    DEBUG_M("free %ld 0x%lx\n",size,(uint64_t)ptr);
 	}
 }
 

@@ -16,8 +16,8 @@ public:
 	RemReqType rtype;
 	uint64_t part_num;
 	uint64_t * part_to_access;
-
-	// calvin
+  // CALVIN
+  uint64_t batch_id;
 	txnid_t txn_id;
 	//virtual void client_query(base_client_query * query, uint64_t dest_id,
 //			uint64_t batch_num, txnid_t txn_id) = 0;
@@ -49,8 +49,6 @@ public:
 
   //for debugging;
   uint64_t debug1;
-  // CALVIN
-  uint64_t batch_num;
 #if MODE==QRY_ONLY_MODE
   uint64_t max_access;
   bool max_done;

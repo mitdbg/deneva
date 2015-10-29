@@ -173,11 +173,10 @@ uint64_t MessageThread::get_msg_size(RemReqType type,base_query * qry) {
   tpcc_query * m_qry = (tpcc_query *)qry;
 #elif WORKLOAD == YCSB
   ycsb_client_query * m_qry2 = (ycsb_client_query*) qry;
-#if CC_ALG == VLL
-  ycsb_query * m_qry = (ycsb_query *)qry;
+  ycsb_query * m_qry __attribute__((unused));
+  m_qry = (ycsb_query *)qry;
 #endif
-#endif
-  size += sizeof(txnid_t) + sizeof(RemReqType);
+  size += sizeof(txnid_t) + sizeof(RemReqType); //12
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
   size += sizeof(uint64_t) * 2;
 #endif
@@ -230,12 +229,15 @@ uint64_t MessageThread::get_msg_size(RemReqType type,base_query * qry) {
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
                           size += sizeof(uint64_t);
 #endif
-                          size += sizeof(uint64_t) * 2;
+                          size += sizeof(uint64_t) * 2; //24
 #if CC_ALG == CALVIN
-                          size += sizeof(uint64_t)*2;
+                          size += sizeof(uint64_t)*2; // 24
 #endif
-                          size += sizeof(uint64_t) * (m_qry2->part_num + 1);
-                          size += sizeof(uint64_t);
+                          if(ISSEQUENCER) 
+                            size += sizeof(uint64_t) * (m_qry->part_num + 1); //24
+                          else
+                            size += sizeof(uint64_t) * (m_qry2->part_num + 1); //24
+                          size += sizeof(uint64_t); //8
 
 #if WORKLOAD == TPCC
                           size += sizeof(TPCCTxnType);
@@ -251,7 +253,10 @@ uint64_t MessageThread::get_msg_size(RemReqType type,base_query * qry) {
       assert(false);
   }
 #elif WORKLOAD == YCSB
-                          size += sizeof(ycsb_request) * (m_qry2->request_cnt);
+                          if(ISSEQUENCER) 
+                            size += sizeof(ycsb_request) * (m_qry->request_cnt); // 240
+                          else
+                            size += sizeof(ycsb_request) * (m_qry2->request_cnt); // 240
 #endif
                           break;
         case  RINIT:      
@@ -428,8 +433,7 @@ void MessageThread::rtxn(mbuf * sbuf, base_query *qry) {
   COPY_BUF(sbuf->buffer,m_qry->pid,sbuf->ptr);
   COPY_BUF(sbuf->buffer,ts,sbuf->ptr);
 #if CC_ALG == CALVIN
-  uint64_t batch_num = 0;
-  COPY_BUF(sbuf->buffer,batch_num,sbuf->ptr);
+  COPY_BUF(sbuf->buffer,m_qry->batch_id,sbuf->ptr);
   COPY_BUF(sbuf->buffer,m_qry->txn_id,sbuf->ptr);
 #endif
   COPY_BUF(sbuf->buffer,m_qry->part_num,sbuf->ptr);
