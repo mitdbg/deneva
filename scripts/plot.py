@@ -53,7 +53,7 @@ for arg in sys.argv[1:]:
     last_arg = arg
 
 #result_dir = PATH + "/../results/"
-result_dir = PATH + "/../results/1027_ec2_full_experiments/"
+result_dir = PATH + "/../results/1028_ec2_results/"
 #result_dir = PATH + "/../results/results_201503pt2/"
 test_dir = ""
 

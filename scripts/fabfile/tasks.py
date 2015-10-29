@@ -301,6 +301,8 @@ def deploy(schema_path,nids,exps,fmt):
                 res = run("echo $SCHEMA_PATH")
                 if not env.dry_run:
                     run(cmd)
+                else:
+                    print(cmd)
             except CommandTimeout:
                 pass
             except NetworkError:
@@ -628,7 +630,7 @@ def run_exp_old(exps,network_test=False,delay=''):
                         # If full, execute all exps in batch and reset everything
                         full = (batch_size + ntotal) > len(env.hosts)
                         if full:
-                            if env.cluster != 'istc':
+                            if env.cluster != 'istc' and not env.dry_run:
                                 # Sync clocks before each experiment
                                 execute(sync_clocks)
                             with color():
@@ -874,6 +876,8 @@ def run_exp(exps,network_test=False,delay=''):
 
     if SKIP:
         for e in experiments[:]:
+            cfgs = get_cfgs(fmt,e)
+            output_fbase = get_outfile_name(cfgs,fmt,env.hosts)
             if len(glob.glob('{}*{}*.out'.format(env.result_dir,output_fbase))) > 0:
                 with color("warn"):
                     puts("experiment exists in results folder... skipping",show_prefix=True)
@@ -960,14 +964,14 @@ def run_exp(exps,network_test=False,delay=''):
 
         if env.remote:
         
-            if env.cluster != 'istc':
+            set_hosts(good_hosts[:batch_size])
+            if env.cluster != 'istc' and not env.dry_run:
                 # Sync clocks before each experiment
                 execute(sync_clocks)
             with color():
-                puts("Batch is full, deploying batch...",show_prefix=True)
+                puts("Batch is full, deploying batch...{}/{}".format(batch_size,len(good_hosts)),show_prefix=True)
             with color("debug"):
                 puts(pprint.pformat(outfiles,depth=3),show_prefix=False)
-            set_hosts(env.hosts[:batch_size])
             with color():
                 puts("Starttime: {}".format(datetime.datetime.now().strftime("%H:%M:%S")),show_prefix=True)
             execute(deploy,schema_path,nids,exps,fmt)
@@ -975,7 +979,6 @@ def run_exp(exps,network_test=False,delay=''):
                 puts("Endtime: {}".format(datetime.datetime.now().strftime("%H:%M:%S")),show_prefix=True)
             execute(get_results,outfiles,nids)
             good_hosts = get_good_hosts()
-            env.roledefs = None
             batch_size = 0
             nids = {}
             exps = {}

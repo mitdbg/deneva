@@ -42,9 +42,12 @@ RC thread_t::run_remote() {
 
 	pthread_barrier_wait( &warmup_bar );
 	stats.init(get_thd_id());
+	run_starttime = get_sys_clock();
 
   while(!_wl->sim_init_done) {
     tport_man.recv_msg();
+    if(get_sys_clock() - run_starttime >= g_done_timer)
+      return FINISH;
   }
   warmup_done = true;
 	pthread_barrier_wait( &warmup_bar );
@@ -102,8 +105,12 @@ RC thread_t::run_send() {
 
   MessageThread messager;
   messager.init(_thd_id);
+
+  run_starttime = get_sys_clock();
 	while (!_wl->sim_init_done) {
     messager.run();
+    if(get_sys_clock() - run_starttime >= g_done_timer)
+      return FINISH;
   }
 
 	pthread_barrier_wait( &warmup_bar );
@@ -130,6 +137,8 @@ RC thread_t::run() {
 	pthread_barrier_wait( &warmup_bar );
 	stats.init(get_thd_id());
 	base_query * m_query = NULL;
+
+	run_starttime = get_sys_clock();
 
 	if( _thd_id == 0) {
 #if WORKLOAD == YCSB
@@ -161,7 +170,14 @@ RC thread_t::run() {
         //work_queue.add_query(_thd_id,m_query);
         work_queue.enqueue(m_query);
       }
+    if(get_sys_clock() - run_starttime >= g_done_timer)
+      return FINISH;
 	  }
+  } else {
+    while(!_wl->sim_init_done) {
+      if(get_sys_clock() - run_starttime >= g_done_timer)
+        return FINISH;
+    }
   }
 	pthread_barrier_wait( &warmup_bar );
 	printf("Run %ld:%ld\n",_node_id, _thd_id);
