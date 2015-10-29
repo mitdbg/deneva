@@ -10,11 +10,13 @@ void MessageQueue::init() {
   pthread_mutex_init(&mtx,NULL);
 }
 void MessageQueue::enqueue(base_query * qry,RemReqType type,uint64_t dest) {
+  /*
   if(qry) {
     DEBUG("Queueing Message %d txn %ld dest %ld\n",type,qry->txn_id,dest);
   } else {
     DEBUG("Queueing Message %d txn NULL dest %ld\n",type,dest);
   }
+  */
   //msg_entry_t entry = (msg_entry_t) mem_allocator.alloc(sizeof(struct msg_entry), 0);
   msg_entry_t entry;
   msg_pool.get(entry);

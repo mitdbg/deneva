@@ -39,17 +39,17 @@ fmt_nt = [["NODE_CNT","CLIENT_NODE_CNT","NETWORK_TEST"]]
 fmt_title=["NODE_CNT","CC_ALG","ACCESS_PERC","TXN_WRITE_PERC","PERC_PAYMENT","MPR","MAX_TXN_IN_FLIGHT"]
 
 def test():
-#    wl = 'YCSB'
-    wl = 'TPCC'
-#    nnodes = [4]
-    nnodes = [1,2,4,8]
+    wl = 'YCSB'
+#    wl = 'TPCC'
+    nnodes = [1]
+#    nnodes = [1,2,4]
 #    nnodes = [1,2,4,8,16,32,64]
     nmpr=[1.0]
     nmpir=[0.01]
 #    nmpr=[0.0,0.1,0.25,0.5,0.75,0.95,1.0]
 #    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
-    nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','MVCC','OCC']
-#    nalgos=['MVCC']
+#    nalgos=['NO_WAIT','WAIT_DIE','TIMESTAMP','MVCC','OCC']
+    nalgos=['CALVIN']
     nthreads=[6]
     nrthreads=[1]
     nsthreads=[1]
@@ -512,7 +512,8 @@ configs = {
 #TPCC
     "NUM_WH": 'PART_CNT',
     "PERC_PAYMENT":1.0,
-    "DEBUG_DISTR":"false",
+    "DEBUG_DISTR":"true",
+    "DEBUG_ALLOC":"true",
     "MODE":"NORMAL_MODE",
     "SHMEM_ENV":"false",
 }

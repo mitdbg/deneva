@@ -46,8 +46,7 @@ void MessageThread::run() {
   sbuf = buffer[dest];
   if(!sbuf->fits(get_msg_size(type,qry))) {
     // send message
-    DEBUG("Sending batch %ld txns to %ld\n",sbuf->cnt,dest);
-    DEBUG_FLUSH();
+    //DEBUG("Sending batch %ld txns to %ld\n",sbuf->cnt,dest);
 	  ((uint32_t*)sbuf->buffer)[2] = sbuf->cnt;
     assert(sbuf->cnt > 0);
     INC_STATS(_thd_id,mbuf_send_time,get_sys_clock() - sbuf->starttime);
@@ -86,6 +85,11 @@ void MessageThread::run() {
 #endif
     }
   }
+#if CC_ALG == CALVIN
+  if(type == RACK && !ISSEQUENCER) {
+      txn_table.delete_txn(qry->return_id, qry->txn_id);
+  }
+#endif
 #if MODE==QRY_ONLY_MODE || MODE == SETUP_MODE || MODE == SIMPLE_MODE
   if(!ISSEQUENCER && type == RQRY_RSP && qry->max_done) {
     txn_table.delete_txn(qry->return_id, qry->txn_id);
@@ -302,7 +306,8 @@ void MessageThread::rfin(mbuf * sbuf,base_query * qry) {
 }
 
 void MessageThread::cl_rsp(mbuf * sbuf, base_query *qry) {
-  DEBUG("Sending CL_RSP %ld\n",qry->txn_id);
+  if(!ISSEQUENCER)
+    DEBUG("Sending CL_RSP %ld\n",qry->txn_id);
   assert(IS_LOCAL(qry->txn_id));
   COPY_BUF(sbuf->buffer,qry->rc,sbuf->ptr);
   COPY_BUF(sbuf->buffer,qry->client_startts,sbuf->ptr);
@@ -418,7 +423,8 @@ void MessageThread::rqry_rsp(mbuf * sbuf, base_query *qry) {
 }
 
 void MessageThread::rtxn(mbuf * sbuf, base_query *qry) {
-  DEBUG("Sending RTXN\n");
+  if(!ISSEQUENCER)
+    DEBUG("Sending RTXN\n");
   //assert(ISCLIENT);
 #if WORKLOAD == TPCC
     tpcc_client_query * m_qry = (tpcc_client_query *)qry;

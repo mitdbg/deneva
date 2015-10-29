@@ -264,6 +264,7 @@ void txn_man::cleanup(RC rc) {
 #endif
 
 	ts_t starttime = get_sys_clock();
+  DEBUG("Cleanup %ld %d\n",get_txn_id(),row_cnt);
   uint64_t thd_prof_start = starttime;
 	for (int rid = row_cnt - 1; rid >= 0; rid --) {
 		row_t * orig_r = accesses[rid]->orig_row;

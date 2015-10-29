@@ -62,6 +62,7 @@ void Sequencer::process_txn_ack(base_query *query, uint64_t thd_id) {
 		ATOM_FETCH_ADD(total_txns_finished,1);
 		INC_STATS(thd_id,txn_cnt,1);
 	}
+  DEBUG("ACK %ld: %d %ld\n",id,query_acks_left,txns_left);
 
 	// If we have all acks for this batch, send qry responses to all clients
 	if (txns_left == 0) {

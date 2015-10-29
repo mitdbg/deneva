@@ -41,8 +41,7 @@ void Remote_query::unpack(void * d, uint64_t len) {
   COPY_VAL(dest_id,data,ptr);
   COPY_VAL(return_id,data,ptr);
   COPY_VAL(txn_cnt,data,ptr);
-  DEBUG("Received batch %d txns from %d\n",txn_cnt,return_id);
-  DEBUG_FLUSH();
+  //DEBUG("Received batch %d txns from %d\n",txn_cnt,return_id);
 
   while(txn_cnt > 0) { 
     qry_pool.get(query);

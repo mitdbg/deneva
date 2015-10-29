@@ -1482,6 +1482,7 @@ RC thread_t::run_calvin() {
 		rc = RCOK;
 		txn_starttime = get_sys_clock();
     assert(m_query->rtype <= NO_MSG);
+    bool new_txn = false;
 
 		switch(m_query->rtype) {
       case RACK:
@@ -1524,6 +1525,7 @@ RC thread_t::run_calvin() {
 					assert(rc == RCOK);
 					m_txn->set_txn_id(m_query->txn_id);
 					txn_table.add_txn(g_node_id,m_txn,m_query);
+          new_txn = true;
         } else {
           tmp_query = tmp_query->merge(m_query);
           if(m_query != tmp_query) {
@@ -1541,13 +1543,13 @@ RC thread_t::run_calvin() {
 					printf("START %ld %ld\n",m_txn->get_txn_id(),m_txn->starttime);
 #endif
         // Acquire locks
-        rc = m_txn->acquire_locks(m_query);
+        if(new_txn)
+          rc = m_txn->acquire_locks(m_query);
+
         if(rc != RCOK)
           break;
         // Execute
 				rc = m_txn->run_calvin_txn(m_query);
-        // Release locks
-        //rc = m_txn->release_locks(m_query);
         assert(rc == RCOK);
 				break;
 		  default:
@@ -1555,6 +1557,9 @@ RC thread_t::run_calvin() {
     }
 
     if(rc == RCOK) {
+      // Release locks
+      //rc = m_txn->release_locks(m_query);
+      m_txn->finish(RCOK,NULL,0);
 			INC_STATS(get_thd_id(),txn_cnt,1);
 			timespan = get_sys_clock() - m_txn->starttime;
 			INC_STATS(get_thd_id(), run_time, timespan);

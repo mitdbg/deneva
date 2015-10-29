@@ -288,12 +288,23 @@ def deploy(schema_path,nids,exps,fmt):
                         cmd += "(/dev/shm/runcl -nid{} {}>> /dev/shm/results{}.out 2>&1 &);".format(nn,args,nn)  
                     else:
                         cmd += "(./runcl -nid{} {}>> results{}.out 2>&1 &);".format(nn,args,nn)  
+            for r in env.roledefs["sequencer"]:
+                if r == env.host:
+                    nn = nid.next()
+                    args = get_args(fmt,exp.next())
+                    if env.shmem:
+                        cmd += "(/dev/shm/runsq -nid{} {}>> /dev/shm/results{}.out 2>&1 &);".format(nn,args,nn)  
+                    else:
+                        cmd += "(./runsq -nid{} {}>> results{}.out 2>&1 &);".format(nn,args,nn)  
+
             cmd = cmd[:-3]
             cmd += ")"
             try:
                 res = run("echo $SCHEMA_PATH")
                 if not env.dry_run:
                     run(cmd)
+                else:
+                    print(cmd)
             except CommandTimeout:
                 pass
             except NetworkError:

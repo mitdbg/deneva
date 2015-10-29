@@ -159,6 +159,7 @@ RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt
       entry->start_ts = get_sys_clock();
 			entry->txn = txn;
 			entry->type = type;
+      DEBUG("wait %ld %ld\n",txn->get_txn_id(),_row->get_primary_key());
 			LIST_PUT_TAIL(waiters_head, waiters_tail, entry);
 			waiter_cnt ++;
       txn->lock_ready = false;
