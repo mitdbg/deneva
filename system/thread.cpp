@@ -284,7 +284,6 @@ RC thread_t::run() {
 				SET_STATS(get_thd_id(), tot_run_time, stoptime - run_starttime); 
 			}
       if(get_thd_id() == 0) {
-        work_queue.finish(currtime);
         abort_queue.abort_finish(currtime);
 
         // Send EXP_DONE to all nodes

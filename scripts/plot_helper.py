@@ -39,7 +39,7 @@ def apply_extras(my_cfg_fmt,my_cfg,extras,xname,vname):
                 my_cfg = my_cfg + [new_val]
             else:
                 my_cfg = my_cfg + [new_val]
-    if my_cfg[my_cfg_fmt.index("PART_PER_TXN")] > my_cfg[my_cfg_fmt.index("PART_CNT")]:
+    if "PART_PER_TXN" in my_cfg_fmt and my_cfg[my_cfg_fmt.index("PART_PER_TXN")] > my_cfg[my_cfg_fmt.index("PART_CNT")]:
         my_cfg[my_cfg_fmt.index("PART_PER_TXN")] = my_cfg[my_cfg_fmt.index("PART_CNT")]
     return my_cfg,my_cfg_fmt
 
@@ -324,8 +324,6 @@ def tput(xval,vval,summary,summary_cl,
             my_cfg_fmt = cfg_fmt + [xname] + [vname]
             my_cfg = cfg + [x] + [v]
             my_cfg,my_cfg_fmt = apply_extras(my_cfg_fmt,my_cfg,extras,xname,vname)
-
-            n_thd =  my_cfg[my_cfg_fmt.index("THREAD_CNT")]
 
             cfgs = get_cfgs(my_cfg_fmt, my_cfg)
             cfgs = get_outfile_name(cfgs,my_cfg_fmt)

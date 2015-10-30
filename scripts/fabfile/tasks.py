@@ -100,8 +100,8 @@ def run_exps(exps,skip_completed='False',exec_exps='True',dry_run='False',iterat
     for i in range(ITERS):
         NOW=datetime.datetime.now()
         STRNOW=NOW.strftime("%Y%m%d-%H%M%S")
-#        execute(run_exp_old,exps,delay=delay)
-        execute(run_exp,exps,delay=delay)
+        execute(run_exp_old,exps,delay=delay)
+#        execute(run_exp,exps,delay=delay)
 
 
 ## Basic usage:
@@ -604,7 +604,11 @@ def run_exp_old(exps,network_test=False,delay=''):
             local("cp {} {}".format(cfg_srcpath,cfg_destpath))
             nnodes = cfgs["NODE_CNT"]
             nclnodes = cfgs["CLIENT_NODE_CNT"]
-            ntotal = nnodes + nclnodes
+            try:
+                ntotal = nnodes + nclnodes
+            except TypeError:
+                nclnodes = cfgs[cfgs["CLIENT_NODE_CNT"]]
+                ntotal = nnodes + nclnodes
             if CC_ALG == 'CALVIN':
                 ntotal += 1
             if env.same_node:

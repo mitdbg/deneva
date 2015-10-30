@@ -4,11 +4,11 @@ from helper import get_prog
 
 PATH=os.getcwd()
 
-exp = sys.argv[1][39:]
-result_dir = PATH + "/../results/1027_ec2_full_experiments/"
+#exp = sys.argv[1][39:]
+#result_dir = PATH + "/../results/1027_ec2_full_experiments/"
 
-#exp = sys.argv[1][13:]
-#result_dir = PATH + "/../results/"
+exp = sys.argv[1][13:]
+result_dir = PATH + "/../results/"
 
 print(exp)
 ncnt = int(sys.argv[2])

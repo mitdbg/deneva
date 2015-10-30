@@ -52,8 +52,10 @@ for arg in sys.argv[1:]:
         exps.append(arg)
     last_arg = arg
 
-#result_dir = PATH + "/../results/"
-result_dir = PATH + "/../results/1028_ec2_results/"
+result_dir = PATH + "/../results/"
+#result_dir = PATH + "/../results/1028_tpcc/"
+#result_dir = PATH + "/../results/1027_ec2_full_experiments/"
+#result_dir = PATH + "/../results/1028_ec2_results/"
 #result_dir = PATH + "/../results/results_201503pt2/"
 test_dir = ""
 
@@ -139,8 +141,15 @@ for exp in exps:
                 print(p_sfile)
                 r = {}
                 r2 = {}
+                nnodes = cfgs["NODE_CNT"]
+                nclients = cfgs["CLIENT_NODE_CNT"]
+                try:
+                    ntotal = nnodes + nclients
+                except TypeError:
+                    nclients = cfgs[cfgs["CLIENT_NODE_CNT"]]
+                    ntotal = nnodes + nclients
                 if clear or not os.path.isfile(p_sfile) or not os.path.isfile(p_cfile):
-                    for n in range(cfgs["NODE_CNT"]+cfgs["CLIENT_NODE_CNT"]):
+                    for n in range(ntotal):
                         ofile = "{}{}_{}*{}.out".format(result_dir,n,output_f,time)
                         res_list = sorted(glob.glob(ofile),key=os.path.getmtime,reverse=True)
                         if res_list:
@@ -179,8 +188,8 @@ for exp in exps:
                     print(s['txn_cnt'])
 
             if plot:
-                s = merge_results(s,exp_cnt,drop,cfgs["NODE_CNT"])
-                s2 = merge_results(s2,exp_cnt,drop,cfgs["CLIENT_NODE_CNT"])
+                s = merge_results(s,exp_cnt,drop,nnodes)
+                s2 = merge_results(s2,exp_cnt,drop,nclients)
                 summary[output_f] = s
                 pp = pprint.PrettyPrinter()
 #                pp.pprint(summary[output_f]['txn_cnt'])

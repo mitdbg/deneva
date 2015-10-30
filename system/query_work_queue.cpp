@@ -24,7 +24,6 @@ void QWorkQueue::init() {
   pthread_cond_init(&cond,NULL);
   cnt = 0;
   abrt_cnt = 0;
-  //wq = new ConcurrentQueue<base_query*,moodycamel::ConcurrentQueueDefaultTraits>;
 }
 
 int inline QWorkQueue::get_idx(int input) {
@@ -36,27 +35,11 @@ int inline QWorkQueue::get_idx(int input) {
     return idx;
 }
 
-bool QWorkQueue::poll_next_query(int tid) {
-  int idx = get_idx(tid);
-    return queue[idx].poll_next_query();
-}
-void QWorkQueue::finish(uint64_t time) {
-    for(int idx=0;idx<q_len;idx++)
-      queue[idx].finish(time);
-} 
 void QWorkQueue::abort_finish(uint64_t time) {
     for(int idx=0;idx<q_len;idx++)
       queue[idx].abort_finish(time);
 } 
 
-// FIXME: Access only 1 partition at a time; what if qry is being restarted at only 1 partition?
-void QWorkQueue::add_query(int tid, base_query * qry) {
-  int idx = get_idx(tid);
-    queue[idx].add_query(qry);
-    ATOM_ADD(cnt,1);
-}
-
-// FIXME: Only should abort at 1 partition
 void QWorkQueue::add_abort_query(int tid, base_query * qry) {
   int idx = get_idx(tid);
     queue[idx].add_abort_query(qry);
@@ -65,13 +48,42 @@ void QWorkQueue::add_abort_query(int tid, base_query * qry) {
 
 void QWorkQueue::enqueue(base_query * qry) {
   qry->q_starttime = get_sys_clock();
-  wq.enqueue(qry);
+  ATOM_ADD(cnt,1);
+  switch(PRIORITY) {
+    case PRIORITY_FCFS:
+      wq.enqueue(qry);
+      break;
+    case PRIORITY_ACTIVE:
+      if(qry->txn_id == UINT64_MAX)
+        new_wq.enqueue(qry);
+      else
+        wq.enqueue(qry);
+      break;
+    case PRIORITY_HOME:
+      if(qry->txn_id == UINT64_MAX)
+        new_wq.enqueue(qry);
+      else if (IS_REMOTE(qry->txn_id))
+        rem_wq.enqueue(qry);
+      else
+        wq.enqueue(qry);
+      break;
+    default: assert(false);
+  }
 }
 //TODO: do we need to has qry id here?
 // If we do, maybe add in check as an atomic var in base_query
 // Current hash implementation requires an expensive mutex
 bool QWorkQueue::dequeue(uint64_t thd_id, base_query *& qry) {
-  bool valid = wq.try_dequeue(qry);
+  bool valid;
+  valid = wq.try_dequeue(qry);
+  if(PRIORITY == PRIORITY_HOME) {
+    if(!valid)
+      valid = rem_wq.try_dequeue(qry);
+  }
+  if(PRIORITY == PRIORITY_HOME || PRIORITY == PRIORITY_ACTIVE) {
+    if(!valid)
+      valid = new_wq.try_dequeue(qry);
+  }
   if(!ISCLIENT && valid && qry->txn_id != UINT64_MAX) {
     if(set_active(thd_id, qry->txn_id)) {
       enqueue(qry);
@@ -121,25 +133,6 @@ void QWorkQueue::delete_active(uint64_t thd_id, uint64_t txn_id) {
 // Note: this is an **approximate** count
 uint64_t QWorkQueue::get_wq_cnt() {
   return (uint64_t)wq.size_approx();
-}
-
-base_query * QWorkQueue::get_next_query(int tid) {
-  int idx = get_idx(tid);
-  base_query * rtn_qry;
-  if(ISCLIENT) {
-    rtn_qry = queue[idx].get_next_query_client();
-  } else {
-    rtn_qry = queue[idx].get_next_query(tid);
-  }
-  if(rtn_qry) {
-    ATOM_SUB(cnt,1);
-  }
-  return rtn_qry;
-}
-
-void QWorkQueue::remove_query(int tid, base_query * qry) {
-  int idx = get_idx(tid);
-    queue[idx].remove_query(qry);
 }
 
 void QWorkQueue::update_hash(int tid, uint64_t id) {

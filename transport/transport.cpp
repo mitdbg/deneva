@@ -20,6 +20,7 @@
 
 	 */
 void Transport::shutdown() {
+  /*
   printf("Shutting down\n");
 //  for(uint64_t i=0;i<_s_cnt;i++) 
     //s[i].sock.shutdown(endpoint_id[i]);
@@ -35,6 +36,7 @@ void Transport::shutdown() {
       delete &s[i];
     }
   }
+  */
   //mem_allocator.free(endpoint_id,sizeof(int)*_s_cnt);
 }
 
@@ -114,6 +116,7 @@ void Transport::init(uint64_t node_id,workload * workload) {
 	}
 
 	printf("Node ID: %d/%lu\n",g_node_id,_node_cnt);
+  fflush(stdout);
 
   uint64_t s_cnt = 0;
   uint64_t s_thd;
@@ -133,7 +136,7 @@ void Transport::init(uint64_t node_id,workload * workload) {
       }
 #if TPORT_TYPE_IPC
       port = j;
-      sprintf(socket_name,"%s://node_%d%s",TPORT_TYPE,port,TPORT_PORT);
+      sprintf(socket_name,"%s://node_%d_%d%s",TPORT_TYPE,port,g_node_id,TPORT_PORT);
 #else
       if(ISCLIENT)
         port = TPORT_PORT + j + _node_cnt;
@@ -153,7 +156,7 @@ void Transport::init(uint64_t node_id,workload * workload) {
     for(uint64_t j = 0; j < g_client_send_thread_cnt; j++) {
 #if TPORT_TYPE_IPC
       port = j + _node_cnt;
-      sprintf(socket_name,"%s://node_%d%s",TPORT_TYPE,port,TPORT_PORT);
+      sprintf(socket_name,"%s://node_%d_%d%s",TPORT_TYPE,port,g_node_id,TPORT_PORT);
 #else
       port = TPORT_PORT + j + _node_cnt*2;
       sprintf(socket_name,"%s://eth0:%d",TPORT_TYPE,port);
@@ -175,7 +178,7 @@ void Transport::init(uint64_t node_id,workload * workload) {
       }
 #if TPORT_TYPE_IPC
       port = g_node_id;
-      sprintf(socket_name,"%s://node_%d%s",TPORT_TYPE,port,TPORT_PORT);
+      sprintf(socket_name,"%s://node_%d_%ld%s",TPORT_TYPE,port,j,TPORT_PORT);
 #else
       if(ISCLIENTN(j))
         port = TPORT_PORT + g_node_id + _node_cnt;
@@ -196,7 +199,7 @@ void Transport::init(uint64_t node_id,workload * workload) {
       for(uint64_t j = g_server_start_node; j < g_server_start_node + g_servers_per_client; j++) {
 #if TPORT_TYPE_IPC
         port = _node_cnt + i;
-        sprintf(socket_name,"%s://node_%d%s",TPORT_TYPE,port,TPORT_PORT);
+        sprintf(socket_name,"%s://node_%d_%ld%s",TPORT_TYPE,port,j,TPORT_PORT);
 #else
         port = TPORT_PORT + _node_cnt*2 + i;
         sprintf(socket_name,"%s://eth0;%s:%d",TPORT_TYPE,ifaddr[j],port);

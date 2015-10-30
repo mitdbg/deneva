@@ -95,6 +95,8 @@ public:
 
 private:
   moodycamel::ConcurrentQueue<base_query*,moodycamel::ConcurrentQueueDefaultTraits> wq;
+  moodycamel::ConcurrentQueue<base_query*,moodycamel::ConcurrentQueueDefaultTraits> new_wq;
+  moodycamel::ConcurrentQueue<base_query*,moodycamel::ConcurrentQueueDefaultTraits> rem_wq;
   QWorkQueueHelper * queue;
   QHash * hash;
   int q_len;
