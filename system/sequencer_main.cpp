@@ -146,7 +146,7 @@ int main(int argc, char* argv[])
 		((TestWorkload *)m_wl)->summarize();
 	}
 
-	tport_man.shutdown();
+	//tport_man.shutdown();
 
 	return 0;
 }

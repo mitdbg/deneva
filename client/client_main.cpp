@@ -185,7 +185,7 @@ int main(int argc, char* argv[])
 		((TestWorkload *)m_wl)->summarize();
 	}
   // Free stuff
-	tport_man.shutdown();
+	//tport_man.shutdown();
   /*
   msg_pool.free_all();
   qry_pool.free_all();

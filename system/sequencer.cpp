@@ -27,6 +27,7 @@ void Sequencer::init(workload * wl) {
 	rsp_cnt = g_node_cnt + g_client_node_cnt;
 	_wl = wl;
   send_batch = true;
+  last_time_batch = 0;
   /*
 #if WORKLOAD == YCSB
 	node_queries = (ycsb_query*) mem_allocator.alloc(sizeof(ycsb_client_query)*g_node_cnt,0);
@@ -66,6 +67,7 @@ void Sequencer::process_txn_ack(base_query *query, uint64_t thd_id) {
 
 	// If we have all acks for this batch, send qry responses to all clients
 	if (txns_left == 0) {
+    uint64_t prof_stat = get_sys_clock();
     DEBUG("FINISH BATCH %ld %ld\n",thd_id,batch_size);
 		for (uint32_t i = 0; i < batch_size; ++i) {
 			qlite next = wait_list[i];
@@ -77,6 +79,7 @@ void Sequencer::process_txn_ack(base_query *query, uint64_t thd_id) {
 		mem_allocator.free(wait_list,sizeof(qlite)*batch_size);
 		wait_list = NULL;
 
+    INC_STATS(thd_id,time_seq_ack,get_sys_clock() - prof_stat);
     ATOM_CAS(send_batch,false,true);
 		//prepare_next_batch(thd_id);
 	}
@@ -89,6 +92,7 @@ void Sequencer::prepare_next_batch(uint64_t thd_id) {
   if(!ATOM_CAS(send_batch,true,false))
     return;
   // Only 1 thread should be here
+  uint64_t prof_stat = get_sys_clock();
 
   assert(next_batch_size > 0);
 	// Lock fill & batch queues for swap
@@ -104,6 +108,10 @@ void Sequencer::prepare_next_batch(uint64_t thd_id) {
   batch_size = next_batch_size;
   next_batch_size = 0;
   DEBUG("PREPARE NEXT BATCH %ld %ld \n",thd_id,batch_size);
+  if(last_time_batch > 0) {
+    INC_STATS(thd_id,time_batch,get_sys_clock() - last_time_batch);
+  }
+  last_time_batch = get_sys_clock();
 
 	// Release queries and signal
 	pthread_mutex_lock(&mtx);
@@ -164,6 +172,7 @@ void Sequencer::prepare_next_batch(uint64_t thd_id) {
 	// Cleanup
   mem_allocator.free(participating_nodes,sizeof(bool)*g_node_cnt);
 	INC_STATS(thd_id,batch_cnt,1);
+  INC_STATS(thd_id,time_seq_prep,get_sys_clock() - prof_stat);
 }
 
 void Sequencer::reset_participating_nodes(bool * part_nodes) {
@@ -358,6 +367,7 @@ RC Seq_thread_t::run_remote() {
   bool got_qry;
   uint64_t thd_prof_start;
 	uint64_t run_starttime = get_sys_clock();
+	uint64_t prog_time = run_starttime;
 
 	while (true) {
 
@@ -367,6 +377,17 @@ RC Seq_thread_t::run_remote() {
       */
 
     thd_prof_start = get_sys_clock();
+
+		if(get_thd_id() == 0) {
+      uint64_t now_time = get_sys_clock();
+      if (now_time - prog_time >= g_prog_timer) {
+        prog_time = now_time;
+        SET_STATS(get_thd_id(), tot_run_time, prog_time - run_starttime); 
+
+        stats.print_sequencer(true);
+      }
+		}
+
 
 		while(!(got_qry = work_queue.dequeue(_thd_id, m_query)) 
                 && !seq_man.send_batch
@@ -386,6 +407,9 @@ RC Seq_thread_t::run_remote() {
       if(get_thd_id() == 0) {
         work_queue.finish(get_sys_clock());
       }
+      printf("FINISH %ld:%ld\n",_node_id,_thd_id);
+      fflush(stdout);
+			return FINISH;
     }
 
     if(seq_man.send_batch)

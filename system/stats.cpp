@@ -288,6 +288,9 @@ void Stats_thd::clear() {
   spec_abort_cnt = 0;
   spec_commit_cnt = 0;
   batch_cnt = 0;
+  time_batch = 0;
+  time_seq_prep = 0;
+  time_seq_ack = 0;
 
 }
 
@@ -409,8 +412,11 @@ void Stats::print_sequencer(bool prog) {
 	double total_time_msg_sent = 0;
 	double total_time_getqry = 0;
 	uint32_t total_batches_sent = 0;
+	double total_time_batch = 0;
+	double total_time_seq_prep = 0;
+	double total_time_seq_ack = 0;
 
-	uint64_t limit = g_seq_thread_cnt;
+	uint64_t limit = g_seq_thread_cnt + 2;
 	for (uint64_t tid = 0; tid < limit; tid ++) {
 		if(!prog)
 			total_tot_run_time += _stats[tid]->tot_run_time;
@@ -430,6 +436,9 @@ void Stats::print_sequencer(bool prog) {
 		total_msg_rcv_cnt += _stats[tid]->msg_rcv_cnt;
 		total_time_msg_sent += _stats[tid]->time_msg_sent;
 		total_batches_sent += _stats[tid]->batch_cnt;
+		total_time_batch += _stats[tid]->time_batch;
+		total_time_seq_prep += _stats[tid]->time_seq_prep;
+		total_time_seq_ack += _stats[tid]->time_seq_ack;
   }
   if(prog)
 		total_tot_run_time += _stats[0]->tot_run_time;
@@ -464,6 +473,9 @@ void Stats::print_sequencer(bool prog) {
       ",time_tport_rcv=%f"
       ",tport_lat=%f"
       ",batches_sent=%u"
+      ",batch_interval=%f"
+      ",time_seq_prep=%f"
+      ",time_seq_ack=%f"
 			"\n",
 			total_tot_run_time / BILLION,
 			total_txn_cnt, 
@@ -483,6 +495,9 @@ void Stats::print_sequencer(bool prog) {
 			total_time_tport_rcv / BILLION,
 			total_tport_lat / BILLION / total_msg_rcv_cnt,
 			total_batches_sent
+			, total_time_batch / BILLION / total_batches_sent
+			, total_time_seq_prep / BILLION
+			, total_time_seq_ack / BILLION
 		);
   /*
 	fprintf(outf, 

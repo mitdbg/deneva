@@ -33,6 +33,7 @@ class Sequencer {
 	volatile bool sent_first_batch;
 	volatile uint32_t rsp_cnt;
 	volatile uint64_t next_batch_id;
+  uint64_t last_time_batch;
 #if WORKLOAD == YCSB
 	ycsb_query* node_queries;
 #elif WORKLOAD == TPCC

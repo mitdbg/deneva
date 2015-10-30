@@ -118,6 +118,9 @@ public:
 
   // calvin
   uint32_t batch_cnt;
+  double time_batch;
+  double time_seq_prep;
+  double time_seq_ack;
 
   double time_getqry;
   double client_latency;

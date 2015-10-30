@@ -41,7 +41,7 @@ fmt_title=["NODE_CNT","CC_ALG","ACCESS_PERC","TXN_WRITE_PERC","PERC_PAYMENT","MP
 def test():
     wl = 'YCSB'
 #    wl = 'TPCC'
-    nnodes = [1]
+    nnodes = [2]
 #    nnodes = [1,2,4]
 #    nnodes = [1,2,4,8,16,32,64]
     nmpr=[1.0]
@@ -513,7 +513,7 @@ configs = {
     "NUM_WH": 'PART_CNT',
     "PERC_PAYMENT":1.0,
     "DEBUG_DISTR":"true",
-    "DEBUG_ALLOC":"true",
+    "DEBUG_ALLOC":"false",
     "MODE":"NORMAL_MODE",
     "SHMEM_ENV":"false",
 }

@@ -237,7 +237,7 @@ int main(int argc, char* argv[])
   printf("\n");
   fflush(stdout);
   // Free things
-	tport_man.shutdown();
+	//tport_man.shutdown();
 
   /*
   txn_table.delete_all();
