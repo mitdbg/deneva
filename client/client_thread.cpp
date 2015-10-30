@@ -38,6 +38,7 @@ RC Client_thread_t::run_remote() {
 	int32_t inf;
   uint32_t return_node_offset;
 
+	run_starttime = get_sys_clock();
   while(!_wl->sim_init_done) {
     tport_man.recv_msg();
     //while((m_query = work_queue.get_next_query(get_thd_id())) != NULL) {
@@ -51,6 +52,8 @@ RC Client_thread_t::run_remote() {
           assert( _wl->sim_init_done);
       }
     }
+    if(get_sys_clock() - run_starttime >= g_done_timer)
+      return FINISH;
   }
   warmup_done = true;
 	int rsp_cnts[g_servers_per_client];
@@ -61,7 +64,7 @@ RC Client_thread_t::run_remote() {
 	myrand rdm;
 	rdm.init(get_thd_id());
 	ts_t rq_time = get_sys_clock();
-	uint64_t run_starttime = get_sys_clock();
+	run_starttime = get_sys_clock();
 
 	while (true) {
     if(get_sys_clock() - run_starttime >= g_done_timer) {
@@ -163,8 +166,11 @@ RC Client_thread_t::run_send() {
 
   MessageThread messager;
   messager.init(_thd_id);
+	run_starttime = get_sys_clock();
 	while (!_wl->sim_init_done) {
     messager.run();
+    if(get_sys_clock() - run_starttime >= g_done_timer)
+      return FINISH;
   }
 
 	pthread_barrier_wait( &warmup_bar );
@@ -190,6 +196,7 @@ RC Client_thread_t::run() {
 	stats.init(get_thd_id());
 	base_client_query * m_query = NULL;
 
+	run_starttime = get_sys_clock();
 	if( _thd_id == 0) {
 #if WORKLOAD == YCSB
     m_query = new ycsb_client_query;
@@ -205,7 +212,14 @@ RC Client_thread_t::run() {
         msg_queue.enqueue(NULL,INIT_DONE,i);
 			}
 		}
-	}
+    if(get_sys_clock() - run_starttime >= g_done_timer)
+      return FINISH;
+	} else {
+    while(!_wl->sim_init_done) {
+      if(get_sys_clock() - run_starttime >= g_done_timer)
+        return FINISH;
+    }
+  }
 	pthread_barrier_wait( &warmup_bar );
 	printf("Run %ld:%ld\n",_node_id, _thd_id);
 
@@ -218,7 +232,7 @@ RC Client_thread_t::run() {
   for (uint32_t i = 0; i < g_servers_per_client; ++i)
       txns_sent[i] = 0;
 
-	uint64_t run_starttime = get_sys_clock();
+	run_starttime = get_sys_clock();
 	uint64_t prog_time = run_starttime;
 
 	//while (num_txns_sent < g_servers_per_client * MAX_TXN_PER_PART) {

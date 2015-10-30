@@ -115,6 +115,7 @@ uint64_t StatsArr::get_avg() {
 
 void Stats_thd::init(uint64_t thd_id) {
   part_cnt = (uint64_t*) mem_allocator.alloc(sizeof(uint64_t)*g_part_cnt,0);
+  part_acc = (uint64_t*) mem_allocator.alloc(sizeof(uint64_t)*g_part_cnt,0);
 	clear();
 //	all_lat = new uint64_t [g_max_txn_per_part]; 
 	all_lat.init(g_max_txn_per_part,ArrIncr);
@@ -221,8 +222,10 @@ void Stats_thd::clear() {
   thd_prof_thd_rack0=0;thd_prof_thd_rack1=0; thd_prof_thd_rack2a=0;thd_prof_thd_rack2=0;thd_prof_thd_rack3=0;thd_prof_thd_rack4=0;
   thd_prof_thd_rtxn1a=0;thd_prof_thd_rtxn1b=0; thd_prof_thd_rtxn2=0;thd_prof_thd_rtxn3=0;thd_prof_thd_rtxn4=0;
 
-  for(uint64_t i = 0; i < g_part_cnt; i++) 
+  for(uint64_t i = 0; i < g_part_cnt; i++) {
     part_cnt[i] = 0;
+    part_acc[i] = 0;
+  }
 
 
   for(int i = 0; i < 16;i++)
@@ -722,8 +725,11 @@ void Stats::print(bool prog) {
     return;
 	
   uint64_t total_part_cnt[g_part_cnt];
-  for(uint64_t i = 0; i < g_part_cnt; i++) 
+  uint64_t total_part_acc[g_part_cnt];
+  for(uint64_t i = 0; i < g_part_cnt; i++) {
     total_part_cnt[i] = 0;
+    total_part_acc[i] = 0;
+  }
 	uint64_t total_txn_cnt = 0;
 	uint64_t total_txn_rem_cnt = 0;
 	uint64_t total_abort_cnt = 0;
@@ -932,8 +938,10 @@ void Stats::print(bool prog) {
   total_txn_time_net += _stats[tid]->txn_time_net;
   total_txn_time_misc += _stats[tid]->txn_time_misc;
 
-  for(uint64_t i = 0; i < g_part_cnt; i++) 
+  for(uint64_t i = 0; i < g_part_cnt; i++) {
     total_part_cnt[i] += _stats[tid]->part_cnt[i];
+    total_part_acc[i] += _stats[tid]->part_acc[i];
+  }
 
   total_qry_cnt += _stats[tid]->rtxn +_stats[tid]->rqry_rsp +_stats[tid]->rack +_stats[tid]->rinit +_stats[tid]->rqry +_stats[tid]->rprep +_stats[tid]->rfin;
 
@@ -1182,6 +1190,12 @@ void Stats::print(bool prog) {
         ",part_cnt%ld=%ld"
         ,i+1
         ,total_part_cnt[i]
+        );
+  for(uint64_t i = 0; i < g_part_cnt; i++) 
+    fprintf(outf,
+        ",part_acc%ld=%ld"
+        ,i+1
+        ,total_part_acc[i]
         );
   mem_util(outf);
   cpu_util(outf);

@@ -20,6 +20,7 @@
 
 	 */
 void Transport::shutdown() {
+  /*
   printf("Shutting down\n");
 //  for(uint64_t i=0;i<_s_cnt;i++) 
     //s[i].sock.shutdown(endpoint_id[i]);
@@ -35,6 +36,7 @@ void Transport::shutdown() {
       delete &s[i];
     }
   }
+  */
   //mem_allocator.free(endpoint_id,sizeof(int)*_s_cnt);
 }
 
@@ -114,6 +116,7 @@ void Transport::init(uint64_t node_id,workload * workload) {
 	}
 
 	printf("Node ID: %d/%lu\n",g_node_id,_node_cnt);
+  fflush(stdout);
 
   uint64_t s_cnt = 0;
   uint64_t s_thd;

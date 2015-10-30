@@ -10,8 +10,8 @@
 #define REM_THREAD_CNT 1
 #define SEND_THREAD_CNT 1
 // PART_CNT should be at least NODE_CNT
-#define PART_CNT 1
-#define CLIENT_NODE_CNT 1
+#define PART_CNT NODE_CNT
+#define CLIENT_NODE_CNT NODE_CNT
 #define CLIENT_THREAD_CNT 2
 #define CLIENT_REM_THREAD_CNT 1
 #define CLIENT_SEND_THREAD_CNT 4
@@ -75,14 +75,15 @@
 #define MAX_QUEUE_LEN NODE_CNT * 2
 
 #define PRIORITY_WORK_QUEUE false
+#define PRIORITY PRIORITY_ACTIVE
 #define MSG_SIZE_MAX 4096
-#define MSG_TIME_LIMIT 1000*1000UL
+#define MSG_TIME_LIMIT 10 * 1000000UL
 
 /***********************************************/
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, VOLTDB, OCC, VLL, CALVIN
-#define CC_ALG CALVIN
+#define CC_ALG TIMESTAMP
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER         false
@@ -162,7 +163,7 @@
 #define TUP_WRITE_PERC 0.5
 #define SCAN_PERC           0
 #define SCAN_LEN          20
-#define PART_PER_TXN 1
+#define PART_PER_TXN NODE_CNT
 #define PERC_MULTI_PART     MPR 
 #define REQ_PER_QUERY 10
 #define FIELD_PER_TUPLE       10
@@ -181,7 +182,7 @@
 // are not modeled.
 #define TPCC_ACCESS_ALL       false 
 #define WH_UPDATE         true
-#define NUM_WH 1
+#define NUM_WH NODE_CNT
 // % of transactions that access multiple partitions
 #define MPR 1.0
 #define MPIR 0.01
@@ -295,6 +296,10 @@ extern TestCases          g_test_case;
 // SKEW METHODS
 #define ZIPF 1
 #define HOT 2
+// PRIORITY WORK QUEUE
+#define PRIORITY_FCFS 1
+#define PRIORITY_ACTIVE 2
+#define PRIORITY_HOME 3
 
 // Stats and timeout
 #define BILLION 1000000000UL // in ns => 1 second

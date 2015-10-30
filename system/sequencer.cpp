@@ -404,9 +404,6 @@ RC Seq_thread_t::run_remote() {
         printf("_wl->sim_done=%d\n",_wl->sim_done);
         fflush(stdout);
       }
-      if(get_thd_id() == 0) {
-        work_queue.finish(get_sys_clock());
-      }
       printf("FINISH %ld:%ld\n",_node_id,_thd_id);
       fflush(stdout);
 			return FINISH;

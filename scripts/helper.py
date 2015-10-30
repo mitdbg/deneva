@@ -283,6 +283,22 @@ stat_map = {
 'type13':[],
 'type14':[],
 'type15':[],
+'part_cnt1':[],
+'part_cnt2':[],
+'part_cnt3':[],
+'part_cnt4':[],
+'part_cnt5':[],
+'part_cnt6':[],
+'part_cnt7':[],
+'part_cnt8':[],
+'part_cnt9':[],
+'part_cnt10':[],
+'part_cnt11':[],
+'part_cnt12':[],
+'part_cnt13':[],
+'part_cnt14':[],
+'part_cnt15':[],
+'part_cnt16':[],
 
 'txn_table_cflt':[],
 'txn_table_cflt_size':[],
@@ -551,6 +567,11 @@ def get_args(fmt,exp):
         if key not in FLAG or key in CONFIG_PARAMS: continue
         flag = FLAG[key]
         args += "{}{} ".format(flag,cfgs[key])
+    for c in configs:
+        if configs[c] in configs and configs[c] in fmt and configs[c] in FLAG and configs[c] not in CONFIG_PARAMS:
+            flag = FLAG[c]
+            args += "{}{} ".format(flag,cfgs[configs[c]])
+            
     return args
  
 def get_execfile_name(cfgs,fmt,network_hosts=[]):
@@ -601,10 +622,10 @@ def get_cfgs(fmt,e):
     # For now, spawn NODE_CNT remote threads to avoid potential deadlock
     #if "REM_THREAD_CNT" not in fmt:
     #    cfgs["REM_THREAD_CNT"] = cfgs["NODE_CNT"] * cfgs["THREAD_CNT"]
-    if "PART_CNT" not in fmt:
-        cfgs["PART_CNT"] = cfgs["NODE_CNT"]# * cfgs["THREAD_CNT"]
-    if "NUM_WH" not in fmt:
-        cfgs["NUM_WH"] = cfgs["PART_CNT"]
+#    if "PART_CNT" not in fmt:
+#        cfgs["PART_CNT"] = cfgs["NODE_CNT"]# * cfgs["THREAD_CNT"]
+#    if "NUM_WH" not in fmt:
+#        cfgs["NUM_WH"] = cfgs["PART_CNT"]
     return cfgs
 
 def print_keys(result_dir="../results",keys=['txn_cnt']):

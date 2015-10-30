@@ -100,7 +100,8 @@ def run_exps(exps,skip_completed='False',exec_exps='True',dry_run='False',iterat
     for i in range(ITERS):
         NOW=datetime.datetime.now()
         STRNOW=NOW.strftime("%Y%m%d-%H%M%S")
-        execute(run_exp,exps,delay=delay)
+        execute(run_exp_old,exps,delay=delay)
+#        execute(run_exp,exps,delay=delay)
 
 
 ## Basic usage:
@@ -125,6 +126,11 @@ def network_test(num_nodes=16,exps="network_experiment",skip_completed='False',e
         set_hosts(list(pair))
         execute(run_exp,exps,network_test=True)
 
+@task
+@parallel
+def check_cpu():
+    put("test_cpu.out",env.rem_homedir)
+    run("chmod a+x test_cpu.out; ./test_cpu.out")
 
 @task
 @hosts('localhost')
@@ -146,6 +152,8 @@ def delete_remote_results():
 @task
 @parallel
 def copy_files(schema,exp_fname):
+    if env.dry_run:
+        return
     executable_files = ["rundb","runcl"]
     if CC_ALG == "CALVIN":
         executable_files.append("runsq")
@@ -205,10 +213,9 @@ def set_delay(delay='10'):
 def reset_delay():
     run("sudo tc qdisc del dev eth0 root") 
  
-#FIXME: max_attempts=3
 @task
 @parallel
-def sync_clocks(max_offset=0.01,max_attempts=0,delay=15):
+def sync_clocks(max_offset=0.01,max_attempts=1,delay=15):
     if env.dry_run:
         return True
     offset = sys.float_info.max
@@ -562,7 +569,7 @@ def check_binaries(exps):
 
 @task
 @hosts(['localhost'])
-def run_exp(exps,network_test=False,delay=''):
+def run_exp_old(exps,network_test=False,delay=''):
     if env.shmem:
         schema_path = "/dev/shm/"
     else:
@@ -606,7 +613,11 @@ def run_exp(exps,network_test=False,delay=''):
             local("cp {} {}".format(cfg_srcpath,cfg_destpath))
             nnodes = cfgs["NODE_CNT"]
             nclnodes = cfgs["CLIENT_NODE_CNT"]
-            ntotal = nnodes + nclnodes
+            try:
+                ntotal = nnodes + nclnodes
+            except TypeError:
+                nclnodes = cfgs[cfgs["CLIENT_NODE_CNT"]]
+                ntotal = nnodes + nclnodes
             if CC_ALG == 'CALVIN':
                 ntotal += 1
             if env.same_node:
@@ -632,7 +643,7 @@ def run_exp(exps,network_test=False,delay=''):
                         # If full, execute all exps in batch and reset everything
                         full = (batch_size + ntotal) > len(env.hosts)
                         if full:
-                            if env.cluster != 'istc':
+                            if env.cluster != 'istc' and not env.dry_run:
                                 # Sync clocks before each experiment
                                 execute(sync_clocks)
                             with color():
@@ -685,7 +696,7 @@ def run_exp(exps,network_test=False,delay=''):
                     # of us are debugging...
                     execute(copy_files,schema,output_exec_fname)
                     
-                if not env.batch_mode or last_exp:
+                if not env.batch_mode or last_exp and len(exps) > 0:
                     if env.batch_mode:
                         set_hosts(good_hosts[:batch_size])
                         print("Deploying last batch")
@@ -857,4 +868,134 @@ def color(level="info"):
     print("\033[%sm" % COLORS[level],end="")
     yield
     print("\033[0m",end="")
+
+@task
+@hosts(['localhost'])
+def run_exp(exps,network_test=False,delay=''):
+    if env.shmem:
+        schema_path = "/dev/shm/"
+    else:
+        schema_path = "{}/".format(env.rem_homedir)
+    good_hosts = []
+    if not network_test and EXECUTE_EXPS:
+        good_hosts = get_good_hosts()
+        with color():
+            puts("good host list =\n{}".format(pprint.pformat(good_hosts,depth=3)),show_prefix=True)
+    fmt,experiments = experiment_map[exps]()
+    batch_size = 0 
+    nids = {} 
+    outfiles = {}
+    exps = {}
+
+    if SKIP:
+        for e in experiments[:]:
+            cfgs = get_cfgs(fmt,e)
+            output_fbase = get_outfile_name(cfgs,fmt,env.hosts)
+            if len(glob.glob('{}*{}*.out'.format(env.result_dir,output_fbase))) > 0:
+                with color("warn"):
+                    puts("experiment exists in results folder... skipping",show_prefix=True)
+                experiments.remove(e)
+                
+    experiments.sort(key=lambda x: x[fmt.index("NODE_CNT")] + x[fmt.index("CLIENT_NODE_CNT")],reverse=True)
+
+# Fill experiment pool
+    while len(experiments) > 0 :
+        round_exps = []
+        batch_total = 0
+        for e in experiments[:]:
+            cfgs = get_cfgs(fmt,e)
+            nnodes = cfgs["NODE_CNT"]
+            nclnodes = cfgs["CLIENT_NODE_CNT"]
+            ccalg = cfgs["CC_ALG"]
+            ntotal = cfgs["NODE_CNT"] + cfgs["CLIENT_NODE_CNT"]
+            if ccalg == 'CALVIN':
+                ntotal += 1
+            if env.same_node:
+                ntotal = 1
+            if env.overlap:
+                ntotal = max(nnodes,nclnodes)
+            if ntotal > len(env.hosts):
+                msg = "Not enough nodes to run experiment!\n"
+                msg += "\tRequired nodes: {}, ".format(ntotal)
+                msg += "Actual nodes: {}".format(len(env.hosts))
+                with color():
+                    puts(msg,show_prefix=True)
+                experiments.remove(e)
+                continue
+            if (batch_total + ntotal) > len(env.hosts):
+                continue
+
+            batch_total += ntotal
+            round_exps.append(e)
+            experiments.remove(e)
+    
+        if not EXECUTE_EXPS: continue
+
+        batch_size = 0
+        for e in round_exps:
+            set_hosts(good_hosts)
+            cfgs = get_cfgs(fmt,e)
+            global CC_ALG
+            nnodes = cfgs["NODE_CNT"]
+            nclnodes = cfgs["CLIENT_NODE_CNT"]
+            CC_ALG = cfgs["CC_ALG"]
+            ntotal = cfgs["NODE_CNT"] + cfgs["CLIENT_NODE_CNT"]
+            if ccalg == 'CALVIN':
+                ntotal += 1
+            if env.same_node:
+                ntotal = 1
+            if env.overlap:
+                ntotal = max(nnodes,nclnodes)
+
+            output_fbase = get_outfile_name(cfgs,fmt,env.hosts)
+            output_exec_fname = get_execfile_name(cfgs,fmt,env.hosts)
+            output_f = output_fbase + STRNOW
+            cfg_srcpath = "{}cfg".format(os.path.join("binaries",output_exec_fname))
+            cfg_destpath = "{}.cfg".format(os.path.join(env.result_dir,output_exec_fname+STRNOW))
+            local("cp {} {}".format(cfg_srcpath,cfg_destpath))
+            with color():
+                puts("Adding experiment to current batch: {}".format(output_f), show_prefix=True)
+            machines = env.hosts[batch_size : batch_size + ntotal]
+            batch_size += ntotal
+            set_hosts(machines)
+            new_roles=execute(assign_roles,nnodes,nclnodes,append=env.batch_mode)[env.host]
+            new_nids,new_exps = execute(write_ifconfig,new_roles,e)[env.host]
+            nids.update(new_nids)
+            exps.update(new_exps)
+            for host,nid in new_nids.iteritems():
+                outfiles[host] = "{}.out".format(output_f)
+            if cfgs["WORKLOAD"] == "TPCC":
+                schema = "benchmarks/TPCC_short_schema.txt"
+            elif cfgs["WORKLOAD"] == "YCSB":
+                schema = "benchmarks/YCSB_schema.txt"
+            # NOTE: copy_files will fail if any (possibly) stray processes
+            # are still running one of the executables. Setting the 'kill'
+            # flag in environment.py to true to kill these processes. This
+            # is useful for running real experiments but dangerous when both
+            # of us are debugging...
+            execute(copy_files,schema,output_exec_fname)
+
+        if env.remote:
+        
+            set_hosts(good_hosts[:batch_size])
+            if env.cluster != 'istc' and not env.dry_run:
+                # Sync clocks before each experiment
+                execute(sync_clocks)
+            with color():
+                puts("Batch is full, deploying batch...{}/{}".format(batch_size,len(good_hosts)),show_prefix=True)
+            with color("debug"):
+                puts(pprint.pformat(outfiles,depth=3),show_prefix=False)
+            with color():
+                puts("Starttime: {}".format(datetime.datetime.now().strftime("%H:%M:%S")),show_prefix=True)
+            execute(deploy,schema_path,nids,exps,fmt)
+            with color():
+                puts("Endtime: {}".format(datetime.datetime.now().strftime("%H:%M:%S")),show_prefix=True)
+            execute(get_results,outfiles,nids)
+            good_hosts = get_good_hosts()
+            batch_size = 0
+            nids = {}
+            exps = {}
+            outfiles = {}
+            set_hosts(good_hosts)
+            env.roledefs = None
 
