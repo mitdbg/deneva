@@ -145,6 +145,7 @@ void Sequencer::prepare_next_batch(uint64_t thd_id) {
 		ycsb_query * m_query = (ycsb_query *) query;
 
 #elif WORKLOAD == TPCC
+		tpcc_query * m_query = (tpcc_query *) query;
 		printf("Add sequencer support for TPCC!\n");
 		assert(false);
 #endif

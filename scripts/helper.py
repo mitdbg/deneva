@@ -12,7 +12,8 @@ CONFIG_PARAMS = [
 #    "DEBUG_DISTR",
     "CC_ALG",
     "MODE",
-    "WORKLOAD"
+    "WORKLOAD",
+    "PRIORITY"
 #    "SHMEM_ENV"
     ]
 
@@ -68,6 +69,7 @@ SHORTNAMES = {
     "MSG_SIZE_MAX" : "BS",
     "DATA_PERC":"D",
     "ACCESS_PERC":"A",
+    "PRIORITY":"",
 }
 
 stat_map = {
@@ -109,7 +111,6 @@ stat_map = {
  'time_tport_send': [],
  'tport_lat': [],
  'cc_wait_abrt_time': [],
- 'latency': [],
  'time_cleanup': [],
  'time_lock_man': [],
  'qq_full': [],
@@ -118,7 +119,6 @@ stat_map = {
  'time_msg_sent': [],
  'qry_rack': [],
  'qq_lat': [],
- 'txn_cnt': [],
  'time_man': [],
  'txn_time_begintxn': [],
  'time_rqry': [],
@@ -567,12 +567,21 @@ def get_args(fmt,exp):
         if key not in FLAG or key in CONFIG_PARAMS: continue
         flag = FLAG[key]
         args += "{}{} ".format(flag,cfgs[key])
-    for c in configs:
-        if configs[c] in configs and configs[c] in fmt and configs[c] in FLAG and configs[c] not in CONFIG_PARAMS:
-            flag = FLAG[c]
-            args += "{}{} ".format(flag,cfgs[configs[c]])
+    for c in configs.keys():
+        if c in fmt: continue
+        key,indirect = get_config_root(c)
+        if not indirect or c not in FLAG or c in CONFIG_PARAMS: continue
+        flag = FLAG[c]
+        args += "{}{} ".format(flag,cfgs[key])
             
     return args
+
+def get_config_root(c):
+    indirect = False
+    while c in configs and configs[c] in configs:
+        c = configs[c]
+        indirect = True
+    return c,indirect
  
 def get_execfile_name(cfgs,fmt,network_hosts=[]):
     output_f = ""
@@ -616,7 +625,7 @@ def get_outfile_name(cfgs,fmt,network_hosts=[]):
     return output_f
 
 def get_cfgs(fmt,e):
-    cfgs = configs
+    cfgs = dict(configs)
     for f,n in zip(fmt,range(len(fmt))):
         cfgs[f] = e[n]
     # For now, spawn NODE_CNT remote threads to avoid potential deadlock
@@ -667,3 +676,117 @@ def print_keys(result_dir="../results",keys=['txn_cnt']):
     print("Total missing files (files not in dir): {}".format(missing_files))
     print("Total missing server results (no [summary] or [prog]): {}".format(missing_results))
 
+def get_summary_stats(stats,summary,x,v):
+    tot_txn_cnt = sum(summary['txn_cnt'])
+    avg_txn_cnt = avg(summary['txn_cnt'])
+    tot_time = sum(summary['clock_time'])
+    avg_time = avg(summary['clock_time'])
+    sk = {}
+    sk['sys_txn_cnt'] = tot_txn_cnt
+    sk['avg_txn_cnt'] = avg_txn_cnt
+    sk['time'] = avg_time
+    sk['sys_tput'] = tot_txn_cnt / avg_time
+    sk['per_node_tput'] = avg_txn_cnt / avg_time
+    sk['time_index'] = avg(summary['time_index'])
+    sk['time_abort'] = avg(summary['time_abort'])
+    sk['time_ccman'] = avg(summary['time_man']) + avg(summary['txn_time_begintxn']) + avg(summary['time_validate'])
+    sk['time_twopc'] = avg(summary['type9']) + avg(summary['type12']) +avg(summary['type5']) + avg(summary['time_msg_sent'])
+    sk['time_work'] = avg(summary['type10']) + avg(summary['type8'])
+    total = sk['time_index'] + sk['time_abort'] + sk['time_ccman'] + sk['time_twopc'] + sk['time_work'] 
+    sk['perc_index'] = sk['time_index'] / total * 100
+    sk['perc_abort'] = sk['time_abort'] / total * 100
+    sk['perc_ccman'] = sk['time_ccman'] / total * 100
+    sk['perc_twopc'] = sk['time_twopc'] / total * 100
+    sk['perc_work'] = sk['time_work'] / total * 100
+    sk['rqry'] =  sum(summary['type4']) / sum(summary['thd2'])
+    sk['rfin'] =  sum(summary['type5']) / sum(summary['thd2'])
+    sk['rqry_rsp'] =  sum(summary['type8']) / sum(summary['thd2'])
+    sk['rack'] =  sum(summary['type9']) / sum(summary['thd2'])
+    sk['rtxn'] =  sum(summary['type10']) / sum(summary['thd2'])
+    sk['rinit'] =  sum(summary['type11']) / sum(summary['thd2'])
+    sk['rprep'] =  sum(summary['type12']) / sum(summary['thd2'])
+    sk['abort_cnt'] = sum(summary['abort_cnt'])
+    try:
+        sk['avg_abort_cnt'] = sum(summary['abort_cnt']) / sum(summary['txn_abort_cnt'])
+    except ZeroDivisionError:
+        sk['avg_abort_cnt'] = 0
+    try:
+        sk['abort_rate'] = sum(summary['abort_cnt']) / tot_txn_cnt
+    except ZeroDivisionError:
+        sk['abort_rate'] = 0
+    sk['abort_row_cnt'] = sum(summary['tot_avg_abort_row_cnt'])
+    try:
+        sk['write_perc'] = sum(summary['write_cnt']) / sum(summary['access_cnt'])
+    except ZeroDivisionError:
+        sk['write_perc'] = 0
+    sk['stage1'] = sum(summary['thd1']) / avg_time * 100
+    sk['stage2'] = sum(summary['thd2']) / avg_time * 100
+    sk['stage3'] = sum(summary['thd3']) / avg_time * 100
+    sk['latency'] = avg(summary['latency'])
+    sk['memory'] = avg(summary['phys_mem_usage']) / 1000000
+
+    if v == '':
+        key = (x)
+    else:
+        key = (x,v)
+    stats[key] = sk
+    return stats
+   
+def write_summary_file(fname,stats,x_vals,v_vals):
+    ps =  [
+    'sys_txn_cnt',
+    'avg_txn_cnt',
+    'time',
+    'sys_tput',
+    'per_node_tput',
+    'time_index',
+    'time_abort',
+    'time_ccman',
+    'time_twopc',
+    'time_work',
+    'perc_index',
+    'perc_abort',
+    'perc_ccman',
+    'perc_twopc',
+    'perc_work',
+    'rqry',
+    'rfin',
+    'rqry_rsp',
+    'rack',
+    'rtxn',
+    'rinit',
+    'rprep',
+    'abort_cnt',
+    'avg_abort_cnt',
+    'abort_rate',
+    'abort_row_cnt',
+    'write_perc',
+    'stage1',
+    'stage2',
+    'stage3',
+    'latency',
+    'memory'
+    ]
+    with open('../figs/' + fname+'.txt','w') as f:
+        if v_vals == []:
+            f.write('\t' + '\t'.join(x_vals) +'\n')
+            for p in ps:
+                s = p + '\t'
+                for x in x_vals:
+                    k = (x)
+                    s += str(stats[k][p]) + '\t'
+                f.write(s+'\n')
+        else:
+            for x in x_vals:
+                f.write(str(x) + '\t\t\t\t\t\t\t' + '\t\t'.join(v_vals) +'\n')
+                for p in ps:
+                    s = p + '\t\t'
+                    for v in v_vals:
+                        k = (x,v)
+                        try:
+                            s += '{0:0.2f}'.format(stats[k][p]) + '\t'
+                        except KeyError:
+                            s += '--\t'
+                    f.write(s+'\n')
+                f.write('\n')
+                        

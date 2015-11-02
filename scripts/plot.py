@@ -52,8 +52,8 @@ for arg in sys.argv[1:]:
         exps.append(arg)
     last_arg = arg
 
-result_dir = PATH + "/../results/"
-#result_dir = PATH + "/../results/1028_tpcc/"
+#result_dir = PATH + "/../results/"
+result_dir = PATH + "/../results/1101_results/"
 #result_dir = PATH + "/../results/1027_ec2_full_experiments/"
 #result_dir = PATH + "/../results/1028_ec2_results/"
 #result_dir = PATH + "/../results/results_201503pt2/"
@@ -86,6 +86,14 @@ for exp in exps:
         cfgs = get_cfgs(fmt,e)
         output_f = get_outfile_name(cfgs,fmt,["*","*"])
 #        output_f = get_outfile_name(cfgs,nfmt,["*","*"])
+        nnodes = cfgs["NODE_CNT"]
+        nclients = cfgs["CLIENT_NODE_CNT"]
+        try:
+            ntotal = nnodes + nclients
+        except TypeError:
+            nclients = cfgs[cfgs["CLIENT_NODE_CNT"]]
+            ntotal = nnodes + nclients
+
         is_network_test = cfgs["NETWORK_TEST"] == "true"
         if is_network_test:
             r = {}
@@ -127,9 +135,9 @@ for exp in exps:
                 res_list = sorted(glob.glob(ofile),key=os.path.getmtime,reverse=True)
                 if res_list == 0:
                     continue
+                print(output_f)
                 for x in range(exp_cnt):
                     if x >= len(res_list):
-                        print(output_f)
                         print("Exceeded experiment limit")
                         continue
                     timedate.append(re.search("(\d{8}-\d{6})",res_list[x]).group(0))
@@ -141,13 +149,6 @@ for exp in exps:
                 print(p_sfile)
                 r = {}
                 r2 = {}
-                nnodes = cfgs["NODE_CNT"]
-                nclients = cfgs["CLIENT_NODE_CNT"]
-                try:
-                    ntotal = nnodes + nclients
-                except TypeError:
-                    nclients = cfgs[cfgs["CLIENT_NODE_CNT"]]
-                    ntotal = nnodes + nclients
                 if clear or not os.path.isfile(p_sfile) or not os.path.isfile(p_cfile):
                     for n in range(ntotal):
                         ofile = "{}{}_{}*{}.out".format(result_dir,n,output_f,time)

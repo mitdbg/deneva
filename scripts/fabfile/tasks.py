@@ -19,6 +19,7 @@ sys.path.append('..')
 
 from environment import *
 from experiments import *
+from experiments import configs 
 from helper import get_cfgs,get_outfile_name,get_execfile_name,get_args
 
 # (see https://github.com/fabric/fabric/issues/51#issuecomment-96341022)
@@ -455,8 +456,7 @@ def assign_roles(server_cnt,client_cnt,append=False):
         env.roledefs={}
         env.roledefs['clients']=[]
         env.roledefs['servers']=[]
-        if CC_ALG == 'CALVIN':
-            env.roledefs['sequencer']=[]
+        env.roledefs['sequencer']=[]
     if append:
         env.roledefs['clients'].extend(clients)
         env.roledefs['servers'].extend(servers)
@@ -495,7 +495,9 @@ def get_good_hosts():
 @task
 @hosts('localhost')
 def compile_binary(fmt,e):
-    cfgs = get_cfgs(fmt,e)
+    ecfgs = get_cfgs(fmt,e)
+    cfgs = dict(configs)
+    cfgs.update(ecfgs)
     if env.remote and not env.same_node:
         cfgs["TPORT_TYPE"],cfgs["TPORT_TYPE_IPC"],cfgs["TPORT_PORT"]="\"tcp\"","false",7000
     if env.shmem:
@@ -647,7 +649,7 @@ def run_exp_old(exps,network_test=False,delay=''):
                                 # Sync clocks before each experiment
                                 execute(sync_clocks)
                             with color():
-                                puts("Batch is full, deploying batch...",show_prefix=True)
+                                puts("Batch is full, deploying batch...{}/{}".format(batch_size,len(good_hosts)),show_prefix=True)
                             with color("debug"):
                                 puts(pprint.pformat(outfiles,depth=3),show_prefix=False)
                             set_hosts(env.hosts[:batch_size])
@@ -657,7 +659,8 @@ def run_exp_old(exps,network_test=False,delay=''):
                             with color():
                                 puts("Endtime: {}".format(datetime.datetime.now().strftime("%H:%M:%S")),show_prefix=True)
                             execute(get_results,outfiles,nids)
-                            good_hosts = get_good_hosts()
+                            if not env.dry_run:
+                                good_hosts = get_good_hosts()
                             env.roledefs = None
                             batch_size = 0
                             nids = {}
@@ -699,7 +702,7 @@ def run_exp_old(exps,network_test=False,delay=''):
                 if not env.batch_mode or last_exp and len(exps) > 0:
                     if env.batch_mode:
                         set_hosts(good_hosts[:batch_size])
-                        print("Deploying last batch")
+                        puts("Deploying last batch...{}/{}".format(batch_size,len(good_hosts)),show_prefix=True)
                     else:
                         print("Deploying: {}".format(output_f))
                     if env.cluster != 'istc':
@@ -719,7 +722,8 @@ def run_exp_old(exps,network_test=False,delay=''):
                         execute(reset_delay)
 
                     execute(get_results,outfiles,nids)
-                    good_hosts = get_good_hosts()
+                    if not env.dry_run:
+                        good_hosts = get_good_hosts()
                     set_hosts(good_hosts)
                     batch_size = 0
                     nids = {}

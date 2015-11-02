@@ -240,12 +240,10 @@ Client_query_thd::done(){
 
 base_client_query * 
 Client_query_thd::get_next_query(uint64_t tid) {
-	if (q_idx >= g_max_txn_per_part) {
+	if (q_idx == g_max_txn_per_part-1) {
     if(FIN_BY_TIME && !CREATE_TXN_FILE) {
       // Restart transaction cycle
-      //ATOM_CAS(q_idx,g_max_txn_per_part,0);
-      // FIXME: race condition important?
-      q_idx = 0;
+      ATOM_CAS(q_idx,g_max_txn_per_part-1,0);
     } else {
       return NULL;
     }

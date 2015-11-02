@@ -22,7 +22,9 @@ void QWorkQueue::init() {
   }
   pthread_mutex_init(&mtx,NULL);
   pthread_cond_init(&cond,NULL);
-  cnt = 0;
+  wq_cnt = 0;
+  rem_wq_cnt = 0;
+  new_wq_cnt = 0;
   abrt_cnt = 0;
 }
 
@@ -48,27 +50,38 @@ void QWorkQueue::add_abort_query(int tid, base_query * qry) {
 
 void QWorkQueue::enqueue(base_query * qry) {
   qry->q_starttime = get_sys_clock();
-  ATOM_ADD(cnt,1);
   switch(PRIORITY) {
     case PRIORITY_FCFS:
+      ATOM_ADD(wq_cnt,1);
       wq.enqueue(qry);
       break;
     case PRIORITY_ACTIVE:
-      if(qry->txn_id == UINT64_MAX)
+      if(qry->txn_id == UINT64_MAX) {
+        ATOM_ADD(new_wq_cnt,1);
         new_wq.enqueue(qry);
-      else
+      }
+      else {
+        ATOM_ADD(wq_cnt,1);
         wq.enqueue(qry);
+        }
       break;
     case PRIORITY_HOME:
-      if(qry->txn_id == UINT64_MAX)
+      if(qry->txn_id == UINT64_MAX) {
+        ATOM_ADD(new_wq_cnt,1);
         new_wq.enqueue(qry);
-      else if (IS_REMOTE(qry->txn_id))
+      }
+      else if (IS_REMOTE(qry->txn_id)) {
+        ATOM_ADD(rem_wq_cnt,1);
         rem_wq.enqueue(qry);
-      else
+      }
+      else {
+        ATOM_ADD(wq_cnt,1);
         wq.enqueue(qry);
+      }
       break;
     default: assert(false);
   }
+  //DEBUG("ENQUEUE %ld %ld %ld %ld\n",qry->txn_id,wq_cnt,rem_wq_cnt,new_wq_cnt);
 }
 //TODO: do we need to has qry id here?
 // If we do, maybe add in check as an atomic var in base_query
@@ -76,14 +89,27 @@ void QWorkQueue::enqueue(base_query * qry) {
 bool QWorkQueue::dequeue(uint64_t thd_id, base_query *& qry) {
   bool valid;
   valid = wq.try_dequeue(qry);
+  if(valid) {
+    ATOM_SUB(wq_cnt,1);
+  }
   if(PRIORITY == PRIORITY_HOME) {
-    if(!valid)
+    if(!valid) {
       valid = rem_wq.try_dequeue(qry);
+      if(valid) {
+        ATOM_SUB(rem_wq_cnt,1);
+      }
+    }
   }
   if(PRIORITY == PRIORITY_HOME || PRIORITY == PRIORITY_ACTIVE) {
-    if(!valid)
+    if(!valid) {
       valid = new_wq.try_dequeue(qry);
+      if(valid) {
+        ATOM_SUB(new_wq_cnt,1);
+      }
+    }
   }
+
+
   if(!ISCLIENT && valid && qry->txn_id != UINT64_MAX) {
     if(set_active(thd_id, qry->txn_id)) {
       enqueue(qry);
@@ -96,6 +122,7 @@ bool QWorkQueue::dequeue(uint64_t thd_id, base_query *& qry) {
     qry->time_q_work += t;
     INC_STATS(0,qq_cnt,1);
     INC_STATS(0,qq_lat,t);
+    DEBUG("DEQUEUE %ld %ld %ld %ld\n",qry->txn_id,wq_cnt,rem_wq_cnt,new_wq_cnt);
   }
   return valid;
 }
@@ -129,10 +156,6 @@ void QWorkQueue::delete_active(uint64_t thd_id, uint64_t txn_id) {
   active_txns[thd_id] = UINT64_MAX;
   pthread_cond_broadcast(&cond);
   pthread_mutex_unlock(&mtx);
-}
-// Note: this is an **approximate** count
-uint64_t QWorkQueue::get_wq_cnt() {
-  return (uint64_t)wq.size_approx();
 }
 
 void QWorkQueue::update_hash(int tid, uint64_t id) {

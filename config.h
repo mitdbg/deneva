@@ -28,14 +28,14 @@
 // # of transactions to run for warmup
 #define WARMUP            0
 // YCSB or TPCC
-#define WORKLOAD YCSB
+#define WORKLOAD TPCC
 // print the transaction latency distribution
 #define PRT_LAT_DISTR false
 #define STATS_ENABLE        true
 #define TIME_ENABLE         true //STATS_ENABLE
 
 #define FIN_BY_TIME true
-#define MAX_TXN_IN_FLIGHT 150
+#define MAX_TXN_IN_FLIGHT 50000
 
 /***********************************************/
 // Memory System
@@ -75,7 +75,7 @@
 #define MAX_QUEUE_LEN NODE_CNT * 2
 
 #define PRIORITY_WORK_QUEUE false
-#define PRIORITY PRIORITY_ACTIVE
+#define PRIORITY PRIORITY_FCFS
 #define MSG_SIZE_MAX 4096
 #define MSG_TIME_LIMIT 10 * 1000000UL
 
@@ -83,7 +83,7 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, VOLTDB, OCC, VLL, CALVIN
-#define CC_ALG TIMESTAMP
+#define CC_ALG WAIT_DIE
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER         false
@@ -145,7 +145,7 @@
 // max number of rows touched per transaction
 #define MAX_ROW_PER_TXN       64
 #define QUERY_INTVL         1UL
-#define MAX_TXN_PER_PART 1500000
+#define MAX_TXN_PER_PART 1000000
 #define FIRST_PART_LOCAL      true
 #define MAX_TUPLE_SIZE        1024 // in bytes
 #define GEN_BY_MPR false
@@ -158,7 +158,7 @@
 #define ACCESS_PERC 0.03
 #define INIT_PARALLELISM 4
 #define SYNTH_TABLE_SIZE 2097152
-#define ZIPF_THETA 0.0
+#define ZIPF_THETA 0.6
 #define TXN_WRITE_PERC 0.5
 #define TUP_WRITE_PERC 0.5
 #define SCAN_PERC           0
@@ -182,7 +182,7 @@
 // are not modeled.
 #define TPCC_ACCESS_ALL       false 
 #define WH_UPDATE         true
-#define NUM_WH NODE_CNT
+#define NUM_WH PART_CNT
 // % of transactions that access multiple partitions
 #define MPR 1.0
 #define MPIR 0.01
@@ -200,7 +200,7 @@ enum TPCCTxnType {TPCC_ALL,
 extern TPCCTxnType          g_tpcc_txn_type;
 
 //#define TXN_TYPE          TPCC_ALL
-#define PERC_PAYMENT 1.0
+#define PERC_PAYMENT 0.0
 #define FIRSTNAME_MINLEN      8
 #define FIRSTNAME_LEN         16
 #define LASTNAME_LEN        16
@@ -244,7 +244,7 @@ extern TestCases          g_test_case;
 #define DEBUG_TIMESTAMP       false
 #define DEBUG_SYNTH         false
 #define DEBUG_ASSERT        false
-#define DEBUG_DISTR true
+#define DEBUG_DISTR false
 #define DEBUG_ALLOC false
 #define DEBUG_TIMELINE        false
 #define DEBUG_BREAKDOWN       false
@@ -308,7 +308,7 @@ extern TestCases          g_test_case;
 #define DONE_TIMER 1 * 60 * BILLION // ~2 minutes
 
 #define SEED 0
-#define SHMEM_ENV true
+#define SHMEM_ENV false
 
 #endif
 

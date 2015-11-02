@@ -2,6 +2,7 @@ import os, sys, re, math, os.path
 import numpy as np
 import operator
 from helper import get_cfgs 
+from helper import write_summary_file,get_summary_stats
 from draw import *
 import types
 import latency_stats as ls
@@ -301,6 +302,7 @@ def tput(xval,vval,summary,summary_cl,
 #    name += '_{}'.format(title.replace(" ","_").lower())
 #    _title = 'System Throughput {}'.format(title)
     _title = title
+    stats={}
 
 #    print "X-axis: " + str(xval)
 #    print "Var: " + str(vval)
@@ -327,6 +329,7 @@ def tput(xval,vval,summary,summary_cl,
 
             cfgs = get_cfgs(my_cfg_fmt, my_cfg)
             cfgs = get_outfile_name(cfgs,my_cfg_fmt)
+            print(cfgs)
             if cfgs not in summary.keys(): 
                 print("Not in summary: {}".format(cfgs))
                 continue 
@@ -339,6 +342,7 @@ def tput(xval,vval,summary,summary_cl,
                 avg_run_time = avg(summary[cfgs]['clock_time'])
                 avg_txn_cnt = avg(summary[cfgs]['txn_cnt'])
 #                avg_txn_cnt = avg(summary_cl[cfgs]['txn_cnt'])
+                stats = get_summary_stats(stats,summary[cfgs],x,v)
             except KeyError:
                 print("KeyError: {} {} {} -- {}".format(v,x,cfg,cfgs))
                 tpt[_v][xi] = 0
@@ -357,6 +361,7 @@ def tput(xval,vval,summary,summary_cl,
 #bbox = [0.7,0.9]
     print("Created plot {}".format(name))
     draw_line(name,tpt,_xval,ylab='Throughput (Txn/sec)',xlab=_xlab,title=_title,bbox=bbox,ncol=2,ltitle=vname) 
+    write_summary_file(name,stats,_xval,vval)
 
 
 def lat(xval,vval,summary,

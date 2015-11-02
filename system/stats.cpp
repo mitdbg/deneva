@@ -1126,7 +1126,10 @@ void Stats::print(bool prog) {
       ",time_rqry=%f"
       ",tport_lat=%f"
       ",txn_table_cnt=%ld"
-      ",work_queue_cnt=%ld"
+      ",tot_wq_cnt=%ld"
+      ",wq_cnt=%ld"
+      ",rem_wq_cnt=%ld"
+      ",new_wq_cnt=%ld"
       ",work_queue_abrt_cnt=%ld"
       ,total_spec_abort_cnt
       ,total_spec_commit_cnt
@@ -1151,7 +1154,10 @@ void Stats::print(bool prog) {
 			,total_time_rqry / BILLION
 			,total_tport_lat / BILLION / total_msg_rcv_cnt
       ,txn_table.get_cnt()
+      ,work_queue.get_cnt()
       ,work_queue.get_wq_cnt()
+      ,work_queue.get_rem_wq_cnt()
+      ,work_queue.get_new_wq_cnt()
       ,work_queue.get_abrt_cnt()
       );
 	fprintf(outf, 

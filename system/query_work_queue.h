@@ -59,11 +59,11 @@ public:
 
 
 private:
+  uint64_t cnt;
   pthread_mutex_t mtx;
   pthread_cond_t cond;
   wq_entry_t head;
   wq_entry_t tail;
-  uint64_t cnt;
   uint64_t last_add_time;
   QHash * hash;
 
@@ -83,7 +83,6 @@ public:
   bool dequeue(uint64_t thd_id, base_client_query *& qry);
   bool set_active(uint64_t thd_id, uint64_t txn_id);
   void delete_active(uint64_t thd_id, uint64_t txn_id);
-  uint64_t get_wq_cnt();
   void add_query(int tid, base_query * qry);
   void add_abort_query(int tid, base_query * qry);
   base_query * get_next_query(int tid);
@@ -92,7 +91,10 @@ public:
   void done(int tid, uint64_t id);
   bool poll_abort(int tid); 
   base_query * get_next_abort_query(int tid);
-  uint64_t get_cnt() {return cnt;}
+  uint64_t get_cnt() {return wq_cnt + rem_wq_cnt + new_wq_cnt;}
+  uint64_t get_wq_cnt() {return wq_cnt;}
+  uint64_t get_rem_wq_cnt() {return rem_wq_cnt;}
+  uint64_t get_new_wq_cnt() {return new_wq_cnt;}
   uint64_t get_abrt_cnt() {return abrt_cnt;}
 
 
@@ -103,7 +105,9 @@ private:
   QWorkQueueHelper * queue;
   QHash * hash;
   int q_len;
-  uint64_t cnt;
+  uint64_t wq_cnt;
+  uint64_t rem_wq_cnt;
+  uint64_t new_wq_cnt;
   uint64_t abrt_cnt;
   uint64_t * active_txns;
   pthread_mutex_t mtx;

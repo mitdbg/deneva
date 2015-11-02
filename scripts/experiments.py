@@ -29,6 +29,7 @@ SHORTNAMES = {
     "MPR":"MPR",
     "REQ_PER_QUERY": "RPQ",
     "MODE":"",
+    "PRIORITY":"",
 }
 # Format: [#Nodes,#Txns,Workload,CC_ALG,MPR]
 fmt_tpcc = [["CLIENT_NODE_CNT","NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","MPIR","CLIENT_THREAD_CNT","CLIENT_REM_THREAD_CNT","CLIENT_SEND_THREAD_CNT","THREAD_CNT","REM_THREAD_CNT","SEND_THREAD_CNT","MAX_TXN_IN_FLIGHT","NUM_WH","PERC_PAYMENT","PART_PER_TXN","PART_CNT","MSG_TIME_LIMIT","MSG_SIZE_MAX","MODE"]]
@@ -43,8 +44,8 @@ fmt_title=["NODE_CNT","CC_ALG","ACCESS_PERC","TXN_WRITE_PERC","PERC_PAYMENT","MP
 def test():
 #    wl = 'YCSB'
     wl = 'TPCC'
-    nnodes = [2]
-#    nnodes = [2,4,8,16]
+#    nnodes = [4]
+    nnodes = [1,2,4,8,16]
     nmpr=[1.0]
     nmpir=[0.01]
     nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
@@ -63,152 +64,22 @@ def test():
 #    nmodes = ["NORMAL_MODE","NOCC_MODE"]
     nmodes = ["NORMAL_MODE"]
 #    nmodes = ["NOCC_MODE"]
-    ntifs=[20000]
+    ntifs=[50000]
+#    ntifs=[1000,2500,5000,10000,20000,30000,50000,70000]
 #    ntifs=[250,500,1000,2000,4000,8000,12000,20000,30000,50000]#,75000,100000]
 #TPCC
-    npercpay=[0.0]
-    nwh=[0]
-#YCSB
-    nzipf=[0.0]
-    d_perc=[100]
-    a_perc=[0.0]
-    ntwr_perc=[0.5]
-    nwr_perc=[0.5]
-    nrpq=[10]
-    if wl == "TPCC":
-        fmt = fmt_tpcc
-        exp = [[n,n,txn,wl,cc,m,mi,ct,crt,cst,t,rt,st,tif,n if wh<n else wh,pp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n,str(mt) + '*1000UL',bsize,mode] for n,ct,crt,cst,t,rt,st,tif,m,mi,cc,p,txn,mt,bsize,mode,pp,wh in itertools.product(nnodes,ncthreads,ncrthreads,ncsthreads,nthreads,nrthreads,nsthreads,ntifs,nmpr,nmpir,nalgos,nparts,ntxn,nbtime,nbsize,nmodes,npercpay,nwh)]
-    elif wl == "YCSB":
-        fmt = fmt_ycsb
-        exp = [[n,n,txn,wl,cc,m,ct,crt,cst,t,rt,st,tif,z,twp,wp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n,str(mt) + '*1000UL',bsize,mode,dp,ap,rpq] for n,ct,crt,cst,t,rt,st,tif,z,twp,wp,m,cc,p,txn,mt,bsize,mode,dp,ap,rpq in itertools.product(nnodes,ncthreads,ncrthreads,ncsthreads,nthreads,nrthreads,nsthreads,ntifs,nzipf,ntwr_perc,nwr_perc,nmpr,nalgos,nparts,ntxn,nbtime,nbsize,nmodes,d_perc,a_perc,nrpq)]
-    exp.sort()
-    exp = list(k for k,_ in itertools.groupby(exp))
-    return fmt[0],exp
-
-# 7x5x2x2 = 140
-def tpcc_scaling():
-#    wl = 'YCSB'
-    wl = 'TPCC'
-    nnodes = [1,2,4,8,16,32,64]
-    nmpr=[1.0]
-    nmpir=[0.01]
-    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
-    nthreads=[6]
-    nrthreads=[1]
-    nsthreads=[1]
-    ncthreads=[2]
-    ncrthreads=[1]
-    ncsthreads=[4]
-    ntxn=[1000000]
-    nbtime=[1000] # in ns
-    nbsize=[4096]
-    nparts = [64]
-#    nmodes = ["NORMAL_MODE","NOCC_MODE","QRY_ONLY_MODE"]#,"SETUP_MODE","SIMPLE_MODE"]
-#    nmodes = ["NORMAL_MODE","NOCC_MODE"]
-    nmodes = ["NORMAL_MODE"]
-    ntifs=[250]
-#TPCC
-    npercpay=[1.0,0.0]
+    npercpay=[0.0,1.0]
     nwh=[0,128]
-#YCSB
-    nzipf=[0.0]
-    d_perc=[100]
-    a_perc=[0.0]
-    ntwr_perc=[0.5]
-    nwr_perc=[0.5]
-    if wl == "TPCC":
-        fmt = fmt_tpcc
-        exp = [[n,n,txn,wl,cc,m,mi,ct,crt,cst,t,rt,st,tif,n if wh<n else wh,pp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n,str(mt) + '*1000UL',bsize,mode] for n,ct,crt,cst,t,rt,st,tif,m,mi,cc,p,txn,mt,bsize,mode,pp,wh in itertools.product(nnodes,ncthreads,ncrthreads,ncsthreads,nthreads,nrthreads,nsthreads,ntifs,nmpr,nmpir,nalgos,nparts,ntxn,nbtime,nbsize,nmodes,npercpay,nwh)]
-    elif wl == "YCSB":
-        fmt = fmt_ycsb
-        exp = [[n,n,txn,wl,cc,m,ct,crt,cst,t,rt,st,tif,z,twp,wp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n,str(mt) + '*1000UL',bsize,mode,dp,ap,rpq] for n,ct,crt,cst,t,rt,st,tif,z,twp,wp,m,cc,p,txn,mt,bsize,mode,dp,ap,rpq in itertools.product(nnodes,ncthreads,ncrthreads,ncsthreads,nthreads,nrthreads,nsthreads,ntifs,nzipf,ntwr_perc,nwr_perc,nmpr,nalgos,nparts,ntxn,nbtime,nbsize,nmodes,d_perc,a_perc,nrpq)]
-    exp.sort()
-    exp = list(k for k,_ in itertools.groupby(exp))
-    return fmt[0],exp
-
-
-# 7x5x2x2 = 140
-def ycsb_scaling():
-    wl = 'YCSB'
-#    wl = 'TPCC'
-#    nnodes = [16,32,64]
-    nnodes = [1,2,4]
-#    nnodes = [1,2,4,8,16,32,64]
-#    nmpr=[1.0]
-#    nmpir=[0.01]
-    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
-
-    fmt = ["WORKLOAD","NODE_CNT","CC_ALG"]
-    exp = [[wl,n,cc] for cc,n in itertools.product(nalgos,nnodes)]
-    return fmt,exp
-#        exp = [[n,n,txn,wl,cc,m,ct,crt,cst,t,rt,st,tif,z,twp,wp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n,str(mt) + '*1000UL',bsize,mode,dp,ap,rpq] for n,ct,crt,cst,t,rt,st,tif,z,twp,wp,m,cc,p,txn,mt,bsize,mode,dp,ap,rpq in itertools.product(nnodes,ncthreads,ncrthreads,ncsthreads,nthreads,nrthreads,nsthreads,ntifs,nzipf,ntwr_perc,nwr_perc,nmpr,nalgos,nparts,ntxn,nbtime,nbsize,nmodes,d_perc,a_perc,nrpq)]
-#    nalgos=['NO_WAIT']
-#    nthreads=[6]
-#    nrthreads=[1]
-#    nsthreads=[1]
-#    ncthreads=[2]
-#    ncrthreads=[1]
-#    ncsthreads=[4]
-#    ntxn=[1000000]
-#    nbtime=[1000] # in ns
-#    nbsize=[4096]
-#    nparts = [2,64]
-#    nmodes = ["NORMAL_MODE"]
-#    ntifs=[250]
-#TPCC
-#    npercpay=[0.0]
-#YCSB
-#    nzipf=[0.0]
-#    d_perc=[100]
-#    a_perc=[0.03]
-#    ntwr_perc=[0.5]
-#    nwr_perc=[0.5]
-#    nrpq=[10]
-#    if wl == "TPCC":
-#        fmt = fmt_tpcc
-#        exp = [[n,n,txn,wl,cc,m,mi,ct,crt,cst,t,rt,st,tif,n,pp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n,str(mt) + '*1000UL',bsize,mode] for n,ct,crt,cst,t,rt,st,tif,m,mi,cc,p,txn,mt,bsize,mode,pp in itertools.product(nnodes,ncthreads,ncrthreads,ncsthreads,nthreads,nrthreads,nsthreads,ntifs,nmpr,nmpir,nalgos,nparts,ntxn,nbtime,nbsize,nmodes,npercpay)]
-#    elif wl == "YCSB":
-#        fmt = fmt_ycsb
-#        exp = [[n,n,txn,wl,cc,m,ct,crt,cst,t,rt,st,tif,z,twp,wp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n,str(mt) + '*1000UL',bsize,mode,dp,ap,rpq] for n,ct,crt,cst,t,rt,st,tif,z,twp,wp,m,cc,p,txn,mt,bsize,mode,dp,ap,rpq in itertools.product(nnodes,ncthreads,ncrthreads,ncsthreads,nthreads,nrthreads,nsthreads,ntifs,nzipf,ntwr_perc,nwr_perc,nmpr,nalgos,nparts,ntxn,nbtime,nbsize,nmodes,d_perc,a_perc,nrpq)]
-#    exp.sort()
-#    exp = list(k for k,_ in itertools.groupby(exp))
-    return fmt[0],exp
-
-
-# 2x5x9x2 = 180
-def ycsb_parts():
-    wl = 'YCSB'
-#    wl = 'TPCC'
-    nnodes = [16]
-    nmpr=[1.0]
-    nmpir=[0.01]
-    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
-    nthreads=[6]
-    nrthreads=[1]
-    nsthreads=[1]
-    ncthreads=[2]
-    ncrthreads=[1]
-    ncsthreads=[4]
-    ntxn=[1000000]
-    nbtime=[1000] # in ns
-    nbsize=[4096]
-    nparts = [2,4,6,8,10,12,14,16]
-#    nmodes = ["NORMAL_MODE","NOCC_MODE","QRY_ONLY_MODE"]#,"SETUP_MODE","SIMPLE_MODE"]
-#    nmodes = ["NORMAL_MODE","NOCC_MODE"]
-    nmodes = ["NORMAL_MODE"]
-    ntifs=[250]
-#TPCC
-    npercpay=[0.0]
 #YCSB
     nzipf=[0.0]
     d_perc=[100]
     a_perc=[0.03]
     ntwr_perc=[0.5]
     nwr_perc=[0.5]
-    nrpq=[16]
+    nrpq=[10]
     if wl == "TPCC":
         fmt = fmt_tpcc
-        exp = [[n,n,txn,wl,cc,m,mi,ct,crt,cst,t,rt,st,tif,n,pp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n,str(mt) + '*1000UL',bsize,mode] for n,ct,crt,cst,t,rt,st,tif,m,mi,cc,p,txn,mt,bsize,mode,pp in itertools.product(nnodes,ncthreads,ncrthreads,ncsthreads,nthreads,nrthreads,nsthreads,ntifs,nmpr,nmpir,nalgos,nparts,ntxn,nbtime,nbsize,nmodes,npercpay)]
+        exp = [[n,n,txn,wl,cc,m,mi,ct,crt,cst,t,rt,st,tif,n if wh<n else wh,pp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n,str(mt) + '*1000UL',bsize,mode] for n,ct,crt,cst,t,rt,st,tif,m,mi,cc,p,txn,mt,bsize,mode,pp,wh in itertools.product(nnodes,ncthreads,ncrthreads,ncsthreads,nthreads,nrthreads,nsthreads,ntifs,nmpr,nmpir,nalgos,nparts,ntxn,nbtime,nbsize,nmodes,npercpay,nwh)]
     elif wl == "YCSB":
         fmt = fmt_ycsb
         exp = [[n,n,txn,wl,cc,m,ct,crt,cst,t,rt,st,tif,z,twp,wp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n,str(mt) + '*1000UL',bsize,mode,dp,ap,rpq] for n,ct,crt,cst,t,rt,st,tif,z,twp,wp,m,cc,p,txn,mt,bsize,mode,dp,ap,rpq in itertools.product(nnodes,ncthreads,ncrthreads,ncsthreads,nthreads,nrthreads,nsthreads,ntifs,nzipf,ntwr_perc,nwr_perc,nmpr,nalgos,nparts,ntxn,nbtime,nbsize,nmodes,d_perc,a_perc,nrpq)]
@@ -216,49 +87,78 @@ def ycsb_parts():
     exp = list(k for k,_ in itertools.groupby(exp))
     return fmt[0],exp
 
+def tpcc_priorities():
+    wl = 'TPCC'
+    nnodes = [1,2,4,8,16,32,64]
+    nprio = ["PRIORITY_HOME","PRIORITY_FCFS","PRIORITY_ACTIVE"]
+    fmt = ["WORKLOAD","NODE_CNT","PRIORITY"]
+    exp = [[wl,n,pp] for n,pp in itertools.product(nnodes,nprio)]
+    return fmt,exp
+
+def tpcc_modes():
+    wl = 'TPCC'
+    nnodes = [1,2,4,8,16,32,64]
+    nmodes = ["NORMAL_MODE","NOCC_MODE","QRY_ONLY_MODE"]
+    fmt = ["WORKLOAD","NODE_CNT","MODE"]
+    exp = [[wl,n,m] for n,m in itertools.product(nnodes,nmodes)]
+    return fmt,exp
+
+# 7x5x2x2 = 140
+def tpcc_scaling():
+    wl = 'TPCC'
+    nnodes = [1,2,4,8,16,32,64]
+    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
+    npercpay=[1.0,0.0]
+    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PERC_PAYMENT"]
+    exp = [[wl,n,cc,pp] for pp,n,cc in itertools.product(npercpay,nnodes,nalgos)]
+    return fmt,exp
+
+def tpcc_scaling_whset():
+    wl = 'TPCC'
+    nnodes = [1,2,4,8,16,32,64]
+    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
+    npercpay=[1.0,0.0]
+    wh=128
+    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PERC_PAYMENT","NUM_WH"]
+    exp = [[wl,n,cc,pp,wh] for pp,n,cc in itertools.product(npercpay,nnodes,nalgos)]
+    return fmt,exp
+
+# 7x5x2x2 = 140
+def ycsb_scaling():
+    wl = 'YCSB'
+    nnodes = [1,2,4,8,16,32,64]
+    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
+    fmt = ["WORKLOAD","NODE_CNT","CC_ALG"]
+    exp = [[wl,n,cc] for n,cc in itertools.product(nnodes,nalgos)]
+    return fmt,exp
+
+def ycsb_scaling_2():
+    wl = 'YCSB'
+    nnodes = [2,4,8,16,32,64]
+    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
+    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PART_PER_TXN"]
+    exp = [[wl,n,cc,2] for n,cc in itertools.product(nnodes,nalgos)]
+    return fmt,exp
+
+
+# 2x5x9x2 = 180
+def ycsb_parts():
+    wl = 'YCSB'
+    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
+    nparts = [2,4,6,8,10,12,14,16]
+    rpq =  16
+    fmt = ["WORKLOAD","REQ_PER_QUERY","PART_PER_TXN","CC_ALG"]
+    exp = [[wl,rpq,p,cc] for p,cc in itertools.product(nparts,nalgos)]
+    return fmt,exp
 
 # 2x5x2x7 = 140
 def ycsb_contention():
     wl = 'YCSB'
-#    wl = 'TPCC'
-#    nnodes = [8,16]
-    nnodes = [16]
-    nmpr=[1.0]
-    nmpir=[0.01]
     nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
-    nthreads=[6]
-    nrthreads=[1]
-    nsthreads=[1]
-    ncthreads=[2]
-    ncrthreads=[1]
-    ncsthreads=[4]
-    ntxn=[1000000]
-    nbtime=[1000] # in ns
-    nbsize=[4096]
-    nparts = [16]
-#    nmodes = ["NORMAL_MODE","NOCC_MODE","QRY_ONLY_MODE"]#,"SETUP_MODE","SIMPLE_MODE"]
-#    nmodes = ["NORMAL_MODE","NOCC_MODE"]
-    nmodes = ["NORMAL_MODE"]
-    ntifs=[250]
-#TPCC
-    npercpay=[0.0]
-#YCSB
-    nzipf=[0.0]
-    d_perc=[100]
     a_perc=[0.0,0.01,0.02,0.03,0.05,0.06,0.07]
-    ntwr_perc=[0.5]
-    nwr_perc=[0.5]
-    nrpq=[10]
-    if wl == "TPCC":
-        fmt = fmt_tpcc
-        exp = [[n,n,txn,wl,cc,m,mi,ct,crt,cst,t,rt,st,tif,n,pp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n,str(mt) + '*1000UL',bsize,mode] for n,ct,crt,cst,t,rt,st,tif,m,mi,cc,p,txn,mt,bsize,mode,pp in itertools.product(nnodes,ncthreads,ncrthreads,ncsthreads,nthreads,nrthreads,nsthreads,ntifs,nmpr,nmpir,nalgos,nparts,ntxn,nbtime,nbsize,nmodes,npercpay)]
-    elif wl == "YCSB":
-        fmt = fmt_ycsb
-        exp = [[n,n,txn,wl,cc,m,ct,crt,cst,t,rt,st,tif,z,twp,wp,p if p <= n else n,n if cc!='HSTORE' and cc!='HSTORE_SPEC' else t*n,str(mt) + '*1000UL',bsize,mode,dp,ap,rpq] for n,ct,crt,cst,t,rt,st,tif,z,twp,wp,m,cc,p,txn,mt,bsize,mode,dp,ap,rpq in itertools.product(nnodes,ncthreads,ncrthreads,ncsthreads,nthreads,nrthreads,nsthreads,ntifs,nzipf,ntwr_perc,nwr_perc,nmpr,nalgos,nparts,ntxn,nbtime,nbsize,nmodes,d_perc,a_perc,nrpq)]
-    exp.sort()
-    exp = list(k for k,_ in itertools.groupby(exp))
-    return fmt[0],exp
-
+    fmt = ["WORKLOAD","ACCESS_PERC","CC_ALG"]
+    exp = [[wl,a,cc] for a,cc in itertools.product(a_perc,nalgos)]
+    return fmt,exp
 
 def tputvlat_setup(summary,summary_cl,nfmt,nexp,x_name,v_name):
     from plot_helper import tput_v_lat
@@ -636,12 +536,13 @@ def tpcc_scaling_plot(summary,summary_client):
     tput_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128,'PERC_PAYMENT':1.0},title="TPCC System Throughput, 128 warehouses, Payment only")
     tput_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':'NODE_CNT','PERC_PAYMENT':0.0},title="TPCC System Throughput, N warehouses, New order only")
     tput_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128,'PERC_PAYMENT':0.0},title="TPCC System Throughput, 128 warehouses, New order only")
-    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT",keys=['thd1','thd2','thd3'],norm=False,key_names=['Getting work','Execution','Wrap-up'],extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','NUM_WH':128})
-    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT",keys=['txn_table_add','txn_table_get','txn_table0a','txn_table1a','txn_table0b','txn_table1b','txn_table2a','txn_table2'],norm=False,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128})
-    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT"            ,keys=['type1','type2','type3','type4','type5','type6','type7','type8','type9','type10','type11','type12','type13','type14']            ,norm=False,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128})
-    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT"            ,keys=['part_cnt1','part_cnt2','part_cnt3','part_cnt4','part_cnt5','part_cnt6','part_cnt7','part_cnt8','part_cnt9','part_cnt10']            ,norm=False,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128})
-    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT",keys=['thd1a','thd1b','thd1c','thd1d'],norm=False,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128})
-    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT",keys=['rtxn1a','rtxn1b','rtxn2','rtxn3','rtxn4'],norm=False,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128})
+    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT",keys=['thd1','thd2','thd3'],norm=False,key_names=['Getting work','Execution','Wrap-up'],extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','NUM_WH':128,'PART_PER_TXN':'NODE_CNT','PERC_PAYMENT':0.0})
+#    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT",keys=['txn_table_add','txn_table_get','txn_table0a','txn_table1a','txn_table0b','txn_table1b','txn_table2a','txn_table2'],norm=False,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128})
+#    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT"            ,keys=['type1','type2','type3','type4','type5','type6','type7','type8','type9','type10','type11','type12','type13','type14']            ,norm=False,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128})
+#    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT"            ,keys=['part_cnt1','part_cnt2','part_cnt3','part_cnt4','part_cnt5','part_cnt6','part_cnt7','part_cnt8','part_cnt9','part_cnt10']            ,norm=False,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128})
+#    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT",keys=['thd1a','thd1b','thd1c','thd1d'],norm=False,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128})
+#    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT",keys=['rtxn1a','rtxn1b','rtxn2','rtxn3','rtxn4'],norm=False,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128})
+    line_rate_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",key='thd1',extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128})
     line_rate_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",key='abort_cnt',extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128})
     line_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",key='tot_avg_abort_row_cnt',extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128})
     line_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",key='txn_cnt',extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128})
@@ -650,16 +551,16 @@ def tpcc_scaling_plot(summary,summary_client):
 def ycsb_scaling_plot(summary,summary_client):
     nfmt,nexp = ycsb_scaling()
     tput_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",title='YCSB System Throughput, default configs, 10 parts/txn')
-    tput_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",title='YCSB System Throughput, default configs, 2 parts/txn')
-    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT",keys=['thd1','thd2','thd3'],norm=False,key_names=['Getting work','Execution','Wrap-up'])
-    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT",keys=['txn_table_add','txn_table_get','txn_table0a','txn_table1a','txn_table0b','txn_table1b','txn_table2a','txn_table2'],norm=False)
-    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT"            ,keys=['type1','type2','type3','type4','type5','type6','type7','type8','type9','type10','type11','type12','type13','type14']            ,norm=False)
-    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT"            ,keys=['part_cnt1','part_cnt2','part_cnt3','part_cnt4','part_cnt5','part_cnt6','part_cnt7','part_cnt8','part_cnt9','part_cnt10']            ,norm=False)
-    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT",keys=['thd1a','thd1b','thd1c','thd1d'],norm=False)
-    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT",keys=['rtxn1a','rtxn1b','rtxn2','rtxn3','rtxn4'],norm=False)
-    line_rate_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",key='abort_cnt')
-    line_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",key='tot_avg_abort_row_cnt')
-    line_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",key='txn_cnt')
+#    tput_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",title='YCSB System Throughput, default configs, 2 parts/txn')
+#    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT",keys=['thd1','thd2','thd3'],norm=False,key_names=['Getting work','Execution','Wrap-up'])
+#    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT",keys=['txn_table_add','txn_table_get','txn_table0a','txn_table1a','txn_table0b','txn_table1b','txn_table2a','txn_table2'],norm=False)
+#    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT"            ,keys=['type1','type2','type3','type4','type5','type6','type7','type8','type9','type10','type11','type12','type13','type14']            ,norm=False)
+#    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT"            ,keys=['part_cnt1','part_cnt2','part_cnt3','part_cnt4','part_cnt5','part_cnt6','part_cnt7','part_cnt8','part_cnt9','part_cnt10']            ,norm=False)
+ #   stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT",keys=['thd1a','thd1b','thd1c','thd1d'],norm=False)
+  #  stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT",keys=['rtxn1a','rtxn1b','rtxn2','rtxn3','rtxn4'],norm=False)
+   # line_rate_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",key='abort_cnt')
+   # line_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",key='tot_avg_abort_row_cnt')
+   # line_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",key='txn_cnt')
 
 
 
@@ -687,7 +588,11 @@ def ycsb_parts_plot(summary,summary_client):
 experiment_map = {
     'test': test,
     'ycsb_scaling': ycsb_scaling,
+    'ycsb_scaling_2': ycsb_scaling_2,
     'tpcc_scaling': tpcc_scaling,
+    'tpcc_priorities': tpcc_priorities,
+    'tpcc_modes': tpcc_modes,
+    'tpcc_scaling_whset': tpcc_scaling_whset,
     'ycsb_parts': ycsb_parts,
     'ycsb_contention': ycsb_contention,
     'ycsb_scaling_plot': ycsb_scaling_plot,
@@ -706,7 +611,7 @@ experiment_map = {
 
 # Default values for variable configurations
 configs = {
-    "NODE_CNT" : 8,
+    "NODE_CNT" : 16,
     "THREAD_CNT": 6,
     "REM_THREAD_CNT": 1,
     "SEND_THREAD_CNT": 1,
@@ -716,14 +621,14 @@ configs = {
     "CLIENT_SEND_THREAD_CNT" : 4,
     "MAX_TXN_PER_PART" : 1000000,
     "WORKLOAD" : "YCSB",
-    "CC_ALG" : "NO_WAIT",
+    "CC_ALG" : "WAIT_DIE",
     "MPR" : 1.0,
     "TPORT_TYPE":"\"ipc\"",
     "TPORT_TYPE_IPC":"true",
     "TPORT_PORT":"\"_.ipc\"",
     "PART_CNT": "NODE_CNT", #2,
     "PART_PER_TXN": "NODE_CNT",
-    "MAX_TXN_IN_FLIGHT": 20000,
+    "MAX_TXN_IN_FLIGHT": 50000,
     "NETWORK_DELAY": '0UL',
     "DONE_TIMER": "1 * 60 * BILLION // ~2 minutes",
     "PROG_TIMER" : "10 * BILLION // in s",
@@ -736,7 +641,6 @@ configs = {
     "PRIORITY":"PRIORITY_ACTIVE",
 #YCSB
     "INIT_PARALLELISM" : 4, 
-#    "READ_PERC":0.5,
     "TUP_WRITE_PERC":0.5,
     "ZIPF_THETA":0.6,
     "ACCESS_PERC":0.03,
@@ -744,9 +648,9 @@ configs = {
     "REQ_PER_QUERY": 10, #16
     "SYNTH_TABLE_SIZE":"2097152",
 #TPCC
-    "NUM_WH": 'NODE_CNT',
-    "PERC_PAYMENT":1.0,
-    "DEBUG_DISTR":"true",
+    "NUM_WH": 'PART_CNT',
+    "PERC_PAYMENT":0.0,
+    "DEBUG_DISTR":"false",
     "DEBUG_ALLOC":"false",
     "MODE":"NORMAL_MODE",
     "SHMEM_ENV":"false",
