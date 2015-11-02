@@ -155,6 +155,8 @@ RC thread_t::run() {
         msg_queue.enqueue(NULL,INIT_DONE,i);
 			}
 		}
+  }
+    /*
     while(!_wl->sim_init_done) {
       while(!work_queue.dequeue(_thd_id,m_query)) { }
       if(m_query->rtype == INIT_DONE) {
@@ -179,6 +181,7 @@ RC thread_t::run() {
         return FINISH;
     }
   }
+    */
 	pthread_barrier_wait( &warmup_bar );
 	printf("Run %ld:%ld\n",_node_id, _thd_id);
   fflush(stdout);

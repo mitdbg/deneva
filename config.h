@@ -5,7 +5,7 @@
 /***********************************************/
 // Simulation + Hardware
 /***********************************************/
-#define NODE_CNT 1
+#define NODE_CNT 16
 #define THREAD_CNT 6
 #define REM_THREAD_CNT 1
 #define SEND_THREAD_CNT 1
@@ -28,7 +28,7 @@
 // # of transactions to run for warmup
 #define WARMUP            0
 // YCSB or TPCC
-#define WORKLOAD TPCC
+#define WORKLOAD YCSB
 // print the transaction latency distribution
 #define PRT_LAT_DISTR false
 #define STATS_ENABLE        true
@@ -75,7 +75,7 @@
 #define MAX_QUEUE_LEN NODE_CNT * 2
 
 #define PRIORITY_WORK_QUEUE false
-#define PRIORITY PRIORITY_FCFS
+#define PRIORITY PRIORITY_ACTIVE
 #define MSG_SIZE_MAX 4096
 #define MSG_TIME_LIMIT 10 * 1000000UL
 
@@ -83,7 +83,7 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, VOLTDB, OCC, VLL, CALVIN
-#define CC_ALG WAIT_DIE
+#define CC_ALG TIMESTAMP
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER         false

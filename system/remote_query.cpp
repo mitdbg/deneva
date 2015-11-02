@@ -59,7 +59,9 @@ void Remote_query::unpack(void * d, uint64_t len) {
       work_queue.enqueue(query);
     }
 #else
-    work_queue.enqueue(query);
+    if(query->rtype != INIT_DONE) {
+      work_queue.enqueue(query);
+    }
 #endif
     txn_cnt--;
     query->time_copy += get_sys_clock() - starttime;
@@ -274,7 +276,15 @@ void Remote_query::unpack_query(base_query *& query,char * data,  uint64_t & ptr
       INC_STATS(0,txn_cnt,1);
       DEBUG("Received CL_RSP from %ld -- %ld %f\n", query->return_id,query->txn_id,(float)timespan/BILLION);
       break;
-    case INIT_DONE: break;
+    case INIT_DONE: 
+        ATOM_SUB(_wl->rsp_cnt,1);
+        printf("Processed INIT_DONE from %ld -- %ld\n",query->return_id,_wl->rsp_cnt);
+        fflush(stdout);
+        if(_wl->rsp_cnt ==0) {
+			    if( !ATOM_CAS(_wl->sim_init_done, false, true) )
+				    assert( _wl->sim_init_done);
+        }
+      break;
     case EXP_DONE: break;
     case RPASS: break;
     case RLK: break;

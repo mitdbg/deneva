@@ -20,7 +20,7 @@ sys.path.append('..')
 from environment import *
 from experiments import *
 from experiments import configs 
-from helper import get_cfgs,get_outfile_name,get_execfile_name,get_args
+from helper import get_cfgs,get_outfile_name,get_execfile_name,get_args,CONFIG_PARAMS
 
 # (see https://github.com/fabric/fabric/issues/51#issuecomment-96341022)
 logging.basicConfig()
@@ -497,6 +497,9 @@ def get_good_hosts():
 def compile_binary(fmt,e):
     ecfgs = get_cfgs(fmt,e)
     cfgs = dict(configs)
+    for c in dict(ecfgs):
+        if c not in CONFIG_PARAMS:
+            del ecfgs[c]
     cfgs.update(ecfgs)
     if env.remote and not env.same_node:
         cfgs["TPORT_TYPE"],cfgs["TPORT_TYPE_IPC"],cfgs["TPORT_PORT"]="\"tcp\"","false",7000

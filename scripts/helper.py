@@ -706,6 +706,7 @@ def get_summary_stats(stats,summary,x,v):
     sk['rinit'] =  sum(summary['type11']) / sum(summary['thd2'])
     sk['rprep'] =  sum(summary['type12']) / sum(summary['thd2'])
     sk['abort_cnt'] = sum(summary['abort_cnt'])
+    sk['txn_abort_cnt'] = sum(summary['txn_abort_cnt'])
     try:
         sk['avg_abort_cnt'] = sum(summary['abort_cnt']) / sum(summary['txn_abort_cnt'])
     except ZeroDivisionError:
@@ -757,6 +758,7 @@ def write_summary_file(fname,stats,x_vals,v_vals):
     'rinit',
     'rprep',
     'abort_cnt',
+    'txn_abort_cnt',
     'avg_abort_cnt',
     'abort_rate',
     'abort_row_cnt',
