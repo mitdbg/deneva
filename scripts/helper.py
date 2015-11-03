@@ -771,26 +771,26 @@ def write_summary_file(fname,stats,x_vals,v_vals):
     'latency',
     'memory'
     ]
-    with open('../figs/' + fname+'.txt','w') as f:
+    with open('../figs/' + fname+'.csv','w') as f:
         if v_vals == []:
-            f.write('\t' + '\t'.join(x_vals) +'\n')
+            f.write(', ' + ', '.join(x_vals) +'\n')
             for p in ps:
-                s = p + '\t'
+                s = p + ', '
                 for x in x_vals:
                     k = (x)
-                    s += str(stats[k][p]) + '\t'
+                    s += str(stats[k][p]) + ', '
                 f.write(s+'\n')
         else:
             for x in x_vals:
-                f.write(str(x) + '\t\t\t\t\t\t\t' + '\t\t'.join(v_vals) +'\n')
+                f.write(str(x) + ', ' + ', '.join(v_vals) +'\n')
                 for p in ps:
-                    s = p + '\t\t'
+                    s = p + ', '
                     for v in v_vals:
                         k = (x,v)
                         try:
-                            s += '{0:0.2f}'.format(stats[k][p]) + '\t'
+                            s += '{0:0.2f}'.format(stats[k][p]) + ', '
                         except KeyError:
-                            s += '--\t'
+                            s += '--, '
                     f.write(s+'\n')
                 f.write('\n')
                         

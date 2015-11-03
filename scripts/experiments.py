@@ -556,10 +556,10 @@ def tpcc_scaling_plot(summary,summary_client):
 #    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT"            ,keys=['part_cnt1','part_cnt2','part_cnt3','part_cnt4','part_cnt5','part_cnt6','part_cnt7','part_cnt8','part_cnt9','part_cnt10']            ,norm=False,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128})
 #    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT",keys=['thd1a','thd1b','thd1c','thd1d'],norm=False,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128})
 #    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT",keys=['rtxn1a','rtxn1b','rtxn2','rtxn3','rtxn4'],norm=False,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128})
-    line_rate_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",key='thd1',extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128})
-    line_rate_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",key='abort_cnt',extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128})
-    line_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",key='tot_avg_abort_row_cnt',extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128})
-    line_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",key='txn_cnt',extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128})
+#    line_rate_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",key='thd1',extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128})
+#    line_rate_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",key='abort_cnt',extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128})
+#    line_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",key='tot_avg_abort_row_cnt',extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128})
+#    line_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",key='txn_cnt',extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128})
 
 
 def ycsb_scaling_plot(summary,summary_client):
