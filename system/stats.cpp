@@ -124,19 +124,22 @@ void Stats_thd::init(uint64_t thd_id) {
 		mem_allocator.alloc(sizeof(uint64_t) * g_max_txn_per_part, thd_id);
     */
 
+  uint64_t nwh = g_num_wh+1;
+  uint64_t nd = g_dist_per_wh+1;
+  uint64_t ni = g_max_items+1;
   all_abort.init(STAT_ARR_SIZE,ArrInsert);
-  w_cflt.init(g_num_wh,ArrInsert);
-  d_cflt.init(g_num_wh*g_dist_per_wh,ArrInsert);
-  cnp_cflt.init(g_num_wh * g_dist_per_wh * g_cust_per_dist,ArrInsert);
-  c_cflt.init(g_num_wh * g_dist_per_wh * g_cust_per_dist,ArrInsert);
-  ol_cflt.init(g_max_items,ArrInsert);
-  s_cflt.init(g_num_wh * g_max_items,ArrInsert);
-  w_abrt.init(g_num_wh,ArrInsert);
-  d_abrt.init(g_num_wh*g_dist_per_wh,ArrInsert);
-  cnp_abrt.init(g_num_wh * g_dist_per_wh * g_cust_per_dist,ArrInsert);
-  c_abrt.init(g_num_wh * g_dist_per_wh * g_cust_per_dist,ArrInsert);
-  ol_abrt.init(g_max_items,ArrInsert);
-  s_abrt.init(g_num_wh * g_max_items,ArrInsert);
+  w_cflt.init(nwh,ArrInsert);
+  d_cflt.init(nwh*nd,ArrInsert);
+  cnp_cflt.init(nwh * nd * g_cust_per_dist,ArrInsert);
+  c_cflt.init(nwh * nd * g_cust_per_dist,ArrInsert);
+  ol_cflt.init(ni,ArrInsert);
+  s_cflt.init(nwh * ni,ArrInsert);
+  w_abrt.init(nwh,ArrInsert);
+  d_abrt.init(nwh*nd,ArrInsert);
+  cnp_abrt.init(nwh * nd * g_cust_per_dist,ArrInsert);
+  c_abrt.init(nwh * nd * g_cust_per_dist,ArrInsert);
+  ol_abrt.init(ni,ArrInsert);
+  s_abrt.init(nwh * ni,ArrInsert);
 
 }
 
@@ -1280,15 +1283,12 @@ void Stats::print_cnts() {
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) 
     _stats[tid]->all_abort.print(stdout);
 #if WORKLOAD == TPCC
-  /*
   printf("\n[w_cflt %ld] ",w_cflt_cnt);
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) 
     _stats[tid]->w_cflt.print(stdout);
-    */
   printf("\n[d_cflt %ld] ",d_cflt_cnt);
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) 
     _stats[tid]->d_cflt.print(stdout);
-  /*
   printf("\n[cnp_cflt %ld] ",cnp_cflt_cnt);
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) 
     _stats[tid]->cnp_cflt.print(stdout);
@@ -1298,19 +1298,15 @@ void Stats::print_cnts() {
   printf("\n[ol_cflt %ld] ",ol_cflt_cnt);
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) 
     _stats[tid]->ol_cflt.print(stdout);
-    */
   printf("\n[s_cflt %ld] ",s_cflt_cnt);
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) 
     _stats[tid]->s_cflt.print(stdout);
-  /*
   printf("\n[w_abrt %ld] ",w_abrt_cnt);
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) 
     _stats[tid]->w_abrt.print(stdout);
-    */
   printf("\n[d_abrt %ld] ",d_abrt_cnt);
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) 
     _stats[tid]->d_abrt.print(stdout);
-  /*
   printf("\n[cnp_abrt %ld] ",cnp_abrt_cnt);
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) 
     _stats[tid]->cnp_abrt.print(stdout);
@@ -1320,7 +1316,6 @@ void Stats::print_cnts() {
   printf("\n[ol_abrt %ld] ",ol_abrt_cnt);
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) 
     _stats[tid]->ol_abrt.print(stdout);
-    */
   printf("\n[s_abrt %ld] ",s_abrt_cnt);
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) 
     _stats[tid]->s_abrt.print(stdout);

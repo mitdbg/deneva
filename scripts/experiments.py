@@ -666,7 +666,7 @@ configs = {
 #TPCC
     "NUM_WH": 'PART_CNT',
     "PERC_PAYMENT":0.0,
-    "DEBUG_DISTR":"true",
+    "DEBUG_DISTR":"false",
     "DEBUG_ALLOC":"false",
     "MODE":"NORMAL_MODE",
     "SHMEM_ENV":"false",

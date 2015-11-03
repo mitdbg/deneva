@@ -44,6 +44,7 @@ FLAG = {
     "LOAD_TXN_FILE":"-i",
     "DATA_PERC":"-dp",
     "ACCESS_PERC":"-ap",
+    "PERC_PAYMENT":"-pp",
 }
 
 SHORTNAMES = {
@@ -70,6 +71,7 @@ SHORTNAMES = {
     "DATA_PERC":"D",
     "ACCESS_PERC":"A",
     "PRIORITY":"",
+    "PERC_PAYMENT":"PP",
 }
 
 stat_map = {

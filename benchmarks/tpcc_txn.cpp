@@ -678,8 +678,9 @@ inline RC tpcc_txn_man::new_order_4(uint64_t w_id, uint64_t d_id, uint64_t c_id,
   RC rc = get_row(r_dist, WR, r_dist_local);
   if(rc == WAIT)
     INC_STATS_ARR(0,d_cflt,key);
-  if(rc == Abort)
+  if(rc == Abort) {
     INC_STATS_ARR(0,d_abrt,key);
+  }
   return rc;
 }
 
