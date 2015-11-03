@@ -77,10 +77,8 @@ public:
   bool poll_next_query(int tid);
   void finish(uint64_t time); 
   void abort_finish(uint64_t time); 
-  void enqueue(base_client_query * qry); 
-  void enqueue(base_query * qry); 
+  void enqueue(uint64_t thd_id,base_query * qry); 
   bool dequeue(uint64_t thd_id, base_query *& qry);
-  bool dequeue(uint64_t thd_id, base_client_query *& qry);
   bool set_active(uint64_t thd_id, uint64_t txn_id);
   void delete_active(uint64_t thd_id, uint64_t txn_id);
   void add_query(int tid, base_query * qry);

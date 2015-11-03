@@ -248,6 +248,12 @@ void Stats_thd::clear() {
   thd_prof_mvcc1=0;thd_prof_mvcc2=0;thd_prof_mvcc3=0;
   thd_prof_mvcc4=0;thd_prof_mvcc5=0;thd_prof_mvcc6=0;thd_prof_mvcc7=0;thd_prof_mvcc8=0;thd_prof_mvcc9=0;
 
+  aq_poll=0;
+  aq_enqueue=0; aq_dequeue=0;
+  wq_enqueue=0; wq_dequeue=0;
+  all_wq_enqueue=0; all_wq_dequeue=0;
+  rem_wq_enqueue=0; rem_wq_dequeue=0;
+  new_wq_enqueue=0; new_wq_dequeue=0;
 
   time_getqry = 0;
   client_latency = 0;
@@ -809,6 +815,12 @@ void Stats::print(bool prog) {
 	uint64_t total_msg_rcv_cnt = 0;
 	double total_time_msg_sent = 0;
 
+  double total_aq_poll = 0;
+  double total_aq_enqueue=0;double total_aq_dequeue=0;
+  double total_wq_enqueue=0;double total_wq_dequeue=0;
+  double total_all_wq_enqueue=0;double total_all_wq_dequeue=0;
+  double total_rem_wq_enqueue=0;double total_rem_wq_dequeue=0;
+  double total_new_wq_enqueue=0;double total_new_wq_dequeue=0;
 
   double total_txn_time_begintxn = 0;
   double total_txn_time_begintxn2 = 0;
@@ -940,6 +952,19 @@ void Stats::print(bool prog) {
   total_txn_time_q_work += _stats[tid]->txn_time_q_work;
   total_txn_time_net += _stats[tid]->txn_time_net;
   total_txn_time_misc += _stats[tid]->txn_time_misc;
+
+  
+ total_aq_poll+= _stats[tid]->aq_poll;
+ total_aq_enqueue+= _stats[tid]->aq_enqueue;
+ total_aq_dequeue+= _stats[tid]->aq_dequeue;
+ total_wq_enqueue+= _stats[tid]->wq_enqueue;
+ total_wq_dequeue+= _stats[tid]->wq_dequeue;
+ total_all_wq_enqueue+= _stats[tid]->all_wq_enqueue;
+ total_all_wq_dequeue+= _stats[tid]->all_wq_dequeue;
+ total_rem_wq_enqueue+= _stats[tid]->rem_wq_enqueue;
+ total_rem_wq_dequeue+= _stats[tid]->rem_wq_dequeue;
+ total_new_wq_enqueue+= _stats[tid]->new_wq_enqueue;
+ total_new_wq_dequeue+= _stats[tid]->new_wq_dequeue;
 
   for(uint64_t i = 0; i < g_part_cnt; i++) {
     total_part_cnt[i] += _stats[tid]->part_cnt[i];
@@ -1093,6 +1118,17 @@ void Stats::print(bool prog) {
       ",qry_rqry=%ld"
       ",qry_rprep=%ld"
       ",qry_rfin=%ld"
+      ",aq_poll=%f"
+      ",aq_enqueue=%f"
+      ",aq_dequeue=%f"
+      ",wq_enqueue=%f"
+      ",wq_dequeue=%f"
+      ",rem_wq_enqueue=%f"
+      ",rem_wq_dequeue=%f"
+      ",new_wq_enqueue=%f"
+      ",new_wq_dequeue=%f"
+      ",all_wq_enqueue=%f"
+      ",all_wq_dequeue=%f"
 			,total_mq_full / BILLION
 			,total_qq_full / BILLION
 			,total_qq_lat / total_qq_cnt / BILLION
@@ -1104,6 +1140,17 @@ void Stats::print(bool prog) {
 			,total_rqry 
 			,total_rprep
 			,total_rfin 
+      ,total_aq_poll/BILLION
+      ,total_aq_enqueue/BILLION
+      ,total_aq_dequeue/BILLION
+      ,total_wq_enqueue/BILLION
+      ,total_wq_dequeue/BILLION
+      ,total_rem_wq_enqueue/BILLION
+      ,total_rem_wq_dequeue/BILLION
+      ,total_new_wq_enqueue/BILLION
+      ,total_new_wq_dequeue/BILLION
+      ,total_all_wq_enqueue/BILLION
+      ,total_all_wq_dequeue/BILLION
       );
 	fprintf(outf, 
       ",spec_abort_cnt=%ld"
@@ -1225,7 +1272,7 @@ void Stats::print(bool prog) {
   fprintf(outf,"\n");
   fflush(outf);
   if(!prog) {
-    print_cnts();
+    print_cnts(outf);
 	  //print_lat_distr();
   }
   fprintf(outf,"\n");
@@ -1248,7 +1295,7 @@ uint64_t Stats::get_txn_cnts() {
     return total_txn_cnt;
 }
 
-void Stats::print_cnts() {
+void Stats::print_cnts(FILE * outf) {
   if(!STATS_ENABLE || g_node_id >= g_node_cnt)
     return;
   uint64_t all_abort_cnt = 0;
@@ -1281,47 +1328,47 @@ void Stats::print_cnts() {
   }
   printf("\n[all_abort %ld] ",all_abort_cnt);
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) 
-    _stats[tid]->all_abort.print(stdout);
+    _stats[tid]->all_abort.print(outf);
 #if WORKLOAD == TPCC
   printf("\n[w_cflt %ld] ",w_cflt_cnt);
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) 
-    _stats[tid]->w_cflt.print(stdout);
+    _stats[tid]->w_cflt.print(outf);
   printf("\n[d_cflt %ld] ",d_cflt_cnt);
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) 
-    _stats[tid]->d_cflt.print(stdout);
+    _stats[tid]->d_cflt.print(outf);
   printf("\n[cnp_cflt %ld] ",cnp_cflt_cnt);
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) 
-    _stats[tid]->cnp_cflt.print(stdout);
+    _stats[tid]->cnp_cflt.print(outf);
   printf("\n[c_cflt %ld] ",c_cflt_cnt);
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) 
-    _stats[tid]->c_cflt.print(stdout);
+    _stats[tid]->c_cflt.print(outf);
   printf("\n[ol_cflt %ld] ",ol_cflt_cnt);
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) 
-    _stats[tid]->ol_cflt.print(stdout);
+    _stats[tid]->ol_cflt.print(outf);
   printf("\n[s_cflt %ld] ",s_cflt_cnt);
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) 
-    _stats[tid]->s_cflt.print(stdout);
+    _stats[tid]->s_cflt.print(outf);
   printf("\n[w_abrt %ld] ",w_abrt_cnt);
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) 
-    _stats[tid]->w_abrt.print(stdout);
+    _stats[tid]->w_abrt.print(outf);
   printf("\n[d_abrt %ld] ",d_abrt_cnt);
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) 
-    _stats[tid]->d_abrt.print(stdout);
+    _stats[tid]->d_abrt.print(outf);
   printf("\n[cnp_abrt %ld] ",cnp_abrt_cnt);
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) 
-    _stats[tid]->cnp_abrt.print(stdout);
+    _stats[tid]->cnp_abrt.print(outf);
   printf("\n[c_abrt %ld] ",c_abrt_cnt);
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) 
-    _stats[tid]->c_abrt.print(stdout);
+    _stats[tid]->c_abrt.print(outf);
   printf("\n[ol_abrt %ld] ",ol_abrt_cnt);
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) 
-    _stats[tid]->ol_abrt.print(stdout);
+    _stats[tid]->ol_abrt.print(outf);
   printf("\n[s_abrt %ld] ",s_abrt_cnt);
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) 
-    _stats[tid]->s_abrt.print(stdout);
+    _stats[tid]->s_abrt.print(outf);
 #endif
 
-  printf("\n");
+  fprintf(outf,"\n");
 
 }
 

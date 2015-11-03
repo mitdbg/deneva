@@ -318,7 +318,7 @@ RC thread_t::run() {
     //FIXME: make abort_queue lock free by transferring implementation to concurrentqueue
 		if(abort_queue.poll_abort(get_thd_id()) && (tmp_query = abort_queue.get_next_abort_query(get_thd_id())) != NULL) {
       //work_queue.add_query(_thd_id,m_query);
-      work_queue.enqueue(tmp_query);
+      work_queue.enqueue(get_thd_id(),tmp_query);
       tmp_query = NULL;
     }
 
@@ -516,7 +516,7 @@ RC thread_t::run() {
             m_txn->spec = false;
             m_txn->spec_done = false;
 					  //work_queue.add_query(_thd_id,m_query);
-            work_queue.enqueue(m_query);
+            work_queue.enqueue(get_thd_id(),m_query);
             break;
           }
 #endif
@@ -1398,7 +1398,7 @@ RC thread_t::run_calvin() {
       } else {
         // Put other queries aside until all nodes are ready
         //work_queue.add_query(_thd_id,m_query);
-        work_queue.enqueue(m_query);
+        work_queue.enqueue(get_thd_id(),m_query);
       }
 	  }
   }
@@ -1490,7 +1490,7 @@ RC thread_t::run_calvin() {
     //FIXME: make abort_queue lock free by transferring implementation to concurrentqueue
 		if(abort_queue.poll_abort(get_thd_id()) && (tmp_query = abort_queue.get_next_abort_query(get_thd_id())) != NULL) {
       //work_queue.add_query(_thd_id,m_query);
-      work_queue.enqueue(tmp_query);
+      work_queue.enqueue(get_thd_id(),tmp_query);
       tmp_query = NULL;
     }
 
