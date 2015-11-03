@@ -93,6 +93,13 @@ RC thread_t::run_remote() {
       fflush(stdout);
 			return FINISH;
 		}
+
+    if(abort_queue.poll_abort(get_thd_id())) {
+      base_query * tmp_query = abort_queue.get_next_abort_query(get_thd_id());
+      if(tmp_query)
+        work_queue.enqueue(get_thd_id(),tmp_query);
+    }
+
 	}
 }
 
@@ -201,7 +208,8 @@ RC thread_t::run() {
   //txn_pool.get(m_txn);
 	//glob_manager.set_txn_man(m_txn);
 
-	base_query * tmp_query = NULL;
+	base_query * tmp_query __attribute__ ((unused));
+  tmp_query = NULL;
 	uint64_t stoptime = 0;
 	uint64_t timespan;
 	run_starttime = get_sys_clock();
@@ -256,7 +264,6 @@ RC thread_t::run() {
                 */
     bool got_qry = false;
 		while(!(got_qry = work_queue.dequeue(_thd_id, m_query))
-                && !abort_queue.poll_abort(get_thd_id())
                 && !_wl->sim_done && !_wl->sim_timeout) {
 #if CC_ALG == HSTORE_SPEC
       txn_table.spec_next(_thd_id);
@@ -316,11 +323,13 @@ RC thread_t::run() {
 		}
 
     //FIXME: make abort_queue lock free by transferring implementation to concurrentqueue
+    /*
 		if(abort_queue.poll_abort(get_thd_id()) && (tmp_query = abort_queue.get_next_abort_query(get_thd_id())) != NULL) {
       //work_queue.add_query(_thd_id,m_query);
       work_queue.enqueue(get_thd_id(),tmp_query);
       tmp_query = NULL;
     }
+    */
 
     INC_STATS(_thd_id,thd_prof_thd1d,get_sys_clock() - thd_prof_start);
     //thd_prof_start = get_sys_clock();

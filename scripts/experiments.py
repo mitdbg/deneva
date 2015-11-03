@@ -115,8 +115,10 @@ def tpcc_scaling():
 
 def tpcc_scaling_whset():
     wl = 'TPCC'
-    nnodes = [1,2,4,8,16,32,64]
-    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
+#    nnodes = [1,2,4,8,16,32,64]
+    nnodes = [2,4,8]
+#    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
+    nalgos=['NO_WAIT']
     npercpay=[1.0,0.0]
     wh=128
     fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PERC_PAYMENT","NUM_WH"]
