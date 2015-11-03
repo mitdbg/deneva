@@ -46,8 +46,10 @@ RC thread_t::run_remote() {
 
   while(!_wl->sim_init_done) {
     tport_man.recv_msg();
+    /*
     if(get_sys_clock() - run_starttime >= g_done_timer)
       return FINISH;
+      */
   }
   warmup_done = true;
 	pthread_barrier_wait( &warmup_bar );
@@ -109,8 +111,10 @@ RC thread_t::run_send() {
   run_starttime = get_sys_clock();
 	while (!_wl->sim_init_done) {
     messager.run();
+    /*
     if(get_sys_clock() - run_starttime >= g_done_timer)
       return FINISH;
+      */
   }
 
 	pthread_barrier_wait( &warmup_bar );

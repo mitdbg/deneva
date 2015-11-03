@@ -28,7 +28,7 @@
 // # of transactions to run for warmup
 #define WARMUP            0
 // YCSB or TPCC
-#define WORKLOAD YCSB
+#define WORKLOAD TPCC
 // print the transaction latency distribution
 #define PRT_LAT_DISTR false
 #define STATS_ENABLE        true
@@ -83,7 +83,7 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, VOLTDB, OCC, VLL, CALVIN
-#define CC_ALG TIMESTAMP
+#define CC_ALG WAIT_DIE
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER         false
@@ -171,7 +171,7 @@
 // ==== [TPCC] ====
 // For large warehouse count, the tables do not fit in memory
 // small tpcc schemas shrink the table size.
-#define TPCC_SMALL          true
+#define TPCC_SMALL          false
 #define MAX_ITEMS_SMALL 10000
 #define CUST_PER_DIST_SMALL 2000
 #define MAX_ITEMS_NORM 100000
@@ -244,7 +244,7 @@ extern TestCases          g_test_case;
 #define DEBUG_TIMESTAMP       false
 #define DEBUG_SYNTH         false
 #define DEBUG_ASSERT        false
-#define DEBUG_DISTR false
+#define DEBUG_DISTR true
 #define DEBUG_ALLOC false
 #define DEBUG_TIMELINE        false
 #define DEBUG_BREAKDOWN       false
@@ -308,7 +308,7 @@ extern TestCases          g_test_case;
 #define DONE_TIMER 1 * 60 * BILLION // ~2 minutes
 
 #define SEED 0
-#define SHMEM_ENV false
+#define SHMEM_ENV true
 
 #endif
 

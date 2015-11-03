@@ -42,7 +42,7 @@ STRNOW=NOW.strftime("%Y%m%d-%H%M%S")
 
 os.chdir('../..')
 
-MAX_TIME_PER_EXP = 60 * 4   # in seconds
+MAX_TIME_PER_EXP = 60 * 20   # in seconds
 
 EXECUTE_EXPS = True
 SKIP = False
@@ -692,7 +692,8 @@ def run_exp_old(exps,network_test=False,delay=''):
                     print(nids)
 
                     if cfgs["WORKLOAD"] == "TPCC":
-                        schema = "benchmarks/TPCC_short_schema.txt"
+                        schema = "benchmarks/TPCC_full_schema.txt"
+#                        schema = "benchmarks/TPCC_short_schema.txt"
                     elif cfgs["WORKLOAD"] == "YCSB":
                         schema = "benchmarks/YCSB_schema.txt"
                     # NOTE: copy_files will fail if any (possibly) stray processes
@@ -972,7 +973,8 @@ def run_exp(exps,network_test=False,delay=''):
             for host,nid in new_nids.iteritems():
                 outfiles[host] = "{}.out".format(output_f)
             if cfgs["WORKLOAD"] == "TPCC":
-                schema = "benchmarks/TPCC_short_schema.txt"
+                schema = "benchmarks/TPCC_full_schema.txt"
+#                schema = "benchmarks/TPCC_short_schema.txt"
             elif cfgs["WORKLOAD"] == "YCSB":
                 schema = "benchmarks/YCSB_schema.txt"
             # NOTE: copy_files will fail if any (possibly) stray processes

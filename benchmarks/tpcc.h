@@ -119,7 +119,7 @@ RC run_txn_state(base_query * query);
 	RC new_order_6(uint64_t ol_i_id, row_t *& r_item_local);
 	RC new_order_7(uint64_t ol_i_id, row_t * r_item_local);
 	RC new_order_8(uint64_t w_id,uint64_t  d_id,bool remote, uint64_t ol_i_id, uint64_t ol_supply_w_id, uint64_t ol_quantity,uint64_t  ol_number,uint64_t  o_id, row_t *& r_stock_local);
-	RC new_order_9(uint64_t w_id,uint64_t  d_id,bool remote, uint64_t ol_i_id, uint64_t ol_supply_w_id, uint64_t ol_quantity,uint64_t  ol_number,uint64_t  o_id, row_t * r_stock_local);
+	RC new_order_9(uint64_t w_id,uint64_t  d_id,bool remote, uint64_t ol_i_id, uint64_t ol_supply_w_id, uint64_t ol_quantity,uint64_t  ol_number,uint64_t ol_amount, uint64_t  o_id, row_t * r_stock_local);
 	RC run_order_status(tpcc_query * query);
 	RC run_delivery(tpcc_query * query);
 	RC run_stock_level(tpcc_query * query);

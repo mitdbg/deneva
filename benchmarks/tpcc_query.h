@@ -80,6 +80,7 @@ public:
 	uint64_t ol_supply_w_id;
 	uint64_t ol_quantity;
 	uint64_t ol_number;
+	uint64_t ol_amount;
 	uint64_t o_id;
 
 
@@ -135,6 +136,7 @@ public:
 	uint64_t ol_supply_w_id;
 	uint64_t ol_quantity;
 	uint64_t ol_number;
+	uint64_t ol_amount;
 	uint64_t o_id;
 
 };

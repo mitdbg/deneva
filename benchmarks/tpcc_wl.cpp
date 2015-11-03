@@ -279,7 +279,9 @@ void tpcc_wl::init_tab_cust(uint64_t did, uint64_t wid) {
 			Lastname(NURand(255,0,999), c_last);
 		row->set_value(C_LAST, c_last);
 #if !TPCC_SMALL
-		char * tmp = "OE";
+		char tmp[2];
+    tmp[0] = 'O';
+    tmp[1] = 'E';
 		row->set_value(C_MIDDLE, tmp);
 		char c_first[FIRSTNAME_LEN];
 		MakeAlphaString(FIRSTNAME_MINLEN, sizeof(c_first), c_first);
@@ -379,7 +381,7 @@ void tpcc_wl::init_tab_order(uint64_t did, uint64_t wid) {
 
 		// ORDER-LINE	
 #if !TPCC_SMALL
-		for (int ol = 1; ol <= o_ol_cnt; ol++) {
+		for (uint64_t ol = 1; ol <= o_ol_cnt; ol++) {
 			t_orderline->get_new_row(row, 0, row_id);
 			row->set_value(OL_O_ID, oid);
 			row->set_value(OL_D_ID, did);

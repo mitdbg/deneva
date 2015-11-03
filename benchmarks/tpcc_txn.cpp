@@ -253,6 +253,7 @@ RC tpcc_txn_man::run_txn_state(base_query * query) {
 	uint64_t ol_supply_w_id = m_query->ol_supply_w_id;
 	uint64_t ol_quantity = m_query->ol_quantity;
 	uint64_t ol_number = m_query->ol_number;
+	uint64_t ol_amount = m_query->ol_amount;
   uint64_t o_id = m_query->o_id;
 
 	uint64_t part_id_w = wh_to_part(w_id);
@@ -348,7 +349,7 @@ RC tpcc_txn_man::run_txn_state(base_query * query) {
       }
 			break;
 		case TPCC_NEWORDER9 :
-			rc = new_order_9( w_id, d_id, remote, ol_i_id, ol_supply_w_id, ol_quantity,  ol_number, o_id, row); 
+			rc = new_order_9( w_id, d_id, remote, ol_i_id, ol_supply_w_id, ol_quantity,  ol_number, ol_amount, o_id, row); 
       break;
     case TPCC_FIN :
       fin = true;
@@ -796,7 +797,7 @@ inline RC tpcc_txn_man::new_order_8(uint64_t w_id,uint64_t  d_id,bool remote, ui
     return rc;
 }
 		
-inline RC tpcc_txn_man::new_order_9(uint64_t w_id,uint64_t  d_id,bool remote, uint64_t ol_i_id, uint64_t ol_supply_w_id, uint64_t ol_quantity,uint64_t  ol_number,uint64_t  o_id, row_t * r_stock_local) {
+inline RC tpcc_txn_man::new_order_9(uint64_t w_id,uint64_t  d_id,bool remote, uint64_t ol_i_id, uint64_t ol_supply_w_id, uint64_t ol_quantity,uint64_t  ol_number, uint64_t ol_amount, uint64_t  o_id, row_t * r_stock_local) {
   assert(r_stock_local != NULL);
 		// XXX s_dist_xx are not retrieved.
 		UInt64 s_quantity;
@@ -805,7 +806,7 @@ inline RC tpcc_txn_man::new_order_9(uint64_t w_id,uint64_t  d_id,bool remote, ui
 #if !TPCC_SMALL
 		int64_t s_ytd;
 		int64_t s_order_cnt;
-		char * s_data;
+		char * s_data __attribute__ ((unused));
 		r_stock_local->get_value(S_YTD, s_ytd);
 		r_stock_local->set_value(S_YTD, s_ytd + ol_quantity);
     // In Coordination Avoidance, this record must be protected!

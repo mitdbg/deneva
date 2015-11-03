@@ -142,7 +142,7 @@ RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt
 
 			  waiter_cnt ++;
         txn->lock_ready = false;
-        DEBUG("wait %ld %ld\n",txn->get_txn_id(),_row->get_primary_key());
+        DEBUG("wait %ld %ld %lx\n",txn->get_txn_id(),_row->get_primary_key(),(uint64_t)_row);
         rc = WAIT;
         txn->rc = rc;
         txn->cc_wait_cnt++;
@@ -150,7 +150,7 @@ RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt
         //printf("wait \n");
       } else {
         INC_STATS(txn->get_thd_id(),abort_from_ts,1);
-        DEBUG("abort %ld %ld\n",txn->get_txn_id(),_row->get_primary_key());
+        DEBUG("abort %ld %ld %lx\n",txn->get_txn_id(),_row->get_primary_key(),(uint64_t)_row);
         rc = Abort;
         //printf("abort \n");
       }

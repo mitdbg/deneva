@@ -52,8 +52,10 @@ RC Client_thread_t::run_remote() {
           assert( _wl->sim_init_done);
       }
     }
+    /*
     if(get_sys_clock() - run_starttime >= g_done_timer)
       return FINISH;
+      */
   }
   warmup_done = true;
 	int rsp_cnts[g_servers_per_client];
@@ -169,8 +171,10 @@ RC Client_thread_t::run_send() {
 	run_starttime = get_sys_clock();
 	while (!_wl->sim_init_done) {
     messager.run();
+    /*
     if(get_sys_clock() - run_starttime >= g_done_timer)
       return FINISH;
+      */
   }
 
 	pthread_barrier_wait( &warmup_bar );
@@ -212,6 +216,8 @@ RC Client_thread_t::run() {
         msg_queue.enqueue(NULL,INIT_DONE,i);
 			}
 		}
+  }
+  /*
     if(get_sys_clock() - run_starttime >= g_done_timer)
       return FINISH;
 	} else {
@@ -220,6 +226,7 @@ RC Client_thread_t::run() {
         return FINISH;
     }
   }
+  */
 	pthread_barrier_wait( &warmup_bar );
 	printf("Run %ld:%ld\n",_node_id, _thd_id);
 
