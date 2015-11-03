@@ -506,11 +506,13 @@ void QWorkQueueHelper::add_abort_query(base_query * qry) {
 
   pthread_mutex_lock(&mtx);
 
-  wq_entry_t n = head;
+  //wq_entry_t n = head;
+  wq_entry_t n = tail;
   while(n) {
     if(n->qry->penalty_end >= entry->qry->penalty_end)
       break;
-    n = n->next;
+    n = n->prev;
+    //n = n->next;
   }
 
   if(n) {
