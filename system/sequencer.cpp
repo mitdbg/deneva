@@ -353,7 +353,7 @@ RC Seq_thread_t::run_remote() {
       } else {
         // Put other queries aside until all nodes are ready
         //work_queue.add_query(_thd_id,m_query);
-        work_queue.enqueue(m_query);
+        work_queue.enqueue(0,m_query);
       }
     }
 	}

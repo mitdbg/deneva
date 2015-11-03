@@ -44,57 +44,72 @@ void QWorkQueue::abort_finish(uint64_t time) {
 
 void QWorkQueue::add_abort_query(int tid, base_query * qry) {
   int idx = get_idx(tid);
-    queue[idx].add_abort_query(qry);
-    ATOM_ADD(abrt_cnt,1);
+  uint64_t starttime = get_sys_clock();
+  queue[idx].add_abort_query(qry);
+  INC_STATS(tid,aq_enqueue,get_sys_clock() - starttime);
+  ATOM_ADD(abrt_cnt,1);
 }
 
-void QWorkQueue::enqueue(base_query * qry) {
-  qry->q_starttime = get_sys_clock();
+void QWorkQueue::enqueue(uint64_t thd_id, base_query * qry) {
+  uint64_t starttime = get_sys_clock();
+  qry->q_starttime = starttime;
   switch(PRIORITY) {
     case PRIORITY_FCFS:
       ATOM_ADD(wq_cnt,1);
       wq.enqueue(qry);
+      INC_STATS(thd_id,wq_enqueue,get_sys_clock() - starttime);
       break;
     case PRIORITY_ACTIVE:
       if(qry->txn_id == UINT64_MAX) {
         ATOM_ADD(new_wq_cnt,1);
         new_wq.enqueue(qry);
+        INC_STATS(thd_id,new_wq_enqueue,get_sys_clock() - starttime);
       }
       else {
         ATOM_ADD(wq_cnt,1);
         wq.enqueue(qry);
+        INC_STATS(thd_id,wq_enqueue,get_sys_clock() - starttime);
         }
       break;
     case PRIORITY_HOME:
       if(qry->txn_id == UINT64_MAX) {
         ATOM_ADD(new_wq_cnt,1);
         new_wq.enqueue(qry);
+        INC_STATS(thd_id,new_wq_enqueue,get_sys_clock() - starttime);
       }
       else if (IS_REMOTE(qry->txn_id)) {
         ATOM_ADD(rem_wq_cnt,1);
         rem_wq.enqueue(qry);
+        INC_STATS(thd_id,rem_wq_enqueue,get_sys_clock() - starttime);
       }
       else {
         ATOM_ADD(wq_cnt,1);
         wq.enqueue(qry);
+        INC_STATS(thd_id,wq_enqueue,get_sys_clock() - starttime);
       }
       break;
     default: assert(false);
   }
   //DEBUG("ENQUEUE %ld %ld %ld %ld\n",qry->txn_id,wq_cnt,rem_wq_cnt,new_wq_cnt);
+  INC_STATS(thd_id,all_wq_enqueue,get_sys_clock() - starttime);
 }
 //TODO: do we need to has qry id here?
 // If we do, maybe add in check as an atomic var in base_query
 // Current hash implementation requires an expensive mutex
 bool QWorkQueue::dequeue(uint64_t thd_id, base_query *& qry) {
   bool valid;
+  uint64_t prof_starttime = get_sys_clock();
+  uint64_t starttime = prof_starttime;
   valid = wq.try_dequeue(qry);
+  INC_STATS(thd_id,wq_dequeue,get_sys_clock() - starttime);
   if(valid) {
     ATOM_SUB(wq_cnt,1);
   }
   if(PRIORITY == PRIORITY_HOME) {
     if(!valid) {
+      starttime = get_sys_clock();
       valid = rem_wq.try_dequeue(qry);
+      INC_STATS(thd_id,rem_wq_dequeue,get_sys_clock() - starttime);
       if(valid) {
         ATOM_SUB(rem_wq_cnt,1);
       }
@@ -102,7 +117,9 @@ bool QWorkQueue::dequeue(uint64_t thd_id, base_query *& qry) {
   }
   if(PRIORITY == PRIORITY_HOME || PRIORITY == PRIORITY_ACTIVE) {
     if(!valid) {
+      starttime = get_sys_clock();
       valid = new_wq.try_dequeue(qry);
+      INC_STATS(thd_id,new_wq_dequeue,get_sys_clock() - starttime);
       if(valid) {
         ATOM_SUB(new_wq_cnt,1);
       }
@@ -112,9 +129,9 @@ bool QWorkQueue::dequeue(uint64_t thd_id, base_query *& qry) {
 
   if(!ISCLIENT && valid && qry->txn_id != UINT64_MAX) {
     if(set_active(thd_id, qry->txn_id)) {
-      enqueue(qry);
+      enqueue(thd_id,qry);
       qry = NULL;
-      return false;
+      valid = false;
     }
   }
   if(valid) {
@@ -124,6 +141,7 @@ bool QWorkQueue::dequeue(uint64_t thd_id, base_query *& qry) {
     INC_STATS(0,qq_lat,t);
     DEBUG("DEQUEUE %ld %ld %ld %ld\n",qry->txn_id,wq_cnt,rem_wq_cnt,new_wq_cnt);
   }
+  INC_STATS(thd_id,all_wq_dequeue,get_sys_clock() - prof_starttime);
   return valid;
 }
 
@@ -171,11 +189,16 @@ void QWorkQueue::done(int tid, uint64_t id) {
 }
 bool QWorkQueue::poll_abort(int tid) {
   int idx = get_idx(tid);
-    return queue[idx].poll_abort();
+  uint64_t starttime = get_sys_clock();
+  bool result = queue[idx].poll_abort();
+  INC_STATS(tid,aq_poll,get_sys_clock() - starttime);
+  return result;
 } 
 base_query * QWorkQueue::get_next_abort_query(int tid) {
   int idx = get_idx(tid);
+  uint64_t starttime = get_sys_clock();
   base_query * rtn_qry = queue[idx].get_next_abort_query();
+  INC_STATS(tid,aq_dequeue,get_sys_clock() - starttime);
   if(rtn_qry) {
     ATOM_SUB(abrt_cnt,1);
   }

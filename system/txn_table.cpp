@@ -153,7 +153,7 @@ void TxnTable::restart_txn(uint64_t txn_id){
         t_node->qry->rtype = RTXN;
       else
         t_node->qry->rtype = RQRY;
-      work_queue.enqueue(t_node->qry);
+      work_queue.enqueue(0,t_node->qry);
       break;
     }
     t_node = t_node->next;

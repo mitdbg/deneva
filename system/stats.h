@@ -113,6 +113,13 @@ public:
   double thd_prof_mvcc1,thd_prof_mvcc2,thd_prof_mvcc3,thd_prof_mvcc4,thd_prof_mvcc5,thd_prof_mvcc6,thd_prof_mvcc7,thd_prof_mvcc8,thd_prof_mvcc9;
   uint64_t thd_prof_get_txn_cnt;
 
+  double aq_poll;
+  double aq_enqueue, aq_dequeue;
+  double wq_enqueue, wq_dequeue;
+  double all_wq_enqueue, all_wq_dequeue;
+  double rem_wq_enqueue, rem_wq_dequeue;
+  double new_wq_enqueue, new_wq_dequeue;
+
   uint64_t msg_batch_size;
   uint64_t msg_batch_bytes;
   uint64_t msg_batch_cnt;
@@ -242,7 +249,7 @@ public:
 	void print_client(bool prog); 
 	void print_sequencer(bool prog);
 	void print(bool prog);
-	void print_cnts();
+	void print_cnts(FILE * outf);
 	void print_lat_distr();
   void print_lat_distr(uint64_t min, uint64_t max); 
 	void print_abort_distr();

@@ -181,8 +181,10 @@ uint64_t tpcc_query::get_keys(uint64_t *& arr) {
 
 void tpcc_client_query::gen_payment(uint64_t thd_id) {
 	txn_type = TPCC_PAYMENT;
-	if (FIRST_PART_LOCAL)
-		w_id = thd_id % g_num_wh + 1;
+	if (FIRST_PART_LOCAL) {
+    while(wh_to_part(w_id = URand(1, g_num_wh)) != thd_id) {}
+		//w_id = thd_id % g_num_wh + 1;
+  }
 	else
 		w_id = URand(1, g_num_wh);
 	d_w_id = w_id;
@@ -227,8 +229,10 @@ void tpcc_client_query::gen_payment(uint64_t thd_id) {
 
 void tpcc_client_query::gen_new_order(uint64_t thd_id) {
 	txn_type = TPCC_NEW_ORDER;
-	if (FIRST_PART_LOCAL)
-		w_id = thd_id % g_num_wh + 1;
+	if (FIRST_PART_LOCAL) {
+    while(wh_to_part(w_id = URand(1, g_num_wh)) != thd_id) {}
+		//w_id = thd_id % g_num_wh + 1;
+  }
 	else
 		w_id = URand(1, g_num_wh);
 	d_id = URand(1, g_dist_per_wh);
