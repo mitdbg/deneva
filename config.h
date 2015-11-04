@@ -83,7 +83,7 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, VOLTDB, OCC, VLL, CALVIN
-#define CC_ALG NO_WAIT
+#define CC_ALG OCC
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER         false
@@ -92,7 +92,7 @@
 // per-row lock/ts management or central lock/ts management
 #define CENTRAL_MAN         false
 #define BUCKET_CNT          31
-#define ABORT_PENALTY 1 * 1000000UL   // in ns.
+#define ABORT_PENALTY 1000000
 #define ABORT_PENALTY_MAX 100 * 1000000UL   // in ns.
 #define BACKOFF true
 // [ INDEX ]

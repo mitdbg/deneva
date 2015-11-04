@@ -25,11 +25,13 @@ void OptCC::init() {
 
 RC OptCC::validate(txn_man * txn) {
 	RC rc;
+  uint64_t starttime = get_sys_clock();
 #if PER_ROW_VALID
 	rc = per_row_validate(txn);
 #else
 	rc = central_validate(txn);
 #endif
+  INC_STATS(txn->get_thd_id(),thd_prof_occ_val2,get_sys_clock() - starttime);
 	return rc;
 }
 
@@ -100,6 +102,8 @@ OptCC::per_row_validate(txn_man * txn) {
 
 RC OptCC::central_validate(txn_man * txn) {
 	RC rc;
+  uint64_t starttime = get_sys_clock();
+  uint64_t total_starttime = starttime;
 	uint64_t start_tn = txn->start_ts;
 	uint64_t finish_tn;
 	//set_ent ** finish_active;
@@ -114,7 +118,6 @@ RC OptCC::central_validate(txn_man * txn) {
 	set_ent * his;
 	set_ent * ent;
 	int n = 0;
-  uint64_t starttime = get_sys_clock();
 
 	//pthread_mutex_lock( &latch );
   sem_wait(&_semaphore);
@@ -188,7 +191,25 @@ final:
 		//txn->cleanup(Abort);
     INC_STATS(txn->get_thd_id(),occ_abort_check_cnt,checked);
 		rc = Abort;
+    // Optimization: If this is aborting, remove from active set now
+    if(!readonly) {
+      sem_wait(&_semaphore);
+        set_ent * act = active;
+        set_ent * prev = NULL;
+        while (act != NULL && act->txn != txn) {
+          prev = act;
+          act = act->next;
+        }
+        assert(act->txn == txn);
+        if (prev != NULL)
+          prev->next = act->next;
+        else
+          active = act->next;
+        active_len --;
+      sem_post(&_semaphore);
+    }
 	}
+  INC_STATS(txn->get_thd_id(),thd_prof_occ_val1,get_sys_clock() - total_starttime);
 	return rc;
 }
 

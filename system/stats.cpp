@@ -1180,7 +1180,7 @@ void Stats::print(bool prog) {
       ",wq_cnt=%ld"
       ",rem_wq_cnt=%ld"
       ",new_wq_cnt=%ld"
-      ",work_queue_abrt_cnt=%ld"
+      ",aq_cnt=%ld"
       ,total_spec_abort_cnt
       ,total_spec_commit_cnt
 			,total_time_abort / BILLION
@@ -1208,8 +1208,7 @@ void Stats::print(bool prog) {
       ,work_queue.get_wq_cnt()
       ,work_queue.get_rem_wq_cnt()
       ,work_queue.get_new_wq_cnt()
-      ,work_queue.get_abrt_cnt()
-      );
+      ,abort_queue.get_abrt_cnt());
 	fprintf(outf, 
   ",txn_time_begintxn=%f"
   ",txn_time_begintxn2=%f"

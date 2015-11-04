@@ -28,6 +28,7 @@ public:
 	// conversion is done within the function.
 	RC 			run();
 	RC 			run_send();
+	RC 			run_abort();
 	RC 			run_remote();
 	RC 			run_calvin();
 

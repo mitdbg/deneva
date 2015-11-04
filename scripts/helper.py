@@ -13,7 +13,8 @@ CONFIG_PARAMS = [
     "CC_ALG",
     "MODE",
     "WORKLOAD",
-    "PRIORITY"
+    "PRIORITY",
+    "ABORT_PENALTY"
 #    "SHMEM_ENV"
     ]
 
@@ -72,6 +73,7 @@ SHORTNAMES = {
     "ACCESS_PERC":"A",
     "PRIORITY":"",
     "PERC_PAYMENT":"PP",
+    "ABORT_PENALTY":"PENALTY"
 }
 
 stat_map = {
@@ -302,8 +304,18 @@ stat_map = {
 'part_cnt15':[],
 'part_cnt16':[],
 
+'txn_table_cnt':[],
 'txn_table_cflt':[],
 'txn_table_cflt_size':[],
+'wq_cnt':[],
+'new_wq_cnt':[],
+'aq_cnt':[],
+'wq_enqueue':[],
+'new_wq_enqueue':[],
+'aq_enqueue':[],
+'wq_dequeue':[],
+'new_wq_dequeue':[],
+'aq_dequeue':[],
 }
 
 cnts = ["all_abort"]
@@ -707,26 +719,37 @@ def get_summary_stats(stats,summary,x,v):
     sk['rtxn'] =  sum(summary['type10']) / sum(summary['thd2'])
     sk['rinit'] =  sum(summary['type11']) / sum(summary['thd2'])
     sk['rprep'] =  sum(summary['type12']) / sum(summary['thd2'])
-    sk['abort_cnt'] = sum(summary['abort_cnt'])
-    sk['txn_abort_cnt'] = sum(summary['txn_abort_cnt'])
+    sk['abort_cnt'] = avg(summary['abort_cnt'])
+    sk['txn_abort_cnt'] = avg(summary['txn_abort_cnt'])
     try:
-        sk['avg_abort_cnt'] = sum(summary['abort_cnt']) / sum(summary['txn_abort_cnt'])
+        sk['avg_abort_cnt'] = avg(summary['abort_cnt']) / sum(summary['txn_abort_cnt'])
     except ZeroDivisionError:
         sk['avg_abort_cnt'] = 0
     try:
-        sk['abort_rate'] = sum(summary['abort_cnt']) / tot_txn_cnt
+        sk['abort_rate'] = avg(summary['abort_cnt']) / avg_txn_cnt
     except ZeroDivisionError:
         sk['abort_rate'] = 0
-    sk['abort_row_cnt'] = sum(summary['tot_avg_abort_row_cnt'])
+    sk['abort_row_cnt'] = avg(summary['tot_avg_abort_row_cnt'])
     try:
         sk['write_perc'] = sum(summary['write_cnt']) / sum(summary['access_cnt'])
     except ZeroDivisionError:
         sk['write_perc'] = 0
-    sk['stage1'] = sum(summary['thd1']) / avg_time * 100
-    sk['stage2'] = sum(summary['thd2']) / avg_time * 100
-    sk['stage3'] = sum(summary['thd3']) / avg_time * 100
+    total = avg(summary['thd1']) + avg(summary['thd2']) + avg(summary['thd3'])
+    sk['stage1'] = avg(summary['thd1']) / total * 100
+    sk['stage2'] = avg(summary['thd2']) / total * 100
+    sk['stage3'] = avg(summary['thd3']) / total * 100
     sk['latency'] = avg(summary['latency'])
     sk['memory'] = avg(summary['phys_mem_usage']) / 1000000
+    sk['wq_cnt'] = avg(summary['wq_cnt'])
+    sk['new_wq_cnt'] = avg(summary['new_wq_cnt'])
+    sk['aq_cnt'] = avg(summary['aq_cnt'])
+    sk['wq_enqueue'] = avg(summary['wq_enqueue'])
+    sk['wq_dequeue'] = avg(summary['wq_dequeue'])
+    sk['new_wq_enqueue'] = avg(summary['new_wq_enqueue'])
+    sk['new_wq_dequeue'] = avg(summary['new_wq_dequeue'])
+    sk['aq_enqueue'] = avg(summary['aq_enqueue'])
+    sk['aq_dequeue'] = avg(summary['aq_dequeue'])
+    sk['txn_table_cnt'] = avg(summary['txn_table_cnt'])
 
     if v == '':
         key = (x)
@@ -769,7 +792,17 @@ def write_summary_file(fname,stats,x_vals,v_vals):
     'stage2',
     'stage3',
     'latency',
-    'memory'
+    'memory',
+    'txn_table_cnt',
+    'wq_cnt',
+    'new_wq_cnt',
+    'aq_cnt',
+    'wq_enqueue',
+    'wq_dequeue',
+    'new_wq_enqueue',
+    'new_wq_dequeue',
+    'aq_enqueue',
+    'aq_dequeue',
     ]
     with open('../figs/' + fname+'.csv','w') as f:
         if v_vals == []:
