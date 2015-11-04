@@ -107,27 +107,21 @@ def tpcc_modes():
 # 7x5x2x2 = 140
 def tpcc_scaling():
     wl = 'TPCC'
-#    nnodes = [1,2,4,8,16,32,64]
-#    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
-    nalgos=['OCC']
+    nnodes = [1,2,4,8,16,32,64]
+    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
     npercpay=[1.0,0.0]
-    nnodes = [1,2,4,8,12]
-    nabrt=[1000000]
-    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PERC_PAYMENT","ABORT_PENALTY"]
-    exp = [[wl,n,cc,pp,a] for pp,n,cc,a in itertools.product(npercpay,nnodes,nalgos,nabrt)]
+    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PERC_PAYMENT"]
+    exp = [[wl,n,cc,pp] for pp,n,cc in itertools.product(npercpay,nnodes,nalgos)]
     return fmt,exp
 
 def tpcc_scaling_whset():
     wl = 'TPCC'
-#    nnodes = [1,2,4,8,16,32,64]
-#    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
-    nalgos=['OCC']
-    nnodes = [1,2,4,8,12]
+    nnodes = [1,2,4,8,16,32,64]
+    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
     npercpay=[1.0,0.0]
-    nabrt=[1000000]
     wh=128
-    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PERC_PAYMENT","NUM_WH","ABORT_PENALTY"]
-    exp = [[wl,n,cc,pp,wh,a] for pp,n,cc,a in itertools.product(npercpay,nnodes,nalgos,nabrt)]
+    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PERC_PAYMENT","NUM_WH"]
+    exp = [[wl,n,cc,pp,wh] for pp,n,cc in itertools.product(npercpay,nnodes,nalgos)]
     return fmt,exp
 
 def inflight_study():
