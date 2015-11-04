@@ -94,13 +94,28 @@ RC thread_t::run_remote() {
 			return FINISH;
 		}
 
+
+	}
+}
+RC thread_t::run_abort() {
+	printf("Run_abort %ld:%ld\n",_node_id, _thd_id);
+	pthread_barrier_wait( &warmup_bar );
+	pthread_barrier_wait( &warmup_bar );
+	printf("Run_abort %ld:%ld\n",_node_id, _thd_id);
+	while (!_wl->sim_done) {
+    abort_queue.process_aborts();
+    /*
     if(abort_queue.poll_abort(get_thd_id())) {
       base_query * tmp_query = abort_queue.get_next_abort_query(get_thd_id());
       if(tmp_query)
-        work_queue.enqueue(get_thd_id(),tmp_query);
+        work_queue.enqueue(0,tmp_query);
+    } else {
+      sleep(10);
     }
-
-	}
+    */
+  }
+  return FINISH;
+ 
 }
 
 RC thread_t::run_send() {

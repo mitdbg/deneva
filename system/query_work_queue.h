@@ -49,7 +49,8 @@ public:
   void finish(uint64_t time); 
   void abort_finish(uint64_t time); 
   void add_query(base_query * qry);
-  void add_abort_query(base_query * qry);
+  int add_abort_query(base_query * qry);
+  int check_abort_query();
   base_query * get_next_query(int id);
   base_query * get_next_query_client();
   void remove_query(base_query * qry);
@@ -77,6 +78,7 @@ public:
   bool poll_next_query(int tid);
   void finish(uint64_t time); 
   void abort_finish(uint64_t time); 
+  void process_aborts(); 
   void enqueue(uint64_t thd_id,base_query * qry); 
   bool dequeue(uint64_t thd_id, base_query *& qry);
   bool set_active(uint64_t thd_id, uint64_t txn_id);
@@ -100,6 +102,8 @@ private:
   moodycamel::ConcurrentQueue<base_query*,moodycamel::ConcurrentQueueDefaultTraits> wq;
   moodycamel::ConcurrentQueue<base_query*,moodycamel::ConcurrentQueueDefaultTraits> new_wq;
   moodycamel::ConcurrentQueue<base_query*,moodycamel::ConcurrentQueueDefaultTraits> rem_wq;
+  moodycamel::ConcurrentQueue<base_query*,moodycamel::ConcurrentQueueDefaultTraits> aq;
+  base_query * aq_head;
   QWorkQueueHelper * queue;
   QHash * hash;
   int q_len;

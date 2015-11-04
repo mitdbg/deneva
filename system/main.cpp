@@ -20,6 +20,7 @@ void * g(void *);
 void * worker(void *);
 void * nn_worker(void *);
 void * send_worker(void *);
+void * abort_worker(void *);
 void * calvin_worker(void * id); 
 void network_test();
 void network_test_recv();
@@ -130,7 +131,7 @@ int main(int argc, char* argv[])
 	uint64_t thd_cnt = g_thread_cnt;
 	uint64_t rthd_cnt = g_rem_thread_cnt;
 	uint64_t sthd_cnt = g_send_thread_cnt;
-  uint64_t all_thd_cnt = thd_cnt + rthd_cnt + sthd_cnt;
+  uint64_t all_thd_cnt = thd_cnt + rthd_cnt + sthd_cnt + 1;
 	
 	pthread_t * p_thds = 
 		(pthread_t *) malloc(sizeof(pthread_t) * (all_thd_cnt));
@@ -212,14 +213,13 @@ int main(int argc, char* argv[])
 		pthread_create(&p_thds[i], NULL, send_worker, (void *)vid);
 		//pthread_create(&p_thds[i], &attr, send_worker, (void *)vid);
   }
-	for (; i < thd_cnt + sthd_cnt + rthd_cnt -1; i++) {
+	for (; i < thd_cnt + sthd_cnt + rthd_cnt ; i++) {
 		uint64_t vid = i;
 		pthread_create(&p_thds[i], NULL, nn_worker, (void *)vid);
 		//pthread_create(&p_thds[i], &attr, nn_worker, (void *)vid);
   }
 
-
-  nn_worker((void *)(i));
+  abort_worker((void *)(i));
 
 	for (i = 0; i < all_thd_cnt - 1; i++) 
 		pthread_join(p_thds[i], NULL);
@@ -261,6 +261,13 @@ void * nn_worker(void * id) {
 	m_thds[tid].run_remote();
 	return NULL;
 }
+
+void * abort_worker(void * id) {
+	uint64_t tid = (uint64_t)id;
+	m_thds[tid].run_abort();
+	return NULL;
+}
+
 
 void * send_worker(void * id) {
 	uint64_t tid = (uint64_t)id;

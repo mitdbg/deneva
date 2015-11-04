@@ -30,6 +30,7 @@ SHORTNAMES = {
     "REQ_PER_QUERY": "RPQ",
     "MODE":"",
     "PRIORITY":"",
+    "ABORT_PENALTY":"PENALTY"
 }
 # Format: [#Nodes,#Txns,Workload,CC_ALG,MPR]
 fmt_tpcc = [["CLIENT_NODE_CNT","NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","MPIR","CLIENT_THREAD_CNT","CLIENT_REM_THREAD_CNT","CLIENT_SEND_THREAD_CNT","THREAD_CNT","REM_THREAD_CNT","SEND_THREAD_CNT","MAX_TXN_IN_FLIGHT","NUM_WH","PERC_PAYMENT","PART_PER_TXN","PART_CNT","MSG_TIME_LIMIT","MSG_SIZE_MAX","MODE"]]
@@ -106,23 +107,27 @@ def tpcc_modes():
 # 7x5x2x2 = 140
 def tpcc_scaling():
     wl = 'TPCC'
-    nnodes = [1,2,4,8,16,32,64]
-    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
+#    nnodes = [1,2,4,8,16,32,64]
+#    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
+    nalgos=['OCC']
     npercpay=[1.0,0.0]
-    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PERC_PAYMENT"]
-    exp = [[wl,n,cc,pp] for pp,n,cc in itertools.product(npercpay,nnodes,nalgos)]
+    nnodes = [1,2,4,8,12]
+    nabrt=[1000000]
+    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PERC_PAYMENT","ABORT_PENALTY"]
+    exp = [[wl,n,cc,pp,a] for pp,n,cc,a in itertools.product(npercpay,nnodes,nalgos,nabrt)]
     return fmt,exp
 
 def tpcc_scaling_whset():
     wl = 'TPCC'
 #    nnodes = [1,2,4,8,16,32,64]
-    nnodes = [2,4,8]
 #    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
-    nalgos=['NO_WAIT']
+    nalgos=['OCC']
+    nnodes = [1,2,4,8,12]
     npercpay=[1.0,0.0]
+    nabrt=[1000000]
     wh=128
-    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PERC_PAYMENT","NUM_WH"]
-    exp = [[wl,n,cc,pp,wh] for pp,n,cc in itertools.product(npercpay,nnodes,nalgos)]
+    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PERC_PAYMENT","NUM_WH","ABORT_PENALTY"]
+    exp = [[wl,n,cc,pp,wh,a] for pp,n,cc,a in itertools.product(npercpay,nnodes,nalgos,nabrt)]
     return fmt,exp
 
 def inflight_study():
@@ -558,10 +563,10 @@ def tpcc_scaling_plot(summary,summary_client):
 #    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT"            ,keys=['part_cnt1','part_cnt2','part_cnt3','part_cnt4','part_cnt5','part_cnt6','part_cnt7','part_cnt8','part_cnt9','part_cnt10']            ,norm=False,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128})
 #    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT",keys=['thd1a','thd1b','thd1c','thd1d'],norm=False,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128})
 #    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT",keys=['rtxn1a','rtxn1b','rtxn2','rtxn3','rtxn4'],norm=False,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128})
-    line_rate_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",key='thd1',extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128})
-    line_rate_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",key='abort_cnt',extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128})
-    line_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",key='tot_avg_abort_row_cnt',extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128})
-    line_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",key='txn_cnt',extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128})
+#    line_rate_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",key='thd1',extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128})
+#    line_rate_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",key='abort_cnt',extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128})
+#    line_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",key='tot_avg_abort_row_cnt',extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128})
+#    line_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",key='txn_cnt',extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128})
 
 
 def ycsb_scaling_plot(summary,summary_client):
@@ -651,7 +656,8 @@ configs = {
     "DONE_TIMER": "1 * 60 * BILLION // ~2 minutes",
     "PROG_TIMER" : "10 * BILLION // in s",
     "NETWORK_TEST" : "false",
-    "ABORT_PENALTY": "1 * 1000000UL   // in ns.",
+    "ABORT_PENALTY": 0,#"1 * 1000000UL   // in ns.",
+    "ABORT_PENALTY_MAX": "100 * 1000000UL   // in ns.",
     "MSG_TIME_LIMIT": "10 * 1000000UL",
     "MSG_SIZE_MAX": 4096,
 #    "PRT_LAT_DISTR": "true",

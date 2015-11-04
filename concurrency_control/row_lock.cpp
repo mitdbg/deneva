@@ -86,6 +86,7 @@ RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt
 		// Cannot be added to the owner list.
 		if (CC_ALG == NO_WAIT) {
 			rc = Abort;
+      DEBUG("abort %ld %ld %lx\n",txn->get_txn_id(),_row->get_primary_key(),(uint64_t)_row);
 			goto final;
 		} else if (CC_ALG == DL_DETECT) {
 			LockEntry * entry = get_entry();

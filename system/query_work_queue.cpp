@@ -26,6 +26,7 @@ void QWorkQueue::init() {
   rem_wq_cnt = 0;
   new_wq_cnt = 0;
   abrt_cnt = 0;
+  aq_head = NULL;
 }
 
 int inline QWorkQueue::get_idx(int input) {
@@ -38,17 +39,11 @@ int inline QWorkQueue::get_idx(int input) {
 }
 
 void QWorkQueue::abort_finish(uint64_t time) {
+  /*
     for(int idx=0;idx<q_len;idx++)
       queue[idx].abort_finish(time);
+      */
 } 
-
-void QWorkQueue::add_abort_query(int tid, base_query * qry) {
-  int idx = get_idx(tid);
-  uint64_t starttime = get_sys_clock();
-  queue[idx].add_abort_query(qry);
-  INC_STATS(tid,aq_enqueue,get_sys_clock() - starttime);
-  ATOM_ADD(abrt_cnt,1);
-}
 
 void QWorkQueue::enqueue(uint64_t thd_id, base_query * qry) {
   uint64_t starttime = get_sys_clock();
@@ -187,22 +182,68 @@ void QWorkQueue::done(int tid, uint64_t id) {
     return queue[idx].done(id);
     */
 }
-bool QWorkQueue::poll_abort(int tid) {
-  int idx = get_idx(tid);
+
+void QWorkQueue::add_abort_query(int tid, base_query * qry) {
   uint64_t starttime = get_sys_clock();
-  bool result = queue[idx].poll_abort();
-  INC_STATS(tid,aq_poll,get_sys_clock() - starttime);
+  if(qry->penalty == 0)
+    qry->penalty = g_abort_penalty;
+#if BACKOFF
+  else {
+    if(qry->penalty * 2 < g_abort_penalty_max)
+      qry->penalty = qry->penalty * 2;
+  }
+#endif
+  qry->penalty_end = starttime + qry->penalty;
+  aq.enqueue(qry);
+  ATOM_ADD(abrt_cnt,1);
+  //queue[idx].add_abort_query(qry);
+  INC_STATS(tid,aq_enqueue,get_sys_clock() - starttime);
+}
+
+bool QWorkQueue::poll_abort(int tid) {
+  uint64_t starttime = get_sys_clock();
+  //bool result = queue[idx].poll_abort();
+  bool result = false;
+  if(!aq_head && aq.size_approx() > 0) {
+    aq.try_dequeue(aq_head);
+  }
+  if(aq_head && aq_head->penalty_end < starttime)
+    result = true;
+  INC_STATS(0,aq_poll,get_sys_clock() - starttime);
   return result;
 } 
+
+void QWorkQueue::process_aborts() {
+    base_query * qry = NULL;
+    uint64_t starttime = get_sys_clock();
+    bool valid = aq.try_dequeue(qry);
+    int restarts = 0;
+    if(valid) 
+      restarts = queue[0].add_abort_query(qry);
+    else
+      restarts = queue[0].check_abort_query();
+    ATOM_SUB(abrt_cnt,restarts);
+    INC_STATS(0,aq_dequeue,get_sys_clock() - starttime);
+
+}
+
 base_query * QWorkQueue::get_next_abort_query(int tid) {
-  int idx = get_idx(tid);
   uint64_t starttime = get_sys_clock();
-  base_query * rtn_qry = queue[idx].get_next_abort_query();
-  INC_STATS(tid,aq_dequeue,get_sys_clock() - starttime);
+  //base_query * rtn_qry = queue[idx].get_next_abort_query();
+  base_query * rtn_qry = NULL;
+  if(aq_head && aq_head->penalty_end < starttime) {
+    ATOM_SUB(abrt_cnt,1);
+    rtn_qry = aq_head;
+    aq_head = NULL;
+  }
+  INC_STATS(0,aq_dequeue,get_sys_clock() - starttime);
+  return rtn_qry;
+  /*
   if(rtn_qry) {
     ATOM_SUB(abrt_cnt,1);
   }
   return rtn_qry;
+  */
 }
 
 /**********************
@@ -485,10 +526,12 @@ bool QWorkQueueHelper::poll_abort() {
   return ready;
 }
 
-void QWorkQueueHelper::add_abort_query(base_query * qry) {
+int QWorkQueueHelper::add_abort_query(base_query * qry) {
 
+  int restarts = 0;
   wq_entry_t entry = (wq_entry_t) mem_allocator.alloc(sizeof(struct wq_entry), 0);
 
+  /*
   if(qry->penalty == 0)
     qry->penalty = g_abort_penalty;
 #if BACKOFF
@@ -499,20 +542,29 @@ void QWorkQueueHelper::add_abort_query(base_query * qry) {
 #endif
 
   qry->penalty_end = get_sys_clock() + qry->penalty;
+*/
   entry->qry = qry;
   entry->next  = NULL;
   entry->starttime = get_sys_clock();
   assert(qry->rtype <= NO_MSG);
+  uint64_t starttime = get_sys_clock();
 
   pthread_mutex_lock(&mtx);
 
-  //wq_entry_t n = head;
-  wq_entry_t n = tail;
+  wq_entry_t n = head;
   while(n) {
+    if(n->qry->penalty_end < starttime) {
+      LIST_REMOVE_HT(n,head,tail);
+      INC_STATS(0,txn_time_q_abrt,starttime - n->starttime);
+      work_queue.enqueue(0,n->qry);
+      mem_allocator.free(n,sizeof(struct wq_entry));
+      restarts ++;
+      n = head;
+      continue;
+    }
     if(n->qry->penalty_end >= entry->qry->penalty_end)
       break;
-    n = n->prev;
-    //n = n->next;
+    n = n->next;
   }
 
   if(n) {
@@ -523,14 +575,36 @@ void QWorkQueueHelper::add_abort_query(base_query * qry) {
   }
 
   cnt++;
-  assert((head && tail));
 
   if(last_add_time == 0)
     last_add_time = get_sys_clock();
 
   pthread_mutex_unlock(&mtx);
+  return restarts;
 }
 
+int QWorkQueueHelper::check_abort_query() {
+
+  int restarts = 0;
+  uint64_t starttime = get_sys_clock();
+  pthread_mutex_lock(&mtx);
+
+  wq_entry_t n = head;
+  while(n) {
+    if(n->qry->penalty_end < starttime) {
+      LIST_REMOVE_HT(n,head,tail);
+      INC_STATS(0,txn_time_q_abrt,starttime - n->starttime);
+      work_queue.enqueue(0,n->qry);
+      restarts++;
+      mem_allocator.free(n,sizeof(struct wq_entry));
+      n = head;
+    } else
+      break;
+  }
+ 
+  pthread_mutex_unlock(&mtx);
+  return restarts;
+}
 
 base_query * QWorkQueueHelper::get_next_abort_query() {
   base_query * next_qry = NULL;
