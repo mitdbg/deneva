@@ -86,6 +86,82 @@ RC tpcc_wl::init_table() {
 //		- order line
 /**********************************/
 
+	pthread_t * p_thds = new pthread_t[g_init_parallelism - 1];
+  thr_args * tt = new thr_args[g_init_parallelism];
+	for (UInt32 i = 0; i < g_init_parallelism ; i++) {
+    tt[i].wl = this;
+    tt[i].id = i;
+  }
+  // Stock table
+	for (UInt32 i = 0; i < g_init_parallelism - 1; i++) {
+    pthread_create(&p_thds[i], NULL, threadInitStock, &tt[i]);
+	}
+  threadInitStock(&tt[g_init_parallelism-1]);
+	for (UInt32 i = 0; i < g_init_parallelism - 1; i++) {
+		int rc = pthread_join(p_thds[i], NULL);
+		if (rc) {
+			printf("ERROR; return code from pthread_join() is %d\n", rc);
+			exit(-1);
+		}
+  }
+  printf("STOCK Done\n");
+  fflush(stdout);
+  // Item Table
+	for (UInt32 i = 0; i < g_init_parallelism - 1; i++) {
+    pthread_create(&p_thds[i], NULL, threadInitItem, &tt[i]);
+	}
+  threadInitItem(&tt[g_init_parallelism-1]);
+	for (UInt32 i = 0; i < g_init_parallelism - 1; i++) {
+		int rc = pthread_join(p_thds[i], NULL);
+		if (rc) {
+			printf("ERROR; return code from pthread_join() is %d\n", rc);
+			exit(-1);
+		}
+  }
+  printf("ITEM Done\n");
+  fflush(stdout);
+  // Customer Table
+	for (UInt32 i = 0; i < g_init_parallelism - 1; i++) {
+    pthread_create(&p_thds[i], NULL, threadInitCust, &tt[i]);
+	}
+  threadInitCust(&tt[g_init_parallelism-1]);
+	for (UInt32 i = 0; i < g_init_parallelism - 1; i++) {
+		int rc = pthread_join(p_thds[i], NULL);
+		if (rc) {
+			printf("ERROR; return code from pthread_join() is %d\n", rc);
+			exit(-1);
+		}
+  }
+  printf("ITEM Done\n");
+  fflush(stdout);
+
+  // Order Table
+  /*
+	for (UInt32 i = 0; i < g_init_parallelism - 1; i++) {
+    pthread_create(&p_thds[i], NULL, threadInitOrder, &tt[i]);
+	}
+  threadInitOrder(&tt[g_init_parallelism-1]);
+	for (UInt32 i = 0; i < g_init_parallelism - 1; i++) {
+		int rc = pthread_join(p_thds[i], NULL);
+		if (rc) {
+			printf("ERROR; return code from pthread_join() is %d\n", rc);
+			exit(-1);
+		}
+  }
+  printf("ORDER Done\n");
+  fflush(stdout);
+  */
+	threadInitWh(this);
+  printf("WAREHOUSE Done\n");
+  fflush(stdout);
+	threadInitDist(this);
+  printf("DISTRICT Done\n");
+  fflush(stdout);
+  threadInitHist(this);
+  printf("HISTORY Done\n");
+  fflush(stdout);
+
+  /*
   UInt32 cust_thr_cnt = g_dist_per_wh/2;
   thr_args * tt = new thr_args[cust_thr_cnt];
 	pthread_t * p_thds = new pthread_t[2+cust_thr_cnt];
@@ -110,6 +186,7 @@ RC tpcc_wl::init_table() {
 			exit(-1);
 		}
 	}
+  */
 	printf("\nData Initialization Complete!\n\n");
 	return RCOK;
 }
@@ -122,11 +199,10 @@ RC tpcc_wl::get_txn_man(txn_man *& txn_manager) {
 	return RCOK;
 }
 
-// TODO ITEM table is assumed to be in partition 0
-void tpcc_wl::init_tab_item() {
+void tpcc_wl::init_tab_item(int id) {
 	if (WL_VERB)
 		printf("[init] loading item table\n");
-	for (UInt32 i = 1; i <= g_max_items; i++) {
+	for (UInt32 i = id+1; i <= g_max_items; i+=g_init_parallelism) {
 		row_t * row;
 		uint64_t row_id;
 		t_item->get_new_row(row, 0, row_id);
@@ -134,11 +210,11 @@ void tpcc_wl::init_tab_item() {
 		row->set_value(I_ID, i);
 		row->set_value(I_IM_ID, URand(1L,10000L));
 		char name[24];
-		MakeAlphaString(14, 24, name);
+		//MakeAlphaString(14, 24, name);
 		row->set_value(I_NAME, name);
 		row->set_value(I_PRICE, URand(1, 100));
 		char data[50];
-    	MakeAlphaString(26, 50, data);
+    //MakeAlphaString(26, 50, data);
 		// TODO in TPCC, "original" should start at a random position
 		if (RAND(10) == 0) 
 			strcpy(data, "original");		
@@ -221,9 +297,9 @@ void tpcc_wl::init_tab_dist(uint64_t wid) {
 	}
 }
 
-void tpcc_wl::init_tab_stock(uint64_t wid) {
+void tpcc_wl::init_tab_stock(int id, uint64_t wid) {
 	
-	for (UInt32 sid = 1; sid <= g_max_items; sid++) {
+	for (UInt32 sid = id + 1; sid <= g_max_items; sid+=g_init_parallelism) {
 		row_t * row;
 		uint64_t row_id;
 		t_stock->get_new_row(row, 0, row_id);
@@ -244,26 +320,28 @@ void tpcc_wl::init_tab_stock(uint64_t wid) {
 				row_name[8] = '0';
 			}
 			row_name[9] = '\0';
-			MakeAlphaString(24, 24, s_dist);
+			//MakeAlphaString(24, 24, s_dist);
 			row->set_value(row_name, s_dist);
 		}
 		row->set_value(S_YTD, 0);
 		row->set_value(S_ORDER_CNT, 0);
 		char s_data[50];
+    /*
 		int len = MakeAlphaString(26, 50, s_data);
 		if (rand() % 100 < 10) {
 			int idx = URand(0, len - 8);
 			strcpy(&s_data[idx], "original");
 		}
+    */
 		row->set_value(S_DATA, s_data);
 #endif
 		index_insert(i_stock, stockKey(sid, wid), row, wh_to_part(wid));
 	}
 }
 
-void tpcc_wl::init_tab_cust(uint64_t did, uint64_t wid) {
+void tpcc_wl::init_tab_cust(int id, uint64_t did, uint64_t wid) {
 	assert(g_cust_per_dist >= 1000);
-	for (UInt32 cid = 1; cid <= g_cust_per_dist; cid++) {
+	for (UInt32 cid = id+1; cid <= g_cust_per_dist; cid += g_init_parallelism) {
 		row_t * row;
 		uint64_t row_id;
 		t_customer->get_new_row(row, 0, row_id);
@@ -278,6 +356,7 @@ void tpcc_wl::init_tab_cust(uint64_t did, uint64_t wid) {
 		else
 			Lastname(NURand(255,0,999), c_last);
 		row->set_value(C_LAST, c_last);
+    /*
 #if !TPCC_SMALL
 		char tmp[2];
     tmp[0] = 'O';
@@ -294,13 +373,13 @@ void tpcc_wl::init_tab_cust(uint64_t did, uint64_t wid) {
         MakeAlphaString(10, 20, street);
 		row->set_value(C_CITY, street); 
 		char state[2];
-		MakeAlphaString(2, 2, state); /* State */
+		MakeAlphaString(2, 2, state); // State 
 		row->set_value(C_STATE, state);
 		char zip[9];
-    	MakeNumberString(9, 9, zip); /* Zip */
+    	MakeNumberString(9, 9, zip); // Zip 
 		row->set_value(C_ZIP, zip);
 		char phone[16];
-  		MakeNumberString(16, 16, phone); /* Zip */
+  		MakeNumberString(16, 16, phone); // Zip 
 		row->set_value(C_PHONE, phone);
 		row->set_value(C_SINCE, 0);
 		row->set_value(C_CREDIT_LIM, 50000);
@@ -310,6 +389,7 @@ void tpcc_wl::init_tab_cust(uint64_t did, uint64_t wid) {
 		row->set_value(C_DATA, c_data);
 
 #endif
+*/
 		if (RAND(10) == 0) {
 			char tmp[] = "GC";
 			row->set_value(C_CREDIT, tmp);
@@ -343,15 +423,15 @@ void tpcc_wl::init_tab_hist(uint64_t c_id, uint64_t d_id, uint64_t w_id) {
 	row->set_value(H_AMOUNT, 10.0);
 #if !TPCC_SMALL
 	char h_data[24];
-	MakeAlphaString(12, 24, h_data);
+	//MakeAlphaString(12, 24, h_data);
 	row->set_value(H_DATA, h_data);
 #endif
 
 }
 
-void tpcc_wl::init_tab_order(uint64_t did, uint64_t wid) {
+void tpcc_wl::init_tab_order(int id, uint64_t did, uint64_t wid) {
 	init_permutation(); /* initialize permutation of customer numbers */
-	for (UInt32 oid = 1; oid <= g_cust_per_dist; oid++) {
+	for (UInt32 oid = id+1; oid <= g_cust_per_dist; oid+=g_init_parallelism) {
 		row_t * row;
 		uint64_t row_id;
 		t_order->get_new_row(row, 0, row_id);
@@ -457,45 +537,51 @@ uint64_t tpcc_wl::get_permutation() {
 }
 
 void * tpcc_wl::threadInitItem(void * This) {
-	((tpcc_wl *)This)->init_tab_item();
+  tpcc_wl * wl = ((thr_args*) This)->wl;
+  int id = ((thr_args*) This)->id;
+	wl->init_tab_item(id);
 	printf("ITEM Done\n");
 	return NULL;
 }
 
 void * tpcc_wl::threadInitWh(void * This) {
-	((tpcc_wl *)This)->init_tab_wh();
+  tpcc_wl * wl = (tpcc_wl*) This;
+	wl->init_tab_wh();
 	printf("WAREHOUSE Done\n");
 	return NULL;
 }
 
 void * tpcc_wl::threadInitDist(void * This) {
+  tpcc_wl * wl = (tpcc_wl*) This;
 	for (uint64_t wid = 1; wid <= g_num_wh; wid ++) {
     if(GET_NODE_ID(wh_to_part(wid)) != g_node_id) 
       continue;
-		((tpcc_wl *)This)->init_tab_dist(wid);
+		wl->init_tab_dist(wid);
   }
 	printf("DISTRICT Done\n");
 	return NULL;
 }
 
 void * tpcc_wl::threadInitStock(void * This) {
+  tpcc_wl * wl = ((thr_args*) This)->wl;
+  int id = ((thr_args*) This)->id;
 	for (uint64_t wid = 1; wid <= g_num_wh; wid ++) {
     if(GET_NODE_ID(wh_to_part(wid)) != g_node_id) 
       continue;
-		((tpcc_wl *)This)->init_tab_stock(wid);
+		wl->init_tab_stock(id,wid);
   }
 	printf("STOCK Done\n");
 	return NULL;
 }
 
 void * tpcc_wl::threadInitCust(void * This) {
+  tpcc_wl * wl = ((thr_args*) This)->wl;
+  int id = ((thr_args*) This)->id;
 	for (uint64_t wid = 1; wid <= g_num_wh; wid ++) {
     if(GET_NODE_ID(wh_to_part(wid)) != g_node_id) 
       continue;
 		for (uint64_t did = 1; did <= g_dist_per_wh; did++) {
-      if( did % ((thr_args *)This)->tot != ((thr_args *)This)->id)
-        continue;
-			((thr_args *)This)->wl->init_tab_cust(did, wid);
+			wl->init_tab_cust(id,did, wid);
     }
   }
 	printf("CUSTOMER %d Done\n",((thr_args *)This)->id);
@@ -503,23 +589,26 @@ void * tpcc_wl::threadInitCust(void * This) {
 }
 	
 void * tpcc_wl::threadInitHist(void * This) {
+  tpcc_wl * wl = (tpcc_wl*) This;
 	for (uint64_t wid = 1; wid <= g_num_wh; wid ++) {
     if(GET_NODE_ID(wh_to_part(wid)) != g_node_id) 
       continue;
 		for (uint64_t did = 1; did <= g_dist_per_wh; did++)
 			for (uint64_t cid = 1; cid <= g_cust_per_dist; cid++) 
-				((tpcc_wl *)This)->init_tab_hist(cid, did, wid);
+				wl->init_tab_hist(cid, did, wid);
   }
 	printf("HISTORY Done\n");
 	return NULL;
 }
 
 void * tpcc_wl::threadInitOrder(void * This) {
+  tpcc_wl * wl = ((thr_args*) This)->wl;
+  int id = ((thr_args*) This)->id;
 	for (uint64_t wid = 1; wid <= g_num_wh; wid ++) {
     if(GET_NODE_ID(wh_to_part(wid)) != g_node_id) 
       continue;
 		for (uint64_t did = 1; did <= g_dist_per_wh; did++)
-			((tpcc_wl *)This)->init_tab_order(did, wid);
+			wl->init_tab_order(id,did, wid);
   }
 	printf("ORDER Done\n");
 	return NULL;

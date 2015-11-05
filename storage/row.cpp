@@ -19,8 +19,9 @@ row_t::init(table_t * host_table, uint64_t part_id, uint64_t row_id) {
 	_part_id = part_id;
 	this->table = host_table;
 	Catalog * schema = host_table->get_schema();
-	int tuple_size = schema->get_tuple_size();
-	data = (char *) mem_allocator.alloc(sizeof(char) * tuple_size, _part_id);
+	tuple_size = schema->get_tuple_size();
+	//data = (char *) mem_allocator.alloc(sizeof(char) * tuple_size, _part_id);
+	data = (char *) mem_allocator.alloc(sizeof(char) * 1, _part_id);
 	return RCOK;
 }
 
@@ -78,12 +79,16 @@ uint64_t row_t::get_field_cnt() {
 void row_t::set_value(int id, void * ptr) {
 	int datasize = get_schema()->get_field_size(id);
 	int pos = get_schema()->get_field_index(id);
-	memcpy( &data[pos], ptr, datasize);
+  char d[tuple_size];
+	memcpy( &d[pos], ptr, datasize);
+	//memcpy( &data[pos], ptr, datasize);
 }
 
 void row_t::set_value(int id, void * ptr, int size) {
 	int pos = get_schema()->get_field_index(id);
-	memcpy( &data[pos], ptr, size);
+  char d[tuple_size];
+	memcpy( &d[pos], ptr, size);
+	//memcpy( &data[pos], ptr, size);
 }
 
 void row_t::set_value(const char * col_name, void * ptr) {
@@ -104,19 +109,25 @@ GET_VALUE(UInt32);
 GET_VALUE(SInt32);
 
 char * row_t::get_value(int id) {
-	int pos = get_schema()->get_field_index(id);
-	return &data[pos];
+  int pos __attribute__ ((unused));
+	pos = get_schema()->get_field_index(id);
+	return data;
+	//return &data[pos];
 }
 
 char * row_t::get_value(char * col_name) {
-	uint64_t pos = get_schema()->get_field_index(col_name);
-	return &data[pos];
+  uint64_t pos __attribute__ ((unused));
+	pos = get_schema()->get_field_index(col_name);
+	return data;
+	//return &data[pos];
 }
 
 char * row_t::get_data() { return data; }
 void row_t::set_data(char * data) { 
 	int tuple_size = get_schema()->get_tuple_size();
-	memcpy(this->data, data, tuple_size);
+  char d[tuple_size];
+	memcpy(d, data, tuple_size);
+	//memcpy(this->data, data, tuple_size);
 }
 // copy from the src to this
 void row_t::copy(row_t * src) {
@@ -126,7 +137,8 @@ void row_t::copy(row_t * src) {
 
 void row_t::free_row() {
   DEBUG_M("row_t::free_row free\n");
-	mem_allocator.free(data, sizeof(char) * get_tuple_size());
+	//mem_allocator.free(data, sizeof(char) * get_tuple_size());
+	mem_allocator.free(data, sizeof(char) * 1);
 }
 
 RC row_t::get_lock(access_t type, txn_man * txn) {

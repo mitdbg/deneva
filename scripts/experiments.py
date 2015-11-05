@@ -108,8 +108,8 @@ def tpcc_modes():
 def tpcc_scaling():
     wl = 'TPCC'
 #    nnodes = [1,2,4,8,16,32,64]
-#    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
-    nalgos=['OCC']
+    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
+#    nalgos=['OCC']
     npercpay=[1.0,0.0]
     nnodes = [1,2,4,8,12]
     nabrt=[1000000]
@@ -122,8 +122,10 @@ def tpcc_scaling_whset():
 #    nnodes = [1,2,4,8,16,32,64]
 #    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
     nalgos=['OCC']
-    nnodes = [1,2,4,8,12]
-    npercpay=[1.0,0.0]
+#    nnodes = [1,2,4,8,12]
+    nnodes = [1]
+#    npercpay=[1.0,0.0]
+    npercpay=[0.0]
     nabrt=[1000000]
     wh=128
     fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PERC_PAYMENT","NUM_WH","ABORT_PENALTY"]
@@ -664,7 +666,7 @@ configs = {
     "TXN_WRITE_PERC":0.5,
     "PRIORITY":"PRIORITY_ACTIVE",
 #YCSB
-    "INIT_PARALLELISM" : 4, 
+    "INIT_PARALLELISM" : 8, 
     "TUP_WRITE_PERC":0.5,
     "ZIPF_THETA":0.6,
     "ACCESS_PERC":0.03,

@@ -47,14 +47,14 @@ public:
 
 private:
 	uint64_t num_wh;
-	void init_tab_item();
+	void init_tab_item(int id);
 	void init_tab_wh();
 	void init_tab_dist(uint64_t w_id);
-	void init_tab_stock(uint64_t w_id);
+	void init_tab_stock(int id,uint64_t w_id);
 	// init_tab_cust initializes both tab_cust and tab_hist.
-	void init_tab_cust(uint64_t d_id, uint64_t w_id);
+	void init_tab_cust(int id, uint64_t d_id, uint64_t w_id);
 	void init_tab_hist(uint64_t c_id, uint64_t d_id, uint64_t w_id);
-	void init_tab_order(uint64_t d_id, uint64_t w_id);
+	void init_tab_order(int id,uint64_t d_id, uint64_t w_id);
 	
 	UInt32 perm_count;
 	uint64_t * perm_c_id;
