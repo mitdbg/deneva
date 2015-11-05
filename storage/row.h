@@ -99,6 +99,7 @@ public:
     Row_avoid * manager;
   #endif
 	char * data;
+  int tuple_size;
 	table_t * table;
 private:
 	// primary key should be calculated from the data stored in the row.

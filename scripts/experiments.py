@@ -658,7 +658,7 @@ configs = {
     "TXN_WRITE_PERC":0.5,
     "PRIORITY":"PRIORITY_ACTIVE",
 #YCSB
-    "INIT_PARALLELISM" : 4, 
+    "INIT_PARALLELISM" : 8, 
     "TUP_WRITE_PERC":0.5,
     "ZIPF_THETA":0.6,
     "ACCESS_PERC":0.03,
