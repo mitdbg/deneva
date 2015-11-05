@@ -172,6 +172,7 @@ void QWorkQueue::delete_active(uint64_t thd_id, uint64_t txn_id) {
 }
 
 void QWorkQueue::update_hash(int tid, uint64_t id) {
+  set_active(tid,id);
   //hash->update_qhash(id);
 }
 
