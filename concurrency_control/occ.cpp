@@ -118,6 +118,7 @@ RC OptCC::central_validate(txn_man * txn) {
 	set_ent * his;
 	set_ent * ent;
 	int n = 0;
+  int stop __attribute__((unused));
 
 	//pthread_mutex_lock( &latch );
   sem_wait(&_semaphore);
@@ -145,6 +146,7 @@ RC OptCC::central_validate(txn_man * txn) {
   starttime = get_sys_clock();
 
   uint64_t checked = 0;
+  stop = 0;
 	if (finish_tn > start_tn) {
 		while (his && his->tn > finish_tn) 
 			his = his->next;
@@ -159,6 +161,7 @@ RC OptCC::central_validate(txn_man * txn) {
 
   INC_STATS(txn->get_thd_id(),thd_prof_mvcc4,get_sys_clock() - starttime);
   starttime = get_sys_clock();
+  stop = 1;
 	for (UInt32 i = 0; i < f_active_len; i++) {
 		set_ent * wact = finish_active[i];
     checked++;
@@ -192,7 +195,6 @@ final:
     INC_STATS(txn->get_thd_id(),occ_abort_check_cnt,checked);
 		rc = Abort;
     // Optimization: If this is aborting, remove from active set now
-    if(!readonly) {
       sem_wait(&_semaphore);
         set_ent * act = active;
         set_ent * prev = NULL;
@@ -207,7 +209,6 @@ final:
           active = act->next;
         active_len --;
       sem_post(&_semaphore);
-    }
 	}
   INC_STATS(txn->get_thd_id(),thd_prof_occ_val1,get_sys_clock() - total_starttime);
 	return rc;
