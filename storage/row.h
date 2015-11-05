@@ -17,9 +17,15 @@
 
 #define GET_VALUE(type)\
 	void row_t::get_value(int col_id, type & value) {\
+    value = *(type *)data; \
+	}
+/*
+#define GET_VALUE(type)\
+	void row_t::get_value(int col_id, type & value) {\
 		int pos = get_schema()->get_field_index(col_id);\
 		value = *(type *)&data[pos];\
 	}
+  */
 
 class table_t;
 class Catalog;
