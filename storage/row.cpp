@@ -209,18 +209,10 @@ RC row_t::get_row(access_t type, txn_man * txn, row_t *& row) {
 		if (rc == RCOK ) {
 			row = txn->cur_row;
 		} else if (rc == WAIT) {
-			//uint64_t t1 = get_sys_clock();
-      // TODO: divide into 2+ functions to restart after ts_ready 
-			//while (!txn->ts_ready) {}
 		  INC_STATS(0, wait_cnt, 1);
       rc = WAIT;
       goto end;
 
-      /*
-			uint64_t t2 = get_sys_clock();
-			INC_STATS(thd_id, time_wait, t2 - t1);
-			row = txn->cur_row;
-      */
 		} else if (rc == Abort) { }
 		if (rc != Abort) {
 			assert(row->get_data() != NULL);
