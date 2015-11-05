@@ -101,7 +101,7 @@ void TxnTable::add_txn(uint64_t node_id, txn_man * txn, base_query * qry) {
       INC_STATS(0,txn_table_cflt,1);
       INC_STATS(0,txn_table_cflt_size,pool[txn_id % pool_size].cnt-1);
     }
-    cnt++;
+    ATOM_ADD(cnt,1);
   }
   else {
     if(txn->get_ts() != t_node->txn->get_ts()) {
@@ -175,7 +175,7 @@ void TxnTable::delete_txn(uint64_t node_id, uint64_t txn_id){
     if (t_node->txn->get_txn_id() == txn_id) {
       LIST_REMOVE_HT(t_node,pool[txn_id % pool_size].head,pool[txn_id % pool_size].tail);
       pool[txn_id % pool_size].cnt--;
-      cnt--;
+      ATOM_SUB(cnt,1);
       break;
     }
     t_node = t_node->next;
