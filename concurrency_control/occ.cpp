@@ -202,12 +202,13 @@ final:
           prev = act;
           act = act->next;
         }
-        assert(act->txn == txn);
-        if (prev != NULL)
-          prev->next = act->next;
-        else
-          active = act->next;
-        active_len --;
+        if(act != NULL && act->txn == txn) {
+          if (prev != NULL)
+            prev->next = act->next;
+          else
+            active = act->next;
+          active_len --;
+        }
       sem_post(&_semaphore);
 	}
   INC_STATS(txn->get_thd_id(),thd_prof_occ_val1,get_sys_clock() - total_starttime);
