@@ -39,6 +39,7 @@ private:
 	LockEntry * waiters_head;
 	LockEntry * waiters_tail;
   uint64_t max_owner_ts;
+  uint64_t own_starttime;
 };
 
 #endif

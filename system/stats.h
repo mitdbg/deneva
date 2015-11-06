@@ -83,6 +83,9 @@ public:
   uint64_t txn_table_cflt;
   uint64_t txn_table_cflt_size;
 
+  double owned_time;
+  double owned_cnt;
+
   uint64_t *part_cnt;
   uint64_t *part_acc;
   double sthd_prof_1a,sthd_prof_1b, sthd_prof_2, sthd_prof_3, sthd_prof_4, sthd_prof_5a, sthd_prof_5b;
