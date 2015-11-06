@@ -84,6 +84,7 @@ public:
   uint64_t txn_table_cflt_size;
 
   double owned_time;
+  double twopl_time_diff;
   double owned_cnt;
 
   uint64_t *part_cnt;
