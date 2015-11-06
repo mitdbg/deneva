@@ -650,7 +650,7 @@ configs = {
     "DONE_TIMER": "1 * 60 * BILLION // ~2 minutes",
     "PROG_TIMER" : "10 * BILLION // in s",
     "NETWORK_TEST" : "false",
-    "ABORT_PENALTY": 0,#"1 * 1000000UL   // in ns.",
+    "ABORT_PENALTY": "1 * 1000000UL   // in ns.",
     "ABORT_PENALTY_MAX": "100 * 1000000UL   // in ns.",
     "MSG_TIME_LIMIT": "10 * 1000000UL",
     "MSG_SIZE_MAX": 4096,

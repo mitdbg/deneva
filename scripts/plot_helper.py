@@ -40,7 +40,7 @@ def apply_extras(my_cfg_fmt,my_cfg,extras,xname,vname):
                 my_cfg = my_cfg + [new_val]
             else:
                 my_cfg = my_cfg + [new_val]
-    if "PART_PER_TXN" in my_cfg_fmt and my_cfg[my_cfg_fmt.index("PART_PER_TXN")] > my_cfg[my_cfg_fmt.index("PART_CNT")]:
+    if "PART_PER_TXN" in my_cfg_fmt and "PART_CNT" in my_cfg_fmt and my_cfg[my_cfg_fmt.index("PART_PER_TXN")] > my_cfg[my_cfg_fmt.index("PART_CNT")]:
         my_cfg[my_cfg_fmt.index("PART_PER_TXN")] = my_cfg[my_cfg_fmt.index("PART_CNT")]
     return my_cfg,my_cfg_fmt
 
