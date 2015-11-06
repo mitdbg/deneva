@@ -13,8 +13,7 @@ CONFIG_PARAMS = [
     "CC_ALG",
     "MODE",
     "WORKLOAD",
-    "PRIORITY",
-    "ABORT_PENALTY"
+    "PRIORITY"
 #    "SHMEM_ENV"
     ]
 
