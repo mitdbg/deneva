@@ -1409,6 +1409,8 @@ RC thread_t::run_calvin() {
         msg_queue.enqueue(NULL,INIT_DONE,i);
 			}
 		}
+  }
+  /*
     while(!_wl->sim_init_done) {
       while(!work_queue.dequeue(_thd_id,m_query)) { }
       if(m_query->rtype == INIT_DONE) {
@@ -1426,6 +1428,7 @@ RC thread_t::run_calvin() {
       }
 	  }
   }
+    */
 	pthread_barrier_wait( &warmup_bar );
 	printf("RunCalvin %ld:%ld\n",_node_id, _thd_id);
   fflush(stdout);
@@ -1562,6 +1565,7 @@ RC thread_t::run_calvin() {
           }
           */
           break;
+      case RQRY:
       case RTXN:
 				INC_STATS(0,rtxn,1);
 
@@ -1617,6 +1621,7 @@ RC thread_t::run_calvin() {
 			//rem_qry_man.ack_response(m_query);
       msg_queue.enqueue(m_query,RACK,m_query->return_id);
     }
+    work_queue.update_hash(get_thd_id(),m_txn->get_txn_id());
 
 		timespan = get_sys_clock() - starttime;
 		INC_STATS(get_thd_id(),time_work,timespan);

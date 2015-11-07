@@ -56,11 +56,11 @@ void Remote_query::unpack(void * d, uint64_t len) {
 		  INC_STATS(0,txn_cnt,1);
       ATOM_ADD(_wl->txn_cnt,1);
     } else {
-      work_queue.enqueue(0,query);
+      work_queue.enqueue(g_thread_cnt,query);
     }
 #else
     if(query->rtype != INIT_DONE) {
-      work_queue.enqueue(0,query);
+      work_queue.enqueue(g_thread_cnt,query);
     }
 #endif
     txn_cnt--;

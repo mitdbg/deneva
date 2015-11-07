@@ -48,6 +48,12 @@ void QWorkQueue::abort_finish(uint64_t time) {
 void QWorkQueue::enqueue(uint64_t thd_id, base_query * qry) {
   uint64_t starttime = get_sys_clock();
   qry->q_starttime = starttime;
+#if CC_ALG == CALVIN
+  if(thd_id >= g_thread_cnt && g_thread_cnt > 1)
+    new_wq.enqueue(qry);
+  else
+    wq.enqueue(qry);
+#else
   switch(PRIORITY) {
     case PRIORITY_FCFS:
       ATOM_ADD(wq_cnt,1);
@@ -85,6 +91,7 @@ void QWorkQueue::enqueue(uint64_t thd_id, base_query * qry) {
       break;
     default: assert(false);
   }
+#endif
   //DEBUG("ENQUEUE %ld %ld %ld %ld\n",qry->txn_id,wq_cnt,rem_wq_cnt,new_wq_cnt);
   INC_STATS(thd_id,all_wq_enqueue,get_sys_clock() - starttime);
 }
@@ -94,6 +101,12 @@ void QWorkQueue::enqueue(uint64_t thd_id, base_query * qry) {
 bool QWorkQueue::dequeue(uint64_t thd_id, base_query *& qry) {
   bool valid;
   uint64_t prof_starttime = get_sys_clock();
+#if CC_ALG == CALVIN
+  if(g_thread_cnt > 1 && thd_id ==0)
+    valid = new_wq.try_dequeue(qry);
+  else
+    valid = wq.try_dequeue(qry);
+#else
   uint64_t starttime = prof_starttime;
   valid = wq.try_dequeue(qry);
   INC_STATS(thd_id,wq_dequeue,get_sys_clock() - starttime);
@@ -120,6 +133,7 @@ bool QWorkQueue::dequeue(uint64_t thd_id, base_query *& qry) {
       }
     }
   }
+#endif
 
 
   if(!ISCLIENT && valid && qry->txn_id != UINT64_MAX) {
