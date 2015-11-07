@@ -43,9 +43,9 @@ fmt_nt = [["NODE_CNT","CLIENT_NODE_CNT","NETWORK_TEST"]]
 fmt_title=["NODE_CNT","CC_ALG","ACCESS_PERC","TXN_WRITE_PERC","PERC_PAYMENT","MPR","MODE","MAX_TXN_IN_FLIGHT"]
 
 def test():
-#    wl = 'YCSB'
-    wl = 'TPCC'
-    nnodes = [2,4,8]
+    wl = 'YCSB'
+#    wl = 'TPCC'
+    nnodes = [1]
 #    nnodes = [1,2,4,8,16]
     nmpr=[1.0]
     nmpir=[0.01]

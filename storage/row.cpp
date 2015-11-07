@@ -21,7 +21,7 @@ row_t::init(table_t * host_table, uint64_t part_id, uint64_t row_id) {
 	Catalog * schema = host_table->get_schema();
 	tuple_size = schema->get_tuple_size();
 	//data = (char *) mem_allocator.alloc(sizeof(char) * tuple_size, _part_id);
-	data = (char *) mem_allocator.alloc(sizeof(char) * 64, _part_id);
+	data = (char *) mem_allocator.alloc(sizeof(char) * 1, _part_id);
 	return RCOK;
 }
 

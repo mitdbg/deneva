@@ -210,6 +210,9 @@ void Stats_thd::clear() {
   qq_cnt = 0;
   qq_lat = 0;
   aq_full = 0;
+  owned_time = 0;
+  twopl_time_diff = 0;
+  owned_cnt = 0;
 
   thd_prof_get_txn_cnt = 0;
   rthd_prof_1=0; rthd_prof_2=0;
@@ -814,6 +817,9 @@ void Stats::print(bool prog) {
 	uint64_t total_msg_sent_cnt = 0;
 	uint64_t total_msg_rcv_cnt = 0;
 	double total_time_msg_sent = 0;
+  double total_owned_time = 0;
+  double total_twopl_time_diff = 0;
+  double total_owned_cnt = 0;
 
   double total_aq_poll = 0;
   double total_aq_enqueue=0;double total_aq_dequeue=0;
@@ -913,6 +919,9 @@ void Stats::print(bool prog) {
 		total_time_query += _stats[tid]->time_query;
 		total_rtime_proc += _stats[tid]->rtime_proc;
 		total_time_unpack += _stats[tid]->time_unpack;
+		total_owned_time += _stats[tid]->owned_time;
+		total_twopl_time_diff += _stats[tid]->twopl_time_diff;
+		total_owned_cnt += _stats[tid]->owned_cnt;
 
 		total_cc_busy_cnt += _stats[tid]->cc_busy_cnt;
 		total_txn_table_cflt += _stats[tid]->txn_table_cflt;
@@ -1062,6 +1071,8 @@ void Stats::print(bool prog) {
 			",cc_wait_abrt_cnt=%ld"
 			",cc_wait_abrt_time=%f"
 			",cc_hold_abrt_time=%f"
+      ",owned_time=%f"
+      ",twopl_diff=%f"
       ,total_access_cnt
       ,total_write_cnt
       ,total_rem_row_cnt
@@ -1075,6 +1086,8 @@ void Stats::print(bool prog) {
       ,total_cc_wait_abrt_cnt
       ,total_cc_wait_abrt_time / BILLION
       ,total_cc_hold_abrt_time / BILLION
+      ,total_owned_time / BILLION / (total_owned_cnt+1)
+      ,total_twopl_time_diff / BILLION / (total_abort_cnt+1)
       );
 
 	fprintf(outf, 
