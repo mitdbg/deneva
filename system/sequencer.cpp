@@ -122,6 +122,7 @@ void Sequencer::prepare_next_batch(uint64_t thd_id) {
 	// Create new wait list
 	wait_list_size = batch_size;
 	wait_list = (qlite *) mem_allocator.alloc(sizeof(qlite) * wait_list_size, 0);
+  //printf("New batch: %ld -- %ld %lx\n",wait_list_size,sizeof(qlite) * wait_list_size,(uint64_t)wait_list);
 	wait_txns_left = wait_list_size;
 
 	// Bookkeeping info for preparing and sending queries to nodes
@@ -248,6 +249,7 @@ RC Seq_thread_t::run_recv() {
   while(!_wl->sim_init_done) {
     tport_man.recv_msg();
   }
+  warmup_done = true;
 	pthread_barrier_wait( &warmup_bar );
 	myrand rdm;
 	rdm.init(get_thd_id());
