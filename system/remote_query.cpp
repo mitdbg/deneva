@@ -60,7 +60,10 @@ void Remote_query::unpack(void * d, uint64_t len) {
     }
 #else
     if(query->rtype != INIT_DONE) {
-      work_queue.enqueue(g_thread_cnt,query);
+      if(CC_ALG == CALVIN && ISSERVER && query->rtype == RTXN)
+        work_queue.enqueue_new(g_thread_cnt,query);
+      else
+        work_queue.enqueue(g_thread_cnt,query);
     }
 #endif
     txn_cnt--;

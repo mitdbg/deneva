@@ -16,8 +16,9 @@ void QWorkQueue::init() {
   for(int i = 0;i<q_len;i++) {
     queue[i].init(hash); 
   }
-  active_txns = (uint64_t*) mem_allocator.alloc(sizeof(uint64_t) * g_thread_cnt,0);
-  for(uint64_t i = 0; i < g_thread_cnt; i++) {
+  uint64_t limit = g_thread_cnt + g_send_thread_cnt + g_rem_thread_cnt + 1;
+  active_txns = (uint64_t*) mem_allocator.alloc(sizeof(uint64_t) *limit,0);
+  for(uint64_t i = 0; i < limit; i++) {
     active_txns[i] = UINT64_MAX;
   }
   pthread_mutex_init(&mtx,NULL);
@@ -45,13 +46,13 @@ void QWorkQueue::abort_finish(uint64_t time) {
       */
 } 
 
+void QWorkQueue::enqueue_new(uint64_t thd_id, base_query * qry) {
+    new_wq.enqueue(qry);
+}
 void QWorkQueue::enqueue(uint64_t thd_id, base_query * qry) {
   uint64_t starttime = get_sys_clock();
   qry->q_starttime = starttime;
 #if CC_ALG == CALVIN
-  if(thd_id >= g_thread_cnt && g_thread_cnt > 1)
-    new_wq.enqueue(qry);
-  else
     wq.enqueue(qry);
 #else
   switch(PRIORITY) {
@@ -102,7 +103,7 @@ bool QWorkQueue::dequeue(uint64_t thd_id, base_query *& qry) {
   bool valid;
   uint64_t prof_starttime = get_sys_clock();
 #if CC_ALG == CALVIN
-  if(g_thread_cnt > 1 && thd_id ==0)
+  if(ISSERVER && thd_id == g_thread_cnt + g_rem_thread_cnt + g_send_thread_cnt)
     valid = new_wq.try_dequeue(qry);
   else
     valid = wq.try_dequeue(qry);
@@ -156,10 +157,11 @@ bool QWorkQueue::dequeue(uint64_t thd_id, base_query *& qry) {
 
 bool QWorkQueue::set_active(uint64_t thd_id, uint64_t txn_id) {
   bool result = false;
+  uint64_t limit = g_thread_cnt + g_send_thread_cnt + g_rem_thread_cnt + 1;
   pthread_mutex_lock(&mtx);
   while(true) {
     uint64_t i = 0;
-    for(i = 0; i < g_thread_cnt; i++) {
+    for(i = 0; i < limit; i++) {
       if(i == thd_id)
         continue;
       if(active_txns[i] == txn_id) {
@@ -167,7 +169,7 @@ bool QWorkQueue::set_active(uint64_t thd_id, uint64_t txn_id) {
         goto end;
       }
     }
-    if(i==g_thread_cnt)
+    if(i==limit)
       break;
     //pthread_cond_wait(&cond,&mtx);
   }

@@ -219,6 +219,7 @@ enum TsType {R_REQ, W_REQ, P_REQ, XP_REQ};
 #define GET_PART_ID_FROM_IDX(idx)	(g_node_id + idx * g_node_cnt) 
 #define GET_PART_ID_IDX(p)	(p / g_node_cnt) 
 #define ISSEQUENCER (CC_ALG == CALVIN && g_node_id == g_node_cnt + g_client_node_cnt ) //FIXME: Is this the right formula?
+#define ISSERVER (g_node_id < g_node_cnt)
 #define ISCLIENT (g_node_id >= g_node_cnt && g_node_id < g_node_cnt + g_client_node_cnt)
 #define ISCLIENTN(id) (id >= g_node_cnt && id < g_node_cnt + g_client_node_cnt)
 #define IS_LOCAL(tid) (tid % g_node_cnt == g_node_id || CC_ALG == CALVIN)

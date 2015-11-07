@@ -341,25 +341,6 @@ RC Seq_thread_t::run_remote() {
 		}
   }
 
-  /*
-    while(!_wl->sim_init_done) {
-      while(!work_queue.dequeue(_thd_id,m_query)) { }
-      if(m_query->rtype == INIT_DONE) {
-        ATOM_SUB(_wl->rsp_cnt,1);
-        printf("Processed INIT_DONE from %ld -- %ld\n",m_query->return_id,_wl->rsp_cnt);
-        fflush(stdout);
-        if(_wl->rsp_cnt ==0) {
-          if( !ATOM_CAS(_wl->sim_init_done, false, true) )
-            assert( _wl->sim_init_done);
-        }
-      } else {
-        // Put other queries aside until all nodes are ready
-        //work_queue.add_query(_thd_id,m_query);
-        work_queue.enqueue(0,m_query);
-      }
-    }
-	}
-  */
 	pthread_barrier_wait( &warmup_bar );
 	printf("Run_remote %ld:%ld\n",_node_id, _thd_id);
 

@@ -68,6 +68,7 @@ void txn_man::init(workload * h_wl) {
 void txn_man::reset() {
   phase = 1;
 	lock_ready = false;
+  lock_ready_cnt = 0;
 	ready_part = 0;
 	rem_row_cnt = 0;
 	row_cnt = 0;
@@ -240,6 +241,23 @@ uint64_t txn_man::get_rsp_cnt() {
   return this->rsp_cnt;
 }
 
+uint64_t txn_man::incr_lr() {
+  //ATOM_ADD(this->rsp_cnt,i);
+  uint64_t result;
+  sem_wait(&rsp_mutex);
+  result = ++this->lock_ready_cnt;
+  sem_post(&rsp_mutex);
+  return result;
+}
+
+uint64_t txn_man::decr_lr() {
+  //ATOM_SUB(this->rsp_cnt,i);
+  uint64_t result;
+  sem_wait(&rsp_mutex);
+  result = --this->lock_ready_cnt;
+  sem_post(&rsp_mutex);
+  return result;
+}
 uint64_t txn_man::incr_rsp(int i) {
   //ATOM_ADD(this->rsp_cnt,i);
   uint64_t result;

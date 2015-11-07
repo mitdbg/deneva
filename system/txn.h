@@ -71,6 +71,8 @@ public:
   uint64_t get_rsp_cnt(); 
   uint64_t incr_rsp(int i); 
   uint64_t decr_rsp(int i);
+  uint64_t incr_lr(); 
+  uint64_t decr_lr();
 
 	pthread_mutex_t txn_lock;
 	row_t * volatile cur_row;
@@ -118,6 +120,9 @@ public:
 	Access **		accesses;
 	int 			num_accesses_alloc;
   bool cflt;
+
+  // Calvin
+  uint32_t lock_ready_cnt;
   
   // Internal state
   TxnState state;

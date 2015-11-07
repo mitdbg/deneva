@@ -314,7 +314,7 @@ void Transport::send_msg(uint64_t dest_id, void ** data, int * sizes, int num) {
   // return_id
 	((uint32_t*)sbuf)[1] = get_node_id();
 
-	//DEBUG("Sending %ld -> %ld: %ld bytes\n",get_node_id(),dest_id,size);
+	DEBUG("Sending %ld -> %ld: %ld bytes\n",get_node_id(),dest_id,size);
 
 	// 3: Add time of message sending for stats purposes
 	ts_t time = get_sys_clock();
