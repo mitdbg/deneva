@@ -109,6 +109,7 @@ def tpcc_scaling():
     wl = 'TPCC'
     nnodes = [1,2,4,8,16,32,64]
     nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
+#    nalgos=['OCC']
     npercpay=[1.0,0.0]
     fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PERC_PAYMENT"]
     exp = [[wl,n,cc,pp] for pp,n,cc in itertools.product(npercpay,nnodes,nalgos)]
@@ -117,7 +118,8 @@ def tpcc_scaling():
 def tpcc_scaling_whset():
     wl = 'TPCC'
     nnodes = [1,2,4,8,16,32,64]
-    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
+#    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
+    nalgos=['NO_WAIT','WAIT_DIE']
     npercpay=[1.0,0.0]
     wh=128
     fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PERC_PAYMENT","NUM_WH"]
@@ -140,6 +142,7 @@ def ycsb_scaling():
     nnodes = [1,2,4,8,16,32,64]
 #    nnodes = [2]
     nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
+#    nalgos=['OCC']
     fmt = ["WORKLOAD","NODE_CNT","CC_ALG"]
     exp = [[wl,n,cc] for n,cc in itertools.product(nnodes,nalgos)]
     return fmt,exp
@@ -148,6 +151,7 @@ def ycsb_scaling_2():
     wl = 'YCSB'
     nnodes = [1,2,4,8,16,32,64]
     nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
+#    nalgos=['OCC']
     fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PART_PER_TXN"]
     exp = [[wl,n,cc,2] for n,cc in itertools.product(nnodes,nalgos)]
     return fmt,exp
@@ -157,6 +161,7 @@ def ycsb_scaling_2():
 def ycsb_parts():
     wl = 'YCSB'
     nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
+#    nalgos=['OCC']
     nparts = [2,4,6,8,10,12,14,16]
     rpq =  16
     fmt = ["WORKLOAD","REQ_PER_QUERY","PART_PER_TXN","CC_ALG"]
@@ -164,13 +169,25 @@ def ycsb_parts():
     return fmt,exp
 
 # 2x5x2x7 = 140
-def ycsb_contention():
+def ycsb_contention_2():
     wl = 'YCSB'
     nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
+#    nalgos=['OCC']
+    nparts = [2]
+    a_perc=[0.0,0.01,0.02,0.03,0.05,0.06,0.07]
+    fmt = ["WORKLOAD","ACCESS_PERC","CC_ALG","PART_PER_TXN"]
+    exp = [[wl,a,cc,p] for a,cc,p in itertools.product(a_perc,nalgos,nparts)]
+    return fmt,exp
+
+def ycsb_contention_N():
+    wl = 'YCSB'
+    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
+#    nalgos=['OCC']
     a_perc=[0.0,0.01,0.02,0.03,0.05,0.06,0.07]
     fmt = ["WORKLOAD","ACCESS_PERC","CC_ALG"]
     exp = [[wl,a,cc] for a,cc in itertools.product(a_perc,nalgos)]
     return fmt,exp
+
 
 def tputvlat_setup(summary,summary_cl,nfmt,nexp,x_name,v_name):
     from plot_helper import tput_v_lat
@@ -562,6 +579,9 @@ def tpcc_scaling_plot(summary,summary_client):
 #    line_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",key='tot_avg_abort_row_cnt',extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128})
 #    line_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",key='txn_cnt',extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128})
 
+def ycsb_scaling_2_plot(summary,summary_client):
+    nfmt,nexp = ycsb_scaling_2()
+    tput_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",title='YCSB System Throughput, default configs, 2 parts/txn')
 
 def ycsb_scaling_plot(summary,summary_client):
     nfmt,nexp = ycsb_scaling()
@@ -579,22 +599,24 @@ def ycsb_scaling_plot(summary,summary_client):
 
 
 
-def ycsb_contention_plot(summary,summary_client):
-    nfmt,nexp = ycsb_contention()
-#    tput_setup(summary,summary_client,nfmt,nexp,x_name="ACCESS_PERC",v_name="CC_ALG",extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NODE_CNT':8},title='YCSB Contention 8 Nodes') 
-    tput_setup(summary,summary_client,nfmt,nexp,x_name="ACCESS_PERC",v_name="CC_ALG",extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT'},title='YCSB Contention 16 Nodes') 
+def ycsb_contention_N_plot(summary,summary_client):
+    nfmt,nexp = ycsb_contention_N()
+    tput_setup(summary,summary_client,nfmt,nexp,x_name="ACCESS_PERC",v_name="CC_ALG",extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT'},title='YCSB Contention 16 Nodes N parts/txn') 
+def ycsb_contention_2_plot(summary,summary_client):
+    nfmt,nexp = ycsb_contention_2()
+    tput_setup(summary,summary_client,nfmt,nexp,x_name="ACCESS_PERC",v_name="CC_ALG",extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT'},title='YCSB Contention 16 Nodes 2 parts/txn') 
 
 def ycsb_parts_plot(summary,summary_client):
     nfmt,nexp = ycsb_parts()
 
     tput_setup(summary,summary_client,nfmt,nexp,x_name="PART_PER_TXN",v_name="CC_ALG",title='YCSB Partition Sweep',extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT'})
-    stacks_setup(summary,nfmt,nexp,x_name="PART_PER_TXN",keys=['thd1','thd2','thd3'],norm=False,key_names=['Getting work','Execution','Wrap-up'],extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT'})
-    stacks_setup(summary,nfmt,nexp,x_name="PART_PER_TXN",keys=['txn_table_add','txn_table_get','txn_table0a','txn_table1a','txn_table0b','txn_table1b','txn_table2a','txn_table2'],norm=False,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT'})
-    stacks_setup(summary,nfmt,nexp,x_name="PART_PER_TXN"            ,keys=['type1','type2','type3','type4','type5','type6','type7','type8','type9','type10','type11','type12','type13','type14']            ,norm=False,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT'})
-    stacks_setup(summary,nfmt,nexp,x_name="PART_PER_TXN",keys=['thd1a','thd1b','thd1c','thd1d'],norm=False,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT'})
-    stacks_setup(summary,nfmt,nexp,x_name="PART_PER_TXN",keys=['rtxn1a','rtxn1b','rtxn2','rtxn3','rtxn4'],norm=False,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT'})
-    line_rate_setup(summary,summary_client,nfmt,nexp,x_name="PART_PER_TXN",v_name="CC_ALG",key='abort_cnt',extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT'})
-    line_setup(summary,summary_client,nfmt,nexp,x_name="PART_PER_TXN",v_name="CC_ALG",key='tot_avg_abort_row_cnt',extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT'})
+#    stacks_setup(summary,nfmt,nexp,x_name="PART_PER_TXN",keys=['thd1','thd2','thd3'],norm=False,key_names=['Getting work','Execution','Wrap-up'],extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT'})
+#    stacks_setup(summary,nfmt,nexp,x_name="PART_PER_TXN",keys=['txn_table_add','txn_table_get','txn_table0a','txn_table1a','txn_table0b','txn_table1b','txn_table2a','txn_table2'],norm=False,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT'})
+#    stacks_setup(summary,nfmt,nexp,x_name="PART_PER_TXN"            ,keys=['type1','type2','type3','type4','type5','type6','type7','type8','type9','type10','type11','type12','type13','type14']            ,norm=False,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT'})
+#    stacks_setup(summary,nfmt,nexp,x_name="PART_PER_TXN",keys=['thd1a','thd1b','thd1c','thd1d'],norm=False,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT'})
+#    stacks_setup(summary,nfmt,nexp,x_name="PART_PER_TXN",keys=['rtxn1a','rtxn1b','rtxn2','rtxn3','rtxn4'],norm=False,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT'})
+#    line_rate_setup(summary,summary_client,nfmt,nexp,x_name="PART_PER_TXN",v_name="CC_ALG",key='abort_cnt',extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT'})
+#    line_setup(summary,summary_client,nfmt,nexp,x_name="PART_PER_TXN",v_name="CC_ALG",key='tot_avg_abort_row_cnt',extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT'})
 
 
 
@@ -610,12 +632,15 @@ experiment_map = {
     'tpcc_modes': tpcc_modes,
     'tpcc_scaling_whset': tpcc_scaling_whset,
     'ycsb_parts': ycsb_parts,
-    'ycsb_contention': ycsb_contention,
+    'ycsb_contention_2': ycsb_contention_2,
+    'ycsb_contention_N': ycsb_contention_N,
     'ycsb_scaling_plot': ycsb_scaling_plot,
+    'ycsb_scaling_2_plot': ycsb_scaling_2_plot,
     'tpcc_scaling_plot': tpcc_scaling_plot,
     'tpcc_scaling_whset_plot': tpcc_scaling_whset_plot,
     'ycsb_parts_plot': ycsb_parts_plot,
-    'ycsb_contention_plot': ycsb_contention_plot,
+    'ycsb_contention_2_plot': ycsb_contention_2_plot,
+    'ycsb_contention_N_plot': ycsb_contention_N_plot,
     'ft_mode': ft_mode,
     'ft_mode_plot': ft_mode_plot,
     'test_plot': test_plot,
@@ -664,7 +689,7 @@ configs = {
     "ACCESS_PERC":0.03,
     "DATA_PERC": 100,
     "REQ_PER_QUERY": 10, #16
-    "SYNTH_TABLE_SIZE":"2097152",
+    "SYNTH_TABLE_SIZE":"2097152*8",
 #TPCC
     "NUM_WH": 'PART_CNT',
     "PERC_PAYMENT":0.0,
