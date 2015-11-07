@@ -21,6 +21,7 @@ void * worker(void *);
 void * nn_worker(void *);
 void * send_worker(void *);
 void * abort_worker(void *);
+void * calvin_lock_worker(void * id); 
 void * calvin_worker(void * id); 
 void network_test();
 void network_test_recv();
@@ -219,7 +220,11 @@ int main(int argc, char* argv[])
 		//pthread_create(&p_thds[i], &attr, nn_worker, (void *)vid);
   }
 
+#if CC_ALG == CALVIN
+  calvin_lock_worker((void *)(i));
+#else
   abort_worker((void *)(i));
+#endif
 
 	for (i = 0; i < all_thd_cnt - 1; i++) 
 		pthread_join(p_thds[i], NULL);
@@ -272,6 +277,12 @@ void * abort_worker(void * id) {
 void * send_worker(void * id) {
 	uint64_t tid = (uint64_t)id;
 	m_thds[tid].run_send();
+	return NULL;
+}
+
+void * calvin_lock_worker(void * id) {
+	uint64_t tid = (uint64_t)id;
+	m_thds[tid].run_calvin_lock();
 	return NULL;
 }
 

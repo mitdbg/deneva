@@ -72,8 +72,9 @@ RC ycsb_txn_man::acquire_locks(base_query * query) {
 		item = index_read(index, req->key, part_id);
 		row_t * row = ((row_t *)item->location);
 		RC rc2 = get_lock(row,req->acctype);
-    if(rc2 != RCOK)
+    if(rc2 != RCOK) {
       rc = rc2;
+    }
 	}
   return rc;
 }

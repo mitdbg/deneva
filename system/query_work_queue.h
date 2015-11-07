@@ -80,6 +80,7 @@ public:
   void abort_finish(uint64_t time); 
   void process_aborts(); 
   void enqueue(uint64_t thd_id,base_query * qry); 
+  void enqueue_new(uint64_t thd_id,base_query * qry); 
   bool dequeue(uint64_t thd_id, base_query *& qry);
   bool set_active(uint64_t thd_id, uint64_t txn_id);
   void delete_active(uint64_t thd_id, uint64_t txn_id);

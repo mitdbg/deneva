@@ -148,9 +148,11 @@ void mem_alloc::free(void * ptr, uint64_t size) {
 void * mem_alloc::alloc(uint64_t size, uint64_t part_id) {
 	void * ptr;
 
-    if (size > BlockSizes[SizeNum - 1])
+	if (THREAD_ALLOC && (warmup_finish || enable_thread_mem_pool)) {
+    if (size > BlockSizes[SizeNum - 1]) {
         ptr = malloc(size);
-	else if (THREAD_ALLOC && (warmup_finish || enable_thread_mem_pool)) {
+        return ptr;
+    }
 		int arena_id = get_arena_id();
 		int size_id = get_size_id(size);
 		ptr = _arenas[arena_id][size_id].alloc();

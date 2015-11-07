@@ -94,9 +94,9 @@ RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt
 			LockEntry * entry = get_entry();
 			entry->txn = txn;
 			entry->type = type;
+      txn->lock_ready = false;
 			LIST_PUT_TAIL(waiters_head, waiters_tail, entry);
 			waiter_cnt ++;
-            txn->lock_ready = false;
             rc = WAIT;
             txn->rc = rc;
             txn->wait_starttime = get_sys_clock();
@@ -137,6 +137,7 @@ RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt
 				entry->txn = txn;
 				entry->type = type;
         LockEntry * en;
+        txn->lock_ready = false;
 				en = waiters_head;
 				while (en != NULL && txn->get_ts() < en->txn->get_ts()) 
 					en = en->next;
@@ -146,7 +147,6 @@ RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt
 					LIST_PUT_TAIL(waiters_head, waiters_tail, entry);
 
 			  waiter_cnt ++;
-        txn->lock_ready = false;
         DEBUG("wait %ld %ld %lx\n",txn->get_txn_id(),_row->get_primary_key(),(uint64_t)_row);
         //printf("wait %ld %ld %lx\n",txn->get_txn_id(),_row->get_primary_key(),(uint64_t)_row);
         rc = WAIT;
@@ -171,6 +171,7 @@ RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt
 			LIST_PUT_TAIL(waiters_head, waiters_tail, entry);
 			waiter_cnt ++;
       txn->lock_ready = false;
+      txn->incr_lr();
       rc = WAIT;
       txn->rc = rc;
       txn->wait_starttime = get_sys_clock();
@@ -337,8 +338,10 @@ RC Row_lock::lock_release(txn_man * txn) {
     if(entry->txn->get_ts() > max_owner_ts)
       max_owner_ts = entry->txn->get_ts();
 		ASSERT(entry->txn->lock_ready == false);
-		entry->txn->lock_ready = true;
-    txn_table.restart_txn(entry->txn->get_txn_id());
+    if(entry->txn->decr_lr() == 0) {
+      entry->txn->lock_ready = true;
+      txn_table.restart_txn(entry->txn->get_txn_id());
+    }
     if(lock_type == LOCK_NONE)
       own_starttime = get_sys_clock();
 		lock_type = entry->type;
