@@ -69,6 +69,7 @@ void txn_man::reset() {
   phase = 1;
 	lock_ready = false;
   lock_ready_cnt = 0;
+  locking_done = true;
 	ready_part = 0;
 	rem_row_cnt = 0;
 	row_cnt = 0;

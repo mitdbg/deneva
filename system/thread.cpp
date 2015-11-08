@@ -40,8 +40,8 @@ RC thread_t::run_remote() {
 		mem_allocator.register_thread(_thd_id);
 	}
 
-	pthread_barrier_wait( &warmup_bar );
 	stats.init(get_thd_id());
+	pthread_barrier_wait( &warmup_bar );
 	run_starttime = get_sys_clock();
 
   while(!_wl->sim_init_done) {
@@ -124,8 +124,8 @@ RC thread_t::run_send() {
 	if (warmup_finish) {
 		mem_allocator.register_thread(_thd_id);
 	}
-	pthread_barrier_wait( &warmup_bar );
 	stats.init(get_thd_id());
+	pthread_barrier_wait( &warmup_bar );
 
   MessageThread messager;
   messager.init(_thd_id);
@@ -160,8 +160,8 @@ RC thread_t::run() {
 	if (warmup_finish) {
 		mem_allocator.register_thread(_thd_id);
 	}
-	pthread_barrier_wait( &warmup_bar );
 	stats.init(get_thd_id());
+	pthread_barrier_wait( &warmup_bar );
 	base_query * m_query = NULL;
 
 	run_starttime = get_sys_clock();
@@ -1390,8 +1390,8 @@ RC thread_t::run_calvin_lock() {
 	if (warmup_finish) {
 		mem_allocator.register_thread(_thd_id);
 	}
-	pthread_barrier_wait( &warmup_bar );
 	stats.init(get_thd_id());
+	pthread_barrier_wait( &warmup_bar );
 	base_query * m_query = NULL;
 
 	pthread_barrier_wait( &warmup_bar );
@@ -1455,8 +1455,8 @@ RC thread_t::run_calvin() {
 	if (warmup_finish) {
 		mem_allocator.register_thread(_thd_id);
 	}
-	pthread_barrier_wait( &warmup_bar );
 	stats.init(get_thd_id());
+	pthread_barrier_wait( &warmup_bar );
 	base_query * m_query = NULL;
 
 	if( _thd_id == 0) {
@@ -1595,6 +1595,13 @@ RC thread_t::run_calvin() {
 				INC_STATS(0,rtxn,1);
 
 				txn_table.get_txn(g_node_id,m_query->txn_id,m_txn,tmp_query);
+        /*
+        if(m_txn != NULL)
+          printf("rtxn %ld %d %d\n",m_query->txn_id,m_txn->lock_ready,m_txn->lock_ready_cnt);
+        else
+          printf("rtxn %ld -- -- \n",m_query->txn_id);
+        fflush(stdout);
+        */
         assert(m_txn != NULL);
         tmp_query = tmp_query->merge(m_query);
         if(m_query != tmp_query) {

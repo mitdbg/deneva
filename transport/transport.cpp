@@ -69,15 +69,17 @@ void Transport::init(uint64_t node_id,workload * workload) {
     _sock_cnt = (_node_cnt)*2 + g_client_send_thread_cnt;
     //_sock_cnt = 1 + (_node_cnt - 1);
     //_sock_cnt = g_send_thread_cnt  * (_node_cnt-1) + (g_node_cnt-1) * g_send_thread_cnt + g_client_node_cnt * g_client_send_thread_cnt;
-  s = new Socket[_sock_cnt];
-  rr = 0;
 #if CC_ALG == CALVIN
 	// TODO: fix me. Calvin does not have separate remote and local threads
 	// so the stat updates seg fault if the sequencer thread count is 1
 	_thd_id = 0;
+  _sock_cnt = (_node_cnt)*2;
 #else
 	_thd_id = 1;
 #endif
+
+  s = new Socket[_sock_cnt];
+  rr = 0;
   //endpoint_id = (int*)mem_allocator.alloc(sizeof(int)*_sock_cnt,0);
 	printf("Tport Init %ld: %ld\n",node_id,_sock_cnt);
 
@@ -152,7 +154,7 @@ void Transport::init(uint64_t node_id,workload * workload) {
       }
     }
 
-  if(!ISCLIENT) {
+  if(CC_ALG != CALVIN && !ISCLIENT) {
     for(uint64_t j = 0; j < g_client_send_thread_cnt; j++) {
 #if TPORT_TYPE_IPC
       port = j + _node_cnt;
@@ -194,7 +196,7 @@ void Transport::init(uint64_t node_id,workload * workload) {
       }
     }
 
-  if(ISCLIENT) {
+  if(CC_ALG != CALVIN && ISCLIENT) {
     for(uint64_t i = 0; i < s_thd; i++) {
       for(uint64_t j = g_server_start_node; j < g_server_start_node + g_servers_per_client; j++) {
 #if TPORT_TYPE_IPC
@@ -229,6 +231,9 @@ uint64_t Transport::get_node_id() {
 void Transport::send_msg(uint64_t sid, uint64_t dest_id, void * sbuf,int size) {
   uint64_t starttime = get_sys_clock();
   uint64_t id;
+#if CC_ALG == CALVIN
+  id = dest_id;
+#else
   if(ISCLIENT) {
     if(dest_id >= g_server_start_node && dest_id < g_server_start_node + g_servers_per_client) {
       id = _node_cnt * 2 + (sid-g_client_thread_cnt) * g_servers_per_client + (dest_id - g_server_start_node);
@@ -239,6 +244,7 @@ void Transport::send_msg(uint64_t sid, uint64_t dest_id, void * sbuf,int size) {
   else {
       id = g_client_send_thread_cnt + _node_cnt + dest_id;
   }
+#endif
   uint64_t idx = id; 
   if(!_wl->sim_init_done) {
     printf("d:%ld idx:%ld -- %ld: %ld, %ld, %ld\n",dest_id,idx,id,_node_cnt,dest_id,sid);

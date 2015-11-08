@@ -123,6 +123,7 @@ public:
 
   // Calvin
   uint32_t lock_ready_cnt;
+  bool locking_done;
   
   // Internal state
   TxnState state;

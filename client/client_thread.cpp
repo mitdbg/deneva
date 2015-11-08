@@ -32,8 +32,8 @@ RC Client_thread_t::run_remote() {
 
 	base_query * m_query = NULL;
 
-	pthread_barrier_wait( &warmup_bar );
 	stats.init(get_thd_id());
+	pthread_barrier_wait( &warmup_bar );
 	// Send start msg to all nodes; wait for rsp from all nodes before continuing.
 	int32_t inf;
   uint32_t return_node_offset;
@@ -163,8 +163,8 @@ RC Client_thread_t::run_send() {
 	if (warmup_finish) {
 		mem_allocator.register_thread(_thd_id);
 	}
-	pthread_barrier_wait( &warmup_bar );
 	stats.init(get_thd_id());
+	pthread_barrier_wait( &warmup_bar );
 
   MessageThread messager;
   messager.init(_thd_id);
@@ -196,8 +196,8 @@ RC Client_thread_t::run() {
 	if (warmup_finish) {
 		mem_allocator.register_thread(_thd_id);
 	}
-	pthread_barrier_wait( &warmup_bar );
 	stats.init(get_thd_id());
+	pthread_barrier_wait( &warmup_bar );
 	base_client_query * m_query = NULL;
 
 	run_starttime = get_sys_clock();
