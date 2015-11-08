@@ -1595,6 +1595,13 @@ RC thread_t::run_calvin() {
 				INC_STATS(0,rtxn,1);
 
 				txn_table.get_txn(g_node_id,m_query->txn_id,m_txn,tmp_query);
+        /*
+        if(m_txn != NULL)
+          printf("rtxn %ld %d %d\n",m_query->txn_id,m_txn->lock_ready,m_txn->lock_ready_cnt);
+        else
+          printf("rtxn %ld -- -- \n",m_query->txn_id);
+        fflush(stdout);
+        */
         assert(m_txn != NULL);
         tmp_query = tmp_query->merge(m_query);
         if(m_query != tmp_query) {

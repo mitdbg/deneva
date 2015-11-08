@@ -77,9 +77,10 @@ RC ycsb_txn_man::acquire_locks(base_query * query) {
       rc = rc2;
     }
 	}
-  if(lock_ready_cnt == 0) {
-    lock_ready = true;
-    rc = RCOK;
+  if(rc == WAIT && lock_ready_cnt == 0) {
+    if(ATOM_CAS(lock_ready,false,true))
+    //lock_ready = true;
+      rc = RCOK;
   }
   locking_done = true;
   return rc;
