@@ -40,8 +40,8 @@ RC thread_t::run_remote() {
 		mem_allocator.register_thread(_thd_id);
 	}
 
-	pthread_barrier_wait( &warmup_bar );
 	stats.init(get_thd_id());
+	pthread_barrier_wait( &warmup_bar );
 	run_starttime = get_sys_clock();
 
   while(!_wl->sim_init_done) {
@@ -124,8 +124,8 @@ RC thread_t::run_send() {
 	if (warmup_finish) {
 		mem_allocator.register_thread(_thd_id);
 	}
-	pthread_barrier_wait( &warmup_bar );
 	stats.init(get_thd_id());
+	pthread_barrier_wait( &warmup_bar );
 
   MessageThread messager;
   messager.init(_thd_id);
@@ -160,8 +160,8 @@ RC thread_t::run() {
 	if (warmup_finish) {
 		mem_allocator.register_thread(_thd_id);
 	}
-	pthread_barrier_wait( &warmup_bar );
 	stats.init(get_thd_id());
+	pthread_barrier_wait( &warmup_bar );
 	base_query * m_query = NULL;
 
 	run_starttime = get_sys_clock();
@@ -1390,8 +1390,8 @@ RC thread_t::run_calvin_lock() {
 	if (warmup_finish) {
 		mem_allocator.register_thread(_thd_id);
 	}
-	pthread_barrier_wait( &warmup_bar );
 	stats.init(get_thd_id());
+	pthread_barrier_wait( &warmup_bar );
 	base_query * m_query = NULL;
 
 	pthread_barrier_wait( &warmup_bar );
@@ -1455,8 +1455,8 @@ RC thread_t::run_calvin() {
 	if (warmup_finish) {
 		mem_allocator.register_thread(_thd_id);
 	}
-	pthread_barrier_wait( &warmup_bar );
 	stats.init(get_thd_id());
+	pthread_barrier_wait( &warmup_bar );
 	base_query * m_query = NULL;
 
 	if( _thd_id == 0) {
