@@ -407,8 +407,12 @@ void ycsb_client_query::gen_requests3(uint64_t thd_id, workload * h_wl) {
           if(part_to_access[j] == row_id % g_part_cnt)
             break;
         }
-        if( j < part_num)
-          break;
+        if( j < part_num) {
+          if(g_strict_ppt && (part_num + (g_req_per_query - rid) > part_limit))
+            continue;
+          else
+            break;
+        }
         if( part_num < part_limit ) {
           part_to_access[part_num++] = row_id % g_part_cnt;
           break;

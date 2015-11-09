@@ -51,6 +51,7 @@ void print_usage() {
 	printf("\t-dpFLOAT       ; DATA_PERC\n");
 	printf("\t-apFLOAT       ; ACCESS_PERC\n");
 	printf("\t-pptINT       ; PART_PER_TXN\n");
+	printf("\t-spptINT       ; STRICT_PPT\n");
 	printf("\t-eINT       ; PERC_MULTI_PART\n");
 	//printf("\t-rFLOAT     ; READ_PERC\n");
 	printf("\t-wFLOAT     ; WRITE_PERC\n");
@@ -75,6 +76,8 @@ void parser(int argc, char * argv[]) {
 		assert(argv[i][0] == '-');
     if (argv[i][1] == 'd' && argv[i][2] == 'o' && argv[i][3] == 'n' && argv[i][4] == 'e')
       g_done_timer = atoi( &argv[i][5] );
+    if (argv[i][1] == 's' && argv[i][2] == 'p' && argv[i][3] == 'p' && argv[i][4] == 't')
+      g_strict_ppt = atoi( &argv[i][5] ) == 1;
     else if (argv[i][1] == 'p' && argv[i][2] == 'r' && argv[i][3] == 'o' && argv[i][4] == 'g')
 			g_thread_cnt = atoi( &argv[i][5] );
     else if (argv[i][1] == 'a' && argv[i][2] == 'b' && argv[i][3] == 'r' && argv[i][4] == 't')
@@ -202,8 +205,9 @@ void parser(int argc, char * argv[]) {
 			printf("g_txn_write_perc %f\n",g_txn_write_perc );
 			printf("g_synth_table_size %ld\n",g_synth_table_size );
 			printf("g_field_per_tuple %d\n",g_field_per_tuple );
-      printf("g_data_perc %f\n",g_access_perc);
+      printf("g_data_perc %f\n",g_data_perc);
       printf("g_access_perc %f\n",g_access_perc);
+      printf("g_strict_ppt %d\n",g_strict_ppt);
 
     // Initialize client-specific globals
     if (g_node_id >= g_node_cnt)

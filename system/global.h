@@ -164,6 +164,7 @@ extern double g_data_perc;
 extern double g_access_perc;
 extern UInt64 g_synth_table_size;
 extern UInt32 g_req_per_query;
+extern bool g_strict_ppt;
 extern UInt32 g_field_per_tuple;
 extern UInt32 g_init_parallelism;
 extern double g_mpr;
