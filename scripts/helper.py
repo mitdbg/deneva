@@ -45,6 +45,7 @@ FLAG = {
     "DATA_PERC":"-dp",
     "ACCESS_PERC":"-ap",
     "PERC_PAYMENT":"-pp",
+    "STRICT_PPT":"-sppt",
 }
 
 SHORTNAMES = {
@@ -72,7 +73,8 @@ SHORTNAMES = {
     "ACCESS_PERC":"A",
     "PRIORITY":"",
     "PERC_PAYMENT":"PP",
-    "ABORT_PENALTY":"PENALTY"
+    "ABORT_PENALTY":"PENALTY",
+    "STRICT_PPT":"SPPT",
 }
 
 stat_map = {
