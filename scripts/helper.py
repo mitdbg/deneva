@@ -691,11 +691,11 @@ def print_keys(result_dir="../results",keys=['txn_cnt']):
     print("Total missing files (files not in dir): {}".format(missing_files))
     print("Total missing server results (no [summary] or [prog]): {}".format(missing_results))
 
-def get_summary_stats(stats,summary,x,v):
-    tot_txn_cnt = sum(summary['txn_cnt'])
-    avg_txn_cnt = avg(summary['txn_cnt'])
-    tot_time = sum(summary['clock_time'])
-    avg_time = avg(summary['clock_time'])
+def get_summary_stats(stats,summary,summary_cl,x,v):
+    tot_txn_cnt = sum(summary_cl['txn_cnt'])
+    avg_txn_cnt = avg(summary_cl['txn_cnt'])
+    tot_time = sum(summary_cl['clock_time'])
+    avg_time = avg(summary_cl['clock_time'])
     sk = {}
     sk['sys_txn_cnt'] = tot_txn_cnt
     sk['avg_txn_cnt'] = avg_txn_cnt

@@ -342,7 +342,7 @@ def tput(xval,vval,summary,summary_cl,
                 avg_run_time = avg(summary[cfgs]['clock_time'])
                 avg_txn_cnt = avg(summary[cfgs]['txn_cnt'])
 #                avg_txn_cnt = avg(summary_cl[cfgs]['txn_cnt'])
-                stats = get_summary_stats(stats,summary[cfgs],x,v)
+                stats = get_summary_stats(stats,summary[cfgs],summary_cl[cfgs],x,v)
             except KeyError:
                 print("KeyError: {} {} {} -- {}".format(v,x,cfg,cfgs))
                 tpt[_v][xi] = 0

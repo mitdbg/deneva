@@ -1561,7 +1561,7 @@ RC thread_t::run_calvin() {
     assert(m_query->rtype <= NO_MSG);
 
 		switch(m_query->rtype) {
-      case RACK:
+      case RFWD:
         /*
 				INC_STATS(0,rack,1);
         base_query * tmp_query;

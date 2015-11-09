@@ -246,6 +246,18 @@ uint64_t MessageThread::get_msg_size(RemReqType type,base_query * qry) {
 #if WORKLOAD == TPCC
                           size += sizeof(TPCCTxnType);
                           size += sizeof(uint64_t)*3;
+                          if(ISSEQUENCER) {
+  switch (m_qry->txn_type) {
+    case TPCC_PAYMENT:
+      size += sizeof(uint64_t)*3 + sizeof(char)*LASTNAME_LEN+ sizeof(double) + sizeof(bool);
+      break;
+    case TPCC_NEW_ORDER:
+      size += sizeof(uint64_t)*4 + sizeof(Item_no)*m_qry->ol_cnt + sizeof(bool)*2;
+      break;
+    default:
+      assert(false);
+  }
+                          } else {
   switch (m_qry2->txn_type) {
     case TPCC_PAYMENT:
       size += sizeof(uint64_t)*3 + sizeof(char)*LASTNAME_LEN+ sizeof(double) + sizeof(bool);
@@ -256,6 +268,7 @@ uint64_t MessageThread::get_msg_size(RemReqType type,base_query * qry) {
     default:
       assert(false);
   }
+                          }
 #elif WORKLOAD == YCSB
                           if(ISSEQUENCER) 
                             size += sizeof(ycsb_request) * (m_qry->request_cnt); // 240

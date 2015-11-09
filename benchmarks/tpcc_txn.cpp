@@ -42,7 +42,7 @@ RC tpcc_txn_man::run_txn(base_query * query) {
   uint64_t thd_prof_start = get_sys_clock();
 
 #if CC_ALG == CALVIN
-  assert(false);
+  rc = run_calvin_txn(query);
   return rc;
 #endif
   // Resume query after hold
@@ -70,6 +70,132 @@ RC tpcc_txn_man::run_txn(base_query * query) {
   return rc;
 
 }
+
+RC tpcc_txn_man::acquire_locks(base_query * query) {
+  assert(CC_ALG == VLL || CC_ALG == CALVIN);
+	tpcc_query * m_query = (tpcc_query *) query;
+  locking_done = false;
+  RC rc = RCOK;
+  RC rc2;
+  INDEX * index;
+  itemid_t * item;
+  row_t* row;
+  uint64_t key;
+
+	uint64_t w_id = m_query->w_id;
+  uint64_t d_id = m_query->d_id;
+  uint64_t c_id = m_query->c_id;
+  uint64_t d_w_id = m_query->d_w_id;
+  uint64_t c_w_id = m_query->c_w_id;
+  uint64_t c_d_id = m_query->c_d_id;
+	char * c_last = m_query->c_last;
+  uint64_t part_id_w = wh_to_part(w_id);
+  uint64_t part_id_c_w = wh_to_part(c_w_id);
+  switch(m_query->txn_type) {
+    case TPCC_PAYMENT:
+      if(GET_NODE_ID(part_id_w) == g_node_id) {
+      // WH
+        index = _wl->i_warehouse;
+        item = index_read(index, w_id, part_id_w);
+        row_t * row = ((row_t *)item->location);
+        rc2 = get_lock(row,g_wh_update? WR:RD);
+        if(rc2 != RCOK)
+          rc = rc2;
+
+      // Dist
+        key = distKey(d_id, d_w_id);
+        item = index_read(_wl->i_district, key, part_id_w);
+        row = ((row_t *)item->location);
+        rc2 = get_lock(row, WR);
+        if(rc2 != RCOK)
+          rc = rc2;
+      }
+      if(GET_NODE_ID(part_id_c_w) == g_node_id) {
+      // Cust
+        if (m_query->by_last_name) { 
+
+          key = custNPKey(c_last, c_d_id, c_w_id);
+          index = _wl->i_customer_last;
+          item = index_read(index, key, part_id_c_w);
+          int cnt = 0;
+          itemid_t * it = item;
+          itemid_t * mid = item;
+          while (it != NULL) {
+            cnt ++;
+            it = it->next;
+            if (cnt % 2 == 0)
+              mid = mid->next;
+          }
+          row = ((row_t *)mid->location);
+          
+        }
+        else { 
+          key = custKey(c_id, c_d_id, c_w_id);
+          index = _wl->i_customer_id;
+          item = index_read(index, key, part_id_c_w);
+          row = (row_t *) item->location;
+        }
+        rc2  = get_lock(row, WR);
+        if(rc2 != RCOK)
+          rc = rc2;
+ 
+      }
+      break;
+    case TPCC_NEW_ORDER:
+      if(GET_NODE_ID(part_id_w) == g_node_id) {
+      // WH
+        index = _wl->i_warehouse;
+        item = index_read(index, w_id, part_id_w);
+        row_t * row = ((row_t *)item->location);
+        rc2 = get_lock(row,RD);
+        if(rc2 != RCOK)
+          rc = rc2;
+      // Cust
+        index = _wl->i_customer_id;
+        key = custKey(c_id, d_id, w_id);
+        item = index_read(index, key, wh_to_part(w_id));
+        row = (row_t *) item->location;
+        rc2 = get_lock(row, RD);
+        if(rc2 != RCOK)
+          rc = rc2;
+      // Dist
+        key = distKey(d_id, w_id);
+        item = index_read(_wl->i_district, key, wh_to_part(w_id));
+        row = ((row_t *)item->location);
+        rc2 = get_lock(row, WR);
+        if(rc2 != RCOK)
+          rc = rc2;
+      }
+      // Items
+        for(uint64_t i = 0; i < m_query->ol_cnt; i++) {
+          if(GET_NODE_ID(wh_to_part(m_query->items[i].ol_supply_w_id)) != g_node_id) 
+            continue;
+
+          key = m_query->items[i].ol_i_id;
+          item = index_read(_wl->i_item, key, 0);
+          row = ((row_t *)item->location);
+          rc2 = get_lock(row, RD);
+          if(rc2 != RCOK)
+            rc = rc2;
+          key = stockKey(m_query->items[i].ol_i_id, m_query->items[i].ol_supply_w_id);
+          index = _wl->i_stock;
+          item = index_read(index, key, wh_to_part(m_query->items[i].ol_supply_w_id));
+          row = ((row_t *)item->location);
+          rc2 = get_lock(row, WR);
+          if(rc2 != RCOK)
+            rc = rc2;
+        }
+      break;
+    default: assert(false);
+  }
+  if(rc == WAIT && lock_ready_cnt == 0) {
+    if(ATOM_CAS(lock_ready,false,true))
+      rc = RCOK;
+  }
+  locking_done = true;
+  return rc;
+}
+
 
 void tpcc_txn_man::rtn_tpcc_state(base_query * query) {
 	tpcc_query * m_query = (tpcc_query *) query;
@@ -1046,4 +1172,196 @@ bool tpcc_txn_man::conflict(base_query * query1,base_query * query2) {
   return false;
 }
 
+RC tpcc_txn_man::run_calvin_txn(base_query * query) {
+	tpcc_query * m_query = (tpcc_query *) query;
+  RC rc = RCOK;
+  while(rc == RCOK && this->phase < 6) {
+    switch(this->phase) {
+      case 1:
+        // Phase 1: Read/write set analysis
+        participant_cnt = 0;
+        active_cnt = 0;
+        for(uint64_t i = 0; i < g_node_cnt; i++) {
+          participant_nodes[i] = false;
+          active_nodes[i] = false;
+        }
+        participant_nodes[g_node_id] = true;
+        active_nodes[g_node_id] = true;
+        participant_cnt++;
+        active_cnt++;
+        if(m_query->txn_type == TPCC_PAYMENT) {
+            uint64_t req_nid = GET_NODE_ID(wh_to_part(m_query->c_w_id));
+            if(!participant_nodes[req_nid]) {
+              participant_cnt++;
+              participant_nodes[req_nid] = true;
+              active_cnt++;
+              active_nodes[req_nid] = true;
+            }
+
+        } else if (m_query->txn_type == TPCC_NEW_ORDER) {
+          for(uint64_t i = 0; i < m_query->ol_cnt; i++) {
+            uint64_t req_nid = GET_NODE_ID(wh_to_part(m_query->items[i].ol_supply_w_id));
+            if(!participant_nodes[req_nid]) {
+              participant_cnt++;
+              participant_nodes[req_nid] = true;
+              active_cnt++;
+              active_nodes[req_nid] = true;
+            }
+          }
+        }
+
+        this->phase = 2;
+        break;
+      case 2:
+        // Phase 2: Perform local reads
+        rc = run_tpcc_phase2(query);
+        //release_read_locks(query);
+
+        this->phase = 3;
+        break;
+      case 3:
+        // Phase 3: Serve remote reads
+        rc = send_remote_reads(query);
+        this->phase = 4;
+        break;
+      case 4:
+        // Phase 4: Collect remote reads
+        this->phase = 5;
+        break;
+      case 5:
+        // Phase 5: Execute transaction / perform local writes
+        rc = run_tpcc_phase5(query);
+        query->rc = rc;
+        rc = calvin_finish(query);
+        this->phase = 6;
+        break;
+      default:
+        assert(false);
+    }
+  }
+  return rc;
+}
+
+
+RC tpcc_txn_man::run_tpcc_phase2(base_query * query) {
+  RC rc = RCOK;
+	tpcc_query * m_query = (tpcc_query *) query;
+  assert(CC_ALG == CALVIN);
+
+	uint64_t w_id = m_query->w_id;
+  uint64_t d_id = m_query->d_id;
+  uint64_t c_id = m_query->c_id;
+  //uint64_t d_w_id = m_query->d_w_id;
+  //uint64_t c_w_id = m_query->c_w_id;
+  //uint64_t c_d_id = m_query->c_d_id;
+	//char * c_last = m_query->c_last;
+  //double h_amount = m_query->h_amount;
+	//bool by_last_name = m_query->by_last_name;
+	bool remote = m_query->remote;
+	uint64_t ol_cnt = m_query->ol_cnt;
+	uint64_t o_entry_d = m_query->o_entry_d;
+  //uint64_t o_id = m_query->o_id;
+
+	uint64_t part_id_w = wh_to_part(w_id);
+	//uint64_t part_id_c_w = wh_to_part(c_w_id);
+  bool w_loc = GET_NODE_ID(part_id_w) == get_node_id();
+  //bool c_w_loc = GET_NODE_ID(part_id_c_w) == get_node_id();
+
+
+	switch (m_query->txn_rtype) {
+		case TPCC_PAYMENT0 :
+      break;
+		case TPCC_NEWORDER0 :
+      if(w_loc) {
+			  rc = new_order_0( w_id, d_id, c_id, remote, ol_cnt, o_entry_d, &m_query->o_id, row); 
+        rc = new_order_1( w_id, d_id, c_id, remote, ol_cnt, o_entry_d, &m_query->o_id, row); 
+        rc = new_order_2( w_id, d_id, c_id, remote, ol_cnt, o_entry_d, &m_query->o_id, row); 
+        rc = new_order_3( w_id, d_id, c_id, remote, ol_cnt, o_entry_d, &m_query->o_id, row); 
+        rc = new_order_4( w_id, d_id, c_id, remote, ol_cnt, o_entry_d, &m_query->o_id, row); 
+        m_query->o_id = *(int64_t *) row->get_value(D_NEXT_O_ID);
+        //rc = new_order_5( w_id, d_id, c_id, remote, ol_cnt, o_entry_d, &m_query->o_id, row); 
+      }
+        for(uint64_t i = 0; i < m_query->ol_cnt; i++) {
+
+          uint64_t ol_number = i;
+          uint64_t ol_i_id = m_query->items[ol_number].ol_i_id;
+          uint64_t ol_supply_w_id = m_query->items[ol_number].ol_supply_w_id;
+          //uint64_t ol_quantity = m_query->items[ol_number].ol_quantity;
+          //uint64_t ol_amount = m_query->ol_amount;
+          uint64_t part_id_ol_supply_w = wh_to_part(ol_supply_w_id);
+          bool ol_supply_w_loc = GET_NODE_ID(part_id_ol_supply_w) == get_node_id();
+          if(ol_supply_w_loc) {
+            rc = new_order_6(ol_i_id, row);
+            rc = new_order_7(ol_i_id, row);
+          }
+        }
+        break;
+    default: assert(false);
+  }
+  return rc;
+}
+
+RC tpcc_txn_man::run_tpcc_phase5(base_query * query) {
+  RC rc = RCOK;
+	tpcc_query * m_query = (tpcc_query *) query;
+  assert(CC_ALG == CALVIN);
+
+	uint64_t w_id = m_query->w_id;
+  uint64_t d_id = m_query->d_id;
+  uint64_t c_id = m_query->c_id;
+  uint64_t d_w_id = m_query->d_w_id;
+  uint64_t c_w_id = m_query->c_w_id;
+  uint64_t c_d_id = m_query->c_d_id;
+	char * c_last = m_query->c_last;
+  double h_amount = m_query->h_amount;
+	bool by_last_name = m_query->by_last_name;
+	bool remote = m_query->remote;
+	uint64_t ol_cnt = m_query->ol_cnt;
+	uint64_t o_entry_d = m_query->o_entry_d;
+  uint64_t o_id = m_query->o_id;
+
+	uint64_t part_id_w = wh_to_part(w_id);
+	uint64_t part_id_c_w = wh_to_part(c_w_id);
+  bool w_loc = GET_NODE_ID(part_id_w) == get_node_id();
+  bool c_w_loc = GET_NODE_ID(part_id_c_w) == get_node_id();
+
+
+	switch (m_query->txn_rtype) {
+		case TPCC_PAYMENT0 :
+      if(w_loc) {
+        rc = run_payment_0(w_id, d_id, d_w_id, h_amount, row);
+        rc = run_payment_1(w_id, d_id, d_w_id, h_amount, row);
+        rc = run_payment_2(w_id, d_id, d_w_id, h_amount, row);
+        rc = run_payment_3(w_id, d_id, d_w_id, h_amount, row);
+      }
+      if(c_w_loc) {
+        rc = run_payment_4( w_id,  d_id, c_id, c_w_id,  c_d_id, c_last, h_amount, by_last_name, row); 
+        rc = run_payment_5( w_id,  d_id, c_id, c_w_id,  c_d_id, c_last, h_amount, by_last_name, row); 
+      }
+      break;
+		case TPCC_NEWORDER0 :
+      if(w_loc) {
+        //rc = new_order_4( w_id, d_id, c_id, remote, ol_cnt, o_entry_d, &m_query->o_id, row); 
+        rc = new_order_5( w_id, d_id, c_id, remote, ol_cnt, o_entry_d, &m_query->o_id, row); 
+      }
+        for(uint64_t i = 0; i < m_query->ol_cnt; i++) {
+
+          uint64_t ol_number = i;
+          uint64_t ol_i_id = m_query->items[ol_number].ol_i_id;
+          uint64_t ol_supply_w_id = m_query->items[ol_number].ol_supply_w_id;
+          uint64_t ol_quantity = m_query->items[ol_number].ol_quantity;
+          uint64_t ol_amount = m_query->ol_amount;
+          uint64_t part_id_ol_supply_w = wh_to_part(ol_supply_w_id);
+          bool ol_supply_w_loc = GET_NODE_ID(part_id_ol_supply_w) == get_node_id();
+          if(ol_supply_w_loc) {
+            rc = new_order_8( w_id, d_id, remote, ol_i_id, ol_supply_w_id, ol_quantity,  ol_number, o_id, row); 
+            rc = new_order_9( w_id, d_id, remote, ol_i_id, ol_supply_w_id, ol_quantity,  ol_number, ol_amount, o_id, row); 
+          }
+        }
+        break;
+    default: assert(false);
+  }
+  return rc;
+
+}
 

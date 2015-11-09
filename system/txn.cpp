@@ -709,6 +709,7 @@ txn_man::release() {
 RC
 txn_man::send_remote_reads(base_query * qry) {
   assert(CC_ALG == CALVIN);
+  return RCOK;
   if(WORKLOAD == YCSB)
     return RCOK;
   int n = 0;
@@ -716,7 +717,7 @@ txn_man::send_remote_reads(base_query * qry) {
     if(i == g_node_id)
       continue;
     if(active_nodes[i]) {
-      msg_queue.enqueue(qry,RACK,i);
+      msg_queue.enqueue(qry,RFWD,i);
       n++;
     }
   }
@@ -729,6 +730,7 @@ txn_man::send_remote_reads(base_query * qry) {
 RC
 txn_man::calvin_finish(base_query * qry) {
   assert(CC_ALG == CALVIN);
+  return RCOK;
   if(WORKLOAD == YCSB)
     return RCOK;
   int n = 0;

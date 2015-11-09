@@ -408,7 +408,7 @@ void ycsb_client_query::gen_requests3(uint64_t thd_id, workload * h_wl) {
             break;
         }
         if( j < part_num) {
-          if(g_strict_ppt && part_num < part_limit && (part_num + (g_req_per_query - rid) > part_limit))
+          if(g_strict_ppt && part_num < part_limit && (part_num + (g_req_per_query - rid) >= part_limit))
             continue;
           else
             break;

@@ -147,8 +147,6 @@ void Sequencer::prepare_next_batch(uint64_t thd_id) {
 
 #elif WORKLOAD == TPCC
 		tpcc_query * m_query = (tpcc_query *) query;
-		printf("Add sequencer support for TPCC!\n");
-		assert(false);
 #endif
     server_ack_cnt = m_query->participants(participating_nodes,_wl);
 		assert(server_ack_cnt > 0);

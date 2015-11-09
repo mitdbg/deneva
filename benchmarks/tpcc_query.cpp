@@ -35,6 +35,23 @@ void tpcc_query::init(uint64_t thd_id, workload * h_wl) {
 	txn_rtype = TPCC_PAYMENT0;
 }
 
+uint64_t tpcc_query::participants(bool *& pps,workload * wl) {
+  int n = 0;
+  for(uint64_t i = 0; i < g_node_cnt; i++)
+    pps[i] = false;
+
+  for(uint64_t i = 0; i < ol_cnt; i++) {
+    uint64_t req_nid = GET_NODE_ID(wh_to_part(items[i].ol_supply_w_id));
+    if(!pps[req_nid]) {
+      pps[req_nid] = true;
+      n++;
+    }
+  }
+
+  return n;
+}
+
+
 base_query * tpcc_query::merge(base_query * query) {
 	tpcc_query * m_query = (tpcc_query *) query;
   this->rtype = m_query->rtype;

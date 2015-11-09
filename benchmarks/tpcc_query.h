@@ -98,7 +98,7 @@ public:
     //void client_query(base_query * query, uint64_t dest_id);
     void unpack_client(base_query * query, void * d); 
   base_query * merge(base_query * query); 
-  uint64_t participants(bool *& pps,workload * wl) {assert(false);} 
+  uint64_t participants(bool *& pps,workload * wl); 
 	//uint64_t rtn_node_id;
 	TPCCTxnType txn_type;
 	TPCCRemTxnType txn_rtype;
