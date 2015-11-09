@@ -45,6 +45,7 @@ FLAG = {
     "DATA_PERC":"-dp",
     "ACCESS_PERC":"-ap",
     "PERC_PAYMENT":"-pp",
+    "STRICT_PPT":"-sppt",
 }
 
 SHORTNAMES = {
@@ -72,7 +73,8 @@ SHORTNAMES = {
     "ACCESS_PERC":"A",
     "PRIORITY":"",
     "PERC_PAYMENT":"PP",
-    "ABORT_PENALTY":"PENALTY"
+    "ABORT_PENALTY":"PENALTY",
+    "STRICT_PPT":"SPPT",
 }
 
 stat_map = {
@@ -98,6 +100,7 @@ stat_map = {
  'occ_check_cnt': [],
  'occ_abort_check_cnt': [],
  'abort_cnt': [],
+ 'owned_time': [],
  'abort_rem_row_cnt': [],
  'avg_abort_rem_row_cnt': [],
  'abort_row_cnt': [],
@@ -711,13 +714,16 @@ def get_summary_stats(stats,summary,x,v):
     sk['perc_ccman'] = sk['time_ccman'] / total * 100
     sk['perc_twopc'] = sk['time_twopc'] / total * 100
     sk['perc_work'] = sk['time_work'] / total * 100
-    sk['rqry'] =  sum(summary['type4']) / sum(summary['thd2'])
-    sk['rfin'] =  sum(summary['type5']) / sum(summary['thd2'])
-    sk['rqry_rsp'] =  sum(summary['type8']) / sum(summary['thd2'])
-    sk['rack'] =  sum(summary['type9']) / sum(summary['thd2'])
-    sk['rtxn'] =  sum(summary['type10']) / sum(summary['thd2'])
-    sk['rinit'] =  sum(summary['type11']) / sum(summary['thd2'])
-    sk['rprep'] =  sum(summary['type12']) / sum(summary['thd2'])
+    total = sum(summary['thd2'])
+    if total == 0:
+        total = 1
+    sk['rqry'] =  sum(summary['type4']) / total
+    sk['rfin'] =  sum(summary['type5']) / total
+    sk['rqry_rsp'] =  sum(summary['type8']) / total
+    sk['rack'] =  sum(summary['type9']) / total
+    sk['rtxn'] =  sum(summary['type10']) / total
+    sk['rinit'] =  sum(summary['type11']) / total
+    sk['rprep'] =  sum(summary['type12']) / total
     sk['abort_cnt'] = avg(summary['abort_cnt'])
     sk['txn_abort_cnt'] = avg(summary['txn_abort_cnt'])
     try:
@@ -749,6 +755,13 @@ def get_summary_stats(stats,summary,x,v):
     sk['aq_enqueue'] = avg(summary['aq_enqueue'])
     sk['aq_dequeue'] = avg(summary['aq_dequeue'])
     sk['txn_table_cnt'] = avg(summary['txn_table_cnt'])
+    sk['mpq_cnt'] = avg(summary['mpq_cnt'])
+    sk['owned_time'] = avg(summary['owned_time'])
+    for i in range(10):
+        try:
+            sk['part'+str(i)] = avg(summary['part_cnt'+str(i)])
+        except KeyError:
+            sk['part'+str(i)] = 0 
 
     if v == '':
         key = (x)
@@ -761,6 +774,7 @@ def write_summary_file(fname,stats,x_vals,v_vals):
     ps =  [
     'sys_txn_cnt',
     'avg_txn_cnt',
+    'mpq_cnt',
     'time',
     'sys_tput',
     'per_node_tput',
@@ -802,6 +816,16 @@ def write_summary_file(fname,stats,x_vals,v_vals):
     'new_wq_dequeue',
     'aq_enqueue',
     'aq_dequeue',
+    'owned_time',
+    'part1',
+    'part2',
+    'part3',
+    'part4',
+    'part5',
+    'part6',
+    'part7',
+    'part8',
+    'part9',
     ]
     with open('../figs/' + fname+'.csv','w') as f:
         if v_vals == []:

@@ -30,7 +30,8 @@ SHORTNAMES = {
     "REQ_PER_QUERY": "RPQ",
     "MODE":"",
     "PRIORITY":"",
-    "ABORT_PENALTY":"PENALTY"
+    "ABORT_PENALTY":"PENALTY",
+    "STRICT_PPT":"SPPT",
 }
 # Format: [#Nodes,#Txns,Workload,CC_ALG,MPR]
 fmt_tpcc = [["CLIENT_NODE_CNT","NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","MPIR","CLIENT_THREAD_CNT","CLIENT_REM_THREAD_CNT","CLIENT_SEND_THREAD_CNT","THREAD_CNT","REM_THREAD_CNT","SEND_THREAD_CNT","MAX_TXN_IN_FLIGHT","NUM_WH","PERC_PAYMENT","PART_PER_TXN","PART_CNT","MSG_TIME_LIMIT","MSG_SIZE_MAX","MODE"]]
@@ -118,8 +119,7 @@ def tpcc_scaling():
 def tpcc_scaling_whset():
     wl = 'TPCC'
     nnodes = [1,2,4,8,16,32,64]
-#    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
-    nalgos=['NO_WAIT','WAIT_DIE']
+    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
     npercpay=[1.0,0.0]
     wh=128
     fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PERC_PAYMENT","NUM_WH"]
@@ -140,9 +140,8 @@ def inflight_study():
 def ycsb_scaling():
     wl = 'YCSB'
     nnodes = [1,2,4,8,16,32,64]
-#    nnodes = [2]
-    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
-#    nalgos=['OCC']
+    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP','CALVIN']
+    nalgos=['CALVIN']
     fmt = ["WORKLOAD","NODE_CNT","CC_ALG"]
     exp = [[wl,n,cc] for n,cc in itertools.product(nnodes,nalgos)]
     return fmt,exp
@@ -151,7 +150,7 @@ def ycsb_scaling_2():
     wl = 'YCSB'
     nnodes = [1,2,4,8,16,32,64]
     nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
-#    nalgos=['OCC']
+    nalgos=['CALVIN']
     fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PART_PER_TXN"]
     exp = [[wl,n,cc,2] for n,cc in itertools.product(nnodes,nalgos)]
     return fmt,exp
@@ -161,17 +160,17 @@ def ycsb_scaling_2():
 def ycsb_parts():
     wl = 'YCSB'
     nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
-#    nalgos=['OCC']
     nparts = [2,4,6,8,10,12,14,16]
     rpq =  16
-    fmt = ["WORKLOAD","REQ_PER_QUERY","PART_PER_TXN","CC_ALG"]
-    exp = [[wl,rpq,p,cc] for p,cc in itertools.product(nparts,nalgos)]
+    fmt = ["WORKLOAD","REQ_PER_QUERY","PART_PER_TXN","CC_ALG","STRICT_PPT"]
+    exp = [[wl,rpq,p,cc,1] for p,cc in itertools.product(nparts,nalgos)]
     return fmt,exp
 
 # 2x5x2x7 = 140
 def ycsb_contention_2():
     wl = 'YCSB'
     nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
+    nalgos=['CALVIN']
 #    nalgos=['OCC']
     nparts = [2]
     a_perc=[0.0,0.01,0.02,0.03,0.05,0.06,0.07]
@@ -182,6 +181,7 @@ def ycsb_contention_2():
 def ycsb_contention_N():
     wl = 'YCSB'
     nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
+    nalgos=['CALVIN']
 #    nalgos=['OCC']
     a_perc=[0.0,0.01,0.02,0.03,0.05,0.06,0.07]
     fmt = ["WORKLOAD","ACCESS_PERC","CC_ALG"]
@@ -697,6 +697,7 @@ configs = {
     "DEBUG_ALLOC":"false",
     "MODE":"NORMAL_MODE",
     "SHMEM_ENV":"false",
+    "STRICT_PPT":0,
 }
 
 config_names = fmt_ycsb[0]
