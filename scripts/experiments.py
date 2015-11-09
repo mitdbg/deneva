@@ -690,6 +690,7 @@ configs = {
     "DATA_PERC": 100,
     "REQ_PER_QUERY": 10, #16
     "SYNTH_TABLE_SIZE":"2097152*8",
+    "STRICT_PPT":0,
 #TPCC
     "NUM_WH": 'PART_CNT',
     "PERC_PAYMENT":0.0,
