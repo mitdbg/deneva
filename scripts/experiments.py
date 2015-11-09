@@ -30,7 +30,8 @@ SHORTNAMES = {
     "REQ_PER_QUERY": "RPQ",
     "MODE":"",
     "PRIORITY":"",
-    "ABORT_PENALTY":"PENALTY"
+    "ABORT_PENALTY":"PENALTY",
+    "STRICT_PPT":"SPPT",
 }
 # Format: [#Nodes,#Txns,Workload,CC_ALG,MPR]
 fmt_tpcc = [["CLIENT_NODE_CNT","NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","MPIR","CLIENT_THREAD_CNT","CLIENT_REM_THREAD_CNT","CLIENT_SEND_THREAD_CNT","THREAD_CNT","REM_THREAD_CNT","SEND_THREAD_CNT","MAX_TXN_IN_FLIGHT","NUM_WH","PERC_PAYMENT","PART_PER_TXN","PART_CNT","MSG_TIME_LIMIT","MSG_SIZE_MAX","MODE"]]
@@ -164,8 +165,8 @@ def ycsb_parts():
 #    nalgos=['OCC']
     nparts = [2,4,6,8,10,12,14,16]
     rpq =  16
-    fmt = ["WORKLOAD","REQ_PER_QUERY","PART_PER_TXN","CC_ALG"]
-    exp = [[wl,rpq,p,cc] for p,cc in itertools.product(nparts,nalgos)]
+    fmt = ["WORKLOAD","REQ_PER_QUERY","PART_PER_TXN","CC_ALG","STRICT_PPT"]
+    exp = [[wl,rpq,p,cc,1] for p,cc in itertools.product(nparts,nalgos)]
     return fmt,exp
 
 # 2x5x2x7 = 140
@@ -690,6 +691,7 @@ configs = {
     "DATA_PERC": 100,
     "REQ_PER_QUERY": 10, #16
     "SYNTH_TABLE_SIZE":"2097152*8",
+    "STRICT_PPT":0,
 #TPCC
     "NUM_WH": 'PART_CNT',
     "PERC_PAYMENT":0.0,
