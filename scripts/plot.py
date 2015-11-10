@@ -66,6 +66,7 @@ test_dir = ""
 ############################################
 summary = {}
 summary_client = {}
+summary_seq = {}
 
 for exp in exps:
 #    summary = {}
@@ -93,6 +94,9 @@ for exp in exps:
         except TypeError:
             nclients = cfgs[cfgs["CLIENT_NODE_CNT"]]
             ntotal = nnodes + nclients
+        cc = cfgs["CC_ALG"]
+        if  cc == "CALVIN":
+            ntotal += 1
 
         is_network_test = cfgs["NETWORK_TEST"] == "true"
         if is_network_test:
@@ -147,8 +151,10 @@ for exp in exps:
             p_cfiles = ["{}c_{}_{}.p".format(result_dir,output_f,t) for t in timedate]
             for p_sfile,p_cfile,time in zip(p_sfiles,p_cfiles,timedate):
                 print(p_sfile)
+                p_qfile = "{}q_{}_{}.p".format(result_dir,output_f,time)
                 r = {}
                 r2 = {}
+                r3 = {}
                 if clear or not os.path.isfile(p_sfile) or not os.path.isfile(p_cfile):
                     for n in range(ntotal):
                         ofile = "{}{}_{}*{}.out".format(result_dir,n,output_f,time)
@@ -156,18 +162,26 @@ for exp in exps:
                         if res_list:
                             assert time == re.search("(\d{8}-\d{6})",res_list[0]).group(0)
                             print(res_list[0])
-                            if n < cfgs["NODE_CNT"]:
+                            if n < nnodes:
                                 r = get_summary(res_list[0],r)
-                            else:
+                            elif n >= nnodes and n < nnodes + nclients:
+                                print(cc,n)
                                 r2 = get_summary(res_list[0],r2)
+                            else:
+                                r3 = get_summary(res_list[0],r3)
                     get_lstats(r)
                     get_lstats(r2)
+                    get_lstats(r3)
                     with open(p_sfile,'w') as f:
                         p = pickle.Pickler(f)
                         p.dump(r)
                     with open(p_cfile,'w') as f:
                         p = pickle.Pickler(f)
                         p.dump(r2)
+                    if cc == "CALVIN":
+                        with open(p_qfile,'w') as f:
+                            p = pickle.Pickler(f)
+                            p.dump(r3)
                 else:
                     with open(p_sfile,'r') as f:
                         p = pickle.Unpickler(f)
@@ -177,20 +191,28 @@ for exp in exps:
                         p = pickle.Unpickler(f)
                         r2 = p.load()
                         opened = True
+                    if cc == "CALVIN":
+                        with open(p_qfile,'r') as f:
+                            p = pickle.Unpickler(f)
+                            r3 = p.load()
+                            opened = True
 
 #                merge_results(r,cfgs["NODE_CNT"],0)
 #                merge_results(r2,cfgs["CLIENT_NODE_CNT"],0)
                 if s == {}:
                     s = r
                     s2 = r2
+                    s3 = r3
                 else:
                     merge(s,r)
                     merge(s2,r2)
+                    merge(s3,r3)
                     print(s['txn_cnt'])
 
             if plot:
                 s = merge_results(s,exp_cnt,drop,nnodes)
                 s2 = merge_results(s2,exp_cnt,drop,nclients)
+                s3 = merge_results(s3,exp_cnt,drop,1)
                 summary[output_f] = s
                 pp = pprint.PrettyPrinter()
 #                pp.pprint(summary[output_f]['txn_cnt'])
@@ -198,6 +220,7 @@ for exp in exps:
 #                pp.pprint(summary[output_f]['thd2'])
 #                pp.pprint(summary[output_f]['thd3'])
                 summary_client[output_f] = s2
+                summary_seq[output_f] = s3
 #                print(output_f)
 #                print(summary[output_f])
 
@@ -206,6 +229,6 @@ for exp in exps:
         if is_network_test:
             experiment_map[exp_plot](all_exps,all_nodes,timestamps)
         else:
-            experiment_map[exp_plot](summary,summary_client)
+            experiment_map[exp_plot](summary,summary_client,summary_seq)
 
 exit()

@@ -287,7 +287,7 @@ def line_rate(xval,vval,summary,summary_cl,
 
 
    
-def tput(xval,vval,summary,summary_cl,
+def tput(xval,vval,summary,summary_cl,summary_sq,
         cfg_fmt=[],
         cfg=[],
         xname="MPR",
@@ -297,6 +297,7 @@ def tput(xval,vval,summary,summary_cl,
         ):
     global plot_cnt
     tpt = {}
+    pntpt = {}
     name = 'tput_plot{}'.format(plot_cnt)
     plot_cnt += 1
 #    name += '_{}'.format(title.replace(" ","_").lower())
@@ -321,6 +322,7 @@ def tput(xval,vval,summary,summary_cl,
         else:
             _v = v
         tpt[_v] = [0] * len(xval)
+        pntpt[_v] = [0] * len(xval)
 
         for x,xi in zip(xval,range(len(xval))):
             my_cfg_fmt = cfg_fmt + [xname] + [vname]
@@ -328,29 +330,34 @@ def tput(xval,vval,summary,summary_cl,
             my_cfg,my_cfg_fmt = apply_extras(my_cfg_fmt,my_cfg,extras,xname,vname)
 
             cfgs = get_cfgs(my_cfg_fmt, my_cfg)
+            cc = cfgs["CC_ALG"]
+            nnodes = cfgs["NODE_CNT"]
             cfgs = get_outfile_name(cfgs,my_cfg_fmt)
             print(cfgs)
             if cfgs not in summary.keys(): 
                 print("Not in summary: {}".format(cfgs))
                 continue 
             try:
-#                tot_run_time = sum(summary[cfgs]['finish_time'])#/n_thd
-                tot_run_time = sum(summary[cfgs]['clock_time'])
-                tot_txn_cnt = sum(summary[cfgs]['txn_cnt'])
-#                tot_txn_cnt = sum(summary_cl[cfgs]['txn_cnt'])
-#                avg_run_time = avg(summary[cfgs]['finish_time'])#/n_thd
+                if cc == "CALVIN":
+                    s = summary_sq
+                else:
+                    s = summary_cl
+                tot_run_time = sum(s[cfgs]['clock_time'])
+                tot_txn_cnt = sum(s[cfgs]['txn_cnt'])
                 avg_run_time = avg(summary[cfgs]['clock_time'])
+#FIXME
                 avg_txn_cnt = avg(summary[cfgs]['txn_cnt'])
-#                avg_txn_cnt = avg(summary_cl[cfgs]['txn_cnt'])
-                stats = get_summary_stats(stats,summary[cfgs],x,v)
+                stats = get_summary_stats(stats,summary[cfgs],summary_cl[cfgs],summary_sq[cfgs],x,v,cc)
             except KeyError:
                 print("KeyError: {} {} {} -- {}".format(v,x,cfg,cfgs))
                 tpt[_v][xi] = 0
+                pntpt[_v][xi] = 0
                 continue
             # System Throughput: total txn count / average of all node's run time
             # Per Node Throughput: avg txn count / average of all node's run time
             # Per txn latency: total of all node's run time / total txn count
             tpt[_v][xi] = (tot_txn_cnt/avg_run_time)
+            pntpt[_v][xi] = (tot_txn_cnt/avg_run_time/nnodes)
             print("{} {} TTC {} Avg {}".format(_v,xi,tot_txn_cnt,avg_run_time))
             #tpt[v][xi] = (avg_txn_cnt/avg_run_time)
 
@@ -361,6 +368,7 @@ def tput(xval,vval,summary,summary_cl,
 #bbox = [0.7,0.9]
     print("Created plot {}".format(name))
     draw_line(name,tpt,_xval,ylab='Throughput (Txn/sec)',xlab=_xlab,title=_title,bbox=bbox,ncol=2,ltitle=vname) 
+    draw_line("pn"+name,pntpt,_xval,ylab='Throughput (Txn/sec)',xlab=_xlab,title="Per Node "+_title,bbox=bbox,ncol=2,ltitle=vname) 
     write_summary_file(name,stats,_xval,vval)
 
 

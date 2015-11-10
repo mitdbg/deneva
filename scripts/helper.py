@@ -193,6 +193,12 @@ stat_map = {
  'avg_msg_batch':[],
  'avg_msg_batch_bytes':[],
 
+ 'batches_sent':[],
+ 'batch_interval':[],
+ 'time_batch':[],
+ 'time_seq_prep':[],
+ 'time_seq_ack':[],
+
 'sthd_prof_1a':[],
 'sthd_prof_2':[],
 'sthd_prof_3':[],
@@ -692,9 +698,14 @@ def print_keys(result_dir="../results",keys=['txn_cnt']):
     print("Total missing files (files not in dir): {}".format(missing_files))
     print("Total missing server results (no [summary] or [prog]): {}".format(missing_results))
 
-def get_summary_stats(stats,summary,x,v):
-    tot_txn_cnt = sum(summary['txn_cnt'])
-    avg_txn_cnt = avg(summary['txn_cnt'])
+def get_summary_stats(stats,summary,summary_cl,summary_sq,x,v,cc):
+    print(summary_cl['txn_cnt'])
+    if cc == "CALVIN":
+        s = summary_sq
+    else:
+        s = summary_cl
+    tot_txn_cnt = sum(s['txn_cnt'])
+    avg_txn_cnt = avg(s['txn_cnt'])
     tot_time = sum(summary['clock_time'])
     avg_time = avg(summary['clock_time'])
     sk = {}
@@ -762,6 +773,19 @@ def get_summary_stats(stats,summary,x,v):
             sk['part'+str(i)] = avg(summary['part_cnt'+str(i)])
         except KeyError:
             sk['part'+str(i)] = 0 
+    try:
+        print(summary_sq)
+        sk['batch_cnt'] = avg(summary_sq['batches_sent'])
+        sk['batch_intv'] = avg(summary_sq['batch_interval'])
+        sk['txn_per_batch'] = avg(summary_sq['txn_cnt'])/avg(summary_sq['batches_sent'])
+        sk['seq_prep'] = avg(summary_sq['time_seq_prep'])
+        sk['seq_ack'] = avg(summary_sq['time_seq_ack'])
+    except KeyError:
+        sk['batch_cnt'] = 0
+        sk['batch_intv'] = 0
+        sk['txn_per_batch'] = 0
+    print(sk['batch_intv'])
+
 
     if v == '':
         key = (x)
@@ -817,6 +841,11 @@ def write_summary_file(fname,stats,x_vals,v_vals):
     'aq_enqueue',
     'aq_dequeue',
     'owned_time',
+    'batch_cnt',
+    'batch_intv',
+    'txn_per_batch',
+    'seq_prep',
+    'seq_ack',
     'part1',
     'part2',
     'part3',
