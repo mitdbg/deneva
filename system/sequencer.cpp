@@ -51,7 +51,7 @@ void Sequencer::process_txn_ack(base_query *query, uint64_t thd_id) {
 	assert(wait_list != NULL);
 	assert(wait_txns_left > 0);
 	// TODO: fix this hack
-	uint64_t id = query->txn_id;
+	uint64_t id = query->txn_id - start_txn_id;
 	//uint64_t id = query->return_id;
 	assert(wait_list[id].server_ack_cnt > 0);
 
@@ -133,7 +133,8 @@ void Sequencer::prepare_next_batch(uint64_t thd_id) {
 
 	// TODO: incrementing next_txn_id & next_batch_id is thread-safe
 	// only if a single thread is doing the processing.
-	next_txn_id = 0;
+	//next_txn_id = 0;
+  start_txn_id = next_txn_id;
 	uint64_t batch_id = next_batch_id++;
 	for (uint32_t i = 0; i < batch_size; ++i) {
 		assert(fill_queue.try_dequeue(query));

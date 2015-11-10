@@ -1404,6 +1404,7 @@ RC thread_t::run_calvin_lock() {
 	txn_man * m_txn;
   uint64_t thd_prof_start;
 	uint64_t run_starttime = get_sys_clock();
+  base_query * tmp_query;
 
 	while(true) {
     m_query = NULL;
@@ -1435,10 +1436,13 @@ RC thread_t::run_calvin_lock() {
 
     assert(m_query->rtype == RTXN);
 
-    txn_pool.get(m_txn);
-    m_txn->set_txn_id(m_query->txn_id);
-    m_txn->register_thd(this);
+    txn_table.get_txn(g_node_id,m_query->txn_id,m_txn,tmp_query);
+    if(m_txn==NULL) {
+      txn_pool.get(m_txn);
+      m_txn->set_txn_id(m_query->txn_id);
+    } 
     txn_table.add_txn(g_node_id,m_txn,m_query);
+    m_txn->register_thd(this);
     // Acquire locks
     rc = m_txn->acquire_locks(m_query);
     if(rc == RCOK) {
@@ -1562,33 +1566,30 @@ RC thread_t::run_calvin() {
 
 		switch(m_query->rtype) {
       case RFWD:
-        /*
 				INC_STATS(0,rack,1);
-        base_query * tmp_query;
+        DEBUG("RFWD %ld\n",m_query->txn_id);
 				txn_table.get_txn(g_node_id,m_query->txn_id,m_txn,tmp_query);
         if(m_txn == NULL) {
 					rc = _wl->get_txn_man(m_txn);
 					assert(rc == RCOK);
 					m_txn->set_txn_id(m_query->txn_id);
 					txn_table.add_txn(g_node_id,m_txn,m_query);
-        }
+        } else {
           tmp_query = tmp_query->merge(m_query);
           if(m_query != tmp_query) {
             qry_pool.put(m_query);
           }
           m_query = tmp_query;
+        }
+        m_txn->register_thd(this);
           m_txn->set_query(m_query);
-          int rsp_cnt = m_txn->incr_rsp(1);
-          if(m_txn->phase == 4 && rsp_cnt == participant_cnt) {
-            m_txn->phase = 5;
-            // Execute
+          if(m_txn->phase == 4) {
             rc = m_txn->run_txn(m_query);
           }
-          if(m_txn->phase == 2 && rsp_cnt == participant_cnt + active_cnt) {
-            // finish
-            msg_queue.enqueue(m_query,RACK,m_query->return_id);
+          else {
+            m_txn->phase_rsp = true;
+            rc = WAIT;
           }
-          */
           break;
       case RQRY:
       case RTXN:
@@ -1617,9 +1618,9 @@ RC thread_t::run_calvin() {
 #if DEBUG_TIMELINE
 					printf("START %ld %ld\n",m_txn->get_txn_id(),m_txn->starttime);
 #endif
+        DEBUG("START %ld %ld\n",m_txn->get_txn_id(),m_txn->starttime);
         // Execute
 				rc = m_txn->run_calvin_txn(m_query);
-        assert(rc == RCOK);
 				break;
 		  default:
 			  assert(false);

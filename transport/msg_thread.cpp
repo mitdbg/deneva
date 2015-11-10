@@ -164,6 +164,7 @@ void MessageThread::copy_to_buffer(mbuf * sbuf, RemReqType type, base_query * qr
     case  RINIT:      rinit(sbuf,qry);break;
     case  RPREPARE:   rprepare(sbuf,qry);break;
     case RPASS:       break;
+    case RFWD:        rfwd(sbuf,qry);break;
     case CL_RSP:      cl_rsp(sbuf,qry);break;
     case NO_MSG: assert(false);
     default: assert(false);
@@ -290,6 +291,10 @@ uint64_t MessageThread::get_msg_size(RemReqType type,base_query * qry) {
                           break;
         case  RPREPARE:   size +=sizeof(uint64_t) + sizeof(RC) + sizeof(uint64_t);break;
         case RPASS:       break;
+        case RFWD:       
+                          
+                          size +=sizeof(uint64_t)*2;
+                          break;
         case CL_RSP:      size +=sizeof(RC) + sizeof(uint64_t);break;
         default: assert(false);
   }
@@ -301,6 +306,15 @@ void MessageThread::rack(mbuf * sbuf,base_query * qry) {
   assert(IS_REMOTE(qry->txn_id));
   COPY_BUF(sbuf->buffer,qry->rc,sbuf->ptr);
 }
+
+void MessageThread::rfwd(mbuf * sbuf,base_query * qry) {
+  DEBUG("Sending RFWD %ld\n",qry->txn_id);
+  assert(WORKLOAD==TPCC);
+  tpcc_query * m_qry = (tpcc_query *)qry;
+  COPY_BUF(sbuf->buffer,qry->txn_id,sbuf->ptr);
+  COPY_BUF(sbuf->buffer,m_qry->o_id,sbuf->ptr);
+}
+
 
 void MessageThread::rprepare(mbuf * sbuf,base_query * qry) {
   DEBUG("Sending RPREPARE %ld\n",qry->txn_id);

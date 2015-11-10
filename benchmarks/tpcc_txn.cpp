@@ -1221,7 +1221,16 @@ RC tpcc_txn_man::run_calvin_txn(base_query * query) {
         break;
       case 3:
         // Phase 3: Serve remote reads
-        rc = send_remote_reads(query);
+        if(WORKLOAD == TPCC && m_query->txn_type == TPCC_NEW_ORDER) {
+          if(GET_NODE_ID(wh_to_part(m_query->w_id) == g_node_id))
+            rc = send_remote_reads(query);
+          else {
+            if(phase_rsp)
+              rc = RCOK;
+            else
+              rc = WAIT;
+          }
+        }
         this->phase = 4;
         break;
       case 4:
@@ -1268,10 +1277,10 @@ RC tpcc_txn_man::run_tpcc_phase2(base_query * query) {
   //bool c_w_loc = GET_NODE_ID(part_id_c_w) == get_node_id();
 
 
-	switch (m_query->txn_rtype) {
-		case TPCC_PAYMENT0 :
+	switch (m_query->txn_type) {
+		case TPCC_PAYMENT :
       break;
-		case TPCC_NEWORDER0 :
+		case TPCC_NEW_ORDER :
       if(w_loc) {
 			  rc = new_order_0( w_id, d_id, c_id, remote, ol_cnt, o_entry_d, &m_query->o_id, row); 
         rc = new_order_1( w_id, d_id, c_id, remote, ol_cnt, o_entry_d, &m_query->o_id, row); 
@@ -1326,8 +1335,8 @@ RC tpcc_txn_man::run_tpcc_phase5(base_query * query) {
   bool c_w_loc = GET_NODE_ID(part_id_c_w) == get_node_id();
 
 
-	switch (m_query->txn_rtype) {
-		case TPCC_PAYMENT0 :
+	switch (m_query->txn_type) {
+		case TPCC_PAYMENT :
       if(w_loc) {
         rc = run_payment_0(w_id, d_id, d_w_id, h_amount, row);
         rc = run_payment_1(w_id, d_id, d_w_id, h_amount, row);
@@ -1339,7 +1348,7 @@ RC tpcc_txn_man::run_tpcc_phase5(base_query * query) {
         rc = run_payment_5( w_id,  d_id, c_id, c_w_id,  c_d_id, c_last, h_amount, by_last_name, row); 
       }
       break;
-		case TPCC_NEWORDER0 :
+		case TPCC_NEW_ORDER :
       if(w_loc) {
         //rc = new_order_4( w_id, d_id, c_id, remote, ol_cnt, o_entry_d, &m_query->o_id, row); 
         rc = new_order_5( w_id, d_id, c_id, remote, ol_cnt, o_entry_d, &m_query->o_id, row); 

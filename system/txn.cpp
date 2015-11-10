@@ -67,6 +67,7 @@ void txn_man::init(workload * h_wl) {
 
 void txn_man::reset() {
   phase = 1;
+  phase_rsp = false;
 	lock_ready = false;
   lock_ready_cnt = 0;
   locking_done = true;
@@ -709,7 +710,6 @@ txn_man::release() {
 RC
 txn_man::send_remote_reads(base_query * qry) {
   assert(CC_ALG == CALVIN);
-  return RCOK;
   if(WORKLOAD == YCSB)
     return RCOK;
   int n = 0;
@@ -721,8 +721,6 @@ txn_man::send_remote_reads(base_query * qry) {
       n++;
     }
   }
-  if(n>0)
-    return WAIT_REM;
   return RCOK;
 
 }
