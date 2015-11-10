@@ -67,6 +67,7 @@ void txn_man::init(workload * h_wl) {
 
 void txn_man::reset() {
   phase = 1;
+  phase_rsp = false;
 	lock_ready = false;
   lock_ready_cnt = 0;
   locking_done = true;
@@ -716,12 +717,10 @@ txn_man::send_remote_reads(base_query * qry) {
     if(i == g_node_id)
       continue;
     if(active_nodes[i]) {
-      msg_queue.enqueue(qry,RACK,i);
+      msg_queue.enqueue(qry,RFWD,i);
       n++;
     }
   }
-  if(n>0)
-    return WAIT_REM;
   return RCOK;
 
 }
@@ -729,6 +728,7 @@ txn_man::send_remote_reads(base_query * qry) {
 RC
 txn_man::calvin_finish(base_query * qry) {
   assert(CC_ALG == CALVIN);
+  return RCOK;
   if(WORKLOAD == YCSB)
     return RCOK;
   int n = 0;

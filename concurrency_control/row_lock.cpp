@@ -252,7 +252,7 @@ RC Row_lock::lock_release(txn_man * txn) {
   INC_STATS(txn->get_thd_id(),thd_prof_cc0,get_sys_clock() - thd_prof_start);
   thd_prof_start = get_sys_clock();
 
-  DEBUG("unlock %ld %ld\n",txn->get_txn_id(),_row->get_primary_key());
+  DEBUG("unlock %ld %ld %lx\n",txn->get_txn_id(),_row->get_primary_key(),(uint64_t)_row);
   //printf("unlock %ld %ld\n",txn->get_txn_id(),_row->get_primary_key());
 
   // If CC is NO_WAIT or WAIT_DIE, txn should own this lock

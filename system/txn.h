@@ -135,6 +135,7 @@ public:
 
   // For Calvin
   int phase;
+  bool phase_rsp;
   int participant_cnt;
   int active_cnt;
   bool * participant_nodes;

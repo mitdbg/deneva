@@ -48,6 +48,7 @@ class Sequencer {
 	uint64_t wait_list_size;
 	uint32_t wait_txns_left;
 	volatile uint32_t next_txn_id;
+	volatile uint32_t start_txn_id;
 	pthread_mutex_t mtx;
 	pthread_cond_t swap_cv;	// thread is swapping fill and batch queues
 	pthread_cond_t access_cv;	// thread(s) are accessing fill and/or batch queues

@@ -57,6 +57,7 @@ public:
   void cl_rsp(mbuf * sbuf, base_query *qry);
   void rinit(mbuf * sbuf,base_query * qry);
   void rqry( mbuf * sbuf, base_query *qry);
+  void rfwd( mbuf * sbuf, base_query *qry);
   void rqry_rsp( mbuf * sbuf, base_query *qry);
   void rtxn(mbuf * sbuf, base_query *qry);
   void rtxn_seq(mbuf * sbuf, base_query *qry);

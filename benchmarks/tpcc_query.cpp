@@ -35,8 +35,61 @@ void tpcc_query::init(uint64_t thd_id, workload * h_wl) {
 	txn_rtype = TPCC_PAYMENT0;
 }
 
+uint64_t tpcc_query::participants(bool *& pps,workload * wl) {
+  int n = 0;
+  for(uint64_t i = 0; i < g_node_cnt; i++)
+    pps[i] = false;
+  uint64_t id;
+
+  switch(txn_type) {
+    case TPCC_PAYMENT:
+      id = GET_NODE_ID(wh_to_part(w_id));
+      if(!pps[id]) {
+        pps[id] = true;
+        n++;
+      }
+      id = GET_NODE_ID(wh_to_part(c_w_id));
+      if(!pps[id]) {
+        pps[id] = true;
+        n++;
+      }
+      break;
+    case TPCC_NEW_ORDER: 
+      id = GET_NODE_ID(wh_to_part(w_id));
+      if(!pps[id]) {
+        pps[id] = true;
+        n++;
+      }
+      /*
+      id = GET_NODE_ID(wh_to_part(c_w_id));
+      if(!pps[id]) {
+        pps[id] = true;
+        n++;
+      }
+      id = GET_NODE_ID(wh_to_part(d_w_id));
+      if(!pps[id]) {
+        pps[id] = true;
+        n++;
+      }
+      */
+      for(uint64_t i = 0; i < ol_cnt; i++) {
+        uint64_t req_nid = GET_NODE_ID(wh_to_part(items[i].ol_supply_w_id));
+        if(!pps[req_nid]) {
+          pps[req_nid] = true;
+          n++;
+        }
+      }
+      break;
+    default: assert(false);
+  }
+
+  return n;
+}
+
+
 base_query * tpcc_query::merge(base_query * query) {
 	tpcc_query * m_query = (tpcc_query *) query;
+  RemReqType old_rtype = this->rtype;
   this->rtype = m_query->rtype;
   switch(m_query->rtype) {
     case RINIT:
@@ -117,6 +170,10 @@ base_query * tpcc_query::merge(base_query * query) {
         this->rc = m_query->rc;
       }
     case RTXN:
+      break;
+    case RFWD:
+      this->o_id = m_query->o_id;
+      this->rtype = old_rtype;
       break;
     default:
       assert(false);
