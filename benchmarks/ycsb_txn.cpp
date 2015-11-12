@@ -174,6 +174,8 @@ void ycsb_txn_man::rtn_ycsb_state(base_query * query) {
         m_query->req = m_query->requests[m_query->rid];
       }
       else {
+        if(m_query->rc != Abort)
+          m_query->rc = RCOK;
         m_query->txn_rtype = YCSB_FIN;
         assert(GET_NODE_ID(m_query->pid) == g_node_id);
       }
@@ -181,6 +183,8 @@ void ycsb_txn_man::rtn_ycsb_state(base_query * query) {
     case YCSB_1:
       assert(false);
     case YCSB_FIN:
+      if(m_query->rc != Abort)
+        m_query->rc = RCOK;
       break;
     default:
       assert(false);
@@ -241,7 +245,7 @@ RC ycsb_txn_man::run_txn_state(base_query * query) {
     assert(CC_ALG != HSTORE && CC_ALG != HSTORE_SPEC);
     return rc;
   }
-	m_query->rc = rc;
+  m_query->rc = rc;
   if(rc == Abort && !fin && GET_NODE_ID(m_query->pid) == g_node_id) {
     query->rem_req_state = YCSB_FIN;
     rc = finish(m_query,false);

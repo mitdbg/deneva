@@ -94,7 +94,7 @@ public:
   double thd_prof_thd1, thd_prof_thd2, thd_prof_thd3;
   double thd_prof_thd1a, thd_prof_thd1b, thd_prof_thd1c, thd_prof_thd1d;
   double thd_prof_thd2_loc, thd_prof_thd2_rem;
-  double thd_prof_thd2_type[16];
+  double thd_prof_thd2_type[17];
 
   double thd_prof_thd_rfin0,thd_prof_thd_rfin1, thd_prof_thd_rfin2;
   double thd_prof_thd_rprep0,thd_prof_thd_rprep1, thd_prof_thd_rprep2;

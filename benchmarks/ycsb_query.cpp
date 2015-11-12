@@ -85,6 +85,17 @@ uint64_t ycsb_query::participants(bool *& pps,workload * wl) {
   return n;
 }
 
+bool ycsb_query::readonly() {
+  for(uint64_t i = 0; i < request_cnt; i++) {
+    if(requests[i].acctype == WR) {
+      ro = false;
+      return false;
+    }
+  }
+  ro = true;
+  return true;
+}
+
 base_query * ycsb_query::merge(base_query * query) {
 	ycsb_query * m_query = (ycsb_query *) query;
   this->rtype = m_query->rtype;

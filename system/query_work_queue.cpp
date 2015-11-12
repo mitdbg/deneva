@@ -93,7 +93,7 @@ void QWorkQueue::enqueue(uint64_t thd_id, base_query * qry) {
     default: assert(false);
   }
 #endif
-  DEBUG("%ld ENQUEUE %ld %ld %ld %ld %lx\n",thd_id,qry->txn_id,wq_cnt,rem_wq_cnt,new_wq_cnt,(uint64_t)qry);
+  //DEBUG("%ld ENQUEUE %ld %ld %ld %ld %lx\n",thd_id,qry->txn_id,wq_cnt,rem_wq_cnt,new_wq_cnt,(uint64_t)qry);
   INC_STATS(thd_id,all_wq_enqueue,get_sys_clock() - starttime);
 }
 //TODO: do we need to has qry id here?
@@ -139,7 +139,7 @@ bool QWorkQueue::dequeue(uint64_t thd_id, base_query *& qry) {
 
   if(!ISCLIENT && valid && qry->txn_id != UINT64_MAX) {
     if(set_active(thd_id, qry->txn_id)) {
-      DEBUG("%ld BUSY %ld %ld %ld %ld\n",thd_id,qry->txn_id,wq_cnt,rem_wq_cnt,new_wq_cnt);
+      //DEBUG("%ld BUSY %ld %ld %ld %ld\n",thd_id,qry->txn_id,wq_cnt,rem_wq_cnt,new_wq_cnt);
       if(CC_ALG == CALVIN && ISSERVER && thd_id == g_thread_cnt + g_rem_thread_cnt + g_send_thread_cnt) {
         enqueue_new(thd_id,qry);
       } else {
@@ -154,7 +154,7 @@ bool QWorkQueue::dequeue(uint64_t thd_id, base_query *& qry) {
     qry->time_q_work += t;
     INC_STATS(0,qq_cnt,1);
     INC_STATS(0,qq_lat,t);
-    DEBUG("%ld DEQUEUE %ld %ld %ld %ld %lx\n",thd_id,qry->txn_id,wq_cnt,rem_wq_cnt,new_wq_cnt,(uint64_t)qry);
+    //DEBUG("%ld DEQUEUE %ld %ld %ld %ld %lx\n",thd_id,qry->txn_id,wq_cnt,rem_wq_cnt,new_wq_cnt,(uint64_t)qry);
   }
   INC_STATS(thd_id,all_wq_dequeue,get_sys_clock() - prof_starttime);
   return valid;

@@ -450,7 +450,7 @@ RC thread_t::run() {
 #endif
 					assert(m_txn->get_rsp_cnt() == 0);
           //assert(MODE==TWOPC || MODE==QRY || m_query->part_num == 1 || ??);
-          assert(MODE!=NORMAL_MODE || (m_query->part_num == 1 && (m_query->rtype == RTXN || m_query->rtype == RPASS)) || (m_query->part_num > 1 && m_query->rtype == RACK));
+          assert(MODE!=NORMAL_MODE || (m_query->part_num == 1 && (m_query->rtype == RTXN || m_query->rtype == RPASS)) || (m_query->part_num > 1 && m_query->rtype == RACK) || ((m_query->rtype == RQRY_RSP || m_query->rtype == RTXN) && m_query->ro));
 
 					if(m_query->part_num == 1 && !m_txn->spec) {
 						rc = m_txn->finish(rc,m_query->part_to_access,m_query->part_num);
@@ -649,6 +649,7 @@ RC thread_t::process_rfin(base_query *& m_query,txn_man *& m_txn) {
           m_txn->register_thd(this);
           if(GET_NODE_ID(m_query->home_part) != g_node_id || GET_PART_ID_IDX(m_query->home_part) == _thd_id) {
             tmp_query = tmp_query->merge(m_query);
+            tmp_query->readonly = m_query->readonly;
             if(m_query != tmp_query) {
               //YCSB_QUERY_FREE(m_query)
               qry_pool.put(m_query);
@@ -685,6 +686,7 @@ RC thread_t::process_rfin(base_query *& m_query,txn_man *& m_txn) {
         if(m_txn) {
           m_txn->register_thd(this);
           tmp_query = tmp_query->merge(m_query);
+          tmp_query->ro = m_query->ro;
           if(m_query != tmp_query) {
             //YCSB_QUERY_FREE(m_query)
             qry_pool.put(m_query);
@@ -702,7 +704,8 @@ RC thread_t::process_rfin(base_query *& m_query,txn_man *& m_txn) {
         // Send ack back to home node
         //  m_query is used by send thread; do not free
         //  m_query will be freed by send thread
-        msg_queue.enqueue(m_query,RACK,m_query->return_id);
+        if(m_query->rc == Abort || !m_query->ro || CC_ALG == OCC)
+          msg_queue.enqueue(m_query,RACK,m_query->return_id);
 #endif
 
         INC_STATS(_thd_id,thd_prof_thd_rfin2,get_sys_clock() - thd_prof_thd_rfin_start);
@@ -1409,8 +1412,6 @@ RC thread_t::run_calvin_lock() {
 	while(true) {
     m_query = NULL;
     m_txn = NULL;
-    uint64_t thd_prof_start_thd1 = get_sys_clock();
-    thd_prof_start = thd_prof_start_thd1;
 
     bool got_qry = false;
 		while(!(got_qry = work_queue.dequeue(_thd_id, m_query))
@@ -1418,8 +1419,6 @@ RC thread_t::run_calvin_lock() {
                 && (get_sys_clock() - run_starttime < g_done_timer)) {
     }
 
-    INC_STATS(_thd_id,thd_prof_thd1c,get_sys_clock() - thd_prof_start);
-    thd_prof_start = get_sys_clock();
 		// End conditions
     if((get_sys_clock() - run_starttime >= g_done_timer)
         ||(_wl->sim_done && _wl->sim_timeout)) { 
@@ -1428,8 +1427,6 @@ RC thread_t::run_calvin_lock() {
 			return FINISH;
 		}
 
-    INC_STATS(_thd_id,thd_prof_thd1d,get_sys_clock() - thd_prof_start);
-    INC_STATS(_thd_id,thd_prof_thd1,get_sys_clock() - thd_prof_start_thd1);
 		if(!got_qry)
 			continue;
     thd_prof_start = get_sys_clock();
@@ -1445,6 +1442,10 @@ RC thread_t::run_calvin_lock() {
     m_txn->register_thd(this);
     // Acquire locks
     rc = m_txn->acquire_locks(m_query);
+
+    INC_STATS(_thd_id,thd_prof_thd3,get_sys_clock() - thd_prof_start);
+
+
     if(rc == RCOK) {
       work_queue.enqueue(_thd_id,m_query);
     }
@@ -1563,6 +1564,7 @@ RC thread_t::run_calvin() {
 		rc = RCOK;
 		txn_starttime = get_sys_clock();
     assert(m_query->rtype <= NO_MSG);
+    uint64_t txn_type = (uint64_t)m_query->rtype;
 
 		switch(m_query->rtype) {
       case RFWD:
@@ -1625,6 +1627,9 @@ RC thread_t::run_calvin() {
 		  default:
 			  assert(false);
     }
+    uint64_t thd_prof_end = get_sys_clock();
+    INC_STATS(_thd_id,thd_prof_thd2,thd_prof_end - thd_prof_start);
+    INC_STATS(_thd_id,thd_prof_thd2_type[txn_type],thd_prof_end - thd_prof_start);
 
     if(rc == RCOK) {
       // Release locks

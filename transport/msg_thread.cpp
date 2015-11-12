@@ -339,6 +339,7 @@ void MessageThread::rfin(mbuf * sbuf,base_query * qry) {
   COPY_BUF(sbuf->buffer,qry->pid,sbuf->ptr);
   COPY_BUF(sbuf->buffer,qry->rc,sbuf->ptr);
   COPY_BUF(sbuf->buffer,qry->txn_id,sbuf->ptr);
+  COPY_BUF(sbuf->buffer,qry->ro,sbuf->ptr);
 }
 
 void MessageThread::cl_rsp(mbuf * sbuf, base_query *qry) {
