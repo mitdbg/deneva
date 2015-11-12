@@ -251,6 +251,8 @@ void tpcc_txn_man::rtn_tpcc_state(base_query * query) {
     default:
       assert(false);
   }
+  if(m_query->rc != Abort)
+    m_query->rc = RCOK;
 
 
 }
