@@ -100,6 +100,7 @@ stat_map = {
  'occ_check_cnt': [],
  'occ_abort_check_cnt': [],
  'abort_cnt': [],
+ 'owned_time': [],
  'abort_rem_row_cnt': [],
  'avg_abort_rem_row_cnt': [],
  'abort_row_cnt': [],
@@ -191,6 +192,12 @@ stat_map = {
  'msg_batch_cnt':[],
  'avg_msg_batch':[],
  'avg_msg_batch_bytes':[],
+
+ 'batches_sent':[],
+ 'batch_interval':[],
+ 'time_batch':[],
+ 'time_seq_prep':[],
+ 'time_seq_ack':[],
 
 'sthd_prof_1a':[],
 'sthd_prof_2':[],
@@ -691,11 +698,16 @@ def print_keys(result_dir="../results",keys=['txn_cnt']):
     print("Total missing files (files not in dir): {}".format(missing_files))
     print("Total missing server results (no [summary] or [prog]): {}".format(missing_results))
 
-def get_summary_stats(stats,summary,summary_cl,x,v):
-    tot_txn_cnt = sum(summary_cl['txn_cnt'])
-    avg_txn_cnt = avg(summary_cl['txn_cnt'])
-    tot_time = sum(summary_cl['clock_time'])
-    avg_time = avg(summary_cl['clock_time'])
+def get_summary_stats(stats,summary,summary_cl,summary_sq,x,v,cc):
+    print(summary_cl['txn_cnt'])
+    if cc == "CALVIN":
+        s = summary_sq
+    else:
+        s = summary_cl
+    tot_txn_cnt = sum(s['txn_cnt'])
+    avg_txn_cnt = avg(s['txn_cnt'])
+    tot_time = sum(summary['clock_time'])
+    avg_time = avg(summary['clock_time'])
     sk = {}
     sk['sys_txn_cnt'] = tot_txn_cnt
     sk['avg_txn_cnt'] = avg_txn_cnt
@@ -713,13 +725,16 @@ def get_summary_stats(stats,summary,summary_cl,x,v):
     sk['perc_ccman'] = sk['time_ccman'] / total * 100
     sk['perc_twopc'] = sk['time_twopc'] / total * 100
     sk['perc_work'] = sk['time_work'] / total * 100
-    sk['rqry'] =  sum(summary['type4']) / sum(summary['thd2'])
-    sk['rfin'] =  sum(summary['type5']) / sum(summary['thd2'])
-    sk['rqry_rsp'] =  sum(summary['type8']) / sum(summary['thd2'])
-    sk['rack'] =  sum(summary['type9']) / sum(summary['thd2'])
-    sk['rtxn'] =  sum(summary['type10']) / sum(summary['thd2'])
-    sk['rinit'] =  sum(summary['type11']) / sum(summary['thd2'])
-    sk['rprep'] =  sum(summary['type12']) / sum(summary['thd2'])
+    total = sum(summary['thd2'])
+    if total == 0:
+        total = 1
+    sk['rqry'] =  sum(summary['type4']) / total
+    sk['rfin'] =  sum(summary['type5']) / total
+    sk['rqry_rsp'] =  sum(summary['type8']) / total
+    sk['rack'] =  sum(summary['type9']) / total
+    sk['rtxn'] =  sum(summary['type10']) / total
+    sk['rinit'] =  sum(summary['type11']) / total
+    sk['rprep'] =  sum(summary['type12']) / total
     sk['abort_cnt'] = avg(summary['abort_cnt'])
     sk['txn_abort_cnt'] = avg(summary['txn_abort_cnt'])
     try:
@@ -751,6 +766,26 @@ def get_summary_stats(stats,summary,summary_cl,x,v):
     sk['aq_enqueue'] = avg(summary['aq_enqueue'])
     sk['aq_dequeue'] = avg(summary['aq_dequeue'])
     sk['txn_table_cnt'] = avg(summary['txn_table_cnt'])
+    sk['mpq_cnt'] = avg(summary['mpq_cnt'])
+    sk['owned_time'] = avg(summary['owned_time'])
+    for i in range(10):
+        try:
+            sk['part'+str(i)] = avg(summary['part_cnt'+str(i)])
+        except KeyError:
+            sk['part'+str(i)] = 0 
+    try:
+        print(summary_sq)
+        sk['batch_cnt'] = avg(summary_sq['batches_sent'])
+        sk['batch_intv'] = avg(summary_sq['batch_interval'])
+        sk['txn_per_batch'] = avg(summary_sq['txn_cnt'])/avg(summary_sq['batches_sent'])
+        sk['seq_prep'] = avg(summary_sq['time_seq_prep'])
+        sk['seq_ack'] = avg(summary_sq['time_seq_ack'])
+    except KeyError:
+        sk['batch_cnt'] = 0
+        sk['batch_intv'] = 0
+        sk['txn_per_batch'] = 0
+    print(sk['batch_intv'])
+
 
     if v == '':
         key = (x)
@@ -763,6 +798,7 @@ def write_summary_file(fname,stats,x_vals,v_vals):
     ps =  [
     'sys_txn_cnt',
     'avg_txn_cnt',
+    'mpq_cnt',
     'time',
     'sys_tput',
     'per_node_tput',
@@ -804,6 +840,21 @@ def write_summary_file(fname,stats,x_vals,v_vals):
     'new_wq_dequeue',
     'aq_enqueue',
     'aq_dequeue',
+    'owned_time',
+    'batch_cnt',
+    'batch_intv',
+    'txn_per_batch',
+    'seq_prep',
+    'seq_ack',
+    'part1',
+    'part2',
+    'part3',
+    'part4',
+    'part5',
+    'part6',
+    'part7',
+    'part8',
+    'part9',
     ]
     with open('../figs/' + fname+'.csv','w') as f:
         if v_vals == []:

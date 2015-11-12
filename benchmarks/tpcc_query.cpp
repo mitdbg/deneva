@@ -300,7 +300,9 @@ void tpcc_client_query::gen_new_order(uint64_t thd_id) {
 		w_id = URand(1, g_num_wh);
 	d_id = URand(1, g_dist_per_wh);
 	c_id = NURand(1023, 1, g_cust_per_dist);
-	rbk = URand(1, 100) == 1 ? true : false;
+  // FIXME: No rollback
+	//rbk = URand(1, 100) == 1 ? true : false;
+	rbk = false;
 	ol_cnt = URand(5, g_max_items_per_txn);
 	o_entry_d = 2013;
 	items = (Item_no *) mem_allocator.alloc(sizeof(Item_no) * ol_cnt, thd_id);

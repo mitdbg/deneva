@@ -817,7 +817,6 @@ inline RC tpcc_txn_man::new_order_5(uint64_t w_id, uint64_t d_id, uint64_t c_id,
 	//double d_tax;
 	//int64_t o_id;
 	//d_tax = *(double *) r_dist_local->get_value(D_TAX);
-  // Coordination Avoidance: Is this where the lock should be?
 	*o_id = *(int64_t *) r_dist_local->get_value(D_NEXT_O_ID);
 	(*o_id) ++;
 	r_dist_local->set_value(D_NEXT_O_ID, *o_id);
@@ -917,7 +916,6 @@ inline RC tpcc_txn_man::new_order_8(uint64_t w_id,uint64_t  d_id,bool remote, ui
 		item = index_read(index, key, wh_to_part(ol_supply_w_id));
 		assert(item != NULL);
 		row_t * r_stock = ((row_t *)item->location);
-    // In Coordination Avoidance, this record must be protected!
     RC rc = get_row(r_stock, WR, r_stock_local);
     if(rc == WAIT)
       INC_STATS_ARR(0,s_cflt,key);
