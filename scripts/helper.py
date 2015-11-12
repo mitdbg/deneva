@@ -759,7 +759,8 @@ def get_summary_stats(stats,summary,summary_cl,summary_sq,x,v,cc):
     sk['time_abort'] = avg(summary['time_abort'])
     sk['time_ccman'] = avg(summary['time_man']) + avg(summary['txn_time_begintxn']) + avg(summary['time_validate'])
     sk['time_twopc'] = avg(summary['type9']) + avg(summary['type12']) +avg(summary['type5']) + avg(summary['time_msg_sent'])
-    sk['time_work'] = avg(summary['type10']) + avg(summary['type8'])
+    sk['time_work'] = avg(summary['clock_time']) - avg(summary[thd_prof_thd1]) - (sk['time_index'] + sk['time_abort'] + sk['time_ccman'] + sk['time_twopc'])
+#    sk['time_work'] = avg(summary['type10']) + avg(summary['type8'])
     total = sk['time_index'] + sk['time_abort'] + sk['time_ccman'] + sk['time_twopc'] + sk['time_work'] 
     sk['perc_index'] = sk['time_index'] / total * 100
     sk['perc_abort'] = sk['time_abort'] / total * 100
