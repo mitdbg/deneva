@@ -30,7 +30,16 @@ void MessageThread::run() {
   mbuf * sbuf;
   uint64_t sthd_prof_start = get_sys_clock();
 
-  type = msg_queue.dequeue(qry,dest);
+  head_type = msg_queue.dequeue(head_qry,head_dest);
+  if(g_network_delay == 0 || (head_type == NO_MSG || !head_qry) ||
+      ((head_type != NO_MSG) && 
+       ((get_sys_clock() - head_qry->q_starttime >= g_network_delay)  || ISCLIENTN(head_dest) || ISCLIENT))) {
+      qry = head_qry;
+      type = head_type;
+      dest = head_dest;
+  } else {
+    goto end;
+  }
 
 
   if( type == NO_MSG ) {

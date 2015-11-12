@@ -65,6 +65,9 @@ private:
   mbuf ** buffer;
   uint64_t buffer_cnt;
   uint64_t _thd_id;
+  base_query * head_qry;
+  RemReqType head_type;
+  uint64_t head_dest;
 
 };
 

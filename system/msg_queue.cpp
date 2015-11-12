@@ -27,6 +27,8 @@ void MessageQueue::enqueue(base_query * qry,RemReqType type,uint64_t dest) {
   entry->next  = NULL;
   entry->prev  = NULL;
   entry->starttime = get_sys_clock();
+  if(qry)
+    entry->qry->q_starttime = entry->starttime;
 
   mq.enqueue(entry);
   /*
