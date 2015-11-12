@@ -52,8 +52,9 @@ for arg in sys.argv[1:]:
         exps.append(arg)
     last_arg = arg
 
-result_dir = PATH + "/../results/"
-#result_dir = PATH + "/../results/1101_results/"
+#result_dir = PATH + "/../results/"
+result_dir = PATH + "/../results/sigmod_results/"
+#result_dir = PATH + "/../results/1108_results/"
 #result_dir = PATH + "/../results/1027_ec2_full_experiments/"
 #result_dir = PATH + "/../results/1028_ec2_results/"
 #result_dir = PATH + "/../results/results_201503pt2/"
@@ -135,7 +136,8 @@ for exp in exps:
             opened = False
             timedate = []
             if _timedate == []:
-                ofile = "{}{}_{}*.out".format(result_dir,0,output_f)
+#                ofile = "{}{}_{}*.out".format(result_dir,0,output_f)
+                ofile = "{}*{}*".format(result_dir,output_f)
                 res_list = sorted(glob.glob(ofile),key=os.path.getmtime,reverse=True)
                 if res_list == 0:
                     continue

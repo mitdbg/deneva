@@ -4,6 +4,7 @@ from experiments import config_names
 import glob
 import pprint
 import latency_stats as ls
+import itertools
 
 CONFIG_PARAMS = [
 #    "TPORT_TYPE",
@@ -13,7 +14,8 @@ CONFIG_PARAMS = [
     "CC_ALG",
     "MODE",
     "WORKLOAD",
-    "PRIORITY"
+    "PRIORITY",
+    "TWOPL_LITE"
 #    "SHMEM_ENV"
     ]
 
@@ -101,6 +103,11 @@ stat_map = {
  'occ_abort_check_cnt': [],
  'abort_cnt': [],
  'owned_time': [],
+ 'owned_time_rd': [],
+ 'owned_time_wr': [],
+ 'owned_cnt': [],
+ 'owned_cnt_rd': [],
+ 'owned_cnt_wr': [],
  'abort_rem_row_cnt': [],
  'avg_abort_rem_row_cnt': [],
  'abort_row_cnt': [],
@@ -363,6 +370,40 @@ def find_in_line(key,line,summary,min_time,low_lim,up_lim):
 #            for k in keys:
 #                summary,min_time = find_in_line(k,line,summary,min_time,low_lim,up_lim)
 #    return summary,min_time
+
+def plot_prep(nexp,nfmt,x_name,v_name,extras={},constants={}):
+    x_vals = []
+    v_vals = []
+    exp = [list(e) for e in nexp]
+    fmt = list(nfmt)
+    for x in constants.keys():
+        for e in exp[:]:
+            if e[fmt.index(x)] != constants[x]:
+                exp.remove(e)
+    for e in exp:
+        x_vals.append(e[fmt.index(x_name)])
+        del e[fmt.index(x_name)]
+    fmt.remove(x_name)
+    if v_name != '':
+        for e in exp:
+            v_vals.append(e[fmt.index(v_name)])
+            del e[fmt.index(v_name)]
+        fmt.remove(v_name)
+    for x in extras.keys():
+        if x not in fmt: 
+            del extras[x]
+            continue
+        for e in exp:
+            del e[fmt.index(x)]
+        fmt.remove(x)
+    x_vals = list(set(x_vals))
+    x_vals.sort()
+    v_vals = list(set(v_vals))
+    v_vals.sort()
+    exp.sort()
+    exp = list(k for k,_ in itertools.groupby(exp))
+    assert(len(exp)==1)
+    return x_vals,v_vals,fmt,exp[0]
 
 def get_prog(sfile):
     summary = {}
@@ -738,7 +779,7 @@ def get_summary_stats(stats,summary,summary_cl,summary_sq,x,v,cc):
     sk['abort_cnt'] = avg(summary['abort_cnt'])
     sk['txn_abort_cnt'] = avg(summary['txn_abort_cnt'])
     try:
-        sk['avg_abort_cnt'] = avg(summary['abort_cnt']) / sum(summary['txn_abort_cnt'])
+        sk['avg_abort_cnt'] = avg(summary['abort_cnt']) / avg(summary['txn_abort_cnt'])
     except ZeroDivisionError:
         sk['avg_abort_cnt'] = 0
     try:
@@ -767,7 +808,20 @@ def get_summary_stats(stats,summary,summary_cl,summary_sq,x,v,cc):
     sk['aq_dequeue'] = avg(summary['aq_dequeue'])
     sk['txn_table_cnt'] = avg(summary['txn_table_cnt'])
     sk['mpq_cnt'] = avg(summary['mpq_cnt'])
-    sk['owned_time'] = avg(summary['owned_time'])
+    try:
+        sk['owned_time'] = avg(summary['owned_time'])
+        sk['owned_time_rd'] = avg(summary['owned_time_rd'])
+        sk['owned_time_wr'] = avg(summary['owned_time_wr'])
+        sk['owned_cnt'] = avg(summary['owned_cnt'])
+        sk['owned_cnt_rd'] = avg(summary['owned_cnt_rd'])
+        sk['owned_cnt_wr'] = avg(summary['owned_cnt_wr'])
+    except KeyError:
+        sk['owned_time'] = 0
+        sk['owned_time_rd'] = 0
+        sk['owned_time_wr'] = 0
+        sk['owned_cnt'] = 0
+        sk['owned_cnt_rd'] = 0
+        sk['owned_cnt_wr'] = 0
     for i in range(10):
         try:
             sk['part'+str(i)] = avg(summary['part_cnt'+str(i)])
@@ -785,6 +839,14 @@ def get_summary_stats(stats,summary,summary_cl,summary_sq,x,v,cc):
         sk['batch_intv'] = 0
         sk['txn_per_batch'] = 0
     print(sk['batch_intv'])
+    sk['mvcc1'] = avg(summary['mvcc1'])
+    sk['mvcc2'] = avg(summary['mvcc2'])
+    sk['mvcc3'] = avg(summary['mvcc3'])
+    sk['mvcc4'] = avg(summary['mvcc4'])
+    sk['mvcc5'] = avg(summary['mvcc5'])
+    sk['mvcc6'] = avg(summary['mvcc6'])
+    sk['mvcc7'] = avg(summary['mvcc7'])
+    sk['mvcc8'] = avg(summary['mvcc8'])
 
 
     if v == '':
@@ -841,6 +903,11 @@ def write_summary_file(fname,stats,x_vals,v_vals):
     'aq_enqueue',
     'aq_dequeue',
     'owned_time',
+    'owned_time_rd',
+    'owned_time_wr',
+    'owned_cnt',
+    'owned_cnt_rd',
+    'owned_cnt_wr',
     'batch_cnt',
     'batch_intv',
     'txn_per_batch',
@@ -855,6 +922,14 @@ def write_summary_file(fname,stats,x_vals,v_vals):
     'part7',
     'part8',
     'part9',
+    'mvcc1',
+    'mvcc2',
+    'mvcc3',
+    'mvcc4',
+    'mvcc5',
+    'mvcc6',
+    'mvcc7',
+    'mvcc8',
     ]
     with open('../figs/' + fname+'.csv','w') as f:
         if v_vals == []:
@@ -878,4 +953,16 @@ def write_summary_file(fname,stats,x_vals,v_vals):
                             s += '--, '
                     f.write(s+'\n')
                 f.write('\n')
-                        
+            for v in v_vals:
+                f.write(str(v) + ', ' + ', '.join([str(x) for x in x_vals]) +'\n')
+                for p in ps:
+                    s = p + ', '
+                    for x in x_vals:
+                        k = (x,v)
+                        try:
+                            s += '{0:0.2f}'.format(stats[k][p]) + ', '
+                        except KeyError:
+                            s += '--, '
+                    f.write(s+'\n')
+                f.write('\n')
+ 
