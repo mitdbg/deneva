@@ -86,6 +86,12 @@ uint64_t tpcc_query::participants(bool *& pps,workload * wl) {
   return n;
 }
 
+bool tpcc_query::readonly() {
+  ro = false;
+  return false;
+}
+
+
 
 base_query * tpcc_query::merge(base_query * query) {
 	tpcc_query * m_query = (tpcc_query *) query;

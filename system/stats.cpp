@@ -238,7 +238,7 @@ void Stats_thd::clear() {
   }
 
 
-  for(int i = 0; i < 16;i++)
+  for(int i = 0; i < 17;i++)
     thd_prof_thd2_type[i] = 0;
   thd_prof_wl1=0;
   thd_prof_row1=0;thd_prof_row2=0;thd_prof_row3=0;
@@ -1684,7 +1684,7 @@ void Stats::print_prof(FILE * outf) {
         total_thd_prof_txn_table1b +=_stats[tid]->thd_prof_txn_table1b;
         total_thd_prof_txn_table2a +=_stats[tid]->thd_prof_txn_table2a;
         total_thd_prof_txn_table2 +=_stats[tid]->thd_prof_txn_table2;
-        for(int i = 0; i < 16;i++)
+        for(int i = 0; i < 17;i++)
           total_thd_prof_type[i] +=_stats[tid]->thd_prof_thd2_type[i];
   }
 

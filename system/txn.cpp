@@ -590,11 +590,8 @@ RC txn_man::finish(base_query * query, bool fin) {
 
   // Stats start
   txn_twopc_starttime = get_sys_clock();
+  bool readonly = false;
 
-
-  if(!fin) {
-    this->state = PREP;
-  }
   if(query->part_touched_cnt == 0 || 
       ((CC_ALG != HSTORE && CC_ALG != HSTORE_SPEC && CC_ALG != VLL) 
        && query->part_touched_cnt == 1 && query->part_num > 1)) {
@@ -606,6 +603,13 @@ RC txn_man::finish(base_query * query, bool fin) {
     return RCOK;
   }
 
+  if(!fin) {
+    readonly = query->readonly();
+    if(readonly && CC_ALG != OCC)
+      this->state = FIN;
+    else
+      this->state = PREP;
+  }
   // Send prepare message to all participating transaction
   assert(rsp_cnt == 0);
   //for (uint64_t i = 0; i < query->part_num; ++i) {
@@ -636,7 +640,7 @@ RC txn_man::finish(base_query * query, bool fin) {
 
     incr_rsp(1);
     query->dest_part = part_id;
-    if(fin) {
+    if(fin || (readonly && CC_ALG != OCC)) {
       if(GET_NODE_ID(part_id) != g_node_id) {
         //query->remote_finish(query, part_node_id);    
         msg_queue.enqueue(query,RFIN,part_node_id);
@@ -691,6 +695,13 @@ RC txn_man::finish(base_query * query, bool fin) {
   INC_STATS(get_thd_id(),time_msg_sent,timespan);
 
 
+  if(query->rc != Abort && readonly && CC_ALG!=OCC) {
+    this->state = DONE;
+		uint64_t part_arr[1];
+		part_arr[0] = query->part_to_access[0];
+	  finish(query->rc,part_arr,1);
+    return RCOK;
+  }
   if(rsp_cnt >0) 
     return WAIT_REM;
   else

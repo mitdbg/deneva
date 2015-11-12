@@ -42,6 +42,7 @@ void print_usage() {
 	printf("\t-o STRING   ; output file\n");
 	printf("\t-i STRING   ; input file\n");
 	printf("\t-cf STRING   ; txn file\n");
+	printf("\t-ndly   ; NETWORK_DELAY\n");
   /*
 	printf("------ Migration ----\n");
 	printf("\t-MeINT      ; HW_MIGRATE\n");
@@ -74,9 +75,11 @@ void parser(int argc, char * argv[]) {
 
 	for (int i = 1; i < argc; i++) {
 		assert(argv[i][0] == '-');
-    if (argv[i][1] == 'd' && argv[i][2] == 'o' && argv[i][3] == 'n' && argv[i][4] == 'e')
+    if (argv[i][1] == 'n' && argv[i][2] == 'd' && argv[i][3] == 'l' && argv[i][4] == 'y')
+      g_network_delay = atoi( &argv[i][5] );
+    else if (argv[i][1] == 'd' && argv[i][2] == 'o' && argv[i][3] == 'n' && argv[i][4] == 'e')
       g_done_timer = atoi( &argv[i][5] );
-    if (argv[i][1] == 's' && argv[i][2] == 'p' && argv[i][3] == 'p' && argv[i][4] == 't')
+    else if (argv[i][1] == 's' && argv[i][2] == 'p' && argv[i][3] == 'p' && argv[i][4] == 't')
       g_strict_ppt = atoi( &argv[i][5] ) == 1;
     else if (argv[i][1] == 'p' && argv[i][2] == 'r' && argv[i][3] == 'o' && argv[i][4] == 'g')
 			g_thread_cnt = atoi( &argv[i][5] );
@@ -208,6 +211,7 @@ void parser(int argc, char * argv[]) {
       printf("g_data_perc %f\n",g_data_perc);
       printf("g_access_perc %f\n",g_access_perc);
       printf("g_strict_ppt %d\n",g_strict_ppt);
+      printf("g_network_delay %d\n",g_network_delay);
 
     // Initialize client-specific globals
     if (g_node_id >= g_node_cnt)
