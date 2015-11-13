@@ -340,6 +340,7 @@ def tput(xval,vval,summary,summary_cl,summary_sq,
             if cfgs not in summary.keys(): 
                 print("Not in summary: {}".format(cfgs))
                 continue 
+            tmp = 0
             try:
                 if cc == "CALVIN":
                     s = summary_sq
@@ -350,12 +351,15 @@ def tput(xval,vval,summary,summary_cl,summary_sq,
                 avg_run_time = avg(summary[cfgs]['clock_time'])
 #FIXME
                 avg_txn_cnt = avg(summary[cfgs]['txn_cnt'])
-                stats = get_summary_stats(stats,summary[cfgs],summary_cl[cfgs],summary_sq[cfgs],x,v,cc)
+                s = summary[cfgs]
+                s = summary_cl[cfgs]
+                s = summary_sq[cfgs]
             except KeyError:
-                print("KeyError: {} {} {} -- {}".format(v,x,cfg,cfgs))
+                print("KeyError: {} {} {} -- {}".format(tmp,v,x,cfgs))
                 tpt[_v][xi] = 0
                 pntpt[_v][xi] = 0
                 continue
+            stats = get_summary_stats(stats,summary[cfgs],summary_cl[cfgs],summary_sq[cfgs],x,v,cc)
             # System Throughput: total txn count / average of all node's run time
             # Per Node Throughput: avg txn count / average of all node's run time
             # Per txn latency: total of all node's run time / total txn count
@@ -729,7 +733,7 @@ def stacks_general(xval,summary,
 # summary: dictionary loaded with results
 # normalized: if true, normalize the results
 def time_breakdown(xval,summary,
-        normalized=False,
+        normalized=True,
         xname="MPR",
         cfg_fmt=[],
         cfg=[],
@@ -786,7 +790,8 @@ def time_breakdown(xval,summary,
             tmp = tmp+1
             time_abort[i] = avg(summary[cfgs]['time_abort'])
             tmp = tmp+1
-            time_ccman[i] = avg(summary[cfgs]['time_man']) + avg(summary[cfgs]['txn_time_begintxn']) + avg(summary[cfgs]['time_validate'])
+            time_ccman[i] = avg(summary[cfgs]['row1']) +avg(summary[cfgs]['row2']) +(avg(summary[cfgs]['row3']) - avg(summary[cfgs]['time_abort'])) + avg(summary[cfgs]['txn_time_begintxn']) + avg(summary[cfgs]['time_validate'])
+#            time_ccman[i] = avg(summary[cfgs]['time_man']) + avg(summary[cfgs]['txn_time_begintxn']) + avg(summary[cfgs]['time_validate'])
             tmp = tmp+1
             time_twopc[i] = avg(summary[cfgs]['prof_time_twopc']) + avg(summary[cfgs]['time_msg_sent'])
 #            time_twopc[i] = avg(summary[cfgs]['type9']) + avg(summary[cfgs]['type12']) +avg(summary[cfgs]['type5']) + avg(summary[cfgs]['time_msg_sent'])
@@ -797,6 +802,7 @@ def time_breakdown(xval,summary,
             tmp = tmp+1
             total[i] = sum(time_index[i] + time_abort[i] + time_ccman[i] + time_twopc[i] + time_work[i] )
             tmp = tmp+1
+            print(total[i],time_index[i] , time_abort[i] , time_ccman[i] , time_twopc[i] , time_work[i] )
 
         except KeyError:
             print("KeyError: {} err:{}".format(cfgs,tmp))
