@@ -35,7 +35,7 @@
 #define TIME_ENABLE         true //STATS_ENABLE
 
 #define FIN_BY_TIME true
-#define MAX_TXN_IN_FLIGHT 100
+#define MAX_TXN_IN_FLIGHT 50000
 
 /***********************************************/
 // Memory System
@@ -64,6 +64,7 @@
 #define TPORT_TYPE "tcp"
 #define TPORT_TYPE_IPC false
 #define TPORT_PORT 7000
+#define SET_AFFINITY false
 
 #define MAX_TPORT_NAME 128
 #define MSG_SIZE 128 // in bytes
@@ -83,7 +84,7 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, VOLTDB, OCC, VLL, CALVIN
-#define CC_ALG CALVIN
+#define CC_ALG TIMESTAMP
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER         false
@@ -201,7 +202,7 @@ enum TPCCTxnType {TPCC_ALL,
 extern TPCCTxnType          g_tpcc_txn_type;
 
 //#define TXN_TYPE          TPCC_ALL
-#define PERC_PAYMENT 0.5
+#define PERC_PAYMENT 0.0
 #define FIRSTNAME_MINLEN      8
 #define FIRSTNAME_LEN         16
 #define LASTNAME_LEN        16
@@ -309,7 +310,7 @@ extern TestCases          g_test_case;
 #define DONE_TIMER 1 * 60 * BILLION // ~2 minutes
 
 #define SEED 0
-#define SHMEM_ENV false
+#define SHMEM_ENV true
 
 #endif
 

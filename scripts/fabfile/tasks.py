@@ -20,7 +20,7 @@ sys.path.append('..')
 from environment import *
 from experiments import *
 from experiments import configs 
-from helper import get_cfgs,get_outfile_name,get_execfile_name,get_args,CONFIG_PARAMS
+from helper import get_cfgs,get_outfile_name,get_execfile_name,get_args,CONFIG_PARAMS,FLAG
 
 # (see https://github.com/fabric/fabric/issues/51#issuecomment-96341022)
 logging.basicConfig()
@@ -42,7 +42,7 @@ STRNOW=NOW.strftime("%Y%m%d-%H%M%S")
 
 os.chdir('../..')
 
-MAX_TIME_PER_EXP = 60 * 10   # in seconds
+MAX_TIME_PER_EXP = 60 * 2   # in seconds
 
 EXECUTE_EXPS = True
 SKIP = False
@@ -76,7 +76,7 @@ def using_local():
 ##      fab using_istc   run_exps:experiment_1
 @task
 @hosts('localhost')
-def run_exps(exps,skip_completed='False',exec_exps='True',dry_run='False',iterations='1',check='True',delay='',same_node='False',overlap='False',shmem='True'):
+def run_exps(exps,skip_completed='False',exec_exps='True',dry_run='False',iterations='1',check='True',delay='',same_node='False',overlap='False',shmem='True',cram='False'):
     global SKIP, EXECUTE_EXPS,NOW,STRNOW 
     ITERS = int(iterations)
     SKIP = skip_completed == 'True'
@@ -85,6 +85,7 @@ def run_exps(exps,skip_completed='False',exec_exps='True',dry_run='False',iterat
     env.dry_run = dry_run == 'True'
     env.same_node = same_node == 'True'
     env.overlap = overlap == 'True'
+    env.cram = cram == 'True'
     if env.cluster != "ec2":
         env.shmem = shmem == 'True'
     if env.dry_run:
@@ -434,7 +435,18 @@ def write_ifconfig(roles,exp):
 @task
 @hosts('localhost')
 def assign_roles(server_cnt,client_cnt,append=False):
-    if not env.same_node:
+    if env.same_node:
+        servers=[env.hosts[0]] * server_cnt
+        clients=[env.hosts[0]] * client_cnt
+    elif env.cram:
+        ncnt = max(max(server_cnt,client_cnt) / 8,1)
+        servers = []
+        clients = []
+        for r in range(server_cnt):
+            servers.append(env.hosts[r%ncnt])
+        for r in range(client_cnt):
+            clients.append(env.hosts[r%ncnt])
+    else:
 #        if len(env.hosts) < server_cnt+client_cnt:
 #            with color("error"):
 #                puts("ERROR: not enough hosts to run experiment",show_prefix=True)
@@ -446,9 +458,6 @@ def assign_roles(server_cnt,client_cnt,append=False):
             clients=env.hosts[0:client_cnt]
         else:
             clients=env.hosts[server_cnt:server_cnt+client_cnt]
-    else:
-        servers=[env.hosts[0]] * server_cnt
-        clients=[env.hosts[0]] * client_cnt
     new_roles = {}
     if CC_ALG == 'CALVIN':
         sequencer = env.hosts[server_cnt+client_cnt:server_cnt+client_cnt+1]
@@ -498,7 +507,7 @@ def compile_binary(fmt,e):
     ecfgs = get_cfgs(fmt,e)
     cfgs = dict(configs)
     for c in dict(ecfgs):
-        if c not in CONFIG_PARAMS:
+        if c not in CONFIG_PARAMS and c in FLAG:
             del ecfgs[c]
     cfgs.update(ecfgs)
     if env.remote and not env.same_node:
@@ -629,6 +638,8 @@ def run_exp_old(exps,network_test=False,delay=''):
                 ntotal = 1
             if env.overlap:
                 ntotal = max(nnodes,nclnodes)
+            if env.cram:
+                ntotal = max(max(nnodes,nclnodes)/8,1)
 
             if env.remote:
                 if not network_test:
@@ -922,6 +933,8 @@ def run_exp(exps,network_test=False,delay=''):
                 ntotal = 1
             if env.overlap:
                 ntotal = max(nnodes,nclnodes)
+            if env.cram:
+                ntotal = max(max(nnodes,nclnodes)/8,1)
             if ntotal > len(env.hosts):
                 msg = "Not enough nodes to run experiment!\n"
                 msg += "\tRequired nodes: {}, ".format(ntotal)
@@ -954,6 +967,8 @@ def run_exp(exps,network_test=False,delay=''):
                 ntotal = 1
             if env.overlap:
                 ntotal = max(nnodes,nclnodes)
+            if env.cram:
+                ntotal = max(max(nnodes,nclnodes)/8,1)
 
             output_fbase = get_outfile_name(cfgs,fmt,env.hosts)
             output_exec_fname = get_execfile_name(cfgs,fmt,env.hosts)

@@ -121,11 +121,13 @@ void Transport::init(uint64_t node_id,workload * workload) {
   fflush(stdout);
 
   uint64_t s_cnt = 0;
+#if SET_AFFINITY
   uint64_t s_thd;
   if(ISCLIENT)
     s_thd = g_client_send_thread_cnt;
   else
     s_thd = g_send_thread_cnt;
+#endif
 
   // Listening port
   char socket_name[MAX_TPORT_NAME];
@@ -139,6 +141,9 @@ void Transport::init(uint64_t node_id,workload * workload) {
 #if TPORT_TYPE_IPC
       port = j;
       sprintf(socket_name,"%s://node_%d_%d%s",TPORT_TYPE,port,g_node_id,TPORT_PORT);
+#elif !SET_AFFINITY
+      port = TPORT_PORT + j * _node_cnt + g_node_id;
+      sprintf(socket_name,"%s://eth0:%d",TPORT_TYPE,port);
 #else
       if(ISCLIENT)
         port = TPORT_PORT + j + _node_cnt;
@@ -153,7 +158,7 @@ void Transport::init(uint64_t node_id,workload * workload) {
         assert(false);
       }
     }
-
+#if SET_AFFINITY
   if(CC_ALG != CALVIN && !ISCLIENT) {
     for(uint64_t j = 0; j < g_client_send_thread_cnt; j++) {
 #if TPORT_TYPE_IPC
@@ -172,6 +177,7 @@ void Transport::init(uint64_t node_id,workload * workload) {
 
     }
   }
+#endif
   // Sending ports
     for(uint64_t j = 0; j < _node_cnt; j++) {
       if(j == g_node_id) {
@@ -181,6 +187,9 @@ void Transport::init(uint64_t node_id,workload * workload) {
 #if TPORT_TYPE_IPC
       port = g_node_id;
       sprintf(socket_name,"%s://node_%d_%ld%s",TPORT_TYPE,port,j,TPORT_PORT);
+#elif !SET_AFFINITY
+      port = TPORT_PORT + g_node_id * _node_cnt + j;
+			sprintf(socket_name,"%s://eth0;%s:%d",TPORT_TYPE,ifaddr[j],port);
 #else
       if(ISCLIENTN(j))
         port = TPORT_PORT + g_node_id + _node_cnt;
@@ -196,6 +205,7 @@ void Transport::init(uint64_t node_id,workload * workload) {
       }
     }
 
+#if SET_AFFINITY
   if(CC_ALG != CALVIN && ISCLIENT) {
     for(uint64_t i = 0; i < s_thd; i++) {
       for(uint64_t j = g_server_start_node; j < g_server_start_node + g_servers_per_client; j++) {
@@ -215,9 +225,10 @@ void Transport::init(uint64_t node_id,workload * workload) {
       }
     }
   } 
+#endif
 
 	fflush(stdout);
-  assert(s_cnt == _sock_cnt);
+  //assert(s_cnt == _sock_cnt);
 
 	if(rc < 0) {
 		printf("Bind Error: %d %s\n",errno,strerror(errno));
@@ -232,6 +243,8 @@ void Transport::send_msg(uint64_t sid, uint64_t dest_id, void * sbuf,int size) {
   uint64_t starttime = get_sys_clock();
   uint64_t id;
 #if CC_ALG == CALVIN
+  id = dest_id;
+#elif !SET_AFFINITY
   id = dest_id;
 #else
   if(ISCLIENT) {

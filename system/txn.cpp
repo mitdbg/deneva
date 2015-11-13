@@ -694,7 +694,6 @@ RC txn_man::finish(base_query * query, bool fin) {
   uint64_t timespan = get_sys_clock() - starttime;
   INC_STATS(get_thd_id(),time_msg_sent,timespan);
 
-
   if(query->rc != Abort && readonly && CC_ALG!=OCC) {
     this->state = DONE;
 		uint64_t part_arr[1];

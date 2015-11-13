@@ -46,6 +46,7 @@ FLAG = {
     "ACCESS_PERC":"-ap",
     "PERC_PAYMENT":"-pp",
     "STRICT_PPT":"-sppt",
+    "NETWORK_DELAY":"-ndly",
 }
 
 SHORTNAMES = {
@@ -75,6 +76,7 @@ SHORTNAMES = {
     "PERC_PAYMENT":"PP",
     "ABORT_PENALTY":"PENALTY",
     "STRICT_PPT":"SPPT",
+    "NETWORK_DELAY":"NDLY",
 }
 
 stat_map = {
@@ -867,7 +869,7 @@ def write_summary_file(fname,stats,x_vals,v_vals):
                 f.write(s+'\n')
         else:
             for x in x_vals:
-                f.write(str(x) + ', ' + ', '.join(v_vals) +'\n')
+                f.write(str(x) + ', ' + ', '.join([str(v) for v in v_vals]) +'\n')
                 for p in ps:
                     s = p + ', '
                     for v in v_vals:

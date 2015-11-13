@@ -317,10 +317,7 @@ def tput(xval,vval,summary,summary_cl,summary_sq,
         _xval = xval
         _xlab = xname
     for v in vval:
-        if vname == "NETWORK_DELAY":
-            _v = (float(v.replace("UL","")))/1000000
-        else:
-            _v = v
+        _v = v
         tpt[_v] = [0] * len(xval)
         pntpt[_v] = [0] * len(xval)
 

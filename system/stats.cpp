@@ -214,6 +214,7 @@ void Stats_thd::clear() {
   twopl_time_diff = 0;
   owned_cnt = 0;
 
+  prof_time_twopc = 0;
   thd_prof_get_txn_cnt = 0;
   rthd_prof_1=0; rthd_prof_2=0;
   sthd_prof_1a=0; sthd_prof_1b=0; sthd_prof_2=0; sthd_prof_3=0; sthd_prof_4=0; sthd_prof_5a=0; sthd_prof_5b=0;
@@ -820,6 +821,7 @@ void Stats::print(bool prog) {
   double total_owned_time = 0;
   double total_twopl_time_diff = 0;
   double total_owned_cnt = 0;
+  double total_prof_time_twopc = 0;
 
   double total_aq_poll = 0;
   double total_aq_enqueue=0;double total_aq_dequeue=0;
@@ -922,6 +924,7 @@ void Stats::print(bool prog) {
 		total_owned_time += _stats[tid]->owned_time;
 		total_twopl_time_diff += _stats[tid]->twopl_time_diff;
 		total_owned_cnt += _stats[tid]->owned_cnt;
+		total_prof_time_twopc += _stats[tid]->prof_time_twopc;
 
 		total_cc_busy_cnt += _stats[tid]->cc_busy_cnt;
 		total_txn_table_cflt += _stats[tid]->txn_table_cflt;
@@ -1142,6 +1145,7 @@ void Stats::print(bool prog) {
       ",new_wq_dequeue=%f"
       ",all_wq_enqueue=%f"
       ",all_wq_dequeue=%f"
+      ",prof_time_twopc=%f"
 			,total_mq_full / BILLION
 			,total_qq_full / BILLION
 			,total_qq_lat / total_qq_cnt / BILLION
@@ -1164,6 +1168,7 @@ void Stats::print(bool prog) {
       ,total_new_wq_dequeue/BILLION
       ,total_all_wq_enqueue/BILLION
       ,total_all_wq_dequeue/BILLION
+      ,total_prof_time_twopc/BILLION
       );
 	fprintf(outf, 
       ",spec_abort_cnt=%ld"

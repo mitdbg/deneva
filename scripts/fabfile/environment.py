@@ -17,6 +17,7 @@ def set_env():
     env.local_path = os.getcwd()
     env.result_dir = os.path.join(env.local_path,"results/")
     env.same_node = False
+    env.cram = False
     env.overlap = False
     env.shmem = True
 
