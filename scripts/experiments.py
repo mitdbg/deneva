@@ -33,6 +33,7 @@ SHORTNAMES = {
     "PRIORITY":"",
     "ABORT_PENALTY":"PENALTY",
     "STRICT_PPT":"SPPT",
+    "NETWORK_DELAY":"NDLY",
 }
 # Format: [#Nodes,#Txns,Workload,CC_ALG,MPR]
 fmt_tpcc = [["CLIENT_NODE_CNT","NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","MPIR","CLIENT_THREAD_CNT","CLIENT_REM_THREAD_CNT","CLIENT_SEND_THREAD_CNT","THREAD_CNT","REM_THREAD_CNT","SEND_THREAD_CNT","MAX_TXN_IN_FLIGHT","NUM_WH","PERC_PAYMENT","PART_PER_TXN","PART_CNT","MSG_TIME_LIMIT","MSG_SIZE_MAX","MODE"]]
@@ -356,11 +357,14 @@ def tput_setup(summary,summary_cl,summary_seq,nfmt,nexp,x_name,v_name
         if "PART_PER_TXN" in fmt and e[fmt.index("PART_PER_TXN")] == 1 and ("NODE_CNT" == x_name or "NODE_CNT" == v_name):
             continue
 #title = "System Tput "
+        _title = ""
         if title == "":
             for t in fmt_title:
                 if t not in fmt: continue
-                title+="{} {} ".format(SHORTNAMES[t],e[fmt.index(t)])
-        tput(x_vals,v_vals,summary,summary_cl,summary_seq,cfg_fmt=fmt,cfg=list(e),xname=x_name,vname=v_name,title=title,extras=extras)
+                _title+="{} {} ".format(SHORTNAMES[t],e[fmt.index(t)])
+        else:
+            _title = title
+        tput(x_vals,v_vals,summary,summary_cl,summary_seq,cfg_fmt=fmt,cfg=list(e),xname=x_name,vname=v_name,title=_title,extras=extras)
 
 def line_rate_setup(summary,summary_cl,summary_seq,nfmt,nexp,x_name,v_name,key
         ,extras={}
@@ -585,40 +589,17 @@ def test_plot(summary,summary_client,summary_seq):
 
 def network_sweep():
     wl = 'YCSB'
-    nnodes = [1,2,4,8,16,32,64]
-    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP','CALVIN']
-#    nalgos=['NO_WAIT']
-    ndelay=[0,1000,2500,5000,7500,10000,12500]
-    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PART_PER_TXN","CLIENT_NODE_CNT","NETWORK_DELAY","THREAD_CNT","CLIENT_SEND_THREAD_CNT"]
-    exp = [[wl,n,cc,2,1,d,2,4] for n,cc,d in itertools.product(nnodes,nalgos,ndelay)]
+    nnodes = [1,2,4,8,16]
+#    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
+    nalgos=['NO_WAIT','MVCC','OCC']
+    ndelay=[0,100,1000,3000,5000,8000,10000,15000,20000,30000,40000,50000,60000,70000,100000]
+    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PART_PER_TXN","NETWORK_DELAY","SET_AFFINITY"]
+    exp = [[wl,n,cc,2,d,"false"] for d,n,cc in itertools.product(ndelay,nnodes,nalgos)]
     return fmt,exp
 
 def network_sweep_plot(summary,summary_client,summary_seq):
-    from plot_helper import tput
-    fmt,exp = node_sweep()
-    fmt = ["CC_ALG","CLIENT_NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","MPR","CLIENT_THREAD_CNT","CLIENT_REM_THREAD_CNT","THREAD_CNT","REM_THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","READ_PERC","WRITE_PERC","PART_PER_TXN"]
-    nmpr=[100]
-    nnodes = [1,2,4,8,16]
-    network_delay = ["0UL","10000UL","100000UL","1000000UL","10000000UL","100000000UL"]
-    nalgos=['WAIT_DIE']
-    nthreads=3
-    nrthreads=1
-    ncthreads=3
-    ncrthreads=1
-    ntifs=1300
-    nzipf=[0.8]
-    nwr_perc=[0.5]
-    nparts = 16 
- 
-    v_vals = network_delay
-    v_name = "NETWORK_DELAY"
-    x_vals = nnodes
-    x_name = "NODE_CNT"
-    for mpr,wr,zipf,alg in itertools.product(nmpr,nwr_perc,nzipf,nalgos):
-        c = [alg,1,3000000,"YCSB",mpr,ncthreads,ncrthreads,nthreads,nrthreads,ntifs,zipf,1.0-wr,wr,nparts]
-        assert(len(c) == len(fmt))
-        title = "YCSB System Throughput {} {}% Writes {} Skew".format(alg,wr*100,zipf);
-        tput(x_vals,v_vals,summary,cfg_fmt=fmt,cfg=c,xname=x_name,vname=v_name,title=title)
+    nfmt,nexp = network_sweep()
+    tput_setup(summary,summary_client,summary_seq,nfmt,nexp,x_name="NODE_CNT",v_name="NETWORK_DELAY",extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT'})
 
 def network_experiment():
     fmt = fmt_nt
@@ -831,6 +812,7 @@ configs = {
     "MODE":"NORMAL_MODE",
     "SHMEM_ENV":"false",
     "STRICT_PPT":0,
+    "SET_AFFINITY":"true",
 }
 
 config_names = fmt_ycsb[0]

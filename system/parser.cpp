@@ -171,6 +171,9 @@ void parser(int argc, char * argv[]) {
 			assert(false);
     }
 	}
+#if !SET_AFFINITY
+  g_client_send_thread_cnt = 1;
+#endif
 
     //g_inflight_max = g_inflight_max / g_node_cnt;
       printf("CC Alg %d\n",CC_ALG);

@@ -613,6 +613,7 @@ thread_t::get_next_ts() {
 
 RC thread_t::process_rfin(base_query *& m_query,txn_man *& m_txn) {
         uint64_t thd_prof_thd_rfin_start = get_sys_clock();
+        uint64_t starttime = thd_prof_thd_rfin_start;
 				DEBUG("%ld Received RFIN %ld\n",GET_PART_ID_FROM_IDX(_thd_id),m_query->txn_id);
 				INC_STATS(0,rfin,1);
         /*
@@ -696,6 +697,7 @@ RC thread_t::process_rfin(base_query *& m_query,txn_man *& m_txn) {
           m_query = tmp_query;
           m_txn->set_query(m_query);
         }
+    INC_STATS(_thd_id,prof_time_twopc,get_sys_clock() - starttime);
         // Clean up transaction
 				if (finish) {
 					m_txn->state = DONE;
@@ -703,6 +705,7 @@ RC thread_t::process_rfin(base_query *& m_query,txn_man *& m_txn) {
         }
         INC_STATS(_thd_id,thd_prof_thd_rfin1,get_sys_clock() - thd_prof_thd_rfin_start);
         thd_prof_thd_rfin_start = get_sys_clock();
+        starttime = thd_prof_thd_rfin_start;
         // Send ack back to home node
         //  m_query is used by send thread; do not free
         //  m_query will be freed by send thread
@@ -711,6 +714,7 @@ RC thread_t::process_rfin(base_query *& m_query,txn_man *& m_txn) {
 #endif
 
         INC_STATS(_thd_id,thd_prof_thd_rfin2,get_sys_clock() - thd_prof_thd_rfin_start);
+    INC_STATS(_thd_id,prof_time_twopc,get_sys_clock() - starttime);
         // TODO: change check from null m_query to qry type?
         //qry_pool.put(m_query);
 				m_query = NULL;
@@ -719,6 +723,7 @@ RC thread_t::process_rfin(base_query *& m_query,txn_man *& m_txn) {
 
 RC thread_t::process_rack(base_query *& m_query,txn_man *& m_txn) {
 
+        uint64_t thd_prof_start = get_sys_clock();
         uint64_t thd_prof_thd_rack_start = get_sys_clock();
 #if CC_ALG == VLL
         uint64_t thd_prof_thd_rack_vll = get_sys_clock();
@@ -825,11 +830,14 @@ RC thread_t::process_rack(base_query *& m_query,txn_man *& m_txn) {
 							txn_table.restart_txn(m_txn->get_txn_id());
               //qry_pool.put(m_query);
 					    m_query = NULL;
+              INC_STATS(_thd_id,prof_time_twopc,get_sys_clock() - thd_prof_start);
               break;
             case PREP:
 							// Validate
 							m_txn->spec = true;
+              INC_STATS(_thd_id,prof_time_twopc,get_sys_clock() - thd_prof_start);
 							rc  = m_txn->validate();
+              thd_prof_start = get_sys_clock();
 							m_txn->spec = false;
 							if(rc == Abort)
 								m_query->rc = rc;
@@ -847,6 +855,7 @@ RC thread_t::process_rack(base_query *& m_query,txn_man *& m_txn) {
               //  RACKs may have been received and FIN processed before this point
               //qry_pool.put(m_query);
 					    m_query = NULL;
+              INC_STATS(_thd_id,prof_time_twopc,get_sys_clock() - thd_prof_start);
 							break;
 						case FIN:
 							// After RFIN
@@ -855,6 +864,7 @@ RC thread_t::process_rack(base_query *& m_query,txn_man *& m_txn) {
 							txn_table.commit_spec_ex(m_query->rc,_thd_id);
 							spec_man.clear();
 #endif
+              INC_STATS(_thd_id,prof_time_twopc,get_sys_clock() - thd_prof_start);
 							uint64_t part_arr[1];
 							part_arr[0] = m_query->part_to_access[0];
 							rc = m_txn->finish(m_query->rc,part_arr,1);
@@ -862,6 +872,9 @@ RC thread_t::process_rack(base_query *& m_query,txn_man *& m_txn) {
 						default:
 							assert(false);
 					}
+        }
+        else {
+              INC_STATS(_thd_id,prof_time_twopc,get_sys_clock() - thd_prof_start);
         }
 
         INC_STATS(_thd_id,thd_prof_thd_rack2,get_sys_clock() - thd_prof_thd_rack_start);
@@ -998,6 +1011,7 @@ RC thread_t::process_rqry(base_query *& m_query,txn_man *& m_txn) {
 }
 
 RC thread_t::process_rprepare(base_query *& m_query,txn_man *& m_txn) {
+    uint64_t starttime = get_sys_clock();
     uint64_t thd_prof_start = get_sys_clock();
         DEBUG("%ld Received RPREPARE %ld\n",GET_PART_ID_FROM_IDX(_thd_id),m_query->txn_id);
 				INC_STATS(0,rprep,1);
@@ -1042,6 +1056,7 @@ RC thread_t::process_rprepare(base_query *& m_query,txn_man *& m_txn) {
     INC_STATS(_thd_id,thd_prof_thd_rprep0,get_sys_clock() - thd_prof_start);
     thd_prof_start = get_sys_clock();
 
+        INC_STATS(_thd_id,prof_time_twopc,get_sys_clock() - starttime);
 			  // Validate transaction
 				if (validate && m_query->rc == RCOK) {
 					m_txn->state = PREP;
@@ -1052,6 +1067,7 @@ RC thread_t::process_rprepare(base_query *& m_query,txn_man *& m_txn) {
         }
     INC_STATS(_thd_id,thd_prof_thd_rprep1,get_sys_clock() - thd_prof_start);
     thd_prof_start = get_sys_clock();
+    starttime = thd_prof_start;
 				// Send ACK w/ commit/abort
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
         if(GET_NODE_ID(m_query->active_part) != GET_NODE_ID(m_query->home_part)) {
@@ -1071,6 +1087,7 @@ RC thread_t::process_rprepare(base_query *& m_query,txn_man *& m_txn) {
     INC_STATS(_thd_id,thd_prof_thd_rprep2,get_sys_clock() - thd_prof_start);
         //qry_pool.put(m_query);
         m_query = NULL;
+    INC_STATS(_thd_id,prof_time_twopc,get_sys_clock() - starttime);
         return rc;
 }
 
