@@ -293,12 +293,15 @@ def tput(xval,vval,summary,summary_cl,summary_sq,
         xname="MPR",
         vname="CC_ALG",
         title="",
-        extras={}
+        extras={},
+        name="",
+        xlab=""
         ):
     global plot_cnt
     tpt = {}
     pntpt = {}
-    name = 'tput_plot{}'.format(plot_cnt)
+    if name == "":
+        name = 'tput_plot{}'.format(plot_cnt)
     plot_cnt += 1
 #    name += '_{}'.format(title.replace(" ","_").lower())
 #    _title = 'System Throughput {}'.format(title)
@@ -315,7 +318,10 @@ def tput(xval,vval,summary,summary_cl,summary_sq,
         _xlab = xname + " (Sec)"
     else:
         _xval = xval
-        _xlab = xname
+        if xlab == "":
+            _xlab = xname
+        else:
+            _xlab = xlab
     for v in vval:
         _v = v
         tpt[_v] = [0] * len(xval)
@@ -353,7 +359,7 @@ def tput(xval,vval,summary,summary_cl,summary_sq,
             # System Throughput: total txn count / average of all node's run time
             # Per Node Throughput: avg txn count / average of all node's run time
             # Per txn latency: total of all node's run time / total txn count
-            tpt[_v][xi] = (tot_txn_cnt/avg_run_time)
+            tpt[_v][xi] = (tot_txn_cnt/avg_run_time/1000000)
             pntpt[_v][xi] = (tot_txn_cnt/avg_run_time/nnodes)
             print("{} {} TTC {} Avg {}".format(_v,xi,tot_txn_cnt,avg_run_time))
             #tpt[v][xi] = (avg_txn_cnt/avg_run_time)
@@ -364,8 +370,8 @@ def tput(xval,vval,summary,summary_cl,summary_sq,
     bbox = [1.0,0.95]
 #bbox = [0.7,0.9]
     print("Created plot {}".format(name))
-    draw_line(name,tpt,_xval,ylab='Throughput (Txn/sec)',xlab=_xlab,title=_title,bbox=bbox,ncol=2,ltitle=vname) 
-    draw_line("pn"+name,pntpt,_xval,ylab='Throughput (Txn/sec)',xlab=_xlab,title="Per Node "+_title,bbox=bbox,ncol=2,ltitle=vname) 
+    draw_line(name,tpt,_xval,ylab='Throughput (Million txn/s)',xlab=_xlab,title=_title,bbox=bbox,ncol=2,ltitle=vname) 
+#    draw_line("pn"+name,pntpt,_xval,ylab='Throughput (Txn/sec)',xlab=_xlab,title="Per Node "+_title,bbox=bbox,ncol=2,ltitle=vname) 
     write_summary_file(name,stats,_xval,vval)
 
 
@@ -728,7 +734,8 @@ def time_breakdown(xval,summary,
         cfg_fmt=[],
         cfg=[],
         title='',
-        extras = {}
+        extras = {},
+        name='',
         ):
     stack_names = [
     'Index',
@@ -738,13 +745,15 @@ def time_breakdown(xval,summary,
     'Useful Work'
     ]
     global plot_cnt
-    name = 'breakdown_{}'.format(plot_cnt)
+    if name == "":
+        name = 'breakdown_{}'.format(plot_cnt)
     plot_cnt += 1
     _ymax=1.0
-    if normalized:
-        _title = 'Normalized {}'.format(title)
-    else:
-        _title = title
+#    if normalized:
+#        _title = 'Normalized {}'.format(title)
+#    else:
+#        _title = title
+    _title = title
 
     if xname == "ABORT_PENALTY":
         _xval = [(float(x.replace("UL","")))/1000000000 for x in xval]
@@ -766,8 +775,7 @@ def time_breakdown(xval,summary,
     for x,i in zip(xval,range(len(xval))):
         my_cfg_fmt = cfg_fmt + [xname]
         my_cfg = cfg + [x]
-        my_cfg,my_cfg_fmt = apply_extras(my_cfg_fmt,my_cfg,extras,xname,vname)
-        n_thd =  my_cfg[my_cfg_fmt.index("THREAD_CNT")]
+        my_cfg,my_cfg_fmt = apply_extras(my_cfg_fmt,my_cfg,extras,xname,'')
 
         cfgs = get_cfgs(my_cfg_fmt, my_cfg)
         cfgs = get_outfile_name(cfgs,my_cfg_fmt)
@@ -782,7 +790,8 @@ def time_breakdown(xval,summary,
             tmp = tmp+1
             time_twopc[i] = avg(summary[cfgs]['type9']) + avg(summary[cfgs]['type12']) +avg(summary[cfgs]['type5']) + avg(summary[cfgs]['time_msg_sent'])
             tmp = tmp+1
-            time_work[i] = avg(summary[cfgs]['type10']) + avg(summary[cfgs]['type8'])
+#            time_work[i] = avg(summary[cfgs]['type10']) + avg(summary[cfgs]['type8']) + avg(summary([cfgs]['type15']))
+            time_work[i] = avg(summary[cfgs]['clock_time']) - avg(summary[cfgs][thd_prof_thd1]) - (time_index[i] + time_abort[i] + time_ccman[i] + time_twopc[i])
 #            time_work[i] = avg(summary[cfgs]['type10']) + avg(summary[cfgs]['type8']) - time_index[i] - avg(summary[cfgs]['time_msg_sent']) - time_ccman[i]
             tmp = tmp+1
             total[i] = sum(time_index[i] + time_abort[i] + time_ccman[i] + time_twopc[i] + time_work[i] )

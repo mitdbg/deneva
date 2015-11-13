@@ -72,6 +72,9 @@ RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt
     INC_STATS(txn->get_thd_id(),cc_busy_cnt,1);
   }
 	bool conflict = conflict_lock(lock_type, type);
+#if TWOPL_LITE
+  conflict = owner_cnt > 0;
+#endif
 	if (CC_ALG == WAIT_DIE && !conflict) {
 		if (waiters_head && txn->get_ts() < waiters_head->txn->get_ts()) {
 			conflict = true;
@@ -261,9 +264,18 @@ RC Row_lock::lock_release(txn_man * txn) {
   assert(owner_cnt > 0);
   owner_cnt--;
   if (owner_cnt == 0) {
-    lock_type = LOCK_NONE;
     INC_STATS(txn->get_thd_id(),owned_cnt,1);
-    INC_STATS(txn->get_thd_id(),owned_time,get_sys_clock() - own_starttime);
+    uint64_t endtime = get_sys_clock();
+    INC_STATS(txn->get_thd_id(),owned_time,endtime - own_starttime);
+    if(lock_type == LOCK_SH) {
+      INC_STATS(txn->get_thd_id(),owned_time_rd,endtime - own_starttime);
+      INC_STATS(txn->get_thd_id(),owned_cnt_rd,1);
+    }
+    else {
+      INC_STATS(txn->get_thd_id(),owned_time_wr,endtime - own_starttime);
+      INC_STATS(txn->get_thd_id(),owned_cnt_wr,1);
+    }
+    lock_type = LOCK_NONE;
   }
 
 #else
@@ -287,9 +299,18 @@ RC Row_lock::lock_release(txn_man * txn) {
 		return_entry(en);
 		owner_cnt --;
     if(owner_cnt == 0){
-      lock_type = LOCK_NONE;
       INC_STATS(txn->get_thd_id(),owned_cnt,1);
-      INC_STATS(txn->get_thd_id(),owned_time,get_sys_clock() - own_starttime);
+      uint64_t endtime = get_sys_clock();
+      INC_STATS(txn->get_thd_id(),owned_time,endtime - own_starttime);
+      if(lock_type == LOCK_SH) {
+        INC_STATS(txn->get_thd_id(),owned_time_rd,endtime - own_starttime);
+        INC_STATS(txn->get_thd_id(),owned_cnt_rd,1);
+      }
+      else {
+        INC_STATS(txn->get_thd_id(),owned_time_wr,endtime - own_starttime);
+        INC_STATS(txn->get_thd_id(),owned_cnt_wr,1);
+      }
+      lock_type = LOCK_NONE;
     }
   } else {
     assert(false);

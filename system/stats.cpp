@@ -211,8 +211,12 @@ void Stats_thd::clear() {
   qq_lat = 0;
   aq_full = 0;
   owned_time = 0;
+  owned_time_rd = 0;
+  owned_time_wr = 0;
   twopl_time_diff = 0;
   owned_cnt = 0;
+  owned_cnt_rd = 0;
+  owned_cnt_wr = 0;
 
   prof_time_twopc = 0;
   thd_prof_get_txn_cnt = 0;
@@ -819,9 +823,13 @@ void Stats::print(bool prog) {
 	uint64_t total_msg_rcv_cnt = 0;
 	double total_time_msg_sent = 0;
   double total_owned_time = 0;
+  double total_owned_time_rd = 0;
+  double total_owned_time_wr = 0;
   double total_twopl_time_diff = 0;
   double total_owned_cnt = 0;
   double total_prof_time_twopc = 0;
+  double total_owned_cnt_rd = 0;
+  double total_owned_cnt_wr = 0;
 
   double total_aq_poll = 0;
   double total_aq_enqueue=0;double total_aq_dequeue=0;
@@ -922,9 +930,13 @@ void Stats::print(bool prog) {
 		total_rtime_proc += _stats[tid]->rtime_proc;
 		total_time_unpack += _stats[tid]->time_unpack;
 		total_owned_time += _stats[tid]->owned_time;
+		total_owned_time_rd += _stats[tid]->owned_time_rd;
+		total_owned_time_wr += _stats[tid]->owned_time_wr;
 		total_twopl_time_diff += _stats[tid]->twopl_time_diff;
 		total_owned_cnt += _stats[tid]->owned_cnt;
 		total_prof_time_twopc += _stats[tid]->prof_time_twopc;
+		total_owned_cnt_rd += _stats[tid]->owned_cnt_rd;
+		total_owned_cnt_wr += _stats[tid]->owned_cnt_wr;
 
 		total_cc_busy_cnt += _stats[tid]->cc_busy_cnt;
 		total_txn_table_cflt += _stats[tid]->txn_table_cflt;
@@ -1075,6 +1087,11 @@ void Stats::print(bool prog) {
 			",cc_wait_abrt_time=%f"
 			",cc_hold_abrt_time=%f"
       ",owned_time=%f"
+      ",owned_time_rd=%f"
+      ",owned_time_wr=%f"
+      ",owned_cnt=%f"
+      ",owned_cnt_rd=%f"
+      ",owned_cnt_wr=%f"
       ",twopl_diff=%f"
       ,total_access_cnt
       ,total_write_cnt
@@ -1090,6 +1107,11 @@ void Stats::print(bool prog) {
       ,total_cc_wait_abrt_time / BILLION
       ,total_cc_hold_abrt_time / BILLION
       ,total_owned_time / BILLION / (total_owned_cnt+1)
+      ,total_owned_time_rd / BILLION / (total_owned_cnt_rd+1)
+      ,total_owned_time_wr / BILLION / (total_owned_cnt_wr+1)
+      ,total_owned_cnt
+      ,total_owned_cnt_rd
+      ,total_owned_cnt_wr
       ,total_twopl_time_diff / BILLION / (total_abort_cnt+1)
       );
 
