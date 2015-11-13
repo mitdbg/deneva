@@ -87,11 +87,13 @@ stat_map = {
  'time_msg_sent': [],
  'msg_rcv': [],
  'txn_cnt': [],
+ 'txn_rem_cnt': [],
  'time_tport_rcv': [],
  'tport_lat': [],
  'time_tport_send': [],
  'clock_time': [],
  'finish_time': [],
+ 'prof_time_twopc': [],
  'msg_bytes': [],
  'time_getqry': [],
 'cc_hold_time': [],
@@ -553,7 +555,10 @@ def merge_results(summary,cnt,drop,gap):
                 
 def process_results(summary,results):
     for r in results:
-        (name,val) = re.split('=',r)
+        try:
+            (name,val) = re.split('=',r)
+        except ValueError:
+            continue
         val = float(val)
         if name not in summary.keys():
             summary[name] = [val]
@@ -751,15 +756,18 @@ def get_summary_stats(stats,summary,summary_cl,summary_sq,x,v,cc):
     avg_time = avg(summary['clock_time'])
     sk = {}
     sk['sys_txn_cnt'] = tot_txn_cnt
+    sk['avg_txn_rem_cnt'] = avg(summary['txn_rem_cnt'])
     sk['avg_txn_cnt'] = avg_txn_cnt
     sk['time'] = avg_time
     sk['sys_tput'] = tot_txn_cnt / avg_time
     sk['per_node_tput'] = avg_txn_cnt / avg_time
     sk['time_index'] = avg(summary['time_index'])
     sk['time_abort'] = avg(summary['time_abort'])
-    sk['time_ccman'] = avg(summary['time_man']) + avg(summary['txn_time_begintxn']) + avg(summary['time_validate'])
-    sk['time_twopc'] = avg(summary['type9']) + avg(summary['type12']) +avg(summary['type5']) + avg(summary['time_msg_sent'])
-    sk['time_work'] = avg(summary['clock_time']) - avg(summary[thd_prof_thd1]) - (sk['time_index'] + sk['time_abort'] + sk['time_ccman'] + sk['time_twopc'])
+    sk['time_ccman'] = avg(summary['row1']) + avg(summary['row2']) +avg(summary['row3']) + avg(summary['txn_time_begintxn']) + avg(summary['time_validate'])
+#    sk['time_ccman'] = avg(summary['time_man']) + avg(summary['txn_time_begintxn']) + avg(summary['time_validate'])
+    sk['time_twopc'] = avg(summary['prof_time_twopc']) + avg(summary['time_msg_sent']) 
+#    sk['time_twopc'] = avg(summary['type9']) + avg(summary['type12']) +avg(summary['type5']) + avg(summary['time_msg_sent']) - avg(summary['time_validate']) - avg(summary['row3'])
+    sk['time_work'] = avg(summary['clock_time']) - avg(summary['thd1']) - (sk['time_index'] + sk['time_abort'] + sk['time_ccman'] + sk['time_twopc'])
 #    sk['time_work'] = avg(summary['type10']) + avg(summary['type8'])
     total = sk['time_index'] + sk['time_abort'] + sk['time_ccman'] + sk['time_twopc'] + sk['time_work'] 
     sk['perc_index'] = sk['time_index'] / total * 100
@@ -808,6 +816,8 @@ def get_summary_stats(stats,summary,summary_cl,summary_sq,x,v,cc):
     sk['aq_enqueue'] = avg(summary['aq_enqueue'])
     sk['aq_dequeue'] = avg(summary['aq_dequeue'])
     sk['txn_table_cnt'] = avg(summary['txn_table_cnt'])
+    sk['txn_table_add'] = avg(summary['txn_table_add'])
+    sk['txn_table_get'] = avg(summary['txn_table_get'])
     sk['mpq_cnt'] = avg(summary['mpq_cnt'])
     try:
         sk['owned_time'] = avg(summary['owned_time'])
@@ -861,6 +871,7 @@ def write_summary_file(fname,stats,x_vals,v_vals):
     ps =  [
     'sys_txn_cnt',
     'avg_txn_cnt',
+    'avg_txn_rem_cnt',
     'mpq_cnt',
     'time',
     'sys_tput',
@@ -891,6 +902,8 @@ def write_summary_file(fname,stats,x_vals,v_vals):
     'stage1',
     'stage2',
     'stage3',
+    'txn_table_add',
+    'txn_table_get',
     'latency',
     'memory',
     'txn_table_cnt',

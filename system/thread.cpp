@@ -587,8 +587,10 @@ RC thread_t::run() {
     work_queue.done(get_thd_id(),txn_id);
 
 		timespan = get_sys_clock() - txn_starttime;
+    thd_prof_end = get_sys_clock();
 		INC_STATS(get_thd_id(),time_work,timespan);
-    INC_STATS(_thd_id,thd_prof_thd3,get_sys_clock() - thd_prof_start);
+    INC_STATS(_thd_id,thd_prof_thd3,thd_prof_end - thd_prof_start);
+    INC_STATS(_thd_id,thd_prof_thd3_type[txn_type],thd_prof_end - thd_prof_start);
 
 	}
 }

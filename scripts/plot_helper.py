@@ -791,10 +791,11 @@ def time_breakdown(xval,summary,
             tmp = tmp+1
             time_ccman[i] = avg(summary[cfgs]['time_man']) + avg(summary[cfgs]['txn_time_begintxn']) + avg(summary[cfgs]['time_validate'])
             tmp = tmp+1
-            time_twopc[i] = avg(summary[cfgs]['type9']) + avg(summary[cfgs]['type12']) +avg(summary[cfgs]['type5']) + avg(summary[cfgs]['time_msg_sent'])
+            time_twopc[i] = avg(summary[cfgs]['prof_time_twopc']) + avg(summary[cfgs]['time_msg_sent'])
+#            time_twopc[i] = avg(summary[cfgs]['type9']) + avg(summary[cfgs]['type12']) +avg(summary[cfgs]['type5']) + avg(summary[cfgs]['time_msg_sent'])
             tmp = tmp+1
 #            time_work[i] = avg(summary[cfgs]['type10']) + avg(summary[cfgs]['type8']) + avg(summary([cfgs]['type15']))
-            time_work[i] = avg(summary[cfgs]['clock_time']) - avg(summary[cfgs][thd_prof_thd1]) - (time_index[i] + time_abort[i] + time_ccman[i] + time_twopc[i])
+            time_work[i] = avg(summary[cfgs]['clock_time']) - avg(summary[cfgs]['thd1']) - (time_index[i] + time_abort[i] + time_ccman[i] + time_twopc[i])
 #            time_work[i] = avg(summary[cfgs]['type10']) + avg(summary[cfgs]['type8']) - time_index[i] - avg(summary[cfgs]['time_msg_sent']) - time_ccman[i]
             tmp = tmp+1
             total[i] = sum(time_index[i] + time_abort[i] + time_ccman[i] + time_twopc[i] + time_work[i] )

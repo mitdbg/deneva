@@ -52,8 +52,8 @@ for arg in sys.argv[1:]:
         exps.append(arg)
     last_arg = arg
 
-#result_dir = PATH + "/../results/"
-result_dir = PATH + "/../results/sigmod_results/"
+result_dir = PATH + "/../results/"
+#result_dir = PATH + "/../results/sigmod_results/"
 #result_dir = PATH + "/../results/1108_results/"
 #result_dir = PATH + "/../results/1027_ec2_full_experiments/"
 #result_dir = PATH + "/../results/1028_ec2_results/"
@@ -77,6 +77,7 @@ for exp in exps:
     for e in experiments:
         s = {}
         s2 = {}
+        s3 = {}
         timestamp = 0
 #        if "HSTORE" in e or "HSTORE_SPEC" in e:
 #            nfmt=fmt

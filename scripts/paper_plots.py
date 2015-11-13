@@ -4,18 +4,47 @@ def plot_all():
     return 0
 
 def ppr_ycsb_scaling_plot(summary,summary_cl,summary_seq):
-    from experiments import ycsb_scaling_2
+    from experiments import ycsb_writes
     from helper import plot_prep
     from plot_helper import tput,time_breakdown
-    nfmt,nexp = ycsb_scaling_2()
+    nfmt,nexp = ycsb_writes()
     x_name = "NODE_CNT"
     v_name = "CC_ALG"
-    x_vals,v_vals,fmt,exp = plot_prep(nexp,nfmt,x_name,v_name)
-    tput(x_vals,v_vals,summary,summary_cl,summary_seq,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_ycsb_scaling",xlab="Server Count")
-    nfmt,nexp = ycsb_scaling_2()
+    x_vals,v_vals,fmt,exp = plot_prep(nexp,nfmt,x_name,v_name,constants={"TUP_WRITE_PERC":0})
+    tput(x_vals,v_vals,summary,summary_cl,summary_seq,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_ycsb_scaling_ro",xlab="Server Count")
+    nfmt,nexp = ycsb_writes()
     x_name = "CC_ALG"
-    x_vals,v_vals,fmt,exp = plot_prep(nexp,nfmt,x_name,'',constants={'NODE_CNT':16})
-    time_breakdown(x_vals,summary,xname=x_name,title='',name='breakdown_ycsb_scaling',cfg_fmt=fmt,cfg=list(exp),normalized=True)
+    x_vals,v_vals,fmt,exp = plot_prep(nexp,nfmt,x_name,'',constants={'NODE_CNT':16,"TUP_WRITE_PERC":0})
+    time_breakdown(x_vals,summary,xname=x_name,title='',name='breakdown_ycsb_scaling_ro',cfg_fmt=fmt,cfg=list(exp),normalized=True)
+
+    x_name = "NODE_CNT"
+    v_name = "CC_ALG"
+    x_vals,v_vals,fmt,exp = plot_prep(nexp,nfmt,x_name,v_name,constants={"TUP_WRITE_PERC":0.1})
+    tput(x_vals,v_vals,summary,summary_cl,summary_seq,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_ycsb_scaling_low",xlab="Server Count")
+    nfmt,nexp = ycsb_writes()
+    x_name = "CC_ALG"
+    x_vals,v_vals,fmt,exp = plot_prep(nexp,nfmt,x_name,'',constants={'NODE_CNT':16,"TUP_WRITE_PERC":0.1})
+    time_breakdown(x_vals,summary,xname=x_name,title='',name='breakdown_ycsb_scaling_low',cfg_fmt=fmt,cfg=list(exp),normalized=True)
+
+
+    x_name = "NODE_CNT"
+    v_name = "CC_ALG"
+    x_vals,v_vals,fmt,exp = plot_prep(nexp,nfmt,x_name,v_name,constants={"TUP_WRITE_PERC":0.2})
+    tput(x_vals,v_vals,summary,summary_cl,summary_seq,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_ycsb_scaling_med",xlab="Server Count")
+    nfmt,nexp = ycsb_writes()
+    x_name = "CC_ALG"
+    x_vals,v_vals,fmt,exp = plot_prep(nexp,nfmt,x_name,'',constants={'NODE_CNT':16,"TUP_WRITE_PERC":0.2})
+    time_breakdown(x_vals,summary,xname=x_name,title='',name='breakdown_ycsb_scaling_med',cfg_fmt=fmt,cfg=list(exp),normalized=True)
+
+    x_name = "NODE_CNT"
+    v_name = "CC_ALG"
+    x_vals,v_vals,fmt,exp = plot_prep(nexp,nfmt,x_name,v_name,constants={"TUP_WRITE_PERC":0.5})
+    tput(x_vals,v_vals,summary,summary_cl,summary_seq,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_ycsb_scaling_high",xlab="Server Count")
+    nfmt,nexp = ycsb_writes()
+    x_name = "CC_ALG"
+    x_vals,v_vals,fmt,exp = plot_prep(nexp,nfmt,x_name,'',constants={'NODE_CNT':16,"TUP_WRITE_PERC":0.5})
+    time_breakdown(x_vals,summary,xname=x_name,title='',name='breakdown_ycsb_scaling_high',cfg_fmt=fmt,cfg=list(exp),normalized=True)
+
 
 def ppr_tpcc_pay_plot(summary,summary_cl,summary_seq):
     from experiments import tpcc_scaling_whset
@@ -50,14 +79,29 @@ def ppr_ycsb_parts_plot(summary,summary_cl,summary_seq):
     tput(x_vals,v_vals,summary,summary_cl,summary_seq,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_ycsb_parts",xlab="Partitions Accessed")
 
 def ppr_ycsb_contention_plot(summary,summary_cl,summary_seq):
-    from experiments import ycsb_contention_2
+    from experiments import ycsb_contention_2_nodesweep
     from helper import plot_prep
     from plot_helper import tput
-    nfmt,nexp = ycsb_contention_2()
+    nfmt,nexp = ycsb_contention_2_nodesweep()
     x_name = "ACCESS_PERC"
     v_name = "CC_ALG"
-    x_vals,v_vals,fmt,exp = plot_prep(nexp,nfmt,x_name,v_name)
-    tput(x_vals,v_vals,summary,summary_cl,summary_seq,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_ycsb_contention",xlab="Hot Data Access \%")
+    x_vals,v_vals,fmt,exp = plot_prep(nexp,nfmt,x_name,v_name,constants={"NODE_CNT":1,"MAX_TXN_IN_FLIGHT":25000})
+    tput(x_vals,v_vals,summary,summary_cl,summary_seq,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_ycsb_contention_1",xlab="Hot Data Access %")
+
+    x_vals,v_vals,fmt,exp = plot_prep(nexp,nfmt,x_name,v_name,constants={"NODE_CNT":2,"MAX_TXN_IN_FLIGHT":25000})
+    tput(x_vals,v_vals,summary,summary_cl,summary_seq,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_ycsb_contention_1",xlab="Hot Data Access %")
+
+    x_vals,v_vals,fmt,exp = plot_prep(nexp,nfmt,x_name,v_name,constants={"NODE_CNT":4,"MAX_TXN_IN_FLIGHT":25000})
+    tput(x_vals,v_vals,summary,summary_cl,summary_seq,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_ycsb_contention_1",xlab="Hot Data Access %")
+
+    x_vals,v_vals,fmt,exp = plot_prep(nexp,nfmt,x_name,v_name,constants={"NODE_CNT":8,"MAX_TXN_IN_FLIGHT":25000})
+    tput(x_vals,v_vals,summary,summary_cl,summary_seq,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_ycsb_contention_1",xlab="Hot Data Access %")
+
+    x_vals,v_vals,fmt,exp = plot_prep(nexp,nfmt,x_name,v_name,constants={"NODE_CNT":16,"MAX_TXN_IN_FLIGHT":25000})
+    tput(x_vals,v_vals,summary,summary_cl,summary_seq,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_ycsb_contention_1",xlab="Hot Data Access %")
+
+    x_vals,v_vals,fmt,exp = plot_prep(nexp,nfmt,x_name,v_name,constants={"NODE_CNT":32,"MAX_TXN_IN_FLIGHT":25000})
+    tput(x_vals,v_vals,summary,summary_cl,summary_seq,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_ycsb_contention_1",xlab="Hot Data Access %")
 
 def ppr_ycsb_gold_plot(summary,summary_cl,summary_seq):
     from experiments import ycsb_gold
