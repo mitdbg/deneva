@@ -139,26 +139,24 @@ int main(int argc, char* argv[])
 	warmup_finish = true;
 	pthread_barrier_init( &warmup_bar, NULL, all_thd_cnt);
 
-#if SET_AFFINITY
 	uint64_t cpu_cnt = 0;
 	cpu_set_t cpus;
-#endif
 	// spawn and run txns again.
 	starttime = get_server_clock();
 
   uint64_t i = 0;
 	for (i = 0; i < thd_cnt; i++) {
 		uint64_t vid = i;
-#if SET_AFFINITY
 		CPU_ZERO(&cpus);
 #if TPORT_TYPE_IPC
+        CPU_SET(g_node_id * thd_cnt + cpu_cnt, &cpus);
+#elif !SET_AFFINITY
         CPU_SET(g_node_id * thd_cnt + cpu_cnt, &cpus);
 #else
         CPU_SET(cpu_cnt, &cpus);
 #endif
 		cpu_cnt = (cpu_cnt + 1) % g_servers_per_client;
     pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
-#endif
 		pthread_create(&p_thds[i], &attr, worker, (void *)vid);
     }
 

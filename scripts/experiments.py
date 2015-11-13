@@ -586,17 +586,16 @@ def test_plot(summary,summary_client,summary_seq):
 
 def network_sweep():
     wl = 'YCSB'
-    nnodes = [1,2,4,8,16]
-#    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
-    nalgos=['NO_WAIT','MVCC','OCC']
-    ndelay=[0,100,1000,3000,5000,8000,10000,15000,20000,30000,40000,50000,60000,70000,100000]
+    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
+#    nalgos=['NO_WAIT','MVCC','OCC']
+    ndelay=[0,2000,4000,6000,8000,10000,12000,14000,16000,18000,20000]#,22000,24000,26000,28000,30000,40000,50000,60000,70000,80000,90000,100000]
     fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PART_PER_TXN","NETWORK_DELAY","SET_AFFINITY"]
-    exp = [[wl,n,cc,2,d,"false"] for d,n,cc in itertools.product(ndelay,nnodes,nalgos)]
+    exp = [[wl,8,cc,2,d,"false"] for d,cc in itertools.product(ndelay,nalgos)]
     return fmt,exp
 
 def network_sweep_plot(summary,summary_client,summary_seq):
     nfmt,nexp = network_sweep()
-    tput_setup(summary,summary_client,summary_seq,nfmt,nexp,x_name="NODE_CNT",v_name="NETWORK_DELAY",extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT'})
+    tput_setup(summary,summary_client,summary_seq,nfmt,nexp,x_name="NETWORK_DELAY",v_name="CC_ALG",extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT'})
 
 def network_experiment():
     fmt = fmt_nt
