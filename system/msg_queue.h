@@ -22,7 +22,7 @@ class MessageQueue {
 public:
   void init();
   void enqueue(base_query * qry,RemReqType type, uint64_t dest);
-  RemReqType dequeue(base_query *& qry,uint64_t & dest);
+  uint64_t dequeue(base_query *& qry,RemReqType & type,uint64_t & dest);
 private:
   moodycamel::ConcurrentQueue<msg_entry_t,moodycamel::ConcurrentQueueDefaultTraits> mq;
   uint64_t last_add_time;

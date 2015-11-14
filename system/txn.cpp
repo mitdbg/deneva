@@ -292,6 +292,7 @@ void txn_man::cleanup(RC rc) {
 		if (type == WR && rc == Abort)
 			type = XP;
 
+    uint64_t cc_rel_starttime = get_sys_clock();
 		if (ROLL_BACK && type == XP &&
 					(CC_ALG == DL_DETECT || 
 					CC_ALG == NO_WAIT || 
@@ -304,6 +305,12 @@ void txn_man::cleanup(RC rc) {
 		} else {
 			orig_r->return_row(type, this, accesses[rid]->data);
 		}
+
+    if(rc == Abort) {
+      INC_STATS(get_thd_id(),prof_cc_rel_abort,get_sys_clock() - cc_rel_starttime);
+    } else {
+      INC_STATS(get_thd_id(),prof_cc_rel_commit,get_sys_clock() - cc_rel_starttime);
+    }
 #if ROLL_BACK && (CC_ALG == DL_DETECT || CC_ALG == NO_WAIT || CC_ALG == WAIT_DIE || CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC)
 		if (type == WR) {
       //printf("free 10 %ld\n",get_txn_id());
