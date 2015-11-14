@@ -94,12 +94,14 @@ public:
   uint64_t *part_cnt;
   uint64_t *part_acc;
   double prof_time_twopc;
+  double prof_cc_rel_abort, prof_cc_rel_commit;
   double sthd_prof_1a,sthd_prof_1b, sthd_prof_2, sthd_prof_3, sthd_prof_4, sthd_prof_5a, sthd_prof_5b;
   double rthd_prof_1, rthd_prof_2;
   double thd_prof_thd1, thd_prof_thd2, thd_prof_thd3;
   double thd_prof_thd1a, thd_prof_thd1b, thd_prof_thd1c, thd_prof_thd1d;
   double thd_prof_thd2_loc, thd_prof_thd2_rem;
   double thd_prof_thd2_type[17];
+  double thd_prof_thd3_type[17];
 
   double thd_prof_thd_rfin0,thd_prof_thd_rfin1, thd_prof_thd_rfin2;
   double thd_prof_thd_rprep0,thd_prof_thd_rprep1, thd_prof_thd_rprep2;

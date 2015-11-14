@@ -237,7 +237,7 @@ def draw_line(fname, data, xticks,
         ax.set_xscale('log')
     n = 0
     if xlabels != None :
-        ax.set_xticklabels(xlabels) 
+        ax.set_xticklabels([x if i%2 else '' for x,i in zip(xlabels,range(len(xlabels)))]) 
     if linenames == None :
         print(data.keys())
         linenames = sorted(data.keys())
@@ -335,7 +335,7 @@ def draw_stack(data, xlabels, slabels, figname='stack', title=None, figsize=(8, 
     #xlabels = [str(x) for x in xlabels]
 
     xticks( ind,  xlabels, rotation=30, ha='center')
-    clr = itertools.cycle(['#DECF3F','#5DA5DA','#60BD68','#FAA43A','#DECF3F','#F15854','#4d4d4d'])
+    clr = itertools.cycle(['#DECF3F','#5DA5DA','#60BD68','#FAA43A','#F15854','#4d4d4d'])
     htch = itertools.cycle(['','//','\\','-','\\\\','/'])
 
     for s in range(len(slabels)):

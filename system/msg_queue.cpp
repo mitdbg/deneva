@@ -27,8 +27,6 @@ void MessageQueue::enqueue(base_query * qry,RemReqType type,uint64_t dest) {
   entry->next  = NULL;
   entry->prev  = NULL;
   entry->starttime = get_sys_clock();
-  if(qry)
-    entry->qry->q_starttime = entry->starttime;
 
   mq.enqueue(entry);
   /*
@@ -45,43 +43,21 @@ void MessageQueue::enqueue(base_query * qry,RemReqType type,uint64_t dest) {
 
 }
 
-RemReqType MessageQueue::dequeue(base_query *& qry, uint64_t & dest) {
+uint64_t MessageQueue::dequeue(base_query *& qry, RemReqType & type, uint64_t & dest) {
   msg_entry * entry;
-  RemReqType t;
+  uint64_t time;
   bool r = mq.try_dequeue(entry);
   if(r) {
     qry = entry->qry;
-    t = entry->type;
+    type = entry->type;
     dest = entry->dest;
+    time = entry->starttime;
     msg_pool.put(entry);
   } else {
     qry = NULL;
-    t = NO_MSG;
+    type = NO_MSG;
     dest = UINT64_MAX;
+    time = 0;
   }
-  /*
-  pthread_mutex_lock(&mtx);
-  if(cnt > 0) {
-    entry = head;
-    LIST_GET_HEAD(head,tail,entry);
-    qry = entry->qry;
-    t = entry->type;
-    dest = entry->dest;
-    mem_allocator.free(entry,sizeof(struct msg_entry));
-    cnt--;
-  }
-  else {
-    qry = NULL;
-    t = NO_MSG;
-    dest = UINT64_MAX;
-  }
-
-  if(cnt == 0 && last_add_time != 0) {
-    INC_STATS(0,mq_full,get_sys_clock() - last_add_time);
-    last_add_time = 0;
-  }
-
-  pthread_mutex_unlock(&mtx);
-  */
-  return t;
+  return time;
 }

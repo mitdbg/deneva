@@ -219,6 +219,8 @@ void Stats_thd::clear() {
   owned_cnt_wr = 0;
 
   prof_time_twopc = 0;
+  prof_cc_rel_abort = 0;
+  prof_cc_rel_commit = 0;
   thd_prof_get_txn_cnt = 0;
   rthd_prof_1=0; rthd_prof_2=0;
   sthd_prof_1a=0; sthd_prof_1b=0; sthd_prof_2=0; sthd_prof_3=0; sthd_prof_4=0; sthd_prof_5a=0; sthd_prof_5b=0;
@@ -239,8 +241,10 @@ void Stats_thd::clear() {
   }
 
 
-  for(int i = 0; i < 17;i++)
+  for(int i = 0; i < 17;i++) {
     thd_prof_thd2_type[i] = 0;
+    thd_prof_thd3_type[i] = 0;
+  }
   thd_prof_wl1=0;
   thd_prof_row1=0;thd_prof_row2=0;thd_prof_row3=0;
   thd_prof_cc1=0;thd_prof_cc2=0;
@@ -828,6 +832,8 @@ void Stats::print(bool prog) {
   double total_twopl_time_diff = 0;
   double total_owned_cnt = 0;
   double total_prof_time_twopc = 0;
+  double total_prof_cc_rel_abort = 0;
+  double total_prof_cc_rel_commit = 0;
   double total_owned_cnt_rd = 0;
   double total_owned_cnt_wr = 0;
 
@@ -935,6 +941,8 @@ void Stats::print(bool prog) {
 		total_twopl_time_diff += _stats[tid]->twopl_time_diff;
 		total_owned_cnt += _stats[tid]->owned_cnt;
 		total_prof_time_twopc += _stats[tid]->prof_time_twopc;
+		total_prof_cc_rel_abort += _stats[tid]->prof_cc_rel_abort;
+		total_prof_cc_rel_commit += _stats[tid]->prof_cc_rel_commit;
 		total_owned_cnt_rd += _stats[tid]->owned_cnt_rd;
 		total_owned_cnt_wr += _stats[tid]->owned_cnt_wr;
 
@@ -1168,6 +1176,8 @@ void Stats::print(bool prog) {
       ",all_wq_enqueue=%f"
       ",all_wq_dequeue=%f"
       ",prof_time_twopc=%f"
+      ",prof_cc_rel_abort=%f"
+      ",prof_cc_rel_commit=%f"
 			,total_mq_full / BILLION
 			,total_qq_full / BILLION
 			,total_qq_lat / total_qq_cnt / BILLION
@@ -1191,6 +1201,8 @@ void Stats::print(bool prog) {
       ,total_all_wq_enqueue/BILLION
       ,total_all_wq_dequeue/BILLION
       ,total_prof_time_twopc/BILLION
+      ,total_prof_cc_rel_abort/BILLION
+      ,total_prof_cc_rel_commit/BILLION
       );
 	fprintf(outf, 
       ",spec_abort_cnt=%ld"
@@ -1689,8 +1701,10 @@ void Stats::print_prof(FILE * outf) {
         total_thd_prof_txn_table1b +=_stats[tid]->thd_prof_txn_table1b;
         total_thd_prof_txn_table2a +=_stats[tid]->thd_prof_txn_table2a;
         total_thd_prof_txn_table2 +=_stats[tid]->thd_prof_txn_table2;
-        for(int i = 0; i < 17;i++)
+        for(int i = 0; i < 17;i++) {
           total_thd_prof_type[i] +=_stats[tid]->thd_prof_thd2_type[i];
+          total_thd_prof_type[i] +=_stats[tid]->thd_prof_thd3_type[i];
+        }
   }
 
     fprintf(outf,
