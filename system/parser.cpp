@@ -22,6 +22,7 @@ void print_usage() {
 	printf("\t-mprINT       ; MPR\n");
 	printf("\t-mpiINT       ; MPIR\n");
 	printf("\t-doneINT       ; DONE_TIMER\n");
+	printf("\t-btmrINT       ; BATCH_TIMER\n");
 	printf("\t-progINT       ; PROG_TIMER\n");
 	printf("\t-abrtINT       ; ABORT_PENALTY (ms)\n");
 
@@ -79,6 +80,8 @@ void parser(int argc, char * argv[]) {
       g_network_delay = atoi( &argv[i][5] );
     else if (argv[i][1] == 'd' && argv[i][2] == 'o' && argv[i][3] == 'n' && argv[i][4] == 'e')
       g_done_timer = atoi( &argv[i][5] );
+    else if (argv[i][1] == 'b' && argv[i][2] == 't' && argv[i][3] == 'm' && argv[i][4] == 'r')
+      g_batch_time_limit = atoi( &argv[i][5] );
     else if (argv[i][1] == 's' && argv[i][2] == 'p' && argv[i][3] == 'p' && argv[i][4] == 't')
       g_strict_ppt = atoi( &argv[i][5] ) == 1;
     else if (argv[i][1] == 'p' && argv[i][2] == 'r' && argv[i][3] == 'o' && argv[i][4] == 'g')

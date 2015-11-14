@@ -15,23 +15,24 @@ LIBS = -lnanomsg -lanl -ljemalloc
 
 DB_MAINS = ./client/client_main.cpp ./system/sequencer_main.cpp ./unit_tests/unit_main.cpp
 CL_MAINS = ./system/main.cpp ./system/sequencer_main.cpp ./unit_tests/unit_main.cpp
-SQ_MAINS = ./system/main.cpp ./client/client_main.cpp ./unit_tests/unit_main.cpp
+#SQ_MAINS = ./system/main.cpp ./client/client_main.cpp ./unit_tests/unit_main.cpp
 UNIT_MAINS = ./system/main.cpp ./client/client_main.cpp ./system/sequencer_main.cpp
 
 CPPS_DB = $(foreach dir,$(SRC_DIRS),$(filter-out $(DB_MAINS), $(wildcard $(dir)*.cpp))) 
 CPPS_CL = $(foreach dir,$(SRC_DIRS),$(filter-out $(CL_MAINS), $(wildcard $(dir)*.cpp))) 
-CPPS_SQ = $(foreach dir,$(SRC_DIRS),$(filter-out $(SQ_MAINS), $(wildcard $(dir)*.cpp))) 
+#CPPS_SQ = $(foreach dir,$(SRC_DIRS),$(filter-out $(SQ_MAINS), $(wildcard $(dir)*.cpp))) 
 CPPS_UNIT = $(foreach dir,$(SRC_DIRS),$(filter-out $(UNIT_MAINS), $(wildcard $(dir)*.cpp))) 
 
 #CPPS = $(wildcard *.cpp)
 OBJS_DB = $(addprefix obj/, $(notdir $(CPPS_DB:.cpp=.o)))
 OBJS_CL = $(addprefix obj/, $(notdir $(CPPS_CL:.cpp=.o)))
-OBJS_SQ = $(addprefix obj/, $(notdir $(CPPS_SQ:.cpp=.o)))
+#OBJS_SQ = $(addprefix obj/, $(notdir $(CPPS_SQ:.cpp=.o)))
 OBJS_UNIT = $(addprefix obj/, $(notdir $(CPPS_UNIT:.cpp=.o)))
 
 #NOGRAPHITE=1
 
-all:rundb runcl runsq 
+all:rundb runcl 
+#runsq 
 #unit_test
 
 .PHONY: deps_db

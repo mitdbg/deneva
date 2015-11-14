@@ -140,7 +140,7 @@ void MessageThread::copy_to_buffer(mbuf * sbuf, RemReqType type, base_query * qr
     sbuf->starttime = get_sys_clock();
   sbuf->cnt++;
 
-  if(ISCLIENT || type == INIT_DONE || type == EXP_DONE) {
+  if(ISCLIENT || type == INIT_DONE || type == EXP_DONE || type == RDONE) {
     uint64_t tmp = UINT64_MAX;
   COPY_BUF(sbuf->buffer,tmp,sbuf->ptr);
   COPY_BUF(sbuf->buffer,type,sbuf->ptr);
@@ -175,6 +175,7 @@ void MessageThread::copy_to_buffer(mbuf * sbuf, RemReqType type, base_query * qr
     case RPASS:       break;
     case RFWD:        rfwd(sbuf,qry);break;
     case CL_RSP:      cl_rsp(sbuf,qry);break;
+    case  RDONE:      break;
     case NO_MSG: assert(false);
     default: assert(false);
   }
@@ -305,6 +306,7 @@ uint64_t MessageThread::get_msg_size(RemReqType type,base_query * qry) {
                           size +=sizeof(uint64_t)*2;
                           break;
         case CL_RSP:      size +=sizeof(RC) + sizeof(uint64_t);break;
+        case RDONE:      break;
         default: assert(false);
   }
 

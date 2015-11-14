@@ -2,14 +2,16 @@
 #include "mem_alloc.h"
 #include "query.h"
 #include "concurrentqueue.h"
+#include "wl.h"
 
 
-void QWorkQueue::init() {
+void QWorkQueue::init(workload * wl) {
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
   q_len = g_part_cnt / g_node_cnt;
 #else
   q_len = 1;
 #endif
+	_wl = wl;
   hash = (QHash *) mem_allocator.alloc(sizeof(QHash), 0);
   hash->init();
   queue = (QWorkQueueHelper *) mem_allocator.alloc(sizeof(QWorkQueueHelper) * q_len, 0);
@@ -28,6 +30,14 @@ void QWorkQueue::init() {
   new_wq_cnt = 0;
   abrt_cnt = 0;
   aq_head = NULL;
+  curr_epoch = 0;
+  sched_ptr = 0;
+  sched_head = (wq_entry_t*) mem_allocator.alloc(sizeof(wq_entry*)*g_node_cnt,0);
+  sched_tail = (wq_entry_t*) mem_allocator.alloc(sizeof(wq_entry*)*g_node_cnt,0);
+  for(uint64_t i = 0; i < g_node_cnt; i++) {
+    sched_head[i] = NULL;
+    sched_tail[i] = NULL;
+  }
 }
 
 int inline QWorkQueue::get_idx(int input) {
@@ -49,11 +59,91 @@ void QWorkQueue::abort_finish(uint64_t time) {
 void QWorkQueue::enqueue_new(uint64_t thd_id, base_query * qry) {
     new_wq.enqueue(qry);
 }
+
+void QWorkQueue::sched_enqueue(base_query * qry) {
+  assert(CC_ALG == CALVIN);
+  uint64_t id = qry->return_id;
+  assert(ISSERVERN(id));
+  assert(qry);
+  wq_entry_t en = (wq_entry_t) mem_allocator.alloc(sizeof(struct wq_entry), 0);
+  en->qry = qry;
+  ATOM_ADD(sched_wq_cnt,1);
+  LIST_PUT_TAIL(sched_head[id],sched_tail[id],en)
+}
+
+bool QWorkQueue::sched_dequeue(base_query *& qry) {
+
+  assert(CC_ALG == CALVIN);
+  while(true) {
+    wq_entry_t en = sched_head[sched_ptr];
+    if(!en || curr_epoch > _wl->epoch) {
+      qry = NULL;
+      return false;
+    }
+
+    if(en->qry->rtype == RDONE) {
+      ATOM_SUB(sched_wq_cnt,1);
+      LIST_GET_HEAD(sched_head[sched_ptr],sched_tail[sched_ptr],en)
+      sched_ptr++;
+      if(sched_ptr == g_node_cnt) {
+        curr_epoch++;
+        sched_ptr = 0;
+      }
+      continue;
+    }
+
+    ATOM_SUB(sched_wq_cnt,1);
+    LIST_GET_HEAD(sched_head[sched_ptr],sched_tail[sched_ptr],en)
+    qry = en->qry;
+    mem_allocator.free(en,sizeof(struct wq_entry));
+    break;
+
+  }
+  return true;
+
+}
+
+
 void QWorkQueue::enqueue(uint64_t thd_id, base_query * qry) {
   uint64_t starttime = get_sys_clock();
   qry->q_starttime = starttime;
 #if CC_ALG == CALVIN
+  if(ISCLIENT) {
+    ATOM_ADD(wq_cnt,1);
     wq.enqueue(qry);
+  } else {
+    if(thd_id < g_thread_cnt-2) { //worker
+      if(qry->rtype == RACK) {
+        ATOM_ADD(new_wq_cnt,1);
+        new_wq.enqueue(qry);
+      } else {
+        ATOM_ADD(wq_cnt,1);
+        wq.enqueue(qry);
+      }
+    } else if(thd_id == g_thread_cnt-2) { // lock thread / scheduler
+      ATOM_ADD(wq_cnt,1);
+      wq.enqueue(qry);
+    } else if(thd_id == g_thread_cnt-1) { // sequencer
+      ATOM_ADD(sched_wq_cnt,1);
+      sched_enqueue(qry);
+    } else { // receiver
+      if(ISCLIENTN(qry->return_id)) {
+        ATOM_ADD(new_wq_cnt,1);
+        new_wq.enqueue(qry);
+      } else {
+        if(qry->rtype == RFWD) {
+          ATOM_ADD(wq_cnt,1);
+          wq.enqueue(qry);
+        } else {
+          // To sequencer
+          ATOM_ADD(new_wq_cnt,1);
+          new_wq.enqueue(qry);
+          // To lock thread
+          //sched_enqueue(qry);
+        }
+      }
+    }
+  }
 #else
   switch(PRIORITY) {
     case PRIORITY_FCFS:
@@ -103,10 +193,25 @@ bool QWorkQueue::dequeue(uint64_t thd_id, base_query *& qry) {
   bool valid;
   uint64_t prof_starttime = get_sys_clock();
 #if CC_ALG == CALVIN
-  if(ISSERVER && thd_id == g_thread_cnt + g_rem_thread_cnt + g_send_thread_cnt)
-    valid = new_wq.try_dequeue(qry);
-  else
+  if(ISCLIENT) {
+    ATOM_SUB(wq_cnt,1);
     valid = wq.try_dequeue(qry);
+  } else {
+    if(thd_id < g_thread_cnt-2) {
+      ATOM_SUB(wq_cnt,1);
+      valid = wq.try_dequeue(qry);
+    } else if(thd_id == g_thread_cnt-2) { // lock thread / scheduler
+      ATOM_SUB(sched_wq_cnt,1);
+      //valid = sched_wq.try_dequeue(qry);
+      valid = sched_dequeue(qry);
+    } else if(thd_id == g_thread_cnt-1) { // sequencer
+      ATOM_SUB(new_wq_cnt,1);
+      valid = new_wq.try_dequeue(qry);
+    } else {
+      assert(false);
+    }
+
+  }
 #else
   uint64_t starttime = prof_starttime;
   valid = wq.try_dequeue(qry);
@@ -140,11 +245,7 @@ bool QWorkQueue::dequeue(uint64_t thd_id, base_query *& qry) {
   if(!ISCLIENT && valid && qry->txn_id != UINT64_MAX) {
     if(set_active(thd_id, qry->txn_id)) {
       //DEBUG("%ld BUSY %ld %ld %ld %ld\n",thd_id,qry->txn_id,wq_cnt,rem_wq_cnt,new_wq_cnt);
-      if(CC_ALG == CALVIN && ISSERVER && thd_id == g_thread_cnt + g_rem_thread_cnt + g_send_thread_cnt) {
-        enqueue_new(thd_id,qry);
-      } else {
-        enqueue(thd_id,qry);
-      }
+      enqueue(thd_id,qry);
       qry = NULL;
       valid = false;
     }

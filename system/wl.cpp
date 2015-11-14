@@ -15,9 +15,11 @@ RC workload::init() {
 	done_cnt = g_node_cnt + g_client_node_cnt - 1;
   txn_cnt = 0;
   rsp_cnt = g_node_cnt + g_client_node_cnt - 1;
+  /*
 #if CC_ALG == CALVIN
 	rsp_cnt++;	// Account for sequencer node
 #endif
+*/
 	return RCOK;
 }
 

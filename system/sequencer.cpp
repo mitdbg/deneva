@@ -12,10 +12,8 @@
 #include "query_work_queue.h"
 
 void Sequencer::init(workload * wl) {
-	wait_list = NULL;
   batch_size = 0;
   next_batch_size = 0;
-	wait_txns_left = 0;
 	pthread_mutex_init(&mtx, NULL);
 	pthread_cond_init(&swap_cv, NULL);
 	pthread_cond_init(&access_cv, NULL);
@@ -29,34 +27,170 @@ void Sequencer::init(workload * wl) {
   send_batch = true;
   last_time_batch = 0;
   /*
-#if WORKLOAD == YCSB
-	node_queries = (ycsb_query*) mem_allocator.alloc(sizeof(ycsb_client_query)*g_node_cnt,0);
-	for (uint32_t i = 0; i < g_node_cnt; ++i) {
-		node_queries[i].requests = (ycsb_request *) mem_allocator.alloc(sizeof(ycsb_request) * g_req_per_query, 0);
-	}
-#elif WORKLOAD == TPCC
-	node_queries = (tpcc_query*) mem_allocator.alloc(sizeof(tpcc_client_query)*g_node_cnt,0);
-	printf("Add sequencer support for TPCC!\n");
-	assert(false);
-#endif
-	for (uint32_t i = 0; i < g_node_cnt; ++i) {
-		node_queries[i].part_to_access = (uint64_t *) mem_allocator.alloc(sizeof(uint64_t)*1, 0);
-		node_queries[i].part_to_access[0] = i;
-		node_queries[i].part_num = 1;
+  fill_queue = (moodycamel::ConcurrentQueue<base_query*,moodycamel::ConcurrentQueueDefaultTraits> *)
+                  mem_allocator.alloc(sizeof(moodycamel::ConcurrentQueue<base_query*,moodycamel::ConcurrentQueueDefaultTraits>) * g_node_cnt, 0);
+  for(uint64_t i = 0; i < g_node_cnt; i++) {
+    fill_queue[i] = new moodycamel::ConcurrentQueue<base_query*,moodycamel::ConcurrentQueueDefaultTraits>;
   }
   */
+  fill_queue = new moodycamel::ConcurrentQueue<base_query*,moodycamel::ConcurrentQueueDefaultTraits>[g_node_cnt];
+  wl_head = NULL;
+  wl_tail = NULL;
 }
 
-void Sequencer::process_txn_ack(base_query *query, uint64_t thd_id) {
+// FIXME: Assumes 1 thread does sequencer work
+void Sequencer::process_ack(base_query *query, uint64_t thd_id) {
+  qlite_ll * en = wl_head;
+  while(en != NULL && en->epoch != query->batch_id) {
+    en = en->next;
+  }
+  assert(en);
+  qlite * wait_list = en->list;
 	assert(wait_list != NULL);
-	assert(wait_txns_left > 0);
-	// TODO: fix this hack
-	uint64_t id = query->txn_id - start_txn_id;
+	assert(en->txns_left > 0);
+
+	uint64_t id = query->txn_id;
+  uint64_t prof_stat = get_sys_clock();
 	//uint64_t id = query->return_id;
 	assert(wait_list[id].server_ack_cnt > 0);
 
 	// Decrement the number of acks needed for this txn
 	uint32_t query_acks_left = ATOM_SUB_FETCH(wait_list[id].server_ack_cnt, 1);
+	if (query_acks_left == 0) {
+    en->txns_left--;
+		ATOM_FETCH_ADD(total_txns_finished,1);
+		INC_STATS(thd_id,txn_cnt,1);
+
+    base_query * m_query = (base_query *) mem_allocator.alloc(sizeof(base_query),0);
+    m_query->client_id = wait_list[id].client_id;
+    m_query->client_startts = wait_list[id].client_startts;
+    msg_queue.enqueue(m_query,CL_RSP,m_query->client_id);
+
+    LIST_REMOVE_HT(en,wl_head,wl_tail);
+    mem_allocator.free(en->list,sizeof(qlite) * en->max_size);
+    mem_allocator.free(en,sizeof(qlite_ll));
+	}
+  DEBUG("ACK %ld: %d %d\n",id,query_acks_left,en->txns_left);
+
+	// If we have all acks for this batch, send qry responses to all clients
+	if (en->txns_left == 0) {
+    DEBUG("FINISHED BATCH %ld\n",batch_size);
+		mem_allocator.free(en->list,sizeof(qlite)*en->max_size);
+    LIST_REMOVE(en);
+
+	}
+  INC_STATS(thd_id,time_seq_ack,get_sys_clock() - prof_stat);
+}
+
+// FIXME: Assumes 1 thread does sequencer work
+void Sequencer::process_txn(base_query * query) {
+
+  qlite_ll * en = wl_tail;
+
+  if(!en || en->epoch != _wl->epoch+1) {
+    // First txn of new wait list
+    en = (qlite_ll *) mem_allocator.alloc(sizeof(qlite_ll), 0);
+    en->epoch = _wl->epoch+1;
+    en->max_size = 1000;
+    en->size = 0;
+    en->list = (qlite *) mem_allocator.alloc(sizeof(qlite) * en->max_size, 0);
+    LIST_PUT_TAIL(wl_head,wl_tail,en)
+  }
+  if(en->size == en->max_size) {
+    en->max_size *= 2;
+    en->list = (qlite *) mem_allocator.realloc(en->list,sizeof(qlite) * en->max_size, 0);
+  }
+
+		txnid_t txn_id = next_txn_id++;
+    query->batch_id = _wl->epoch + 1;
+    query->txn_id = txn_id;
+#if WORKLOAD == YCSB
+		ycsb_query * m_query = (ycsb_query *) query;
+#elif WORKLOAD == TPCC
+		tpcc_query * m_query = (tpcc_query *) query;
+#endif
+    bool * participating_nodes = (bool*)mem_allocator.alloc(sizeof(bool)*g_node_cnt,0);
+    reset_participating_nodes(participating_nodes);
+		uint32_t server_ack_cnt = m_query->participants(participating_nodes,_wl);
+		assert(server_ack_cnt > 0);
+		assert(ISCLIENTN(query->return_id));
+		en->list[txn_id].client_id = query->return_id;
+		en->list[txn_id].client_startts = query->client_startts;
+		en->list[txn_id].server_ack_cnt = server_ack_cnt;
+    en->txns_left++;
+    en->size++;
+    query->return_id = g_node_id;
+
+    // Add new txn to fill queue
+		for (uint64_t j = 0; j < g_node_cnt; ++j) {
+			if (participating_nodes[j]) {
+        fill_queue[j].enqueue(query);
+			}
+		}
+  mem_allocator.free(participating_nodes,sizeof(bool)*g_node_cnt);
+
+	ATOM_ADD(next_batch_size,1);
+	ATOM_ADD(total_txns_received,1);
+  DEBUG("FILL %ld %ld, %ld %ld\n",en->epoch,query->txn_id,total_txns_received,total_txns_finished)
+
+}
+
+
+// FIXME: Assumes 1 thread does sequencer work
+void Sequencer::send_next_batch(uint64_t thd_id) {
+  uint64_t prof_stat = get_sys_clock();
+  qlite_ll * en = wl_tail;
+  if(en) {
+    DEBUG("SEND NEXT BATCH %ld %ld %ld %ld\n",thd_id,_wl->epoch,en->epoch,en->size);
+  }
+
+  base_query * query;
+  for(uint64_t j = 0; j < g_node_cnt; j++) {
+    while(fill_queue[j].try_dequeue(query)) {
+      if(j == g_node_id) {
+        work_queue.enqueue(thd_id,query);
+      } else {
+        msg_queue.enqueue(query,RTXN,j);
+      }
+    }
+    qry_pool.get(query);
+    query->rtype = RDONE;
+    query->return_id = g_node_id;
+    if(j == g_node_id)
+      work_queue.enqueue(thd_id,query);
+    else
+      msg_queue.enqueue(query,RDONE,j);
+    qry_pool.put(query);
+  }
+
+  if(last_time_batch > 0) {
+    INC_STATS(thd_id,time_batch,get_sys_clock() - last_time_batch);
+  }
+
+	INC_STATS(thd_id,batch_cnt,1);
+  INC_STATS(thd_id,time_seq_prep,get_sys_clock() - prof_stat);
+}
+
+void Sequencer::reset_participating_nodes(bool * part_nodes) {
+	for (uint32_t i = 0; i < g_node_cnt; ++i)
+		part_nodes[i] = false;
+}
+
+/*
+void Sequencer::process_txn_ack(base_query *query, uint64_t thd_id) {
+  qlite_ll * en = wl_head;
+  while(en != NULL && en->epoch != query->batch_id)
+    en = en->next;
+  assert(en != NULL);
+	assert(en->list != NULL);
+	assert(en->txns_left > 0);
+	// TODO: fix this hack
+	uint64_t id = query->txn_id - start_txn_id;
+	//uint64_t id = query->return_id;
+	assert(en->list[id].server_ack_cnt > 0);
+
+	// Decrement the number of acks needed for this txn
+	uint32_t query_acks_left = en->list[id].server_ack_cnt--;
 	uint64_t txns_left = UINT64_MAX;
 	if (query_acks_left == 0) {
 		txns_left = ATOM_SUB_FETCH(wait_txns_left, 1);
@@ -159,11 +293,7 @@ void Sequencer::prepare_next_batch(uint64_t thd_id) {
 		// update all node queries with necessary query information
 		for (uint64_t j = 0; j < g_node_cnt; ++j) {
 			if (participating_nodes[j]) {
-        /*
-				node_queries[j].rtype = RTXN;
 				node_queries[j].pid = j;
-        msg_queue.enqueue(&node_queries[j],RTXN,j);
-        */
         msg_queue.enqueue(query,RTXN,j);
 			}
 		}
@@ -176,10 +306,7 @@ void Sequencer::prepare_next_batch(uint64_t thd_id) {
   INC_STATS(thd_id,time_seq_prep,get_sys_clock() - prof_stat);
 }
 
-void Sequencer::reset_participating_nodes(bool * part_nodes) {
-	for (uint32_t i = 0; i < g_node_cnt; ++i)
-		part_nodes[i] = false;
-}
+
 
 //void Sequencer::start_batch_timer() {
 //	pthread_mutex_lock(&batchts_mtx);
@@ -212,23 +339,6 @@ void Sequencer::process_new_txn(base_query * query) {
 	if (num_accessing_queues == 0)
 		pthread_cond_signal(&access_cv);
 	pthread_mutex_unlock(&mtx);
-}
-
-void Sequencer::send_first_batch(uint64_t thd_id) {
-  /*
-	bool send_batch = false;
-	pthread_mutex_lock(&batchts_mtx);
-	if (!sent_first_batch && fill_queue.size_approx() > 0) {
-		send_batch = true;
-		sent_first_batch = true;
-	}
-	pthread_mutex_unlock(&batchts_mtx);
-
-	if (send_batch) {
-		prepare_next_batch(thd_id);
-	}
-
-  */
 }
 
 void Seq_thread_t::init(uint64_t thd_id, uint64_t node_id, workload * workload) {
@@ -357,10 +467,6 @@ RC Seq_thread_t::run_remote() {
 
 	while (true) {
 
-    /*
-		if (!seq_man.sent_first_batch)
-			seq_man.send_first_batch(get_thd_id());
-      */
 
     thd_prof_start = get_sys_clock();
 
@@ -420,3 +526,4 @@ RC Seq_thread_t::run_remote() {
 	}
 }
 
+*/

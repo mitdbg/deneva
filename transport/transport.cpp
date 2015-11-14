@@ -57,9 +57,11 @@ void Transport::read_ifconfig(const char * ifaddr_file) {
 void Transport::init(uint64_t node_id,workload * workload) {
 	_wl = workload;
   _node_cnt = g_node_cnt + g_client_node_cnt;
+  /*
 #if CC_ALG == CALVIN
 	_node_cnt++;	// account for the sequencer
 #endif
+*/
 	_node_id = node_id;
   if(ISCLIENT)
     _sock_cnt = g_client_send_thread_cnt * g_servers_per_client + (_node_cnt)*2;
@@ -69,14 +71,15 @@ void Transport::init(uint64_t node_id,workload * workload) {
     _sock_cnt = (_node_cnt)*2 + g_client_send_thread_cnt;
     //_sock_cnt = 1 + (_node_cnt - 1);
     //_sock_cnt = g_send_thread_cnt  * (_node_cnt-1) + (g_node_cnt-1) * g_send_thread_cnt + g_client_node_cnt * g_client_send_thread_cnt;
+  /*
 #if CC_ALG == CALVIN
-	// TODO: fix me. Calvin does not have separate remote and local threads
-	// so the stat updates seg fault if the sequencer thread count is 1
 	_thd_id = 0;
   _sock_cnt = (_node_cnt)*2;
 #else
 	_thd_id = 1;
 #endif
+*/
+	_thd_id = 1;
 
   s = new Socket[_sock_cnt];
   rr = 0;
@@ -159,7 +162,7 @@ void Transport::init(uint64_t node_id,workload * workload) {
       }
     }
 #if SET_AFFINITY
-  if(CC_ALG != CALVIN && !ISCLIENT) {
+  if(!ISCLIENT) {
     for(uint64_t j = 0; j < g_client_send_thread_cnt; j++) {
 #if TPORT_TYPE_IPC
       port = j + _node_cnt;
@@ -206,7 +209,7 @@ void Transport::init(uint64_t node_id,workload * workload) {
     }
 
 #if SET_AFFINITY
-  if(CC_ALG != CALVIN && ISCLIENT) {
+  if(&& ISCLIENT) {
     for(uint64_t i = 0; i < s_thd; i++) {
       for(uint64_t j = g_server_start_node; j < g_server_start_node + g_servers_per_client; j++) {
 #if TPORT_TYPE_IPC
@@ -242,9 +245,7 @@ uint64_t Transport::get_node_id() {
 void Transport::send_msg(uint64_t sid, uint64_t dest_id, void * sbuf,int size) {
   uint64_t starttime = get_sys_clock();
   uint64_t id;
-#if CC_ALG == CALVIN
-  id = dest_id;
-#elif !SET_AFFINITY
+#if !SET_AFFINITY
   id = dest_id;
 #else
   if(ISCLIENT) {

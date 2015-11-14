@@ -337,6 +337,7 @@ def tput(xval,vval,summary,summary_cl,summary_sq,
             nnodes = cfgs["NODE_CNT"]
             cfgs = get_outfile_name(cfgs,my_cfg_fmt)
             print(cfgs)
+            tmp = 0
             if cfgs not in summary.keys(): 
                 print("Not in summary: {}".format(cfgs))
                 continue 
@@ -350,16 +351,16 @@ def tput(xval,vval,summary,summary_cl,summary_sq,
                 avg_run_time = avg(summary[cfgs]['clock_time'])
 #FIXME
                 avg_txn_cnt = avg(summary[cfgs]['txn_cnt'])
-                stats = get_summary_stats(stats,summary[cfgs],summary_cl[cfgs],summary_sq[cfgs],x,v,cc)
             except KeyError:
-                print("KeyError: {} {} {} -- {}".format(v,x,cfg,cfgs))
+                print("KeyError: {}, {} {} -- {}".format(tmp,v,x,cfgs))
                 tpt[_v][xi] = 0
                 pntpt[_v][xi] = 0
                 continue
+            stats = get_summary_stats(stats,summary[cfgs],summary_cl[cfgs],summary_sq[cfgs],x,v,cc)
             # System Throughput: total txn count / average of all node's run time
             # Per Node Throughput: avg txn count / average of all node's run time
             # Per txn latency: total of all node's run time / total txn count
-            tpt[_v][xi] = (tot_txn_cnt/avg_run_time/1000000)
+            tpt[_v][xi] = (tot_txn_cnt/avg_run_time/1000)
             pntpt[_v][xi] = (tot_txn_cnt/avg_run_time/nnodes)
             print("{} {} TTC {} Avg {}".format(_v,xi,tot_txn_cnt,avg_run_time))
             #tpt[v][xi] = (avg_txn_cnt/avg_run_time)
@@ -368,9 +369,11 @@ def tput(xval,vval,summary,summary_cl,summary_sq,
     pp.pprint(tpt)
 #    bbox = [0.8,0.35]
     bbox = [1.0,0.95]
+    if xname == 'NETWORK_DELAY':
+        _xval = [x/1000 for x in _xval]
 #bbox = [0.7,0.9]
     print("Created plot {}".format(name))
-    draw_line(name,tpt,_xval,ylab='Throughput (Million txn/s)',xlab=_xlab,title=_title,bbox=bbox,ncol=2,ltitle=vname) 
+    draw_line(name,tpt,_xval,ylab='Throughput (Thousand txn/s)',xlab=_xlab,title=_title,bbox=bbox,ncol=2,ltitle=vname) 
 #    draw_line("pn"+name,pntpt,_xval,ylab='Throughput (Txn/sec)',xlab=_xlab,title="Per Node "+_title,bbox=bbox,ncol=2,ltitle=vname) 
     write_summary_file(name,stats,_xval,vval)
 

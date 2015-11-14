@@ -89,7 +89,7 @@ int main(int argc, char* argv[])
   client_man.init();
   printf("Done\n");
   printf("Initializing work queue... ");
-  work_queue.init();
+  work_queue.init(m_wl);
   printf("Done\n");
   printf("Initializing query pool... ");
   qry_pool.init(m_wl,g_inflight_max);

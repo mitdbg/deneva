@@ -14,6 +14,7 @@
 #include "transport.h"
 #include "msg_queue.h"
 #include "ycsb_query.h"
+#include "sequencer.h"
 
 void * f(void *);
 void * g(void *);
@@ -22,6 +23,7 @@ void * nn_worker(void *);
 void * send_worker(void *);
 void * abort_worker(void *);
 void * calvin_lock_worker(void * id); 
+void * calvin_seq_worker(void * id); 
 void * calvin_worker(void * id); 
 void network_test();
 void network_test_recv();
@@ -101,10 +103,10 @@ int main(int argc, char* argv[])
   printf("Done\n");
   fflush(stdout);
   printf("Initializing work queue... ");
-  work_queue.init();
+  work_queue.init(m_wl);
   printf("Done\n");
   printf("Initializing abort queue... ");
-  abort_queue.init();
+  abort_queue.init(m_wl);
   printf("Done\n");
   printf("Initializing message queue... ");
   msg_queue.init();
@@ -127,12 +129,20 @@ int main(int argc, char* argv[])
   printf("Initializing transaction table... ");
   txn_table.init();
   printf("Done\n");
+#if CC_ALG == CALVIN
+  printf("Initializing sequencer... ");
+  seq_man.init(m_wl);
+  printf("Done\n");
+#endif
 
 	// 2. spawn multiple threads
 	uint64_t thd_cnt = g_thread_cnt;
 	uint64_t rthd_cnt = g_rem_thread_cnt;
 	uint64_t sthd_cnt = g_send_thread_cnt;
   uint64_t all_thd_cnt = thd_cnt + rthd_cnt + sthd_cnt + 1;
+#if CC_ALG == CALVIN
+  assert(thd_cnt >= 3);
+#endif
 	
 	pthread_t * p_thds = 
 		(pthread_t *) malloc(sizeof(pthread_t) * (all_thd_cnt));
@@ -192,7 +202,11 @@ int main(int argc, char* argv[])
 	starttime = get_server_clock();
 
   uint64_t i = 0;
+#if CC_ALG == CALVIN
+	for (i = 0; i < thd_cnt - 2; i++) {
+#else
 	for (i = 0; i < thd_cnt; i++) {
+#endif
 		uint64_t vid = i;
 		CPU_ZERO(&cpus);
 #if TPORT_TYPE_IPC
@@ -208,7 +222,16 @@ int main(int argc, char* argv[])
 		pthread_create(&p_thds[i], &attr, calvin_worker, (void *)vid);
 #else
 		pthread_create(&p_thds[i], &attr, worker, (void *)vid);
+#endif
   }
+
+#if CC_ALG == CALVIN
+  pthread_create(&p_thds[i], &attr, calvin_lock_worker, (void *)i);
+  i++;
+  pthread_create(&p_thds[i], &attr, calvin_seq_worker, (void *)i);
+  i++;
+#endif
+  assert(i == thd_cnt);
 
 	for (; i < thd_cnt + sthd_cnt; i++) {
 		uint64_t vid = i;
@@ -221,11 +244,7 @@ int main(int argc, char* argv[])
 		//pthread_create(&p_thds[i], &attr, nn_worker, (void *)vid);
   }
 
-#if CC_ALG == CALVIN
-  calvin_lock_worker((void *)(i));
-#else
   abort_worker((void *)(i));
-#endif
 
 	for (i = 0; i < all_thd_cnt - 1; i++) 
 		pthread_join(p_thds[i], NULL);
@@ -278,6 +297,12 @@ void * abort_worker(void * id) {
 void * send_worker(void * id) {
 	uint64_t tid = (uint64_t)id;
 	m_thds[tid].run_send();
+	return NULL;
+}
+
+void * calvin_seq_worker(void * id) {
+	uint64_t tid = (uint64_t)id;
+	m_thds[tid].run_calvin_seq();
 	return NULL;
 }
 

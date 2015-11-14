@@ -107,6 +107,7 @@ UInt32 g_server_start_node = 0;
 UInt32 g_max_txn_per_part = MAX_TXN_PER_PART;
 UInt32 g_network_delay = NETWORK_DELAY;
 UInt64 g_done_timer = DONE_TIMER;
+UInt64 g_batch_time_limit = BATCH_TIMER;
 UInt64 g_prog_timer = PROG_TIMER;
 UInt64 g_msg_time_limit = MSG_TIME_LIMIT;
 

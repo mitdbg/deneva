@@ -208,9 +208,11 @@ RC Client_thread_t::run() {
     m_query = new tpcc_client_query;
 #endif
 		uint64_t nnodes = g_node_cnt + g_client_node_cnt;
+    /*
 #if CC_ALG == CALVIN
 		nnodes++;
 #endif
+*/
 		for(uint64_t i = 0; i < nnodes; i++) {
 			if(i != g_node_id) {
         msg_queue.enqueue(NULL,INIT_DONE,i);

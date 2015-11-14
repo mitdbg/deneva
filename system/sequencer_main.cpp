@@ -21,7 +21,9 @@ void parser(int argc, char * argv[]);
 int main(int argc, char* argv[])
 {
   printf("Running sequencer...\n\n");
+  assert(false);
 	// 0. initialize global data structure
+  /*
 	parser(argc, argv);
 	assert(CC_ALG == CALVIN);
     assert(g_node_id == g_node_cnt + g_client_node_cnt);
@@ -145,12 +147,14 @@ int main(int argc, char* argv[])
 	} else {
 		((TestWorkload *)m_wl)->summarize();
 	}
+  */
 
 	//tport_man.shutdown();
 
 	return 0;
 }
 
+/*
 void * recv_worker(void * id) {
 	uint64_t tid = (uint64_t)id;
 	m_thds[tid].run_recv();
@@ -168,6 +172,7 @@ void * nn_worker(void * id) {
 	m_thds[tid].run_remote();
 	return NULL;
 }
+*/
 
 void network_test() {
 
