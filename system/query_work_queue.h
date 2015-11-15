@@ -81,7 +81,7 @@ public:
   void finish(uint64_t time); 
   void abort_finish(uint64_t time); 
   void process_aborts(); 
-  void enqueue(uint64_t thd_id,base_query * qry); 
+  void enqueue(uint64_t thd_id,base_query * qry,bool busy); 
   void sched_enqueue(base_query * qry); 
   bool sched_dequeue(base_query *& qry); 
   void enqueue_new(uint64_t thd_id,base_query * qry); 
@@ -124,7 +124,9 @@ private:
   pthread_cond_t cond;
   workload * _wl;
   uint64_t sched_ptr;
+  base_query * last_sched_dq;
   uint64_t curr_epoch;
+  bool new_epoch;
   wq_entry_t * sched_head;
   wq_entry_t * sched_tail;
 

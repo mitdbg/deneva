@@ -153,7 +153,7 @@ void TxnTable::restart_txn(uint64_t txn_id){
         t_node->qry->rtype = RTXN;
       else
         t_node->qry->rtype = RQRY;
-      work_queue.enqueue(0,t_node->qry);
+      work_queue.enqueue(0,t_node->qry,false);
       break;
     }
     t_node = t_node->next;
@@ -212,10 +212,12 @@ void TxnTable::delete_txn(uint64_t node_id, uint64_t txn_id){
       txn_pool.put(t_node->txn);
     }
     
+#if CC_ALG != CALVIN
     if(t_node->qry) {
       //YCSB_QUERY_FREE(t_node->qry)
       qry_pool.put(t_node->qry);
     }
+#endif
 #endif
     //mem_allocator.free(t_node, sizeof(struct txn_node));
     txn_table_pool.put(t_node);

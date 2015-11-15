@@ -543,7 +543,7 @@ RC thread_t::run() {
             m_txn->spec = false;
             m_txn->spec_done = false;
 					  //work_queue.add_query(_thd_id,m_query);
-            work_queue.enqueue(get_thd_id(),m_query);
+            work_queue.enqueue(get_thd_id(),m_query,false);
             break;
           }
 #endif
@@ -1462,6 +1462,7 @@ RC thread_t::run_calvin_lock() {
     } 
     txn_table.add_txn(g_node_id,m_txn,m_query);
     m_txn->register_thd(this);
+    m_txn->batch_id = m_query->batch_id;
     // Acquire locks
     rc = m_txn->acquire_locks(m_query);
 
@@ -1469,7 +1470,7 @@ RC thread_t::run_calvin_lock() {
 
 
     if(rc == RCOK) {
-      work_queue.enqueue(_thd_id,m_query);
+      work_queue.enqueue(_thd_id,m_query,false);
     }
 
     work_queue.done(_thd_id,m_txn->get_txn_id());
@@ -1589,6 +1590,7 @@ RC thread_t::run_calvin() {
 		txn_starttime = get_sys_clock();
     assert(m_query->rtype <= NO_MSG);
     uint64_t txn_type = (uint64_t)m_query->rtype;
+    uint64_t tid = m_query->txn_id;
 
 		switch(m_query->rtype) {
       case RFWD:
@@ -1599,6 +1601,7 @@ RC thread_t::run_calvin() {
 					rc = _wl->get_txn_man(m_txn);
 					assert(rc == RCOK);
 					m_txn->set_txn_id(m_query->txn_id);
+          m_txn->batch_id = m_query->batch_id;
 					txn_table.add_txn(g_node_id,m_txn,m_query);
         } else {
           tmp_query = tmp_query->merge(m_query);
@@ -1668,12 +1671,14 @@ RC thread_t::run_calvin() {
 			//rem_qry_man.ack_response(m_query);
       if(m_query->return_id == g_node_id) {
         m_query->rtype = RACK;
-        work_queue.enqueue(_thd_id,m_query);
+        work_queue.enqueue(_thd_id,m_query,false);
       } else {
         msg_queue.enqueue(m_query,RACK,m_query->return_id);
       }
+      txn_table.delete_txn(m_query->return_id,tid);
+      ATOM_SUB(_wl->epoch_txn_cnt,1);
     }
-    work_queue.done(_thd_id,m_txn->get_txn_id());
+    work_queue.done(_thd_id,tid);
 
 		timespan = get_sys_clock() - starttime;
 		INC_STATS(get_thd_id(),time_work,timespan);
@@ -1739,6 +1744,7 @@ RC thread_t::run_calvin_seq() {
       case RACK:
         // Ack from server
         seq_man.process_ack(m_query,get_thd_id());
+        qry_pool.put(m_query);
         break;
       default:
         assert(false);

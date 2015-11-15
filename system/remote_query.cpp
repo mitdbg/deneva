@@ -56,11 +56,15 @@ void Remote_query::unpack(void * d, uint64_t len) {
 		  INC_STATS(0,txn_cnt,1);
       ATOM_ADD(_wl->txn_cnt,1);
     } else {
-      work_queue.enqueue(g_thread_cnt,query);
+      work_queue.enqueue(g_thread_cnt,query,false);
     }
 #else
     if(query->rtype != INIT_DONE) {
-      work_queue.enqueue(g_thread_cnt,query);
+      if(ISCLIENT) {
+        work_queue.enqueue(g_client_thread_cnt,query,false);
+      } else {
+        work_queue.enqueue(g_thread_cnt,query,false);
+      }
     }
 #endif
     txn_cnt--;
@@ -202,6 +206,9 @@ void Remote_query::unpack_query(base_query *& query,char * data,  uint64_t & ptr
       break;
     case RACK:
       COPY_VAL(query->rc,data,ptr);
+#if CC_ALG == CALVIN
+      COPY_VAL(query->batch_id,data,ptr);
+#endif
       break;
     case RTXN: {
 #if WORKLOAD == TPCC
@@ -213,7 +220,7 @@ void Remote_query::unpack_query(base_query *& query,char * data,  uint64_t & ptr
       query->home_part = query->active_part;
 #endif
       m_query->client_id = m_query->return_id;
-      assert(m_query->client_id >= g_node_cnt);
+      assert(CC_ALG == CALVIN || m_query->client_id >= g_node_cnt);
       COPY_VAL(m_query->pid,data,ptr);
       COPY_VAL(m_query->client_startts,data,ptr);
 #if CC_ALG == CALVIN
@@ -298,6 +305,7 @@ void Remote_query::unpack_query(base_query *& query,char * data,  uint64_t & ptr
       COPY_VAL(((tpcc_query*)query)->o_id,data,ptr);
                    break;
     case NO_MSG: assert(false);
+    case RDONE: break;
     default: assert(false);
 	}
 

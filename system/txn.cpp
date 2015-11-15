@@ -667,7 +667,7 @@ RC txn_man::finish(base_query * query, bool fin) {
         tmp_query->parts = new uint64_t[1];
         tmp_query->parts[0] = part_id;
         //work_queue.add_query(GET_PART_ID_IDX(tmp_query->active_part),tmp_query);
-        work_queue.enqueue(0,tmp_query);
+        work_queue.enqueue(0,tmp_query,false);
 
 
       }
@@ -691,7 +691,7 @@ RC txn_man::finish(base_query * query, bool fin) {
         tmp_query->part_cnt = 1;
         tmp_query->parts = new uint64_t[1];
         tmp_query->parts[0] = part_id;
-        work_queue.enqueue(0,tmp_query);
+        work_queue.enqueue(0,tmp_query,false);
 
 
       }

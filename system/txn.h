@@ -107,6 +107,7 @@ public:
   uint64_t home_part; // Are these duplicates?
   uint64_t active_part; 
   uint64_t parts_locked; 
+  uint64_t batch_id;
 	// For OCC
 	uint64_t 		start_ts;
 	uint64_t 		end_ts;

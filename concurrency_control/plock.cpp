@@ -80,7 +80,7 @@ RC PartMan::lock(txn_man * txn) {
         tmp_query->rtype = RACK;
         tmp_query->rc = RCOK;
         tmp_query->active_part = owner->home_part;
-        work_queue.enqueue(txn->get_thd_id(),tmp_query);
+        work_queue.enqueue(txn->get_thd_id(),tmp_query,false);
 
     }
     rc = RCOK;
@@ -131,7 +131,7 @@ RC PartMan::lock(txn_man * txn) {
         tmp_query->rtype = RACK;
         tmp_query->rc = rc;
         tmp_query->active_part = txn->home_part;
-        work_queue.enqueue(txn->get_thd_id(),tmp_query);
+        work_queue.enqueue(txn->get_thd_id(),tmp_query,false);
 
 
     }
@@ -197,7 +197,7 @@ void PartMan::unlock(txn_man * txn) {
         tmp_query->rtype = RACK;
         tmp_query->rc = RCOK;
         tmp_query->active_part = owner->home_part;
-        work_queue.enqueue(txn->get_thd_id(),tmp_query);
+        work_queue.enqueue(txn->get_thd_id(),tmp_query,false);
 
 
         }

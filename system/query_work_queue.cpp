@@ -28,12 +28,14 @@ void QWorkQueue::init(workload * wl) {
   wq_cnt = 0;
   rem_wq_cnt = 0;
   new_wq_cnt = 0;
+  sched_wq_cnt = 0;
   abrt_cnt = 0;
   aq_head = NULL;
-  curr_epoch = 0;
+  curr_epoch = 1;
+  new_epoch = false;
   sched_ptr = 0;
-  sched_head = (wq_entry_t*) mem_allocator.alloc(sizeof(wq_entry*)*g_node_cnt,0);
-  sched_tail = (wq_entry_t*) mem_allocator.alloc(sizeof(wq_entry*)*g_node_cnt,0);
+  sched_head = (wq_entry_t*) mem_allocator.alloc(sizeof(wq_entry_t*)*g_node_cnt,0);
+  sched_tail = (wq_entry_t*) mem_allocator.alloc(sizeof(wq_entry_t*)*g_node_cnt,0);
   for(uint64_t i = 0; i < g_node_cnt; i++) {
     sched_head[i] = NULL;
     sched_tail[i] = NULL;
@@ -66,84 +68,141 @@ void QWorkQueue::sched_enqueue(base_query * qry) {
   assert(ISSERVERN(id));
   assert(qry);
   wq_entry_t en = (wq_entry_t) mem_allocator.alloc(sizeof(struct wq_entry), 0);
+  pthread_mutex_lock(&mtx);
   en->qry = qry;
-  ATOM_ADD(sched_wq_cnt,1);
+  //DEBUG("SEnq %ld %ld,%ld\n",id,qry->txn_id,qry->batch_id);
   LIST_PUT_TAIL(sched_head[id],sched_tail[id],en)
+  pthread_mutex_unlock(&mtx);
+  ATOM_ADD(sched_wq_cnt,1);
 }
 
 bool QWorkQueue::sched_dequeue(base_query *& qry) {
 
+  bool result = false;
   assert(CC_ALG == CALVIN);
+  pthread_mutex_lock(&mtx);
   while(true) {
-    wq_entry_t en = sched_head[sched_ptr];
-    if(!en || curr_epoch > _wl->epoch) {
-      qry = NULL;
-      return false;
+    if(last_sched_dq != NULL) {
+      qry = last_sched_dq;
+      return true;
     }
+    wq_entry_t en = sched_head[sched_ptr];
+    if(!en || curr_epoch > _wl->epoch || (new_epoch && _wl->epoch_txn_cnt > 0)) {
+      qry = NULL;
+      break;
+      //return false;
+    }
+    new_epoch = false;
 
     if(en->qry->rtype == RDONE) {
       ATOM_SUB(sched_wq_cnt,1);
-      LIST_GET_HEAD(sched_head[sched_ptr],sched_tail[sched_ptr],en)
+      LIST_REMOVE_HT(en,sched_head[sched_ptr],sched_tail[sched_ptr])
+      qry_pool.put(en->qry);
+      mem_allocator.free(en,sizeof(struct wq_entry));
+      DEBUG("RDONE %ld %ld\n",sched_ptr,curr_epoch);
       sched_ptr++;
       if(sched_ptr == g_node_cnt) {
         curr_epoch++;
         sched_ptr = 0;
+        new_epoch = true;
       }
       continue;
     }
 
     ATOM_SUB(sched_wq_cnt,1);
-    LIST_GET_HEAD(sched_head[sched_ptr],sched_tail[sched_ptr],en)
+    ATOM_ADD(_wl->epoch_txn_cnt,1);
+    LIST_REMOVE_HT(en,sched_head[sched_ptr],sched_tail[sched_ptr])
     qry = en->qry;
+    //DEBUG("SDeq %ld %ld,%ld\n",sched_ptr,qry->txn_id,curr_epoch);
     mem_allocator.free(en,sizeof(struct wq_entry));
+    result = true;
     break;
 
   }
-  return true;
+  pthread_mutex_unlock(&mtx);
+  return result;
 
 }
 
 
-void QWorkQueue::enqueue(uint64_t thd_id, base_query * qry) {
+// types:
+// 9: N/A
+// 0: wq
+// 1: sched_wq
+// 2: new_wq
+void QWorkQueue::enqueue(uint64_t thd_id, base_query * qry,bool busy) {
   uint64_t starttime = get_sys_clock();
   qry->q_starttime = starttime;
+  int q_type __attribute__((unused));
+  q_type = 9;
 #if CC_ALG == CALVIN
   if(ISCLIENT) {
     ATOM_ADD(wq_cnt,1);
     wq.enqueue(qry);
+    q_type = 0;
   } else {
+    if(busy) { //re-enqueue
+      if(thd_id < g_thread_cnt-2) { //worker
+          ATOM_ADD(wq_cnt,1);
+          wq.enqueue(qry);
+          q_type = 0;
+      } else if(thd_id == g_thread_cnt-2) { // lock thread / scheduler
+        sched_enqueue(qry);
+        q_type = 1;
+      } else if(thd_id == g_thread_cnt-1) { // sequencer
+          ATOM_ADD(new_wq_cnt,1);
+          new_wq.enqueue(qry);
+          q_type = 2;
+      } else {
+        assert(false);
+      }
+    } else {
     if(thd_id < g_thread_cnt-2) { //worker
       if(qry->rtype == RACK) {
         ATOM_ADD(new_wq_cnt,1);
         new_wq.enqueue(qry);
+        q_type = 2;
       } else {
         ATOM_ADD(wq_cnt,1);
         wq.enqueue(qry);
+        q_type = 0;
       }
     } else if(thd_id == g_thread_cnt-2) { // lock thread / scheduler
       ATOM_ADD(wq_cnt,1);
       wq.enqueue(qry);
+      q_type = 0;
     } else if(thd_id == g_thread_cnt-1) { // sequencer
-      ATOM_ADD(sched_wq_cnt,1);
       sched_enqueue(qry);
+      q_type = 1;
     } else { // receiver
       if(ISCLIENTN(qry->return_id)) {
         ATOM_ADD(new_wq_cnt,1);
         new_wq.enqueue(qry);
+        q_type = 2;
       } else {
         if(qry->rtype == RFWD) {
           ATOM_ADD(wq_cnt,1);
           wq.enqueue(qry);
+          q_type = 0;
+        } else if (qry->rtype == RTXN || qry->rtype == RDONE){
+          // To lock thread
+          sched_enqueue(qry);
+          q_type = 1;
         } else {
           // To sequencer
           ATOM_ADD(new_wq_cnt,1);
           new_wq.enqueue(qry);
-          // To lock thread
-          //sched_enqueue(qry);
+          q_type = 2;
         }
       }
     }
+    }
   }
+  assert(
+      (q_type == 0  && (qry->rtype == CL_RSP || qry->rtype == RTXN || qry->rtype == RFWD || qry->rtype == RQRY))
+      || (q_type == 1  && (qry->rtype == RTXN || qry->rtype == RDONE))
+      || (q_type == 2  && (qry->rtype == RTXN || qry->rtype == RACK))
+      );
 #else
   switch(PRIORITY) {
     case PRIORITY_FCFS:
@@ -183,7 +242,8 @@ void QWorkQueue::enqueue(uint64_t thd_id, base_query * qry) {
     default: assert(false);
   }
 #endif
-  //DEBUG("%ld ENQUEUE %ld %ld %ld %ld %lx\n",thd_id,qry->txn_id,wq_cnt,rem_wq_cnt,new_wq_cnt,(uint64_t)qry);
+  //DEBUG("%ld ENQUEUE %ld %d, %d,%ld %ld %ld %lx\n",thd_id,qry->txn_id,q_type,qry->rtype,wq_cnt,rem_wq_cnt,new_wq_cnt,(uint64_t)qry);
+  DEBUG("%ld ENQUEUE %ld,%ld; %d, %d,%lx\n",thd_id,qry->txn_id,qry->batch_id,q_type,qry->rtype,(uint64_t)qry);
   INC_STATS(thd_id,all_wq_enqueue,get_sys_clock() - starttime);
 }
 //TODO: do we need to has qry id here?
@@ -192,26 +252,37 @@ void QWorkQueue::enqueue(uint64_t thd_id, base_query * qry) {
 bool QWorkQueue::dequeue(uint64_t thd_id, base_query *& qry) {
   bool valid;
   uint64_t prof_starttime = get_sys_clock();
+  int q_type __attribute__((unused));
+  q_type = 9;
 #if CC_ALG == CALVIN
   if(ISCLIENT) {
     ATOM_SUB(wq_cnt,1);
     valid = wq.try_dequeue(qry);
+    q_type = 0;
   } else {
     if(thd_id < g_thread_cnt-2) {
       ATOM_SUB(wq_cnt,1);
       valid = wq.try_dequeue(qry);
+      q_type = 0;
     } else if(thd_id == g_thread_cnt-2) { // lock thread / scheduler
-      ATOM_SUB(sched_wq_cnt,1);
       //valid = sched_wq.try_dequeue(qry);
       valid = sched_dequeue(qry);
+      q_type = 1;
     } else if(thd_id == g_thread_cnt-1) { // sequencer
       ATOM_SUB(new_wq_cnt,1);
       valid = new_wq.try_dequeue(qry);
+      q_type = 2;
     } else {
       assert(false);
     }
 
   }
+  assert(
+      !valid
+      || (q_type == 0  && (qry->rtype == CL_RSP || qry->rtype == RTXN || qry->rtype == RFWD || qry->rtype == RQRY))
+      || (q_type == 1  && (qry->rtype == RTXN))
+      || (q_type == 2  && (qry->rtype == RTXN || qry->rtype == RACK))
+      );
 #else
   uint64_t starttime = prof_starttime;
   valid = wq.try_dequeue(qry);
@@ -242,20 +313,28 @@ bool QWorkQueue::dequeue(uint64_t thd_id, base_query *& qry) {
 #endif
 
 
-  if(!ISCLIENT && valid && qry->txn_id != UINT64_MAX) {
+  if(!ISCLIENT && valid && qry->txn_id != UINT64_MAX && !(CC_ALG == CALVIN && thd_id == g_thread_cnt-1)) {
     if(set_active(thd_id, qry->txn_id)) {
       //DEBUG("%ld BUSY %ld %ld %ld %ld\n",thd_id,qry->txn_id,wq_cnt,rem_wq_cnt,new_wq_cnt);
-      enqueue(thd_id,qry);
+      if(CC_ALG == CALVIN && thd_id == g_thread_cnt -2) {
+        last_sched_dq = qry;
+      } else {
+        enqueue(thd_id,qry,true);
+      }
       qry = NULL;
       valid = false;
     }
   }
   if(valid) {
     uint64_t t = get_sys_clock() - qry->q_starttime;
+    if(CC_ALG == CALVIN && thd_id == g_thread_cnt -2) {
+      last_sched_dq = NULL;
+    }
     qry->time_q_work += t;
     INC_STATS(0,qq_cnt,1);
     INC_STATS(0,qq_lat,t);
-    //DEBUG("%ld DEQUEUE %ld %ld %ld %ld %lx\n",thd_id,qry->txn_id,wq_cnt,rem_wq_cnt,new_wq_cnt,(uint64_t)qry);
+    //DEBUG("%ld DEQUEUE %ld %d, %d, %ld %ld %ld %lx\n",thd_id,qry->txn_id,q_type,qry->rtype,wq_cnt,rem_wq_cnt,new_wq_cnt,(uint64_t)qry);
+    DEBUG("%ld DEQUEUE %ld,%ld; %d, %d, 0x%lx\n",thd_id,qry->txn_id,qry->batch_id,q_type,qry->rtype,(uint64_t)qry);
   }
   INC_STATS(thd_id,all_wq_dequeue,get_sys_clock() - prof_starttime);
   return valid;
@@ -679,7 +758,7 @@ int QWorkQueueHelper::add_abort_query(base_query * qry) {
     if(n->qry->penalty_end < starttime) {
       LIST_REMOVE_HT(n,head,tail);
       INC_STATS(0,txn_time_q_abrt,starttime - n->starttime);
-      work_queue.enqueue(0,n->qry);
+      work_queue.enqueue(0,n->qry,false);
       mem_allocator.free(n,sizeof(struct wq_entry));
       restarts ++;
       n = head;
@@ -717,7 +796,7 @@ int QWorkQueueHelper::check_abort_query() {
     if(n->qry->penalty_end < starttime) {
       LIST_REMOVE_HT(n,head,tail);
       INC_STATS(0,txn_time_q_abrt,starttime - n->starttime);
-      work_queue.enqueue(0,n->qry);
+      work_queue.enqueue(0,n->qry,false);
       restarts++;
       mem_allocator.free(n,sizeof(struct wq_entry));
       n = head;

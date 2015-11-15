@@ -80,13 +80,8 @@ RC Client_thread_t::run_remote() {
 			assert(m_query->dest_id == g_node_id);
 			switch (m_query->rtype) {
 				case CL_RSP:
-#if CC_ALG == CALVIN
-					assert(m_query->return_id == g_node_cnt + g_client_node_cnt);
-					return_node_offset = 0;
-#else
           return_node_offset = m_query->return_id - g_server_start_node;
           assert(return_node_offset < g_servers_per_client);
-#endif
 		      rsp_cnts[return_node_offset]++;
 					inf = client_man.dec_inflight(return_node_offset);
           assert(inf >=0);

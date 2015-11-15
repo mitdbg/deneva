@@ -12,6 +12,7 @@
 #include "query_work_queue.h"
 
 void Sequencer::init(workload * wl) {
+  next_txn_id = 0;
   batch_size = 0;
   next_batch_size = 0;
 	pthread_mutex_init(&mtx, NULL);
@@ -49,7 +50,7 @@ void Sequencer::process_ack(base_query *query, uint64_t thd_id) {
 	assert(wait_list != NULL);
 	assert(en->txns_left > 0);
 
-	uint64_t id = query->txn_id;
+	uint64_t id = query->txn_id / g_node_cnt;
   uint64_t prof_stat = get_sys_clock();
 	//uint64_t id = query->return_id;
 	assert(wait_list[id].server_ack_cnt > 0);
@@ -61,22 +62,21 @@ void Sequencer::process_ack(base_query *query, uint64_t thd_id) {
 		ATOM_FETCH_ADD(total_txns_finished,1);
 		INC_STATS(thd_id,txn_cnt,1);
 
-    base_query * m_query = (base_query *) mem_allocator.alloc(sizeof(base_query),0);
+    base_query * m_query;
+    qry_pool.get(m_query);
     m_query->client_id = wait_list[id].client_id;
     m_query->client_startts = wait_list[id].client_startts;
     msg_queue.enqueue(m_query,CL_RSP,m_query->client_id);
 
-    LIST_REMOVE_HT(en,wl_head,wl_tail);
-    mem_allocator.free(en->list,sizeof(qlite) * en->max_size);
-    mem_allocator.free(en,sizeof(qlite_ll));
 	}
-  DEBUG("ACK %ld: %d %d\n",id,query_acks_left,en->txns_left);
+  DEBUG("ACK %ld from %ld: %d %d\n",id,query->return_id,query_acks_left,en->txns_left);
 
 	// If we have all acks for this batch, send qry responses to all clients
 	if (en->txns_left == 0) {
     DEBUG("FINISHED BATCH %ld\n",batch_size);
-		mem_allocator.free(en->list,sizeof(qlite)*en->max_size);
-    LIST_REMOVE(en);
+    LIST_REMOVE_HT(en,wl_head,wl_tail);
+    mem_allocator.free(en->list,sizeof(qlite) * en->max_size);
+    mem_allocator.free(en,sizeof(qlite_ll));
 
 	}
   INC_STATS(thd_id,time_seq_ack,get_sys_clock() - prof_stat);
@@ -93,6 +93,7 @@ void Sequencer::process_txn(base_query * query) {
     en->epoch = _wl->epoch+1;
     en->max_size = 1000;
     en->size = 0;
+    en->txns_left = 0;
     en->list = (qlite *) mem_allocator.alloc(sizeof(qlite) * en->max_size, 0);
     LIST_PUT_TAIL(wl_head,wl_tail,en)
   }
@@ -101,8 +102,10 @@ void Sequencer::process_txn(base_query * query) {
     en->list = (qlite *) mem_allocator.realloc(en->list,sizeof(qlite) * en->max_size, 0);
   }
 
-		txnid_t txn_id = next_txn_id++;
-    query->batch_id = _wl->epoch + 1;
+		txnid_t txn_id = g_node_id + g_node_cnt * next_txn_id;
+    next_txn_id++;
+    uint64_t id = txn_id / g_node_cnt;
+    query->batch_id = en->epoch;
     query->txn_id = txn_id;
 #if WORKLOAD == YCSB
 		ycsb_query * m_query = (ycsb_query *) query;
@@ -114,12 +117,14 @@ void Sequencer::process_txn(base_query * query) {
 		uint32_t server_ack_cnt = m_query->participants(participating_nodes,_wl);
 		assert(server_ack_cnt > 0);
 		assert(ISCLIENTN(query->return_id));
-		en->list[txn_id].client_id = query->return_id;
-		en->list[txn_id].client_startts = query->client_startts;
-		en->list[txn_id].server_ack_cnt = server_ack_cnt;
-    en->txns_left++;
+		en->list[id].client_id = query->return_id;
+		en->list[id].client_startts = query->client_startts;
+		en->list[id].server_ack_cnt = server_ack_cnt;
     en->size++;
+    en->txns_left++;
     query->return_id = g_node_id;
+    assert(en->size == en->txns_left);
+    assert(en->size <= (uint64_t)g_inflight_max);
 
     // Add new txn to fill queue
 		for (uint64_t j = 0; j < g_node_cnt; ++j) {
@@ -141,14 +146,14 @@ void Sequencer::send_next_batch(uint64_t thd_id) {
   uint64_t prof_stat = get_sys_clock();
   qlite_ll * en = wl_tail;
   if(en) {
-    DEBUG("SEND NEXT BATCH %ld %ld %ld %ld\n",thd_id,_wl->epoch,en->epoch,en->size);
+    DEBUG("SEND NEXT BATCH %ld [%ld,%ld] %ld\n",thd_id,_wl->epoch,en->epoch,en->size);
   }
 
   base_query * query;
   for(uint64_t j = 0; j < g_node_cnt; j++) {
     while(fill_queue[j].try_dequeue(query)) {
       if(j == g_node_id) {
-        work_queue.enqueue(thd_id,query);
+        work_queue.enqueue(thd_id,query,false);
       } else {
         msg_queue.enqueue(query,RTXN,j);
       }
@@ -157,10 +162,9 @@ void Sequencer::send_next_batch(uint64_t thd_id) {
     query->rtype = RDONE;
     query->return_id = g_node_id;
     if(j == g_node_id)
-      work_queue.enqueue(thd_id,query);
+      work_queue.enqueue(thd_id,query,false);
     else
       msg_queue.enqueue(query,RDONE,j);
-    qry_pool.put(query);
   }
 
   if(last_time_batch > 0) {
@@ -169,6 +173,7 @@ void Sequencer::send_next_batch(uint64_t thd_id) {
 
 	INC_STATS(thd_id,batch_cnt,1);
   INC_STATS(thd_id,time_seq_prep,get_sys_clock() - prof_stat);
+  next_txn_id = 0;
 }
 
 void Sequencer::reset_participating_nodes(bool * part_nodes) {
