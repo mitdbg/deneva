@@ -11,7 +11,7 @@
 #define SEND_THREAD_CNT 1
 // PART_CNT should be at least NODE_CNT
 #define PART_CNT NODE_CNT
-#define CLIENT_NODE_CNT 1
+#define CLIENT_NODE_CNT 2
 #define CLIENT_THREAD_CNT 1
 #define CLIENT_REM_THREAD_CNT 1
 #define CLIENT_SEND_THREAD_CNT 1
@@ -28,14 +28,14 @@
 // # of transactions to run for warmup
 #define WARMUP            0
 // YCSB or TPCC
-#define WORKLOAD YCSB
+#define WORKLOAD TPCC
 // print the transaction latency distribution
 #define PRT_LAT_DISTR false
 #define STATS_ENABLE        true
 #define TIME_ENABLE         true //STATS_ENABLE
 
 #define FIN_BY_TIME true
-#define MAX_TXN_IN_FLIGHT 10
+#define MAX_TXN_IN_FLIGHT 100
 
 /***********************************************/
 // Memory System
@@ -201,7 +201,7 @@ enum TPCCTxnType {TPCC_ALL,
 extern TPCCTxnType          g_tpcc_txn_type;
 
 //#define TXN_TYPE          TPCC_ALL
-#define PERC_PAYMENT 0.0
+#define PERC_PAYMENT 0.5
 #define FIRSTNAME_MINLEN      8
 #define FIRSTNAME_LEN         16
 #define LASTNAME_LEN        16
@@ -306,7 +306,7 @@ extern TestCases          g_test_case;
 #define BILLION 1000000000UL // in ns => 1 second
 #define STAT_ARR_SIZE 1024
 #define PROG_TIMER 60 * BILLION // in s
-#define BATCH_TIMER 10*10000000UL // 10 ms
+#define BATCH_TIMER 1*10000000UL // 10 ms
 #define DONE_TIMER 10 * 60 * BILLION // ~2 minutes
 
 #define SEED 0

@@ -107,6 +107,7 @@ void Sequencer::process_txn(base_query * query) {
     uint64_t id = txn_id / g_node_cnt;
     query->batch_id = en->epoch;
     query->txn_id = txn_id;
+    assert(txn_id != UINT64_MAX);
 #if WORKLOAD == YCSB
 		ycsb_query * m_query = (ycsb_query *) query;
 #elif WORKLOAD == TPCC
@@ -124,7 +125,7 @@ void Sequencer::process_txn(base_query * query) {
     en->txns_left++;
     query->return_id = g_node_id;
     assert(en->size == en->txns_left);
-    assert(en->size <= (uint64_t)g_inflight_max);
+    assert(en->size <= ((uint64_t)g_inflight_max * g_node_cnt));
 
     // Add new txn to fill queue
 		for (uint64_t j = 0; j < g_node_cnt; ++j) {

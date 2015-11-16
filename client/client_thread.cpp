@@ -271,11 +271,13 @@ RC Client_thread_t::run() {
 #endif
 */
 
+   /* 
 #if CC_ALG == CALVIN
     msg_queue.enqueue((base_query*)((void*)m_query),RTXN,g_node_cnt + g_client_node_cnt);
 #else
+*/
     msg_queue.enqueue((base_query*)((void*)m_query),RTXN,GET_NODE_ID(m_query->pid));
-#endif
+//#endif
 		num_txns_sent++;
 		txns_sent[GET_NODE_ID(m_query->pid)-g_server_start_node]++;
     INC_STATS(get_thd_id(),txn_sent,1);

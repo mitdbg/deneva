@@ -33,6 +33,7 @@ void QWorkQueue::init(workload * wl) {
   aq_head = NULL;
   curr_epoch = 1;
   new_epoch = false;
+  last_sched_dq = NULL;
   sched_ptr = 0;
   sched_head = (wq_entry_t*) mem_allocator.alloc(sizeof(wq_entry_t*)*g_node_cnt,0);
   sched_tail = (wq_entry_t*) mem_allocator.alloc(sizeof(wq_entry_t*)*g_node_cnt,0);
@@ -84,7 +85,8 @@ bool QWorkQueue::sched_dequeue(base_query *& qry) {
   while(true) {
     if(last_sched_dq != NULL) {
       qry = last_sched_dq;
-      return true;
+      result = true;
+      break;
     }
     wq_entry_t en = sched_head[sched_ptr];
     if(!en || curr_epoch > _wl->epoch || (new_epoch && _wl->epoch_txn_cnt > 0)) {

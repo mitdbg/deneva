@@ -1454,6 +1454,7 @@ RC thread_t::run_calvin_lock() {
     thd_prof_start = get_sys_clock();
 
     assert(m_query->rtype == RTXN);
+    assert(m_query->txn_id != UINT64_MAX);
 
     txn_table.get_txn(g_node_id,m_query->txn_id,m_txn,tmp_query);
     if(m_txn==NULL) {
