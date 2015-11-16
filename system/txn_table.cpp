@@ -192,32 +192,16 @@ void TxnTable::delete_txn(uint64_t node_id, uint64_t txn_id){
     INC_STATS(0,thd_prof_txn_table1a,get_sys_clock() - thd_prof_start);
     thd_prof_start = get_sys_clock();
     assert(!t_node->txn->spec || t_node->txn->state == DONE);
-#if WORKLOAD == TPCC
-    /*
-    t_node->txn->release();
-    mem_allocator.free(t_node->txn, sizeof(tpcc_txn_man));
-    if(t_node->qry->txn_id % g_node_cnt != node_id) {
-      mem_allocator.free(t_node->qry, sizeof(tpcc_query));
-    }
-    */
+
     if(t_node->txn) {
-      t_node->txn->release();
-      txn_pool.put(t_node->txn);
-    }
-#elif WORKLOAD == YCSB
-    if(t_node->txn) {
-      //t_node->txn->release();
-      //mem_allocator.free(t_node->txn, sizeof(ycsb_txn_man));
       t_node->txn->release();
       txn_pool.put(t_node->txn);
     }
     
 #if CC_ALG != CALVIN
     if(t_node->qry) {
-      //YCSB_QUERY_FREE(t_node->qry)
       qry_pool.put(t_node->qry);
     }
-#endif
 #endif
     //mem_allocator.free(t_node, sizeof(struct txn_node));
     txn_table_pool.put(t_node);

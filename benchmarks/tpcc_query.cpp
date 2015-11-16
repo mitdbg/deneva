@@ -36,6 +36,39 @@ void tpcc_query::init(uint64_t thd_id, workload * h_wl) {
 }
 
 void tpcc_query::deep_copy(base_query * qry) {
+	tpcc_query * m_qry = (tpcc_query *) qry;
+  this->return_id = m_qry->return_id;
+  this->rtype = m_qry->rtype;
+  this->batch_id = m_qry->batch_id;
+  this->txn_id = m_qry->txn_id;
+  this->txn_rtype = m_qry->txn_rtype;
+  this->txn_type = m_qry->txn_type;
+  this->w_id = m_qry->w_id;
+  this->c_id = m_qry->c_id;
+  this->d_id = m_qry->d_id;
+  this->w_id = m_qry->d_w_id;
+  this->w_id = m_qry->c_w_id;
+  this->w_id = m_qry->c_d_id;
+  memcpy(this->c_last,m_qry->c_last,LASTNAME_LEN);
+  this->h_amount = m_qry->h_amount;
+  this->by_last_name = m_qry->by_last_name;
+  this->rbk = m_qry->rbk;
+  this->ol_cnt = m_qry->ol_cnt;
+  this->ol_entry_d = m_qry->ol_entry_d;
+  this->ol_carrier_d = m_qry->ol_carrier_d;
+  this->ol_delivery_d = m_qry->ol_delivery_d;
+  this->ol_supply_w_id = m_qry->ol_supply_w_id;
+  this->ol_quantity = m_qry->ol_quantity;
+  this->ol_number = m_qry->ol_number;
+  this->o_id = m_qry->o_id;
+  this->ol_amount = m_qry->ol_amount;
+  for(uint64_t i = 0; i < m_qry->ol_cnt; i++) {
+    this->ol_i_id = m_qry->ol_i_id;
+    this->ol_supply_w_id = m_qry->ol_supply_w_id;
+    this->ol_quantity = m_qry->ol_quantity;
+  }
+
+  
 }
 uint64_t tpcc_query::participants(bool *& pps,workload * wl) {
   int n = 0;

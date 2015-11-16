@@ -80,7 +80,10 @@ void ycsb_query::deep_copy(base_query * qry) {
   this->txn_rtype = m_qry->txn_rtype;
   this->request_cnt = m_qry->request_cnt;
   for(uint64_t i = 0; i < m_qry->request_cnt; i++) {
-    this->requests[i] =  m_qry->requests[i];
+    this->requests[i].acctype =  m_qry->requests[i].acctype;
+    this->requests[i].key =  m_qry->requests[i].key;
+    this->requests[i].value =  m_qry->requests[i].value;
+    this->requests[i].scan_len =  m_qry->requests[i].scan_len;
   }
 }
 

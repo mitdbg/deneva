@@ -1667,15 +1667,13 @@ RC thread_t::run_calvin() {
 			timespan = get_sys_clock() - m_txn->starttime;
 			INC_STATS(get_thd_id(), run_time, timespan);
 			INC_STATS(get_thd_id(), latency, timespan);
-      // FIXME
-			//rem_qry_man.send_client_rsp(m_query);
-			//rem_qry_man.ack_response(m_query);
       if(m_query->return_id == g_node_id) {
         m_query->rtype = RACK;
         work_queue.enqueue(_thd_id,m_query,false);
       } else {
         msg_queue.enqueue(m_query,RACK,m_query->return_id);
       }
+      // delete_txn does not free m_query for CALVIN
       txn_table.delete_txn(m_query->return_id,tid);
       ATOM_SUB(_wl->epoch_txn_cnt,1);
     }
