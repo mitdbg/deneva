@@ -368,9 +368,9 @@ RC Row_lock::lock_release(txn_man * txn) {
     if(entry->txn->get_ts() > max_owner_ts)
       max_owner_ts = entry->txn->get_ts();
 		ASSERT(entry->txn->lock_ready == false);
-    if(entry->txn->decr_lr() == 0 && entry->txn->locking_done) {
+    //if(entry->txn->decr_lr() == 0 && entry->txn->locking_done) {
+    if(entry->txn->decr_lr() == 0) {
       if(ATOM_CAS(entry->txn->lock_ready,false,true))
-      //entry->txn->lock_ready = true;
         txn_table.restart_txn(entry->txn->get_txn_id());
     }
     if(lock_type == LOCK_NONE)

@@ -1643,6 +1643,7 @@ RC thread_t::run_calvin() {
           qry_pool.put(m_query);
         }
         m_query = tmp_query;
+        assert(m_query->batch_id == _wl->curr_epoch || m_query->batch_id == _wl->curr_epoch - 1);
         m_txn->set_query(m_query);
         m_txn->register_thd(this);
 
@@ -1674,8 +1675,10 @@ RC thread_t::run_calvin() {
       // delete_txn does NOT free m_query for CALVIN
       txn_table.delete_txn(m_query->return_id,tid);
       assert(_wl->epoch_txn_cnt > 1 || txn_table.get_cnt() == 0);
+      assert(m_query->batch_id == _wl->curr_epoch || m_query->batch_id == _wl->curr_epoch - 1);
       if(m_query->return_id == g_node_id) {
-        DEBUG_R("RACK %ld,%ld  0x%lx\n",m_query->txn_id,m_query->batch_id,(uint64_t)m_query);
+        DEBUG_R("RACK (%ld,%ld)  0x%lx\n",m_query->txn_id,m_query->batch_id,(uint64_t)m_query);
+        //printf("%ld RACK (%ld,%ld)  0x%lx\n",_thd_id,m_query->txn_id,m_query->batch_id,(uint64_t)m_query);
         m_query->rtype = RACK;
         work_queue.enqueue(_thd_id,m_query,false);
       } else {

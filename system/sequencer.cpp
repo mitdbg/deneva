@@ -159,7 +159,7 @@ void Sequencer::process_txn(base_query * query) {
 void Sequencer::send_next_batch(uint64_t thd_id) {
   uint64_t prof_stat = get_sys_clock();
   qlite_ll * en = wl_tail;
-  if(en) {
+  if(en && en->epoch == _wl->epoch) {
     DEBUG("SEND NEXT BATCH %ld [%ld,%ld] %ld\n",thd_id,_wl->epoch,en->epoch,en->size);
   }
 
@@ -176,6 +176,7 @@ void Sequencer::send_next_batch(uint64_t thd_id) {
     qry_pool.get(query);
     query->rtype = RDONE;
     query->return_id = g_node_id;
+    query->batch_id = _wl->epoch;
     if(j == g_node_id)
       work_queue.enqueue(thd_id,query,false);
     else

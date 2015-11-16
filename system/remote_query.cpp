@@ -306,7 +306,9 @@ void Remote_query::unpack_query(base_query *& query,char * data,  uint64_t & ptr
       COPY_VAL(((tpcc_query*)query)->o_id,data,ptr);
                    break;
     case NO_MSG: assert(false);
-    case RDONE: break;
+    case RDONE: 
+      COPY_VAL(query->batch_id,data,ptr);
+                 break;
     default: assert(false);
 	}
 

@@ -142,7 +142,7 @@ void MessageThread::copy_to_buffer(mbuf * sbuf, RemReqType type, base_query * qr
     sbuf->starttime = get_sys_clock();
   sbuf->cnt++;
 
-  if(ISCLIENT || type == INIT_DONE || type == EXP_DONE || type == RDONE) {
+  if(ISCLIENT || type == INIT_DONE || type == EXP_DONE) {
     uint64_t tmp = UINT64_MAX;
   COPY_BUF(sbuf->buffer,tmp,sbuf->ptr);
   COPY_BUF(sbuf->buffer,type,sbuf->ptr);
@@ -177,7 +177,7 @@ void MessageThread::copy_to_buffer(mbuf * sbuf, RemReqType type, base_query * qr
     case RPASS:       break;
     case RFWD:        rfwd(sbuf,qry);break;
     case CL_RSP:      cl_rsp(sbuf,qry);break;
-    case  RDONE:      break;
+    case  RDONE:      rdone(sbuf,qry);break;
     case NO_MSG: assert(false);
     default: assert(false);
   }
@@ -243,7 +243,7 @@ uint64_t MessageThread::get_msg_size(RemReqType type,base_query * qry) {
         case  RQRY_RSP:   size +=sizeof(RC) + sizeof(uint64_t);break;
         case  RACK:       size += sizeof(RC);
 #if CC_ALG == CALVIN
-                          size += sizeof(uint64_t); // 12 
+                          size += sizeof(uint64_t); // 4+8 = 12
 #endif
                           break;
         case  RTXN:       
@@ -312,7 +312,7 @@ uint64_t MessageThread::get_msg_size(RemReqType type,base_query * qry) {
                           size +=sizeof(uint64_t)*2;
                           break;
         case CL_RSP:      size +=sizeof(RC) + sizeof(uint64_t);break;
-        case RDONE:      break;
+        case RDONE:      size +=sizeof(uint64_t);break;
         default: assert(false);
   }
 
@@ -335,6 +335,11 @@ void MessageThread::rfwd(mbuf * sbuf,base_query * qry) {
   COPY_BUF(sbuf->buffer,m_qry->o_id,sbuf->ptr);
 }
 
+void MessageThread::rdone(mbuf * sbuf,base_query * qry) {
+  DEBUG("Sending RDONE %ld\n",qry->batch_id);
+  assert(CC_ALG == CALVIN);
+  COPY_BUF(sbuf->buffer,qry->batch_id,sbuf->ptr);
+}
 
 void MessageThread::rprepare(mbuf * sbuf,base_query * qry) {
   DEBUG("Sending RPREPARE %ld\n",qry->txn_id);

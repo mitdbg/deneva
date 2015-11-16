@@ -63,6 +63,7 @@ RC ycsb_txn_man::acquire_locks(base_query * query) {
 	ycsb_query * m_query = (ycsb_query *) query;
   locking_done = false;
   RC rc = RCOK;
+  incr_lr();
 	for (uint32_t rid = 0; rid < m_query->request_cnt; rid ++) {
 		ycsb_request * req = &m_query->requests[rid];
 		uint64_t part_id = _wl->key_to_part( req->key );
@@ -77,11 +78,17 @@ RC ycsb_txn_man::acquire_locks(base_query * query) {
       rc = rc2;
     }
 	}
+  if(decr_lr() == 0) {
+    if(ATOM_CAS(lock_ready,false,true))
+      rc = RCOK;
+  }
+  /*
   if(rc == WAIT && lock_ready_cnt == 0) {
     if(ATOM_CAS(lock_ready,false,true))
     //lock_ready = true;
       rc = RCOK;
   }
+  */
   locking_done = true;
   return rc;
 }

@@ -146,6 +146,9 @@ void QryPool::put(base_query * item) {
   assert(item);
   //DEBUG_M("put 0x%lx\n",(uint64_t)item);
   DEBUG_R("put 0x%lx\n",(uint64_t)item);
+  item->batch_id = UINT64_MAX;
+  item->txn_id = UINT64_MAX;
+  //mem_allocator.free(item,sizeof(item));
   pool.enqueue(item);
 }
 

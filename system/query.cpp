@@ -65,9 +65,10 @@ Query_thd::get_next_query() {
 void base_query::clear() { 
   dest_id = UINT32_MAX;
   return_id = UINT32_MAX;
+  batch_id = UINT64_MAX;
   txn_id = UINT64_MAX;
   ts = UINT64_MAX;
-  rtype = (RemReqType)-1;
+  rtype = NO_MSG;
   rc = RCOK;
   pid = UINT64_MAX;
   client_id = UINT32_MAX;
