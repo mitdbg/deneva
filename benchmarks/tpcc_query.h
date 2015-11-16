@@ -99,6 +99,7 @@ public:
     void unpack_client(base_query * query, void * d); 
   base_query * merge(base_query * query); 
   uint64_t participants(bool *& pps,workload * wl); 
+  void deep_copy(base_query * qry); 
   bool readonly();
 	//uint64_t rtn_node_id;
 	TPCCTxnType txn_type;

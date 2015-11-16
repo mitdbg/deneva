@@ -59,16 +59,16 @@ void Sequencer::process_ack(base_query *query, uint64_t thd_id) {
 	// Decrement the number of acks needed for this txn
 	uint32_t query_acks_left = ATOM_SUB_FETCH(wait_list[id].server_ack_cnt, 1);
 
-  if(query->return_id != g_node_id)
-    qry_pool.put(query);
+  //if(query->return_id != g_node_id)
+  //  qry_pool.put(query);
 
 	if (query_acks_left == 0) {
     en->txns_left--;
 		ATOM_FETCH_ADD(total_txns_finished,1);
 		INC_STATS(thd_id,txn_cnt,1);
 
-    base_query * m_query = wait_list[id].qry;
-    //qry_pool.get(m_query);
+    base_query * m_query;// = wait_list[id].qry;
+    qry_pool.get(m_query);
     m_query->client_id = wait_list[id].client_id;
     m_query->client_startts = wait_list[id].client_startts;
     msg_queue.enqueue(m_query,CL_RSP,m_query->client_id);
@@ -127,7 +127,7 @@ void Sequencer::process_txn(base_query * query) {
 		en->list[id].client_id = query->return_id;
 		en->list[id].client_startts = query->client_startts;
 		en->list[id].server_ack_cnt = server_ack_cnt;
-		en->list[id].qry = query;
+		//en->list[id].qry = query;
     en->size++;
     en->txns_left++;
     query->return_id = g_node_id;
@@ -136,8 +136,12 @@ void Sequencer::process_txn(base_query * query) {
 
     // Add new txn to fill queue
 		for (uint64_t j = 0; j < g_node_cnt; ++j) {
+      // Make several deep copies of this query
+      base_query * m_query;
+      qry_pool.get(m_query);
+      m_query->deep_copy(query);
 			if (participating_nodes[j]) {
-        fill_queue[j].enqueue(query);
+        fill_queue[j].enqueue(m_query);
 			}
 		}
   mem_allocator.free(participating_nodes,sizeof(bool)*g_node_cnt);

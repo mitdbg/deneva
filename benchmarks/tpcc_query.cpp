@@ -35,6 +35,8 @@ void tpcc_query::init(uint64_t thd_id, workload * h_wl) {
 	txn_rtype = TPCC_PAYMENT0;
 }
 
+void tpcc_query::deep_copy(base_query * qry) {
+}
 uint64_t tpcc_query::participants(bool *& pps,workload * wl) {
   int n = 0;
   for(uint64_t i = 0; i < g_node_cnt; i++)

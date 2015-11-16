@@ -95,10 +95,8 @@ void MessageThread::run() {
 #endif
   }
 #else//CALVIN
-  if(type == RACK) {
+  if(ISSERVER && (type == RACK || type == RTXN || type == CL_RSP)) {
       //txn_table.delete_txn(qry->return_id, qry->txn_id);
-      qry_pool.put(qry);
-  } else if (ISSERVER && (type == CL_RSP )) {
       qry_pool.put(qry);
   }
 #endif

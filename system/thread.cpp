@@ -1749,6 +1749,7 @@ RC thread_t::run_calvin_seq() {
       default:
         assert(false);
     }
+    qry_pool.put(m_query);
     work_queue.done(_thd_id,tid);
   }
 }

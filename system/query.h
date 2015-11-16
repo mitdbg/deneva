@@ -28,6 +28,7 @@ public:
 	virtual void init(uint64_t thd_id, workload * h_wl) = 0;
   virtual void reset() = 0;
   virtual base_query * merge(base_query * query) = 0;
+  virtual void deep_copy(base_query * qry) = 0;
   virtual bool readonly() = 0;
   void base_reset();
 	uint64_t waiting_time;

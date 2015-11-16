@@ -71,6 +71,19 @@ void ycsb_query::reset() {
   req = requests[0];
 }
 
+void ycsb_query::deep_copy(base_query * qry) {
+	ycsb_query * m_qry = (ycsb_query *) qry;
+  this->return_id = m_qry->return_id;
+  this->rtype = m_qry->rtype;
+  this->batch_id = m_qry->batch_id;
+  this->txn_id = m_qry->txn_id;
+  this->txn_rtype = m_qry->txn_rtype;
+  this->request_cnt = m_qry->request_cnt;
+  for(uint64_t i = 0; i < m_qry->request_cnt; i++) {
+    this->requests[i] =  m_qry->requests[i];
+  }
+}
+
 uint64_t ycsb_query::participants(bool *& pps,workload * wl) {
   int n = 0;
   for(uint64_t i = 0; i < g_node_cnt; i++)
