@@ -101,7 +101,7 @@ bool QWorkQueue::sched_dequeue(base_query *& qry) {
       LIST_REMOVE_HT(en,sched_head[sched_ptr],sched_tail[sched_ptr])
       qry_pool.put(en->qry);
       mem_allocator.free(en,sizeof(struct wq_entry));
-      DEBUG("RDONE %ld %ld\n",sched_ptr,curr_epoch);
+      //DEBUG("RDONE %ld %ld\n",sched_ptr,curr_epoch);
       sched_ptr++;
       if(sched_ptr == g_node_cnt) {
         curr_epoch++;
@@ -245,7 +245,7 @@ void QWorkQueue::enqueue(uint64_t thd_id, base_query * qry,bool busy) {
   }
 #endif
   //DEBUG("%ld ENQUEUE %ld %d, %d,%ld %ld %ld %lx\n",thd_id,qry->txn_id,q_type,qry->rtype,wq_cnt,rem_wq_cnt,new_wq_cnt,(uint64_t)qry);
-  DEBUG("%ld ENQUEUE %ld,%ld; %d, %d,%lx\n",thd_id,qry->txn_id,qry->batch_id,q_type,qry->rtype,(uint64_t)qry);
+  DEBUG("%ld ENQUEUE %ld,%ld; %ld; %d, %d,%lx\n",thd_id,qry->txn_id,qry->batch_id,qry->return_id,q_type,qry->rtype,(uint64_t)qry);
   INC_STATS(thd_id,all_wq_enqueue,get_sys_clock() - starttime);
 }
 //TODO: do we need to has qry id here?
@@ -336,7 +336,7 @@ bool QWorkQueue::dequeue(uint64_t thd_id, base_query *& qry) {
     INC_STATS(0,qq_cnt,1);
     INC_STATS(0,qq_lat,t);
     //DEBUG("%ld DEQUEUE %ld %d, %d, %ld %ld %ld %lx\n",thd_id,qry->txn_id,q_type,qry->rtype,wq_cnt,rem_wq_cnt,new_wq_cnt,(uint64_t)qry);
-    DEBUG("%ld DEQUEUE %ld,%ld; %d, %d, 0x%lx\n",thd_id,qry->txn_id,qry->batch_id,q_type,qry->rtype,(uint64_t)qry);
+    DEBUG("%ld DEQUEUE %ld,%ld; %ld; %d, %d, 0x%lx\n",thd_id,qry->txn_id,qry->batch_id,qry->return_id,q_type,qry->rtype,(uint64_t)qry);
   }
   INC_STATS(thd_id,all_wq_dequeue,get_sys_clock() - prof_starttime);
   return valid;

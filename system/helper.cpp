@@ -66,11 +66,6 @@ void init_globals() {
 }
 
 void init_client_globals() {
-#if CC_ALG == CALVIN
-	// Sequencer is the only node
-	g_servers_per_client = 1;
-	g_server_start_node = 0;
-#else
   if(g_node_cnt > g_client_node_cnt) {
     g_servers_per_client = g_node_cnt / g_client_node_cnt;
     g_clients_per_server = 1;
@@ -87,7 +82,6 @@ void init_client_globals() {
       // TODO: fix the remainder to be equally distributed among clients
       g_servers_per_client += g_node_cnt % g_client_node_cnt;
   }
-#endif
     printf("Node %u: servicing %u total nodes starting with node %u\n", g_node_id, g_servers_per_client, g_server_start_node);
 }
 
