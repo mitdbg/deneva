@@ -120,10 +120,10 @@ def tpcc_scaling():
 
 def tpcc_scaling_whset():
     wl = 'TPCC'
-    nnodes = [1,2,4,8,16,32,48,64]
-    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP','CALVIN']
-    npercpay=[1.0,0.0]
-    npercpay=[0.5]
+    nnodes = [1,2,4,8,16,32,64]
+    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
+#    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP','CALVIN']
+    npercpay=[0.0,0.5,1.0]
     wh=128
     fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PERC_PAYMENT","NUM_WH"]
     exp = [[wl,n,cc,pp,wh] for pp,n,cc in itertools.product(npercpay,nnodes,nalgos)]
@@ -223,15 +223,16 @@ def ycsb_scaling_2_low_access():
 # 2x5x9x2 = 180
 def ycsb_parts():
     wl = 'YCSB'
-    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP','CALVIN']
+    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
+#    nalgos=['OCC','MVCC','TIMESTAMP','CALVIN']
     nparts = [2,4,6,8,10,12,14,16]
     rpq =  16
-    fmt = ["WORKLOAD","REQ_PER_QUERY","PART_PER_TXN","CC_ALG","STRICT_PPT"]
-    exp = [[wl,rpq,p,cc,1] for p,cc in itertools.product(nparts,nalgos)]
-    exp += [[wl,rpq,1,'CALVIN',1]]
+    fmt = ["WORKLOAD","REQ_PER_QUERY","PART_PER_TXN","CC_ALG","STRICT_PPT","MAX_TXN_IN_FLIGHT"]
+    exp = [[wl,rpq,p,cc,1,50000] for p,cc in itertools.product(nparts,nalgos)]
+#    exp += [[wl,rpq,1,'CALVIN',1]]
     nalgos=['NO_WAIT','WAIT_DIE']
     fmt = ["WORKLOAD","REQ_PER_QUERY","PART_PER_TXN","CC_ALG","STRICT_PPT","MAX_TXN_IN_FLIGHT"]
-    exp = [[wl,rpq,p,cc,1,25000] for p,cc in itertools.product(nparts,nalgos)]
+    exp += [[wl,rpq,p,cc,1,25000] for p,cc in itertools.product(nparts,nalgos)]
     return fmt,exp
 
 def ycsb_load():
@@ -244,6 +245,17 @@ def ycsb_load():
     fmt = ["WORKLOAD","REQ_PER_QUERY","PART_PER_TXN","CC_ALG","MAX_TXN_IN_FLIGHT","NODE_CNT"]
     exp = [[wl,rpq,2,cc,tif,n] for cc,n,tif in itertools.product(nalgos,nnodes,ntif)]
     return fmt,exp
+
+def ycsb_load_ro():
+    wl = 'YCSB'
+    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
+    ntif = [10000,25000,50000,75000,100000,125000,150000,175000,200000]
+    nnodes = [16]
+    rpq =  10
+    fmt = ["WORKLOAD","REQ_PER_QUERY","PART_PER_TXN","CC_ALG","MAX_TXN_IN_FLIGHT","NODE_CNT","TUP_WRITE_PERC"]
+    exp = [[wl,rpq,2,cc,tif,n,0] for cc,n,tif in itertools.product(nalgos,nnodes,ntif)]
+    return fmt,exp
+
 
 
 def ycsb_parts_calvin():
@@ -722,6 +734,7 @@ experiment_map = {
     'tpcc_scaling_whset': tpcc_scaling_whset,
     'ycsb_parts': ycsb_parts,
     'ycsb_load': ycsb_load,
+    'ycsb_load_ro': ycsb_load_ro,
     'ycsb_writes': ycsb_writes,
     'ycsb_contention_2': ycsb_contention_2,
     'ycsb_contention_2_nodesweep': ycsb_contention_2_nodesweep,
@@ -742,6 +755,8 @@ experiment_map = {
     'network_experiment_plot' : network_experiment_plot,
     'ppr_ycsb_scaling': ycsb_writes,
     'ppr_ycsb_scaling_plot': ppr_ycsb_scaling_plot,
+    'ppr_tpcc': tpcc_scaling_whset,
+    'ppr_tpcc_plot': ppr_tpcc_plot,
     'ppr_tpcc_pay': tpcc_scaling_whset,
     'ppr_tpcc_pay_plot': ppr_tpcc_pay_plot,
     'ppr_tpcc_neworder': tpcc_scaling_whset,
