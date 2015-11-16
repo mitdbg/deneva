@@ -209,7 +209,7 @@ void Transport::init(uint64_t node_id,workload * workload) {
     }
 
 #if SET_AFFINITY
-  if(&& ISCLIENT) {
+  if(ISCLIENT) {
     for(uint64_t i = 0; i < s_thd; i++) {
       for(uint64_t j = g_server_start_node; j < g_server_start_node + g_servers_per_client; j++) {
 #if TPORT_TYPE_IPC
