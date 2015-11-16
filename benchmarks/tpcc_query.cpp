@@ -54,8 +54,8 @@ void tpcc_query::deep_copy(base_query * qry) {
   this->by_last_name = m_qry->by_last_name;
   this->rbk = m_qry->rbk;
   this->ol_cnt = m_qry->ol_cnt;
-  this->ol_entry_d = m_qry->ol_entry_d;
-  this->ol_carrier_d = m_qry->ol_carrier_d;
+  this->o_entry_d = m_qry->o_entry_d;
+  this->o_carrier_id = m_qry->o_carrier_id;
   this->ol_delivery_d = m_qry->ol_delivery_d;
   this->ol_supply_w_id = m_qry->ol_supply_w_id;
   this->ol_quantity = m_qry->ol_quantity;
