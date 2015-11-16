@@ -324,6 +324,7 @@ void network_test() {
 	ts_t end;
 	ts_t time;
 	int bytes;
+  float total = 0;
 	//for(int i=4; i < 257; i+=4) {
 	//	time = 0;
 	//	for(int j=0;j < 1000; j++) {
@@ -348,9 +349,11 @@ void network_test() {
 			end = get_sys_clock();
 			assert(bytes == num_bytes);
 			time = end-start;
-			printf("%lu ",time);
+      total += time;
+			//printf("%lu\n",time);
 		}
-		printf("\n");
+		printf("Avg(s): %f\n",total/BILLION/1000);
+    fflush(stdout);
 		//time = time/1000;
 		//printf("Network Bytes: %d, s: %f\n",i,time/BILLION);
 		//printf("Network Bytes: %d, ns: %.3f\n",i,time);

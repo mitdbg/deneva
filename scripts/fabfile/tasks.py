@@ -116,8 +116,9 @@ def network_test(num_nodes=16,exps="network_experiment",skip_completed='False',e
     global SKIP, EXECUTE_EXPS, MAX_TIME_PER_EXP
     SKIP = skip_completed == 'True'
     EXECUTE_EXPS = exec_exps == 'True'
-    MAX_TIME_PER_EXP = 30
+    MAX_TIME_PER_EXP = 60
     num_nodes = int(num_nodes)
+    execute(check_binaries,exps)
     if num_nodes < 2 or len(env.hosts) < num_nodes:
         with color(level="error"):
             puts("not enough hosts in ifconfig!",show_prefix=True)
@@ -157,8 +158,8 @@ def copy_files(schema,exp_fname):
     if env.dry_run:
         return
     executable_files = ["rundb","runcl"]
-    if CC_ALG == "CALVIN":
-        executable_files.append("runsq")
+#    if CC_ALG == "CALVIN":
+#        executable_files.append("runsq")
     files = ["ifconfig.txt"]
     files.append(schema)
     succeeded = True
@@ -263,7 +264,7 @@ def killall():
         if not env.dry_run:
             run("pkill -f rundb")
             run("pkill -f runcl")
-            run("pkill -f runsq")
+#            run("pkill -f runsq")
 
 @task
 @parallel
@@ -297,14 +298,14 @@ def deploy(schema_path,nids,exps,fmt):
                         cmd += "(/dev/shm/runcl -nid{} {}>> /dev/shm/results{}.out 2>&1 &);".format(nn,args,nn)  
                     else:
                         cmd += "(./runcl -nid{} {}>> results{}.out 2>&1 &);".format(nn,args,nn)  
-            for r in env.roledefs["sequencer"]:
-                if r == env.host:
-                    nn = nid.next()
-                    args = get_args(fmt,exp.next())
-                    if env.shmem:
-                        cmd += "(/dev/shm/runsq -nid{} {}>> /dev/shm/results{}.out 2>&1 &);".format(nn,args,nn)  
-                    else:
-                        cmd += "(./runsq -nid{} {}>> results{}.out 2>&1 &);".format(nn,args,nn)  
+#            for r in env.roledefs["sequencer"]:
+#                if r == env.host:
+#                    nn = nid.next()
+#                    args = get_args(fmt,exp.next())
+#                    if env.shmem:
+#                        cmd += "(/dev/shm/runsq -nid{} {}>> /dev/shm/results{}.out 2>&1 &);".format(nn,args,nn)  
+#                    else:
+#                        cmd += "(./runsq -nid{} {}>> results{}.out 2>&1 &);".format(nn,args,nn)  
 
             cmd = cmd[:-3]
             cmd += ")"
@@ -423,13 +424,13 @@ def write_ifconfig(roles,exp):
                 nids[client].append(nid)
                 exps[client].append(exp)
             nid += 1
-        if "sequencer" in roles:
-            assert CC_ALG == "CALVIN"
-            sequencer = roles['sequencer'][0]
-            f.write(sequencer + "\n")
-            nids[sequencer] = [nid]
-            exps[sequencer] = [exp]
-            nid += 1
+#        if "sequencer" in roles:
+#            assert CC_ALG == "CALVIN"
+#            sequencer = roles['sequencer'][0]
+#            f.write(sequencer + "\n")
+#            nids[sequencer] = [nid]
+#            exps[sequencer] = [exp]
+#            nid += 1
     return nids,exps
             
 @task
@@ -459,8 +460,8 @@ def assign_roles(server_cnt,client_cnt,append=False):
         else:
             clients=env.hosts[server_cnt:server_cnt+client_cnt]
     new_roles = {}
-    if CC_ALG == 'CALVIN':
-        sequencer = env.hosts[server_cnt+client_cnt:server_cnt+client_cnt+1]
+#    if CC_ALG == 'CALVIN':
+#        sequencer = env.hosts[server_cnt+client_cnt:server_cnt+client_cnt+1]
     if env.roledefs is None or len(env.roledefs) == 0: 
         env.roledefs={}
         env.roledefs['clients']=[]
@@ -469,17 +470,17 @@ def assign_roles(server_cnt,client_cnt,append=False):
     if append:
         env.roledefs['clients'].extend(clients)
         env.roledefs['servers'].extend(servers)
-        if CC_ALG == 'CALVIN':
-            env.roledefs['sequencer'].extend(sequencer)
+#        if CC_ALG == 'CALVIN':
+#            env.roledefs['sequencer'].extend(sequencer)
     else:
         env.roledefs['clients']=clients
         env.roledefs['servers']=servers
-        if CC_ALG == 'CALVIN':
-            env.roledefs['sequencer']=sequencer
+#        if CC_ALG == 'CALVIN':
+#            env.roledefs['sequencer']=sequencer
     new_roles['clients']=clients
     new_roles['servers']=servers
-    if CC_ALG == 'CALVIN':
-        new_roles['sequencer']=sequencer
+#    if CC_ALG == 'CALVIN':
+#        new_roles['sequencer']=sequencer
     with color():
         puts("Assigned the following roles:",show_prefix=True)
         puts(pprint.pformat(new_roles,depth=3) + "\n",show_prefix=False)
@@ -511,7 +512,7 @@ def compile_binary(fmt,e):
             del ecfgs[c]
     cfgs.update(ecfgs)
     if env.remote and not env.same_node:
-        cfgs["TPORT_TYPE"],cfgs["TPORT_TYPE_IPC"],cfgs["TPORT_PORT"]="\"tcp\"","false",7000
+        cfgs["TPORT_TYPE"],cfgs["TPORT_TYPE_IPC"],cfgs["TPORT_PORT"]="\"tcp\"","false",17000
     if env.shmem:
         cfgs["SHMEM_ENV"]="true"
 
@@ -523,7 +524,7 @@ def compile_binary(fmt,e):
 
     local("cp rundb binaries/{}rundb".format(output_f))
     local("cp runcl binaries/{}runcl".format(output_f))
-    local("cp runsq binaries/{}runsq".format(output_f))
+#    local("cp runsq binaries/{}runsq".format(output_f))
     local("cp config.h binaries/{}cfg".format(output_f))
 
     if EXECUTE_EXPS:
@@ -559,7 +560,7 @@ def check_binaries(exps):
     for e in experiments:
         cfgs = get_cfgs(fmt,e)
         if env.remote and not env.same_node:
-            cfgs["TPORT_TYPE"],cfgs["TPORT_TYPE_IPC"],cfgs["TPORT_PORT"]="\"tcp\"","false",7000
+            cfgs["TPORT_TYPE"],cfgs["TPORT_TYPE_IPC"],cfgs["TPORT_PORT"]="\"tcp\"","false",17000
         if env.shmem:
             cfgs["SHMEM_ENV"]="true"
         
@@ -567,17 +568,19 @@ def check_binaries(exps):
         output_f = get_execfile_name(cfgs,fmt,env.hosts) 
 
         executables = glob.glob("{}*".format(os.path.join("binaries",output_f)))
-        has_rundb,has_runcl,has_runsq,has_config=False,False,False,False
+        has_rundb,has_runcl,has_config=False,False,False
+#        has_rundb,has_runcl,has_runsq,has_config=False,False,False,False
         for executable in executables:
             if executable.endswith("rundb"):
                 has_rundb = True
             elif executable.endswith("runcl"):
                 has_runcl = True
-            elif executable.endswith("runsq"):
-                has_runsq = True
+#            elif executable.endswith("runsq"):
+#                has_runsq = True
             elif executable.endswith("cfg"):
                 has_config = True
-        if not has_rundb or not has_runcl or not has_runsq or not has_config:
+#        if not has_rundb or not has_runcl or not has_runsq or not has_config:
+        if not has_rundb or not has_runcl or not has_config:
             execute(compile_binary,fmt,e)
 
 
@@ -632,8 +635,8 @@ def run_exp_old(exps,network_test=False,delay=''):
             except TypeError:
                 nclnodes = cfgs[cfgs["CLIENT_NODE_CNT"]]
                 ntotal = nnodes + nclnodes
-            if CC_ALG == 'CALVIN':
-                ntotal += 1
+#            if CC_ALG == 'CALVIN':
+#                ntotal += 1
             if env.same_node:
                 ntotal = 1
             if env.overlap:
@@ -753,9 +756,9 @@ def run_exp_old(exps,network_test=False,delay=''):
                         cmd = "./rundb -nid{}".format(n)
                     elif n < nnodes+nclnodes:
                         cmd = "./runcl -nid{}".format(n)
-                    elif n == nnodes+nclnodes:
-                        assert(CC_ALG == 'CALVIN')
-                        cmd = "./runsq -nid{}".format(n)
+#                    elif n == nnodes+nclnodes:
+#                        assert(CC_ALG == 'CALVIN')
+#                        cmd = "./runsq -nid{}".format(n)
                     else:
                         assert(false)
                     print(cmd)
@@ -927,8 +930,8 @@ def run_exp(exps,network_test=False,delay=''):
             nclnodes = cfgs["CLIENT_NODE_CNT"]
             ccalg = cfgs["CC_ALG"]
             ntotal = cfgs["NODE_CNT"] + cfgs["CLIENT_NODE_CNT"]
-            if ccalg == 'CALVIN':
-                ntotal += 1
+#            if ccalg == 'CALVIN':
+#                ntotal += 1
             if env.same_node:
                 ntotal = 1
             if env.overlap:
@@ -961,8 +964,8 @@ def run_exp(exps,network_test=False,delay=''):
             nclnodes = cfgs["CLIENT_NODE_CNT"]
             CC_ALG = cfgs["CC_ALG"]
             ntotal = cfgs["NODE_CNT"] + cfgs["CLIENT_NODE_CNT"]
-            if ccalg == 'CALVIN':
-                ntotal += 1
+#            if ccalg == 'CALVIN':
+#                ntotal += 1
             if env.same_node:
                 ntotal = 1
             if env.overlap:

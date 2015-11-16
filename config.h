@@ -64,6 +64,7 @@
 #define TPORT_TYPE "ipc"
 #define TPORT_TYPE_IPC true
 #define TPORT_PORT ".ipc"
+#define SET_AFFINITY true
 
 #define MAX_TPORT_NAME 128
 #define MSG_SIZE 128 // in bytes
