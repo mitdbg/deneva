@@ -64,7 +64,7 @@
 #define TPORT_TYPE "tcp"
 #define TPORT_TYPE_IPC false
 #define TPORT_PORT 7000
-#define SET_AFFINITY false
+#define SET_AFFINITY true
 
 #define MAX_TPORT_NAME 128
 #define MSG_SIZE 128 // in bytes
@@ -84,7 +84,7 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, VOLTDB, OCC, VLL, CALVIN
-#define CC_ALG TIMESTAMP
+#define CC_ALG CALVIN
 #define TWOPL_LITE false
 
 // all transactions acquire tuples according to the primary key order.
@@ -311,7 +311,7 @@ extern TestCases          g_test_case;
 #define DONE_TIMER 1 * 60 * BILLION // ~2 minutes
 
 #define SEED 0
-#define SHMEM_ENV true
+#define SHMEM_ENV false
 
 #endif
 

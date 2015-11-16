@@ -303,7 +303,7 @@ def draw_bars_single(data, xlabels,
     #xlabels = [str(x) for x in xlabels]
 
     xticks( ind,  xlabels, rotation=30, ha='center')
-    clr = itertools.cycle(['#DECF3F','#5DA5DA','#60BD68','#FAA43A','#DECF3F','#F15854','#4d4d4d'])
+    clr = itertools.cycle(['#4d4d4d','#F15854','#DECF3F','#5DA5DA','#FAA43A','#60BD68'])
     htch = itertools.cycle(['','//','\\','-','\\\\','/'])
 
     w = 0.8 
@@ -335,7 +335,7 @@ def draw_stack(data, xlabels, slabels, figname='stack', title=None, figsize=(8, 
     #xlabels = [str(x) for x in xlabels]
 
     xticks( ind,  xlabels, rotation=30, ha='center')
-    clr = itertools.cycle(['#DECF3F','#5DA5DA','#60BD68','#FAA43A','#F15854','#4d4d4d'])
+    clr = itertools.cycle(['#4d4d4d','#F15854','#DECF3F','#5DA5DA','#FAA43A','#60BD68'])
     htch = itertools.cycle(['','//','\\','-','\\\\','/'])
 
     for s in range(len(slabels)):
@@ -367,7 +367,7 @@ def draw_bars(data, xlabels,
     #xlabels = [str(x) for x in xlabels]
 
     xticks( ind,  xlabels, rotation=30, ha='center')
-    clr = itertools.cycle(['#DECF3F','#5DA5DA','#60BD68','#FAA43A','#DECF3F','#F15854','#4d4d4d'])
+    clr = itertools.cycle(['#4d4d4d','#F15854','#DECF3F','#5DA5DA','#FAA43A','#60BD68'])
     htch = itertools.cycle(['','//','\\','-','\\\\','/'])
 
     w = 0.12
@@ -401,7 +401,7 @@ def draw_stack(data, xlabels, slabels, figname='stack', title=None, figsize=(8, 
     #xlabels = [str(x) for x in xlabels]
 
     xticks( ind,  xlabels, rotation=30, ha='center')
-    clr = itertools.cycle(['#DECF3F','#5DA5DA','#60BD68','#FAA43A','#DECF3F','#F15854','#4d4d4d'])
+    clr = itertools.cycle(['#4d4d4d','#F15854','#DECF3F','#5DA5DA','#FAA43A','#60BD68'])
     htch = itertools.cycle(['','//','\\','-','\\\\','/'])
 
     for s in range(len(slabels)):

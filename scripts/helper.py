@@ -203,6 +203,8 @@ stat_map = {
  'msg_batch_cnt':[],
  'avg_msg_batch':[],
  'avg_msg_batch_bytes':[],
+'prof_cc_rel_abort':[],
+'prof_cc_rel_commit':[],
 
  'batches_sent':[],
  'batch_interval':[],
@@ -384,15 +386,6 @@ def plot_prep(nexp,nfmt,x_name,v_name,extras={},constants={}):
         for e in exp[:]:
             if e[fmt.index(x)] != constants[x]:
                 exp.remove(e)
-    for e in exp:
-        x_vals.append(e[fmt.index(x_name)])
-        del e[fmt.index(x_name)]
-    fmt.remove(x_name)
-    if v_name != '':
-        for e in exp:
-            v_vals.append(e[fmt.index(v_name)])
-            del e[fmt.index(v_name)]
-        fmt.remove(v_name)
     for x in extras.keys():
         if x not in fmt: 
             del extras[x]
@@ -400,14 +393,40 @@ def plot_prep(nexp,nfmt,x_name,v_name,extras={},constants={}):
         for e in exp:
             del e[fmt.index(x)]
         fmt.remove(x)
+    lst = {}
+    tmp_fmt = list(fmt)
+    tmp_fmt.remove(x_name)
+    for e in exp:
+        x_vals.append(e[fmt.index(x_name)])
+        x = e[fmt.index(x_name)]
+        del e[fmt.index(x_name)]
+        if v_name != '':
+            v_vals.append(e[tmp_fmt.index(v_name)])
+            v = e[tmp_fmt.index(v_name)]
+            del e[tmp_fmt.index(v_name)]
+        else:
+            v = 0
+        lst[(x,v)] = e
+    fmt.remove(x_name)
+    if v_name != '':
+        fmt.remove(v_name)
+#    for e in exp:
+#        x_vals.append(e[fmt.index(x_name)])
+#        del e[fmt.index(x_name)]
+#    fmt.remove(x_name)
+#    if v_name != '':
+#        for e in exp:
+#            v_vals.append(e[fmt.index(v_name)])
+#            del e[fmt.index(v_name)]
+#        fmt.remove(v_name)
     x_vals = list(set(x_vals))
     x_vals.sort()
     v_vals = list(set(v_vals))
     v_vals.sort()
     exp.sort()
     exp = list(k for k,_ in itertools.groupby(exp))
-    assert(len(exp)==1)
-    return x_vals,v_vals,fmt,exp[0]
+#    assert(len(exp)==1)
+    return x_vals,v_vals,fmt,exp[0],lst
 
 def get_prog(sfile):
     summary = {}
@@ -748,6 +767,7 @@ def print_keys(result_dir="../results",keys=['txn_cnt']):
 
 def get_summary_stats(stats,summary,summary_cl,summary_sq,x,v,cc):
     print(summary_cl['txn_cnt'])
+    nthd = 6
     if cc == "CALVIN":
         s = summary_sq
     else:
@@ -763,15 +783,40 @@ def get_summary_stats(stats,summary,summary_cl,summary_sq,x,v,cc):
     sk['time'] = avg_time
     sk['sys_tput'] = tot_txn_cnt / avg_time
     sk['per_node_tput'] = avg_txn_cnt / avg_time
-    sk['time_index'] = avg(summary['time_index'])
-    sk['time_abort'] = avg(summary['time_abort'])
-    sk['time_ccman'] = avg(summary['row1']) + avg(summary['row2']) +avg(summary['row3']) + avg(summary['txn_time_begintxn']) + avg(summary['time_validate'])
+    sk['thd1'] = avg(summary['thd1'])
+    sk['row1'] = avg(summary['row1'])
+    sk['row2'] = avg(summary['row2'])
+    sk['row3'] = avg(summary['row3'])
+    try:
+        sk['txn_time_begintxn'] = avg(summary['txn_time_begintxn']) / nthd
+        sk['time_validate'] = avg(summary['time_validate']) / nthd
+        sk['prof_time_twopc'] = avg(summary['prof_time_twopc']) / nthd
+        sk['time_msg_sent'] = avg(summary['time_msg_sent']) / nthd
+        sk['time_index'] = avg(summary['time_index']) / nthd
+        sk['prof_cc_rel_abort'] = avg(summary['prof_cc_rel_abort']) / nthd
+        sk['prof_cc_rel_commit'] = avg(summary['prof_cc_rel_commit']) / nthd
+# time_abort contains some row3
+        sk['time_abort'] = avg(summary['time_abort']) / nthd
+#    sk['time_abort'] = avg(summary['time_abort']) / nthd
+#    sk['time_ccman'] = avg(summary['row1']) + avg(summary['row2']) + avg(summary['txn_time_begintxn']) + avg(summary['time_validate'])
+        sk['time_ccman'] = sk['row1'] + sk['row2'] + sk['prof_cc_rel_commit']+ sk['txn_time_begintxn'] + sk['time_validate']
+#    sk['time_ccman'] = avg(summary['row1']) + avg(summary['row2']) +avg(summary['row3']) + avg(summary['txn_time_begintxn']) + avg(summary['time_validate'])
 #    sk['time_ccman'] = avg(summary['time_man']) + avg(summary['txn_time_begintxn']) + avg(summary['time_validate'])
-    sk['time_twopc'] = avg(summary['prof_time_twopc']) + avg(summary['time_msg_sent']) 
+        sk['time_twopc'] = sk['prof_time_twopc'] + sk['time_msg_sent'] 
+#    sk['time_twopc'] = avg(summary['prof_time_twopc']) + avg(summary['time_msg_sent']) 
 #    sk['time_twopc'] = avg(summary['type9']) + avg(summary['type12']) +avg(summary['type5']) + avg(summary['time_msg_sent']) - avg(summary['time_validate']) - avg(summary['row3'])
-    sk['time_work'] = avg(summary['clock_time']) - avg(summary['thd1']) - (sk['time_index'] + sk['time_abort'] + sk['time_ccman'] + sk['time_twopc'])
+        sk['time_work'] = sk['time'] - sk['thd1'] - (sk['time_index'] + sk['time_abort'] + sk['time_ccman'] + sk['time_twopc'])
+    except KeyError:
+        sk['time_index'] = 0
+        sk['time_abort'] = 0
+        sk['time_ccman'] = 0
+        sk['time_twopc'] = 0
+        sk['time_work'] = 0
+#    sk['time_work'] = avg(summary['clock_time']) - avg(summary['thd1']) - (sk['time_index'] + sk['time_abort'] + sk['time_ccman'] + sk['time_twopc'])
 #    sk['time_work'] = avg(summary['type10']) + avg(summary['type8'])
     total = sk['time_index'] + sk['time_abort'] + sk['time_ccman'] + sk['time_twopc'] + sk['time_work'] 
+    if total == 0:
+        total = 1
     sk['perc_index'] = sk['time_index'] / total * 100
     sk['perc_abort'] = sk['time_abort'] / total * 100
     sk['perc_ccman'] = sk['time_ccman'] / total * 100
@@ -870,6 +915,7 @@ def get_summary_stats(stats,summary,summary_cl,summary_sq,x,v,cc):
     return stats
    
 def write_summary_file(fname,stats,x_vals,v_vals):
+
     ps =  [
     'sys_txn_cnt',
     'avg_txn_cnt',
@@ -878,6 +924,7 @@ def write_summary_file(fname,stats,x_vals,v_vals):
     'time',
     'sys_tput',
     'per_node_tput',
+    'thd1',
     'time_index',
     'time_abort',
     'time_ccman',
@@ -947,6 +994,24 @@ def write_summary_file(fname,stats,x_vals,v_vals):
     'mvcc7',
     'mvcc8',
     ]
+#    ps = [
+#    'time',
+#    'thd1',
+#    'row1',
+#    'row2',
+#    'row3',
+#    'txn_time_begintxn',
+#    'time_validate',
+#    'prof_time_twopc',
+#    'time_msg_sent',
+#    'prof_cc_rel_abort',
+#    'prof_cc_rel_commit',
+#    'time_index',
+#    'time_abort',
+#    'time_ccman',
+#    'time_twopc',
+#    'time_work',
+#    ]
     with open('../figs/' + fname+'.csv','w') as f:
         if v_vals == []:
             f.write(', ' + ', '.join(x_vals) +'\n')
