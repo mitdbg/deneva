@@ -490,22 +490,29 @@ void Transport::simple_send_msg(int size) {
 	ts_t time = get_sys_clock();
 	memcpy(&((char*)sbuf)[0],&time,sizeof(ts_t));
 
-	int rc = s[(g_node_id + 1) % _node_cnt].sock.send(&sbuf,NN_MSG,0);
-	if(rc < 0) {
-		printf("send Error: %d %s\n",errno,strerror(errno));
-		assert(false);
+  int rc = -1;
+  while(rc < 0 ) {
+    //rc = s[(g_node_id + 1) % _node_cnt].sock.send(&sbuf,NN_MSG,0);
+  if(g_node_id == 0)
+    rc = s[3].sock.send(&sbuf,NN_MSG,0);
+  else
+    rc = s[2].sock.send(&sbuf,NN_MSG,0);
 	}
 }
 
 uint64_t Transport::simple_recv_msg() {
 	int bytes;
 	void * buf;
-	bytes = s[(g_node_id + 1) % _node_cnt].sock.recv(&buf, NN_MSG, NN_DONTWAIT);
-	if(bytes <= 0 ) {
-		if(errno != 11)
-			nn::freemsg(buf);	
-		return 0;
-	}
+
+  if(g_node_id == 0)
+		bytes = s[1].sock.recv(&buf, NN_MSG, NN_DONTWAIT);
+  else
+		bytes = s[0].sock.recv(&buf, NN_MSG, NN_DONTWAIT);
+    if(bytes <= 0 ) {
+      if(errno != 11)
+        nn::freemsg(buf);	
+      return 0;
+    }
 
 	ts_t time;
 	memcpy(&time,&((char*)buf)[0],sizeof(ts_t));

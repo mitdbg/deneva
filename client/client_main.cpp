@@ -66,7 +66,7 @@ int main(int argc, char* argv[])
 	m_wl->workload::init();
 	printf("workload initialized!\n");
 #if NETWORK_TEST
-	tport_man.init(g_node_id);
+	tport_man.init(g_node_id,m_wl);
 	sleep(3);
 	if(g_node_id == 0)
 		network_test();

@@ -150,8 +150,9 @@ def ycsb_scaling():
 
 def ycsb_scaling_2():
     wl = 'YCSB'
-    nnodes = [1,2,4,8,16,32,64]
+    nnodes = [1,2,4,8,16,32]#,48]#,64]
     nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP','CALVIN']
+    nalgos=['CALVIN']
     fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PART_PER_TXN"]
     exp = [[wl,n,cc,2] for n,cc in itertools.product(nnodes,nalgos)]
     return fmt,exp
@@ -169,9 +170,11 @@ def ycsb_gold():
 
 def ycsb_writes():
     wl = 'YCSB'
-    nnodes = [1,2,4,8,16,32,64]
+#nnodes = [1,2,4,8,16,32,64]
+    nnodes = [1,2,4,8,16,32,48]#,64]
     nwr = [0.0,0.1,0.2,0.3,0.4,0.5]
     nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP','CALVIN']
+    nalgos=['CALVIN']
     fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PART_PER_TXN","TUP_WRITE_PERC"]
     exp = [[wl,n,cc,2,wr] for n,cc,wr in itertools.product(nnodes,nalgos,nwr)]
     return fmt,exp
@@ -224,20 +227,21 @@ def ycsb_scaling_2_low_access():
 def ycsb_parts():
     wl = 'YCSB'
     nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
-#    nalgos=['OCC','MVCC','TIMESTAMP','CALVIN']
+    nalgos=['CALVIN']
     nparts = [2,4,6,8,10,12,14,16]
     rpq =  16
     fmt = ["WORKLOAD","REQ_PER_QUERY","PART_PER_TXN","CC_ALG","STRICT_PPT","MAX_TXN_IN_FLIGHT"]
     exp = [[wl,rpq,p,cc,1,50000] for p,cc in itertools.product(nparts,nalgos)]
-#    exp += [[wl,rpq,1,'CALVIN',1]]
-    nalgos=['NO_WAIT','WAIT_DIE']
-    fmt = ["WORKLOAD","REQ_PER_QUERY","PART_PER_TXN","CC_ALG","STRICT_PPT","MAX_TXN_IN_FLIGHT"]
-    exp += [[wl,rpq,p,cc,1,25000] for p,cc in itertools.product(nparts,nalgos)]
+    exp += [[wl,rpq,1,'CALVIN',1]]
+#    nalgos=['NO_WAIT','WAIT_DIE']
+#    fmt = ["WORKLOAD","REQ_PER_QUERY","PART_PER_TXN","CC_ALG","STRICT_PPT","MAX_TXN_IN_FLIGHT"]
+#    exp += [[wl,rpq,p,cc,1,25000] for p,cc in itertools.product(nparts,nalgos)]
     return fmt,exp
 
 def ycsb_load():
     wl = 'YCSB'
     nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP','CALVIN']
+    nalgos=['CALVIN']
 #    ntif = [5000,10000,20000,30000,40000,50000]
     ntif = [5000,10000,20000,30000,40000,50000,60000,70000,80000,90000,100000,110000,120000,130000,140000]
     nnodes = [16]
@@ -249,6 +253,7 @@ def ycsb_load():
 def ycsb_load_ro():
     wl = 'YCSB'
     nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
+    nalgos=['CALVIN']
     ntif = [10000,25000,50000,75000,100000,125000,150000,175000,200000]
     nnodes = [16]
     rpq =  10
@@ -283,13 +288,14 @@ def ycsb_contention_2_nodesweep():
     wl = 'YCSB'
     nnodes = [1,2,4,8,16,32]
     nalgos=['OCC','MVCC','TIMESTAMP','CALVIN']
+    nalgos=['CALVIN']
     nparts = [2]
     a_perc=[0.0,0.01,0.02,0.03,0.05,0.06,0.07]
     fmt = ["WORKLOAD","ACCESS_PERC","CC_ALG","PART_PER_TXN","MAX_TXN_IN_FLIGHT","NODE_CNT"]
     exp = [[wl,a,cc,p,50000,n] for a,cc,n,p in itertools.product(a_perc,nalgos,nnodes,nparts)]
-    nalgos=['NO_WAIT','WAIT_DIE']
-    fmt = ["WORKLOAD","ACCESS_PERC","CC_ALG","PART_PER_TXN","MAX_TXN_IN_FLIGHT","NODE_CNT"]
-    exp += [[wl,a,cc,p,25000,n] for a,cc,n,p in itertools.product(a_perc,nalgos,nnodes,nparts)]
+#    nalgos=['NO_WAIT','WAIT_DIE']
+#    fmt = ["WORKLOAD","ACCESS_PERC","CC_ALG","PART_PER_TXN","MAX_TXN_IN_FLIGHT","NODE_CNT"]
+#    exp += [[wl,a,cc,p,25000,n] for a,cc,n,p in itertools.product(a_perc,nalgos,nnodes,nparts)]
     return fmt,exp
 
 
@@ -715,9 +721,18 @@ def ycsb_parts_plot(summary,summary_client,summary_seq):
 
 
 
+def network_test():
+    wl = 'YCSB'
+    nnodes = [1]
+    nalgos=['NO_WAIT']
+    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","NETWORK_TEST","SET_AFFINITY"]
+    exp = [[wl,n,cc,'true','false'] for n,cc in itertools.product(nnodes,nalgos)]
+    return fmt,exp
+
 
 
 experiment_map = {
+    'network_test':network_test,
     'test': test,
     'inflight_study': inflight_study,
     'ycsb_scaling': ycsb_scaling,
@@ -827,7 +842,7 @@ configs = {
     "MODE":"NORMAL_MODE",
     "SHMEM_ENV":"false",
     "STRICT_PPT":0,
-    "SET_AFFINITY":"true",
+    "SET_AFFINITY":"false",
 }
 
 config_names = fmt_ycsb[0]

@@ -299,6 +299,8 @@ def tput(xval,vval,summary,summary_cl,summary_sq,
         xlab="",
         new_cfgs = {},
         ylimit=0,
+        logscale=False,
+        logscalex=False,
         ):
     global plot_cnt
     tpt = {}
@@ -382,7 +384,7 @@ def tput(xval,vval,summary,summary_cl,summary_sq,
         _xval = [x/1000 for x in _xval]
 #bbox = [0.7,0.9]
     print("Created plot {}".format(name))
-    draw_line(name,tpt,_xval,ylab='Throughput (Thousand txn/s)',xlab=_xlab,title=_title,bbox=bbox,ncol=2,ltitle=vname,ylimit=ylimit) 
+    draw_line(name,tpt,_xval,ylab='Throughput (Thousand txn/s)',xlab=_xlab,title=_title,bbox=bbox,ncol=2,ltitle=vname,ylimit=ylimit,logscale=logscale,logscalex=logscalex)
 #    draw_line("pn"+name,pntpt,_xval,ylab='Throughput (Txn/sec)',xlab=_xlab,title="Per Node "+_title,bbox=bbox,ncol=2,ltitle=vname) 
     write_summary_file(name,stats,_xval,vval)
 
