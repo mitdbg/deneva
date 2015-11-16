@@ -142,6 +142,7 @@ extern UInt32 g_max_txn_per_part;
 extern bool g_hw_migrate;
 extern UInt32 g_network_delay;
 extern UInt64 g_done_timer;
+extern UInt64 g_batch_time_limit;
 extern UInt64 g_prog_timer;
 extern UInt64 g_msg_time_limit;
 
@@ -186,7 +187,7 @@ extern UInt32 g_max_items_per_txn;
 extern UInt32 g_seq_thread_cnt;
 
 enum RC { RCOK, Commit, Abort, WAIT, WAIT_REM, ERROR, FINISH, NONE };
-enum RemReqType {INIT_DONE,EXP_DONE,RLK, RULK, RQRY, RFIN, RLK_RSP, RULK_RSP, RQRY_RSP, RACK, RTXN, RINIT, RPREPARE,RPASS,RFWD,CL_RSP,NO_MSG};
+enum RemReqType {INIT_DONE,EXP_DONE,RLK, RULK, RQRY, RFIN, RLK_RSP, RULK_RSP, RQRY_RSP, RACK, RTXN, RINIT, RPREPARE,RPASS,RFWD,RDONE,CL_RSP,NO_MSG};
 
 /* Thread */
 typedef uint64_t txnid_t;
@@ -221,6 +222,7 @@ enum TsType {R_REQ, W_REQ, P_REQ, XP_REQ};
 #define GET_PART_ID_IDX(p)	(p / g_node_cnt) 
 #define ISSEQUENCER (CC_ALG == CALVIN && g_node_id == g_node_cnt + g_client_node_cnt ) //FIXME: Is this the right formula?
 #define ISSERVER (g_node_id < g_node_cnt)
+#define ISSERVERN(id) (id < g_node_cnt)
 #define ISCLIENT (g_node_id >= g_node_cnt && g_node_id < g_node_cnt + g_client_node_cnt)
 #define ISCLIENTN(id) (id >= g_node_cnt && id < g_node_cnt + g_client_node_cnt)
 #define IS_LOCAL(tid) (tid % g_node_cnt == g_node_id || CC_ALG == CALVIN)

@@ -40,6 +40,7 @@ FLAG = {
     "MPIR" : "-mpi",
     "NUM_WH": "-wh",
     "DONE_TIMER": "-done",
+    "BATCH_TIMER": "-btmr",
     "PROG_TIMER": "-prog",
     "ABORT_PENALTY": "-abrt",
     "SYNTH_TABLE_SIZE":"-s",

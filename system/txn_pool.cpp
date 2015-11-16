@@ -133,6 +133,7 @@ void QryPool::get(base_query *& item) {
     qry->part_touched = (uint64_t*)mem_allocator.alloc(sizeof(uint64_t)*g_part_per_txn,0);
     item = (base_query*)qry;
   }
+  DEBUG_M("get 0x%lx\n",(uint64_t)item);
   item->clear();
   item->base_reset();
   item->reset();
@@ -140,6 +141,7 @@ void QryPool::get(base_query *& item) {
 
 void QryPool::put(base_query * item) {
   assert(item);
+  DEBUG_M("put 0x%lx\n",(uint64_t)item);
   pool.enqueue(item);
 }
 

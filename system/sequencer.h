@@ -17,17 +17,30 @@ typedef struct qlite_entry {
 	uint32_t server_ack_cnt;
 } qlite;
 
+typedef struct qlite_ll_entry {
+  qlite * list;
+	uint64_t size;
+	uint32_t max_size;
+	uint32_t txns_left;
+	uint64_t epoch;
+  qlite_ll_entry * next;
+  qlite_ll_entry * prev;
+} qlite_ll;
+
 
 class Sequencer {
  public:
 	void init(workload * wl);	
+	void process_ack(base_query * query, uint64_t thd_id);
+	void process_txn(base_query * query);
+	void send_next_batch(uint64_t thd_id);
 	void process_txn_ack(base_query * query, uint64_t thd_id);
 	void process_new_txn(base_query * query);
 	void prepare_next_batch(uint64_t thd_id);
 	//void start_batch_timer();
 	void send_first_batch(uint64_t thd_id); 
 	//WorkQueue * fill_queue;		// queue currently being filled with new txns
-  moodycamel::ConcurrentQueue<base_query*,moodycamel::ConcurrentQueueDefaultTraits> fill_queue;
+  moodycamel::ConcurrentQueue<base_query*,moodycamel::ConcurrentQueueDefaultTraits> * fill_queue;
 	volatile uint64_t total_txns_finished;
 	volatile uint64_t total_txns_received;
 	volatile bool sent_first_batch;
@@ -44,9 +57,8 @@ class Sequencer {
   uint64_t batch_size;
   uint64_t next_batch_size;
 	void reset_participating_nodes(bool * part_nodes);
-	qlite * wait_list;		// list of txns in batch being executed
-	uint64_t wait_list_size;
-	uint32_t wait_txns_left;
+	qlite_ll * wl_head;		// list of txns in batch being executed
+	qlite_ll * wl_tail;		// list of txns in batch being executed
 	volatile uint32_t next_txn_id;
 	volatile uint32_t start_txn_id;
 	pthread_mutex_t mtx;

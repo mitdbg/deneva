@@ -1,6 +1,7 @@
 #ifndef _TXN_POOL_H_
 #define _TXN_POOL_H_
 
+
 #include "global.h"
 #include "helper.h"
 #include "concurrentqueue.h"
@@ -11,6 +12,7 @@ class workload;
 struct msg_entry;
 struct txn_node;
 class Access;
+
 
 class TxnPool {
 public:

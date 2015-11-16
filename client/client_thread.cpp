@@ -80,13 +80,8 @@ RC Client_thread_t::run_remote() {
 			assert(m_query->dest_id == g_node_id);
 			switch (m_query->rtype) {
 				case CL_RSP:
-#if CC_ALG == CALVIN
-					assert(m_query->return_id == g_node_cnt + g_client_node_cnt);
-					return_node_offset = 0;
-#else
           return_node_offset = m_query->return_id - g_server_start_node;
           assert(return_node_offset < g_servers_per_client);
-#endif
 		      rsp_cnts[return_node_offset]++;
 					inf = client_man.dec_inflight(return_node_offset);
           assert(inf >=0);
@@ -208,9 +203,11 @@ RC Client_thread_t::run() {
     m_query = new tpcc_client_query;
 #endif
 		uint64_t nnodes = g_node_cnt + g_client_node_cnt;
+    /*
 #if CC_ALG == CALVIN
 		nnodes++;
 #endif
+*/
 		for(uint64_t i = 0; i < nnodes; i++) {
 			if(i != g_node_id) {
         msg_queue.enqueue(NULL,INIT_DONE,i);
@@ -274,11 +271,13 @@ RC Client_thread_t::run() {
 #endif
 */
 
+   /* 
 #if CC_ALG == CALVIN
     msg_queue.enqueue((base_query*)((void*)m_query),RTXN,g_node_cnt + g_client_node_cnt);
 #else
+*/
     msg_queue.enqueue((base_query*)((void*)m_query),RTXN,GET_NODE_ID(m_query->pid));
-#endif
+//#endif
 		num_txns_sent++;
 		txns_sent[GET_NODE_ID(m_query->pid)-g_server_start_node]++;
     INC_STATS(get_thd_id(),txn_sent,1);

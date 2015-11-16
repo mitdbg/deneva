@@ -28,6 +28,7 @@ void MessageThread::run() {
   RemReqType type;
   uint64_t dest;
   mbuf * sbuf;
+  //uint64_t startptr;
   uint64_t sthd_prof_start = get_sys_clock();
 
   uint64_t head_start = msg_queue.dequeue(head_qry,head_type,head_dest);
@@ -72,7 +73,9 @@ void MessageThread::run() {
   sthd_prof_start = get_sys_clock();
 
 
+  //startptr = sbuf->ptr;
   copy_to_buffer(sbuf,type,qry);
+  //assert(sbuf->ptr - startptr == get_msg_size(type,qry));
 
   //if(_thd_id == g_thread_cnt) 
   //  printf("Sthd Add %ld %ld\n",dest,get_sys_clock()-sbuf->starttime);
@@ -80,10 +83,8 @@ void MessageThread::run() {
   INC_STATS(_thd_id,sthd_prof_3,get_sys_clock() - sthd_prof_start);
   sthd_prof_start = get_sys_clock();
   // This is the end for final RACKs and CL_RSP; delete from txn pool
+#if CC_ALG != CALVIN
   if((type == RACK && qry->rtype==RFIN) || (type == CL_RSP)) {
-    if(ISSEQUENCER) {
-      mem_allocator.free(qry,sizeof(base_query));
-    } else {
 #if MODE==SIMPLE_MODE
       // Need to free the original query
       //  that was not placed in txn pool
@@ -92,15 +93,17 @@ void MessageThread::run() {
 #else
       txn_table.delete_txn(qry->return_id, qry->txn_id);
 #endif
-    }
   }
-#if CC_ALG == CALVIN
-  if(type == RACK && !ISSEQUENCER) {
-      txn_table.delete_txn(qry->return_id, qry->txn_id);
+#else//CALVIN
+  if(type == RACK) {
+      //txn_table.delete_txn(qry->return_id, qry->txn_id);
+      qry_pool.put(qry);
+  } else if (ISSERVER && (type == CL_RSP )) {
+      qry_pool.put(qry);
   }
 #endif
 #if MODE==QRY_ONLY_MODE || MODE == SETUP_MODE || MODE == SIMPLE_MODE
-  if(!ISSEQUENCER && type == RQRY_RSP && qry->max_done) {
+  if(type == RQRY_RSP && qry->max_done) {
     txn_table.delete_txn(qry->return_id, qry->txn_id);
   }
 #endif
@@ -140,7 +143,7 @@ void MessageThread::copy_to_buffer(mbuf * sbuf, RemReqType type, base_query * qr
     sbuf->starttime = get_sys_clock();
   sbuf->cnt++;
 
-  if(ISCLIENT || type == INIT_DONE || type == EXP_DONE) {
+  if(ISCLIENT || type == INIT_DONE || type == EXP_DONE || type == RDONE) {
     uint64_t tmp = UINT64_MAX;
   COPY_BUF(sbuf->buffer,tmp,sbuf->ptr);
   COPY_BUF(sbuf->buffer,type,sbuf->ptr);
@@ -169,12 +172,13 @@ void MessageThread::copy_to_buffer(mbuf * sbuf, RemReqType type, base_query * qr
     case  RULK_RSP:   /* TODO */ break;
     case  RQRY_RSP:   rqry_rsp(sbuf,qry);break;
     case  RACK:       rack(sbuf,qry);break;
-    case  RTXN:       if(ISSEQUENCER) rtxn_seq(sbuf,qry); else rtxn(sbuf,qry);break;
+    case  RTXN:       if(ISCLIENT) rtxn(sbuf,qry); else rtxn_seq(sbuf,qry);break;
     case  RINIT:      rinit(sbuf,qry);break;
     case  RPREPARE:   rprepare(sbuf,qry);break;
     case RPASS:       break;
     case RFWD:        rfwd(sbuf,qry);break;
     case CL_RSP:      cl_rsp(sbuf,qry);break;
+    case  RDONE:      break;
     case NO_MSG: assert(false);
     default: assert(false);
   }
@@ -238,25 +242,28 @@ uint64_t MessageThread::get_msg_size(RemReqType type,base_query * qry) {
         case  RLK_RSP:    /* TODO */ break;
         case  RULK_RSP:   /* TODO */ break;
         case  RQRY_RSP:   size +=sizeof(RC) + sizeof(uint64_t);break;
-        case  RACK:       size += sizeof(RC);break;
+        case  RACK:       size += sizeof(RC);
+#if CC_ALG == CALVIN
+                          size += sizeof(uint64_t); // 12 
+#endif
+                          break;
         case  RTXN:       
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
                           size += sizeof(uint64_t);
 #endif
-                          size += sizeof(uint64_t) * 2; //24
+                          size += sizeof(uint64_t) * 2; //16
 #if CC_ALG == CALVIN
-                          size += sizeof(uint64_t)*2; // 24
+                          size += sizeof(uint64_t)*2; // 16
 #endif
-                          if(ISSEQUENCER) 
-                            size += sizeof(uint64_t) * (m_qry->part_num + 1); //24
+                          if(ISCLIENT) 
+                            size += sizeof(uint64_t) * (m_qry2->part_num + 1); // 8 + 8*pnum
                           else
-                            size += sizeof(uint64_t) * (m_qry2->part_num + 1); //24
-                          size += sizeof(uint64_t); //8
+                            size += sizeof(uint64_t) * (m_qry->part_num + 1); // 8 + 8*pnum
 
 #if WORKLOAD == TPCC
-                          size += sizeof(TPCCTxnType);
-                          size += sizeof(uint64_t)*3;
-                          if(ISSEQUENCER) {
+                          size += sizeof(TPCCTxnType); // 4
+                          size += sizeof(uint64_t)*3; // 24 // :96
+                          if(!ISCLIENT) {
   switch (m_qry->txn_type) {
     case TPCC_PAYMENT:
       size += sizeof(uint64_t)*3 + sizeof(char)*LASTNAME_LEN+ sizeof(double) + sizeof(bool);
@@ -273,14 +280,15 @@ uint64_t MessageThread::get_msg_size(RemReqType type,base_query * qry) {
       size += sizeof(uint64_t)*3 + sizeof(char)*LASTNAME_LEN+ sizeof(double) + sizeof(bool);
       break;
     case TPCC_NEW_ORDER:
-      size += sizeof(uint64_t)*4 + sizeof(Item_no)*m_qry2->ol_cnt + sizeof(bool)*2;
+      size += sizeof(uint64_t)*4 + sizeof(Item_no)*m_qry2->ol_cnt + sizeof(bool)*2; // :322
       break;
     default:
       assert(false);
   }
                           }
 #elif WORKLOAD == YCSB
-                          if(ISSEQUENCER) 
+                          size += sizeof(uint64_t); //8
+                          if(!ISCLIENT) 
                             size += sizeof(ycsb_request) * (m_qry->request_cnt); // 240
                           else
                             size += sizeof(ycsb_request) * (m_qry2->request_cnt); // 240
@@ -305,6 +313,7 @@ uint64_t MessageThread::get_msg_size(RemReqType type,base_query * qry) {
                           size +=sizeof(uint64_t)*2;
                           break;
         case CL_RSP:      size +=sizeof(RC) + sizeof(uint64_t);break;
+        case RDONE:      break;
         default: assert(false);
   }
 
@@ -314,6 +323,9 @@ void MessageThread::rack(mbuf * sbuf,base_query * qry) {
   DEBUG("Sending RACK %ld\n",qry->txn_id);
   assert(IS_REMOTE(qry->txn_id));
   COPY_BUF(sbuf->buffer,qry->rc,sbuf->ptr);
+#if CC_ALG == CALVIN
+  COPY_BUF(sbuf->buffer,qry->batch_id,sbuf->ptr);
+#endif
 }
 
 void MessageThread::rfwd(mbuf * sbuf,base_query * qry) {
@@ -343,8 +355,7 @@ void MessageThread::rfin(mbuf * sbuf,base_query * qry) {
 }
 
 void MessageThread::cl_rsp(mbuf * sbuf, base_query *qry) {
-  if(!ISSEQUENCER)
-    DEBUG("Sending CL_RSP %ld\n",qry->txn_id);
+  DEBUG("Sending CL_RSP %ld\n",qry->txn_id);
   assert(IS_LOCAL(qry->txn_id));
   COPY_BUF(sbuf->buffer,qry->rc,sbuf->ptr);
   COPY_BUF(sbuf->buffer,qry->client_startts,sbuf->ptr);
@@ -460,7 +471,6 @@ void MessageThread::rqry_rsp(mbuf * sbuf, base_query *qry) {
 }
 
 void MessageThread::rtxn(mbuf * sbuf, base_query *qry) {
-  if(!ISSEQUENCER)
     DEBUG("Sending RTXN\n");
   //assert(ISCLIENT);
 #if WORKLOAD == TPCC
@@ -522,7 +532,7 @@ void MessageThread::rtxn(mbuf * sbuf, base_query *qry) {
 }
 
 void MessageThread::rtxn_seq(mbuf * sbuf, base_query *qry) {
-  DEBUG("Sending RTXN\n");
+  DEBUG("Sending RTXN %ld\n",qry->txn_id);
 #if WORKLOAD == TPCC
     tpcc_query * m_qry = (tpcc_query *)qry;
 #elif WORKLOAD == YCSB
@@ -536,8 +546,7 @@ void MessageThread::rtxn_seq(mbuf * sbuf, base_query *qry) {
   COPY_BUF(sbuf->buffer,m_qry->pid,sbuf->ptr);
   COPY_BUF(sbuf->buffer,ts,sbuf->ptr);
 #if CC_ALG == CALVIN
-  uint64_t batch_num = 0;
-  COPY_BUF(sbuf->buffer,batch_num,sbuf->ptr);
+  COPY_BUF(sbuf->buffer,m_qry->batch_id,sbuf->ptr);
   COPY_BUF(sbuf->buffer,m_qry->txn_id,sbuf->ptr);
 #endif
   COPY_BUF(sbuf->buffer,m_qry->part_num,sbuf->ptr);

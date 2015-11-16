@@ -345,6 +345,7 @@ def tput(xval,vval,summary,summary_cl,summary_sq,
             nnodes = cfgs["NODE_CNT"]
             cfgs = get_outfile_name(cfgs,my_cfg_fmt)
             print(cfgs)
+            tmp = 0
             if cfgs not in summary.keys(): 
                 print("Not in summary: {}".format(cfgs))
                 continue 
@@ -359,14 +360,8 @@ def tput(xval,vval,summary,summary_cl,summary_sq,
                 tmp = 3
 #FIXME
                 avg_txn_cnt = avg(summary[cfgs]['txn_cnt'])
-                tmp = 4
-                s = summary[cfgs]
-                tmp = 5
-                s = summary_cl[cfgs]
-                tmp = 6
-                s = summary_sq[cfgs]
             except KeyError:
-                print("KeyError: {} {} {} -- {}".format(tmp,v,x,cfgs))
+                print("KeyError: {}, {} {} -- {}".format(tmp,v,x,cfgs))
                 tpt[_v][xi] = 0
                 pntpt[_v][xi] = 0
                 continue
@@ -383,6 +378,8 @@ def tput(xval,vval,summary,summary_cl,summary_sq,
     pp.pprint(tpt)
 #    bbox = [0.8,0.35]
     bbox = [1.0,0.95]
+    if xname == 'NETWORK_DELAY':
+        _xval = [x/1000 for x in _xval]
 #bbox = [0.7,0.9]
     print("Created plot {}".format(name))
     draw_line(name,tpt,_xval,ylab='Throughput (Thousand txn/s)',xlab=_xlab,title=_title,bbox=bbox,ncol=2,ltitle=vname,ylimit=ylimit) 

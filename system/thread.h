@@ -31,6 +31,7 @@ public:
 	RC 			run_abort();
 	RC 			run_remote();
 	RC 			run_calvin_lock();
+	RC 			run_calvin_seq();
 	RC 			run_calvin();
 
   RC process_rfin(base_query *& m_query,txn_man *& m_txn);

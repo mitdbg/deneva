@@ -18,6 +18,7 @@
 #include "helper.h"
 #include "msg_thread.h"
 #include "msg_queue.h"
+#include "sequencer.h"
 
 void thread_t::init(uint64_t thd_id, uint64_t node_id, workload * workload) {
 	_thd_id = thd_id;
@@ -173,9 +174,11 @@ RC thread_t::run() {
     m_query = new tpcc_query;
 #endif
 		uint64_t total_nodes = g_node_cnt + g_client_node_cnt;
+    /*
 #if CC_ALG == CALVIN
 		total_nodes++;
 #endif
+*/
 		for(uint64_t i = 0; i < total_nodes; i++) {
 			if(i != g_node_id) {
         msg_queue.enqueue(NULL,INIT_DONE,i);
@@ -540,7 +543,7 @@ RC thread_t::run() {
             m_txn->spec = false;
             m_txn->spec_done = false;
 					  //work_queue.add_query(_thd_id,m_query);
-            work_queue.enqueue(get_thd_id(),m_query);
+            work_queue.enqueue(get_thd_id(),m_query,false);
             break;
           }
 #endif
@@ -1451,6 +1454,7 @@ RC thread_t::run_calvin_lock() {
     thd_prof_start = get_sys_clock();
 
     assert(m_query->rtype == RTXN);
+    assert(m_query->txn_id != UINT64_MAX);
 
     txn_table.get_txn(g_node_id,m_query->txn_id,m_txn,tmp_query);
     if(m_txn==NULL) {
@@ -1459,6 +1463,7 @@ RC thread_t::run_calvin_lock() {
     } 
     txn_table.add_txn(g_node_id,m_txn,m_query);
     m_txn->register_thd(this);
+    m_txn->batch_id = m_query->batch_id;
     // Acquire locks
     rc = m_txn->acquire_locks(m_query);
 
@@ -1466,7 +1471,7 @@ RC thread_t::run_calvin_lock() {
 
 
     if(rc == RCOK) {
-      work_queue.enqueue(_thd_id,m_query);
+      work_queue.enqueue(_thd_id,m_query,false);
     }
 
     work_queue.done(_thd_id,m_txn->get_txn_id());
@@ -1490,9 +1495,11 @@ RC thread_t::run_calvin() {
     m_query = new tpcc_query;
 #endif
 		uint64_t total_nodes = g_node_cnt + g_client_node_cnt;
+    /*
 #if CC_ALG == CALVIN
 		total_nodes++;
 #endif
+*/
 		for(uint64_t i = 0; i < total_nodes; i++) {
 			if(i != g_node_id) {
         msg_queue.enqueue(NULL,INIT_DONE,i);
@@ -1584,6 +1591,7 @@ RC thread_t::run_calvin() {
 		txn_starttime = get_sys_clock();
     assert(m_query->rtype <= NO_MSG);
     uint64_t txn_type = (uint64_t)m_query->rtype;
+    uint64_t tid = m_query->txn_id;
 
 		switch(m_query->rtype) {
       case RFWD:
@@ -1594,6 +1602,7 @@ RC thread_t::run_calvin() {
 					rc = _wl->get_txn_man(m_txn);
 					assert(rc == RCOK);
 					m_txn->set_txn_id(m_query->txn_id);
+          m_txn->batch_id = m_query->batch_id;
 					txn_table.add_txn(g_node_id,m_txn,m_query);
         } else {
           tmp_query = tmp_query->merge(m_query);
@@ -1661,13 +1670,88 @@ RC thread_t::run_calvin() {
       // FIXME
 			//rem_qry_man.send_client_rsp(m_query);
 			//rem_qry_man.ack_response(m_query);
-      msg_queue.enqueue(m_query,RACK,m_query->return_id);
+      if(m_query->return_id == g_node_id) {
+        m_query->rtype = RACK;
+        work_queue.enqueue(_thd_id,m_query,false);
+      } else {
+        msg_queue.enqueue(m_query,RACK,m_query->return_id);
+      }
+      txn_table.delete_txn(m_query->return_id,tid);
+      ATOM_SUB(_wl->epoch_txn_cnt,1);
     }
-    work_queue.done(_thd_id,m_txn->get_txn_id());
+    work_queue.done(_thd_id,tid);
 
 		timespan = get_sys_clock() - starttime;
 		INC_STATS(get_thd_id(),time_work,timespan);
 
   }
 }
+
+RC thread_t::run_calvin_seq() {
+	printf("RunCalvinSequencer %ld:%ld\n",_node_id, _thd_id);
+  fflush(stdout);
+	if (warmup_finish) {
+		mem_allocator.register_thread(_thd_id);
+	}
+	stats.init(get_thd_id());
+	pthread_barrier_wait( &warmup_bar );
+	base_query * m_query = NULL;
+  _wl->epoch = 0;
+
+	pthread_barrier_wait( &warmup_bar );
+	printf("RunCalvinSequencer %ld:%ld\n",_node_id, _thd_id);
+  fflush(stdout);
+
+	myrand rdm;
+	rdm.init(get_thd_id());
+  //uint64_t thd_prof_start;
+	uint64_t run_starttime = get_sys_clock();
+	uint64_t last_batchtime = run_starttime;
+
+	while(true) {
+    m_query = NULL;
+
+    bool got_qry = false;
+		while(!(got_qry = work_queue.dequeue(_thd_id, m_query))
+                && (get_sys_clock() - last_batchtime < g_batch_time_limit) 
+                && !_wl->sim_done && !_wl->sim_timeout
+                && (get_sys_clock() - run_starttime < g_done_timer)) {
+    }
+
+		// End conditions
+    if((get_sys_clock() - run_starttime >= g_done_timer)
+        ||(_wl->sim_done && _wl->sim_timeout)) { 
+      printf("FINISH %ld:%ld\n",_node_id,_thd_id);
+      fflush(stdout);
+			return FINISH;
+		}
+
+
+    if(get_sys_clock() - last_batchtime >= g_batch_time_limit) {
+      ATOM_ADD(_wl->epoch,1);
+      seq_man.send_next_batch(_thd_id);
+      last_batchtime = get_sys_clock();
+    }
+
+		if(!got_qry)
+			continue;
+    uint64_t tid = m_query->txn_id;
+
+    switch (m_query->rtype) {
+      case RTXN:
+        // Query from client
+        seq_man.process_txn(m_query);
+        break;
+      case RACK:
+        // Ack from server
+        seq_man.process_ack(m_query,get_thd_id());
+        qry_pool.put(m_query);
+        break;
+      default:
+        assert(false);
+    }
+    work_queue.done(_thd_id,tid);
+  }
+}
+
 

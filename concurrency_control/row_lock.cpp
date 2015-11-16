@@ -94,7 +94,7 @@ RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt
 		// Cannot be added to the owner list.
 		if (CC_ALG == NO_WAIT) {
 			rc = Abort;
-      DEBUG("abort %ld %ld %lx\n",txn->get_txn_id(),_row->get_primary_key(),(uint64_t)_row);
+      DEBUG("abort %ld,%ld %ld %lx\n",txn->get_txn_id(),txn->batch_id,_row->get_primary_key(),(uint64_t)_row);
       //printf("abort %ld %ld %lx\n",txn->get_txn_id(),_row->get_primary_key(),(uint64_t)_row);
 			goto final;
 		} else if (CC_ALG == DL_DETECT) {
@@ -158,7 +158,7 @@ RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt
 					LIST_PUT_TAIL(waiters_head, waiters_tail, entry);
 
 			  waiter_cnt ++;
-        DEBUG("wait %ld %ld %lx\n",txn->get_txn_id(),_row->get_primary_key(),(uint64_t)_row);
+        DEBUG("wait %ld,%ld %ld %lx\n",txn->get_txn_id(),txn->batch_id,_row->get_primary_key(),(uint64_t)_row);
         //printf("wait %ld %ld %lx\n",txn->get_txn_id(),_row->get_primary_key(),(uint64_t)_row);
         rc = WAIT;
         txn->rc = rc;
@@ -167,7 +167,7 @@ RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt
         //printf("wait \n");
       } else {
         INC_STATS(txn->get_thd_id(),abort_from_ts,1);
-        DEBUG("abort %ld %ld %lx\n",txn->get_txn_id(),_row->get_primary_key(),(uint64_t)_row);
+        DEBUG("abort %ld,%ld %ld %lx\n",txn->get_txn_id(),txn->batch_id,_row->get_primary_key(),(uint64_t)_row);
         //printf("abort %ld %ld %lx\n",txn->get_txn_id(),_row->get_primary_key(),(uint64_t)_row);
         rc = Abort;
         //printf("abort \n");
@@ -177,7 +177,7 @@ RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt
       entry->start_ts = get_sys_clock();
 			entry->txn = txn;
 			entry->type = type;
-      DEBUG("wait %ld %ld\n",txn->get_txn_id(),_row->get_primary_key());
+      DEBUG("wait %ld,%ld %ld\n",txn->get_txn_id(),txn->batch_id,_row->get_primary_key());
       //printf("wait %ld %ld\n",txn->get_txn_id(),_row->get_primary_key());
 			LIST_PUT_TAIL(waiters_head, waiters_tail, entry);
 			waiter_cnt ++;
@@ -189,7 +189,7 @@ RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt
       txn->wait_starttime = get_sys_clock();
     }
 	} else { 
-    DEBUG("1lock %ld %ld %lx\n",txn->get_txn_id(),_row->get_primary_key(),(uint64_t)_row);
+    DEBUG("1lock %ld,%ld %ld %lx\n",txn->get_txn_id(),txn->batch_id,_row->get_primary_key(),(uint64_t)_row);
     //printf("1lock %ld %ld %lx\n",txn->get_txn_id(),_row->get_primary_key(),(uint64_t)_row);
 #if DEBUG_TIMELINE
     printf("LOCK %ld %ld\n",entry->txn->get_txn_id(),entry->start_ts);
@@ -255,7 +255,7 @@ RC Row_lock::lock_release(txn_man * txn) {
   INC_STATS(txn->get_thd_id(),thd_prof_cc0,get_sys_clock() - thd_prof_start);
   thd_prof_start = get_sys_clock();
 
-  DEBUG("unlock %ld %ld %lx\n",txn->get_txn_id(),_row->get_primary_key(),(uint64_t)_row);
+  DEBUG("unlock %ld,%ld %ld %lx\n",txn->get_txn_id(),txn->batch_id,_row->get_primary_key(),(uint64_t)_row);
   //printf("unlock %ld %ld\n",txn->get_txn_id(),_row->get_primary_key());
 
   // If CC is NO_WAIT or WAIT_DIE, txn should own this lock
@@ -352,7 +352,7 @@ RC Row_lock::lock_release(txn_man * txn) {
 #if DEBUG_TIMELINE
     printf("LOCK %ld %ld\n",entry->txn->get_txn_id(),get_sys_clock());
 #endif
-    DEBUG("2lock %ld %ld %lx\n",entry->txn->get_txn_id(),_row->get_primary_key(),(uint64_t)_row);
+    DEBUG("2lock %ld,%ld %ld %lx\n",entry->txn->get_txn_id(),txn->batch_id,_row->get_primary_key(),(uint64_t)_row);
     //printf("2lock %ld %ld %lx\n",entry->txn->get_txn_id(),_row->get_primary_key(),(uint64_t)_row);
     // Stats
     t = get_sys_clock() - entry->start_ts;
@@ -404,11 +404,11 @@ LockEntry * Row_lock::get_entry() {
 		mem_allocator.alloc(sizeof(LockEntry), _row->get_part_id());
   entry->type = LOCK_NONE;
   entry->txn = NULL;
-  DEBUG_M("row_lock::get_entry alloc %lx\n",(uint64_t)entry);
+  //DEBUG_M("row_lock::get_entry alloc %lx\n",(uint64_t)entry);
 	return entry;
 }
 void Row_lock::return_entry(LockEntry * entry) {
-  DEBUG_M("row_lock::return_entry free %lx\n",(uint64_t)entry);
+  //DEBUG_M("row_lock::return_entry free %lx\n",(uint64_t)entry);
 	mem_allocator.free(entry, sizeof(LockEntry));
 }
 
