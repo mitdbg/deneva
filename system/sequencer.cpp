@@ -74,7 +74,7 @@ void Sequencer::process_ack(base_query *query, uint64_t thd_id) {
     msg_queue.enqueue(m_query,CL_RSP,m_query->client_id);
 
 	}
-  DEBUG("ACK %ld from %ld: %d %d\n",id,rid,query_acks_left,en->txns_left);
+  DEBUG("ACK %ld (%ld,%ld) from %ld: %d %d 0x%lx\n",id,query->txn_id,en->epoch,rid,query_acks_left,en->txns_left,(uint64_t)query);
 
 
 	// If we have all acks for this batch, send qry responses to all clients
@@ -164,6 +164,7 @@ void Sequencer::send_next_batch(uint64_t thd_id) {
   base_query * query;
   for(uint64_t j = 0; j < g_node_cnt; j++) {
     while(fill_queue[j].try_dequeue(query)) {
+      assert(query->rtype == RTXN);
       if(j == g_node_id) {
         work_queue.enqueue(thd_id,query,false);
       } else {

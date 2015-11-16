@@ -67,6 +67,7 @@ bool TxnTable::empty(uint64_t node_id) {
 
 void TxnTable::add_txn(uint64_t node_id, txn_man * txn, base_query * qry) {
 
+    //printf("Add (%ld,%ld) 0x%lx\n",qry->txn_id,qry->batch_id,(uint64_t)qry);
   uint64_t thd_prof_start = get_sys_clock();
   txn->set_query(qry);
   uint64_t txn_id = txn->get_txn_id();
@@ -198,6 +199,7 @@ void TxnTable::delete_txn(uint64_t node_id, uint64_t txn_id){
       txn_pool.put(t_node->txn);
     }
     
+    //  printf("Delete (%ld,%ld) 0x%lx\n",t_node->qry->txn_id,t_node->qry->batch_id,(uint64_t)t_node->qry);
 #if CC_ALG != CALVIN
     if(t_node->qry) {
       qry_pool.put(t_node->qry);
