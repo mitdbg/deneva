@@ -12,6 +12,7 @@ class ycsb_client_query;
 class tpcc_client_query;
 
 typedef struct qlite_entry {
+  base_query * qry;
 	uint32_t client_id;
 	uint64_t client_startts;
 	uint32_t server_ack_cnt;

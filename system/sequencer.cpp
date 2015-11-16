@@ -51,25 +51,31 @@ void Sequencer::process_ack(base_query *query, uint64_t thd_id) {
 	assert(en->txns_left > 0);
 
 	uint64_t id = query->txn_id / g_node_cnt;
+	uint64_t rid = query->return_id;
   uint64_t prof_stat = get_sys_clock();
 	//uint64_t id = query->return_id;
 	assert(wait_list[id].server_ack_cnt > 0);
 
 	// Decrement the number of acks needed for this txn
 	uint32_t query_acks_left = ATOM_SUB_FETCH(wait_list[id].server_ack_cnt, 1);
+
+  if(query->return_id != g_node_id)
+    qry_pool.put(query);
+
 	if (query_acks_left == 0) {
     en->txns_left--;
 		ATOM_FETCH_ADD(total_txns_finished,1);
 		INC_STATS(thd_id,txn_cnt,1);
 
-    base_query * m_query;
-    qry_pool.get(m_query);
+    base_query * m_query = wait_list[id].qry;
+    //qry_pool.get(m_query);
     m_query->client_id = wait_list[id].client_id;
     m_query->client_startts = wait_list[id].client_startts;
     msg_queue.enqueue(m_query,CL_RSP,m_query->client_id);
 
 	}
-  DEBUG("ACK %ld from %ld: %d %d\n",id,query->return_id,query_acks_left,en->txns_left);
+  DEBUG("ACK %ld from %ld: %d %d\n",id,rid,query_acks_left,en->txns_left);
+
 
 	// If we have all acks for this batch, send qry responses to all clients
 	if (en->txns_left == 0) {
@@ -121,6 +127,7 @@ void Sequencer::process_txn(base_query * query) {
 		en->list[id].client_id = query->return_id;
 		en->list[id].client_startts = query->client_startts;
 		en->list[id].server_ack_cnt = server_ack_cnt;
+		en->list[id].qry = query;
     en->size++;
     en->txns_left++;
     query->return_id = g_node_id;

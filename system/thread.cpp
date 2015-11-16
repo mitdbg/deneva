@@ -1745,7 +1745,6 @@ RC thread_t::run_calvin_seq() {
       case RACK:
         // Ack from server
         seq_man.process_ack(m_query,get_thd_id());
-        qry_pool.put(m_query);
         break;
       default:
         assert(false);
