@@ -49,6 +49,7 @@ void Remote_query::unpack(void * d, uint64_t len) {
 
 
     unpack_query(query,data,ptr,dest_id,return_id);
+    DEBUG_R("^^got (%ld,%ld) %d 0x%lx\n",query->txn_id,query->batch_id,query->rtype,(uint64_t)query);
 #if MODE==SIMPLE_MODE
     if(query->rtype == RTXN) {
       query->txn_id = g_node_id;

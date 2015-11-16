@@ -115,6 +115,7 @@ bool QWorkQueue::sched_dequeue(base_query *& qry) {
     ATOM_ADD(_wl->epoch_txn_cnt,1);
     LIST_REMOVE_HT(en,sched_head[sched_ptr],sched_tail[sched_ptr])
     qry = en->qry;
+    assert(qry->batch_id == curr_epoch);
     //DEBUG("SDeq %ld %ld,%ld\n",sched_ptr,qry->txn_id,curr_epoch);
     mem_allocator.free(en,sizeof(struct wq_entry));
     result = true;
@@ -336,7 +337,7 @@ bool QWorkQueue::dequeue(uint64_t thd_id, base_query *& qry) {
     INC_STATS(0,qq_cnt,1);
     INC_STATS(0,qq_lat,t);
     //DEBUG("%ld DEQUEUE %ld %d, %d, %ld %ld %ld %lx\n",thd_id,qry->txn_id,q_type,qry->rtype,wq_cnt,rem_wq_cnt,new_wq_cnt,(uint64_t)qry);
-    //DEBUG("%ld DEQUEUE %ld,%ld; %ld; %d, %d, 0x%lx\n",thd_id,qry->txn_id,qry->batch_id,qry->return_id,q_type,qry->rtype,(uint64_t)qry);
+    //printf("%ld DEQUEUE (%ld,%ld) %ld; %d, %d, 0x%lx\n",thd_id,qry->txn_id,qry->batch_id,qry->return_id,q_type,qry->rtype,(uint64_t)qry);
   }
   INC_STATS(thd_id,all_wq_dequeue,get_sys_clock() - prof_starttime);
   return valid;

@@ -69,6 +69,7 @@ void Sequencer::process_ack(base_query *query, uint64_t thd_id) {
 
     base_query * m_query;// = wait_list[id].qry;
     qry_pool.get(m_query);
+    DEBUG_R("^^got seq cl_rsp 0x%lx\n",(uint64_t)m_query);
     m_query->client_id = wait_list[id].client_id;
     m_query->client_startts = wait_list[id].client_startts;
     msg_queue.enqueue(m_query,CL_RSP,m_query->client_id);
@@ -140,6 +141,7 @@ void Sequencer::process_txn(base_query * query) {
       base_query * m_query;
       qry_pool.get(m_query);
       m_query->deep_copy(query);
+      DEBUG_R("^^got seq rtxn (%ld,%ld) %d 0x%lx\n",m_query->txn_id,m_query->batch_id,m_query->rtype,(uint64_t)m_query);
 			if (participating_nodes[j]) {
         fill_queue[j].enqueue(m_query);
 			}

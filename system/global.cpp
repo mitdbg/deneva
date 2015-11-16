@@ -83,6 +83,7 @@ UInt32 g_node_id = 0;
 UInt32 g_node_cnt = NODE_CNT;
 UInt32 g_part_cnt = PART_CNT;
 UInt32 g_virtual_part_cnt = VIRTUAL_PART_CNT;
+UInt32 g_core_cnt = CORE_CNT;
 
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
 UInt32 g_thread_cnt = PART_CNT/NODE_CNT;

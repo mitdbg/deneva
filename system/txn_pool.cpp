@@ -81,6 +81,8 @@ void TxnTablePool::get(txn_node *& item) {
     DEBUG_M("txn_table_pool\n");
     item = (txn_node *) mem_allocator.alloc(sizeof(struct txn_node), g_thread_cnt);
   }
+  item->txn = NULL;
+  item->qry = NULL;
 }
 
 void TxnTablePool::put(txn_node * item) {
@@ -134,6 +136,7 @@ void QryPool::get(base_query *& item) {
     item = (base_query*)qry;
   }
   //DEBUG_M("get 0x%lx\n",(uint64_t)item);
+  DEBUG_R("get 0x%lx\n",(uint64_t)item);
   item->clear();
   item->base_reset();
   item->reset();
@@ -142,6 +145,7 @@ void QryPool::get(base_query *& item) {
 void QryPool::put(base_query * item) {
   assert(item);
   //DEBUG_M("put 0x%lx\n",(uint64_t)item);
+  DEBUG_R("put 0x%lx\n",(uint64_t)item);
   pool.enqueue(item);
 }
 

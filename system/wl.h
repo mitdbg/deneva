@@ -46,7 +46,7 @@ public:
   uint64_t txn_cnt;
   uint64_t rsp_cnt;
   uint64_t epoch;
-  uint64_t epoch_txn_cnt;
+  int64_t epoch_txn_cnt;
 protected:
 	void index_insert(string index_name, uint64_t key, row_t * row);
 	void index_insert(INDEX * index, uint64_t key, row_t * row, int64_t part_id = -1);

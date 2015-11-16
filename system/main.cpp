@@ -210,7 +210,7 @@ int main(int argc, char* argv[])
 		uint64_t vid = i;
 		CPU_ZERO(&cpus);
 #if TPORT_TYPE_IPC
-    CPU_SET(g_node_id * (g_thread_cnt) + cpu_cnt, &cpus);
+    CPU_SET((g_node_id * (g_thread_cnt) + cpu_cnt) % g_core_cnt, &cpus);
 #elif !SET_AFFINITY
     CPU_SET(g_node_id * (g_thread_cnt) + cpu_cnt, &cpus);
 #else

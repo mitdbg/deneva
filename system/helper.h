@@ -25,6 +25,13 @@
     fflush(stdout); \
   }
 
+#define DEBUG_R(...) \
+  if(DEBUG_RACE && warmup_done) { \
+    fprintf(stdout,__VA_ARGS__); \
+    fflush(stdout); \
+  }
+
+
 /************************************************/
 // atomic operations
 /************************************************/

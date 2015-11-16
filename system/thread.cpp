@@ -1457,6 +1457,7 @@ RC thread_t::run_calvin_lock() {
     assert(m_query->txn_id != UINT64_MAX);
 
     txn_table.get_txn(g_node_id,m_query->txn_id,m_txn,tmp_query);
+    assert(WORKLOAD == TPCC || m_txn==NULL);
     if(m_txn==NULL) {
       txn_pool.get(m_txn);
       m_txn->set_txn_id(m_query->txn_id);
@@ -1592,6 +1593,8 @@ RC thread_t::run_calvin() {
     assert(m_query->rtype <= NO_MSG);
     uint64_t txn_type = (uint64_t)m_query->rtype;
     uint64_t tid = m_query->txn_id;
+    uint64_t bid __attribute__((unused));
+    bid = m_query->batch_id;
 
 		switch(m_query->rtype) {
       case RFWD:
@@ -1670,8 +1673,9 @@ RC thread_t::run_calvin() {
 			INC_STATS(get_thd_id(), latency, timespan);
       // delete_txn does NOT free m_query for CALVIN
       txn_table.delete_txn(m_query->return_id,tid);
+      assert(_wl->epoch_txn_cnt > 1 || txn_table.get_cnt() == 0);
       if(m_query->return_id == g_node_id) {
-        //printf("RACK %ld,%ld  0x%lx\n",m_query->txn_id,m_query->batch_id,(uint64_t)m_query);
+        DEBUG_R("RACK %ld,%ld  0x%lx\n",m_query->txn_id,m_query->batch_id,(uint64_t)m_query);
         m_query->rtype = RACK;
         work_queue.enqueue(_thd_id,m_query,false);
       } else {
@@ -1749,7 +1753,7 @@ RC thread_t::run_calvin_seq() {
       default:
         assert(false);
     }
-    //printf("seq_man %d put 0x%lx\n",m_query->rtype,(uint64_t)m_query);
+    DEBUG_R("seq_man %d put 0x%lx\n",m_query->rtype,(uint64_t)m_query);
     qry_pool.put(m_query);
     work_queue.done(_thd_id,tid);
   }
