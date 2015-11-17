@@ -377,6 +377,9 @@ void txn_man::cleanup(RC rc) {
 
 RC txn_man::get_lock(row_t * row, access_t type) {
   rc = row->get_lock(type, this);
+  if(rc == WAIT) {
+    INC_STATS(get_thd_id(), cflt_cnt, 1);
+  }
   return rc;
 }
 
@@ -734,6 +737,10 @@ txn_man::send_remote_reads(base_query * qry) {
     if(i == g_node_id)
       continue;
     if(active_nodes[i]) {
+      base_query * m_qry;
+      qry_pool.get(m_qry);
+      m_qry->deep_copy(qry);
+      assert(m_qry->batch_id != UINT64_MAX);
       msg_queue.enqueue(qry,RFWD,i);
       n++;
     }

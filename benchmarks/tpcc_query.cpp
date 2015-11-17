@@ -46,10 +46,9 @@ void tpcc_query::deep_copy(base_query * qry) {
   this->w_id = m_qry->w_id;
   this->c_id = m_qry->c_id;
   this->d_id = m_qry->d_id;
-  this->w_id = m_qry->d_w_id;
-  this->w_id = m_qry->c_w_id;
-  this->w_id = m_qry->c_d_id;
-  memcpy(this->c_last,m_qry->c_last,LASTNAME_LEN);
+  this->d_w_id = m_qry->d_w_id;
+  this->c_w_id = m_qry->c_w_id;
+  this->c_d_id = m_qry->c_d_id;
   this->h_amount = m_qry->h_amount;
   this->by_last_name = m_qry->by_last_name;
   this->rbk = m_qry->rbk;
@@ -62,10 +61,15 @@ void tpcc_query::deep_copy(base_query * qry) {
   this->ol_number = m_qry->ol_number;
   this->o_id = m_qry->o_id;
   this->ol_amount = m_qry->ol_amount;
-  for(uint64_t i = 0; i < m_qry->ol_cnt; i++) {
-    this->ol_i_id = m_qry->ol_i_id;
-    this->ol_supply_w_id = m_qry->ol_supply_w_id;
-    this->ol_quantity = m_qry->ol_quantity;
+  if(m_qry->txn_type == TPCC_PAYMENT) {
+    memcpy(this->c_last,m_qry->c_last,LASTNAME_LEN);
+  }
+  if(m_qry->txn_type == TPCC_NEW_ORDER) {
+    for(uint64_t i = 0; i < m_qry->ol_cnt; i++) {
+      this->items[i].ol_i_id = m_qry->items[i].ol_i_id;
+      this->items[i].ol_supply_w_id = m_qry->items[i].ol_supply_w_id;
+      this->items[i].ol_quantity = m_qry->items[i].ol_quantity;
+    }
   }
 
   
@@ -215,6 +219,7 @@ base_query * tpcc_query::merge(base_query * query) {
     case RFWD:
       this->o_id = m_query->o_id;
       this->rtype = old_rtype;
+      this->batch_id = m_query->batch_id;
       break;
     default:
       assert(false);

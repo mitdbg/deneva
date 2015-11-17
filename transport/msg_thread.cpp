@@ -95,7 +95,7 @@ void MessageThread::run() {
 #endif
   }
 #else//CALVIN
-  if(ISSERVER && (type == RACK || type == RTXN || type == CL_RSP)) {
+  if(ISSERVER && (type == RACK || type == RTXN || type == CL_RSP || type == RFWD)) {
       //txn_table.delete_txn(qry->return_id, qry->txn_id);
       DEBUG_R("msg thd put %d 0x%lx\n",type,(uint64_t)qry);
       qry_pool.put(qry);
@@ -309,7 +309,7 @@ uint64_t MessageThread::get_msg_size(RemReqType type,base_query * qry) {
         case RPASS:       break;
         case RFWD:       
                           
-                          size +=sizeof(uint64_t)*2;
+                          size +=sizeof(uint64_t)*3;
                           break;
         case CL_RSP:      size +=sizeof(RC) + sizeof(uint64_t);break;
         case RDONE:      size +=sizeof(uint64_t);break;
@@ -332,6 +332,7 @@ void MessageThread::rfwd(mbuf * sbuf,base_query * qry) {
   assert(WORKLOAD==TPCC);
   tpcc_query * m_qry = (tpcc_query *)qry;
   COPY_BUF(sbuf->buffer,qry->txn_id,sbuf->ptr);
+  COPY_BUF(sbuf->buffer,qry->batch_id,sbuf->ptr);
   COPY_BUF(sbuf->buffer,m_qry->o_id,sbuf->ptr);
 }
 

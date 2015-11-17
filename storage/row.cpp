@@ -145,10 +145,12 @@ void row_t::free_row() {
 
 RC row_t::get_lock(access_t type, txn_man * txn) {
   RC rc = RCOK;
+  uint64_t thd_prof_start = get_sys_clock();
 #if CC_ALG == CALVIN
 	lock_t lt = (type == RD || type == SCAN)? LOCK_SH : LOCK_EX;
 	rc = this->manager->lock_get(lt, txn);
 #endif
+  INC_STATS(txn->get_thd_id(),thd_prof_row1,get_sys_clock() - thd_prof_start);
   return rc;
 }
 

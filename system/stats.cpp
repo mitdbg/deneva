@@ -312,9 +312,12 @@ void Stats_thd::clear() {
   spec_abort_cnt = 0;
   spec_commit_cnt = 0;
   batch_cnt = 0;
-  time_batch = 0;
-  time_seq_prep = 0;
+
+  seq_txn_cnt = 0;
+  seq_batch_cnt = 0;
+  time_seq_batch = 0;
   time_seq_ack = 0;
+  time_seq_prep = 0;
 
 }
 
@@ -413,138 +416,6 @@ void Stats::abort(uint64_t thd_id) {
 	if (STATS_ENABLE) 
 		tmp_stats[thd_id]->init();
 }
-
-void Stats::print_sequencer(bool prog) {
-	fflush(stdout);
-  if(!STATS_ENABLE)
-    return;
-
-	uint64_t total_txn_cnt = 0;
-	uint64_t total_txn_sent = 0;
-	double total_tot_run_time = 0;
-	double total_seq_latency = 0;
-	double total_time_tport_send = 0;
-	double total_time_tport_rcv = 0;
-	double total_tport_lat = 0;
-	uint64_t total_msg_bytes = 0;
-	double total_mbuf_send_time = 0;
-	uint64_t total_msg_batch_size = 0;
-	uint64_t total_msg_batch_bytes = 0;
-	uint64_t total_msg_batch_cnt = 0;
-	uint64_t total_msg_sent_cnt = 0;
-	uint64_t total_msg_rcv_cnt = 0;
-	double total_time_msg_sent = 0;
-	double total_time_getqry = 0;
-	uint32_t total_batches_sent = 0;
-	double total_time_batch = 0;
-	double total_time_seq_prep = 0;
-	double total_time_seq_ack = 0;
-
-	uint64_t limit = g_seq_thread_cnt + 2;
-	for (uint64_t tid = 0; tid < limit; tid ++) {
-		if(!prog)
-			total_tot_run_time += _stats[tid]->tot_run_time;
-		total_txn_cnt += _stats[tid]->txn_cnt;
-		total_txn_sent += _stats[tid]->txn_sent;
-		total_seq_latency += _stats[tid]->client_latency;
-		total_time_getqry += _stats[tid]->time_getqry;
-		total_time_tport_send += _stats[tid]->time_tport_send;
-		total_time_tport_rcv += _stats[tid]->time_tport_rcv;
-		total_tport_lat += _stats[tid]->tport_lat;
-		total_msg_bytes += _stats[tid]->msg_bytes;
-		total_mbuf_send_time += _stats[tid]->mbuf_send_time;
-		total_msg_batch_size += _stats[tid]->msg_batch_size;
-		total_msg_batch_bytes += _stats[tid]->msg_batch_bytes;
-		total_msg_batch_cnt += _stats[tid]->msg_batch_cnt;
-		total_msg_sent_cnt += _stats[tid]->msg_sent_cnt;
-		total_msg_rcv_cnt += _stats[tid]->msg_rcv_cnt;
-		total_time_msg_sent += _stats[tid]->time_msg_sent;
-		total_batches_sent += _stats[tid]->batch_cnt;
-		total_time_batch += _stats[tid]->time_batch;
-		total_time_seq_prep += _stats[tid]->time_seq_prep;
-		total_time_seq_ack += _stats[tid]->time_seq_ack;
-  }
-  if(prog)
-		total_tot_run_time += _stats[0]->tot_run_time;
-  else
-		total_tot_run_time = total_tot_run_time / g_seq_thread_cnt;
-
-	FILE * outf;
-	if (output_file != NULL) 
-		outf = fopen(output_file, "w");
-  else 
-    outf = stdout;
-  if(prog)
-	  fprintf(outf, "[prog] ");
-  else
-	  fprintf(outf, "[summary] ");
-	fprintf(outf, 
-      "clock_time=%f"
-      ",txn_cnt=%ld"
-      ",txns_sent=%ld"
-      ",time_getqry=%f"
-      ",latency=%f"
-      ",mbuf_send_time=%f"
-      ",msg_batch_size=%ld"
-      ",msg_batch_cnt=%ld"
-      ",avg_msg_batch=%ld"
-      ",avg_msg_batch_bytes=%ld"
-      ",msg_bytes=%ld"
-      ",msg_rcv=%ld"
-      ",msg_sent=%ld"
-			",time_msg_sent=%f"
-      ",time_tport_send=%f"
-      ",time_tport_rcv=%f"
-      ",tport_lat=%f"
-      ",batches_sent=%u"
-      ",batch_interval=%f"
-      ",time_seq_prep=%f"
-      ",time_seq_ack=%f"
-			"\n",
-			total_tot_run_time / BILLION,
-			total_txn_cnt, 
-			total_txn_sent, 
-			total_time_getqry / BILLION,
-			total_seq_latency,
-			total_mbuf_send_time / BILLION / total_msg_batch_cnt, 
-			total_msg_batch_size, 
-			total_msg_batch_cnt, 
-			total_msg_batch_size / total_msg_batch_cnt, 
-			total_msg_batch_bytes / total_msg_batch_cnt, 
-			total_msg_bytes, 
-			total_msg_rcv_cnt, 
-			total_msg_sent_cnt, 
-			total_time_msg_sent / BILLION,
-			total_time_tport_send / BILLION,
-			total_time_tport_rcv / BILLION,
-			total_tport_lat / BILLION / total_msg_rcv_cnt,
-			total_batches_sent
-			, total_time_batch / BILLION / total_batches_sent
-			, total_time_seq_prep / BILLION
-			, total_time_seq_ack / BILLION
-		);
-  /*
-	fprintf(outf, 
-      "clock_time=%f"
-      ",txns_sent=%ld"
-      ",time_getqry=%f"
-      ",latency=%f"
-			"\n",
-			(_stats[tid]->tot_run_time ) / BILLION,
-			_stats[tid]->txn_cnt,
-			_stats[tid]->time_getqry / BILLION,
-			_stats[tid]->client_latency / BILLION / _stats[tid]->txn_cnt
-		);
-    */
-    //if(prog) {
-	//	  //for (uint32_t k = 0; k < g_node_id; ++k) {
-	//	  for (uint32_t k = 0; k < g_servers_per_client; ++k) {
-    //    printf("tif_node%u=%d, "
-    //        ,k,client_man.get_inflight(k)
-    //        );
-    //  }
-      printf("\n");
-    }
 
 void Stats::print_client(bool prog) {
   fflush(stdout);
@@ -837,6 +708,12 @@ void Stats::print(bool prog) {
   double total_owned_cnt_rd = 0;
   double total_owned_cnt_wr = 0;
 
+  uint64_t total_seq_txn_cnt = 0;
+  uint64_t total_seq_batch_cnt = 0;
+  double total_time_seq_batch = 0;
+  double total_time_seq_ack = 0;
+  double total_time_seq_prep = 0;
+
   double total_aq_poll = 0;
   double total_aq_enqueue=0;double total_aq_dequeue=0;
   double total_wq_enqueue=0;double total_wq_dequeue=0;
@@ -985,6 +862,11 @@ void Stats::print(bool prog) {
   total_txn_time_net += _stats[tid]->txn_time_net;
   total_txn_time_misc += _stats[tid]->txn_time_misc;
 
+  total_seq_txn_cnt += _stats[tid]->seq_txn_cnt;
+  total_seq_batch_cnt += _stats[tid]->seq_batch_cnt;
+  total_time_seq_batch += _stats[tid]->time_seq_batch;
+  total_time_seq_ack += _stats[tid]->time_seq_ack;
+  total_time_seq_prep += _stats[tid]->time_seq_prep;
   
  total_aq_poll+= _stats[tid]->aq_poll;
  total_aq_enqueue+= _stats[tid]->aq_enqueue;
@@ -1150,6 +1032,19 @@ void Stats::print(bool prog) {
 			,total_msg_bytes 
 			,total_msg_rcv_cnt 
 			,total_msg_sent_cnt
+      );
+
+	fprintf(outf, 
+      ",seq_txn_cnt=%ld\n"
+      ",seq_batch_cnt=%ld\n"
+      ",time_seq_batch=%f\n"
+      ",time_seq_ack=%f\n"
+      ",time_seq_prep=%f\n"
+      ,total_seq_txn_cnt
+      ,total_seq_batch_cnt
+      ,total_time_seq_batch / BILLION
+      ,total_time_seq_ack / BILLION
+      ,total_time_seq_prep / BILLION
       );
 
 	fprintf(outf, 

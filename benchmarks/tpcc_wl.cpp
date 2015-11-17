@@ -228,7 +228,7 @@ void tpcc_wl::init_tab_wh() {
 	if (WL_VERB)
 		printf("[init] workload table.\n");
 	for (UInt32 wid = 1; wid <= g_num_wh; wid ++) {
-    //if(GET_NODE_ID(wh_to_part(wid)) != g_node_id) continue;
+    if(GET_NODE_ID(wh_to_part(wid)) != g_node_id) continue;
 		row_t * row;
 		uint64_t row_id;
 		t_warehouse->get_new_row(row, 0, row_id);

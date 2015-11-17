@@ -303,6 +303,7 @@ void Remote_query::unpack_query(base_query *& query,char * data,  uint64_t & ptr
     case RFWD: 
       assert(WORKLOAD == TPCC);
       COPY_VAL(query->txn_id,data,ptr);
+      COPY_VAL(query->batch_id,data,ptr);
       COPY_VAL(((tpcc_query*)query)->o_id,data,ptr);
                    break;
     case NO_MSG: assert(false);

@@ -65,7 +65,7 @@ void Sequencer::process_ack(base_query *query, uint64_t thd_id) {
 	if (query_acks_left == 0) {
     en->txns_left--;
 		ATOM_FETCH_ADD(total_txns_finished,1);
-		INC_STATS(thd_id,txn_cnt,1);
+		INC_STATS(thd_id,seq_txn_cnt,1);
 
     base_query * m_query;// = wait_list[id].qry;
     qry_pool.get(m_query);
@@ -184,10 +184,10 @@ void Sequencer::send_next_batch(uint64_t thd_id) {
   }
 
   if(last_time_batch > 0) {
-    INC_STATS(thd_id,time_batch,get_sys_clock() - last_time_batch);
+    INC_STATS(thd_id,time_seq_batch,get_sys_clock() - last_time_batch);
   }
 
-	INC_STATS(thd_id,batch_cnt,1);
+	INC_STATS(thd_id,seq_batch_cnt,1);
   INC_STATS(thd_id,time_seq_prep,get_sys_clock() - prof_stat);
   next_txn_id = 0;
 }

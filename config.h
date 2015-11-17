@@ -36,7 +36,7 @@
 #define TIME_ENABLE         true //STATS_ENABLE
 
 #define FIN_BY_TIME true
-#define MAX_TXN_IN_FLIGHT 2000
+#define MAX_TXN_IN_FLIGHT 100
 
 /***********************************************/
 // Memory System
@@ -157,7 +157,7 @@
 //    HOT: use ACCESS_PERC of the accesses go to DATA_PERC of the data
 #define SKEW_METHOD HOT
 #define DATA_PERC 100
-#define ACCESS_PERC 0.03
+#define ACCESS_PERC 0.07
 #define INIT_PARALLELISM 4
 #define SYNTH_TABLE_SIZE 2097152
 #define ZIPF_THETA 0.6
@@ -185,7 +185,7 @@
 // are not modeled.
 #define TPCC_ACCESS_ALL       false 
 #define WH_UPDATE         true
-#define NUM_WH PART_CNT
+#define NUM_WH 128
 // % of transactions that access multiple partitions
 #define MPR 1.0
 #define MPIR 0.01
@@ -247,8 +247,8 @@ extern TestCases          g_test_case;
 #define DEBUG_TIMESTAMP       false
 #define DEBUG_SYNTH         false
 #define DEBUG_ASSERT        false
-#define DEBUG_RACE false
-#define DEBUG_DISTR false
+#define DEBUG_RACE true
+#define DEBUG_DISTR true
 #define DEBUG_ALLOC false
 #define DEBUG_TIMELINE        false
 #define DEBUG_BREAKDOWN       false

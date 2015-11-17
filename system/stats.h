@@ -135,9 +135,11 @@ public:
   uint64_t msg_batch_bytes;
   uint64_t msg_batch_cnt;
 
-  // calvin
   uint32_t batch_cnt;
-  double time_batch;
+  // calvin
+  uint64_t seq_txn_cnt;
+  uint64_t seq_batch_cnt;
+  double time_seq_batch;
   double time_seq_prep;
   double time_seq_ack;
 
