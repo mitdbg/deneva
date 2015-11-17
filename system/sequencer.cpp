@@ -186,6 +186,7 @@ void Sequencer::send_next_batch(uint64_t thd_id) {
   if(last_time_batch > 0) {
     INC_STATS(thd_id,time_seq_batch,get_sys_clock() - last_time_batch);
   }
+  last_time_batch = get_sys_clock();
 
 	INC_STATS(thd_id,seq_batch_cnt,1);
   INC_STATS(thd_id,time_seq_prep,get_sys_clock() - prof_stat);
