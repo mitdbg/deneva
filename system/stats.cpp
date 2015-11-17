@@ -1035,11 +1035,11 @@ void Stats::print(bool prog) {
       );
 
 	fprintf(outf, 
-      ",seq_txn_cnt=%ld\n"
-      ",seq_batch_cnt=%ld\n"
-      ",time_seq_batch=%f\n"
-      ",time_seq_ack=%f\n"
-      ",time_seq_prep=%f\n"
+      ",seq_txn_cnt=%ld"
+      ",seq_batch_cnt=%ld"
+      ",time_seq_batch=%f"
+      ",time_seq_ack=%f"
+      ",time_seq_prep=%f"
       ,total_seq_txn_cnt
       ,total_seq_batch_cnt
       ,total_time_seq_batch / BILLION
