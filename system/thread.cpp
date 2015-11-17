@@ -492,7 +492,6 @@ RC thread_t::run() {
 					// Send result back to client
           assert(ISCLIENTN(m_query->client_id));
           msg_queue.enqueue(m_query,CL_RSP,m_query->client_id);
-					//txn_table.delete_txn(g_node_id,m_query->txn_id);
 					ATOM_ADD(_wl->txn_cnt,1);
 
 					break;
@@ -516,7 +515,6 @@ RC thread_t::run() {
 		      timespan = get_sys_clock() - m_txn->starttime;
 		      INC_STATS(get_thd_id(), run_time, timespan);
 		      INC_STATS(get_thd_id(), latency, timespan);
-        //txn_table.delete_txn(g_node_id,m_query->txn_id);
 					ATOM_ADD(_wl->txn_cnt,1);
         //ATOM_SUB(txn_table.inflight_cnt,1);
           msg_queue.enqueue(m_query,CL_RSP,m_query->client_id);
@@ -636,7 +634,7 @@ RC thread_t::process_rfin(base_query *& m_query,txn_man *& m_txn) {
         // Retrieve transaction from transaction pool
         // TODO: move outside of process functions?
         base_query * tmp_query;
-				txn_table.get_txn(m_query->return_id, m_query->txn_id,m_txn,tmp_query);
+				txn_table.get_txn(m_query->return_id, m_query->txn_id,0,m_txn,tmp_query);
 				bool finish = true;
 #if CC_ALG != HSTORE && CC_ALG != HSTORE_SPEC && CC_ALG != VLL
 				if (m_txn == NULL) {
@@ -680,13 +678,6 @@ RC thread_t::process_rfin(base_query *& m_query,txn_man *& m_txn) {
           m_query->local_rack_query();
         }
 
-        /*
-				if (finish) {
-          if(GET_NODE_ID(m_query->home_part) != g_node_id || GET_PART_ID_IDX(m_query->home_part) == _thd_id) {
-					  txn_table.delete_txn(m_query->return_id, m_query->txn_id);
-          } 
-        }
-        */
 #else // NOT CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
         // Merge query information
         if(m_txn) {
@@ -740,7 +731,7 @@ RC thread_t::process_rack(base_query *& m_query,txn_man *& m_txn) {
 
         // Retrieve this transaction
         base_query * tmp_query;
-				txn_table.get_txn(g_node_id, m_query->txn_id,m_txn,tmp_query);
+				txn_table.get_txn(g_node_id, m_query->txn_id,0,m_txn,tmp_query);
 				assert(m_txn != NULL);
         m_txn->register_thd(this);
 
@@ -892,7 +883,7 @@ RC thread_t::process_rqry_rsp(uint64_t tid, base_query *& m_query,txn_man *& m_t
 
         // Retrieve transaction
         base_query * tmp_query;
-				txn_table.get_txn(g_node_id, m_query->txn_id,m_txn,tmp_query);
+				txn_table.get_txn(g_node_id, m_query->txn_id,0,m_txn,tmp_query);
 				assert(m_txn != NULL);
         m_txn->register_thd(this);
 
@@ -943,7 +934,7 @@ RC thread_t::process_rqry(base_query *& m_query,txn_man *& m_txn) {
 				// Theoretically, we could send multiple queries to one node,
 				//    so m_txn could already be in txn_table
         base_query * tmp_query;
-				txn_table.get_txn(m_query->return_id, m_query->txn_id,m_txn,tmp_query);
+				txn_table.get_txn(m_query->return_id, m_query->txn_id,0,m_txn,tmp_query);
 
         // If transaction not in pool, create one
 				if (m_txn == NULL) {
@@ -1030,7 +1021,7 @@ RC thread_t::process_rprepare(base_query *& m_query,txn_man *& m_txn) {
 */
         // Retrieve transaction
         base_query * tmp_query;
-				txn_table.get_txn(m_query->return_id, m_query->txn_id,m_txn,tmp_query);
+				txn_table.get_txn(m_query->return_id, m_query->txn_id,0,m_txn,tmp_query);
 
 				bool validate = true;
         RC rc = RCOK;
@@ -1107,7 +1098,7 @@ RC thread_t::process_rinit(base_query *& m_query,txn_man *& m_txn) {
 				// Set up txn_table
         if((CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC) && IS_LOCAL(m_query->txn_id)) {
           base_query * tmp_query;
-          txn_table.get_txn(m_query->return_id, m_query->txn_id,m_txn,tmp_query);
+          txn_table.get_txn(m_query->return_id, m_query->txn_id,0,m_txn,tmp_query);
           tmp_query->active_part = m_query->active_part;
           //m_query = tmp_query;
         } else {
@@ -1156,7 +1147,7 @@ RC thread_t::process_rinit(base_query *& m_query,txn_man *& m_txn) {
 
 RC thread_t::process_rpass(base_query *& m_query,txn_man *& m_txn) {
         base_query * tmp_query;
-				txn_table.get_txn(m_query->return_id, m_query->txn_id,m_txn,tmp_query);
+				txn_table.get_txn(m_query->return_id, m_query->txn_id,0,m_txn,tmp_query);
 				assert(m_txn != NULL);
         m_txn->register_thd(this);
         return m_txn->rc;
@@ -1219,7 +1210,7 @@ RC thread_t::process_rtxn(base_query *& m_query,txn_man *& m_txn) {
 				else {
 					// Re-executing transaction
           base_query * tmp_query;
-					txn_table.get_txn(g_node_id,m_query->txn_id,m_txn,tmp_query);
+					txn_table.get_txn(g_node_id,m_query->txn_id,0,m_txn,tmp_query);
 					assert(m_txn != NULL);
           m_txn->register_thd(this);
     INC_STATS(_thd_id,thd_prof_thd_rtxn1b,get_sys_clock() - thd_prof_start);
@@ -1456,7 +1447,7 @@ RC thread_t::run_calvin_lock() {
     assert(m_query->rtype == RTXN);
     assert(m_query->txn_id != UINT64_MAX);
 
-    txn_table.get_txn(g_node_id,m_query->txn_id,m_txn,tmp_query);
+    txn_table.get_txn(g_node_id,m_query->txn_id,m_query->batch_id,m_txn,tmp_query);
     assert(WORKLOAD == TPCC || m_txn==NULL);
     if(m_txn==NULL) {
       txn_pool.get(m_txn);
@@ -1599,8 +1590,8 @@ RC thread_t::run_calvin() {
 		switch(m_query->rtype) {
       case RFWD:
 				INC_STATS(0,rack,1);
-        DEBUG("RFWD %ld\n",m_query->txn_id);
-				txn_table.get_txn(g_node_id,m_query->txn_id,m_txn,tmp_query);
+        DEBUG("RFWD (%ld,%ld)\n",m_query->txn_id,m_query->batch_id);
+				txn_table.get_txn(g_node_id,m_query->txn_id,m_query->batch_id,m_txn,tmp_query);
         if(m_txn == NULL) {
 					rc = _wl->get_txn_man(m_txn);
 					assert(rc == RCOK);
@@ -1610,7 +1601,7 @@ RC thread_t::run_calvin() {
         } else {
           tmp_query = tmp_query->merge(m_query);
           if(m_query != tmp_query) {
-            printf("merge2 put %lx\n",(uint64_t)m_query);
+            DEBUG_R("merge2 put 0x%lx\n",(uint64_t)m_query);
             qry_pool.put(m_query);
           }
           m_query = tmp_query;
@@ -1629,7 +1620,7 @@ RC thread_t::run_calvin() {
       case RTXN:
 				INC_STATS(0,rtxn,1);
 
-				txn_table.get_txn(g_node_id,m_query->txn_id,m_txn,tmp_query);
+				txn_table.get_txn(g_node_id,m_query->txn_id,m_query->batch_id,m_txn,tmp_query);
         /*
         if(m_txn != NULL)
           printf("rtxn %ld %d %d\n",m_query->txn_id,m_txn->lock_ready,m_txn->lock_ready_cnt);
@@ -1673,8 +1664,8 @@ RC thread_t::run_calvin() {
 			INC_STATS(get_thd_id(), run_time, timespan);
 			INC_STATS(get_thd_id(), latency, timespan);
       // delete_txn does NOT free m_query for CALVIN
-      txn_table.delete_txn(m_query->return_id,tid);
-      assert(_wl->epoch_txn_cnt > 1 || txn_table.get_cnt() == 0);
+      txn_table.delete_txn(m_query->return_id,tid,m_query->batch_id);
+      //assert(_wl->epoch_txn_cnt > 1 || txn_table.get_cnt() == 0);
       assert(m_query->batch_id == _wl->curr_epoch || m_query->batch_id == _wl->curr_epoch - 1);
       if(m_query->return_id == g_node_id) {
         DEBUG_R("RACK (%ld,%ld)  0x%lx\n",m_query->txn_id,m_query->batch_id,(uint64_t)m_query);

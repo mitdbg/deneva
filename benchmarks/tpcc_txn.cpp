@@ -1231,7 +1231,10 @@ RC tpcc_txn_man::run_calvin_txn(base_query * query) {
               rc = WAIT;
           }
         }
-        this->phase = 4;
+        if(active_nodes[g_node_id])
+          this->phase = 4;
+        else
+          this->phase = 5;
         break;
       case 4:
         // Phase 4: Collect remote reads

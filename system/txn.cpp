@@ -741,7 +741,7 @@ txn_man::send_remote_reads(base_query * qry) {
       qry_pool.get(m_qry);
       m_qry->deep_copy(qry);
       assert(m_qry->batch_id != UINT64_MAX);
-      msg_queue.enqueue(qry,RFWD,i);
+      msg_queue.enqueue(m_qry,RFWD,i);
       n++;
     }
   }

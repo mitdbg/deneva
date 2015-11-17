@@ -91,20 +91,25 @@ void MessageThread::run() {
       //mem_allocator.free(qry,sizeof(ycsb_query));
       qry_pool.put(qry);
 #else
-      txn_table.delete_txn(qry->return_id, qry->txn_id);
+      txn_table.delete_txn(qry->return_id, qry->txn_id,0);
 #endif
   }
 #else//CALVIN
   if(ISSERVER && (type == RACK || type == RTXN || type == CL_RSP || type == RFWD)) {
-      //txn_table.delete_txn(qry->return_id, qry->txn_id);
       DEBUG_R("msg thd put %d 0x%lx\n",type,(uint64_t)qry);
       qry_pool.put(qry);
   }
 #endif
 #if MODE==QRY_ONLY_MODE || MODE == SETUP_MODE || MODE == SIMPLE_MODE
+#if CC_ALG == CALVIN
   if(type == RQRY_RSP && qry->max_done) {
-    txn_table.delete_txn(qry->return_id, qry->txn_id);
+    txn_table.delete_txn(qry->return_id, qry->txn_id,qry->batch_id);
   }
+#else
+  if(type == RQRY_RSP && qry->max_done) {
+    txn_table.delete_txn(qry->return_id, qry->txn_id,0);
+  }
+#endif
 #endif
 
   INC_STATS(_thd_id,sthd_prof_4,get_sys_clock() - sthd_prof_start);
@@ -156,7 +161,7 @@ void MessageThread::copy_to_buffer(mbuf * sbuf, RemReqType type, base_query * qr
   COPY_BUF(sbuf->buffer,type,sbuf->ptr);
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
   COPY_BUF(sbuf->buffer,qry->dest_part,sbuf->ptr);
-  COPY_BUF(sbuf->buffer,qry->hoem_part,sbuf->ptr);
+  COPY_BUF(sbuf->buffer,qry->home_part,sbuf->ptr);
 #endif
   }
 
@@ -328,7 +333,7 @@ void MessageThread::rack(mbuf * sbuf,base_query * qry) {
 }
 
 void MessageThread::rfwd(mbuf * sbuf,base_query * qry) {
-  DEBUG("Sending RFWD %ld\n",qry->txn_id);
+  DEBUG("Sending RFWD (%ld,%ld)\n",qry->txn_id,qry->batch_id);
   assert(WORKLOAD==TPCC);
   tpcc_query * m_qry = (tpcc_query *)qry;
   COPY_BUF(sbuf->buffer,qry->txn_id,sbuf->ptr);

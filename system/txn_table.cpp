@@ -81,10 +81,17 @@ void TxnTable::add_txn(uint64_t node_id, txn_man * txn, base_query * qry) {
   txn_node_t t_node = pool[txn_id % pool_size].head;
 
   while (t_node != NULL) {
+#if CC_ALG == CALVIN
+    if (t_node->txn->get_txn_id() == txn_id && t_node->qry->batch_id == qry->batch_id) {
+      next_txn = t_node->txn;
+      break;
+    }
+#else
     if (t_node->txn->get_txn_id() == txn_id) {
       next_txn = t_node->txn;
       break;
     }
+#endif
     t_node = t_node->next;
   }
 
@@ -122,7 +129,8 @@ void TxnTable::add_txn(uint64_t node_id, txn_man * txn, base_query * qry) {
   MODIFY_END(txn_id % pool_size);
   INC_STATS(0,thd_prof_txn_table_add,get_sys_clock() - thd_prof_start);
 }
-void TxnTable::get_txn(uint64_t node_id, uint64_t txn_id,txn_man *& txn,base_query *& qry){
+
+void TxnTable::get_txn(uint64_t node_id, uint64_t txn_id,uint64_t batch_id,txn_man *& txn,base_query *& qry){
 
   uint64_t thd_prof_start = get_sys_clock();
   txn = NULL;
@@ -133,7 +141,11 @@ void TxnTable::get_txn(uint64_t node_id, uint64_t txn_id,txn_man *& txn,base_que
   txn_node_t t_node = pool[txn_id % pool_size].head;
 
   while (t_node != NULL) {
+#if CC_ALG == CALVIN
+    if (t_node->txn->get_txn_id() == txn_id && t_node->qry->batch_id == batch_id) {
+#else
     if (t_node->txn->get_txn_id() == txn_id) {
+#endif
       txn = t_node->txn;
       qry = t_node->qry;
       assert(txn->get_txn_id() == qry->txn_id);
@@ -168,7 +180,7 @@ void TxnTable::restart_txn(uint64_t txn_id){
 
 }
 
-void TxnTable::delete_txn(uint64_t node_id, uint64_t txn_id){
+void TxnTable::delete_txn(uint64_t node_id, uint64_t txn_id, uint64_t batch_id){
   uint64_t thd_prof_start = get_sys_clock();
   uint64_t starttime = thd_prof_start;
 
@@ -177,7 +189,11 @@ void TxnTable::delete_txn(uint64_t node_id, uint64_t txn_id){
   txn_node_t t_node = pool[txn_id % pool_size].head;
 
   while (t_node != NULL) {
+#if CC_ALG == CALVIN
+    if (t_node->txn->get_txn_id() == txn_id && t_node->qry->batch_id == batch_id) {
+#else
     if (t_node->txn->get_txn_id() == txn_id) {
+#endif
       LIST_REMOVE_HT(t_node,pool[txn_id % pool_size].head,pool[txn_id % pool_size].tail);
       pool[txn_id % pool_size].cnt--;
       ATOM_SUB(cnt,1);
