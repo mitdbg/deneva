@@ -1,6 +1,6 @@
 import os,re,sys,math
 from experiments import configs
-from experiments import config_names
+#from experiments import config_names
 import glob
 import pprint
 import latency_stats as ls
