@@ -386,8 +386,7 @@ void tpcc_client_query::gen_new_order(uint64_t thd_id) {
     double r_rem = (double)(rand() % 100000) / 100000;
     //printf("rr: %f, ",r_rem);
     // FIXME!!
-		//if (r_rem > 0.01 || r_mpr > g_mpr || g_num_wh == 1) {
-		if (r_rem > 0.50 || r_mpr > g_mpr || g_num_wh == 1) {
+		if (r_rem > 0.01 || r_mpr > g_mpr || g_num_wh == 1) {
 			// home warehouse
 			items[oid].ol_supply_w_id = w_id;
 		}
