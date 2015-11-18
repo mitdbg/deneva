@@ -488,7 +488,8 @@ RC tpcc_txn_man::run_txn_state(base_query * query) {
         m_query->rqry_req_cnt = 0;
 
         for(uint64_t i = m_query->ol_number; i < m_query->ol_cnt; i++) {
-          if(GET_NODE_ID(wh_to_part(m_query->items[i].ol_supply_w_id)) == get_node_id())
+          if(GET_NODE_ID(wh_to_part(m_query->items[i].ol_supply_w_id)) == get_node_id()
+              || GET_NODE_ID(wh_to_part(m_query->items[i].ol_supply_w_id)) != GET_NODE_ID(part_id_ol_supply_w))
             break;
           m_query->rqry_req_cnt++;
         }
@@ -1243,20 +1244,17 @@ RC tpcc_txn_man::run_calvin_txn(base_query * query) {
         break;
       case 3:
         // Phase 3: Serve remote reads
-        if(WORKLOAD == TPCC && m_query->txn_type == TPCC_NEW_ORDER) {
-          if(GET_NODE_ID(wh_to_part(m_query->w_id) == g_node_id))
-            rc = send_remote_reads(query);
-          else {
-            if(phase_rsp)
-              rc = RCOK;
-            else
-              rc = WAIT;
-          }
-        }
-        if(active_nodes[g_node_id])
+        //if(WORKLOAD == TPCC && m_query->txn_type == TPCC_NEW_ORDER) {
+          //if(GET_NODE_ID(wh_to_part(m_query->w_id) == g_node_id))
+        rc = send_remote_reads(query);
+        if(active_nodes[g_node_id]) {
           ATOM_ADD(this->phase,1); //4
-        else
-          ATOM_ADD(this->phase,2); //5
+          if(get_rsp_cnt() == active_cnt-1) {
+            rc = RCOK;
+          } else
+            rc = WAIT;
+        } else
+          ATOM_ADD(this->phase,3); //6
         break;
       case 4:
         // Phase 4: Collect remote reads

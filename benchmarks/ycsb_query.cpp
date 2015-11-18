@@ -115,6 +115,7 @@ bool ycsb_query::readonly() {
 
 base_query * ycsb_query::merge(base_query * query) {
 	ycsb_query * m_query = (ycsb_query *) query;
+  RemReqType old_rtype = this->rtype;
   this->rtype = m_query->rtype;
   switch(m_query->rtype) {
     case RINIT:
@@ -149,6 +150,9 @@ base_query * ycsb_query::merge(base_query * query) {
         this->txn_rtype = YCSB_FIN;
       }
       break;
+    case RFWD:
+      this->rtype = old_rtype;
+      this->batch_id = m_query->batch_id;
     case RFIN:
       assert(this->pid == m_query->pid);
       this->rc = m_query->rc;

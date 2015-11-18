@@ -1448,7 +1448,6 @@ RC thread_t::run_calvin_lock() {
     assert(m_query->txn_id != UINT64_MAX);
 
     txn_table.get_txn(g_node_id,m_query->txn_id,m_query->batch_id,m_txn,tmp_query);
-    assert(WORKLOAD == TPCC || m_txn==NULL);
     if(m_txn==NULL) {
       txn_pool.get(m_txn);
       m_txn->set_txn_id(m_query->txn_id);
@@ -1528,6 +1527,7 @@ RC thread_t::run_calvin() {
       if (now_time - prog_time >= g_prog_timer) {
         prog_time = now_time;
         SET_STATS(get_thd_id(), tot_run_time, prog_time - run_starttime); 
+        txn_table.dump();
 
         stats.print(true);
       }
@@ -1586,11 +1586,34 @@ RC thread_t::run_calvin() {
     uint64_t tid = m_query->txn_id;
     uint64_t bid __attribute__((unused));
     bid = m_query->batch_id;
+    bool txn_done = false;
+    uint64_t rsp_cnt;
 
 		switch(m_query->rtype) {
+      case RFIN:
+				DEBUG("%ld RFIN (%ld,%ld)\n",_thd_id,m_query->txn_id,m_query->batch_id);
+				INC_STATS(0,rfin,1);
+				txn_table.get_txn(g_node_id,m_query->txn_id,m_query->batch_id,m_txn,tmp_query);
+        assert(m_txn != NULL);
+        tmp_query = tmp_query->merge(m_query);
+        if(m_query != tmp_query) {
+          DEBUG_R("merge2 put 0x%lx\n",(uint64_t)m_query);
+          qry_pool.put(m_query);
+        }
+        m_query = tmp_query;
+        m_txn->register_thd(this);
+				rsp_cnt = m_txn->incr_rsp2(1);
+        assert(rsp_cnt >=0);
+        if(m_txn->phase==6 && rsp_cnt == m_txn->active_cnt-1) {
+          rc = m_query->rc;
+          txn_done = true;
+        } else {
+          rc = WAIT;
+        }
+        break;
       case RFWD:
-				INC_STATS(0,rack,1);
-        DEBUG("RFWD (%ld,%ld)\n",m_query->txn_id,m_query->batch_id);
+				INC_STATS(0,rfwd,1);
+        DEBUG("%ld RFWD (%ld,%ld)\n",_thd_id,m_query->txn_id,m_query->batch_id);
 				txn_table.get_txn(g_node_id,m_query->txn_id,m_query->batch_id,m_txn,tmp_query);
         if(m_txn == NULL) {
 					rc = _wl->get_txn_man(m_txn);
@@ -1607,15 +1630,14 @@ RC thread_t::run_calvin() {
           m_query = tmp_query;
         }
         m_txn->register_thd(this);
-          m_txn->set_query(m_query);
-          if(m_txn->phase == 4) {
-            rc = m_txn->run_txn(m_query);
-          }
-          else {
-            m_txn->phase_rsp = true;
-            rc = WAIT;
-          }
-          break;
+        m_txn->set_query(m_query);
+				rsp_cnt = m_txn->incr_rsp(1);
+        if(m_txn->phase == 4 && rsp_cnt == m_txn->participant_cnt-1) {
+          rc = m_txn->run_calvin_txn(m_query);
+        } else {
+          rc = WAIT;
+        }
+        break;
       case RQRY:
       case RTXN:
 				INC_STATS(0,rtxn,1);
@@ -1647,6 +1669,8 @@ RC thread_t::run_calvin() {
         DEBUG("START %ld %ld\n",m_txn->get_txn_id(),m_txn->starttime);
         // Execute
 				rc = m_txn->run_calvin_txn(m_query);
+        if((m_txn->phase==6 && rc == RCOK) || m_txn->active_cnt == 0 || m_txn->active_cnt == 1)
+          txn_done = true;
 				break;
 		  default:
 			  assert(false);
@@ -1655,10 +1679,11 @@ RC thread_t::run_calvin() {
     INC_STATS(_thd_id,thd_prof_thd2,thd_prof_end - thd_prof_start);
     INC_STATS(_thd_id,thd_prof_thd2_type[txn_type],thd_prof_end - thd_prof_start);
 
-    if(rc == RCOK) {
+
+    if(txn_done) {
       // Release locks
       //rc = m_txn->release_locks(m_query);
-      m_txn->finish(RCOK,NULL,0);
+      m_txn->finish(rc,NULL,0);
 			INC_STATS(get_thd_id(),txn_cnt,1);
 			timespan = get_sys_clock() - m_txn->starttime;
 			INC_STATS(get_thd_id(), run_time, timespan);

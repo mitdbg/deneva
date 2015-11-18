@@ -95,7 +95,6 @@ RC ycsb_txn_man::acquire_locks(base_query * query) {
 
 
 RC ycsb_txn_man::run_txn(base_query * query) {
-	ycsb_query * m_query = (ycsb_query *) query;
   /*
 #if MODE==TWOPC
   ycsb_query * m_query = (ycsb_query*) query;
@@ -116,6 +115,7 @@ RC ycsb_txn_man::run_txn(base_query * query) {
   return rc;
 #endif
 #if DEBUG_DISTR
+	ycsb_query * m_query = (ycsb_query *) query;
   if(IS_LOCAL(m_query->txn_id) && m_query->txn_rtype == YCSB_0 && m_query->rid == 0) {
     printf("REQ %ld: %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld\n",m_query->txn_id
         ,GET_NODE_ID(m_query->requests[0].key)
@@ -256,7 +256,8 @@ RC ycsb_txn_man::run_txn_state(base_query * query) {
 
         m_query->rqry_req_cnt = 0;
         for(uint64_t i = m_query->rid; i < m_query->request_cnt; i++) {
-          if(GET_NODE_ID(_wl->key_to_part(m_query->requests[i].key)) == get_node_id())
+          if(GET_NODE_ID(_wl->key_to_part(m_query->requests[i].key)) == get_node_id()
+              || GET_NODE_ID(_wl->key_to_part(m_query->requests[i].key)) != GET_NODE_ID(part_id))
             break;
           m_query->rqry_req_cnt++;
         }
@@ -335,6 +336,22 @@ RC ycsb_txn_man::run_calvin_txn(base_query * query) {
   while(rc == RCOK && this->phase < 6) {
     switch(this->phase) {
       case 1:
+#if DEBUG_DISTR
+    printf("REQ %ld: %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld\n",m_query->txn_id
+        ,GET_NODE_ID(m_query->requests[0].key)
+        ,GET_NODE_ID(m_query->requests[1].key)
+        ,GET_NODE_ID(m_query->requests[2].key)
+        ,GET_NODE_ID(m_query->requests[3].key)
+        ,GET_NODE_ID(m_query->requests[4].key)
+        ,GET_NODE_ID(m_query->requests[5].key)
+        ,GET_NODE_ID(m_query->requests[6].key)
+        ,GET_NODE_ID(m_query->requests[7].key)
+        ,GET_NODE_ID(m_query->requests[8].key)
+        ,GET_NODE_ID(m_query->requests[9].key)
+        );
+#endif
+
+
         // Phase 1: Read/write set analysis
         participant_cnt = 0;
         active_cnt = 0;
@@ -354,30 +371,48 @@ RC ycsb_txn_man::run_calvin_txn(base_query * query) {
             active_nodes[req_nid] = true;
           }
         }
-        this->phase = 2;
+        ATOM_ADD(this->phase,1); //2
         break;
       case 2:
         // Phase 2: Perform local reads
         rc = run_ycsb(query);
         //release_read_locks(query);
 
-        this->phase = 3;
+        ATOM_ADD(this->phase,1); //3
         break;
       case 3:
         // Phase 3: Serve remote reads
         rc = send_remote_reads(query);
-        this->phase = 4;
+        if(active_nodes[g_node_id]) {
+          ATOM_ADD(this->phase,1); //4
+          if(get_rsp_cnt() == participant_cnt-1) {
+            rc = RCOK;
+          } else {
+            DEBUG("Phase4 (%ld,%ld)\n",query->txn_id,query->batch_id);
+            rc = WAIT;
+          }
+        } else { // Done
+          rc = RCOK;
+          ATOM_ADD(this->phase,3); //6
+        }
+
         break;
       case 4:
         // Phase 4: Collect remote reads
-        this->phase = 5;
+        ATOM_ADD(this->phase,1); //5
         break;
       case 5:
         // Phase 5: Execute transaction / perform local writes
         rc = run_ycsb(query);
         query->rc = rc;
         rc = calvin_finish(query);
-        this->phase = 6;
+        ATOM_ADD(this->phase,1); //6
+        if(get_rsp2_cnt() == active_cnt-1) {
+          rc = RCOK;
+        } else {
+        DEBUG("Phase6 (%ld,%ld)\n",query->txn_id,query->batch_id);
+            rc = WAIT;
+        }
         break;
       default:
         assert(false);

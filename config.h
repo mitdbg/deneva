@@ -6,7 +6,7 @@
 // Simulation + Hardware
 /***********************************************/
 #define NODE_CNT 2
-#define THREAD_CNT 2
+#define THREAD_CNT 4
 #define REM_THREAD_CNT 1
 #define SEND_THREAD_CNT 1
 // PART_CNT should be at least NODE_CNT
@@ -29,14 +29,14 @@
 // # of transactions to run for warmup
 #define WARMUP            0
 // YCSB or TPCC
-#define WORKLOAD TPCC
+#define WORKLOAD YCSB
 // print the transaction latency distribution
 #define PRT_LAT_DISTR false
 #define STATS_ENABLE        true
 #define TIME_ENABLE         true //STATS_ENABLE
 
 #define FIN_BY_TIME true
-#define MAX_TXN_IN_FLIGHT 100
+#define MAX_TXN_IN_FLIGHT 10
 
 /***********************************************/
 // Memory System
@@ -85,7 +85,7 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, VOLTDB, OCC, VLL, CALVIN
-#define CC_ALG NO_WAIT
+#define CC_ALG CALVIN
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER         false
@@ -203,7 +203,7 @@ enum TPCCTxnType {TPCC_ALL,
 extern TPCCTxnType          g_tpcc_txn_type;
 
 //#define TXN_TYPE          TPCC_ALL
-#define PERC_PAYMENT 0.0
+#define PERC_PAYMENT 0.5
 #define FIRSTNAME_MINLEN      8
 #define FIRSTNAME_LEN         16
 #define LASTNAME_LEN        16
@@ -308,10 +308,10 @@ extern TestCases          g_test_case;
 // Stats and timeout
 #define BILLION 1000000000UL // in ns => 1 second
 #define STAT_ARR_SIZE 1024
-#define PROG_TIMER 100 * BILLION // in s
+#define PROG_TIMER 10 * BILLION // in s
 #define BATCH_TIMER 1*10000000UL // 10 ms
 //#define DONE_TIMER 10 * BILLION // ~2 minutes
-#define DONE_TIMER 20 * 60 * BILLION // ~2 minutes
+#define DONE_TIMER 1 * 60 * BILLION // ~2 minutes
 
 #define SEED 0
 #define SHMEM_ENV false

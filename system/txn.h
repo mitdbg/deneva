@@ -69,8 +69,11 @@ public:
 	void 			set_start_ts(uint64_t start_ts);
 	ts_t 			get_start_ts();
   uint64_t get_rsp_cnt(); 
+  uint64_t get_rsp2_cnt(); 
   uint64_t incr_rsp(int i); 
   uint64_t decr_rsp(int i);
+  uint64_t incr_rsp2(int i); 
+  uint64_t decr_rsp2(int i);
   uint64_t incr_lr(); 
   uint64_t decr_lr();
 
@@ -137,8 +140,8 @@ public:
   // For Calvin
   int phase;
   bool phase_rsp;
-  int participant_cnt;
-  int active_cnt;
+  uint64_t participant_cnt;
+  uint64_t active_cnt;
   bool * participant_nodes;
   bool * active_nodes;
 
@@ -193,7 +196,9 @@ private:
 	txnid_t 		txn_id;
 	ts_t 			timestamp;
   uint64_t rsp_cnt;
+  uint64_t rsp2_cnt;
   sem_t rsp_mutex;
+  sem_t rsp2_mutex;
 };
 
 #endif

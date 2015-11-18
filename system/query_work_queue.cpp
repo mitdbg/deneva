@@ -138,13 +138,17 @@ void QWorkQueue::enqueue(uint64_t thd_id, base_query * qry,bool busy) {
   qry->q_starttime = starttime;
   int q_type __attribute__((unused));
   q_type = 9;
-#if CC_ALG == CALVIN
   RemReqType rtype = NO_MSG;
   uint64_t batch_id = UINT64_MAX;
+  uint64_t return_id = UINT64_MAX;
+  uint64_t txn_id = UINT64_MAX;
   if(qry) {
     rtype = qry->rtype;
     batch_id = qry->batch_id;
+    return_id =qry->return_id;
+    txn_id =qry->txn_id;
   }
+#if CC_ALG == CALVIN
   if(ISCLIENT) {
     ATOM_ADD(wq_cnt,1);
     wq.enqueue(qry);
@@ -189,7 +193,7 @@ void QWorkQueue::enqueue(uint64_t thd_id, base_query * qry,bool busy) {
         new_wq.enqueue(qry);
         q_type = 2;
       } else {
-        if(qry->rtype == RFWD) {
+        if(qry->rtype == RFWD || qry->rtype == RFIN) {
           ATOM_ADD(wq_cnt,1);
           wq.enqueue(qry);
           q_type = 0;
@@ -209,7 +213,7 @@ void QWorkQueue::enqueue(uint64_t thd_id, base_query * qry,bool busy) {
   }
   assert(ISCLIENT || rtype == CL_RSP || (q_type == 2 && rtype == RTXN) || batch_id != UINT64_MAX);
   assert(
-      (q_type == 0  && (rtype == CL_RSP || rtype == RTXN || rtype == RFWD || rtype == RQRY))
+      (q_type == 0  && (rtype == CL_RSP || rtype == RTXN || rtype == RFWD || rtype == RQRY || rtype == RFIN))
       || (q_type == 1  && (rtype == RTXN || rtype == RDONE))
       || (q_type == 2  && (rtype == RTXN || rtype == RACK))
       );
@@ -252,7 +256,7 @@ void QWorkQueue::enqueue(uint64_t thd_id, base_query * qry,bool busy) {
     default: assert(false);
   }
 #endif
-  DEBUG("%ld ENQUEUE (%ld,%ld); %ld; %d, %d,0x%lx\n",thd_id,qry->txn_id,qry->batch_id,qry->return_id,q_type,qry->rtype,(uint64_t)qry);
+  DEBUG("%ld ENQUEUE (%ld,%ld); %ld; %d, %d,0x%lx\n",thd_id,txn_id,batch_id,return_id,q_type,rtype,(uint64_t)qry);
   INC_STATS(thd_id,all_wq_enqueue,get_sys_clock() - starttime);
 }
 //TODO: do we need to has qry id here?
@@ -295,7 +299,7 @@ bool QWorkQueue::dequeue(uint64_t thd_id, base_query *& qry) {
   assert(!valid || ISCLIENT || qry->rtype == CL_RSP || (q_type == 2 && qry->rtype == RTXN) || qry->batch_id != UINT64_MAX);
   assert(
       !valid
-      || (q_type == 0  && (qry->rtype == CL_RSP || qry->rtype == RTXN || qry->rtype == RFWD || qry->rtype == RQRY))
+      || (q_type == 0  && (qry->rtype == CL_RSP || qry->rtype == RTXN || qry->rtype == RFWD || qry->rtype == RQRY || qry->rtype == RFIN))
       || (q_type == 1  && (qry->rtype == RTXN))
       || (q_type == 2  && (qry->rtype == RTXN || qry->rtype == RACK))
       );

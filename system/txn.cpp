@@ -33,6 +33,7 @@ void txn_man::init(workload * h_wl) {
 	insert_cnt = 0;
   ack_cnt = 0;
   rsp_cnt = 0;
+  rsp2_cnt = 0;
   state = START;
   cc_wait_abrt_cnt = 0;
   cc_wait_abrt_time = 0;
@@ -41,6 +42,7 @@ void txn_man::init(workload * h_wl) {
   clear();
 
   sem_init(&rsp_mutex, 0, 1);
+  sem_init(&rsp2_mutex, 0, 1);
 
 
   txn_time_idx = 0;
@@ -81,6 +83,7 @@ void txn_man::reset() {
 	insert_cnt = 0;
   ack_cnt = 0;
   rsp_cnt = 0;
+  rsp2_cnt = 0;
   state = START;
   cc_wait_abrt_cnt = 0;
   cc_wait_abrt_time = 0;
@@ -278,6 +281,26 @@ uint64_t txn_man::decr_rsp(int i) {
   return result;
 }
 
+uint64_t txn_man::get_rsp2_cnt() {
+  return this->rsp2_cnt;
+}
+uint64_t txn_man::incr_rsp2(int i) {
+  //ATOM_ADD(this->rsp_cnt,i);
+  uint64_t result;
+  sem_wait(&rsp2_mutex);
+  result = ++this->rsp2_cnt;
+  sem_post(&rsp2_mutex);
+  return result;
+}
+
+uint64_t txn_man::decr_rsp2(int i) {
+  //ATOM_SUB(this->rsp_cnt,i);
+  uint64_t result;
+  sem_wait(&rsp2_mutex);
+  result = --this->rsp2_cnt;
+  sem_post(&rsp2_mutex);
+  return result;
+}
 void txn_man::cleanup(RC rc) {
 #if CC_ALG == OCC && MODE == NORMAL_MODE
   occ_man.finish(rc,this);
@@ -730,9 +753,6 @@ txn_man::release() {
 RC
 txn_man::send_remote_reads(base_query * qry) {
   assert(CC_ALG == CALVIN);
-  if(WORKLOAD == YCSB)
-    return RCOK;
-  int n = 0;
   for(uint64_t i = 0; i < g_node_cnt; i++) {
     if(i == g_node_id)
       continue;
@@ -742,7 +762,6 @@ txn_man::send_remote_reads(base_query * qry) {
       m_qry->deep_copy(qry);
       assert(m_qry->batch_id != UINT64_MAX);
       msg_queue.enqueue(m_qry,RFWD,i);
-      n++;
     }
   }
   return RCOK;
@@ -752,19 +771,16 @@ txn_man::send_remote_reads(base_query * qry) {
 RC
 txn_man::calvin_finish(base_query * qry) {
   assert(CC_ALG == CALVIN);
-  return RCOK;
-  if(WORKLOAD == YCSB)
-    return RCOK;
-  int n = 0;
   for(uint64_t i = 0; i < g_node_cnt; i++) {
     if(i == g_node_id)
       continue;
     if(active_nodes[i]) {
-      msg_queue.enqueue(qry,RACK,i);
-      n++;
+      base_query * m_qry;
+      qry_pool.get(m_qry);
+      m_qry->deep_copy(qry);
+      assert(m_qry->batch_id != UINT64_MAX);
+      msg_queue.enqueue(m_qry,RFIN,i);
     }
   }
-  if(n>0)
-    return WAIT_REM;
   return RCOK;
 }
