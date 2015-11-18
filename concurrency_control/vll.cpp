@@ -96,7 +96,7 @@ VLLMan::restartQFront() {
       msg_queue.enqueue(qry,RACK,qry->return_id);
     }
     else {
-      txn_table.restart_txn(front_txn->get_txn_id());
+      txn_table.restart_txn(front_txn->get_txn_id(),0);
     }
   }
   pthread_mutex_unlock(&_mutex);

@@ -821,7 +821,7 @@ RC thread_t::process_rack(base_query *& m_query,txn_man *& m_txn) {
               }
 #endif
 							m_txn->state = EXEC; 
-							txn_table.restart_txn(m_txn->get_txn_id());
+							txn_table.restart_txn(m_txn->get_txn_id(),0);
               //qry_pool.put(m_query);
 					    m_query = NULL;
               INC_STATS(_thd_id,prof_time_twopc,get_sys_clock() - thd_prof_start);

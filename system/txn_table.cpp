@@ -182,13 +182,17 @@ void TxnTable::get_txn(uint64_t node_id, uint64_t txn_id,uint64_t batch_id,txn_m
 
 }
 
-void TxnTable::restart_txn(uint64_t txn_id){
+void TxnTable::restart_txn(uint64_t txn_id,uint64_t batch_id){
   MODIFY_START(txn_id % pool_size);
 
   txn_node_t t_node = pool[txn_id % pool_size].head;
 
   while (t_node != NULL) {
+#if CC_ALG == CALVIN
+    if (t_node->txn->get_txn_id() == txn_id && t_node->qry->batch_id == batch_id) {
+#else
     if (t_node->txn->get_txn_id() == txn_id) {
+#endif
       if(txn_id % g_node_cnt == g_node_id)
         t_node->qry->rtype = RTXN;
       else
