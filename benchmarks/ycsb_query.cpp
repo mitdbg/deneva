@@ -135,13 +135,12 @@ base_query * ycsb_query::merge(base_query * query) {
 #endif
       this->req = m_query->req;
       this->txn_rtype = m_query->txn_rtype;
-#if WORKLOAD == YCSB
+
       this->rid = m_query->rid;
       this->request_cnt = m_query->request_cnt;
       for(uint64_t i = 0 ; i < this->request_cnt;i++) {
         this->requests[i] = m_query->requests[i];
       }
-#endif
       break;
     case RQRY_RSP:
       //if(m_query->rc == Abort || this->rc == WAIT || this->rc == WAIT_REM) {

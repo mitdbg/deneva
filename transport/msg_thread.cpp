@@ -28,7 +28,7 @@ void MessageThread::run() {
   RemReqType type;
   uint64_t dest;
   mbuf * sbuf;
-  //uint64_t startptr;
+  uint64_t startptr;
   uint64_t sthd_prof_start = get_sys_clock();
 
   uint64_t head_start = msg_queue.dequeue(head_qry,head_type,head_dest);
@@ -73,9 +73,9 @@ void MessageThread::run() {
   sthd_prof_start = get_sys_clock();
 
 
-  //startptr = sbuf->ptr;
+  startptr = sbuf->ptr;
   copy_to_buffer(sbuf,type,qry);
-  //assert(sbuf->ptr - startptr == get_msg_size(type,qry));
+  assert(sbuf->ptr - startptr == get_msg_size(type,qry));
 
   //if(_thd_id == g_thread_cnt) 
   //  printf("Sthd Add %ld %ld\n",dest,get_sys_clock()-sbuf->starttime);
@@ -209,9 +209,17 @@ uint64_t MessageThread::get_msg_size(RemReqType type,base_query * qry) {
         case RLK:         /* TODO */ break;
         case  RULK:       /* TODO */ break;
         case  RQRY:       
+                          size += sizeof(uint64_t);//pid
+
+#if CC_ALG == WAIT_DIE || CC_ALG == TIMESTAMP || CC_ALG == MVCC || CC_ALG == VLL
+                          size += sizeof(uint64_t); //ts
+#endif
+#if CC_ALG == MVCC  || CC_ALG == OCC
+                          size += sizeof(uint64_t); //thd_id || start_ts
+#endif
 #if WORKLOAD == TPCC
-                          size +=sizeof(TPCCRemTxnType);
-                          size +=sizeof(TPCCTxnType);
+                          size +=sizeof(TPCCRemTxnType); //txn_rtype
+                          //size +=sizeof(TPCCTxnType); //txn_type
   switch(m_qry->txn_rtype) {
     case TPCC_PAYMENT0 :
       size += sizeof(uint64_t)*3 + sizeof(double);
@@ -226,7 +234,9 @@ uint64_t MessageThread::get_msg_size(RemReqType type,base_query * qry) {
       size += sizeof(uint64_t);
       break;
     case TPCC_NEWORDER8 :
-      size += sizeof(uint64_t)*7 + sizeof(bool);
+      //size += sizeof(uint64_t)*7 + sizeof(bool);
+      size += sizeof(uint64_t)*4 + sizeof(bool);
+      size += sizeof(Item_no)*m_qry->rqry_req_cnt;
       break;
     default: assert(false);
   }
@@ -235,15 +245,12 @@ uint64_t MessageThread::get_msg_size(RemReqType type,base_query * qry) {
                           size +=sizeof(uint64_t);
                           size += sizeof(ycsb_request)*m_qry->rqry_req_cnt;
 #endif
+
+#if MODE==QRY_ONLY_MODE
                           size +=sizeof(uint64_t);
-#if CC_ALG == WAIT_DIE || CC_ALG == TIMESTAMP || CC_ALG == MVCC || CC_ALG == VLL
-                          size += sizeof(uint64_t);
-#endif
-#if CC_ALG == MVCC  || CC_ALG == OCC
-                          size += sizeof(uint64_t);
 #endif
                           break;
-        case  RFIN:       size +=sizeof(uint64_t) + sizeof(RC) + sizeof(uint64_t);break;
+        case  RFIN:       size +=sizeof(uint64_t) + sizeof(RC) + sizeof(uint64_t) + sizeof(bool);break;
         case  RLK_RSP:    /* TODO */ break;
         case  RULK_RSP:   /* TODO */ break;
         case  RQRY_RSP:   size +=sizeof(RC) + sizeof(uint64_t);break;
@@ -407,10 +414,11 @@ void MessageThread::rqry(mbuf * sbuf, base_query *qry) {
   assert(IS_LOCAL(qry->txn_id));
 #if WORKLOAD == TPCC
   tpcc_query * m_qry = (tpcc_query *)qry;
+  DEBUG("Sending RQRY %ld -- %ld %ld\n",qry->txn_id,m_qry->ol_number,m_qry->rqry_req_cnt);
 #elif WORKLOAD == YCSB
   ycsb_query * m_qry = (ycsb_query *)qry;
-#endif
   DEBUG("Sending RQRY %ld -- %ld %ld\n",qry->txn_id,m_qry->rid,m_qry->rqry_req_cnt);
+#endif
 
   COPY_BUF(sbuf->buffer,m_qry->txn_rtype,sbuf->ptr);
   COPY_BUF(sbuf->buffer,qry->pid,sbuf->ptr);
@@ -455,11 +463,15 @@ void MessageThread::rqry(mbuf * sbuf, base_query *qry) {
       COPY_BUF(sbuf->buffer,m_qry->w_id,sbuf->ptr);
       COPY_BUF(sbuf->buffer,m_qry->d_id,sbuf->ptr);
       COPY_BUF(sbuf->buffer,m_qry->remote,sbuf->ptr);
-      COPY_BUF(sbuf->buffer,m_qry->ol_i_id,sbuf->ptr);
-      COPY_BUF(sbuf->buffer,m_qry->ol_supply_w_id,sbuf->ptr);
-      COPY_BUF(sbuf->buffer,m_qry->ol_quantity,sbuf->ptr);
-      COPY_BUF(sbuf->buffer,m_qry->ol_number,sbuf->ptr);
       COPY_BUF(sbuf->buffer,m_qry->o_id,sbuf->ptr);
+      //COPY_BUF(sbuf->buffer,m_qry->ol_i_id,sbuf->ptr);
+      //COPY_BUF(sbuf->buffer,m_qry->ol_supply_w_id,sbuf->ptr);
+      //COPY_BUF(sbuf->buffer,m_qry->ol_quantity,sbuf->ptr);
+      //COPY_BUF(sbuf->buffer,m_qry->ol_number,sbuf->ptr);
+      COPY_BUF(sbuf->buffer,m_qry->rqry_req_cnt,sbuf->ptr);
+      for(uint64_t i = m_qry->ol_number; i < m_qry->ol_number + m_qry->rqry_req_cnt; i++) {
+        COPY_BUF(sbuf->buffer,m_qry->items[i],sbuf->ptr);
+      }
       break;
     default: assert(false);
 

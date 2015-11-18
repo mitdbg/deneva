@@ -34,6 +34,7 @@ void Remote_query::unpack(void * d, uint64_t len) {
 	uint64_t ptr = 0;
   uint32_t dest_id = UINT32_MAX;
   uint32_t return_id = UINT32_MAX;
+  uint32_t tot_txn_cnt __attribute__((unused));
   uint32_t txn_cnt = 0;
   uint64_t starttime = get_sys_clock();
   assert(len > sizeof(uint32_t) * 3);
@@ -45,6 +46,7 @@ void Remote_query::unpack(void * d, uint64_t len) {
   assert(ISCLIENTN(return_id) || ISSERVERN(return_id));
   //DEBUG("Received batch %d txns from %d\n",txn_cnt,return_id);
 
+  tot_txn_cnt = txn_cnt;
   while(txn_cnt > 0) { 
     qry_pool.get(query);
     assert(query);
@@ -153,6 +155,7 @@ void Remote_query::unpack_query(base_query *& query,char * data,  uint64_t & ptr
           COPY_VAL(m_query->d_id,data,ptr);
           COPY_VAL(m_query->d_w_id,data,ptr);
           COPY_VAL(m_query->h_amount,data,ptr);
+          m_query->txn_type = TPCC_PAYMENT;
           break;
         case TPCC_PAYMENT4 :
           COPY_VAL(m_query->w_id,data,ptr);
@@ -163,6 +166,7 @@ void Remote_query::unpack_query(base_query *& query,char * data,  uint64_t & ptr
           COPY_VAL(m_query->c_last,data,ptr);
           COPY_VAL(m_query->h_amount,data,ptr);
           COPY_VAL(m_query->by_last_name,data,ptr);
+          m_query->txn_type = TPCC_PAYMENT;
           break;
         case TPCC_NEWORDER0 :
           COPY_VAL(m_query->w_id,data,ptr);
@@ -170,19 +174,30 @@ void Remote_query::unpack_query(base_query *& query,char * data,  uint64_t & ptr
           COPY_VAL(m_query->c_id,data,ptr);
           COPY_VAL(m_query->remote,data,ptr);
           COPY_VAL(m_query->ol_cnt,data,ptr);
+          m_query->txn_type = TPCC_NEW_ORDER;
           break;
         case TPCC_NEWORDER6 :
           COPY_VAL(m_query->ol_i_id,data,ptr);
+          m_query->txn_type = TPCC_NEW_ORDER;
           break;
         case TPCC_NEWORDER8 :
           COPY_VAL(m_query->w_id,data,ptr);
           COPY_VAL(m_query->d_id,data,ptr);
           COPY_VAL(m_query->remote,data,ptr);
-          COPY_VAL(m_query->ol_i_id,data,ptr);
-          COPY_VAL(m_query->ol_supply_w_id,data,ptr);
-          COPY_VAL(m_query->ol_quantity,data,ptr);
-          COPY_VAL(m_query->ol_number,data,ptr);
           COPY_VAL(m_query->o_id,data,ptr);
+          //COPY_VAL(m_query->ol_i_id,data,ptr);
+          //COPY_VAL(m_query->ol_supply_w_id,data,ptr);
+          //COPY_VAL(m_query->ol_quantity,data,ptr);
+          //COPY_VAL(m_query->ol_number,data,ptr);
+          COPY_VAL(m_query->ol_cnt,data,ptr);
+          for(uint64_t i = 0; i < m_query->ol_cnt; i++) {
+            COPY_VAL(m_query->items[i],data,ptr);
+          }
+          m_query->txn_type = TPCC_NEW_ORDER;
+          m_query->ol_i_id = m_query->items[0].ol_i_id;
+          m_query->ol_supply_w_id = m_query->items[0].ol_supply_w_id;
+          m_query->ol_quantity = m_query->items[0].ol_quantity;
+          m_query->ol_number = 0;
           break;
         default: assert(false);
           

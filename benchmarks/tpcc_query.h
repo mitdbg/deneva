@@ -140,6 +140,7 @@ public:
 	uint64_t ol_number;
 	uint64_t ol_amount;
 	uint64_t o_id;
+  uint64_t rqry_req_cnt;
 
 };
 
