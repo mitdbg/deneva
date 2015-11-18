@@ -1564,6 +1564,7 @@ RC thread_t::run_calvin() {
 			else {
 				SET_STATS(get_thd_id(), tot_run_time, stoptime - run_starttime); 
 			}
+      txn_table.dump();
 
       printf("FINISH %ld:%ld\n",_node_id,_thd_id);
       fflush(stdout);
@@ -1634,6 +1635,8 @@ RC thread_t::run_calvin() {
 				rsp_cnt = m_txn->incr_rsp(1);
         if(m_txn->phase == 4 && rsp_cnt == m_txn->participant_cnt-1) {
           rc = m_txn->run_calvin_txn(m_query);
+          if(m_txn->phase==6 && rc == RCOK)
+            txn_done = true;
         } else {
           rc = WAIT;
         }
@@ -1669,7 +1672,7 @@ RC thread_t::run_calvin() {
         DEBUG("START %ld %ld\n",m_txn->get_txn_id(),m_txn->starttime);
         // Execute
 				rc = m_txn->run_calvin_txn(m_query);
-        if((m_txn->phase==6 && rc == RCOK) || m_txn->active_cnt == 0 || m_txn->active_cnt == 1)
+        if((m_txn->phase==6 && rc == RCOK) || m_txn->active_cnt == 0 || m_txn->participant_cnt == 1)
           txn_done = true;
 				break;
 		  default:
