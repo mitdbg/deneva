@@ -232,7 +232,8 @@ uint64_t MessageThread::get_msg_size(RemReqType type,base_query * qry) {
   }
 #elif WORKLOAD == YCSB
                           size +=sizeof(YCSBRemTxnType);
-                          size += sizeof(ycsb_request);
+                          size +=sizeof(uint64_t);
+                          size += sizeof(ycsb_request)*m_qry->rqry_req_cnt;
 #endif
                           size +=sizeof(uint64_t);
 #if CC_ALG == WAIT_DIE || CC_ALG == TIMESTAMP || CC_ALG == MVCC || CC_ALG == VLL
@@ -402,13 +403,14 @@ void MessageThread::rinit(mbuf * sbuf,base_query * qry) {
 }
 
 void MessageThread::rqry(mbuf * sbuf, base_query *qry) {
-  DEBUG("Sending RQRY %ld\n",qry->txn_id);
+  //DEBUG("Sending RQRY %ld\n",qry->txn_id);
   assert(IS_LOCAL(qry->txn_id));
 #if WORKLOAD == TPCC
   tpcc_query * m_qry = (tpcc_query *)qry;
 #elif WORKLOAD == YCSB
   ycsb_query * m_qry = (ycsb_query *)qry;
 #endif
+  DEBUG("Sending RQRY %ld -- %ld %ld\n",qry->txn_id,m_qry->rid,m_qry->rqry_req_cnt);
 
   COPY_BUF(sbuf->buffer,m_qry->txn_rtype,sbuf->ptr);
   COPY_BUF(sbuf->buffer,qry->pid,sbuf->ptr);
@@ -463,7 +465,10 @@ void MessageThread::rqry(mbuf * sbuf, base_query *qry) {
 
   }
 #elif WORKLOAD == YCSB
-  COPY_BUF(sbuf->buffer,m_qry->req,sbuf->ptr);
+  COPY_BUF(sbuf->buffer,m_qry->rqry_req_cnt,sbuf->ptr);
+  for(uint64_t i = m_qry->rid; i < m_qry->rid + m_qry->rqry_req_cnt;i++) {
+    COPY_BUF(sbuf->buffer,m_qry->requests[i],sbuf->ptr);
+  }
 #endif
 
 

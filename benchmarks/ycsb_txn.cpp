@@ -95,6 +95,7 @@ RC ycsb_txn_man::acquire_locks(base_query * query) {
 
 
 RC ycsb_txn_man::run_txn(base_query * query) {
+	ycsb_query * m_query = (ycsb_query *) query;
   /*
 #if MODE==TWOPC
   ycsb_query * m_query = (ycsb_query*) query;
@@ -113,6 +114,22 @@ RC ycsb_txn_man::run_txn(base_query * query) {
 #if CC_ALG == CALVIN
   rc = run_ycsb(query);
   return rc;
+#endif
+#if DEBUG_DISTR
+  if(IS_LOCAL(m_query->txn_id) && m_query->txn_rtype == YCSB_0 && m_query->rid == 0) {
+    printf("REQ %ld: %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld\n",m_query->txn_id
+        ,GET_NODE_ID(m_query->requests[0].key)
+        ,GET_NODE_ID(m_query->requests[1].key)
+        ,GET_NODE_ID(m_query->requests[2].key)
+        ,GET_NODE_ID(m_query->requests[3].key)
+        ,GET_NODE_ID(m_query->requests[4].key)
+        ,GET_NODE_ID(m_query->requests[5].key)
+        ,GET_NODE_ID(m_query->requests[6].key)
+        ,GET_NODE_ID(m_query->requests[7].key)
+        ,GET_NODE_ID(m_query->requests[8].key)
+        ,GET_NODE_ID(m_query->requests[9].key)
+        );
+  }
 #endif
 
   // Resume query after hold
@@ -149,10 +166,12 @@ void ycsb_txn_man::next_ycsb_state(base_query * query) {
       break;
       //m_query->req = m_query->requests[m_query->rid];
     case YCSB_1:
+      /*
       if(GET_NODE_ID(m_query->pid) != g_node_id) {
         rem_done = true;
         break;
       }
+      */
       m_query->rid++;
       if(m_query->rid < m_query->request_cnt && m_query->rc !=Abort ) {
         m_query->txn_rtype = YCSB_0;
@@ -160,8 +179,12 @@ void ycsb_txn_man::next_ycsb_state(base_query * query) {
         m_query->rc = RCOK;
       }
       else {
-        m_query->txn_rtype = YCSB_FIN;
-        assert(GET_NODE_ID(m_query->pid) == g_node_id);
+        if(GET_NODE_ID(m_query->pid) == g_node_id) {
+          m_query->txn_rtype = YCSB_FIN;
+        } else {
+          rem_done = true;
+          break;
+        }
       }
     case YCSB_FIN:
       break;
@@ -174,7 +197,8 @@ void ycsb_txn_man::rtn_ycsb_state(base_query * query) {
 
   switch(m_query->txn_rtype) {
     case YCSB_0:
-      m_query->rid++;
+      m_query->rid+=m_query->rqry_req_cnt;
+      //m_query->rid++;
       if(m_query->rid < m_query->request_cnt && m_query->rc != Abort) {
         m_query->rc = RCOK;
         m_query->txn_rtype = YCSB_0;
@@ -230,6 +254,13 @@ RC ycsb_txn_man::run_txn_state(base_query * query) {
 #endif
         this->rem_row_cnt++;
 
+        m_query->rqry_req_cnt = 0;
+        for(uint64_t i = m_query->rid; i < m_query->request_cnt; i++) {
+          if(GET_NODE_ID(_wl->key_to_part(m_query->requests[i].key)) == get_node_id())
+            break;
+          m_query->rqry_req_cnt++;
+        }
+        assert(m_query->rqry_req_cnt > 0);
         query->dest_part = part_id;
         query->dest_id = GET_NODE_ID(part_id);
         query->rem_req_state = YCSB_0;

@@ -84,6 +84,7 @@ void remote_rsp(base_query * query) ;
   uint64_t rid;
 	uint64_t req_i;
   ycsb_request req;
+  uint64_t rqry_req_cnt;
 
 };
 
