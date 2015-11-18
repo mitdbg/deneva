@@ -236,7 +236,8 @@ void tpcc_txn_man::rtn_tpcc_state(base_query * query) {
       break;
     case TPCC_NEWORDER8: // loop pt 2
     case TPCC_NEWORDER9:
-      m_query->ol_number = m_query->ol_number+1;
+      m_query->ol_number += m_query->rqry_req_cnt;
+      //m_query->ol_number = m_query->ol_number+1;
       if(m_query->ol_number < m_query->ol_cnt) {
         m_query->txn_rtype = TPCC_NEWORDER6;
 		    m_query->ol_i_id = m_query->items[m_query->ol_number].ol_i_id;
@@ -313,10 +314,12 @@ void tpcc_txn_man::next_tpcc_state(base_query * query) {
       m_query->txn_rtype = TPCC_NEWORDER5;
       break;
     case TPCC_NEWORDER5:
+      /*
       if(GET_NODE_ID(m_query->pid) != g_node_id) {
         rem_done = true;
         break;
       }
+      */
       m_query->ol_number = 0;
       if(m_query->ol_number < m_query->ol_cnt) {
         m_query->txn_rtype = TPCC_NEWORDER6;
@@ -325,7 +328,11 @@ void tpcc_txn_man::next_tpcc_state(base_query * query) {
 		    m_query->ol_quantity = m_query->items[m_query->ol_number].ol_quantity;
       }
       else {
-        m_query->txn_rtype = TPCC_FIN;
+        if(GET_NODE_ID(m_query->pid) == g_node_id) {
+          m_query->txn_rtype = TPCC_FIN;
+        } else {
+          rem_done = true;
+        }
       }
       break;
     case TPCC_NEWORDER6: // loop pt 1
@@ -340,10 +347,12 @@ void tpcc_txn_man::next_tpcc_state(base_query * query) {
       m_query->txn_rtype = TPCC_NEWORDER9;
       break;
     case TPCC_NEWORDER9:
+      /*
       if(GET_NODE_ID(m_query->pid) != g_node_id) {
         rem_done = true;
         break;
       }
+      */
       m_query->ol_number = m_query->ol_number+1;
       if(m_query->ol_number < m_query->ol_cnt) {
         m_query->txn_rtype = TPCC_NEWORDER6;
@@ -353,7 +362,11 @@ void tpcc_txn_man::next_tpcc_state(base_query * query) {
         //m_query->rc = RCOK; // ??
       }
       else {
-        m_query->txn_rtype = TPCC_FIN;
+        if(GET_NODE_ID(m_query->pid) == g_node_id) {
+          m_query->txn_rtype = TPCC_FIN;
+        } else {
+          rem_done = true;
+        }
       }
       break;
     case TPCC_FIN:
@@ -472,6 +485,14 @@ RC tpcc_txn_man::run_txn_state(base_query * query) {
 			  //rem_qry_man.remote_qry(query,TPCC_NEWORDER8,GET_NODE_ID(part_id_ol_supply_w),this);
         assert(GET_NODE_ID(m_query->pid) == g_node_id);
         this->rem_row_cnt++;
+        m_query->rqry_req_cnt = 0;
+
+        for(uint64_t i = m_query->ol_number; i < m_query->ol_cnt; i++) {
+          if(GET_NODE_ID(wh_to_part(m_query->items[i].ol_supply_w_id)) == get_node_id())
+            break;
+          m_query->rqry_req_cnt++;
+        }
+
         query->dest_id = GET_NODE_ID(part_id_ol_supply_w);
         query->rem_req_state = TPCC_NEWORDER8;
         rc = WAIT_REM;

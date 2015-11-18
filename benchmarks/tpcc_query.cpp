@@ -154,6 +154,7 @@ base_query * tpcc_query::merge(base_query * query) {
       this->start_ts = m_query->start_ts;
 #endif
       this->txn_rtype = m_query->txn_rtype;
+      this->txn_type = m_query->txn_type;
       switch(m_query->txn_rtype) {
         case TPCC_PAYMENT0 :
           this->w_id = m_query->w_id;
@@ -190,6 +191,10 @@ base_query * tpcc_query::merge(base_query * query) {
           this->ol_quantity = m_query->ol_quantity;
           this->ol_number = m_query->ol_number;
           this->o_id = m_query->o_id;
+          this->ol_cnt = m_query->ol_cnt;
+          for(uint64_t i = 0 ; i < this->ol_cnt;i++) {
+            this->items[i] = m_query->items[i];
+          }
           break;
         default: assert(false);
  
@@ -380,7 +385,7 @@ void tpcc_client_query::gen_new_order(uint64_t thd_id) {
 
     double r_rem = (double)(rand() % 100000) / 100000;
     //printf("rr: %f, ",r_rem);
-		//if (r_rem > g_mpitem || r_mpr > g_mpr || g_num_wh == 1) {
+    // FIXME!!
 		if (r_rem > 0.01 || r_mpr > g_mpr || g_num_wh == 1) {
 			// home warehouse
 			items[oid].ol_supply_w_id = w_id;
