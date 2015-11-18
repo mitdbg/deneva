@@ -352,7 +352,7 @@ RC Row_lock::lock_release(txn_man * txn) {
 #if DEBUG_TIMELINE
     printf("LOCK %ld %ld\n",entry->txn->get_txn_id(),get_sys_clock());
 #endif
-    DEBUG("2lock %ld,%ld %ld %lx\n",entry->txn->get_txn_id(),txn->batch_id,_row->get_primary_key(),(uint64_t)_row);
+    DEBUG("2lock %ld,%ld %ld %lx\n",entry->txn->get_txn_id(),entry->txn->batch_id,_row->get_primary_key(),(uint64_t)_row);
     //printf("2lock %ld %ld %lx\n",entry->txn->get_txn_id(),_row->get_primary_key(),(uint64_t)_row);
     // Stats
     t = get_sys_clock() - entry->start_ts;
@@ -371,7 +371,7 @@ RC Row_lock::lock_release(txn_man * txn) {
     //if(entry->txn->decr_lr() == 0 && entry->txn->locking_done) {
     if(entry->txn->decr_lr() == 0) {
       if(ATOM_CAS(entry->txn->lock_ready,false,true))
-        txn_table.restart_txn(entry->txn->get_txn_id());
+        txn_table.restart_txn(entry->txn->get_txn_id(),entry->txn->batch_id);
     }
     if(lock_type == LOCK_NONE)
       own_starttime = get_sys_clock();

@@ -40,7 +40,7 @@ void PartMan::start_spec_ex() {
     if(waiters[i]->conflict(owner_qry,waiter_qry))
       continue;
     waiters[i]->spec = true;
-    txn_table.restart_txn(waiters[i]->get_txn_id());
+    txn_table.restart_txn(waiters[i]->get_txn_id(),0);
   }
   
 
@@ -179,7 +179,7 @@ void PartMan::unlock(txn_man * txn) {
           if(owner->ready_part == 0 && owner->get_rsp_cnt() == 0) {
             owner->state = EXEC; 
             owner->rc = RCOK;
-            txn_table.restart_txn(owner->get_txn_id());
+            txn_table.restart_txn(owner->get_txn_id(),0);
           }
         } else {
           // Model after RACK

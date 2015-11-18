@@ -352,7 +352,7 @@ void Row_mvcc::update_buffer(txn_man * txn) {
 
     // TODO: add req->txn to work queue
 		req->txn->ts_ready = true;
-    txn_table.restart_txn(req->txn->get_txn_id());
+    txn_table.restart_txn(req->txn->get_txn_id(),0);
 		tofree = req;
 		req = req->next;
 		// free ready_read
