@@ -322,7 +322,10 @@ uint64_t MessageThread::get_msg_size(RemReqType type,base_query * qry) {
         case RPASS:       break;
         case RFWD:       
                           
-                          size +=sizeof(uint64_t)*3;
+                          size +=sizeof(uint64_t)*2;
+#if WORKLOAD == TPCC
+                          size +=sizeof(uint64_t);
+#endif
                           break;
         case CL_RSP:      size +=sizeof(RC) + sizeof(uint64_t);break;
         case RDONE:      size +=sizeof(uint64_t);break;
@@ -345,7 +348,9 @@ void MessageThread::rfwd(mbuf * sbuf,base_query * qry) {
   tpcc_query * m_qry = (tpcc_query *)qry;
   COPY_BUF(sbuf->buffer,qry->txn_id,sbuf->ptr);
   COPY_BUF(sbuf->buffer,qry->batch_id,sbuf->ptr);
+#if WORKLOAD == TPCC
   COPY_BUF(sbuf->buffer,m_qry->o_id,sbuf->ptr);
+#endif
 }
 
 void MessageThread::rdone(mbuf * sbuf,base_query * qry) {

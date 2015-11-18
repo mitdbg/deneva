@@ -1198,6 +1198,7 @@ bool tpcc_txn_man::conflict(base_query * query1,base_query * query2) {
 RC tpcc_txn_man::run_calvin_txn(base_query * query) {
 	tpcc_query * m_query = (tpcc_query *) query;
   RC rc = RCOK;
+  uint64_t home_wh_node;
   while(rc == RCOK && this->phase < 6) {
     switch(this->phase) {
       case 1:
@@ -1208,8 +1209,9 @@ RC tpcc_txn_man::run_calvin_txn(base_query * query) {
           participant_nodes[i] = false;
           active_nodes[i] = false;
         }
-        participant_nodes[g_node_id] = true;
-        active_nodes[g_node_id] = true;
+        home_wh_node = GET_NODE_ID(wh_to_part(m_query->w_id));
+        participant_nodes[home_wh_node] = true;
+        active_nodes[home_wh_node] = true;
         participant_cnt++;
         active_cnt++;
         if(m_query->txn_type == TPCC_PAYMENT) {
@@ -1232,6 +1234,15 @@ RC tpcc_txn_man::run_calvin_txn(base_query * query) {
             }
           }
         }
+#if DEBUG_DISTR
+        printf("REQ (%ld,%ld): %d %d; %d %d\n"
+            ,m_query->txn_id,m_query->batch_id
+            ,participant_nodes[0]
+            ,active_nodes[0]
+            ,participant_nodes[1]
+            ,active_nodes[1]
+            );
+#endif
 
         ATOM_ADD(this->phase,1); //2
         break;
@@ -1244,17 +1255,19 @@ RC tpcc_txn_man::run_calvin_txn(base_query * query) {
         break;
       case 3:
         // Phase 3: Serve remote reads
-        //if(WORKLOAD == TPCC && m_query->txn_type == TPCC_NEW_ORDER) {
-          //if(GET_NODE_ID(wh_to_part(m_query->w_id) == g_node_id))
         rc = send_remote_reads(query);
         if(active_nodes[g_node_id]) {
           ATOM_ADD(this->phase,1); //4
-          if(get_rsp_cnt() == active_cnt-1) {
+          if(get_rsp_cnt() == participant_cnt-1) {
             rc = RCOK;
-          } else
+          } else {
+            DEBUG("Phase4 (%ld,%ld)\n",query->txn_id,query->batch_id);
             rc = WAIT;
-        } else
+          }
+        } else { // Done
+          rc = RCOK;
           ATOM_ADD(this->phase,3); //6
+        }
         break;
       case 4:
         // Phase 4: Collect remote reads
@@ -1266,6 +1279,12 @@ RC tpcc_txn_man::run_calvin_txn(base_query * query) {
         query->rc = rc;
         rc = calvin_finish(query);
         ATOM_ADD(this->phase,1); //6
+        if(get_rsp2_cnt() == active_cnt-1) {
+          rc = RCOK;
+        } else {
+        DEBUG("Phase6 (%ld,%ld)\n",query->txn_id,query->batch_id);
+            rc = WAIT;
+        }
         break;
       default:
         assert(false);

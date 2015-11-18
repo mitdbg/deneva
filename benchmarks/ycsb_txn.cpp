@@ -337,7 +337,7 @@ RC ycsb_txn_man::run_calvin_txn(base_query * query) {
     switch(this->phase) {
       case 1:
 #if DEBUG_DISTR
-    printf("REQ %ld: %ld,%d; %ld,%d; %ld,%d; %ld,%d; %ld,%d; %ld,%d; %ld,%d; %ld,%d; %ld,%d; %ld,%d;\n",m_query->txn_id
+    printf("REQ (%ld,%ld): %ld,%d; %ld,%d; %ld,%d; %ld,%d; %ld,%d; %ld,%d; %ld,%d; %ld,%d; %ld,%d; %ld,%d;\n",m_query->txn_id,m_query->batch_id
         ,GET_NODE_ID(m_query->requests[0].key)
         ,GET_NODE_ID(m_query->requests[0].acctype)
         ,GET_NODE_ID(m_query->requests[1].key)
