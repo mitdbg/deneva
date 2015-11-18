@@ -225,6 +225,7 @@ void Remote_query::unpack_query(base_query *& query,char * data,  uint64_t & ptr
       COPY_VAL(query->pid,data,ptr);
       COPY_VAL(query->rc,data,ptr);
       COPY_VAL(query->txn_id,data,ptr);
+      COPY_VAL(query->batch_id,data,ptr);
       COPY_VAL(query->ro,data,ptr);
       break;
     case RACK:
@@ -323,7 +324,6 @@ void Remote_query::unpack_query(base_query *& query,char * data,  uint64_t & ptr
     case RLK_RSP: break;
     case RULK_RSP: break;
     case RFWD: 
-      assert(WORKLOAD == TPCC);
       COPY_VAL(query->txn_id,data,ptr);
       COPY_VAL(query->batch_id,data,ptr);
       COPY_VAL(((tpcc_query*)query)->o_id,data,ptr);

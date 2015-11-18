@@ -80,7 +80,7 @@ void Sequencer::process_ack(base_query *query, uint64_t thd_id) {
 
 	// If we have all acks for this batch, send qry responses to all clients
 	if (en->txns_left == 0) {
-    DEBUG("FINISHED BATCH %ld\n",batch_size);
+    DEBUG("FINISHED BATCH %ld\n",en->epoch);
     LIST_REMOVE_HT(en,wl_head,wl_tail);
     mem_allocator.free(en->list,sizeof(qlite) * en->max_size);
     mem_allocator.free(en,sizeof(qlite_ll));

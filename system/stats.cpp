@@ -181,6 +181,7 @@ void Stats_thd::clear() {
 	rqry = 0;
 	rqry_rsp = 0;
 	rfin = 0;
+	rfwd = 0;
 	rack = 0;
 	rprep = 0;
 	rinit = 0;
@@ -743,6 +744,7 @@ void Stats::print(bool prog) {
   uint64_t total_rinit = 0;
   uint64_t total_rprep = 0;
   uint64_t total_rfin = 0;
+  uint64_t total_rfwd = 0;
   uint64_t total_rack = 0;
   uint64_t total_qry_cnt = 0;
 
@@ -794,6 +796,7 @@ void Stats::print(bool prog) {
 		total_rqry += _stats[tid]->rqry;
 		total_rprep += _stats[tid]->rprep;
 		total_rfin += _stats[tid]->rfin;
+		total_rfwd += _stats[tid]->rfwd;
 		total_time_index += _stats[tid]->time_index;
 		total_rtime_index += _stats[tid]->rtime_index;
 		total_time_abort += _stats[tid]->time_abort;

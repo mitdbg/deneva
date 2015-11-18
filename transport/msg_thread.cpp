@@ -95,7 +95,7 @@ void MessageThread::run() {
 #endif
   }
 #else//CALVIN
-  if(ISSERVER && (type == RACK || type == RTXN || type == CL_RSP || type == RFWD)) {
+  if(ISSERVER && (type == RACK || type == RTXN || type == CL_RSP || type == RFWD || type == RFIN)) {
       DEBUG_R("msg thd put %d 0x%lx\n",type,(uint64_t)qry);
       qry_pool.put(qry);
   }
@@ -250,7 +250,7 @@ uint64_t MessageThread::get_msg_size(RemReqType type,base_query * qry) {
                           size +=sizeof(uint64_t);
 #endif
                           break;
-        case  RFIN:       size +=sizeof(uint64_t) + sizeof(RC) + sizeof(uint64_t) + sizeof(bool);break;
+        case  RFIN:       size +=sizeof(uint64_t) + sizeof(RC) + sizeof(uint64_t)*2 + sizeof(bool);break;
         case  RLK_RSP:    /* TODO */ break;
         case  RULK_RSP:   /* TODO */ break;
         case  RQRY_RSP:   size +=sizeof(RC) + sizeof(uint64_t);break;
@@ -342,7 +342,6 @@ void MessageThread::rack(mbuf * sbuf,base_query * qry) {
 
 void MessageThread::rfwd(mbuf * sbuf,base_query * qry) {
   DEBUG("Sending RFWD (%ld,%ld)\n",qry->txn_id,qry->batch_id);
-  assert(WORKLOAD==TPCC);
   tpcc_query * m_qry = (tpcc_query *)qry;
   COPY_BUF(sbuf->buffer,qry->txn_id,sbuf->ptr);
   COPY_BUF(sbuf->buffer,qry->batch_id,sbuf->ptr);
@@ -364,11 +363,12 @@ void MessageThread::rprepare(mbuf * sbuf,base_query * qry) {
 }
 
 void MessageThread::rfin(mbuf * sbuf,base_query * qry) {
-  DEBUG("Sending RFIN %ld\n",qry->txn_id);
+  DEBUG("Sending RFIN (%ld,%ld)\n",qry->txn_id,qry->batch_id);
   assert(IS_LOCAL(qry->txn_id));
   COPY_BUF(sbuf->buffer,qry->pid,sbuf->ptr);
   COPY_BUF(sbuf->buffer,qry->rc,sbuf->ptr);
   COPY_BUF(sbuf->buffer,qry->txn_id,sbuf->ptr);
+  COPY_BUF(sbuf->buffer,qry->batch_id,sbuf->ptr);
   COPY_BUF(sbuf->buffer,qry->ro,sbuf->ptr);
 }
 

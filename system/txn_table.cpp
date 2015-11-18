@@ -65,6 +65,29 @@ bool TxnTable::empty(uint64_t node_id) {
   return ts_pool.empty();
 }
 
+void TxnTable::dump() {
+  for(uint64_t i = 0; i < pool_size;i++) {
+    if(pool[i].cnt  == 0)
+      continue;
+    ACCESS_START(i);
+      txn_node_t t_node = pool[i].head;
+
+      while (t_node != NULL) {
+        printf("TT (%ld,%ld) %d %d %d, %d %ld %ld\n",t_node->qry->txn_id,t_node->qry->batch_id
+            ,t_node->txn->locking_done
+            ,t_node->txn->lock_ready
+            ,t_node->txn->lock_ready_cnt
+            ,t_node->txn->phase
+            ,t_node->txn->get_rsp_cnt()
+            ,t_node->txn->get_rsp2_cnt()
+            );
+        t_node = t_node->next;
+      }
+      
+    ACCESS_END(i);
+  }
+}
+
 void TxnTable::add_txn(uint64_t node_id, txn_man * txn, base_query * qry) {
 
   DEBUG_R("Add (%ld,%ld) 0x%lx\n",qry->txn_id,qry->batch_id,(uint64_t)qry);

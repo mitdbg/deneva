@@ -175,6 +175,7 @@ public:
 	uint64_t rqry;
 	uint64_t rqry_rsp;
 	uint64_t rfin;
+	uint64_t rfwd;
 	uint64_t rack;
 	uint64_t rprep;
 	uint64_t rinit;
