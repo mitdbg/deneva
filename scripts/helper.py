@@ -770,14 +770,11 @@ def print_keys(result_dir="../results",keys=['txn_cnt']):
 def get_summary_stats(stats,summary,summary_cl,summary_sq,x,v,cc):
     print(summary_cl['txn_cnt'])
     nthd = 6
-    if cc == "CALVIN":
-        s = summary_sq
-    else:
-        s = summary_cl
+    s = summary_cl
     tot_txn_cnt = sum(s['txn_cnt'])
     avg_txn_cnt = avg(s['txn_cnt'])
-    tot_time = sum(summary['clock_time'])
-    avg_time = avg(summary['clock_time'])
+    tot_time = sum(s['clock_time'])
+    avg_time = avg(s['clock_time'])
     sk = {}
     sk['sys_txn_cnt'] = tot_txn_cnt
     sk['avg_txn_rem_cnt'] = avg(summary['txn_rem_cnt'])
@@ -888,12 +885,11 @@ def get_summary_stats(stats,summary,summary_cl,summary_sq,x,v,cc):
         except KeyError:
             sk['part'+str(i)] = 0 
     try:
-        print(summary_sq)
-        sk['batch_cnt'] = avg(summary_sq['batches_sent'])
-        sk['batch_intv'] = avg(summary_sq['batch_interval'])
-        sk['txn_per_batch'] = avg(summary_sq['txn_cnt'])/avg(summary_sq['batches_sent'])
-        sk['seq_prep'] = avg(summary_sq['time_seq_prep'])
-        sk['seq_ack'] = avg(summary_sq['time_seq_ack'])
+        sk['batch_cnt'] = avg(summary['batches_sent'])
+        sk['batch_intv'] = avg(summary['batch_interval'])
+        sk['txn_per_batch'] = avg(summary['txn_cnt'])/avg(summary['batches_sent'])
+        sk['seq_prep'] = avg(summary['time_seq_prep'])
+        sk['seq_ack'] = avg(summary['time_seq_ack'])
     except KeyError:
         sk['batch_cnt'] = 0
         sk['batch_intv'] = 0
