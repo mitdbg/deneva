@@ -178,6 +178,20 @@ def ycsb_gold():
     exp = [[wl,n,cc,2,m] for m,n,cc in itertools.product(nmodes,nnodes,nalgos)]
     return fmt,exp
 
+def ycsb_writes_optimal_load():
+    wl = 'YCSB'
+    nnodes = [1,2,4,8,16,32,64]
+    nwr = [0.0,0.1,0.2,0.5]
+    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP','CALVIN']
+    nalgos=['NO_WAIT','WAIT_DIE','OCC']
+#    nalgos=['CALVIN']
+    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PART_PER_TXN","TUP_WRITE_PERC","MAX_TXN_IN_FLIGHT"]
+    exp = [[wl,n,cc,2,wr,25000] for n,cc,wr in itertools.product(nnodes,nalgos,nwr)]
+    nalgos=['MVCC','TIMESTAMP']
+    exp += [[wl,n,cc,2,wr,250000] for n,cc,wr in itertools.product(nnodes,nalgos,nwr)]
+    return fmt,exp
+
+
 
 def ycsb_writes():
     wl = 'YCSB'
@@ -185,9 +199,10 @@ def ycsb_writes():
 #    nnodes = [64]
     nwr = [0.0,0.1,0.2,0.5]
     nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP','CALVIN']
+    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
 #    nalgos=['CALVIN']
-    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PART_PER_TXN","TUP_WRITE_PERC"]
-    exp = [[wl,n,cc,2,wr] for n,cc,wr in itertools.product(nnodes,nalgos,nwr)]
+    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PART_PER_TXN","TUP_WRITE_PERC","MAX_TXN_IN_FLIGHT"]
+    exp = [[wl,n,cc,2,wr,50000] for n,cc,wr in itertools.product(nnodes,nalgos,nwr)]
     return fmt,exp
 
 def ycsb_writes_const_load():
@@ -260,15 +275,31 @@ def ycsb_parts():
 #    exp += [[wl,rpq,p,cc,1,25000] for p,cc in itertools.product(nparts,nalgos)]
     return fmt,exp
 
-def ycsb_load():
+def ycsb_load_small():
     wl = 'YCSB'
     nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP','CALVIN']
+    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
 #    ntif = [5000,10000,20000,30000,40000,50000]
-    ntif = [5000,10000,20000,30000,40000,50000,60000,70000,80000,90000,100000,110000,120000,130000,140000]
+    ntif = [5000,10000,15000,20000,25000,30000,35000,40000,45000,50000]
     nnodes = [16]
     rpq =  10
     fmt = ["WORKLOAD","REQ_PER_QUERY","PART_PER_TXN","CC_ALG","MAX_TXN_IN_FLIGHT","NODE_CNT"]
-    exp = [[wl,rpq,2,cc,tif,n] for cc,n,tif in itertools.product(nalgos,nnodes,ntif)]
+    exp = [[wl,rpq,2,cc,tif,n] for n,tif,cc in itertools.product(nnodes,ntif,nalgos)]
+    return fmt,exp
+
+
+def ycsb_load():
+    wl = 'YCSB'
+    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP','CALVIN']
+    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
+#    ntif = [5000,10000,20000,30000,40000,50000]
+    ntif = [5000,10000,20000,30000,40000,50000,60000,70000,80000,90000,100000,110000,120000,130000,140000,150000,160000,170000,180000,190000,200000,250000,300000,350000,400000]
+    ntif = [5000,10000,25000,50000,100000,150000,200000,250000,300000,350000]
+#    ntif = [250000,300000,350000,400000]
+    nnodes = [16]
+    rpq =  10
+    fmt = ["WORKLOAD","REQ_PER_QUERY","PART_PER_TXN","CC_ALG","MAX_TXN_IN_FLIGHT","NODE_CNT"]
+    exp = [[wl,rpq,2,cc,tif,n] for n,tif,cc in itertools.product(nnodes,ntif,nalgos)]
     return fmt,exp
 
 def ycsb_load_ro():
@@ -785,8 +816,10 @@ experiment_map = {
     'ycsb_parts': ycsb_parts,
     'ycsb_load': ycsb_load,
     'ycsb_load_ro': ycsb_load_ro,
+    'ycsb_load_small': ycsb_load_small,
     'ycsb_writes': ycsb_writes,
     'ycsb_writes_const_load': ycsb_writes_const_load,
+    'ycsb_writes_optimal_load': ycsb_writes_optimal_load,
     'ycsb_contention_2': ycsb_contention_2,
     'ycsb_contention_2_nodesweep': ycsb_contention_2_nodesweep,
     'ycsb_contention_N': ycsb_contention_N,
@@ -805,6 +838,8 @@ experiment_map = {
     'network_experiment' : network_experiment,
     'network_experiment_plot' : network_experiment_plot,
     'ppr_ycsb_scaling': ycsb_writes,
+    'ppr_ycsb_scaling_optimal_load': ycsb_writes_optimal_load,
+    'ppr_ycsb_scaling_optimal_load_plot': ppr_ycsb_scaling_optimal_load_plot,
     'ppr_ycsb_scaling_plot': ppr_ycsb_scaling_plot,
     'ppr_tpcc': tpcc_scaling_whset,
     'ppr_tpcc_plot': ppr_tpcc_plot,

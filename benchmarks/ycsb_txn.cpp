@@ -95,7 +95,6 @@ RC ycsb_txn_man::acquire_locks(base_query * query) {
 
 
 RC ycsb_txn_man::run_txn(base_query * query) {
-	ycsb_query * m_query = (ycsb_query *) query;
   /*
 #if MODE==TWOPC
   ycsb_query * m_query = (ycsb_query*) query;
@@ -116,6 +115,7 @@ RC ycsb_txn_man::run_txn(base_query * query) {
   return rc;
 #endif
 #if DEBUG_DISTR
+	ycsb_query * m_query = (ycsb_query *) query;
   if(IS_LOCAL(m_query->txn_id) && m_query->txn_rtype == YCSB_0 && m_query->rid == 0) {
     printf("REQ %ld: %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld\n",m_query->txn_id
         ,GET_NODE_ID(m_query->requests[0].key)

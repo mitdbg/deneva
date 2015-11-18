@@ -831,6 +831,7 @@ def get_summary_stats(stats,summary,summary_cl,summary_sq,x,v,cc):
     sk['rtxn'] =  sum(summary['type10']) / total
     sk['rinit'] =  sum(summary['type11']) / total
     sk['rprep'] =  sum(summary['type12']) / total
+    sk['tot_abort_cnt'] = sum(summary['abort_cnt'])
     sk['abort_cnt'] = avg(summary['abort_cnt'])
     sk['txn_abort_cnt'] = avg(summary['txn_abort_cnt'])
     try:
@@ -940,6 +941,7 @@ def write_summary_file(fname,stats,x_vals,v_vals):
     'rtxn',
     'rinit',
     'rprep',
+    'tot_abort_cnt',
     'abort_cnt',
     'txn_abort_cnt',
     'avg_abort_cnt',
