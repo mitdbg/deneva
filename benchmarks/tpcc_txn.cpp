@@ -81,6 +81,7 @@ RC tpcc_txn_man::acquire_locks(base_query * query) {
   itemid_t * item;
   row_t* row;
   uint64_t key;
+  incr_lr();
 
 	uint64_t w_id = m_query->w_id;
   uint64_t d_id = m_query->d_id;
@@ -188,7 +189,7 @@ RC tpcc_txn_man::acquire_locks(base_query * query) {
       break;
     default: assert(false);
   }
-  if(rc == WAIT && lock_ready_cnt == 0) {
+  if(decr_lr() == 0) {
     if(ATOM_CAS(lock_ready,false,true))
       rc = RCOK;
   }
@@ -1210,14 +1211,14 @@ RC tpcc_txn_man::run_calvin_txn(base_query * query) {
           }
         }
 
-        this->phase = 2;
+        ATOM_ADD(this->phase,1); //2
         break;
       case 2:
         // Phase 2: Perform local reads
         rc = run_tpcc_phase2(query);
         //release_read_locks(query);
 
-        this->phase = 3;
+        ATOM_ADD(this->phase,1); //3
         break;
       case 3:
         // Phase 3: Serve remote reads
@@ -1232,20 +1233,20 @@ RC tpcc_txn_man::run_calvin_txn(base_query * query) {
           }
         }
         if(active_nodes[g_node_id])
-          this->phase = 4;
+          ATOM_ADD(this->phase,1); //4
         else
-          this->phase = 5;
+          ATOM_ADD(this->phase,2); //5
         break;
       case 4:
         // Phase 4: Collect remote reads
-        this->phase = 5;
+        ATOM_ADD(this->phase,1); //5
         break;
       case 5:
         // Phase 5: Execute transaction / perform local writes
         rc = run_tpcc_phase5(query);
         query->rc = rc;
         rc = calvin_finish(query);
-        this->phase = 6;
+        ATOM_ADD(this->phase,1); //6
         break;
       default:
         assert(false);

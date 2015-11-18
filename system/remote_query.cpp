@@ -188,7 +188,12 @@ void Remote_query::unpack_query(base_query *& query,char * data,  uint64_t & ptr
           
       }
 #elif WORKLOAD == YCSB
-      COPY_VAL(m_query->req,data,ptr);
+      COPY_VAL(m_query->request_cnt,data,ptr);
+      for(uint64_t i = 0 ; i < m_query->request_cnt;i++) {
+        COPY_VAL(m_query->requests[i],data,ptr);
+      }
+      m_query->req = m_query->requests[0];
+      m_query->rid = 0;
 #endif
 
 #if MODE==QRY_ONLY_MODE
