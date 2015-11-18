@@ -332,7 +332,7 @@ uint64_t MessageThread::get_msg_size(RemReqType type,base_query * qry) {
   return size;
 }
 void MessageThread::rack(mbuf * sbuf,base_query * qry) {
-  DEBUG("Sending RACK %ld\n",qry->txn_id);
+  DEBUG("Sending RACK (%ld,%ld)\n",qry->txn_id,qry->batch_id);
   assert(IS_REMOTE(qry->txn_id));
   COPY_BUF(sbuf->buffer,qry->rc,sbuf->ptr);
 #if CC_ALG == CALVIN
@@ -559,7 +559,7 @@ void MessageThread::rtxn(mbuf * sbuf, base_query *qry) {
 }
 
 void MessageThread::rtxn_seq(mbuf * sbuf, base_query *qry) {
-  DEBUG("Sending RTXN %ld\n",qry->txn_id);
+  DEBUG("Sending RTXN (%ld,%ld)\n",qry->txn_id,qry->batch_id);
 #if WORKLOAD == TPCC
     tpcc_query * m_qry = (tpcc_query *)qry;
 #elif WORKLOAD == YCSB

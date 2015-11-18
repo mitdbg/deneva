@@ -337,17 +337,27 @@ RC ycsb_txn_man::run_calvin_txn(base_query * query) {
     switch(this->phase) {
       case 1:
 #if DEBUG_DISTR
-    printf("REQ %ld: %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld\n",m_query->txn_id
+    printf("REQ %ld: %ld,%d; %ld,%d; %ld,%d; %ld,%d; %ld,%d; %ld,%d; %ld,%d; %ld,%d; %ld,%d; %ld,%d;\n",m_query->txn_id
         ,GET_NODE_ID(m_query->requests[0].key)
+        ,GET_NODE_ID(m_query->requests[0].acctype)
         ,GET_NODE_ID(m_query->requests[1].key)
+        ,GET_NODE_ID(m_query->requests[1].acctype)
         ,GET_NODE_ID(m_query->requests[2].key)
+        ,GET_NODE_ID(m_query->requests[2].acctype)
         ,GET_NODE_ID(m_query->requests[3].key)
+        ,GET_NODE_ID(m_query->requests[3].acctype)
         ,GET_NODE_ID(m_query->requests[4].key)
+        ,GET_NODE_ID(m_query->requests[4].acctype)
         ,GET_NODE_ID(m_query->requests[5].key)
+        ,GET_NODE_ID(m_query->requests[5].acctype)
         ,GET_NODE_ID(m_query->requests[6].key)
+        ,GET_NODE_ID(m_query->requests[6].acctype)
         ,GET_NODE_ID(m_query->requests[7].key)
+        ,GET_NODE_ID(m_query->requests[7].acctype)
         ,GET_NODE_ID(m_query->requests[8].key)
+        ,GET_NODE_ID(m_query->requests[8].acctype)
         ,GET_NODE_ID(m_query->requests[9].key)
+        ,GET_NODE_ID(m_query->requests[9].acctype)
         );
 #endif
 
