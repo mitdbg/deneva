@@ -207,9 +207,10 @@ stat_map = {
 'prof_cc_rel_abort':[],
 'prof_cc_rel_commit':[],
 
- 'batches_sent':[],
- 'batch_interval':[],
- 'time_batch':[],
+ 'seq_batch_cnt':[],
+ 'seq_txn_cnt':[],
+ 'time_seq_batch':[],
+ 'time_seq_batch':[],
  'time_seq_prep':[],
  'time_seq_ack':[],
 
@@ -786,6 +787,7 @@ def get_summary_stats(stats,summary,summary_cl,summary_sq,x,v,cc):
     sk['row1'] = avg(summary['row1'])
     sk['row2'] = avg(summary['row2'])
     sk['row3'] = avg(summary['row3'])
+    sk['cflt_cnt'] = avg(summary['cflt_cnt'])
     try:
         sk['txn_time_begintxn'] = avg(summary['txn_time_begintxn']) / nthd
         sk['time_validate'] = avg(summary['time_validate']) / nthd
@@ -886,15 +888,21 @@ def get_summary_stats(stats,summary,summary_cl,summary_sq,x,v,cc):
         except KeyError:
             sk['part'+str(i)] = 0 
     try:
-        sk['batch_cnt'] = avg(summary['batches_sent'])
-        sk['batch_intv'] = avg(summary['batch_interval'])
-        sk['txn_per_batch'] = avg(summary['txn_cnt'])/avg(summary['batches_sent'])
+        sk['batch_cnt'] = avg(summary['seq_batch_cnt'])
+        if sk['batch_cnt'] == 0:
+            sk['txn_per_batch'] = 0
+            sk['batch_intv'] = 0
+        else:
+            sk['txn_per_batch'] = avg(summary['seq_txn_cnt'])/sk['batch_cnt']
+            sk['batch_intv'] = avg(summary['time_seq_batch'])/sk['batch_cnt']
         sk['seq_prep'] = avg(summary['time_seq_prep'])
         sk['seq_ack'] = avg(summary['time_seq_ack'])
     except KeyError:
         sk['batch_cnt'] = 0
         sk['batch_intv'] = 0
         sk['txn_per_batch'] = 0
+        sk['seq_prep'] = 0
+        sk['seq_ack'] = 0
     print(sk['batch_intv'])
     sk['mvcc1'] = avg(summary['mvcc1'])
     sk['mvcc2'] = avg(summary['mvcc2'])
@@ -941,6 +949,7 @@ def write_summary_file(fname,stats,x_vals,v_vals):
     'rtxn',
     'rinit',
     'rprep',
+    'cflt_cnt',
     'tot_abort_cnt',
     'abort_cnt',
     'txn_abort_cnt',

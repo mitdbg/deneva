@@ -86,13 +86,15 @@ def ycsb_gold():
     return fmt,exp
 def ycsb_contention_2_nodesweep():
     wl = 'YCSB'
-    nnodes = [1,2,4,8,16,32,64]
+    nnodes = [2,4,8,16,32]
+#    nnodes = [16]
     nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP','CALVIN']
 #    nalgos=['CALVIN']
     nparts = [2]
     a_perc=[0.0,0.01,0.02,0.03,0.05,0.06,0.07]
-    fmt = ["WORKLOAD","ACCESS_PERC","CC_ALG","PART_PER_TXN","MAX_TXN_IN_FLIGHT","NODE_CNT"]
-    exp = [[wl,a,cc,p,50000,n] for a,cc,n,p in itertools.product(a_perc,nalgos,nnodes,nparts)]
+#    fmt = ["WORKLOAD","ACCESS_PERC","CC_ALG","PART_PER_TXN","MAX_TXN_IN_FLIGHT","NODE_CNT"]
+    fmt = ["WORKLOAD","ACCESS_PERC","CC_ALG","PART_PER_TXN","MAX_TXN_IN_FLIGHT","NODE_CNT","SYNTH_TABLE_SIZE"]
+    exp = [[wl,a,cc,p,50000,n,67108864] for n,p,a,cc in itertools.product(nnodes,nparts,a_perc,nalgos)]
 #    nalgos=['NO_WAIT','WAIT_DIE']
 #    fmt = ["WORKLOAD","ACCESS_PERC","CC_ALG","PART_PER_TXN","MAX_TXN_IN_FLIGHT","NODE_CNT"]
 #    exp += [[wl,a,cc,p,25000,n] for a,cc,n,p in itertools.product(a_perc,nalgos,nnodes,nparts)]
@@ -100,7 +102,7 @@ def ycsb_contention_2_nodesweep():
 def ycsb_parts():
     wl = 'YCSB'
     nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP','CALVIN']
-    nparts = [1,2,4,6,8,10,12,14,16]
+    nparts = [2,4,6,8,10,12,14,16]
     rpq =  16
     fmt = ["WORKLOAD","REQ_PER_QUERY","PART_PER_TXN","CC_ALG","STRICT_PPT","MAX_TXN_IN_FLIGHT"]
     exp = [[wl,rpq,p,cc,1,50000] for p,cc in itertools.product(nparts,nalgos)]

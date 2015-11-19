@@ -168,8 +168,8 @@ def ppr_ycsb_contention_plot(summary,summary_cl,summary_seq):
     nfmt,nexp = ycsb_contention_2_nodesweep()
     x_name = "ACCESS_PERC"
     v_name = "CC_ALG"
-    x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants={"NODE_CNT":1})
-    tput(x_vals,v_vals,summary,summary_cl,summary_seq,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_ycsb_contention_1",xlab="Hot Data Access %",new_cfgs=lst,ylimit=0.7)
+#    x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants={"NODE_CNT":1})
+#    tput(x_vals,v_vals,summary,summary_cl,summary_seq,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_ycsb_contention_1",xlab="Hot Data Access %",new_cfgs=lst,ylimit=0.7)
 
     x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants={"NODE_CNT":2})
     tput(x_vals,v_vals,summary,summary_cl,summary_seq,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_ycsb_contention_2",xlab="Hot Data Access %",new_cfgs=lst,ylimit=0.7)
