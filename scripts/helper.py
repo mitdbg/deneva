@@ -1040,6 +1040,7 @@ def write_summary_file(fname,stats,x_vals,v_vals):
                         try:
                             s += '{0:0.2f}'.format(stats[k][p]) + ', '
                         except KeyError:
+                            print("helper keyerror {} {}".format(p,k))
                             s += '--, '
                     f.write(s+'\n')
                 f.write('\n')

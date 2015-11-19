@@ -385,15 +385,16 @@ def tput(xval,vval,summary,summary_cl,summary_sq,
     pp.pprint(tpt)
 #    bbox = [0.8,0.35]
     bbox = [1.0,0.95]
+    write_summary_file(name,stats,_xval,vval)
     if xname == 'NETWORK_DELAY':
-        _xval = [x/1000 for x in _xval]
+        _xval = [float(x)/1000000 for x in _xval]
+        base = 10
     if xname == 'MAX_TXN_IN_FLIGHT':
         _xval = [x*nnodes for x in _xval]
 #bbox = [0.7,0.9]
     print("Created plot {}".format(name))
-    draw_line(name,tpt,_xval,ylab='Throughput (Thousand txn/s)',xlab=_xlab,title=_title,bbox=bbox,ncol=2,ltitle=vname,ylimit=ylimit,logscale=logscale,logscalex=logscalex,legend=legend)
+    draw_line(name,tpt,_xval,ylab='Throughput (Thousand txn/s)',xlab=_xlab,title=_title,bbox=bbox,ncol=2,ltitle=vname,ylimit=ylimit,logscale=logscale,logscalex=logscalex,legend=legend,base=base)
 #    draw_line("pn"+name,pntpt,_xval,ylab='Throughput (Txn/sec)',xlab=_xlab,title="Per Node "+_title,bbox=bbox,ncol=2,ltitle=vname) 
-    write_summary_file(name,stats,_xval,vval)
 
 
 def lat(xval,vval,summary,

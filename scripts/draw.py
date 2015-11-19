@@ -358,7 +358,8 @@ def draw_line(fname, data, xticks,
         ylab='Throughput', logscale=False, 
         logscalex = False,
         ylimit=0, xlimit=None, xlab='Number of Cores',
-        legend=False, linenames = None, figsize=(23/3, 10/3), styles=None,ltitle='') :
+        legend=False, linenames = None, figsize=(23/3, 10/3), styles=None,ltitle=''
+        ,base=2) :
 
     if len(xticks) <= 6:
         current_palette = sns.color_palette()
@@ -378,7 +379,7 @@ def draw_line(fname, data, xticks,
     if logscale :
         ax.set_yscale('log')
     if logscalex:
-        ax.set_xscale('log',basex=2)
+        ax.set_xscale('log',basex=base)
     n = 0
     if xlabels != None :
         ax.set_xticklabels([x if i%2 else '' for x,i in zip(xlabels,range(len(xlabels)))]) 
@@ -414,7 +415,10 @@ def draw_line(fname, data, xticks,
         #ticklabel_format(axis='y', style='sci', scilimits=(-3,5))
     if logscalex:
 #ax.get_xaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
-        ax.get_xaxis().set_major_formatter(matplotlib.ticker.FormatStrFormatter('%d'))
+        if xlab == "Network Latency (ms)":
+            ax.get_xaxis().set_major_formatter(matplotlib.ticker.FormatStrFormatter('%f'))
+        else:
+            ax.get_xaxis().set_major_formatter(matplotlib.ticker.FormatStrFormatter('%d'))
     if legend :
         #fig.legend(lines, linenames, loc='upper right',bbox_to_anchor = (1,1), prop={'size':9}, ncol=ncol)
         fig.legend(lines, linenames, loc='upper center',bbox_to_anchor = (0.4,1), prop={'size':10},ncol=len(linenames)/2)

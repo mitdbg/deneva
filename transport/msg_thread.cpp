@@ -32,11 +32,13 @@ void MessageThread::run() {
   uint64_t sthd_prof_start = get_sys_clock();
   uint64_t head_start;
 
+  uint64_t curr_time = get_sys_clock();
   if(!head_qry)
     head_start = msg_queue.dequeue(head_qry,head_type,head_dest);
   if(g_network_delay == 0 || (head_type == NO_MSG || !head_qry) ||
       ((head_type != NO_MSG) && 
-       ((get_sys_clock() - head_start >= g_network_delay)  || ISCLIENTN(head_dest) || ISCLIENT))) {
+       ((curr_time - head_start >= g_network_delay)  || ISCLIENTN(head_dest) || ISCLIENT))) {
+      //printf("Sending %f, %ld, %f\n",((float)g_network_delay)/BILLION,head_start,((float)(curr_time - head_start))/BILLION);
       qry = head_qry;
       type = head_type;
       dest = head_dest;
