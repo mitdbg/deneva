@@ -7,6 +7,8 @@ from pylab import *
 from helper import *
 from textwrap import wrap
 import latency_stats as ls
+import seaborn as sns
+
 
 rename = {
     "average": "   avg   "
@@ -21,40 +23,51 @@ scatterconfig = {
 }
 
 lineconfig_nopreset = [
-    "ls='-', lw=2, color='#f15854', marker='o', ms=4",
-    "ls='-', lw=2, color='#faa43a', marker='o', ms=4",
-    "ls='-', lw=2, color='#DECF3F', marker='o', ms=4",
-    "ls='-', lw=2, color='#60BD68', marker='o', ms=4",
-    "ls='--', lw=2, color='#5DA5DA', marker='o', ms=4", #, marker='+', ms=10",
-    "ls='--', lw=2, color='#B276B2', marker='o', ms=6",
-    "ls='-', lw=2, color='#4d4d4d', marker='o', ms=6",
-    "ls='-', lw=2, color='#f15854', marker='D', ms=4",
-    "ls='-', lw=2, color='#faa43a', marker='D', ms=4",
-    "ls='-', lw=2, color='#DECF3F', marker='D', ms=4",
-    "ls='-', lw=2, color='#60BD68', marker='D', ms=4",
-    "ls='--', lw=2, color='#5DA5DA', marker='D', ms=4", #, marker='+', ms=10",
-    "ls='--', lw=2, color='#B276B2', marker='D', ms=6",
-    "ls='-', lw=2, color='#4d4d4d', marker='D', ms=6",
-    "ls='-', lw=2, color='#f15854', marker='^', ms=4",
-    "ls='-', lw=2, color='#faa43a', marker='^', ms=4",
-    "ls='-', lw=2, color='#DECF3F', marker='^', ms=4",
-    "ls='-', lw=2, color='#60BD68', marker='^', ms=4",
-    "ls='--', lw=2, color='#5DA5DA', marker='^', ms=4", #, marker='+', ms=10",
-    "ls='--', lw=2, color='#B276B2', marker='^', ms=6",
-    "ls='-', lw=2, color='#4d4d4d', marker='^', ms=6"
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+#    "ls='-', lw=2, color='#f15854', marker='o', ms=4",
+#    "ls='-', lw=2, color='#faa43a', marker='o', ms=4",
+#    "ls='-', lw=2, color='#DECF3F', marker='o', ms=4",
+#    "ls='-', lw=2, color='#60BD68', marker='o', ms=4",
+#    "ls='--', lw=2, color='#5DA5DA', marker='o', ms=4", #, marker='+', ms=10",
+#    "ls='--', lw=2, color='#B276B2', marker='o', ms=6",
+#    "ls='-', lw=2, color='#4d4d4d', marker='o', ms=6",
+#    "ls='-', lw=2, color='#f15854', marker='D', ms=4",
+#    "ls='-', lw=2, color='#faa43a', marker='D', ms=4",
+#    "ls='-', lw=2, color='#DECF3F', marker='D', ms=4",
+#    "ls='-', lw=2, color='#60BD68', marker='D', ms=4",
+#    "ls='--', lw=2, color='#5DA5DA', marker='D', ms=4", #, marker='+', ms=10",
+#    "ls='--', lw=2, color='#B276B2', marker='D', ms=6",
+#    "ls='-', lw=2, color='#4d4d4d', marker='D', ms=6",
+#    "ls='-', lw=2, color='#f15854', marker='^', ms=4",
+#    "ls='-', lw=2, color='#faa43a', marker='^', ms=4",
+#    "ls='-', lw=2, color='#DECF3F', marker='^', ms=4",
+#    "ls='-', lw=2, color='#60BD68', marker='^', ms=4",
+#    "ls='--', lw=2, color='#5DA5DA', marker='^', ms=4", #, marker='+', ms=10",
+#    "ls='--', lw=2, color='#B276B2', marker='^', ms=6",
+#    "ls='-', lw=2, color='#4d4d4d', marker='^', ms=6"
 ]
 
 lineconfig = {
 # CC Algos
 #    'DL_DETECT'     : "ls='-', lw=2, color='#f15854', marker='o', ms=4",
-    'NO_WAIT'       : "ls='-', lw=2, color='#faa43a', marker='D', ms=4",
-    'WAIT_DIE'      : "ls='-', lw=2, color='#DECF3F', marker='s', ms=4",
-    'TIMESTAMP'     : "ls='-', lw=2, color='#60BD68', marker='^', ms=4",
-    'MVCC'          : "ls='--', lw=2, color='#5DA5DA', marker='o', ms=4", #, marker='+', ms=10",
-    'OCC'           : "ls='--', lw=2, color='#B276B2', marker='+', ms=6",
-    'HSTORE'        : "ls='-', lw=2, color='#4d4d4d', marker='x', ms=6",
-    'HSTORE_SPEC'   : "ls='--', lw=2, color='#4d4d4d', marker='x', ms=6",
-    'VLL'           : "ls='-', lw=2, color='#ff3333', marker='*', ms=4",
+#    'NO_WAIT'       : "ls='-', lw=2, color='#faa43a', marker='D', ms=4",
+#    'WAIT_DIE'      : "ls='-', lw=2, color='#DECF3F', marker='s', ms=4",
+#    'TIMESTAMP'     : "ls='-', lw=2, color='#60BD68', marker='^', ms=4",
+#    'MVCC'          : "ls='--', lw=2, color='#5DA5DA', marker='o', ms=4", #, marker='+', ms=10",
+#    'OCC'           : "ls='--', lw=2, color='#B276B2', marker='+', ms=6",
+#    'HSTORE'        : "ls='-', lw=2, color='#4d4d4d', marker='x', ms=6",
+#    'HSTORE_SPEC'   : "ls='--', lw=2, color='#4d4d4d', marker='x', ms=6",
+#    'CALVIN'           : "ls='-', lw=2, color='#ff3333', marker='*', ms=4",
+    'NO_WAIT'       : "ls='-', lw=2, marker='D', ms=4",
+    'WAIT_DIE'      : "ls='-', lw=2, marker='s', ms=4",
+    'TIMESTAMP'     : "ls='-', lw=2, marker='^', ms=4",
+    'MVCC'          : "ls='--', lw=2,marker='o', ms=4", #, marker='+', ms=10",
+    'OCC'           : "ls='--', lw=2, marker='+', ms=6",
+    'HSTORE'        : "ls='-', lw=2, marker='x', ms=6",
+    'HSTORE_SPEC'   : "ls='--', lw=2, marker='x', ms=6",
+    'CALVIN'           : "ls='-', lw=2, marker='*', ms=4",
 
     25              : "ls='-', lw=2, color='#4d4d4d', marker='s', ms=6",
     50              : "ls='-', lw=2, color='#5DA5DA', marker='+', ms=6",
@@ -227,10 +240,17 @@ def draw_line(fname, data, xticks,
         logscalex = False,
         ylimit=0, xlimit=None, xlab='Number of Cores',
         legend=True, linenames = None, figsize=(23/3, 10/3), styles=None,ltitle='') :
+
+    current_palette = sns.color_palette()
+    sns.set_palette("bright")
+    sns.set_style("whitegrid")
+
     fig = figure(figsize=figsize)
     thr = [0] * len(xticks)
     lines = [0] * len(data)
     ax = plt.axes()
+
+
     if logscale :
         ax.set_yscale('log')
     if logscalex:
@@ -256,6 +276,7 @@ def draw_line(fname, data, xticks,
         else :
             style = lineconfig_nopreset[i]
         exec("lines[n], = plot(intlab, data[key], %s)" % style)
+#        exec("lines[n], = plot(intlab, data[key])")
         n += 1
     if ylimit != 0:
         ylim(ylimit)
@@ -271,7 +292,7 @@ def draw_line(fname, data, xticks,
 #ax.get_xaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
     if legend :
         #fig.legend(lines, linenames, loc='upper right',bbox_to_anchor = (1,1), prop={'size':9}, ncol=ncol)
-        fig.legend(lines, linenames, loc='upper center',bbox_to_anchor = (0.4,1), prop={'size':8},ncol=len(linenames)/2)
+        fig.legend(lines, linenames, loc='upper center',bbox_to_anchor = (0.4,1), prop={'size':10},ncol=len(linenames)/2)
 #        fig.legend(lines, linenames, loc='upper right',bbox_to_anchor = bbox, prop={'size':8},ncol=ncol,title=ltitle)
     subplots_adjust(left=0.18, bottom=0.15, right=0.9, top=None)
     if title:

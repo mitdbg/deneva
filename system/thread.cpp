@@ -1527,7 +1527,9 @@ RC thread_t::run_calvin() {
       if (now_time - prog_time >= g_prog_timer) {
         prog_time = now_time;
         SET_STATS(get_thd_id(), tot_run_time, prog_time - run_starttime); 
+#if DEBUG_DISTR
         txn_table.dump();
+#endif
 
         stats.print(true);
       }
@@ -1564,7 +1566,9 @@ RC thread_t::run_calvin() {
 			else {
 				SET_STATS(get_thd_id(), tot_run_time, stoptime - run_starttime); 
 			}
-      txn_table.dump();
+#if DEBUG_DISTR
+        txn_table.dump();
+#endif
 
       printf("FINISH %ld:%ld\n",_node_id,_thd_id);
       fflush(stdout);

@@ -328,7 +328,11 @@ def tput(xval,vval,summary,summary_cl,summary_sq,
         else:
             _xlab = xlab
     for v in vval:
-        _v = v
+        if vname == 'MODE':
+            mode_nice = {"NOCC_MODE":"No CC","NORMAL_MODE":"Normal","QRY_ONLY_MODE":"No 2PC"}
+            _v = mode_nice[v]
+        else:
+            _v = v
         tpt[_v] = [0] * len(xval)
         pntpt[_v] = [0] * len(xval)
 
@@ -358,10 +362,10 @@ def tput(xval,vval,summary,summary_cl,summary_sq,
                 tmp = 1
                 tot_txn_cnt = sum(s[cfgs]['txn_cnt'])
                 tmp = 2
-                avg_run_time = avg(summary[cfgs]['clock_time'])
+                avg_run_time = avg(s[cfgs]['clock_time'])
                 tmp = 3
 #FIXME
-                avg_txn_cnt = avg(summary[cfgs]['txn_cnt'])
+                avg_txn_cnt = avg(s[cfgs]['txn_cnt'])
             except KeyError:
                 print("KeyError: {}, {} {} -- {}".format(tmp,v,x,cfgs))
                 tpt[_v][xi] = 0
