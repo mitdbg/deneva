@@ -179,6 +179,10 @@ lineconfig = {
 #    'HSTORE'        : "ls='-', lw=2, color='#4d4d4d', marker='x', ms=6",
 #    'HSTORE_SPEC'   : "ls='--', lw=2, color='#4d4d4d', marker='x', ms=6",
 #    'CALVIN'           : "ls='-', lw=2, color='#ff3333', marker='*', ms=4",
+#    'Single Server'       : "ls='--', color='#d3d3d3',lw=2, marker='D', ms=8",
+    'Single Server'       : "ls='--',lw=2",
+    'Serializable Execution'       : "ls='-',lw=2",
+    'No Concurrency Control'       : "ls='-',lw=2",
     'NO_WAIT'       : "ls='-', lw=2, marker='D', ms=8",
     'WAIT_DIE'      : "ls='-', lw=2, marker='s', ms=8",
     'TIMESTAMP'     : "ls='-', lw=2, marker='^', ms=8",
@@ -374,6 +378,7 @@ def draw_line(fname, data, xticks,
     thr = [0] * len(xticks)
     lines = [0] * len(data)
     ax = plt.axes()
+    plt.tick_params(axis='both',which='major',labelsize=16)
 
 
     if logscale :
@@ -391,6 +396,7 @@ def draw_line(fname, data, xticks,
         try:
             intlab = [float(x) for x in xticks]
         except ValueError:
+            print("ValError " + key)
             intlab = [float(x[:-2]) for x in xticks]
 
         style = None
@@ -407,9 +413,10 @@ def draw_line(fname, data, xticks,
         ylim(ylimit)
     if xlimit != None:
         xlim(xlimit)
+    ax.set_xlim([xticks[0],xticks[len(xticks)-1]])
     plt.gca().set_ylim(bottom=0)
-    ylabel(ylab)
-    xlabel(xlab)
+    ylabel(ylab,fontsize=18)
+    xlabel(xlab,fontsize=18)
     if not logscale:
         ticklabel_format(axis='y', style='plain')
         #ticklabel_format(axis='y', style='sci', scilimits=(-3,5))
@@ -489,7 +496,8 @@ def draw_bars_single(data, xlabels,
 
 
 
-def draw_stack(data, xlabels, slabels, figname='stack', title=None, figsize=(8, 3),ymin=0, ymax=1,ltitle='') :
+def draw_stack(data, xlabels, slabels, figname='stack', title=None, figsize=(8, 3),ymin=0, ymax=1,ltitle=''
+        ,legend=False) :
     fig = figure(figsize=figsize)
     ind = range(0, len(xlabels))
 
@@ -510,9 +518,15 @@ def draw_stack(data, xlabels, slabels, figname='stack', title=None, figsize=(8, 
 
     if title:
         plt.title("\n".join(wrap(title)))
-    legend(reversed(plots), tuple(slabels), bbox_to_anchor = (0.38, -0.2, 1, 1), prop={'size':11})
+    if legend:
+        legend(reversed(plots), tuple(slabels), bbox_to_anchor = (0.38, -0.2, 1, 1), prop={'size':11})
     subplots_adjust(bottom=0.25, right=0.7, top=None)
     savefig('../figs/' + figname + '.pdf', bbox_inches='tight')
+    plt.close()
+#    fig = figure(figsize=((7.2, 0.4)))
+    fig = figure(figsize=figsize)
+    fig.legend(reversed(plots), tuple(slabels), bbox_to_anchor = (1,1, 1, 1), prop={'size':10})
+    savefig('../figs/' + figname + '_legend.pdf')
     plt.close()
 
 
@@ -554,7 +568,8 @@ def draw_bars(data, xlabels,
 
 
 
-def draw_stack(data, xlabels, slabels, figname='stack', title=None, figsize=(8, 3),ymin=0, ymax=1,ltitle='') :
+def draw_stack(data, xlabels, slabels, figname='stack', title=None, figsize=(8, 3),ymin=0, ymax=1,ltitle=''
+        ,legend=False) :
     fig = figure(figsize=figsize)
     slabels = list(reversed(slabels))
     ind = range(0, len(xlabels))
@@ -576,9 +591,15 @@ def draw_stack(data, xlabels, slabels, figname='stack', title=None, figsize=(8, 
 
     if title:
         plt.title("\n".join(wrap(title)))
-    legend(reversed(plots), tuple(slabels), bbox_to_anchor = (0.38, -0.2, 1, 1), prop={'size':11})
+    if legend:
+        legend(reversed(plots), tuple(slabels), bbox_to_anchor = (0.38, -0.2, 1, 1), prop={'size':11})
     subplots_adjust(bottom=0.25, right=0.7, top=None)
     savefig('../figs/' + figname + '.pdf', bbox_inches='tight')
+    plt.close()
+    fig = figure(figsize=figsize)
+    fig.legend(reversed(plots), tuple(slabels), prop={'size':10})
+#    fig.legend(reversed(plots), tuple(slabels), bbox_to_anchor = (1,1, 1, 1), prop={'size':10})
+    savefig('../figs/' + figname + '_legend.pdf')
     plt.close()
 
 
