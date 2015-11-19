@@ -26,6 +26,125 @@ lineconfig_nopreset = [
     "ls='-', lw=2, marker='o', ms=4",
     "ls='-', lw=2, marker='o', ms=4",
     "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
+    "ls='-', lw=2, marker='o', ms=4",
 #    "ls='-', lw=2, color='#f15854', marker='o', ms=4",
 #    "ls='-', lw=2, color='#faa43a', marker='o', ms=4",
 #    "ls='-', lw=2, color='#DECF3F', marker='o', ms=4",
@@ -60,14 +179,14 @@ lineconfig = {
 #    'HSTORE'        : "ls='-', lw=2, color='#4d4d4d', marker='x', ms=6",
 #    'HSTORE_SPEC'   : "ls='--', lw=2, color='#4d4d4d', marker='x', ms=6",
 #    'CALVIN'           : "ls='-', lw=2, color='#ff3333', marker='*', ms=4",
-    'NO_WAIT'       : "ls='-', lw=2, marker='D', ms=4",
-    'WAIT_DIE'      : "ls='-', lw=2, marker='s', ms=4",
-    'TIMESTAMP'     : "ls='-', lw=2, marker='^', ms=4",
-    'MVCC'          : "ls='--', lw=2,marker='o', ms=4", #, marker='+', ms=10",
-    'OCC'           : "ls='--', lw=2, marker='+', ms=6",
-    'HSTORE'        : "ls='-', lw=2, marker='x', ms=6",
-    'HSTORE_SPEC'   : "ls='--', lw=2, marker='x', ms=6",
-    'CALVIN'           : "ls='-', lw=2, marker='*', ms=4",
+    'NO_WAIT'       : "ls='-', lw=2, marker='D', ms=8",
+    'WAIT_DIE'      : "ls='-', lw=2, marker='s', ms=8",
+    'TIMESTAMP'     : "ls='-', lw=2, marker='^', ms=8",
+    'MVCC'          : "ls='--', lw=2,marker='o', ms=8", #, marker='+', ms=10",
+    'OCC'           : "ls='--', lw=2, marker='+', ms=10",
+    'HSTORE'        : "ls='-', lw=2, marker='x', ms=10",
+    'HSTORE_SPEC'   : "ls='--', lw=2, marker='x', ms=10",
+    'CALVIN'           : "ls='-', lw=2, marker='*', ms=8",
 
     25              : "ls='-', lw=2, color='#4d4d4d', marker='s', ms=6",
     50              : "ls='-', lw=2, color='#5DA5DA', marker='+', ms=6",
@@ -212,8 +331,8 @@ def draw_line2(fname, data, xticks,
     if not logscale:
         ticklabel_format(axis='y', style='plain')
         #ticklabel_format(axis='y', style='sci', scilimits=(-3,5))
-#if logscalex:
-#ax.get_xaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
+    if logscalex:
+        ax.get_xaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
     if legend :
         #fig.legend(lines, linenames, loc='upper right',bbox_to_anchor = (1,1), prop={'size':9}, ncol=ncol)
         fig.legend(lines, linenames, loc='upper right',bbox_to_anchor = bbox, prop={'size':8},ncol=ncol,title=ltitle)
@@ -239,11 +358,16 @@ def draw_line(fname, data, xticks,
         ylab='Throughput', logscale=False, 
         logscalex = False,
         ylimit=0, xlimit=None, xlab='Number of Cores',
-        legend=True, linenames = None, figsize=(23/3, 10/3), styles=None,ltitle='') :
+        legend=False, linenames = None, figsize=(23/3, 10/3), styles=None,ltitle='') :
 
-    current_palette = sns.color_palette()
+    if len(xticks) <= 6:
+        current_palette = sns.color_palette()
+    else:
+        current_palette = sns.color_palette("hls",len(xticks))
     sns.set_palette("bright")
     sns.set_style("whitegrid")
+
+
 
     fig = figure(figsize=figsize)
     thr = [0] * len(xticks)
@@ -254,7 +378,7 @@ def draw_line(fname, data, xticks,
     if logscale :
         ax.set_yscale('log')
     if logscalex:
-        ax.set_xscale('log')
+        ax.set_xscale('log',basex=2)
     n = 0
     if xlabels != None :
         ax.set_xticklabels([x if i%2 else '' for x,i in zip(xlabels,range(len(xlabels)))]) 
@@ -288,13 +412,13 @@ def draw_line(fname, data, xticks,
     if not logscale:
         ticklabel_format(axis='y', style='plain')
         #ticklabel_format(axis='y', style='sci', scilimits=(-3,5))
-#if logscalex:
+    if logscalex:
 #ax.get_xaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
+        ax.get_xaxis().set_major_formatter(matplotlib.ticker.FormatStrFormatter('%d'))
     if legend :
         #fig.legend(lines, linenames, loc='upper right',bbox_to_anchor = (1,1), prop={'size':9}, ncol=ncol)
         fig.legend(lines, linenames, loc='upper center',bbox_to_anchor = (0.4,1), prop={'size':10},ncol=len(linenames)/2)
 #        fig.legend(lines, linenames, loc='upper right',bbox_to_anchor = bbox, prop={'size':8},ncol=ncol,title=ltitle)
-    subplots_adjust(left=0.18, bottom=0.15, right=0.9, top=None)
     if title:
         ax.set_title("\n".join(wrap(title)))
     axes = ax.get_axes()
@@ -304,9 +428,25 @@ def draw_line(fname, data, xticks,
         color='0.75'
     )
     ax.set_axisbelow(True)
+    ax.spines['right'].set_color('black')
+    ax.spines['left'].set_color('black')
+    ax.spines['bottom'].set_color('black')
+    ax.spines['top'].set_color('black')
 
     savefig('../figs/' + fname +'.pdf', bbox_inches='tight')
     plt.close()
+#    fig = figure(figsize=((7.2, 0.4)))
+#    fig.legend(lines, linenames,bbox_to_anchor = (1,1), prop={'size':10},frameon=True,ncol=len(linenames))
+#    savefig('../figs/' + fname + 'legend.pdf')
+#    plt.close()
+#    fig = figure(figsize=((3.9, 0.6)))
+#    fig.legend(lines, linenames,bbox_to_anchor = (1,1), prop={'size':10},frameon=True,ncol=len(linenames)/2)
+#    savefig('../figs/' + fname + 'legend_half.pdf')
+#    plt.close()
+#    fig = figure(figsize=((4.2, 0.4)))
+#    fig.legend(lines, linenames,bbox_to_anchor = (1,1), prop={'size':10},frameon=True,ncol=len(linenames))
+#    savefig('../figs/' + fname + 'legend.pdf')
+#    plt.close()
 
 def draw_bars_single(data, xlabels, 
         figname='stack', 
