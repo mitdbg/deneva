@@ -47,7 +47,6 @@ def tpcc_scaling_whset():
     nnodes = [1,2,4,8,16,32,64]
     nnodes = [8]
     nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP','CALVIN']
-    nalgos=['OCC']
     npercpay=[0.0,0.5,1.0]
     npercpay=[0.5]
     wh=128
@@ -84,6 +83,7 @@ def ycsb_gold():
     nnodes = [1,2,4,8,16,32,64]
     nalgos=['NO_WAIT']
     nmodes = ["NORMAL_MODE","NOCC_MODE","QRY_ONLY_MODE"]
+    nmodes = ["NORMAL_MODE","QRY_ONLY_MODE"]
     fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PART_PER_TXN","MODE"]
     exp = [[wl,n,cc,2,m] for m,n,cc in itertools.product(nmodes,nnodes,nalgos)]
     return fmt,exp

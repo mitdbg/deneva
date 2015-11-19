@@ -239,7 +239,7 @@ def ppr_ycsb_load_plot(summary,summary_cl,summary_seq):
     v_name = "CC_ALG"
     extras = {'CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT'}
     x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name)
-    tput(x_vals,v_vals,summary,summary_cl,summary_seq,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_ycsb_load",xlab="Load (txns/server)")
+    tput(x_vals,v_vals,summary,summary_cl,summary_seq,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_ycsb_load",xlab="Load (client connections/server")
 
 def ppr_network_plot(summary,summary_cl,summary_seq):
     from experiments import network_sweep
