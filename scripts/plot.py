@@ -23,6 +23,7 @@ plot = True;
 clear = False;
 _timedate = [];
 exps = []
+res_dir = False
 for arg in sys.argv[1:]:
     if last_arg == "-n":
         exp_cnt = int(arg)
@@ -38,6 +39,8 @@ for arg in sys.argv[1:]:
         plot = False
     elif arg == "-u":
         use_tmp = True
+    elif arg == "-r":
+        res_dir = True
     elif arg == "-n" or arg == "-tdate":
         blah = True
 #    elif exp_cnt == sys.maxint:
@@ -59,6 +62,8 @@ result_dir = PATH + "/../results/sigmod_results/"
 #result_dir = PATH + "/../results/1028_ec2_results/"
 #result_dir = PATH + "/../results/results_201503pt2/"
 test_dir = ""
+if res_dir:
+    result_dir = PATH + "/../results/"
 
 
 

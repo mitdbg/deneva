@@ -381,6 +381,8 @@ def tput(xval,vval,summary,summary_cl,summary_sq,
             print("{} {} TTC {} Avg {}".format(_v,xi,tot_txn_cnt,avg_run_time))
             #tpt[v][xi] = (avg_txn_cnt/avg_run_time)
 
+#    if name == "tput_ycsb_gold":
+#        tpt["Single Server"] = [tpt["Serializable Execution"][0]]*len(_xval)
     pp = pprint.PrettyPrinter()
     pp.pprint(tpt)
 #    bbox = [0.8,0.35]
@@ -388,10 +390,13 @@ def tput(xval,vval,summary,summary_cl,summary_sq,
     if xname == 'NETWORK_DELAY':
         _xval = [x/1000 for x in _xval]
     if xname == 'MAX_TXN_IN_FLIGHT':
-        _xval = [x*nnodes for x in _xval]
+        _xval = [float(x)*nnodes/100000 for x in _xval]
 #bbox = [0.7,0.9]
     print("Created plot {}".format(name))
-    draw_line(name,tpt,_xval,ylab='Throughput (Thousand txn/s)',xlab=_xlab,title=_title,bbox=bbox,ncol=2,ltitle=vname,ylimit=ylimit,logscale=logscale,logscalex=logscalex,legend=legend)
+    if logscalex:
+        _xlab = _xlab + " (Log Scale)"
+    print(_xval)
+    draw_line(name,tpt,_xval,ylab='System Throughput\n(Thousand txn/s)',xlab=_xlab,title=_title,bbox=bbox,ncol=2,ltitle=vname,ylimit=ylimit,logscale=logscale,logscalex=logscalex,legend=legend)
 #    draw_line("pn"+name,pntpt,_xval,ylab='Throughput (Txn/sec)',xlab=_xlab,title="Per Node "+_title,bbox=bbox,ncol=2,ltitle=vname) 
     write_summary_file(name,stats,_xval,vval)
 
