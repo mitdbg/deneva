@@ -30,14 +30,19 @@ void MessageThread::run() {
   mbuf * sbuf;
   uint64_t startptr;
   uint64_t sthd_prof_start = get_sys_clock();
+  uint64_t head_start;
 
-  uint64_t head_start = msg_queue.dequeue(head_qry,head_type,head_dest);
+  if(!head_qry)
+    head_start = msg_queue.dequeue(head_qry,head_type,head_dest);
   if(g_network_delay == 0 || (head_type == NO_MSG || !head_qry) ||
       ((head_type != NO_MSG) && 
        ((get_sys_clock() - head_start >= g_network_delay)  || ISCLIENTN(head_dest) || ISCLIENT))) {
       qry = head_qry;
       type = head_type;
       dest = head_dest;
+      head_qry = NULL;
+      head_type  = NO_MSG;
+      head_dest = UINT64_MAX;
   } else {
     goto end;
   }

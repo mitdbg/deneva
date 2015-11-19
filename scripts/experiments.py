@@ -45,8 +45,11 @@ fmt_title=["NODE_CNT","CC_ALG","ACCESS_PERC","TXN_WRITE_PERC","PERC_PAYMENT","MP
 def tpcc_scaling_whset():
     wl = 'TPCC'
     nnodes = [1,2,4,8,16,32,64]
+    nnodes = [8]
     nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP','CALVIN']
+    nalgos=['OCC']
     npercpay=[0.0,0.5,1.0]
+    npercpay=[0.5]
     wh=128
     fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PERC_PAYMENT","NUM_WH"]
     exp = [[wl,n,cc,pp,wh] for pp,n,cc in itertools.product(npercpay,nnodes,nalgos)]
@@ -609,7 +612,6 @@ def test_plot(summary,summary_client,summary_seq):
 def network_sweep():
     wl = 'YCSB'
     nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP','CALVIN']
-#    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
 #    nalgos=['NO_WAIT','MVCC','OCC']
     ndelay=[0,2000,4000,6000,8000,10000,12000,14000,16000,18000,20000,22000,24000,26000,28000,30000]#,32000,34000,36000,38000,40000,42000,44000,46000,48000,50000]#,22000,24000,26000,28000,30000,40000,50000,60000,70000,80000,90000,100000]
     fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PART_PER_TXN","NETWORK_DELAY","SET_AFFINITY"]

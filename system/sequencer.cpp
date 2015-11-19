@@ -173,6 +173,7 @@ void Sequencer::send_next_batch(uint64_t thd_id) {
         msg_queue.enqueue(query,RTXN,j);
       }
     }
+    DEBUG("Seq RDONE %ld\n",_wl->epoch)
     qry_pool.get(query);
     query->rtype = RDONE;
     query->return_id = g_node_id;

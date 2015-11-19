@@ -101,7 +101,7 @@ bool QWorkQueue::sched_dequeue(base_query *& qry) {
       LIST_REMOVE_HT(en,sched_head[sched_ptr],sched_tail[sched_ptr])
       qry_pool.put(en->qry);
       mem_allocator.free(en,sizeof(struct wq_entry));
-      //DEBUG("RDONE %ld %ld\n",sched_ptr,_wl->curr_epoch);
+      DEBUG("RDONE %ld %ld\n",sched_ptr,_wl->curr_epoch);
       sched_ptr++;
       if(sched_ptr == g_node_cnt) {
         _wl->curr_epoch++;
@@ -115,8 +115,14 @@ bool QWorkQueue::sched_dequeue(base_query *& qry) {
     ATOM_ADD(_wl->epoch_txn_cnt,1);
     LIST_REMOVE_HT(en,sched_head[sched_ptr],sched_tail[sched_ptr])
     qry = en->qry;
+    DEBUG("SDeq %ld (%ld,%ld) %ld\n",sched_ptr,qry->txn_id,qry->batch_id,_wl->curr_epoch);
+    if(qry->batch_id == UINT64_MAX)
+      assert(false);
+    if(qry->batch_id < _wl->curr_epoch)
+      assert(false);
+    if(qry->batch_id > _wl->curr_epoch)
+      assert(false);
     assert(qry->batch_id == _wl->curr_epoch);
-    //DEBUG("SDeq %ld %ld,%ld\n",sched_ptr,qry->txn_id,_wl->curr_epoch);
     mem_allocator.free(en,sizeof(struct wq_entry));
     result = true;
     break;

@@ -162,9 +162,9 @@ void row_t::free_row() {
   DEBUG_M("row_t::free_row free\n");
 #if SIM_FULL_ROW
 	mem_allocator.free(data, sizeof(char) * get_tuple_size());
-#endif
-	mem_allocator.free(data, sizeof(char) * 1);
 #else
+	mem_allocator.free(data, sizeof(char) * 1);
+#endif
 }
 
 RC row_t::get_lock(access_t type, txn_man * txn) {

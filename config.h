@@ -9,6 +9,7 @@
 #define THREAD_CNT 6
 #define REM_THREAD_CNT 1
 #define SEND_THREAD_CNT 1
+#define CORE_CNT 8
 // PART_CNT should be at least NODE_CNT
 #define PART_CNT NODE_CNT
 #define CLIENT_NODE_CNT NODE_CNT
@@ -16,7 +17,6 @@
 #define CLIENT_REM_THREAD_CNT 1
 #define CLIENT_SEND_THREAD_CNT 4
 #define CLIENT_RUNTIME false
-#define CORE_CNT 8
 
 // each transaction only accesses only 1 virtual partition. But the lock/ts manager and index are not aware of such partitioning. VIRTUAL_PART_CNT describes the request distribution and is only used to generate queries. For HSTORE, VIRTUAL_PART_CNT should be the same as PART_CNT.
 #define VIRTUAL_PART_CNT    PART_CNT  
@@ -65,7 +65,7 @@
 #define TPORT_TYPE "tcp"
 #define TPORT_TYPE_IPC false
 #define TPORT_PORT 17000
-#define SET_AFFINITY false
+#define SET_AFINITY false
 
 #define MAX_TPORT_NAME 128
 #define MSG_SIZE 128 // in bytes
@@ -247,9 +247,9 @@ extern TestCases          g_test_case;
 #define DEBUG_TIMESTAMP       false
 #define DEBUG_SYNTH         false
 #define DEBUG_ASSERT        false
-#define DEBUG_RACE false
 #define DEBUG_DISTR false
 #define DEBUG_ALLOC false
+#define DEBUG_RACE false
 #define DEBUG_TIMELINE        false
 #define DEBUG_BREAKDOWN       false
 
@@ -310,7 +310,6 @@ extern TestCases          g_test_case;
 #define STAT_ARR_SIZE 1024
 #define PROG_TIMER 10 * BILLION // in s
 #define BATCH_TIMER 10000000
-#define DONE_TIMER 1 * 60 * BILLION // ~2 minutes
 #define DONE_TIMER 1 * 60 * BILLION // ~2 minutes
 
 #define SEED 0
