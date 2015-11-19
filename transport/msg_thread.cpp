@@ -345,10 +345,10 @@ void MessageThread::rack(mbuf * sbuf,base_query * qry) {
 
 void MessageThread::rfwd(mbuf * sbuf,base_query * qry) {
   DEBUG("Sending RFWD (%ld,%ld)\n",qry->txn_id,qry->batch_id);
-  tpcc_query * m_qry = (tpcc_query *)qry;
   COPY_BUF(sbuf->buffer,qry->txn_id,sbuf->ptr);
   COPY_BUF(sbuf->buffer,qry->batch_id,sbuf->ptr);
 #if WORKLOAD == TPCC
+  tpcc_query * m_qry = (tpcc_query *)qry;
   COPY_BUF(sbuf->buffer,m_qry->o_id,sbuf->ptr);
 #endif
 }

@@ -770,10 +770,7 @@ def print_keys(result_dir="../results",keys=['txn_cnt']):
 def get_summary_stats(stats,summary,summary_cl,summary_sq,x,v,cc):
     print(summary_cl['txn_cnt'])
     nthd = 6
-    if cc == "CALVIN":
-        s = summary_sq
-    else:
-        s = summary_cl
+    s = summary_cl
     tot_txn_cnt = sum(s['txn_cnt'])
     avg_txn_cnt = avg(s['txn_cnt'])
     tot_time = sum(summary['clock_time'])
