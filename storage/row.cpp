@@ -20,8 +20,11 @@ row_t::init(table_t * host_table, uint64_t part_id, uint64_t row_id) {
 	this->table = host_table;
 	Catalog * schema = host_table->get_schema();
 	tuple_size = schema->get_tuple_size();
-	//data = (char *) mem_allocator.alloc(sizeof(char) * tuple_size, _part_id);
+#if SIM_FULL_ROW
+	data = (char *) mem_allocator.alloc(sizeof(char) * tuple_size, _part_id);
+#else
 	data = (char *) mem_allocator.alloc(sizeof(char) * 1, _part_id);
+#endif
 	return RCOK;
 }
 
@@ -79,16 +82,22 @@ uint64_t row_t::get_field_cnt() {
 void row_t::set_value(int id, void * ptr) {
 	int datasize = get_schema()->get_field_size(id);
 	int pos = get_schema()->get_field_index(id);
+#if SIM_FULL_ROW
+	memcpy( &data[pos], ptr, datasize);
+#else
   char d[tuple_size];
 	memcpy( &d[pos], ptr, datasize);
-	//memcpy( &data[pos], ptr, datasize);
+#endif
 }
 
 void row_t::set_value(int id, void * ptr, int size) {
 	int pos = get_schema()->get_field_index(id);
+#if SIM_FULL_ROW
+	memcpy( &data[pos], ptr, size);
+#else
   char d[tuple_size];
 	memcpy( &d[pos], ptr, size);
-	//memcpy( &data[pos], ptr, size);
+#endif
 }
 
 void row_t::set_value(const char * col_name, void * ptr) {
@@ -111,36 +120,51 @@ GET_VALUE(SInt32);
 char * row_t::get_value(int id) {
   int pos __attribute__ ((unused));
 	pos = get_schema()->get_field_index(id);
+#if SIM_FULL_ROW
+	return &data[pos];
+#else
 	return data;
-	//return &data[pos];
+#endif
 }
 
 char * row_t::get_value(char * col_name) {
   uint64_t pos __attribute__ ((unused));
 	pos = get_schema()->get_field_index(col_name);
+#if SIM_FULL_ROW
+	return &data[pos];
+#else
 	return data;
-	//return &data[pos];
+#endif
 }
 
 char * row_t::get_data() { return data; }
 void row_t::set_data(char * data) { 
 	int tuple_size = get_schema()->get_tuple_size();
+#if SIM_FULL_ROW
+	memcpy(this->data, data, tuple_size);
+#else
   char d[tuple_size];
 	memcpy(d, data, tuple_size);
-	//memcpy(this->data, data, tuple_size);
+#endif
 }
 // copy from the src to this
 void row_t::copy(row_t * src) {
 	assert(src->get_schema() == this->get_schema());
+#if SIM_FULL_ROW
+	set_data(src->get_data());
+#else
   char d[tuple_size];
 	set_data(d);
-	//set_data(src->get_data());
+#endif
 }
 
 void row_t::free_row() {
   DEBUG_M("row_t::free_row free\n");
-	//mem_allocator.free(data, sizeof(char) * get_tuple_size());
+#if SIM_FULL_ROW
+	mem_allocator.free(data, sizeof(char) * get_tuple_size());
+#endif
 	mem_allocator.free(data, sizeof(char) * 1);
+#else
 }
 
 RC row_t::get_lock(access_t type, txn_man * txn) {
