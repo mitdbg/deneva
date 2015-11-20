@@ -395,7 +395,6 @@ def tput(xval,vval,summary,summary_cl,summary_sq,
         _xval = [float(x)*nnodes/100000 for x in _xval]
 #bbox = [0.7,0.9]
     print("Created plot {}".format(name))
-    draw_line(name,tpt,_xval,ylab='Throughput (Thousand txn/s)',xlab=_xlab,title=_title,bbox=bbox,ncol=2,ltitle=vname,ylimit=ylimit,logscale=logscale,logscalex=logscalex,legend=legend,base=base)
     if logscalex:
         _xlab = _xlab + " (Log Scale)"
     print(_xval)

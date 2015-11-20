@@ -412,7 +412,8 @@ def draw_line(fname, data, xticks,
     if ylimit != 0:
         ylim(ylimit)
     if xlimit != None:
-        xlim(xlimit)
+        if not logscalex:
+            xlim(xlimit)
     ax.set_xlim([xticks[0],xticks[len(xticks)-1]])
     plt.gca().set_ylim(bottom=0)
     ylabel(ylab,fontsize=18)
@@ -422,8 +423,8 @@ def draw_line(fname, data, xticks,
         #ticklabel_format(axis='y', style='sci', scilimits=(-3,5))
     if logscalex:
 #ax.get_xaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
-        if xlab == "Network Latency (ms)":
-            ax.get_xaxis().set_major_formatter(matplotlib.ticker.FormatStrFormatter('%f'))
+        if xlab == "Network Latency (ms) (Log Scale)" or xlab == "Network Latency (ms)":
+            ax.get_xaxis().set_major_formatter(matplotlib.ticker.FormatStrFormatter('%.1f'))
         else:
             ax.get_xaxis().set_major_formatter(matplotlib.ticker.FormatStrFormatter('%d'))
     if legend :
