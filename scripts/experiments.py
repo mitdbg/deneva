@@ -746,9 +746,7 @@ def tpcc_test():
     wl = 'TPCC'
     nnodes = [1,2,4,8,16,32,64]
     nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP','CALVIN']
-    nalgos=['OCC']
     npercpay=[0.0,0.5,1.0]
-    npercpay=[0.5]
     wh=256
     fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PERC_PAYMENT","NUM_WH"]
     exp = [[wl,n,cc,pp,wh] for pp,n,cc in itertools.product(npercpay,nnodes,nalgos)]
@@ -760,9 +758,21 @@ def tpcc_test_plot(summary,summary_client,summary_seq):
     nfmt,nexp = tpcc_test()
     x_name = "NODE_CNT"
     v_name = "CC_ALG"
+    extras = {'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','PERC_PAYMENT':0.0}
+    x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,extras=extras)
+    tput(x_vals,v_vals,summary,summary_client,summary_seq,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_tpcc_neworder",xlab="Server Count",extras=extras,logscalex=True)
+    nfmt,nexp = tpcc_test()
+    x_name = "NODE_CNT"
+    v_name = "CC_ALG"
     extras = {'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','PERC_PAYMENT':0.5}
     x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,extras=extras)
-    tput(x_vals,v_vals,summary,summary_client,summary_seq,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_tpcc_mix_test",xlab="Server Count",extras=extras,logscalex=True)
+    tput(x_vals,v_vals,summary,summary_client,summary_seq,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_tpcc_mix",xlab="Server Count",extras=extras,logscalex=True)
+    nfmt,nexp = tpcc_test()
+    x_name = "NODE_CNT"
+    v_name = "CC_ALG"
+    extras = {'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','PERC_PAYMENT':1.0}
+    x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,extras=extras)
+    tput(x_vals,v_vals,summary,summary_client,summary_seq,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_tpcc_pay",xlab="Server Count",extras=extras,logscalex=True)
 
 
 experiment_map = {

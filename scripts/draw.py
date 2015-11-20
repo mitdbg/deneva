@@ -182,7 +182,7 @@ lineconfig = {
 #    'Single Server'       : "ls='--', color='#d3d3d3',lw=2, marker='D', ms=8",
     'Single Server'       : "ls='--',lw=2",
     'Serializable Execution'       : "ls='-',lw=2",
-    'No Concurrency Control'       : "ls='-',lw=2",
+    'No Concurrency Control'       : "ls='--',lw=2",
     'NO_WAIT'       : "ls='-', lw=2, marker='D', ms=8",
     'WAIT_DIE'      : "ls='-', lw=2, marker='s', ms=8",
     'TIMESTAMP'     : "ls='-', lw=2, marker='^', ms=8",
@@ -597,10 +597,10 @@ def draw_stack(data, xlabels, slabels, figname='stack', title=None, figsize=(8, 
     subplots_adjust(bottom=0.25, right=0.7, top=None)
     savefig('../figs/' + figname + '.pdf', bbox_inches='tight')
     plt.close()
-    fig = figure(figsize=figsize)
-    fig.legend(reversed(plots), tuple(slabels), prop={'size':10})
+    fig = figure(figsize=(5.4, 0.3))
+    fig.legend(reversed(plots), tuple(slabels), prop={'size':8},ncol=len(slabels))
 #    fig.legend(reversed(plots), tuple(slabels), bbox_to_anchor = (1,1, 1, 1), prop={'size':10})
-    savefig('../figs/' + figname + '_legend.pdf')
+    savefig('../figs/breakdown_legend.pdf')
     plt.close()
 
 

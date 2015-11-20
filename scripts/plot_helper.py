@@ -385,9 +385,12 @@ def tput(xval,vval,summary,summary_cl,summary_sq,
 #        tpt["Single Server"] = [tpt["Serializable Execution"][0]]*len(_xval)
     pp = pprint.PrettyPrinter()
     pp.pprint(tpt)
+    write_summary_file(name,stats,_xval,vval)
 #    bbox = [0.8,0.35]
     bbox = [1.0,0.95]
     write_summary_file(name,stats,_xval,vval)
+    if xname == 'ACCESS_PERC':
+        _xval = [int(x*100) for x in _xval]
     if xname == 'NETWORK_DELAY':
         _xval = [float(x)/1000000 for x in _xval]
         base = 10
