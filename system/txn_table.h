@@ -20,14 +20,14 @@
 #include "global.h"
 #include "helper.h"
 
-class txn_man;
-class base_query;
+class TxnManager;
+class BaseQuery;
 class row_t;
 
 struct txn_node {
  public:
-    txn_man * txn;
-    base_query * qry;
+    TxnManager * txn;
+    BaseQuery * qry;
     struct txn_node * next;
     struct txn_node * prev;
 };
@@ -59,10 +59,10 @@ public:
   void init();
   uint64_t get_cnt() {return cnt;}
   bool empty(uint64_t node_id);
-  void add_txn(uint64_t node_id, txn_man * txn, base_query * qry);
-  void get_txn(uint64_t node_id, uint64_t txn_id,uint64_t batch_id,txn_man *& txn,base_query *& qry);
-  //txn_man * get_txn(uint64_t node_id, uint64_t txn_id);
-  //base_query * get_qry(uint64_t node_id, uint64_t txn_id);
+  void add_txn(uint64_t node_id, TxnManager * txn, BaseQuery * qry);
+  void get_txn(uint64_t node_id, uint64_t txn_id,uint64_t batch_id,TxnManager *& txn,BaseQuery *& qry);
+  //TxnManager * get_txn(uint64_t node_id, uint64_t txn_id);
+  //BaseQuery * get_qry(uint64_t node_id, uint64_t txn_id);
   void dump();
   void restart_txn(uint64_t txn_id,uint64_t batch_id);
   void delete_all();

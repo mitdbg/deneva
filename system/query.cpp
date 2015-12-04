@@ -26,7 +26,7 @@
 /*************************************************/
 
 void 
-Query_queue::init(workload * h_wl) {
+Query_queue::init(Workload * h_wl) {
 	all_queries = new Query_thd * [g_thread_cnt];
 	_wl = h_wl;
 	for (UInt32 tid = 0; tid < g_thread_cnt; tid ++)
@@ -39,29 +39,29 @@ Query_queue::init(int thread_id) {
 	all_queries[thread_id]->init(_wl, thread_id);
 }
 
-base_query * 
+BaseQuery * 
 Query_queue::get_next_query(uint64_t thd_id) { 	
-	base_query * query = all_queries[thd_id]->get_next_query();
+	BaseQuery * query = all_queries[thd_id]->get_next_query();
 	return query;
 }
 
 void 
-Query_thd::init(workload * h_wl, int thread_id) {
+Query_thd::init(Workload * h_wl, int thread_id) {
 	uint64_t request_cnt;
 	q_idx = 0;
 	request_cnt = WARMUP / g_thread_cnt + MAX_TXN_PER_PART + 4;
 #if WORKLOAD == YCSB	
-	queries = (ycsb_query *) 
-		mem_allocator.alloc(sizeof(ycsb_query) * request_cnt, thread_id);
+	queries = (YCSBQuery *) 
+		mem_allocator.alloc(sizeof(YCSBQuery) * request_cnt, thread_id);
 #elif WORKLOAD == TPCC
-	queries = (tpcc_query *) 
-		mem_allocator.alloc(sizeof(tpcc_query) * request_cnt, thread_id);
+	queries = (TPCCQuery *) 
+		mem_allocator.alloc(sizeof(TPCCQuery) * request_cnt, thread_id);
 #endif
 	for (UInt32 qid = 0; qid < request_cnt; qid ++) {
 #if WORKLOAD == YCSB	
-		new(&queries[qid]) ycsb_query();
+		new(&queries[qid]) YCSBQuery();
 #elif WORKLOAD == TPCC
-		new(&queries[qid]) tpcc_query();
+		new(&queries[qid]) TPCCQuery();
 #endif
 		queries[qid].init(thread_id, h_wl);
     // Setup
@@ -72,13 +72,13 @@ Query_thd::init(workload * h_wl, int thread_id) {
 
 }
 
-base_query * 
+BaseQuery * 
 Query_thd::get_next_query() {
-	base_query * query = &queries[q_idx++];
+	BaseQuery * query = &queries[q_idx++];
 	return query;
 }
 
-void base_query::clear() { 
+void BaseQuery::clear() { 
   dest_id = UINT32_MAX;
   return_id = UINT32_MAX;
   batch_id = UINT64_MAX;
@@ -97,7 +97,7 @@ void base_query::clear() {
   //time_copy = 0;
 } 
 
-void base_query::base_reset() { 
+void BaseQuery::base_reset() { 
   part_touched_cnt = 0;
   rtype = RTXN;
   rc = RCOK;
@@ -109,16 +109,16 @@ void base_query::base_reset() {
 #endif
 }
 
-void base_query::update_rc(RC rc) {
+void BaseQuery::update_rc(RC rc) {
   if(rc == Abort)
     this->rc = rc;
 }
 
-void base_query::set_txn_id(uint64_t _txn_id) { txn_id = _txn_id; } 
+void BaseQuery::set_txn_id(uint64_t _txn_id) { txn_id = _txn_id; } 
 
 // FIXME: Haven't debugged HStore with this
-void base_query::local_rinit_query(uint64_t part_id) {
-        base_query * tmp_query; 
+void BaseQuery::local_rinit_query(uint64_t part_id) {
+        BaseQuery * tmp_query; 
         qry_pool.get(tmp_query);
         tmp_query->txn_id = this->txn_id;
         tmp_query->ts = this->ts;

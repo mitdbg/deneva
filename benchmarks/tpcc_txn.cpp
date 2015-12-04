@@ -28,16 +28,16 @@
 #include "remote_query.h"
 #include "transport.h"
 
-void tpcc_txn_man::init(workload * h_wl) {
-	txn_man::init(h_wl);
-	_wl = (tpcc_wl *) h_wl;
-	_qry = new tpcc_query;
+void TPCCTxnManager::init(Workload * h_wl) {
+	TxnManager::init(h_wl);
+	_wl = (TPCCWorkload *) h_wl;
+	_qry = new TPCCQuery;
   rc = RCOK;
 }
 
-void tpcc_txn_man::merge_txn_rsp(base_query * query1, base_query * query2) {
-	tpcc_query * m_query1 = (tpcc_query *) query1;
-	tpcc_query * m_query2 = (tpcc_query *) query2;
+void TPCCTxnManager::merge_txn_rsp(BaseQuery * query1, BaseQuery * query2) {
+	TPCCQuery * m_query1 = (TPCCQuery *) query1;
+	TPCCQuery * m_query2 = (TPCCQuery *) query2;
 
   if(m_query1->rc == Abort) {
     m_query2->rc = m_query1->rc;
@@ -46,8 +46,8 @@ void tpcc_txn_man::merge_txn_rsp(base_query * query1, base_query * query2) {
 
 }
 
-RC tpcc_txn_man::run_txn(base_query * query) {
-	//tpcc_query * m_query = (tpcc_query *) query;
+RC TPCCTxnManager::run_txn(BaseQuery * query) {
+	//TPCCQuery * m_query = (TPCCQuery *) query;
   //assert(query->rc == RCOK);
 #if MODE == SETUP_MODE
   return RCOK;
@@ -87,9 +87,9 @@ RC tpcc_txn_man::run_txn(base_query * query) {
 
 }
 
-RC tpcc_txn_man::acquire_locks(base_query * query) {
+RC TPCCTxnManager::acquire_locks(BaseQuery * query) {
   assert(CC_ALG == VLL || CC_ALG == CALVIN);
-	tpcc_query * m_query = (tpcc_query *) query;
+	TPCCQuery * m_query = (TPCCQuery *) query;
   locking_done = false;
   RC rc = RCOK;
   RC rc2;
@@ -214,8 +214,8 @@ RC tpcc_txn_man::acquire_locks(base_query * query) {
 }
 
 
-void tpcc_txn_man::rtn_tpcc_state(base_query * query) {
-	tpcc_query * m_query = (tpcc_query *) query;
+void TPCCTxnManager::rtn_tpcc_state(BaseQuery * query) {
+	TPCCQuery * m_query = (TPCCQuery *) query;
 
   switch(m_query->txn_rtype) {
     case TPCC_PAYMENT0:
@@ -275,8 +275,8 @@ void tpcc_txn_man::rtn_tpcc_state(base_query * query) {
 
 }
 
-void tpcc_txn_man::next_tpcc_state(base_query * query) {
-	tpcc_query * m_query = (tpcc_query *) query;
+void TPCCTxnManager::next_tpcc_state(BaseQuery * query) {
+	TPCCQuery * m_query = (TPCCQuery *) query;
 
   switch(m_query->txn_rtype) {
     case TPCC_PAYMENT_S:
@@ -393,8 +393,8 @@ void tpcc_txn_man::next_tpcc_state(base_query * query) {
 
 }
 
-RC tpcc_txn_man::run_txn_state(base_query * query) {
-	tpcc_query * m_query = (tpcc_query *) query;
+RC TPCCTxnManager::run_txn_state(BaseQuery * query) {
+	TPCCQuery * m_query = (TPCCQuery *) query;
 	uint64_t w_id = m_query->w_id;
   uint64_t d_id = m_query->d_id;
   uint64_t c_id = m_query->c_id;
@@ -543,7 +543,7 @@ RC tpcc_txn_man::run_txn_state(base_query * query) {
   return rc;
 }
 
-inline RC tpcc_txn_man::run_payment_0(uint64_t w_id, uint64_t d_id, uint64_t d_w_id, double h_amount, row_t *& r_wh_local) {
+inline RC TPCCTxnManager::run_payment_0(uint64_t w_id, uint64_t d_id, uint64_t d_w_id, double h_amount, row_t *& r_wh_local) {
 
 	uint64_t key;
 	itemid_t * item;
@@ -577,7 +577,7 @@ inline RC tpcc_txn_man::run_payment_0(uint64_t w_id, uint64_t d_id, uint64_t d_w
   return rc;
 }
 
-inline RC tpcc_txn_man::run_payment_1(uint64_t w_id, uint64_t d_id, uint64_t d_w_id, double h_amount, row_t * r_wh_local) {
+inline RC TPCCTxnManager::run_payment_1(uint64_t w_id, uint64_t d_id, uint64_t d_w_id, double h_amount, row_t * r_wh_local) {
 
   assert(r_wh_local != NULL);
 /*====================================================+
@@ -600,7 +600,7 @@ inline RC tpcc_txn_man::run_payment_1(uint64_t w_id, uint64_t d_id, uint64_t d_w
   return RCOK;
 }
 
-inline RC tpcc_txn_man::run_payment_2(uint64_t w_id, uint64_t d_id, uint64_t d_w_id, double h_amount, row_t *& r_dist_local) {
+inline RC TPCCTxnManager::run_payment_2(uint64_t w_id, uint64_t d_id, uint64_t d_w_id, double h_amount, row_t *& r_dist_local) {
 	/*=====================================================+
 		EXEC SQL UPDATE district SET d_ytd = d_ytd + :h_amount
 		WHERE d_w_id=:w_id AND d_id=:d_id;
@@ -620,7 +620,7 @@ inline RC tpcc_txn_man::run_payment_2(uint64_t w_id, uint64_t d_id, uint64_t d_w
 
 }
 
-inline RC tpcc_txn_man::run_payment_3(uint64_t w_id, uint64_t d_id, uint64_t d_w_id, double h_amount, row_t * r_dist_local) {
+inline RC TPCCTxnManager::run_payment_3(uint64_t w_id, uint64_t d_id, uint64_t d_w_id, double h_amount, row_t * r_dist_local) {
   assert(r_dist_local != NULL);
 
 	/*=====================================================+
@@ -634,7 +634,7 @@ inline RC tpcc_txn_man::run_payment_3(uint64_t w_id, uint64_t d_id, uint64_t d_w
 	return RCOK;
 }
 
-inline RC tpcc_txn_man::run_payment_4(uint64_t w_id, uint64_t d_id,uint64_t c_id,uint64_t c_w_id, uint64_t c_d_id, char * c_last, double h_amount, bool by_last_name, row_t *& r_cust_local) { 
+inline RC TPCCTxnManager::run_payment_4(uint64_t w_id, uint64_t d_id,uint64_t c_id,uint64_t c_w_id, uint64_t c_d_id, char * c_last, double h_amount, bool by_last_name, row_t *& r_cust_local) { 
 	/*====================================================================+
 		EXEC SQL SELECT d_street_1, d_street_2, d_city, d_state, d_zip, d_name
 		INTO :d_street_1, :d_street_2, :d_city, :d_state, :d_zip, :d_name
@@ -731,7 +731,7 @@ inline RC tpcc_txn_man::run_payment_4(uint64_t w_id, uint64_t d_id,uint64_t c_id
 }
 
 
-inline RC tpcc_txn_man::run_payment_5(uint64_t w_id, uint64_t d_id,uint64_t c_id,uint64_t c_w_id, uint64_t c_d_id, char * c_last, double h_amount, bool by_last_name, row_t * r_cust_local) { 
+inline RC TPCCTxnManager::run_payment_5(uint64_t w_id, uint64_t d_id,uint64_t c_id,uint64_t c_w_id, uint64_t c_d_id, char * c_last, double h_amount, bool by_last_name, row_t * r_cust_local) { 
   assert(r_cust_local != NULL);
 	double c_balance;
 	double c_ytd_payment;
@@ -772,7 +772,7 @@ inline RC tpcc_txn_man::run_payment_5(uint64_t w_id, uint64_t d_id,uint64_t c_id
 
 
 // new_order 0
-inline RC tpcc_txn_man::new_order_0(uint64_t w_id, uint64_t d_id, uint64_t c_id, bool remote, uint64_t  ol_cnt,uint64_t  o_entry_d, uint64_t * o_id, row_t *& r_wh_local) {
+inline RC TPCCTxnManager::new_order_0(uint64_t w_id, uint64_t d_id, uint64_t c_id, bool remote, uint64_t  ol_cnt,uint64_t  o_entry_d, uint64_t * o_id, row_t *& r_wh_local) {
 	uint64_t key;
 	itemid_t * item;
 	/*=======================================================================+
@@ -794,14 +794,14 @@ inline RC tpcc_txn_man::new_order_0(uint64_t w_id, uint64_t d_id, uint64_t c_id,
   return rc;
 }
 
-inline RC tpcc_txn_man::new_order_1(uint64_t w_id, uint64_t d_id, uint64_t c_id, bool remote, uint64_t  ol_cnt,uint64_t  o_entry_d, uint64_t * o_id, row_t * r_wh_local) {
+inline RC TPCCTxnManager::new_order_1(uint64_t w_id, uint64_t d_id, uint64_t c_id, bool remote, uint64_t  ol_cnt,uint64_t  o_entry_d, uint64_t * o_id, row_t * r_wh_local) {
   assert(r_wh_local != NULL);
 	double w_tax;
 	r_wh_local->get_value(W_TAX, w_tax); 
   return RCOK;
 }
 
-inline RC tpcc_txn_man::new_order_2(uint64_t w_id, uint64_t d_id, uint64_t c_id, bool remote, uint64_t  ol_cnt,uint64_t  o_entry_d, uint64_t * o_id, row_t *& r_cust_local) {
+inline RC TPCCTxnManager::new_order_2(uint64_t w_id, uint64_t d_id, uint64_t c_id, bool remote, uint64_t  ol_cnt,uint64_t  o_entry_d, uint64_t * o_id, row_t *& r_cust_local) {
 	uint64_t key;
 	itemid_t * item;
 	key = custKey(c_id, d_id, w_id);
@@ -817,7 +817,7 @@ inline RC tpcc_txn_man::new_order_2(uint64_t w_id, uint64_t d_id, uint64_t c_id,
   return rc;
 }
 
-inline RC tpcc_txn_man::new_order_3(uint64_t w_id, uint64_t d_id, uint64_t c_id, bool remote, uint64_t  ol_cnt,uint64_t  o_entry_d, uint64_t * o_id, row_t * r_cust_local) {
+inline RC TPCCTxnManager::new_order_3(uint64_t w_id, uint64_t d_id, uint64_t c_id, bool remote, uint64_t  ol_cnt,uint64_t  o_entry_d, uint64_t * o_id, row_t * r_cust_local) {
   assert(r_cust_local != NULL);
 	uint64_t c_discount;
 	//char * c_last;
@@ -828,7 +828,7 @@ inline RC tpcc_txn_man::new_order_3(uint64_t w_id, uint64_t d_id, uint64_t c_id,
   return RCOK;
 }
  	
-inline RC tpcc_txn_man::new_order_4(uint64_t w_id, uint64_t d_id, uint64_t c_id, bool remote, uint64_t  ol_cnt,uint64_t  o_entry_d, uint64_t * o_id, row_t *& r_dist_local) {
+inline RC TPCCTxnManager::new_order_4(uint64_t w_id, uint64_t d_id, uint64_t c_id, bool remote, uint64_t  ol_cnt,uint64_t  o_entry_d, uint64_t * o_id, row_t *& r_dist_local) {
 	uint64_t key;
 	itemid_t * item;
 	/*==================================================+
@@ -851,7 +851,7 @@ inline RC tpcc_txn_man::new_order_4(uint64_t w_id, uint64_t d_id, uint64_t c_id,
   return rc;
 }
 
-inline RC tpcc_txn_man::new_order_5(uint64_t w_id, uint64_t d_id, uint64_t c_id, bool remote, uint64_t  ol_cnt,uint64_t  o_entry_d, uint64_t * o_id, row_t * r_dist_local) {
+inline RC TPCCTxnManager::new_order_5(uint64_t w_id, uint64_t d_id, uint64_t c_id, bool remote, uint64_t  ol_cnt,uint64_t  o_entry_d, uint64_t * o_id, row_t * r_dist_local) {
   assert(r_dist_local != NULL);
 	//double d_tax;
 	//int64_t o_id;
@@ -895,7 +895,7 @@ inline RC tpcc_txn_man::new_order_5(uint64_t w_id, uint64_t d_id, uint64_t c_id,
 
 // new_order 1
 // Read from replicated read-only item table
-inline RC tpcc_txn_man::new_order_6(uint64_t ol_i_id, row_t *& r_item_local) {
+inline RC TPCCTxnManager::new_order_6(uint64_t ol_i_id, row_t *& r_item_local) {
 		uint64_t key;
 		itemid_t * item;
 		/*===========================================+
@@ -917,7 +917,7 @@ inline RC tpcc_txn_man::new_order_6(uint64_t ol_i_id, row_t *& r_item_local) {
     return rc;
 }
 
-inline RC tpcc_txn_man::new_order_7(uint64_t ol_i_id, row_t * r_item_local) {
+inline RC TPCCTxnManager::new_order_7(uint64_t ol_i_id, row_t * r_item_local) {
   assert(r_item_local != NULL);
 		int64_t i_price;
 		//char * i_name;
@@ -932,7 +932,7 @@ inline RC tpcc_txn_man::new_order_7(uint64_t ol_i_id, row_t * r_item_local) {
 }
 
 // new_order 2
-inline RC tpcc_txn_man::new_order_8(uint64_t w_id,uint64_t  d_id,bool remote, uint64_t ol_i_id, uint64_t ol_supply_w_id, uint64_t ol_quantity,uint64_t  ol_number,uint64_t  o_id, row_t *& r_stock_local) {
+inline RC TPCCTxnManager::new_order_8(uint64_t w_id,uint64_t  d_id,bool remote, uint64_t ol_i_id, uint64_t ol_supply_w_id, uint64_t ol_quantity,uint64_t  ol_number,uint64_t  o_id, row_t *& r_stock_local) {
 		uint64_t key;
 		itemid_t * item;
 
@@ -963,7 +963,7 @@ inline RC tpcc_txn_man::new_order_8(uint64_t w_id,uint64_t  d_id,bool remote, ui
     return rc;
 }
 		
-inline RC tpcc_txn_man::new_order_9(uint64_t w_id,uint64_t  d_id,bool remote, uint64_t ol_i_id, uint64_t ol_supply_w_id, uint64_t ol_quantity,uint64_t  ol_number, uint64_t ol_amount, uint64_t  o_id, row_t * r_stock_local) {
+inline RC TPCCTxnManager::new_order_9(uint64_t w_id,uint64_t  d_id,bool remote, uint64_t ol_i_id, uint64_t ol_supply_w_id, uint64_t ol_quantity,uint64_t  ol_number, uint64_t ol_amount, uint64_t  o_id, row_t * r_stock_local) {
   assert(r_stock_local != NULL);
 		// XXX s_dist_xx are not retrieved.
 		UInt64 s_quantity;
@@ -1021,8 +1021,8 @@ inline RC tpcc_txn_man::new_order_9(uint64_t w_id,uint64_t  d_id,bool remote, ui
 }
 
 /*
-void tpcc_txn_man::read_keys(base_query * query) {
-	tpcc_query * m_query = (tpcc_query *) query;
+void TPCCTxnManager::read_keys(BaseQuery * query) {
+	TPCCQuery * m_query = (TPCCQuery *) query;
   m_query->txn_type = query->t_type;
   uint64_t w_key;
   uint64_t d_key;
@@ -1133,14 +1133,14 @@ void tpcc_txn_man::read_keys(base_query * query) {
   // Send data back with ts and write sets
 }
 
-void tpcc_txn_man::read_keys_again(base_query * query) {
-	tpcc_query * m_query = (tpcc_query *) query;
+void TPCCTxnManager::read_keys_again(BaseQuery * query) {
+	TPCCQuery * m_query = (TPCCQuery *) query;
 }
 */
 
 /*
-void tpcc_txn_man::get_keys(base_query * query) {
-	tpcc_query * m_query = (tpcc_query *) query;
+void TPCCTxnManager::get_keys(BaseQuery * query) {
+	TPCCQuery * m_query = (TPCCQuery *) query;
   uint64_t num_keys = m_query->txn_type == TPCC_PAYMENT ? 4 : 3 + m_query->ol_cnt;
   uint64_t keys[num_keys];
   uint64_t n = 0;
@@ -1170,9 +1170,9 @@ void tpcc_txn_man::get_keys(base_query * query) {
 */
 
 // Check for potential conflict for same row by comparing keys
-bool tpcc_txn_man::conflict(base_query * query1,base_query * query2) {
-	tpcc_query * m_query1 = (tpcc_query *) query1;
-	tpcc_query * m_query2 = (tpcc_query *) query2;
+bool TPCCTxnManager::conflict(BaseQuery * query1,BaseQuery * query2) {
+	TPCCQuery * m_query1 = (TPCCQuery *) query1;
+	TPCCQuery * m_query2 = (TPCCQuery *) query2;
 
   uint64_t q1_w_key = m_query1->w_id;
   uint64_t q1_d_key = m_query1->txn_type == TPCC_PAYMENT ? distKey(m_query1->d_id, m_query1->d_w_id) : distKey(m_query1->d_id, m_query1->w_id);
@@ -1211,8 +1211,8 @@ bool tpcc_txn_man::conflict(base_query * query1,base_query * query2) {
   return false;
 }
 
-RC tpcc_txn_man::run_calvin_txn(base_query * query) {
-	tpcc_query * m_query = (tpcc_query *) query;
+RC TPCCTxnManager::run_calvin_txn(BaseQuery * query) {
+	TPCCQuery * m_query = (TPCCQuery *) query;
   RC rc = RCOK;
   uint64_t home_wh_node;
   while(rc == RCOK && this->phase < 6) {
@@ -1310,9 +1310,9 @@ RC tpcc_txn_man::run_calvin_txn(base_query * query) {
 }
 
 
-RC tpcc_txn_man::run_tpcc_phase2(base_query * query) {
+RC TPCCTxnManager::run_tpcc_phase2(BaseQuery * query) {
   RC rc = RCOK;
-	tpcc_query * m_query = (tpcc_query *) query;
+	TPCCQuery * m_query = (TPCCQuery *) query;
   assert(CC_ALG == CALVIN);
 
 	uint64_t w_id = m_query->w_id;
@@ -1368,9 +1368,9 @@ RC tpcc_txn_man::run_tpcc_phase2(base_query * query) {
   return rc;
 }
 
-RC tpcc_txn_man::run_tpcc_phase5(base_query * query) {
+RC TPCCTxnManager::run_tpcc_phase5(BaseQuery * query) {
   RC rc = RCOK;
-	tpcc_query * m_query = (tpcc_query *) query;
+	TPCCQuery * m_query = (TPCCQuery *) query;
   assert(CC_ALG == CALVIN);
 
 	uint64_t w_id = m_query->w_id;

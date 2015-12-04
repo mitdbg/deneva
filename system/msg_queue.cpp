@@ -17,7 +17,7 @@
 #include "msg_queue.h"
 #include "mem_alloc.h"
 #include "query.h"
-#include "txn_pool.h"
+#include "pool.h"
 
 void MessageQueue::init() {
   cnt = 0;
@@ -25,7 +25,7 @@ void MessageQueue::init() {
   tail = NULL;
   pthread_mutex_init(&mtx,NULL);
 }
-void MessageQueue::enqueue(base_query * qry,RemReqType type,uint64_t dest) {
+void MessageQueue::enqueue(BaseQuery * qry,RemReqType type,uint64_t dest) {
   msg_entry_t entry;
   msg_pool.get(entry);
   entry->qry = qry;
@@ -39,7 +39,7 @@ void MessageQueue::enqueue(base_query * qry,RemReqType type,uint64_t dest) {
 
 }
 
-uint64_t MessageQueue::dequeue(base_query *& qry, RemReqType & type, uint64_t & dest) {
+uint64_t MessageQueue::dequeue(BaseQuery *& qry, RemReqType & type, uint64_t & dest) {
   msg_entry * entry;
   uint64_t time;
   bool r = mq.try_dequeue(entry);

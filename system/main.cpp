@@ -17,9 +17,7 @@
 #include "global.h"
 #include "ycsb.h"
 #include "tpcc.h"
-#include "test.h"
 #include "thread.h"
-#include "calvin_thread.h"
 #include "manager.h"
 #include "math.h"
 #include "mem_alloc.h"
@@ -45,7 +43,7 @@ void network_test();
 void network_test_recv();
 
 
-thread_t * m_thds;
+Thread * m_thds;
 
 // defined in parser.cpp
 void parser(int argc, char * argv[]);
@@ -79,18 +77,12 @@ int main(int argc, char* argv[])
   fflush(stdout);
 	glob_manager.init();
   printf("Done\n");
-	if (g_cc_alg == DL_DETECT) 
-		dl_detector.init();
-	workload * m_wl;
+	Workload * m_wl;
 	switch (WORKLOAD) {
 		case YCSB :
-			m_wl = new ycsb_wl; break;
+			m_wl = new YCSBWorkload; break;
 		case TPCC :
-			m_wl = new tpcc_wl; break;
-		case TEST :
-			m_wl = new TestWorkload; 
-			((TestWorkload *)m_wl)->tick();
-			break;
+			m_wl = new TPCCWorkload; break;
 		default:
 			assert(false);
 	}
@@ -165,7 +157,7 @@ int main(int argc, char* argv[])
 	pthread_attr_t attr;
 	pthread_attr_init(&attr);
 	cpu_set_t cpus;
-	m_thds = new thread_t[all_thd_cnt];
+	m_thds = new Thread[all_thd_cnt];
 	// query_queue should be the last one to be initialized!!!
 	// because it collects txn latency
 	//if (WORKLOAD != TEST) {
@@ -267,14 +259,10 @@ int main(int argc, char* argv[])
 
 	endtime = get_server_clock();
 	
-	if (WORKLOAD != TEST) {
-		printf("PASS! SimTime = %f\n", (float)(endtime - starttime) / BILLION);
-		if (STATS_ENABLE)
-			stats.print(false);
-    //malloc_stats_print(NULL, NULL, NULL);
-	} else {
-		((TestWorkload *)m_wl)->summarize();
-	}
+  printf("PASS! SimTime = %f\n", (float)(endtime - starttime) / BILLION);
+  if (STATS_ENABLE)
+    stats.print(false);
+  //malloc_stats_print(NULL, NULL, NULL);
   printf("\n");
   fflush(stdout);
   // Free things

@@ -86,7 +86,7 @@ void Transport::read_ifconfig(const char * ifaddr_file) {
 	}
 }
 
-void Transport::init(uint64_t node_id,workload * workload) {
+void Transport::init(uint64_t node_id,Workload * workload) {
 	_wl = workload;
   _node_cnt = g_node_cnt + g_client_node_cnt;
   /*
@@ -324,123 +324,6 @@ void Transport::send_msg(uint64_t sid, uint64_t dest_id, void * sbuf,int size) {
 	INC_STATS(_thd_id,msg_bytes,size);
 }
 
-void Transport::send_msg(uint64_t dest_id, void ** data, int * sizes, int num) {
-    uint64_t starttime = get_sys_clock();
-#if CC_ALG == CALVIN
-	//RemReqType * rtype = (RemReqType *) data[rtype_offset];
-	RemReqType rtype = *((RemReqType *)data[1]);
-	//memcpy(&rtype, data[rtype_offset],sizeof(RemReqType));
-	if (rtype != INIT_DONE) {
-		// Sequencer is last node id
-		uint64_t seq_node_id = _node_cnt - 1;
-		if (g_node_id != seq_node_id)
-			dest_id = seq_node_id;
-	} else {
-		printf("Node %lu sending INIT_DONE to %lu\n",get_node_id(),dest_id);
-	}
-#endif
-
-	// 1: Scrape data pointers for actual data
-	// Profile data for size
-	uint64_t size = HEADER_SIZE;
-	for(int i = 0; i < num; i++) {
-		size += sizes[i];
-	}
-	// For step 3
-	size += sizeof(ts_t);
-
-	void * sbuf = nn_allocmsg(size,0);
-	memset(sbuf,0,size);
-
-	// Copy all data into sbuf
-	uint64_t dsize = HEADER_SIZE;
-	for(int i = 0; i < num; i++) {
-		memcpy(&((char*)sbuf)[dsize],data[i],sizes[i]);
-		dsize += sizes[i];
-	}
-
-
-	// 2: Create message header
-  // dest_id
-	((uint32_t*)sbuf)[0] = dest_id;
-  // return_id
-	((uint32_t*)sbuf)[1] = get_node_id();
-
-	DEBUG("Sending %ld -> %ld: %ld bytes\n",get_node_id(),dest_id,size);
-
-	// 3: Add time of message sending for stats purposes
-	ts_t time = get_sys_clock();
-	memcpy(&((char*)sbuf)[dsize],&time,sizeof(ts_t));
-	dsize += sizeof(ts_t);
-
-	assert(size == dsize);
-
-	int rc;
-	
-	// 4: send message
-  if(*(RemReqType*)data[1] == EXP_DONE) {
-	  rc = s[dest_id].sock.send(&sbuf,NN_MSG,NN_DONTWAIT);
-    return;
-  }
-
-  if(g_network_delay > 0) {
-    RemReqType rem_req_type = *(RemReqType*)data[1];
-    if (rem_req_type != INIT_DONE) { // && rem_req_type != RTXN) {
-       DelayMessage * msg = new DelayMessage(dest_id, sbuf,size);
-       delay_queue->add_entry(msg);
-       INC_STATS(_thd_id,time_tport_send,get_sys_clock() - starttime);
-       return;
-    }
-  }
-
-	rc= s[dest_id].sock.send(&sbuf,NN_MSG,0);
-
-	// Check for a send error
-	if(rc < 0) {
-		printf("send Error: %d %s\n",errno,strerror(errno));
-		assert(false);
-	}
-
-  INC_STATS(_thd_id,time_tport_send,get_sys_clock() - starttime);
-	INC_STATS(_thd_id,msg_sent_cnt,1);
-	INC_STATS(_thd_id,msg_bytes,size);
-}
-
-void Transport::check_delayed_messages() {
-    assert(g_network_delay > 0);
-    DelayMessage * dmsg = NULL;
-    while ((dmsg = (DelayMessage *) delay_queue->get_next_entry()) != NULL) {
-        DEBUG("In check_delayed_messages : sending message on the delay queue\n");
-        send_msg_no_delay(dmsg);
-    }
-}
-
-void Transport::send_msg_no_delay(DelayMessage * msg) {
-    assert(g_network_delay > 0);
-
-    uint64_t starttime = get_sys_clock();
-    // dest_id
-	uint64_t dest_id = ((uint32_t*)msg->_sbuf)[0];
-    // return_id
-	uint64_t return_id = ((uint32_t*)msg->_sbuf)[1];
-    DEBUG("In send_msg_no_delay: dest_id = %lu, return_id = %lu\n",dest_id, return_id);
-    assert (dest_id == msg->_dest_id);
-    assert (return_id == get_node_id());
-
-    int rc;
-	rc= s[msg->_dest_id].sock.send(&msg->_sbuf,NN_MSG,0);
-
-	// Check for a send error
-	if(rc < 0) {
-		printf("send Error: %d %s\n",errno,strerror(errno));
-		assert(false);
-	}
-
-	INC_STATS(_thd_id,msg_sent_cnt,1);
-  INC_STATS(_thd_id,time_tport_send,get_sys_clock() - starttime);
-	INC_STATS(_thd_id,msg_bytes,msg->_size);
-}
-
 // Listens to socket for messages from other nodes
 bool Transport::recv_msg() {
 	int bytes = 0;
@@ -486,31 +369,11 @@ bool Transport::recv_msg() {
 	starttime = get_sys_clock();
 	INC_STATS(_thd_id,msg_rcv_cnt,1);
 
-  /*
-	uint32_t return_id __attribute__ ((unused)); // for debug only
-	uint32_t dest_id;
-#if CC_ALG == CALVIN
-	if (get_node_id() == _node_cnt - 1) {
-		query = (void *) rem_qry_man.unpack_client_query(buf,bytes);
-		return_id = ((base_client_query *)query)->return_id;
-		memcpy(&dest_id,buf,sizeof(uint32_t));
-	} else {
-		query = (void *) rem_qry_man.unpack(buf,bytes);
-		return_id = ((base_query *)query)->return_id;
-		dest_id = ((base_query *)query)->dest_id;
-	}
-#else
-	query = (void *) rem_qry_man.unpack(buf,bytes);
-	return_id = ((base_query *)query)->return_id;
-	dest_id = ((base_query *)query)->dest_id;
-#endif
-*/
-  rem_qry_man.unpack(buf,bytes);
+  rem_qry_man.unmarshall(buf,bytes);
 
 	//DEBUG("Msg delay: %d->%d, %d bytes, %f s\n",return_id,
   //          dest_id,bytes,((float)(time2-time))/BILLION);
 	nn::freemsg(buf);	
-  //assert(dest_id == get_node_id());
 
 	INC_STATS(_thd_id,time_unpack,get_sys_clock()-starttime);
   return true;
@@ -552,44 +415,5 @@ uint64_t Transport::simple_recv_msg() {
 
 	nn::freemsg(buf);	
 	return bytes;
-}
-
-void * DelayQueue::get_next_entry() {
-  assert (g_network_delay > 0);
-  q_entry_t next_entry = NULL;
-  DelayMessage * data = NULL;
-
-  pthread_mutex_lock(&mtx);
-
-  assert( ( (cnt == 0) && head == NULL && tail == NULL) || ( (cnt > 0) && head != NULL && tail !=NULL) );
-
-  if(cnt > 0) {
-    next_entry = head;
-	data = (DelayMessage *) next_entry->entry;
-	assert(data != NULL);
-    uint64_t nowtime = get_sys_clock();
-
-    DEBUG("DelayQueue: current delay time for head query: %lu\n",nowtime - data->_start_ts);
-    // Check whether delay ns have passed
-    if (nowtime - data->_start_ts < g_network_delay) {
-        pthread_mutex_unlock(&mtx);
-        return NULL;
-    }
-    head = head->next;
-	free(next_entry);
-    cnt--;
-
-    if(cnt == 0) {
-      tail = NULL;
-    }
-  }
-
-  if(cnt == 0 && last_add_time != 0) {
-    //INC_STATS(0,qq_full,nowtime - last_add_time);
-    last_add_time = 0;
-  }
-
-  pthread_mutex_unlock(&mtx);
-  return data;
 }
 

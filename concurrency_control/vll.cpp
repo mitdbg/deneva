@@ -37,14 +37,14 @@ VLLMan::init() {
 }
 
 void
-VLLMan::vllMainLoop(txn_man * txn, base_query * query) {
+VLLMan::vllMainLoop(TxnManager * txn, BaseQuery * query) {
 	
   /*
-	ycsb_query * m_query = (ycsb_query *) query;
+	YCSBQuery * m_query = (YCSBQuery *) query;
 	// access the indexes. This is not in the critical section
 	for (uint32_t rid = 0; rid < m_query->request_cnt; rid ++) {
 		ycsb_request * req = &m_query->requests[rid];
-		ycsb_wl * wl = (ycsb_wl *) txn->get_wl();
+		YCSBWorkload * wl = (YCSBWorkload *) txn->get_wl();
 		int part_id = wl->key_to_part( req->key );
 		INDEX * index = wl->the_index;
 		itemid_t * item;
@@ -58,7 +58,7 @@ VLLMan::vllMainLoop(txn_man * txn, base_query * query) {
 
 	bool done = false;
 	while (!done) {
-		txn_man * front_txn = NULL;
+		TxnManager * front_txn = NULL;
 uint64_t t5 = get_sys_clock();
 		//pthread_mutex_lock(&_mutex);
 uint64_t tt5 = get_sys_clock() - t5;
@@ -94,7 +94,7 @@ void
 VLLMan::restartQFront() {
   pthread_mutex_lock(&_mutex);
   TxnQEntry * front = _txn_queue;
-  txn_man * front_txn = NULL;
+  TxnManager * front_txn = NULL;
 	if (front)
 		front_txn = front->txn;
 	if (front_txn && front_txn->vll_txn_type == VLL_Blocked) {
@@ -105,10 +105,10 @@ VLLMan::restartQFront() {
     front_txn->rc = RCOK;
     //if(WORKLOAD != YCSB && front_txn->get_txn_id() % g_node_cnt != g_node_id) {
     if(front_txn->get_txn_id() % g_node_cnt != g_node_id) {
-      //base_query * qry = txn_table.get_qry(g_node_id,front_txn->get_txn_id());
+      //BaseQuery * qry = txn_table.get_qry(g_node_id,front_txn->get_txn_id());
   		//rem_qry_man.ack_response(qry);
   		//rem_qry_man.ack_response(RCOK,front_txn);
-      base_query * qry = front_txn->get_query();
+      BaseQuery * qry = front_txn->get_query();
       msg_queue.enqueue(qry,RACK,qry->return_id);
     }
     else {
@@ -120,7 +120,7 @@ VLLMan::restartQFront() {
 }
 
 RC
-VLLMan::beginTxn(txn_man * txn, base_query * query) {
+VLLMan::beginTxn(TxnManager * txn, BaseQuery * query) {
 
   txn->read_keys(query);
 #if MODE != NORMAL_MODE
@@ -162,10 +162,10 @@ VLLMan::beginTxn(txn_man * txn, base_query * query) {
       txn->rc = Abort;
       query->rc = Abort;
 #if WORKLOAD == TPCC
-      tpcc_query * m_query = (tpcc_query*) query;
+      TPCCQuery * m_query = (TPCCQuery*) query;
       m_query->txn_rtype = TPCC_FIN;
 #elif WORKLOAD == YCSB
-      ycsb_query * m_query = (ycsb_query*) query;
+      YCSBQuery * m_query = (YCSBQuery*) query;
       m_query->txn_rtype = YCSB_FIN;
 #endif
       goto final;
@@ -234,7 +234,7 @@ final:
 }
 
 void 
-VLLMan::finishTxn(txn_man * txn) {
+VLLMan::finishTxn(TxnManager * txn) {
 	pthread_mutex_lock(&_mutex);
   DEBUG("finishTxn %ld\n",txn->get_txn_id());
 	TxnQEntry * entry = txn->vll_entry;

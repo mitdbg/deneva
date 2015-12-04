@@ -20,11 +20,11 @@
 #include "global.h"
 #include "helper.h"
 
-class workload;
-class ycsb_query;
-class tpcc_query;
+class Workload;
+class YCSBQuery;
+class TPCCQuery;
 
-class base_client_query {
+class BaseClientQuery {
 public:
   uint64_t pid;
   uint64_t return_id;
@@ -35,16 +35,16 @@ public:
   // CALVIN
   uint64_t batch_id;
 	txnid_t txn_id;
-	//virtual void client_query(base_client_query * query, uint64_t dest_id,
+	//virtual void client_query(BaseClientQuery * query, uint64_t dest_id,
 //			uint64_t batch_num, txnid_t txn_id) = 0;
 };
 
-class base_query : public base_client_query {
+class BaseQuery : public BaseClientQuery {
 public:
-	virtual void init(uint64_t thd_id, workload * h_wl) = 0;
+	virtual void init(uint64_t thd_id, Workload * h_wl) = 0;
   virtual void reset() = 0;
-  virtual base_query * merge(base_query * query) = 0;
-  virtual void deep_copy(base_query * qry) = 0;
+  virtual BaseQuery * merge(BaseQuery * query) = 0;
+  virtual void deep_copy(BaseQuery * qry) = 0;
   virtual bool readonly() = 0;
   void base_reset();
 	uint64_t waiting_time;
@@ -107,9 +107,9 @@ public:
   void clear();
   void update_rc(RC rc);
   void set_txn_id(uint64_t _txn_id); 
-  void remote_prepare(base_query * query, int dest_id);
-  void remote_finish(base_query * query, int dest_id);
-  void unpack_finish(base_query * query, void *d);
+  void remote_prepare(BaseQuery * query, int dest_id);
+  void remote_finish(BaseQuery * query, int dest_id);
+  void unpack_finish(BaseQuery * query, void *d);
   void local_rack_query();
   void local_rinit_query(uint64_t part_id);
 };
@@ -117,13 +117,13 @@ public:
 // All the queries for a particular thread.
 class Query_thd {
 public:
-	void init(workload * h_wl, int thread_id);
-	base_query * get_next_query(); 
+	void init(Workload * h_wl, int thread_id);
+	BaseQuery * get_next_query(); 
 	int q_idx;
 #if WORKLOAD == YCSB
-	ycsb_query * queries;
+	YCSBQuery * queries;
 #else 
-	tpcc_query * queries;
+	TPCCQuery * queries;
 #endif
 	char pad[CL_SIZE - sizeof(void *) - sizeof(int)];
 };
@@ -133,13 +133,13 @@ public:
 // queue model might be implemented.
 class Query_queue {
 public:
-	void init(workload * h_wl);
+	void init(Workload * h_wl);
 	void init(int thread_id);
-	base_query * get_next_query(uint64_t thd_id); 
+	BaseQuery * get_next_query(uint64_t thd_id); 
 	
 private:
 	Query_thd ** all_queries;
-	workload * _wl;
+	Workload * _wl;
 };
 
 #endif

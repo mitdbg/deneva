@@ -37,7 +37,7 @@ void SpecEx::clear() {
   history = NULL;
 }
 
-RC SpecEx::validate(txn_man * txn) {
+RC SpecEx::validate(TxnManager * txn) {
 	RC rc;
 	bool valid = true;
 	// SpecEx is centralized. No need to do per partition malloc.
@@ -74,7 +74,7 @@ final:
 	return rc;
 }
 
-RC SpecEx::get_rw_set(txn_man * txn, set_ent * &rset, set_ent *& wset) {
+RC SpecEx::get_rw_set(TxnManager * txn, set_ent * &rset, set_ent *& wset) {
 	wset = (set_ent*) mem_allocator.alloc(sizeof(set_ent), 0);
 	rset = (set_ent*) mem_allocator.alloc(sizeof(set_ent), 0);
 	wset->set_size = txn->wr_cnt;

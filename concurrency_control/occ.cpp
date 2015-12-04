@@ -39,7 +39,7 @@ void OptCC::init() {
 	lock_all = false;
 }
 
-RC OptCC::validate(txn_man * txn) {
+RC OptCC::validate(TxnManager * txn) {
 	RC rc;
   uint64_t starttime = get_sys_clock();
 #if PER_ROW_VALID
@@ -51,7 +51,7 @@ RC OptCC::validate(txn_man * txn) {
 	return rc;
 }
 
-void OptCC::finish(RC rc, txn_man * txn) {
+void OptCC::finish(RC rc, TxnManager * txn) {
 #if PER_ROW_VALID
   per_row_finish(rc,txn);
 #else
@@ -60,7 +60,7 @@ void OptCC::finish(RC rc, txn_man * txn) {
 }
 
 RC 
-OptCC::per_row_validate(txn_man * txn) {
+OptCC::per_row_validate(TxnManager * txn) {
 	RC rc = RCOK;
 #if CC_ALG == OCC
 	// sort all rows accessed in primary key order.
@@ -116,7 +116,7 @@ OptCC::per_row_validate(txn_man * txn) {
 	return rc;
 }
 
-RC OptCC::central_validate(txn_man * txn) {
+RC OptCC::central_validate(TxnManager * txn) {
 	RC rc;
   uint64_t starttime = get_sys_clock();
   uint64_t total_starttime = starttime;
@@ -231,14 +231,14 @@ final:
 	return rc;
 }
 
-void OptCC::per_row_finish(RC rc, txn_man * txn) {
+void OptCC::per_row_finish(RC rc, TxnManager * txn) {
   if(rc == RCOK) {
 		// advance the global timestamp and get the end_ts
 		txn->end_ts = glob_manager.get_ts( txn->get_thd_id() );
   }
 }
 
-void OptCC::central_finish(RC rc, txn_man * txn) {
+void OptCC::central_finish(RC rc, TxnManager * txn) {
 	set_ent * wset;
 	set_ent * rset;
 	get_rw_set(txn, rset, wset);
@@ -287,7 +287,7 @@ void OptCC::central_finish(RC rc, txn_man * txn) {
 	}
 }
 
-RC OptCC::get_rw_set(txn_man * txn, set_ent * &rset, set_ent *& wset) {
+RC OptCC::get_rw_set(TxnManager * txn, set_ent * &rset, set_ent *& wset) {
 	wset = (set_ent*) mem_allocator.alloc(sizeof(set_ent), 0);
 	rset = (set_ent*) mem_allocator.alloc(sizeof(set_ent), 0);
 	wset->set_size = txn->wr_cnt;

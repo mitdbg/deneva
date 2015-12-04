@@ -19,13 +19,13 @@
 
 class table_t;
 class Catalog;
-class txn_man;
+class TxnManager;
 struct TsReqEntry;
 
 class Row_specex {
 public:
 	void 				init(row_t * row);
-	RC 					access(txn_man * txn, TsType type);
+	RC 					access(TxnManager * txn, TsType type);
 	void 				latch();
 	// ts is the start_ts of the validating txn 
 	bool				validate(uint64_t ts);

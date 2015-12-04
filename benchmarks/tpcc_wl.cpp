@@ -29,8 +29,8 @@
 #include "mem_alloc.h"
 #include "tpcc_const.h"
 
-RC tpcc_wl::init() {
-	workload::init();
+RC TPCCWorkload::init() {
+	Workload::init();
 	//char * cpath = getenv("GRAPHITE_HOME");
 	char * cpath = getenv("SCHEMA_PATH");
 	string path;	
@@ -63,8 +63,8 @@ RC tpcc_wl::init() {
 	return RCOK;
 }
 
-RC tpcc_wl::init_schema(const char * schema_file) {
-	workload::init_schema(schema_file);
+RC TPCCWorkload::init_schema(const char * schema_file) {
+	Workload::init_schema(schema_file);
 	t_warehouse = tables["WAREHOUSE"];
 	t_district = tables["DISTRICT"];
 	t_customer = tables["CUSTOMER"];
@@ -86,7 +86,7 @@ RC tpcc_wl::init_schema(const char * schema_file) {
 	return RCOK;
 }
 
-RC tpcc_wl::init_table() {
+RC TPCCWorkload::init_table() {
 	num_wh = g_num_wh;
 
 /******** fill in data ************/
@@ -207,15 +207,15 @@ RC tpcc_wl::init_table() {
 	return RCOK;
 }
 
-RC tpcc_wl::get_txn_man(txn_man *& txn_manager) {
-	txn_manager = (tpcc_txn_man *)
-		mem_allocator.alloc( sizeof(tpcc_txn_man),0);
-	new(txn_manager) tpcc_txn_man();
+RC TPCCWorkload::get_txn_man(TxnManager *& txn_manager) {
+	txn_manager = (TPCCTxnManager *)
+		mem_allocator.alloc( sizeof(TPCCTxnManager),0);
+	new(txn_manager) TPCCTxnManager();
 	txn_manager->init( this);
 	return RCOK;
 }
 
-void tpcc_wl::init_tab_item(int id) {
+void TPCCWorkload::init_tab_item(int id) {
 	if (WL_VERB)
 		printf("[init] loading item table\n");
 	for (UInt32 i = id+1; i <= g_max_items; i+=g_init_parallelism) {
@@ -240,7 +240,7 @@ void tpcc_wl::init_tab_item(int id) {
 	}
 }
 
-void tpcc_wl::init_tab_wh() {
+void TPCCWorkload::init_tab_wh() {
 	if (WL_VERB)
 		printf("[init] workload table.\n");
 	for (UInt32 wid = 1; wid <= g_num_wh; wid ++) {
@@ -278,7 +278,7 @@ void tpcc_wl::init_tab_wh() {
 	return;
 }
 
-void tpcc_wl::init_tab_dist(uint64_t wid) {
+void TPCCWorkload::init_tab_dist(uint64_t wid) {
 	for (uint64_t did = 1; did <= g_dist_per_wh; did++) {
 		row_t * row;
 		uint64_t row_id;
@@ -313,7 +313,7 @@ void tpcc_wl::init_tab_dist(uint64_t wid) {
 	}
 }
 
-void tpcc_wl::init_tab_stock(int id, uint64_t wid) {
+void TPCCWorkload::init_tab_stock(int id, uint64_t wid) {
 	
 	for (UInt32 sid = id + 1; sid <= g_max_items; sid+=g_init_parallelism) {
 		row_t * row;
@@ -355,7 +355,7 @@ void tpcc_wl::init_tab_stock(int id, uint64_t wid) {
 	}
 }
 
-void tpcc_wl::init_tab_cust(int id, uint64_t did, uint64_t wid) {
+void TPCCWorkload::init_tab_cust(int id, uint64_t did, uint64_t wid) {
 	assert(g_cust_per_dist >= 1000);
 	for (UInt32 cid = id+1; cid <= g_cust_per_dist; cid += g_init_parallelism) {
 		row_t * row;
@@ -425,7 +425,7 @@ void tpcc_wl::init_tab_cust(int id, uint64_t did, uint64_t wid) {
 	}
 }
 
-void tpcc_wl::init_tab_hist(uint64_t c_id, uint64_t d_id, uint64_t w_id) {
+void TPCCWorkload::init_tab_hist(uint64_t c_id, uint64_t d_id, uint64_t w_id) {
 	row_t * row;
 	uint64_t row_id;
 	t_history->get_new_row(row, 0, row_id);
@@ -445,7 +445,7 @@ void tpcc_wl::init_tab_hist(uint64_t c_id, uint64_t d_id, uint64_t w_id) {
 
 }
 
-void tpcc_wl::init_tab_order(int id, uint64_t did, uint64_t wid) {
+void TPCCWorkload::init_tab_order(int id, uint64_t did, uint64_t wid) {
 	init_permutation(); /* initialize permutation of customer numbers */
 	for (UInt32 oid = id+1; oid <= g_cust_per_dist; oid+=g_init_parallelism) {
 		row_t * row;
@@ -519,7 +519,7 @@ void tpcc_wl::init_tab_order(int id, uint64_t did, uint64_t wid) {
 | InitPermutation
 +==================================================================*/
 
-void tpcc_wl::init_permutation() {
+void TPCCWorkload::init_permutation() {
 	UInt32 i;
 	perm_count = 0;
 	perm_c_id = new uint64_t[g_cust_per_dist];
@@ -544,7 +544,7 @@ void tpcc_wl::init_permutation() {
 | GetPermutation
 +==================================================================*/
 
-uint64_t tpcc_wl::get_permutation() {
+uint64_t TPCCWorkload::get_permutation() {
 	if(perm_count >= g_cust_per_dist) {
 		// wrapped around, restart at 0
 		perm_count = 0;
@@ -552,23 +552,23 @@ uint64_t tpcc_wl::get_permutation() {
 	return (uint64_t) perm_c_id[perm_count++];
 }
 
-void * tpcc_wl::threadInitItem(void * This) {
-  tpcc_wl * wl = ((thr_args*) This)->wl;
+void * TPCCWorkload::threadInitItem(void * This) {
+  TPCCWorkload * wl = ((thr_args*) This)->wl;
   int id = ((thr_args*) This)->id;
 	wl->init_tab_item(id);
 	printf("ITEM Done\n");
 	return NULL;
 }
 
-void * tpcc_wl::threadInitWh(void * This) {
-  tpcc_wl * wl = (tpcc_wl*) This;
+void * TPCCWorkload::threadInitWh(void * This) {
+  TPCCWorkload * wl = (TPCCWorkload*) This;
 	wl->init_tab_wh();
 	printf("WAREHOUSE Done\n");
 	return NULL;
 }
 
-void * tpcc_wl::threadInitDist(void * This) {
-  tpcc_wl * wl = (tpcc_wl*) This;
+void * TPCCWorkload::threadInitDist(void * This) {
+  TPCCWorkload * wl = (TPCCWorkload*) This;
 	for (uint64_t wid = 1; wid <= g_num_wh; wid ++) {
     if(GET_NODE_ID(wh_to_part(wid)) != g_node_id) 
       continue;
@@ -578,8 +578,8 @@ void * tpcc_wl::threadInitDist(void * This) {
 	return NULL;
 }
 
-void * tpcc_wl::threadInitStock(void * This) {
-  tpcc_wl * wl = ((thr_args*) This)->wl;
+void * TPCCWorkload::threadInitStock(void * This) {
+  TPCCWorkload * wl = ((thr_args*) This)->wl;
   int id = ((thr_args*) This)->id;
 	for (uint64_t wid = 1; wid <= g_num_wh; wid ++) {
     if(GET_NODE_ID(wh_to_part(wid)) != g_node_id) 
@@ -590,8 +590,8 @@ void * tpcc_wl::threadInitStock(void * This) {
 	return NULL;
 }
 
-void * tpcc_wl::threadInitCust(void * This) {
-  tpcc_wl * wl = ((thr_args*) This)->wl;
+void * TPCCWorkload::threadInitCust(void * This) {
+  TPCCWorkload * wl = ((thr_args*) This)->wl;
   int id = ((thr_args*) This)->id;
 	for (uint64_t wid = 1; wid <= g_num_wh; wid ++) {
     if(GET_NODE_ID(wh_to_part(wid)) != g_node_id) 
@@ -604,8 +604,8 @@ void * tpcc_wl::threadInitCust(void * This) {
 	return NULL;
 }
 	
-void * tpcc_wl::threadInitHist(void * This) {
-  tpcc_wl * wl = (tpcc_wl*) This;
+void * TPCCWorkload::threadInitHist(void * This) {
+  TPCCWorkload * wl = (TPCCWorkload*) This;
 	for (uint64_t wid = 1; wid <= g_num_wh; wid ++) {
     if(GET_NODE_ID(wh_to_part(wid)) != g_node_id) 
       continue;
@@ -617,8 +617,8 @@ void * tpcc_wl::threadInitHist(void * This) {
 	return NULL;
 }
 
-void * tpcc_wl::threadInitOrder(void * This) {
-  tpcc_wl * wl = ((thr_args*) This)->wl;
+void * TPCCWorkload::threadInitOrder(void * This) {
+  TPCCWorkload * wl = ((thr_args*) This)->wl;
   int id = ((thr_args*) This)->id;
 	for (uint64_t wid = 1; wid <= g_num_wh; wid ++) {
     if(GET_NODE_ID(wh_to_part(wid)) != g_node_id) 

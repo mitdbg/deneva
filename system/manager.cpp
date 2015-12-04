@@ -26,7 +26,7 @@ void Manager::init() {
 	last_min_ts_time = 0;
 	min_ts = 0; 
 	all_ts = (ts_t *) malloc(sizeof(ts_t) * (g_thread_cnt * g_node_cnt));
-	_all_txns = new txn_man * [g_thread_cnt + g_rem_thread_cnt];
+	_all_txns = new TxnManager * [g_thread_cnt + g_rem_thread_cnt];
 	for (UInt32 i = 0; i < g_thread_cnt + g_rem_thread_cnt; i++) {
 		//all_ts[i] = 0;
 		//all_ts[i] = UINT64_MAX;
@@ -106,7 +106,7 @@ void Manager::add_ts(uint64_t thd_id, ts_t ts) {
   //add_ts(g_node_id,thd_id,ts);
 }
 
-void Manager::set_txn_man(txn_man * txn) {
+void Manager::set_txn_man(TxnManager * txn) {
 	int thd_id = txn->get_thd_id();
 	_all_txns[thd_id] = txn;
 }

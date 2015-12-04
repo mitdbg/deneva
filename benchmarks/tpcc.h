@@ -25,14 +25,14 @@
 
 class table_t;
 class INDEX;
-class tpcc_query;
+class TPCCQuery;
 
-class tpcc_wl : public workload {
+class TPCCWorkload : public Workload {
 public:
 	RC init();
 	RC init_table();
 	RC init_schema(const char * schema_file);
-	RC get_txn_man(txn_man *& txn_manager);
+	RC get_txn_man(TxnManager *& txn_manager);
 	table_t * 		t_warehouse;
 	table_t * 		t_district;
 	table_t * 		t_customer;
@@ -87,40 +87,40 @@ private:
 };
 
   struct thr_args{
-    tpcc_wl * wl;
+    TPCCWorkload * wl;
     UInt32 id;
     UInt32 tot;
   };
 
-class tpcc_txn_man : public txn_man
+class TPCCTxnManager : public TxnManager
 {
 public:
-	void init( workload * h_wl);
-  bool conflict(base_query * query1,base_query * query2);
-  void read_keys(base_query * query){ assert(false);}; 
-  RC acquire_locks(base_query * query); 
-	RC run_txn(base_query * query);
-	RC run_calvin_txn(base_query * query); 
-	RC run_rem_txn(base_query * query);
-  RC run_tpcc_phase2(base_query * query); 
-  RC run_tpcc_phase5(base_query * query); 
-	void rem_txn_rsp(base_query * rtn_query,base_query * loc_query); 
-	void rem_txn_rsp(base_query * query); 
+	void init( Workload * h_wl);
+  bool conflict(BaseQuery * query1,BaseQuery * query2);
+  void read_keys(BaseQuery * query){ assert(false);}; 
+  RC acquire_locks(BaseQuery * query); 
+	RC run_txn(BaseQuery * query);
+	RC run_calvin_txn(BaseQuery * query); 
+	RC run_rem_txn(BaseQuery * query);
+  RC run_tpcc_phase2(BaseQuery * query); 
+  RC run_tpcc_phase5(BaseQuery * query); 
+	void rem_txn_rsp(BaseQuery * rtn_query,BaseQuery * loc_query); 
+	void rem_txn_rsp(BaseQuery * query); 
 	//void pack(r_query * query, void ** data, int * sizes, int * num);
 	//void unpack(r_query * query, char * data);
 private:
-	tpcc_wl * _wl;
+	TPCCWorkload * _wl;
 	volatile RC _rc;
-	tpcc_query * _qry;
+	TPCCQuery * _qry;
   row_t * row;
   bool rem_done;
   bool fin;
 
-void merge_txn_rsp(base_query * query1, base_query * query2);
-//RC run_txn(base_query * query, bool rem);
-void rtn_tpcc_state(base_query * query);
-void next_tpcc_state(base_query * query);
-RC run_txn_state(base_query * query);
+void merge_txn_rsp(BaseQuery * query1, BaseQuery * query2);
+//RC run_txn(BaseQuery * query, bool rem);
+void rtn_tpcc_state(BaseQuery * query);
+void next_tpcc_state(BaseQuery * query);
+RC run_txn_state(BaseQuery * query);
 
 	RC run_payment_0(uint64_t w_id, uint64_t d_id, uint64_t d_w_id, double h_amount, row_t *& r_wh_local);
 	RC run_payment_1(uint64_t w_id, uint64_t d_id, uint64_t d_w_id, double h_amount, row_t * r_wh_local);
@@ -138,9 +138,9 @@ RC run_txn_state(base_query * query);
 	RC new_order_7(uint64_t ol_i_id, row_t * r_item_local);
 	RC new_order_8(uint64_t w_id,uint64_t  d_id,bool remote, uint64_t ol_i_id, uint64_t ol_supply_w_id, uint64_t ol_quantity,uint64_t  ol_number,uint64_t  o_id, row_t *& r_stock_local);
 	RC new_order_9(uint64_t w_id,uint64_t  d_id,bool remote, uint64_t ol_i_id, uint64_t ol_supply_w_id, uint64_t ol_quantity,uint64_t  ol_number,uint64_t ol_amount, uint64_t  o_id, row_t * r_stock_local);
-	RC run_order_status(tpcc_query * query);
-	RC run_delivery(tpcc_query * query);
-	RC run_stock_level(tpcc_query * query);
+	RC run_order_status(TPCCQuery * query);
+	RC run_delivery(TPCCQuery * query);
+	RC run_stock_level(TPCCQuery * query);
 };
 
 #endif

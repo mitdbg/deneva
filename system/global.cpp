@@ -17,7 +17,6 @@
 #include "global.h"
 #include "mem_alloc.h"
 #include "stats.h"
-#include "dl_detect.h"
 #include "manager.h"
 #include "query.h"
 #include "client_query.h"
@@ -26,17 +25,16 @@
 #include "specex.h"
 #include "vll.h"
 #include "transport.h"
-#include "query_work_queue.h"
+#include "work_queue.h"
 #include "msg_queue.h"
 #include "remote_query.h"
-#include "txn_pool.h"
+#include "pool.h"
 #include "txn_table.h"
 #include "client_txn.h"
 #include "sequencer.h"
 
 mem_alloc mem_allocator;
 Stats stats;
-DL_detect dl_detector;
 Manager glob_manager;
 Query_queue query_queue;
 Client_query_queue client_query_queue;

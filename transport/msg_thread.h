@@ -65,24 +65,24 @@ class MessageThread {
 public:
   void init(uint64_t thd_id);
   void run();
-  void copy_to_buffer(mbuf * sbuf, RemReqType type, base_query * qry); 
-  uint64_t get_msg_size(RemReqType type, base_query * qry); 
-  void rack( mbuf * sbuf,base_query * qry);
-  void rprepare( mbuf * sbuf,base_query * qry);
-  void rfin( mbuf * sbuf,base_query * qry);
-  void cl_rsp(mbuf * sbuf, base_query *qry);
-  void rinit(mbuf * sbuf,base_query * qry);
-  void rqry( mbuf * sbuf, base_query *qry);
-  void rfwd( mbuf * sbuf, base_query *qry);
-  void rdone( mbuf * sbuf, base_query *qry);
-  void rqry_rsp( mbuf * sbuf, base_query *qry);
-  void rtxn(mbuf * sbuf, base_query *qry);
-  void rtxn_seq(mbuf * sbuf, base_query *qry);
+  void copy_to_buffer(mbuf * sbuf, RemReqType type, BaseQuery * qry); 
+  uint64_t get_msg_size(RemReqType type, BaseQuery * qry); 
+  void rack( mbuf * sbuf,BaseQuery * qry);
+  void rprepare( mbuf * sbuf,BaseQuery * qry);
+  void rfin( mbuf * sbuf,BaseQuery * qry);
+  void cl_rsp(mbuf * sbuf, BaseQuery *qry);
+  void rinit(mbuf * sbuf,BaseQuery * qry);
+  void rqry( mbuf * sbuf, BaseQuery *qry);
+  void rfwd( mbuf * sbuf, BaseQuery *qry);
+  void rdone( mbuf * sbuf, BaseQuery *qry);
+  void rqry_rsp( mbuf * sbuf, BaseQuery *qry);
+  void rtxn(mbuf * sbuf, BaseQuery *qry);
+  void rtxn_seq(mbuf * sbuf, BaseQuery *qry);
 private:
   mbuf ** buffer;
   uint64_t buffer_cnt;
   uint64_t _thd_id;
-  base_query * head_qry;
+  BaseQuery * head_qry;
   RemReqType head_type;
   uint64_t head_dest;
   uint64_t head_start;

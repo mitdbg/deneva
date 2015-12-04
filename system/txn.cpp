@@ -33,9 +33,9 @@
 #include "plock.h"
 #include "vll.h"
 #include "msg_queue.h"
-#include "txn_pool.h"
+#include "pool.h"
 
-void txn_man::init(workload * h_wl) {
+void TxnManager::init(Workload * h_wl) {
 	this->h_wl = h_wl;
 	pthread_mutex_init(&txn_lock, NULL);
 	lock_ready = false;
@@ -83,7 +83,7 @@ void txn_man::init(workload * h_wl) {
   active_nodes = (bool*)mem_allocator.alloc(sizeof(bool)*g_node_cnt,0);
 }
 
-void txn_man::reset() {
+void TxnManager::reset() {
   phase = 1;
   phase_rsp = false;
 	lock_ready = false;
@@ -126,7 +126,7 @@ void txn_man::reset() {
 
 }
 
-void txn_man::clear() {
+void TxnManager::clear() {
   cc_wait_cnt = 0;
   cc_wait_time = 0;
   cc_hold_time = 0;
@@ -142,7 +142,7 @@ void txn_man::clear() {
   phase = 1;
 }
 
-void txn_man::update_stats() {
+void TxnManager::update_stats() {
   INC_STATS(get_thd_id(), cc_wait_cnt, cc_wait_cnt);
   INC_STATS(get_thd_id(), cc_wait_time, cc_wait_time);
   INC_STATS(get_thd_id(), cc_hold_time, cc_hold_time);
@@ -200,69 +200,69 @@ void txn_man::update_stats() {
 
 }
 
-void txn_man::register_thd(thread_t * h_thd) {
+void TxnManager::register_thd(Thread * h_thd) {
   this->h_thd = h_thd;
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
   this->active_part = GET_PART_ID_FROM_IDX(get_thd_id());
 #endif
 }
 
-void txn_man::set_txn_id(txnid_t txn_id) {
+void TxnManager::set_txn_id(txnid_t txn_id) {
 	this->txn_id = txn_id;
 }
 
-txnid_t txn_man::get_txn_id() {
+txnid_t TxnManager::get_txn_id() {
 	return this->txn_id;
 }
 
-workload * txn_man::get_wl() {
+Workload * TxnManager::get_wl() {
 	return h_wl;
 }
 
-uint64_t txn_man::get_thd_id() {
+uint64_t TxnManager::get_thd_id() {
 	return h_thd->get_thd_id();
 }
 
-base_query * txn_man::get_query() {
+BaseQuery * TxnManager::get_query() {
 	return myquery;
 }
-void txn_man::set_query(base_query * qry) {
+void TxnManager::set_query(BaseQuery * qry) {
 	myquery = qry;
 }
 
-uint64_t txn_man::get_node_id() {
+uint64_t TxnManager::get_node_id() {
 	return h_thd->get_node_id();
 }
 
-void txn_man::set_pid(uint64_t pid) {
+void TxnManager::set_pid(uint64_t pid) {
   this->pid = pid;
 }
 
-uint64_t txn_man::get_pid() {
+uint64_t TxnManager::get_pid() {
   return pid;
 }
 
-void txn_man::set_ts(ts_t timestamp) {
+void TxnManager::set_ts(ts_t timestamp) {
 	this->timestamp = timestamp;
 }
 
-ts_t txn_man::get_ts() {
+ts_t TxnManager::get_ts() {
 	return this->timestamp;
 }
 
-void txn_man::set_start_ts(uint64_t start_ts) {
+void TxnManager::set_start_ts(uint64_t start_ts) {
 	this->start_ts = start_ts;
 }
 
-ts_t txn_man::get_start_ts() {
+ts_t TxnManager::get_start_ts() {
 	return this->start_ts;
 }
 
-uint64_t txn_man::get_rsp_cnt() {
+uint64_t TxnManager::get_rsp_cnt() {
   return this->rsp_cnt;
 }
 
-uint64_t txn_man::incr_lr() {
+uint64_t TxnManager::incr_lr() {
   //ATOM_ADD(this->rsp_cnt,i);
   uint64_t result;
   sem_wait(&rsp_mutex);
@@ -271,7 +271,7 @@ uint64_t txn_man::incr_lr() {
   return result;
 }
 
-uint64_t txn_man::decr_lr() {
+uint64_t TxnManager::decr_lr() {
   //ATOM_SUB(this->rsp_cnt,i);
   uint64_t result;
   sem_wait(&rsp_mutex);
@@ -279,7 +279,7 @@ uint64_t txn_man::decr_lr() {
   sem_post(&rsp_mutex);
   return result;
 }
-uint64_t txn_man::incr_rsp(int i) {
+uint64_t TxnManager::incr_rsp(int i) {
   //ATOM_ADD(this->rsp_cnt,i);
   uint64_t result;
   sem_wait(&rsp_mutex);
@@ -288,7 +288,7 @@ uint64_t txn_man::incr_rsp(int i) {
   return result;
 }
 
-uint64_t txn_man::decr_rsp(int i) {
+uint64_t TxnManager::decr_rsp(int i) {
   //ATOM_SUB(this->rsp_cnt,i);
   uint64_t result;
   sem_wait(&rsp_mutex);
@@ -297,10 +297,10 @@ uint64_t txn_man::decr_rsp(int i) {
   return result;
 }
 
-uint64_t txn_man::get_rsp2_cnt() {
+uint64_t TxnManager::get_rsp2_cnt() {
   return this->rsp2_cnt;
 }
-uint64_t txn_man::incr_rsp2(int i) {
+uint64_t TxnManager::incr_rsp2(int i) {
   //ATOM_ADD(this->rsp_cnt,i);
   uint64_t result;
   sem_wait(&rsp2_mutex);
@@ -309,7 +309,7 @@ uint64_t txn_man::incr_rsp2(int i) {
   return result;
 }
 
-uint64_t txn_man::decr_rsp2(int i) {
+uint64_t TxnManager::decr_rsp2(int i) {
   //ATOM_SUB(this->rsp_cnt,i);
   uint64_t result;
   sem_wait(&rsp2_mutex);
@@ -317,7 +317,7 @@ uint64_t txn_man::decr_rsp2(int i) {
   sem_post(&rsp2_mutex);
   return result;
 }
-void txn_man::cleanup(RC rc) {
+void TxnManager::cleanup(RC rc) {
 #if CC_ALG == OCC && MODE == NORMAL_MODE
   occ_man.finish(rc,this);
 #endif
@@ -354,7 +354,7 @@ void txn_man::cleanup(RC rc) {
 		if (type == WR) {
       //printf("free 10 %ld\n",get_txn_id());
 			accesses[rid]->orig_data->free_row();
-      DEBUG_M("txn_man::cleanup WR free\n");
+      DEBUG_M("TxnManager::cleanup WR free\n");
 			mem_allocator.free(accesses[rid]->orig_data, sizeof(row_t));
 		}
 #endif
@@ -374,11 +374,11 @@ void txn_man::cleanup(RC rc) {
 			row_t * row = insert_rows[i];
 			assert(g_part_alloc == false);
 #if CC_ALG != HSTORE && CC_ALG != HSTORE_SPEC && CC_ALG != OCC && MODE == NORMAL_MODE
-      DEBUG_M("txn_man::cleanup row->manager free\n");
+      DEBUG_M("TxnManager::cleanup row->manager free\n");
 			mem_allocator.free(row->manager, 0);
 #endif
 			row->free_row();
-      DEBUG_M("txn_man::cleanup row free\n");
+      DEBUG_M("TxnManager::cleanup row free\n");
 			mem_allocator.free(row, sizeof(row));
 		}
     uint64_t t = get_sys_clock() - starttime;
@@ -414,7 +414,7 @@ void txn_man::cleanup(RC rc) {
   INC_STATS(get_thd_id(),thd_prof_txn2,get_sys_clock() - thd_prof_start);
 }
 
-RC txn_man::get_lock(row_t * row, access_t type) {
+RC TxnManager::get_lock(row_t * row, access_t type) {
   rc = row->get_lock(type, this);
   if(rc == WAIT) {
     INC_STATS(get_thd_id(), cflt_cnt, 1);
@@ -422,7 +422,7 @@ RC txn_man::get_lock(row_t * row, access_t type) {
   return rc;
 }
 
-RC txn_man::get_row_vll(access_t type, row_t *& row_rtn) {
+RC TxnManager::get_row_vll(access_t type, row_t *& row_rtn) {
   assert(vll_row_cnt2 < row_cnt);
   assert(accesses[vll_row_cnt2] != NULL);
   vll_row_cnt2++;
@@ -432,7 +432,7 @@ RC txn_man::get_row_vll(access_t type, row_t *& row_rtn) {
 
 }
 
-RC txn_man::get_row(row_t * row, access_t type, row_t *& row_rtn) {
+RC TxnManager::get_row(row_t * row, access_t type, row_t *& row_rtn) {
 	uint64_t starttime = get_sys_clock();
   uint64_t timespan;
 	RC rc = RCOK;
@@ -473,7 +473,7 @@ RC txn_man::get_row(row_t * row, access_t type, row_t *& row_rtn) {
 	if (type == WR) {
     //printf("alloc 10 %ld\n",get_txn_id());
     uint64_t part_id = row->get_part_id();
-    DEBUG_M("txn_man::get_row alloc\n")
+    DEBUG_M("TxnManager::get_row alloc\n")
 		accesses[row_cnt]->orig_data = (row_t *) 
 			mem_allocator.alloc(sizeof(row_t), part_id);
 		accesses[row_cnt]->orig_data->init(row->get_table(), part_id, 0);
@@ -492,7 +492,7 @@ RC txn_man::get_row(row_t * row, access_t type, row_t *& row_rtn) {
   return rc;
 }
 
-RC txn_man::get_row_post_wait(row_t *& row_rtn) {
+RC TxnManager::get_row_post_wait(row_t *& row_rtn) {
   assert(CC_ALG != HSTORE && CC_ALG != HSTORE_SPEC);
   uint64_t timespan = get_sys_clock() - this->wait_starttime;
   if(get_txn_id() % g_node_cnt == g_node_id) {
@@ -515,7 +515,7 @@ RC txn_man::get_row_post_wait(row_t *& row_rtn) {
 	if (type == WR) {
 	  uint64_t part_id = row->get_part_id();
     //printf("alloc 10 %ld\n",get_txn_id());
-    DEBUG_M("txn_man::get_row_post_wait alloc\n");
+    DEBUG_M("TxnManager::get_row_post_wait alloc\n");
 		accesses[row_cnt]->orig_data = (row_t *) 
 			mem_allocator.alloc(sizeof(row_t), part_id);
 		accesses[row_cnt]->orig_data->init(row->get_table(), part_id, 0);
@@ -534,7 +534,7 @@ RC txn_man::get_row_post_wait(row_t *& row_rtn) {
 
 }
 
-void txn_man::insert_row(row_t * row, table_t * table) {
+void TxnManager::insert_row(row_t * row, table_t * table) {
 	if (CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC)
 		return;
 	assert(insert_cnt < MAX_ROW_PER_TXN);
@@ -542,7 +542,7 @@ void txn_man::insert_row(row_t * row, table_t * table) {
 }
 
 itemid_t *
-txn_man::index_read(INDEX * index, idx_key_t key, int part_id) {
+TxnManager::index_read(INDEX * index, idx_key_t key, int part_id) {
 	uint64_t starttime = get_sys_clock();
 
 	itemid_t * item;
@@ -555,7 +555,7 @@ txn_man::index_read(INDEX * index, idx_key_t key, int part_id) {
 	return item;
 }
 
-RC txn_man::validate() {
+RC TxnManager::validate() {
 #if MODE != NORMAL_MODE
   return RCOK;
 #endif
@@ -574,14 +574,14 @@ RC txn_man::validate() {
   return rc;
 }
 
-RC txn_man::finish_local(RC rc, uint64_t * parts, uint64_t part_cnt) {
+RC TxnManager::finish_local(RC rc, uint64_t * parts, uint64_t part_cnt) {
   assert(h_thd->_node_id < g_node_cnt);
 	assert(CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC); 
 	part_lock_man.rem_unlock(parts, part_cnt, this);
   return RCOK;
 }
 
-RC txn_man::finish(RC rc, uint64_t * parts, uint64_t part_cnt) {
+RC TxnManager::finish(RC rc, uint64_t * parts, uint64_t part_cnt) {
 #if MODE == SETUP_MODE
   return RCOK;
 #endif
@@ -603,18 +603,18 @@ RC txn_man::finish(RC rc, uint64_t * parts, uint64_t part_cnt) {
 	return rc;
 }
 
-RC txn_man::rem_fin_txn(base_query * query) {
+RC TxnManager::rem_fin_txn(BaseQuery * query) {
   assert(query->rc == Abort || query->rc == RCOK);
   return finish(query->rc,query->parts,query->part_cnt);
 }
 
-RC txn_man::loc_fin_txn(base_query * query) {
+RC TxnManager::loc_fin_txn(BaseQuery * query) {
   assert(query->rc == Abort || query->rc == RCOK);
   return finish_local(query->rc,query->parts,query->part_cnt);
 }
 
 
-RC txn_man::finish(base_query * query, bool fin) {
+RC TxnManager::finish(BaseQuery * query, bool fin) {
   // Only home node should execute
   uint64_t starttime = get_sys_clock();
 #if CC_ALG != CALVIN
@@ -696,7 +696,7 @@ RC txn_man::finish(base_query * query, bool fin) {
       } else {
         assert(CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC);
          // Model after RFIN
-        base_query * tmp_query; 
+        BaseQuery * tmp_query; 
         qry_pool.get(tmp_query);
         tmp_query->txn_id = query->txn_id;
         tmp_query->ts = query->ts;
@@ -721,7 +721,7 @@ RC txn_man::finish(base_query * query, bool fin) {
       } else {
         assert(CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC);
          // Model after RPREP
-        base_query * tmp_query; 
+        BaseQuery * tmp_query; 
         qry_pool.get(tmp_query);
         tmp_query->txn_id = query->txn_id;
         tmp_query->ts = query->ts;
@@ -758,7 +758,7 @@ RC txn_man::finish(base_query * query, bool fin) {
 }
 
 void
-txn_man::release() {
+TxnManager::release() {
 	for (int i = 0; i < num_accesses_alloc; i++) {
     access_pool.put(accesses[i]);
 		//mem_allocator.free(accesses[i], sizeof(Access));
@@ -767,13 +767,13 @@ txn_man::release() {
 }
 
 RC
-txn_man::send_remote_reads(base_query * qry) {
+TxnManager::send_remote_reads(BaseQuery * qry) {
   assert(CC_ALG == CALVIN);
   for(uint64_t i = 0; i < g_node_cnt; i++) {
     if(i == g_node_id)
       continue;
     if(active_nodes[i]) {
-      base_query * m_qry;
+      BaseQuery * m_qry;
       qry_pool.get(m_qry);
       m_qry->deep_copy(qry);
       assert(m_qry->batch_id != UINT64_MAX);
@@ -785,13 +785,13 @@ txn_man::send_remote_reads(base_query * qry) {
 }
 
 RC
-txn_man::calvin_finish(base_query * qry) {
+TxnManager::calvin_finish(BaseQuery * qry) {
   assert(CC_ALG == CALVIN);
   for(uint64_t i = 0; i < g_node_cnt; i++) {
     if(i == g_node_id)
       continue;
     if(active_nodes[i]) {
-      base_query * m_qry;
+      BaseQuery * m_qry;
       qry_pool.get(m_qry);
       m_qry->deep_copy(qry);
       assert(m_qry->batch_id != UINT64_MAX);

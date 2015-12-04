@@ -26,8 +26,8 @@ class IndexHash;
 class index_btree;
 class Catalog;
 class lock_man;
-class txn_man;
-class thread_t;
+class TxnManager;
+class Thread;
 class index_base;
 class Timestamp;
 class Mvcc;
@@ -36,7 +36,7 @@ class Mvcc;
 // into that class.
 
 // this is the base class for all workload
-class workload
+class Workload
 {
 public:
 //	table_t * table;
@@ -51,7 +51,7 @@ public:
 	virtual RC init();
 	virtual RC init_schema(const char * schema_file);
 	virtual RC init_table()=0;
-	virtual RC get_txn_man(txn_man *& txn_manager)=0;
+	virtual RC get_txn_man(TxnManager *& txn_manager)=0;
 	// get the global timestamp.
 //	uint64_t get_ts(uint64_t thread_id);
 	//uint64_t cur_txn_id;

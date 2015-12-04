@@ -19,15 +19,15 @@
 
 #include "global.h"
 
-class workload;
+class Workload;
 
-class thread_t {
+class Thread {
 public:
-//	thread_t();
-//	~thread_t();
+//	Thread();
+//	~Thread();
 	uint64_t _thd_id;
 	uint64_t _node_id;
-	workload * _wl;
+	Workload * _wl;
 
 	uint64_t 	get_thd_id();
 	uint64_t 	get_node_id();
@@ -38,7 +38,7 @@ public:
 	uint64_t 	get_cur_cid();
 	void 		set_cur_cid(uint64_t cid);
 
-	void 		init(uint64_t thd_id, uint64_t node_id, workload * workload);
+	void 		init(uint64_t thd_id, uint64_t node_id, Workload * workload);
 	// the following function must be in the form void* (*)(void*)
 	// to run with pthread.
 	// conversion is done within the function.
@@ -50,15 +50,15 @@ public:
 	RC 			run_calvin_seq();
 	RC 			run_calvin();
 
-  RC process_rfin(base_query *& m_query,txn_man *& m_txn);
-  RC process_rack(base_query *& m_query,txn_man *& m_txn);
-  RC process_rqry_rsp(uint64_t tid, base_query *& m_query,txn_man *& m_txn);
-  RC process_rqry(base_query *& m_query,txn_man *& m_txn);
-  RC process_rinit(base_query *& m_query,txn_man *& m_txn);
-  RC process_rprepare(base_query *& m_query,txn_man *& m_txn);
-  RC process_rpass(base_query *& m_query,txn_man *& m_txn);
-  RC process_rtxn(base_query *& m_query,txn_man *& m_txn);
-  RC init_phase(base_query * m_query, txn_man * m_txn); 
+  RC process_rfin(BaseQuery *& m_query,TxnManager *& m_txn);
+  RC process_rack(BaseQuery *& m_query,TxnManager *& m_txn);
+  RC process_rqry_rsp(uint64_t tid, BaseQuery *& m_query,TxnManager *& m_txn);
+  RC process_rqry(BaseQuery *& m_query,TxnManager *& m_txn);
+  RC process_rinit(BaseQuery *& m_query,TxnManager *& m_txn);
+  RC process_rprepare(BaseQuery *& m_query,TxnManager *& m_txn);
+  RC process_rpass(BaseQuery *& m_query,TxnManager *& m_txn);
+  RC process_rtxn(BaseQuery *& m_query,TxnManager *& m_txn);
+  RC init_phase(BaseQuery * m_query, TxnManager * m_txn); 
 
 private:
   uint64_t _thd_txn_id;
@@ -69,7 +69,7 @@ private:
   uint64_t run_starttime;
   uint64_t txn_starttime;
 
-	RC	 		runTest(txn_man * txn);
+	RC	 		runTest(TxnManager * txn);
 };
 
 #endif

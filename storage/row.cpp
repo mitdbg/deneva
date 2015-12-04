@@ -183,7 +183,7 @@ void row_t::free_row() {
 #endif
 }
 
-RC row_t::get_lock(access_t type, txn_man * txn) {
+RC row_t::get_lock(access_t type, TxnManager * txn) {
   RC rc = RCOK;
   uint64_t thd_prof_start = get_sys_clock();
 #if CC_ALG == CALVIN
@@ -194,7 +194,7 @@ RC row_t::get_lock(access_t type, txn_man * txn) {
   return rc;
 }
 
-RC row_t::get_row(access_t type, txn_man * txn, row_t *& row) {
+RC row_t::get_row(access_t type, TxnManager * txn, row_t *& row) {
 	RC rc = RCOK;
 #if MODE==NOCC_MODE || MODE==QRY_ONLY_MODE 
   txn->rc = rc;
@@ -302,7 +302,7 @@ end:
 }
 
 // Return call for get_row if waiting 
-RC row_t::get_row_post_wait(access_t type, txn_man * txn, row_t *& row) {
+RC row_t::get_row_post_wait(access_t type, TxnManager * txn, row_t *& row) {
 
   uint64_t thd_prof_start = get_sys_clock();
   RC rc = RCOK;
@@ -343,7 +343,7 @@ RC row_t::get_row_post_wait(access_t type, txn_man * txn, row_t *& row) {
 // delete during history cleanup.
 // For TIMESTAMP, the row will be explicity deleted at the end of access().
 // (c.f. row_ts.cpp)
-void row_t::return_row(access_t type, txn_man * txn, row_t * row) {	
+void row_t::return_row(access_t type, TxnManager * txn, row_t * row) {	
 #if MODE==NOCC_MODE || MODE==QRY_ONLY_MODE
   return;
 #endif

@@ -22,14 +22,14 @@
 #include "table.h"
 #include "helper.h"
 
-uint64_t ycsb_client_query::the_n = 0;
-double ycsb_client_query::denom = 0;
+uint64_t YCSBClientQuery::the_n = 0;
+double YCSBClientQuery::denom = 0;
 
-void ycsb_query::init(uint64_t thd_id, workload * h_wl) {
+void YCSBQuery::init(uint64_t thd_id, Workload * h_wl) {
     init();
 }
 
-void ycsb_client_query::client_init(uint64_t thd_id, workload * h_wl, uint64_t node_id) {
+void YCSBClientQuery::client_init(uint64_t thd_id, Workload * h_wl, uint64_t node_id) {
 	mrand = (myrand *) mem_allocator.alloc(sizeof(myrand), thd_id);
 	mrand->init(get_sys_clock());
   // FIXME for HSTORE/SPEC, need to generate queries to more than 1 part per node
@@ -68,28 +68,28 @@ void ycsb_client_query::client_init(uint64_t thd_id, workload * h_wl, uint64_t n
 
 }
 
-void ycsb_client_query::client_init() {
+void YCSBClientQuery::client_init() {
 	requests = (ycsb_request *) 
 		mem_allocator.alloc(sizeof(ycsb_request) * g_req_per_query, 0);
 	part_to_access = (uint64_t *) 
 		mem_allocator.alloc(sizeof(uint64_t) * g_part_per_txn, 0);
 }
 
-void ycsb_query::init() {
+void YCSBQuery::init() {
   time_q_abrt = 0;
   time_q_work = 0;
   time_copy = 0;
 }
 
-void ycsb_query::reset() {
+void YCSBQuery::reset() {
   txn_rtype = YCSB_0;
   rid = 0;
   req = requests[0];
   rqry_req_cnt = 0;
 }
 
-void ycsb_query::deep_copy(base_query * qry) {
-	ycsb_query * m_qry = (ycsb_query *) qry;
+void YCSBQuery::deep_copy(BaseQuery * qry) {
+	YCSBQuery * m_qry = (YCSBQuery *) qry;
   this->return_id = m_qry->return_id;
   this->rtype = m_qry->rtype;
   this->batch_id = m_qry->batch_id;
@@ -104,13 +104,13 @@ void ycsb_query::deep_copy(base_query * qry) {
   }
 }
 
-uint64_t ycsb_query::participants(bool *& pps,workload * wl) {
+uint64_t YCSBQuery::participants(bool *& pps,Workload * wl) {
   int n = 0;
   for(uint64_t i = 0; i < g_node_cnt; i++)
     pps[i] = false;
 
   for(uint64_t i = 0; i < request_cnt; i++) {
-    uint64_t req_nid = GET_NODE_ID(((ycsb_wl*)wl)->key_to_part(requests[i].key));
+    uint64_t req_nid = GET_NODE_ID(((YCSBWorkload*)wl)->key_to_part(requests[i].key));
     if(!pps[req_nid])
       n++;
     pps[req_nid] = true;
@@ -118,7 +118,7 @@ uint64_t ycsb_query::participants(bool *& pps,workload * wl) {
   return n;
 }
 
-bool ycsb_query::readonly() {
+bool YCSBQuery::readonly() {
   for(uint64_t i = 0; i < request_cnt; i++) {
     if(requests[i].acctype == WR) {
       ro = false;
@@ -129,8 +129,8 @@ bool ycsb_query::readonly() {
   return true;
 }
 
-base_query * ycsb_query::merge(base_query * query) {
-	ycsb_query * m_query = (ycsb_query *) query;
+BaseQuery * YCSBQuery::merge(BaseQuery * query) {
+	YCSBQuery * m_query = (YCSBQuery *) query;
   RemReqType old_rtype = this->rtype;
   this->rtype = m_query->rtype;
   switch(m_query->rtype) {
@@ -195,14 +195,14 @@ base_query * ycsb_query::merge(base_query * query) {
 // However, it seems there is a small bug. 
 // The original paper says zeta(theta, 2.0). But I guess it should be 
 // zeta(2.0, theta).
-double ycsb_client_query::zeta(uint64_t n, double theta) {
+double YCSBClientQuery::zeta(uint64_t n, double theta) {
 	double sum = 0;
 	for (uint64_t i = 1; i <= n; i++) 
 		sum += pow(1.0 / i, theta);
 	return sum;
 }
 
-uint64_t ycsb_client_query::zipf(uint64_t n, double theta) {
+uint64_t YCSBClientQuery::zipf(uint64_t n, double theta) {
 	assert(this->the_n == n);
 	assert(theta == g_zipf_theta);
 	double alpha = 1 / (1 - theta);
@@ -219,7 +219,7 @@ uint64_t ycsb_client_query::zipf(uint64_t n, double theta) {
 }
 
 
-void ycsb_client_query::gen_requests(uint64_t thd_id, workload * h_wl) {
+void YCSBClientQuery::gen_requests(uint64_t thd_id, Workload * h_wl) {
   /*
 #if CC_ALG == HSTORE
 	assert(g_virtual_part_cnt == g_part_cnt);
@@ -334,7 +334,7 @@ void ycsb_client_query::gen_requests(uint64_t thd_id, workload * h_wl) {
 
 }
 
-void ycsb_client_query::gen_requests2(uint64_t thd_id, workload * h_wl) {
+void YCSBClientQuery::gen_requests2(uint64_t thd_id, Workload * h_wl) {
   /*
 #if CC_ALG == HSTORE
 	assert(g_virtual_part_cnt == g_part_cnt);
@@ -411,7 +411,7 @@ void ycsb_client_query::gen_requests2(uint64_t thd_id, workload * h_wl) {
 
 }
 
-void ycsb_client_query::gen_requests3(uint64_t thd_id, workload * h_wl) {
+void YCSBClientQuery::gen_requests3(uint64_t thd_id, Workload * h_wl) {
 	uint64_t access_cnt = 0;
 	set<uint64_t> all_keys;
 	part_num = 0;

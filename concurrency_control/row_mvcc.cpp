@@ -97,7 +97,7 @@ void Row_mvcc::return_his_entry(MVHisEntry * entry) {
 	mem_allocator.free(entry, sizeof(MVHisEntry));
 }
 
-void Row_mvcc::buffer_req(TsType type, txn_man * txn)
+void Row_mvcc::buffer_req(TsType type, TxnManager * txn)
 {
   uint64_t starttime = get_sys_clock();
 	MVReqEntry * req_entry = get_req_entry();
@@ -119,7 +119,7 @@ void Row_mvcc::buffer_req(TsType type, txn_man * txn)
 //	 debuffer all non-conflicting requests
 // for type == P_REQ
 //   debuffer the request with matching txn.
-MVReqEntry * Row_mvcc::debuffer_req( TsType type, txn_man * txn) {
+MVReqEntry * Row_mvcc::debuffer_req( TsType type, TxnManager * txn) {
 	MVReqEntry ** queue;
 	MVReqEntry * return_queue = NULL;
 	switch (type) {
@@ -251,7 +251,7 @@ bool Row_mvcc::conflict(TsType type, ts_t ts) {
 	return true;
 }
 
-RC Row_mvcc::access(txn_man * txn, TsType type, row_t * row) {
+RC Row_mvcc::access(TxnManager * txn, TsType type, row_t * row) {
 	RC rc = RCOK;
 	ts_t ts = txn->get_ts();
 
@@ -347,7 +347,7 @@ RC Row_mvcc::access(txn_man * txn, TsType type, row_t * row) {
 	return rc;
 }
 
-void Row_mvcc::update_buffer(txn_man * txn) {
+void Row_mvcc::update_buffer(TxnManager * txn) {
 	MVReqEntry * ready_read = debuffer_req(R_REQ, NULL);
 	MVReqEntry * req = ready_read;
 	MVReqEntry * tofree = NULL;

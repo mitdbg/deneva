@@ -21,13 +21,13 @@
 #include "tpcc_query.h"
 #include "client_query.h"
 #include "mem_alloc.h"
-#include "test.h"
 #include "transport.h"
 #include "client_txn.h"
 #include "msg_thread.h"
 #include "msg_queue.h"
+#include "wl.h"
 
-void Client_thread_t::init(uint64_t thd_id, uint64_t node_id, workload * workload) {
+void Client_thread_t::init(uint64_t thd_id, uint64_t node_id, Workload * workload) {
 	_thd_id = thd_id;
 	_node_id = node_id;
 	_wl = workload;
@@ -46,7 +46,7 @@ RC Client_thread_t::run_remote() {
 		mem_allocator.register_thread(_thd_id);
 	}
 
-	base_query * m_query = NULL;
+	BaseQuery * m_query = NULL;
 
 	stats.init(get_thd_id());
 	pthread_barrier_wait( &warmup_bar );
@@ -209,14 +209,14 @@ RC Client_thread_t::run() {
 	}
 	stats.init(get_thd_id());
 	pthread_barrier_wait( &warmup_bar );
-	base_client_query * m_query = NULL;
+	BaseClientQuery * m_query = NULL;
 
 	run_starttime = get_sys_clock();
 	if( _thd_id == 0) {
 #if WORKLOAD == YCSB
-    m_query = new ycsb_client_query;
+    m_query = new YCSBClientQuery;
 #elif WORKLOAD == TPCC
-    m_query = new tpcc_client_query;
+    m_query = new TPCCClientQuery;
 #endif
 		uint64_t nnodes = g_node_cnt + g_client_node_cnt;
     /*
@@ -271,8 +271,7 @@ RC Client_thread_t::run() {
 		m_query = client_query_queue.get_next_query(next_node,_thd_id);
 		if (m_query == NULL) {
 			client_man.dec_inflight(next_node);
-      if(client_query_queue.done()
-              && (g_network_delay > 0 && !tport_man.delay_queue->poll_next_entry()))
+      if(client_query_queue.done())
         break;
 			continue;
 		}
@@ -285,13 +284,7 @@ RC Client_thread_t::run() {
     }
     */
 
-   /* 
-#if CC_ALG == CALVIN
-    msg_queue.enqueue((base_query*)((void*)m_query),RTXN,g_node_cnt + g_client_node_cnt);
-#else
-*/
-    msg_queue.enqueue((base_query*)((void*)m_query),RTXN,GET_NODE_ID(m_query->pid));
-//#endif
+    msg_queue.enqueue((BaseQuery*)((void*)m_query),RTXN,GET_NODE_ID(m_query->pid));
 		num_txns_sent++;
 		txns_sent[GET_NODE_ID(m_query->pid)-g_server_start_node]++;
     INC_STATS(get_thd_id(),txn_sent,1);
@@ -318,11 +311,8 @@ RC Client_thread_t::run() {
     // Send EXP_DONE to all nodes
     /*
     uint64_t nnodes = g_node_cnt + g_client_node_cnt;
-#if CC_ALG == CALVIN
-    nnodes++;
-#endif
 #if WORKLOAD == YCSB
-    m_query = new ycsb_client_query;
+    m_query = new YCSBClientQuery;
 #endif
     for(uint64_t i = 0; i < nnodes; i++) {
       if(i != g_node_id) {

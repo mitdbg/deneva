@@ -23,7 +23,7 @@
 #include "remote_query.h"
 #include "query.h"
 
-class workload;
+class Workload;
 
 /*
 	 Message format:
@@ -44,32 +44,13 @@ class Socket {
         char _pad[CL_SIZE - sizeof(nn::socket)];
 };
 
-class DelayQueue : public WorkQueue {
-    public:
-        void * get_next_entry();
-};
-
-class DelayMessage {
-    public:
-        inline DelayMessage(uint64_t dest_id, void * sbuf, uint64_t size) {
-            _dest_id = dest_id;
-            _sbuf = sbuf;
-            _start_ts = get_sys_clock();
-            _size = size;
-        }
-        uint64_t _dest_id;
-        void * _sbuf;
-        uint64_t _start_ts;
-        uint64_t _size;
-};
-
 class Transport {
 	public:
 		//Transport();
 		//~Transport();
 		//Transport() : s(AF_SP,NN_PAIR) {}
 		void read_ifconfig(const char * ifaddr_file);
-		void init(uint64_t node_id,workload* workload);
+		void init(uint64_t node_id,Workload* workload);
     void shutdown(); 
 		uint64_t get_node_id();
 		void send_msg(uint64_t sid, uint64_t dest_id, void * sbuf,int size);
@@ -79,10 +60,6 @@ class Transport {
 		uint64_t simple_recv_msg();
 		//void set_ifaddr(const char * ifaddr, uint64_t n) { this.ifaddr[n] = ifaddr; }
 
-        // For adding network delay
-        DelayQueue * delay_queue;
-        void send_msg_no_delay(DelayMessage * msg);
-        void check_delayed_messages();
 	private:
     uint64_t rr;
 		Socket * s;
@@ -94,7 +71,7 @@ class Transport {
 		char ** ifaddr;
 		uint32_t _thd_id;	// for stats
     int * endpoint_id;
-    workload * _wl;
+    Workload * _wl;
 
 };
 

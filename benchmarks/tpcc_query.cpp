@@ -22,7 +22,7 @@
 #include "wl.h"
 #include "table.h"
 
-void tpcc_client_query::client_init(uint64_t thd_id, workload * h_wl) {
+void TPCCClientQuery::client_init(uint64_t thd_id, Workload * h_wl) {
 	//double x = (double)(rand() % 100) / 100.0;
 	//part_to_access = (uint64_t *) 
 	//	mem_allocator.alloc(sizeof(uint64_t) * g_part_cnt, thd_id);
@@ -35,7 +35,7 @@ void tpcc_client_query::client_init(uint64_t thd_id, workload * h_wl) {
     client_init(thd_id, h_wl, g_node_id);
 }
 
-void tpcc_client_query::client_init(uint64_t thd_id, workload * h_wl, uint64_t node_id) {
+void TPCCClientQuery::client_init(uint64_t thd_id, Workload * h_wl, uint64_t node_id) {
 	double x = (double)(rand() % 100) / 100.0;
 	part_to_access = (uint64_t *) 
 		mem_allocator.alloc(sizeof(uint64_t) * g_part_cnt, thd_id);
@@ -47,12 +47,12 @@ void tpcc_client_query::client_init(uint64_t thd_id, workload * h_wl, uint64_t n
 		gen_new_order(pid);
 }
 
-void tpcc_query::init(uint64_t thd_id, workload * h_wl) {
+void TPCCQuery::init(uint64_t thd_id, Workload * h_wl) {
 	txn_rtype = TPCC_PAYMENT0;
 }
 
-void tpcc_query::deep_copy(base_query * qry) {
-	tpcc_query * m_qry = (tpcc_query *) qry;
+void TPCCQuery::deep_copy(BaseQuery * qry) {
+	TPCCQuery * m_qry = (TPCCQuery *) qry;
   this->return_id = m_qry->return_id;
   this->rtype = m_qry->rtype;
   this->batch_id = m_qry->batch_id;
@@ -90,7 +90,7 @@ void tpcc_query::deep_copy(base_query * qry) {
 
   
 }
-uint64_t tpcc_query::participants(bool *& pps,workload * wl) {
+uint64_t TPCCQuery::participants(bool *& pps,Workload * wl) {
   int n = 0;
   for(uint64_t i = 0; i < g_node_cnt; i++)
     pps[i] = false;
@@ -141,15 +141,15 @@ uint64_t tpcc_query::participants(bool *& pps,workload * wl) {
   return n;
 }
 
-bool tpcc_query::readonly() {
+bool TPCCQuery::readonly() {
   ro = false;
   return false;
 }
 
 
 
-base_query * tpcc_query::merge(base_query * query) {
-	tpcc_query * m_query = (tpcc_query *) query;
+BaseQuery * TPCCQuery::merge(BaseQuery * query) {
+	TPCCQuery * m_query = (TPCCQuery *) query;
   RemReqType old_rtype = this->rtype;
   this->rtype = m_query->rtype;
   switch(m_query->rtype) {
@@ -250,7 +250,7 @@ base_query * tpcc_query::merge(base_query * query) {
 
 }
 
-void tpcc_query::reset() {
+void TPCCQuery::reset() {
 
   if(txn_type == TPCC_PAYMENT) {
     txn_rtype = TPCC_PAYMENT0;
@@ -273,7 +273,7 @@ void tpcc_query::reset() {
 }
 
 /*
-uint64_t tpcc_query::get_keys(uint64_t *& arr) {
+uint64_t TPCCQuery::get_keys(uint64_t *& arr) {
   uint64_t num_keys = txn_type == TPCC_PAYMENT ? 4 : 3 + ol_cnt;
   uint64_t keys[num_keys];
   uint64_t n = 0;
@@ -303,7 +303,7 @@ uint64_t tpcc_query::get_keys(uint64_t *& arr) {
 */
 
 
-void tpcc_client_query::gen_payment(uint64_t thd_id) {
+void TPCCClientQuery::gen_payment(uint64_t thd_id) {
 	txn_type = TPCC_PAYMENT;
 	if (FIRST_PART_LOCAL) {
     while(wh_to_part(w_id = URand(1, g_num_wh)) != thd_id) {}
@@ -351,7 +351,7 @@ void tpcc_client_query::gen_payment(uint64_t thd_id) {
 	}
 }
 
-void tpcc_client_query::gen_new_order(uint64_t thd_id) {
+void TPCCClientQuery::gen_new_order(uint64_t thd_id) {
 	txn_type = TPCC_NEW_ORDER;
 	if (FIRST_PART_LOCAL) {
     while(wh_to_part(w_id = URand(1, g_num_wh)) != thd_id) {}
@@ -463,7 +463,7 @@ void tpcc_client_query::gen_new_order(uint64_t thd_id) {
 
 /*
 void 
-tpcc_query::gen_order_status(uint64_t thd_id) {
+TPCCQuery::gen_order_status(uint64_t thd_id) {
 	txn_type = TPCC_ORDER_STATUS;
 	//txn_rtype = TPCC_ORDER_STATUS0;
 	if (FIRST_PART_LOCAL)
@@ -488,7 +488,7 @@ tpcc_query::gen_order_status(uint64_t thd_id) {
 
 /*
 void 
-tpcc_query::gen_delivery(uint64_t thd_id) {
+TPCCQuery::gen_delivery(uint64_t thd_id) {
 /	type = TPCC_DELIVERY;
 //	if (FIRST_PART_LOCAL)
 		w_id = thd_id % g_num_wh + 1;
@@ -498,7 +498,7 @@ tpcc_query::gen_delivery(uint64_t thd_id) {
 	ol_delivery_d = 2014;
 }
 */
-//uint64_t tpcc_query::wh_to_part(uint64_t wid) {
+//uint64_t TPCCQuery::wh_to_part(uint64_t wid) {
 //	uint64_t part_id;
 //	assert(g_part_cnt <= g_num_wh);
 //	part_id = wid % g_part_cnt;

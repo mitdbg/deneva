@@ -21,26 +21,26 @@
 #include "helper.h"
 #include "query.h"
 
-class txn_man;
+class TxnManager;
 
 class TxnQEntry {
 public:
 	TxnQEntry * prev;
 	TxnQEntry * next;
-	txn_man * 	txn;
+	TxnManager * 	txn;
 };
 
 class VLLMan {
 public:
 	void init();
   void restartQFront(); 
-	void vllMainLoop(txn_man * next_txn, base_query * query);
+	void vllMainLoop(TxnManager * next_txn, BaseQuery * query);
 	// 	 1: txn is blocked
 	//	 2: txn is not blocked. Can run.
 	//   3: txn_queue is full. 
-	RC beginTxn(txn_man * txn, base_query * query);
-	void finishTxn(txn_man * txn);
-	void execute(txn_man * txn, base_query * query);
+	RC beginTxn(TxnManager * txn, BaseQuery * query);
+	void finishTxn(TxnManager * txn);
+	void execute(TxnManager * txn, BaseQuery * query);
 private:
     TxnQEntry * 			_txn_queue;
     TxnQEntry * 			_txn_queue_tail;

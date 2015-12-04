@@ -21,7 +21,7 @@
 #include "query.h"
 #include "ycsb_query.h"
 #include "tpcc_query.h"
-#include "txn_pool.h"
+#include "pool.h"
 #include "global.h"
 
 void MessageThread::init(uint64_t thd_id) { 
@@ -40,7 +40,7 @@ void MessageThread::init(uint64_t thd_id) {
 
 void MessageThread::run() {
   
-  base_query * qry;
+  BaseQuery * qry;
   RemReqType type;
   uint64_t dest;
   mbuf * sbuf;
@@ -111,7 +111,7 @@ void MessageThread::run() {
 #if MODE==SIMPLE_MODE
       // Need to free the original query
       //  that was not placed in txn pool
-      //mem_allocator.free(qry,sizeof(ycsb_query));
+      //mem_allocator.free(qry,sizeof(YCSBQuery));
       qry_pool.put(qry);
 #else
       txn_table.delete_txn(qry->return_id, qry->txn_id,0);
@@ -165,7 +165,7 @@ end:
 
 }
 
-void MessageThread::copy_to_buffer(mbuf * sbuf, RemReqType type, base_query * qry) {
+void MessageThread::copy_to_buffer(mbuf * sbuf, RemReqType type, BaseQuery * qry) {
   if(sbuf->cnt == 0)
     sbuf->starttime = get_sys_clock();
   sbuf->cnt++;
@@ -211,15 +211,15 @@ void MessageThread::copy_to_buffer(mbuf * sbuf, RemReqType type, base_query * qr
   }
 }
 
-uint64_t MessageThread::get_msg_size(RemReqType type,base_query * qry) {
+uint64_t MessageThread::get_msg_size(RemReqType type,BaseQuery * qry) {
   uint64_t size = 0;
 #if WORKLOAD == TPCC
-  tpcc_client_query * m_qry2 = (tpcc_client_query*) qry;
-  tpcc_query * m_qry = (tpcc_query *)qry;
+  TPCCClientQuery * m_qry2 = (TPCCClientQuery*) qry;
+  TPCCQuery * m_qry = (TPCCQuery *)qry;
 #elif WORKLOAD == YCSB
-  ycsb_client_query * m_qry2 = (ycsb_client_query*) qry;
-  ycsb_query * m_qry __attribute__((unused));
-  m_qry = (ycsb_query *)qry;
+  YCSBClientQuery * m_qry2 = (YCSBClientQuery*) qry;
+  YCSBQuery * m_qry __attribute__((unused));
+  m_qry = (YCSBQuery *)qry;
 #endif
   size += sizeof(txnid_t) + sizeof(RemReqType); //12
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
@@ -357,7 +357,7 @@ uint64_t MessageThread::get_msg_size(RemReqType type,base_query * qry) {
 
   return size;
 }
-void MessageThread::rack(mbuf * sbuf,base_query * qry) {
+void MessageThread::rack(mbuf * sbuf,BaseQuery * qry) {
   DEBUG("Sending RACK (%ld,%ld)\n",qry->txn_id,qry->batch_id);
   assert(IS_REMOTE(qry->txn_id));
   COPY_BUF(sbuf->buffer,qry->rc,sbuf->ptr);
@@ -366,23 +366,23 @@ void MessageThread::rack(mbuf * sbuf,base_query * qry) {
 #endif
 }
 
-void MessageThread::rfwd(mbuf * sbuf,base_query * qry) {
+void MessageThread::rfwd(mbuf * sbuf,BaseQuery * qry) {
   DEBUG("Sending RFWD (%ld,%ld)\n",qry->txn_id,qry->batch_id);
   COPY_BUF(sbuf->buffer,qry->txn_id,sbuf->ptr);
   COPY_BUF(sbuf->buffer,qry->batch_id,sbuf->ptr);
 #if WORKLOAD == TPCC
-  tpcc_query * m_qry = (tpcc_query *)qry;
+  TPCCQuery * m_qry = (TPCCQuery *)qry;
   COPY_BUF(sbuf->buffer,m_qry->o_id,sbuf->ptr);
 #endif
 }
 
-void MessageThread::rdone(mbuf * sbuf,base_query * qry) {
+void MessageThread::rdone(mbuf * sbuf,BaseQuery * qry) {
   DEBUG("Sending RDONE %ld\n",qry->batch_id);
   assert(CC_ALG == CALVIN);
   COPY_BUF(sbuf->buffer,qry->batch_id,sbuf->ptr);
 }
 
-void MessageThread::rprepare(mbuf * sbuf,base_query * qry) {
+void MessageThread::rprepare(mbuf * sbuf,BaseQuery * qry) {
   DEBUG("Sending RPREPARE %ld\n",qry->txn_id);
   assert(IS_LOCAL(qry->txn_id));
   COPY_BUF(sbuf->buffer,qry->pid,sbuf->ptr);
@@ -390,7 +390,7 @@ void MessageThread::rprepare(mbuf * sbuf,base_query * qry) {
   COPY_BUF(sbuf->buffer,qry->txn_id,sbuf->ptr);
 }
 
-void MessageThread::rfin(mbuf * sbuf,base_query * qry) {
+void MessageThread::rfin(mbuf * sbuf,BaseQuery * qry) {
   DEBUG("Sending RFIN (%ld,%ld)\n",qry->txn_id,qry->batch_id);
   assert(IS_LOCAL(qry->txn_id));
   COPY_BUF(sbuf->buffer,qry->pid,sbuf->ptr);
@@ -400,7 +400,7 @@ void MessageThread::rfin(mbuf * sbuf,base_query * qry) {
   COPY_BUF(sbuf->buffer,qry->ro,sbuf->ptr);
 }
 
-void MessageThread::cl_rsp(mbuf * sbuf, base_query *qry) {
+void MessageThread::cl_rsp(mbuf * sbuf, BaseQuery *qry) {
   DEBUG("Sending CL_RSP %ld\n",qry->txn_id);
   assert(IS_LOCAL(qry->txn_id));
   COPY_BUF(sbuf->buffer,qry->rc,sbuf->ptr);
@@ -408,7 +408,7 @@ void MessageThread::cl_rsp(mbuf * sbuf, base_query *qry) {
 
 }
 
-void MessageThread::rinit(mbuf * sbuf,base_query * qry) {
+void MessageThread::rinit(mbuf * sbuf,BaseQuery * qry) {
   DEBUG("Sending RINIT %ld\n",qry->txn_id);
   assert(IS_LOCAL(qry->txn_id));
   uint64_t part_id;
@@ -425,9 +425,9 @@ void MessageThread::rinit(mbuf * sbuf,base_query * qry) {
   COPY_BUF(sbuf->buffer,part_cnt,sbuf->ptr);
 #elif CC_ALG == VLL
 #if WORKLOAD == TPCC
-  //tpcc_query * m_qry = (tpcc_query *)qry;
+  //TPCCQuery * m_qry = (TPCCQuery *)qry;
 #elif WORKLOAD == YCSB
-  ycsb_query * m_qry = (ycsb_query *)qry;
+  YCSBQuery * m_qry = (YCSBQuery *)qry;
   COPY_BUF(sbuf->buffer,m_qry->request_cnt,sbuf->ptr);
 	for (uint64_t i = 0; i < m_qry->request_cnt; i++) {
     COPY_BUF_SIZE(sbuf->buffer,m_qry->requests[i],sbuf->ptr,sizeof(ycsb_request));
@@ -437,14 +437,14 @@ void MessageThread::rinit(mbuf * sbuf,base_query * qry) {
 #endif
 }
 
-void MessageThread::rqry(mbuf * sbuf, base_query *qry) {
+void MessageThread::rqry(mbuf * sbuf, BaseQuery *qry) {
   //DEBUG("Sending RQRY %ld\n",qry->txn_id);
   assert(IS_LOCAL(qry->txn_id));
 #if WORKLOAD == TPCC
-  tpcc_query * m_qry = (tpcc_query *)qry;
+  TPCCQuery * m_qry = (TPCCQuery *)qry;
   DEBUG("Sending RQRY %ld -- %ld %ld\n",qry->txn_id,m_qry->ol_number,m_qry->rqry_req_cnt);
 #elif WORKLOAD == YCSB
-  ycsb_query * m_qry = (ycsb_query *)qry;
+  YCSBQuery * m_qry = (YCSBQuery *)qry;
   DEBUG("Sending RQRY %ld -- %ld %ld\n",qry->txn_id,m_qry->rid,m_qry->rqry_req_cnt);
 #endif
 
@@ -518,20 +518,20 @@ void MessageThread::rqry(mbuf * sbuf, base_query *qry) {
 #endif
 }
 
-void MessageThread::rqry_rsp(mbuf * sbuf, base_query *qry) {
+void MessageThread::rqry_rsp(mbuf * sbuf, BaseQuery *qry) {
   DEBUG("Sending RQRY_RSP %ld\n",qry->txn_id);
   assert(IS_REMOTE(qry->txn_id));
   COPY_BUF(sbuf->buffer,qry->rc,sbuf->ptr);
   COPY_BUF(sbuf->buffer,qry->pid,sbuf->ptr);
 }
 
-void MessageThread::rtxn(mbuf * sbuf, base_query *qry) {
+void MessageThread::rtxn(mbuf * sbuf, BaseQuery *qry) {
     DEBUG("Sending RTXN\n");
   //assert(ISCLIENT);
 #if WORKLOAD == TPCC
-    tpcc_client_query * m_qry = (tpcc_client_query *)qry;
+    TPCCClientQuery * m_qry = (TPCCClientQuery *)qry;
 #elif WORKLOAD == YCSB
-    ycsb_client_query * m_qry = (ycsb_client_query *)qry;
+    YCSBClientQuery * m_qry = (YCSBClientQuery *)qry;
 #endif
   uint64_t ts = get_sys_clock();
 
@@ -586,12 +586,12 @@ void MessageThread::rtxn(mbuf * sbuf, base_query *qry) {
 
 }
 
-void MessageThread::rtxn_seq(mbuf * sbuf, base_query *qry) {
+void MessageThread::rtxn_seq(mbuf * sbuf, BaseQuery *qry) {
   DEBUG("Sending RTXN (%ld,%ld)\n",qry->txn_id,qry->batch_id);
 #if WORKLOAD == TPCC
-    tpcc_query * m_qry = (tpcc_query *)qry;
+    TPCCQuery * m_qry = (TPCCQuery *)qry;
 #elif WORKLOAD == YCSB
-    ycsb_query * m_qry = (ycsb_query *)qry;
+    YCSBQuery * m_qry = (YCSBQuery *)qry;
 #endif
   uint64_t ts = get_sys_clock();
 

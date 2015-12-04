@@ -20,7 +20,7 @@
 struct LockEntry {
     lock_t type;
     ts_t   start_ts;
-    txn_man * txn;
+    TxnManager * txn;
 	LockEntry * next;
 	LockEntry * prev;
 };
@@ -29,9 +29,9 @@ class Row_lock {
 public:
 	void init(row_t * row);
 	// [DL_DETECT] txnids are the txn_ids that current txn is waiting for.
-    RC lock_get(lock_t type, txn_man * txn);
-    RC lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt);
-    RC lock_release(txn_man * txn);
+    RC lock_get(lock_t type, TxnManager * txn);
+    RC lock_get(lock_t type, TxnManager * txn, uint64_t* &txnids, int &txncnt);
+    RC lock_release(TxnManager * txn);
 	
 private:
     pthread_mutex_t * latch;

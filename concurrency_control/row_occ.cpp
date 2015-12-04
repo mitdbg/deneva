@@ -32,7 +32,7 @@ Row_occ::init(row_t * row) {
 }
 
 RC
-Row_occ::access(txn_man * txn, TsType type) {
+Row_occ::access(TxnManager * txn, TsType type) {
 	RC rc = RCOK;
 	//pthread_mutex_lock( _latch );
   sem_wait(&_semaphore);

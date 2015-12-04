@@ -25,27 +25,22 @@
 #include "plock.h"
 #include "msg_queue.h"
 
-void Remote_query::init(uint64_t node_id, workload * wl) {
+void Remote_query::init(uint64_t node_id, Workload * wl) {
 	q_idx = 0;
 	_node_id = node_id;
 	_wl = wl;
   pthread_mutex_init(&mtx,NULL);
-  /*
-  for(int i=0;i<g_max_txn_per_part*2*3;i++)
-    responses[i] = false;
-    */
 }
 
-txn_man * Remote_query::get_txn_man(uint64_t thd_id, uint64_t node_id, uint64_t txn_id) {
+TxnManager * Remote_query::get_txn_man(uint64_t thd_id, uint64_t node_id, uint64_t txn_id) {
 
-  txn_man * next_txn = NULL;
+  TxnManager * next_txn = NULL;
 
   return next_txn;
 }
 
-//base_query * Remote_query::unpack(void * d, int len) {
-void Remote_query::unpack(void * d, uint64_t len) {
-    base_query * query;
+void Remote_query::unmarshall(void * d, uint64_t len) {
+    BaseQuery * query;
 	char * data = (char *) d;
 	uint64_t ptr = 0;
   uint32_t dest_id = UINT32_MAX;
@@ -68,7 +63,7 @@ void Remote_query::unpack(void * d, uint64_t len) {
     assert(query);
 
 
-    unpack_query(query,data,ptr,dest_id,return_id);
+    unmarshall(query,data,ptr,dest_id,return_id);
     DEBUG_R("^^got (%ld,%ld) %d 0x%lx\n",query->txn_id,query->batch_id,query->rtype,(uint64_t)query);
 #if MODE==SIMPLE_MODE
     if(query->rtype == RTXN) {
@@ -91,10 +86,9 @@ void Remote_query::unpack(void * d, uint64_t len) {
     txn_cnt--;
     query->time_copy += get_sys_clock() - starttime;
   }
-  //  return query;
 }
 
-void Remote_query::unpack_query(base_query *& query,char * data,  uint64_t & ptr,uint64_t dest_id,uint64_t return_id) {
+void Remote_query::unmarshall(BaseQuery *& query,char * data,  uint64_t & ptr,uint64_t dest_id,uint64_t return_id) {
 
   uint64_t timespan;
 	assert(query != NULL);
@@ -104,10 +98,6 @@ void Remote_query::unpack_query(base_query *& query,char * data,  uint64_t & ptr
 
   COPY_VAL(query->txn_id,data,ptr);
   COPY_VAL(query->rtype,data,ptr);
-    /*
-    if(query->rtype == INIT_DONE || query->rtype == EXP_DONE)
-      return query;
-      */
 
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
   COPY_VAL(active_part,data,ptr);
@@ -129,7 +119,7 @@ void Remote_query::unpack_query(base_query *& query,char * data,  uint64_t & ptr
 #if CC_ALG == VLL
 #if WORKLOAD == TPCC
 #elif WORKLOAD == YCSB
-      ycsb_query * m_query = (ycsb_query*) query;
+      YCSBQuery * m_query = (YCSBQuery*) query;
       COPY_VAL(m_query->request_cnt,data,ptr);
       //m_query->requests = (ycsb_request *) 
       //mem_allocator.alloc(sizeof(ycsb_request) * m_query->request_cnt, 0);
@@ -149,9 +139,9 @@ void Remote_query::unpack_query(base_query *& query,char * data,  uint64_t & ptr
       break;
 		case RQRY: {
 #if WORKLOAD == TPCC
-      tpcc_query * m_query = (tpcc_query*) query;
+      TPCCQuery * m_query = (TPCCQuery*) query;
 #elif WORKLOAD == YCSB
-      ycsb_query * m_query = (ycsb_query*) query;
+      YCSBQuery * m_query = (YCSBQuery*) query;
 #endif
       COPY_VAL(m_query->txn_rtype,data,ptr);
       COPY_VAL(m_query->pid,data,ptr);
@@ -252,9 +242,9 @@ void Remote_query::unpack_query(base_query *& query,char * data,  uint64_t & ptr
       break;
     case RTXN: {
 #if WORKLOAD == TPCC
-      tpcc_query * m_query = (tpcc_query*) query;
+      TPCCQuery * m_query = (TPCCQuery*) query;
 #elif WORKLOAD == YCSB
-      ycsb_query *m_query = (ycsb_query*) query;
+      YCSBQuery *m_query = (YCSBQuery*) query;
 #endif
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
       query->home_part = query->active_part;
@@ -343,7 +333,7 @@ void Remote_query::unpack_query(base_query *& query,char * data,  uint64_t & ptr
       COPY_VAL(query->txn_id,data,ptr);
       COPY_VAL(query->batch_id,data,ptr);
 #if WORKLOAD == TPCC
-      COPY_VAL(((tpcc_query*)query)->o_id,data,ptr);
+      COPY_VAL(((TPCCQuery*)query)->o_id,data,ptr);
 #endif
                    break;
     case NO_MSG: assert(false);

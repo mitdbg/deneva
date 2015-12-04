@@ -31,10 +31,10 @@
 #include "mem_alloc.h"
 #include "query.h"
 
-int ycsb_wl::next_tid;
+int YCSBWorkload::next_tid;
 
-RC ycsb_wl::init() {
-	workload::init();
+RC YCSBWorkload::init() {
+	Workload::init();
 	next_tid = 0;
 	char * cpath = getenv("SCHEMA_PATH");
 	string path;
@@ -59,21 +59,21 @@ RC ycsb_wl::init() {
 	return RCOK;
 }
 
-RC ycsb_wl::init_schema(const char * schema_file) {
-	workload::init_schema(schema_file);
+RC YCSBWorkload::init_schema(const char * schema_file) {
+	Workload::init_schema(schema_file);
 	the_table = tables["MAIN_TABLE"]; 	
 	the_index = indexes["MAIN_INDEX"];
 	return RCOK;
 }
 	
 int 
-ycsb_wl::key_to_part(uint64_t key) {
+YCSBWorkload::key_to_part(uint64_t key) {
 	//uint64_t rows_per_part = g_synth_table_size / g_part_cnt;
 	//return key / rows_per_part;
   return key % g_part_cnt;
 }
 
-RC ycsb_wl::init_table() {
+RC YCSBWorkload::init_table() {
 	RC rc;
     uint64_t total_row = 0;
     while (true) {
@@ -122,7 +122,7 @@ ins_done:
 }
 
 // init table in parallel
-void ycsb_wl::init_table_parallel() {
+void YCSBWorkload::init_table_parallel() {
 	enable_thread_mem_pool = true;
 	pthread_t * p_thds = new pthread_t[g_init_parallelism - 1];
 	for (UInt32 i = 0; i < g_init_parallelism - 1; i++) {
@@ -142,7 +142,7 @@ void ycsb_wl::init_table_parallel() {
 	mem_allocator.unregister();
 }
 
-void * ycsb_wl::init_table_slice() {
+void * YCSBWorkload::init_table_slice() {
 	UInt32 tid = ATOM_FETCH_ADD(next_tid, 1);
 	mem_allocator.register_thread(tid);
 	RC rc;
@@ -191,10 +191,10 @@ void * ycsb_wl::init_table_slice() {
 	return NULL;
 }
 
-RC ycsb_wl::get_txn_man(txn_man *& txn_manager){
-	txn_manager = (ycsb_txn_man *)
-		mem_allocator.alloc( sizeof(ycsb_txn_man), 0 );
-	new(txn_manager) ycsb_txn_man();
+RC YCSBWorkload::get_txn_man(TxnManager *& txn_manager){
+	txn_manager = (YCSBTxnManager *)
+		mem_allocator.alloc( sizeof(YCSBTxnManager), 0 );
+	new(txn_manager) YCSBTxnManager();
 	txn_manager->init(this); 
 	return RCOK;
 }

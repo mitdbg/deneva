@@ -33,18 +33,18 @@
 #include "query.h"
 #include "msg_queue.h"
 
-void ycsb_txn_man::init(workload * h_wl) {
-	txn_man::init(h_wl);
-	_wl = (ycsb_wl *) h_wl;
+void YCSBTxnManager::init(Workload * h_wl) {
+	TxnManager::init(h_wl);
+	_wl = (YCSBWorkload *) h_wl;
 }
 
-bool ycsb_txn_man::conflict(base_query * query1,base_query * query2){
+bool YCSBTxnManager::conflict(BaseQuery * query1,BaseQuery * query2){
   return false;
 }
 
-void ycsb_txn_man::merge_txn_rsp(base_query * query1, base_query *query2) { 
-	ycsb_query * m_query1 = (ycsb_query *) query1;
-	ycsb_query * m_query2 = (ycsb_query *) query2;
+void YCSBTxnManager::merge_txn_rsp(BaseQuery * query1, BaseQuery *query2) { 
+	YCSBQuery * m_query1 = (YCSBQuery *) query1;
+	YCSBQuery * m_query2 = (YCSBQuery *) query2;
 
   if(m_query1->rc == Abort) {
     m_query2->rc = m_query1->rc;
@@ -55,9 +55,9 @@ void ycsb_txn_man::merge_txn_rsp(base_query * query1, base_query *query2) {
 
 }
 
-void ycsb_txn_man::read_keys(base_query * query) {
+void YCSBTxnManager::read_keys(BaseQuery * query) {
   assert(CC_ALG == VLL);
-	ycsb_query * m_query = (ycsb_query *) query;
+	YCSBQuery * m_query = (YCSBQuery *) query;
 	// access the indexes. This is not in the critical section
 	for (uint32_t rid = 0; rid < m_query->request_cnt; rid ++) {
 		ycsb_request * req = &m_query->requests[rid];
@@ -74,9 +74,9 @@ void ycsb_txn_man::read_keys(base_query * query) {
 	}
 }
 
-RC ycsb_txn_man::acquire_locks(base_query * query) {
+RC YCSBTxnManager::acquire_locks(BaseQuery * query) {
   assert(CC_ALG == VLL || CC_ALG == CALVIN);
-	ycsb_query * m_query = (ycsb_query *) query;
+	YCSBQuery * m_query = (YCSBQuery *) query;
   locking_done = false;
   RC rc = RCOK;
   incr_lr();
@@ -110,10 +110,10 @@ RC ycsb_txn_man::acquire_locks(base_query * query) {
 }
 
 
-RC ycsb_txn_man::run_txn(base_query * query) {
+RC YCSBTxnManager::run_txn(BaseQuery * query) {
   /*
 #if MODE==TWOPC
-  ycsb_query * m_query = (ycsb_query*) query;
+  YCSBQuery * m_query = (YCSBQuery*) query;
   m_query->rem_req_state = YCSB_FIN;
 	return finish(query,false);
 #endif
@@ -131,7 +131,7 @@ RC ycsb_txn_man::run_txn(base_query * query) {
   return rc;
 #endif
 #if DEBUG_DISTR
-	ycsb_query * m_query = (ycsb_query *) query;
+	YCSBQuery * m_query = (YCSBQuery *) query;
   if(IS_LOCAL(m_query->txn_id) && m_query->txn_rtype == YCSB_0 && m_query->rid == 0) {
     printf("REQ %ld: %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld\n",m_query->txn_id
         ,GET_NODE_ID(m_query->requests[0].key)
@@ -174,8 +174,8 @@ RC ycsb_txn_man::run_txn(base_query * query) {
 
 }
 
-void ycsb_txn_man::next_ycsb_state(base_query * query) {
-	ycsb_query * m_query = (ycsb_query *) query;
+void YCSBTxnManager::next_ycsb_state(BaseQuery * query) {
+	YCSBQuery * m_query = (YCSBQuery *) query;
   switch(m_query->txn_rtype) {
     case YCSB_0:
       m_query->txn_rtype = YCSB_1;
@@ -208,8 +208,8 @@ void ycsb_txn_man::next_ycsb_state(base_query * query) {
       assert(false);
   }
 }
-void ycsb_txn_man::rtn_ycsb_state(base_query * query) {
-	ycsb_query * m_query = (ycsb_query *) query;
+void YCSBTxnManager::rtn_ycsb_state(BaseQuery * query) {
+	YCSBQuery * m_query = (YCSBQuery *) query;
 
   switch(m_query->txn_rtype) {
     case YCSB_0:
@@ -238,8 +238,8 @@ void ycsb_txn_man::rtn_ycsb_state(base_query * query) {
   }
 }
 
-RC ycsb_txn_man::run_txn_state(base_query * query) {
-	ycsb_query * m_query = (ycsb_query *) query;
+RC YCSBTxnManager::run_txn_state(BaseQuery * query) {
+	YCSBQuery * m_query = (YCSBQuery *) query;
 	//ycsb_request * req = &m_query->requests[m_query->rid];
 	ycsb_request * req = &m_query->req;
 	uint64_t part_id = _wl->key_to_part( req->key );
@@ -310,7 +310,7 @@ RC ycsb_txn_man::run_txn_state(base_query * query) {
   return rc;
 }
 
-RC ycsb_txn_man::run_ycsb_0(ycsb_request * req,row_t *& row_local) {
+RC YCSBTxnManager::run_ycsb_0(ycsb_request * req,row_t *& row_local) {
     RC rc = RCOK;
 		int part_id = _wl->key_to_part( req->key );
 		access_t type = req->acctype;
@@ -329,7 +329,7 @@ RC ycsb_txn_man::run_ycsb_0(ycsb_request * req,row_t *& row_local) {
 
 }
 
-RC ycsb_txn_man::run_ycsb_1(access_t acctype, row_t * row_local) {
+RC YCSBTxnManager::run_ycsb_1(access_t acctype, row_t * row_local) {
   if (acctype == RD || acctype == SCAN) {
     int fid = 0;
 		char * data = row_local->get_data();
@@ -346,8 +346,8 @@ RC ycsb_txn_man::run_ycsb_1(access_t acctype, row_t * row_local) {
   } 
   return RCOK;
 }
-RC ycsb_txn_man::run_calvin_txn(base_query * query) {
-	ycsb_query * m_query = (ycsb_query *) query;
+RC YCSBTxnManager::run_calvin_txn(BaseQuery * query) {
+	YCSBQuery * m_query = (YCSBQuery *) query;
   RC rc = RCOK;
   while(rc == RCOK && this->phase < 6) {
     switch(this->phase) {
@@ -447,9 +447,9 @@ RC ycsb_txn_man::run_calvin_txn(base_query * query) {
   return rc;
 }
 
-RC ycsb_txn_man::run_ycsb(base_query * query) {
+RC YCSBTxnManager::run_ycsb(BaseQuery * query) {
   RC rc = RCOK;
-	ycsb_query * m_query = (ycsb_query *) query;
+	YCSBQuery * m_query = (YCSBQuery *) query;
   assert(CC_ALG == CALVIN);
   
   for (uint64_t i = 0; i < m_query->request_cnt; i++) {

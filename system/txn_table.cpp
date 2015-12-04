@@ -25,7 +25,7 @@
 #include "mem_alloc.h"
 #include "row.h"
 #include "plock.h"
-#include "txn_pool.h"
+#include "pool.h"
 
 #define MODIFY_START(i) {\
     pthread_mutex_lock(&pool[i].mtx);\
@@ -104,7 +104,7 @@ void TxnTable::dump() {
   }
 }
 
-void TxnTable::add_txn(uint64_t node_id, txn_man * txn, base_query * qry) {
+void TxnTable::add_txn(uint64_t node_id, TxnManager * txn, BaseQuery * qry) {
 
   DEBUG_R("Add (%ld,%ld) 0x%lx\n",qry->txn_id,qry->batch_id,(uint64_t)qry);
   uint64_t thd_prof_start = get_sys_clock();
@@ -112,7 +112,7 @@ void TxnTable::add_txn(uint64_t node_id, txn_man * txn, base_query * qry) {
   uint64_t txn_id = txn->get_txn_id();
   assert(txn_id == qry->txn_id);
 
-  txn_man * next_txn = NULL;
+  TxnManager * next_txn = NULL;
   assert(txn->get_txn_id() == qry->txn_id);
 
   MODIFY_START(txn_id % pool_size);
@@ -169,7 +169,7 @@ void TxnTable::add_txn(uint64_t node_id, txn_man * txn, base_query * qry) {
   INC_STATS(0,thd_prof_txn_table_add,get_sys_clock() - thd_prof_start);
 }
 
-void TxnTable::get_txn(uint64_t node_id, uint64_t txn_id,uint64_t batch_id,txn_man *& txn,base_query *& qry){
+void TxnTable::get_txn(uint64_t node_id, uint64_t txn_id,uint64_t batch_id,TxnManager *& txn,BaseQuery *& qry){
 
   uint64_t thd_prof_start = get_sys_clock();
   txn = NULL;

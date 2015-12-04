@@ -33,16 +33,16 @@ void PartMan::init(uint64_t node_id, uint64_t part_id) {
 	_node_id = node_id; 
 	waiter_cnt = 0;
 	owner = NULL;
-	waiters = (txn_man **)
-		mem_allocator.alloc(sizeof(txn_man *) * g_node_cnt * g_inflight_max, part_id_tmp);
+	waiters = (TxnManager **)
+		mem_allocator.alloc(sizeof(TxnManager *) * g_node_cnt * g_inflight_max, part_id_tmp);
 	pthread_mutex_init( &latch, NULL );
 }
 
 void PartMan::start_spec_ex() {
   pthread_mutex_lock( &latch );
 
-  txn_man * tmp_txn;
-  base_query * owner_qry;
+  TxnManager * tmp_txn;
+  BaseQuery * owner_qry;
   txn_table.get_txn(GET_NODE_ID(owner->get_pid()), owner->get_txn_id(),0,tmp_txn,owner_qry);
   for (UInt32 i = 0; i < waiter_cnt - 1; i++) {
     if(waiters[i]->spec)
@@ -51,7 +51,7 @@ void PartMan::start_spec_ex() {
       continue;
       //check for conflicts
     // TODO: Check for conflicts with all waiters earlier in queue, not just the plock owner
-    base_query * waiter_qry;
+    BaseQuery * waiter_qry;
     txn_table.get_txn(GET_NODE_ID(waiters[i]->get_pid()), waiters[i]->get_txn_id(),0,tmp_txn,waiter_qry);
     if(waiters[i]->conflict(owner_qry,waiter_qry))
       continue;
@@ -63,7 +63,7 @@ void PartMan::start_spec_ex() {
   pthread_mutex_unlock( &latch );
 }
 
-RC PartMan::lock(txn_man * txn) {
+RC PartMan::lock(TxnManager * txn) {
   RC rc;
 
   pthread_mutex_lock( &latch );
@@ -84,11 +84,11 @@ RC PartMan::lock(txn_man * txn) {
       // Model after RACK
       //printf("Local RACK 3 -- %ld\n",_part_id);
 #if WORKLOAD == TPCC
-	    base_query * tmp_query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), 0);
-	      tmp_query = new tpcc_query();
+	    BaseQuery * tmp_query = (TPCCQuery *) mem_allocator.alloc(sizeof(TPCCQuery), 0);
+	      tmp_query = new TPCCQuery();
 #elif WORKLOAD == YCSB
-	    base_query * tmp_query = (ycsb_query *) mem_allocator.alloc(sizeof(ycsb_query), 0);
-        tmp_query = new ycsb_query();
+	    BaseQuery * tmp_query = (YCSBQuery *) mem_allocator.alloc(sizeof(YCSBQuery), 0);
+        tmp_query = new YCSBQuery();
 #endif
         tmp_query->set_txn_id(owner->get_txn_id());
         tmp_query->ts = owner->get_ts();
@@ -135,11 +135,11 @@ RC PartMan::lock(txn_man * txn) {
       // Model after RACK
       //printf("Local RACK 1 -- %ld\n",_part_id);
 #if WORKLOAD == TPCC
-	    base_query * tmp_query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), 0);
-	      tmp_query = new tpcc_query();
+	    BaseQuery * tmp_query = (TPCCQuery *) mem_allocator.alloc(sizeof(TPCCQuery), 0);
+	      tmp_query = new TPCCQuery();
 #elif WORKLOAD == YCSB
-	    base_query * tmp_query = (ycsb_query *) mem_allocator.alloc(sizeof(ycsb_query), 0);
-        tmp_query = new ycsb_query();
+	    BaseQuery * tmp_query = (YCSBQuery *) mem_allocator.alloc(sizeof(YCSBQuery), 0);
+        tmp_query = new YCSBQuery();
 #endif
         tmp_query->set_txn_id(txn->get_txn_id());
         tmp_query->ts = txn->get_ts();
@@ -156,7 +156,7 @@ RC PartMan::lock(txn_man * txn) {
   return rc;
 }
 
-void PartMan::unlock(txn_man * txn) {
+void PartMan::unlock(TxnManager * txn) {
   pthread_mutex_lock( &latch );
   if (txn == owner) {   
 #if DEBUG_TIMELINE
@@ -201,11 +201,11 @@ void PartMan::unlock(txn_man * txn) {
           // Model after RACK
       //printf("Local RACK 2 -- %ld\n",_part_id);
 #if WORKLOAD == TPCC
-	    base_query * tmp_query = (tpcc_query *) mem_allocator.alloc(sizeof(tpcc_query), 0);
-	      tmp_query = new tpcc_query();
+	    BaseQuery * tmp_query = (TPCCQuery *) mem_allocator.alloc(sizeof(TPCCQuery), 0);
+	      tmp_query = new TPCCQuery();
 #elif WORKLOAD == YCSB
-	    base_query * tmp_query = (ycsb_query *) mem_allocator.alloc(sizeof(ycsb_query), 0);
-        tmp_query = new ycsb_query();
+	    BaseQuery * tmp_query = (YCSBQuery *) mem_allocator.alloc(sizeof(YCSBQuery), 0);
+        tmp_query = new YCSBQuery();
 #endif
         tmp_query->set_txn_id(owner->get_txn_id());
         tmp_query->ts = owner->get_ts();
@@ -258,7 +258,7 @@ final:
 }
 
 
-void PartMan::remote_rsp(bool l, RC rc, txn_man * txn) {
+void PartMan::remote_rsp(bool l, RC rc, TxnManager * txn) {
   msg_queue.enqueue(txn->get_query(),RACK,GET_NODE_ID(txn->get_pid()));
 
 }
@@ -282,7 +282,7 @@ void Plock::start_spec_ex(uint64_t * parts, uint64_t part_cnt) {
   }
 }
 
-RC Plock::lock(uint64_t * parts, uint64_t part_cnt, txn_man * txn) {
+RC Plock::lock(uint64_t * parts, uint64_t part_cnt, TxnManager * txn) {
 	uint64_t tid = txn->get_thd_id();
   // Part ID is at home node
 	uint64_t nid = txn->get_node_id();
@@ -327,7 +327,7 @@ RC Plock::lock(uint64_t * parts, uint64_t part_cnt, txn_man * txn) {
 	return RCOK;
 }
 
-RC Plock::unlock(uint64_t * parts, uint64_t part_cnt, txn_man * txn) {
+RC Plock::unlock(uint64_t * parts, uint64_t part_cnt, TxnManager * txn) {
 	uint64_t tid = txn->get_thd_id();
 	//uint64_t nid = txn->get_node_id();
 	ts_t starttime = get_sys_clock();
@@ -357,7 +357,7 @@ RC Plock::unlock(uint64_t * parts, uint64_t part_cnt, txn_man * txn) {
   return RCOK;
 }
 
-void Plock::unpack_rsp(base_query * query, void * d) {
+void Plock::unpack_rsp(BaseQuery * query, void * d) {
 	char * data = (char *) d;
 	uint64_t ptr = HEADER_SIZE + sizeof(txnid_t) + sizeof(RemReqType);
 	memcpy(&query->rc,&data[ptr],sizeof(RC));
@@ -368,7 +368,7 @@ void Plock::unpack_rsp(base_query * query, void * d) {
 	ptr += sizeof(query->ts);
 }
 
-void Plock::unpack(base_query * query, char * data) {
+void Plock::unpack(BaseQuery * query, char * data) {
 	uint64_t ptr = HEADER_SIZE + sizeof(txnid_t) + sizeof(RemReqType);
 	assert(query->rtype == RLK || query->rtype == RULK);
 		
@@ -386,7 +386,7 @@ void Plock::unpack(base_query * query, char * data) {
 }
 
 
-RC Plock::rem_lock(uint64_t * parts, uint64_t part_cnt, txn_man * txn) {
+RC Plock::rem_lock(uint64_t * parts, uint64_t part_cnt, TxnManager * txn) {
   RC rc;
   assert(part_cnt >= 1);
 	ts_t starttime = get_sys_clock();
@@ -399,7 +399,7 @@ RC Plock::rem_lock(uint64_t * parts, uint64_t part_cnt, txn_man * txn) {
   return rc;
 }
 
-void Plock::rem_unlock(uint64_t * parts, uint64_t part_cnt, txn_man * txn) {
+void Plock::rem_unlock(uint64_t * parts, uint64_t part_cnt, TxnManager * txn) {
 	ts_t starttime = get_sys_clock();
 	for (UInt32 i = 0; i < part_cnt; i ++) {
 		uint64_t part_id = parts[i];
@@ -409,7 +409,7 @@ void Plock::rem_unlock(uint64_t * parts, uint64_t part_cnt, txn_man * txn) {
   INC_STATS(txn->get_thd_id(), time_lock_man, get_sys_clock() - starttime);
 }
 
-void Plock::rem_lock_rsp(RC rc, txn_man * txn) {
+void Plock::rem_lock_rsp(RC rc, TxnManager * txn) {
 	ts_t starttime = get_sys_clock();
 	if(rc != RCOK) {
     assert(rc == Abort);
@@ -419,7 +419,7 @@ void Plock::rem_lock_rsp(RC rc, txn_man * txn) {
 	INC_STATS(txn->get_thd_id(), time_lock_man, get_sys_clock() - starttime);
 }
 
-void Plock::rem_unlock_rsp(txn_man * txn) {
+void Plock::rem_unlock_rsp(TxnManager * txn) {
 	ts_t starttime = get_sys_clock();
 	ATOM_SUB(txn->ready_ulk, 1);
 	INC_STATS(txn->get_thd_id(), time_lock_man, get_sys_clock() - starttime);

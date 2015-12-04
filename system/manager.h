@@ -21,7 +21,7 @@
 #include "global.h"
 
 class row_t;
-class txn_man;
+class TxnManager;
 
 class Manager {
 public:
@@ -39,15 +39,15 @@ public:
  	void 			lock_row(row_t * row);
 	void 			release_row(row_t * row);
 	
-	txn_man * 		get_txn_man(int thd_id) { return _all_txns[thd_id]; };
-	void 			set_txn_man(txn_man * txn);
+	TxnManager * 		get_txn_man(int thd_id) { return _all_txns[thd_id]; };
+	void 			set_txn_man(TxnManager * txn);
 private:
 	pthread_mutex_t ts_mutex;
 	uint64_t 		timestamp;
 	pthread_mutex_t mutexes[BUCKET_CNT];
 	uint64_t 		hash(row_t * row);
 	ts_t * volatile all_ts;
-	txn_man ** 		_all_txns;
+	TxnManager ** 		_all_txns;
 	ts_t			last_min_ts_time;
 	ts_t			min_ts;
 };

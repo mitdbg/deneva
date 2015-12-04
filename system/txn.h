@@ -22,17 +22,14 @@
 #include "semaphore.h"
 //#include "wl.h"
 
-class workload;
-class thread_t;
+class Workload;
+class Thread;
 class row_t;
 class table_t;
-class base_query;
+class BaseQuery;
 class INDEX;
 class TxnQEntry; 
 //class r_query;
-
-// each thread has a txn_man. 
-// a txn_man corresponds to a single transaction.
 
 //For VLL
 enum TxnType {VLL_Blocked, VLL_Free};
@@ -48,35 +45,35 @@ public:
 	void cleanup();
 };
 
-class txn_man
+class TxnManager
 {
 public:
-	virtual void init(workload * h_wl);
+	virtual void init(Workload * h_wl);
   void clear();
   void reset();
 	void release();
-	thread_t * h_thd;
-	workload * h_wl;
+	Thread * h_thd;
+	Workload * h_wl;
 	myrand * mrand;
 	uint64_t abort_cnt;
     volatile uint64_t ack_cnt;
 
-	virtual RC 		run_txn(base_query * m_query) = 0;
-  virtual RC run_calvin_txn(base_query * qry) = 0; 
-	//virtual RC 		run_rem_txn(base_query * m_query) = 0;
-	virtual void 		merge_txn_rsp(base_query * m_query1, base_query *m_query2) = 0;
-  virtual bool  conflict(base_query * query1,base_query * query2) = 0;
-  virtual void read_keys(base_query * query) = 0; 
-  virtual RC acquire_locks(base_query * query) = 0; 
-  void register_thd(thread_t * h_thd);
+	virtual RC 		run_txn(BaseQuery * m_query) = 0;
+  virtual RC run_calvin_txn(BaseQuery * qry) = 0; 
+	//virtual RC 		run_rem_txn(BaseQuery * m_query) = 0;
+	virtual void 		merge_txn_rsp(BaseQuery * m_query1, BaseQuery *m_query2) = 0;
+  virtual bool  conflict(BaseQuery * query1,BaseQuery * query2) = 0;
+  virtual void read_keys(BaseQuery * query) = 0; 
+  virtual RC acquire_locks(BaseQuery * query) = 0; 
+  void register_thd(Thread * h_thd);
   void update_stats(); 
 	uint64_t 		get_thd_id();
 	uint64_t 		get_node_id();
-	workload * 		get_wl();
+	Workload * 		get_wl();
 	void 			set_txn_id(txnid_t txn_id);
 	txnid_t 		get_txn_id();
-  void set_query(base_query * qry);
-  base_query * get_query();
+  void set_query(BaseQuery * qry);
+  BaseQuery * get_query();
 
   void      set_pid(uint64_t pid);
   uint64_t get_pid();
@@ -106,12 +103,12 @@ public:
   RC        validate();
 	RC 				finish(RC rc, uint64_t * parts, uint64_t part_cnt);
 	RC 				finish_local(RC rc, uint64_t * parts, uint64_t part_cnt);
-	RC 				finish(base_query * query,bool fin);
+	RC 				finish(BaseQuery * query,bool fin);
 	void 			cleanup(RC rc);
-  RC              rem_fin_txn(base_query * query);
-  RC              loc_fin_txn(base_query * query);
-  RC send_remote_reads(base_query * qry); 
-  RC calvin_finish(base_query * qry); 
+  RC              rem_fin_txn(BaseQuery * query);
+  RC              loc_fin_txn(BaseQuery * query);
+  RC send_remote_reads(BaseQuery * qry); 
+  RC calvin_finish(BaseQuery * qry); 
 
 	////////////////////////////////
 	// LOGGING
@@ -177,7 +174,7 @@ public:
   bool spec;
   bool spec_done;
 
-  base_query * myquery;
+  BaseQuery * myquery;
 
   // For performance measurements
   uint64_t starttime;

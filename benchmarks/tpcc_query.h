@@ -14,15 +14,15 @@
    limitations under the License.
 */
 
-#ifndef _TPCC_QUERY_H_
-#define _TPCC_QUERY_H_
+#ifndef _TPCCQuery_H_
+#define _TPCCQuery_H_
 
 #include "global.h"
 #include "helper.h"
 #include "query.h"
 #include "remote_query.h"
 
-class workload;
+class Workload;
 
 // items of new order transaction
 struct Item_no {
@@ -53,10 +53,10 @@ enum TPCCRemTxnType {
   TPCC_FIN,
   TPCC_RDONE};
 
-class tpcc_client_query : public base_client_query {
+class TPCCClientQuery : public BaseClientQuery {
 public:
-  void client_init(uint64_t thd_id, workload * h_wl); 
-  void client_init(uint64_t thd_id, workload * h_wl, uint64_t node_id); 
+  void client_init(uint64_t thd_id, Workload * h_wl); 
+  void client_init(uint64_t thd_id, Workload * h_wl, uint64_t node_id); 
 private:
   void gen_payment(uint64_t thd_id); 
   void gen_new_order(uint64_t thd_id); 
@@ -102,20 +102,20 @@ public:
 
 };
 
-class tpcc_query : public base_query {
+class TPCCQuery : public BaseQuery {
 public:
-	void init(uint64_t thd_id, workload * h_wl);
+	void init(uint64_t thd_id, Workload * h_wl);
   void reset();
-	void remote_qry(base_query * query, int type,int dest_id);
-	void remote_rsp(base_query * query);
-	void unpack(base_query * query, void * d);
-	void unpack_rsp(base_query * query, void * d);
-	void pack(base_query * query, void ** data, int * sizes, int * num, RC rc);
-    //void client_query(base_query * query, uint64_t dest_id);
-    void unpack_client(base_query * query, void * d); 
-  base_query * merge(base_query * query); 
-  uint64_t participants(bool *& pps,workload * wl); 
-  void deep_copy(base_query * qry); 
+	void remote_qry(BaseQuery * query, int type,int dest_id);
+	void remote_rsp(BaseQuery * query);
+	void unpack(BaseQuery * query, void * d);
+	void unpack_rsp(BaseQuery * query, void * d);
+	void pack(BaseQuery * query, void ** data, int * sizes, int * num, RC rc);
+    //void client_query(BaseQuery * query, uint64_t dest_id);
+    void unpack_client(BaseQuery * query, void * d); 
+  BaseQuery * merge(BaseQuery * query); 
+  uint64_t participants(bool *& pps,Workload * wl); 
+  void deep_copy(BaseQuery * qry); 
   bool readonly();
 	//uint64_t rtn_node_id;
 	TPCCTxnType txn_type;

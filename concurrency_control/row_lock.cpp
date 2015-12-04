@@ -43,13 +43,13 @@ void Row_lock::init(row_t * row) {
 
 }
 
-RC Row_lock::lock_get(lock_t type, txn_man * txn) {
+RC Row_lock::lock_get(lock_t type, TxnManager * txn) {
 	uint64_t *txnids = NULL;
 	int txncnt = 0;
 	return lock_get(type, txn, txnids, txncnt);
 }
 
-RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt) {
+RC Row_lock::lock_get(lock_t type, TxnManager * txn, uint64_t* &txnids, int &txncnt) {
 	assert (CC_ALG == DL_DETECT || CC_ALG == NO_WAIT || CC_ALG == WAIT_DIE || CC_ALG == CALVIN);
 	RC rc;
 	//int part_id =_row->get_part_id(); // This was for DL_DETECT
@@ -260,7 +260,7 @@ final:
 }
 
 
-RC Row_lock::lock_release(txn_man * txn) {	
+RC Row_lock::lock_release(TxnManager * txn) {	
 
   uint64_t thd_prof_start = get_sys_clock();
 	if (g_central_man)

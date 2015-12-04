@@ -17,7 +17,6 @@
 #include "global.h"
 #include "ycsb.h"
 #include "tpcc.h"
-#include "test.h"
 #include "client_thread.h"
 #include "mem_alloc.h"
 #include "client_query.h"
@@ -66,20 +65,16 @@ int main(int argc, char* argv[])
   fflush(stdout);
 	stats.init();
   printf("Done\n");
-	workload * m_wl;
+	Workload * m_wl;
 	switch (WORKLOAD) {
 		case YCSB :
-			m_wl = new ycsb_wl; break;
+			m_wl = new YCSBWorkload; break;
 		case TPCC :
-			m_wl = new tpcc_wl; break;
-		case TEST :
-			m_wl = new TestWorkload; 
-			((TestWorkload *)m_wl)->tick();
-			break;
+			m_wl = new TPCCWorkload; break;
 		default:
 			assert(false);
 	}
-	m_wl->workload::init();
+	m_wl->Workload::init();
 	printf("workload initialized!\n");
 #if NETWORK_TEST
 	tport_man.init(g_node_id,m_wl);
@@ -133,9 +128,7 @@ int main(int argc, char* argv[])
   printf("Done\n");
   printf("Initializing client query queue... ");
   fflush(stdout);
-	if (WORKLOAD != TEST) {
-		client_query_queue.init(m_wl);
-	}
+  client_query_queue.init(m_wl);
   printf("Done\n");
   fflush(stdout);
 
@@ -194,13 +187,9 @@ int main(int argc, char* argv[])
 
 	endtime = get_server_clock();
 	
-	if (WORKLOAD != TEST) {
-		printf("CLIENT PASS! SimTime = %ld\n", endtime - starttime);
-		if (STATS_ENABLE)
-			stats.print_client(false);
-	} else {
-		((TestWorkload *)m_wl)->summarize();
-	}
+  printf("CLIENT PASS! SimTime = %ld\n", endtime - starttime);
+  if (STATS_ENABLE)
+    stats.print_client(false);
   // Free stuff
 	//tport_man.shutdown();
   /*

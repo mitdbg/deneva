@@ -45,10 +45,8 @@ fmt_title=["NODE_CNT","CC_ALG","ACCESS_PERC","TXN_WRITE_PERC","PERC_PAYMENT","MP
 def tpcc_scaling_whset():
     wl = 'TPCC'
     nnodes = [1,2,4,8,16,32,64]
-    nnodes = [8]
     nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP','CALVIN']
     npercpay=[0.0,0.5,1.0]
-    npercpay=[0.5]
     wh=128
     fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PERC_PAYMENT","NUM_WH"]
     exp = [[wl,n,cc,pp,wh] for pp,n,cc in itertools.product(npercpay,nnodes,nalgos)]
@@ -90,9 +88,7 @@ def ycsb_gold():
 def ycsb_contention_2_nodesweep():
     wl = 'YCSB'
     nnodes = [2,4,8,16,32]
-#    nnodes = [16]
     nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP','CALVIN']
-#    nalgos=['CALVIN']
     nparts = [2]
     a_perc=[0.0,0.01,0.02,0.03,0.05,0.06,0.07]
 #    fmt = ["WORKLOAD","ACCESS_PERC","CC_ALG","PART_PER_TXN","MAX_TXN_IN_FLIGHT","NODE_CNT"]
@@ -119,6 +115,16 @@ def ycsb_parts():
 # /END/ SIGMOD PAPER PLOTS
 ##############################
 
+
+def test():
+    wl = 'YCSB'
+    nnodes = [1,2,4,8,16,32,64]
+    nnodes = [2]
+    nwr = [0.2]
+    nalgos=['OCC']
+    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PART_PER_TXN","TUP_WRITE_PERC","MAX_TXN_IN_FLIGHT"]
+    exp = [[wl,n,cc,2,wr,20000] for n,cc,wr in itertools.product(nnodes,nalgos,nwr)]
+    return fmt,exp
 
 def tpcc_priorities():
     wl = 'TPCC'
@@ -811,6 +817,7 @@ experiment_map = {
     'ycsb_contention_N_plot': ycsb_contention_N_plot,
     'ft_mode': ft_mode,
     'ft_mode_plot': ft_mode_plot,
+    'test': test,
     'test_plot': test_plot,
     'network_sweep': network_sweep,
     'network_sweep_plot': network_sweep_plot,

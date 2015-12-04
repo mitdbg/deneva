@@ -22,22 +22,22 @@
 #include "remote_query.h"
 #include "query.h"
 
-class txn_man;
+class TxnManager;
 
 // Parition manager for HSTORE / HSTORE_SPEC
 class PartMan {
 public:
 	void init(uint64_t node_id,uint64_t part_id);
   void start_spec_ex(); 
-	RC lock(txn_man * txn);
-	void unlock(txn_man * txn);
-	void remote_rsp(bool l, RC rc, txn_man * txn);
+	RC lock(TxnManager * txn);
+	void unlock(TxnManager * txn);
+	void remote_rsp(bool l, RC rc, TxnManager * txn);
 private:
 	uint64_t _node_id;
 	pthread_mutex_t latch;
   // TODO: Change back to owner / waiters
-	txn_man * owner;
-	txn_man ** waiters;
+	TxnManager * owner;
+	TxnManager ** waiters;
 	UInt32 waiter_cnt;
   uint64_t _part_id;
   /*
@@ -80,17 +80,17 @@ public:
 	void init(uint64_t node_id);
   void start_spec_ex(uint64_t * parts, uint64_t part_cnt); 
 	// lock all partitions in parts
-	RC lock(uint64_t * parts, uint64_t part_cnt, txn_man * txn);
-	RC unlock(uint64_t * parts, uint64_t part_cnt, txn_man * txn);
+	RC lock(uint64_t * parts, uint64_t part_cnt, TxnManager * txn);
+	RC unlock(uint64_t * parts, uint64_t part_cnt, TxnManager * txn);
 
-	void unpack_rsp(base_query * query, void * d);
-	void unpack(base_query * query, char * data);
-	void remote_qry(bool l, uint64_t lid, txn_man * txn);
+	void unpack_rsp(BaseQuery * query, void * d);
+	void unpack(BaseQuery * query, char * data);
+	void remote_qry(bool l, uint64_t lid, TxnManager * txn);
 	uint64_t get_node_id() {return _node_id;};
-	RC rem_lock(uint64_t * parts, uint64_t part_cnt, txn_man * txn); 
-	void rem_unlock(uint64_t * parts, uint64_t part_cnt, txn_man * txn);
-	void rem_lock_rsp(RC rc, txn_man * txn);
-  void rem_unlock_rsp(txn_man * txn);
+	RC rem_lock(uint64_t * parts, uint64_t part_cnt, TxnManager * txn); 
+	void rem_unlock(uint64_t * parts, uint64_t part_cnt, TxnManager * txn);
+	void rem_lock_rsp(RC rc, TxnManager * txn);
+  void rem_unlock_rsp(TxnManager * txn);
 private:
 	uint64_t _node_id;
 	PartMan ** part_mans;

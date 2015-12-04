@@ -19,10 +19,10 @@
 
 class table_t;
 class Catalog;
-class txn_man;
+class TxnManager;
 
 struct MVReqEntry {
-	txn_man * txn;
+	TxnManager * txn;
 	ts_t ts;
 	ts_t starttime;
 	MVReqEntry * next;
@@ -43,7 +43,7 @@ struct MVHisEntry {
 class Row_mvcc {
 public:
 	void init(row_t * row);
-	RC access(txn_man * txn, TsType type, row_t * row);
+	RC access(TxnManager * txn, TsType type, row_t * row);
 private:
  	pthread_mutex_t * latch;
 	bool blatch;
@@ -55,9 +55,9 @@ private:
 	void return_his_entry(MVHisEntry * entry);
 
 	bool conflict(TsType type, ts_t ts);
-	void buffer_req(TsType type, txn_man * txn);
-	MVReqEntry * debuffer_req( TsType type, txn_man * txn = NULL);
-	void update_buffer(txn_man * txn);
+	void buffer_req(TsType type, TxnManager * txn);
+	MVReqEntry * debuffer_req( TsType type, TxnManager * txn = NULL);
+	void update_buffer(TxnManager * txn);
 	void insert_history( ts_t ts, row_t * row);
 
 	row_t * clear_history(TsType type, ts_t ts); 

@@ -14,15 +14,15 @@
    limitations under the License.
 */
 
-#ifndef _YCSB_QUERY_H_
-#define _YCSB_QUERY_H_
+#ifndef _YCSBQuery_H_
+#define _YCSBQuery_H_
 
 #include "global.h"
 #include "helper.h"
 #include "query.h"
 #include "remote_query.h"
 
-class workload;
+class Workload;
 
 enum YCSBRemTxnType {
   YCSB_0,
@@ -30,7 +30,7 @@ enum YCSBRemTxnType {
   YCSB_FIN,
   YCSB_RDONE
 };
-// Each ycsb_query contains several ycsb_requests, 
+// Each YCSBQuery contains several ycsb_requests, 
 // each of which is a RD, WR or SCAN 
 // to a single table
 
@@ -46,23 +46,23 @@ public:
 	UInt32 scan_len;
 };
 
-class ycsb_client_query : public base_client_query {
+class YCSBClientQuery : public BaseClientQuery {
   public:
-	void client_init(uint64_t thd_id, workload * h_wl);
-  void client_init(uint64_t thd_id, workload * h_wl, uint64_t node_id);
+	void client_init(uint64_t thd_id, Workload * h_wl);
+  void client_init(uint64_t thd_id, Workload * h_wl, uint64_t node_id);
   void client_init();
   
   // calvin
-  //void client_query(base_client_query * query, uint64_t dest_id, uint64_t batch_num,
+  //void client_query(BaseClientQuery * query, uint64_t dest_id, uint64_t batch_num,
 //		  txnid_t txn_id);
 
 	uint64_t request_cnt;
 	ycsb_request * requests;
 
 private:
-	void gen_requests(uint64_t thd_id, workload * h_wl);
-	void gen_requests2(uint64_t thd_id, workload * h_wl);
-	void gen_requests3(uint64_t thd_id, workload * h_wl);
+	void gen_requests(uint64_t thd_id, Workload * h_wl);
+	void gen_requests2(uint64_t thd_id, Workload * h_wl);
+	void gen_requests3(uint64_t thd_id, Workload * h_wl);
 	// for Zipfian distribution
 	double zeta(uint64_t n, double theta);
 	uint64_t zipf(uint64_t n, double theta);
@@ -75,22 +75,22 @@ private:
 };
 
 // Beware diamond inheritance...
-class ycsb_query : public base_query {
+class YCSBQuery : public BaseQuery {
 public:
-	void init(uint64_t thd_id, workload * h_wl);
+	void init(uint64_t thd_id, Workload * h_wl);
   void init();
   void reset();
-  void unpack_rsp(base_query * query, void * d); 
-  void client_query(base_query * query, uint64_t dest_id) {} 
-  uint64_t participants(bool *& pps,workload * wl); 
-  void deep_copy(base_query * qry); 
+  void unpack_rsp(BaseQuery * query, void * d); 
+  void client_query(BaseQuery * query, uint64_t dest_id) {} 
+  uint64_t participants(bool *& pps,Workload * wl); 
+  void deep_copy(BaseQuery * qry); 
   bool readonly();
 	
-  base_query * merge(base_query * query); 
-void unpack(base_query * query, void * d) ;
-void remote_qry(base_query * query, int type, int dest_id) ;
-void remote_rsp(base_query * query) ;
-//void unpack_client(base_query * query, void * d) ;
+  BaseQuery * merge(BaseQuery * query); 
+void unpack(BaseQuery * query, void * d) ;
+void remote_qry(BaseQuery * query, int type, int dest_id) ;
+void remote_rsp(BaseQuery * query) ;
+//void unpack_client(BaseQuery * query, void * d) ;
 
   uint64_t access_cnt;
 	uint64_t request_cnt;

@@ -63,7 +63,7 @@ void Row_ts::return_req_list(TsReqEntry * list) {
 	}
 }
 
-void Row_ts::buffer_req(TsType type, txn_man * txn, row_t * row)
+void Row_ts::buffer_req(TsType type, TxnManager * txn, row_t * row)
 {
   uint64_t starttime = get_sys_clock();
 	TsReqEntry * req_entry = get_req_entry();
@@ -92,7 +92,7 @@ void Row_ts::buffer_req(TsType type, txn_man * txn, row_t * row)
   INC_STATS(0,thd_prof_mvcc1,get_sys_clock() - starttime);
 }
 
-TsReqEntry * Row_ts::debuffer_req(TsType type, txn_man * txn) {
+TsReqEntry * Row_ts::debuffer_req(TsType type, TxnManager * txn) {
 	return debuffer_req(type, txn, UINT64_MAX);
 }
 	
@@ -100,7 +100,7 @@ TsReqEntry * Row_ts::debuffer_req(TsType type, ts_t ts) {
 	return debuffer_req(type, NULL, ts);
 }
 
-TsReqEntry * Row_ts::debuffer_req( TsType type, txn_man * txn, ts_t ts ) {
+TsReqEntry * Row_ts::debuffer_req( TsType type, TxnManager * txn, ts_t ts ) {
 	TsReqEntry ** queue;
 	TsReqEntry * return_queue = NULL;
 	switch (type) {
@@ -169,7 +169,7 @@ ts_t Row_ts::cal_min(TsType type) {
 	return new_min_pts;
 }
 
-RC Row_ts::access(txn_man * txn, TsType type, row_t * row) {
+RC Row_ts::access(TxnManager * txn, TsType type, row_t * row) {
 	RC rc;
 	ts_t ts = txn->get_ts();
   uint64_t starttime = get_sys_clock();

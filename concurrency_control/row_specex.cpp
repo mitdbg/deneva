@@ -31,7 +31,7 @@ Row_specex::init(row_t * row) {
 }
 
 RC
-Row_specex::access(txn_man * txn, TsType type) {
+Row_specex::access(TxnManager * txn, TsType type) {
 	RC rc = RCOK;
 	pthread_mutex_lock( _latch );
 	if (type == R_REQ) {

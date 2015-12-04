@@ -21,20 +21,20 @@
 #include "helper.h"
 #include "query.h"
 
-class workload;
-class ycsb_query;
-class ycsb_client_query;
-class tpcc_query;
+class Workload;
+class YCSBQuery;
+class YCSBClientQuery;
+class TPCCQuery;
 class tpcc_client_query;
 
 //enum RemReqType {INIT_DONE,RLK, RULK, RQRY, RFIN, RLK_RSP, RULK_RSP, RQRY_RSP, RACK, RTXN, RINIT, RPREPARE,RPASS};
 
-//class client_base_query {
+//class client_BaseQuery {
 //public:
-//	virtual void init(uint64_t thd_id, workload * h_wl) = 0;
+//	virtual void init(uint64_t thd_id, Workload * h_wl) = 0;
 //    virtual void reset() = 0;
-//    virtual void unpack_rsp(base_query * query, void * d) = 0;
-//    virtual void unpack(base_query * query, void * d) = 0;
+//    virtual void unpack_rsp(BaseQuery * query, void * d) = 0;
+//    virtual void unpack(BaseQuery * query, void * d) = 0;
 //	uint64_t waiting_time;
 //	uint64_t part_num;
 //	uint64_t * part_to_access;
@@ -69,28 +69,28 @@ class tpcc_client_query;
 //  void clear();
 //  void update_rc(RC rc);
 //  void set_txn_id(uint64_t _txn_id); 
-//  void remote_prepare(base_query * query, int dest_id);
-//  void remote_finish(base_query * query, int dest_id);
-//  void unpack_finish(base_query * query, void *d);
+//  void remote_prepare(BaseQuery * query, int dest_id);
+//  void remote_finish(BaseQuery * query, int dest_id);
+//  void unpack_finish(BaseQuery * query, void *d);
 //};
 
 // All the queries for a particular thread.
 class Client_query_thd {
 public:
-	void init(workload * h_wl, int thread_id);
+	void init(Workload * h_wl, int thread_id);
   bool done(); 
   void init_txns_file(const char * txn_file);
-	base_client_query * get_next_query(uint64_t tid); 
-	//base_query * get_next_query(uint64_t tid); 
+	BaseClientQuery * get_next_query(uint64_t tid); 
+	//BaseQuery * get_next_query(uint64_t tid); 
   volatile uint64_t q_idx;
   static void * threadInitQuery(void * id);
   void init_query();
   int next_tid;
   uint64_t thread_id;
-  workload * h_wl;
+  Workload * h_wl;
 #if WORKLOAD == YCSB
-	ycsb_client_query * queries;
-	//ycsb_query * queries;
+	YCSBClientQuery * queries;
+	//YCSBQuery * queries;
 #else 
 	tpcc_client_query * queries;
 #endif
@@ -102,15 +102,15 @@ public:
 // queue model might be implemented.
 class Client_query_queue {
 public:
-	void init(workload * h_wl);
+	void init(Workload * h_wl);
 	void init(int thread_id);
   bool done(); 
-	base_client_query * get_next_query(uint64_t nid, uint64_t tid); 
-	//base_query * get_next_query(uint64_t nid, uint64_t tid); 
+	BaseClientQuery * get_next_query(uint64_t nid, uint64_t tid); 
+	//BaseQuery * get_next_query(uint64_t nid, uint64_t tid); 
 	
 private:
 	Client_query_thd ** all_queries;
-	workload * _wl;
+	Workload * _wl;
 };
 
 #endif
