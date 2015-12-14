@@ -1,6 +1,6 @@
 SETUP
 -----------------------------
-Dependencies:
+== Dependencies ==
 nanomsg (nanomsg.org)
 jemalloc (www.canonware.com/jemalloc)
 
@@ -14,17 +14,18 @@ DBMS BENCHMARK
   dbms is a OLTP database benchmark with the following features.
   
   1. Seven different concurrency control algorithms are supported.
-    DL_DETECT[1]	: deadlock detection 
 	NO_WAIT[1]		: no wait two phase locking
 	WAIT_DIE[1]		: wait and die two phase locking
 	TIMESTAMP[1]	: basic T/O
 	MVCC[1]			: multi-version T/O
-	HSTORE[3]		: H-STORE
 	OCC[2]			: optimistic concurrency control
+	HSTORE[3]		: H-STORE
+	CALVIN[4]		: Calvin
 
   [1] Phlip Bernstein, Nathan Goodman, "Concurrency Control in Distributed Database Systems", Computing Surveys, June 1981
   [2] H.T. Kung, John Robinson, "On Optimistic Methods for Concurrency Control", Transactions on Database Systems, June 1981
   [3] R. Kallman et al, "H-Store: a High-Performance, Distributed Main Memory Transaction Processing System,", VLDB 2008
+  [4] A. Thomson et al, "Calvin: Fast Distributed Transactions for Partitioned Database Systems", SIGMOD 2012
 	
   2. Two benchmarks are supported. 
     2.1 YCSB[4]
