@@ -18,6 +18,11 @@
 #define CLIENT_SEND_THREAD_CNT 4
 #define CLIENT_RUNTIME false
 
+// Replication
+#define REPLICA_CNT 0
+// AA (Active-Active), AP (Active-Passive)
+#define REPL_TYPE AA
+
 // each transaction only accesses only 1 virtual partition. But the lock/ts manager and index are not aware of such partitioning. VIRTUAL_PART_CNT describes the request distribution and is only used to generate queries. For HSTORE, VIRTUAL_PART_CNT should be the same as PART_CNT.
 #define VIRTUAL_PART_CNT    PART_CNT  
 #define PAGE_SIZE         4096 
@@ -304,6 +309,9 @@ extern TestCases          g_test_case;
 #define PRIORITY_FCFS 1
 #define PRIORITY_ACTIVE 2
 #define PRIORITY_HOME 3
+// Replication
+#define AA 1
+#define AP 2
 
 // Stats and timeout
 #define BILLION 1000000000UL // in ns => 1 second

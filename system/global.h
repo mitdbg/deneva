@@ -199,8 +199,12 @@ extern UInt32 g_max_items_per_txn;
 // CALVIN
 extern UInt32 g_seq_thread_cnt;
 
+// Replication
+extern UInt32 g_repl_type;
+extern UInt32 g_repl_cnt;
+
 enum RC { RCOK, Commit, Abort, WAIT, WAIT_REM, ERROR, FINISH, NONE };
-enum RemReqType {INIT_DONE,EXP_DONE,RLK, RULK, RQRY, RFIN, RLK_RSP, RULK_RSP, RQRY_RSP, RACK, RTXN, RINIT, RPREPARE,RPASS,RFWD,RDONE,CL_RSP,NO_MSG};
+enum RemReqType {INIT_DONE,EXP_DONE,RLK, RULK, RQRY, RFIN, RLK_RSP, RULK_RSP, RQRY_RSP, RACK, RTXN, RINIT, RPREPARE,RPASS,RFWD,RDONE,CL_RSP,LOG_MSG,LOG_MSG_RSP,NO_MSG};
 
 /* Thread */
 typedef uint64_t txnid_t;

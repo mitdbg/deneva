@@ -153,3 +153,6 @@ UInt32 g_cust_per_dist = CUST_PER_DIST_NORM;
 #endif
 UInt32 g_max_items_per_txn = MAX_ITEMS_PER_TXN;
 UInt32 g_dist_per_wh = DIST_PER_WH;
+
+UInt32 g_repl_type = REPL_TYPE;
+UInt32 g_repl_cnt = REPLICA_CNT;

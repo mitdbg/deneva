@@ -46,6 +46,9 @@ void print_usage() {
 	printf("\t-dINT       ; PRT_LAT_DISTR\n");
 	printf("\t-aINT       ; PART_ALLOC (0 or 1)\n");
 	printf("\t-mINT       ; MEM_PAD (0 or 1)\n");
+
+	printf("\t-rnINT       ; REPLICA_CNT (0+)\n");
+	printf("\t-rtINT       ; REPL_TYPE (AA: 1, AP: 2)\n");
 //	printf("\t-GcINT      ; CENTRAL_MAN\n");
 //	printf("\t-GtINT      ; TS_ALLOC\n");
 //	printf("\t-GkINT      ; KEY_ORDER\n");
@@ -144,6 +147,10 @@ void parser(int argc, char * argv[]) {
       g_data_perc = atof( &argv[i][3] );
     else if (argv[i][1] == 'a' && argv[i][2] == 'p')
       g_access_perc = atof( &argv[i][3] );
+    else if (argv[i][1] == 'r' && argv[i][2] == 'n')
+      g_repl_cnt = atof( &argv[i][3] );
+    else if (argv[i][1] == 'r' && argv[i][2] == 't')
+      g_repl_type = atof( &argv[i][3] );
     else if (argv[i][1] == 't'&& argv[i][2] == 'w') {
 			g_txn_write_perc = atof( &argv[i][3] );
 			g_txn_read_perc = 1.0 - atof( &argv[i][3] );
