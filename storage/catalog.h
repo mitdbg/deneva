@@ -74,7 +74,7 @@ public:
 	Column * 		_columns;
 	UInt32 			tuple_size;
 private:
-	char pad[CL_SIZE - sizeof(uint64_t)*2 - sizeof(int) - sizeof(char *)*2];
+	char pad[CL_SIZE - sizeof(uint64_t)*2 - sizeof(int) - sizeof(char *)*2 - sizeof(uint32_t)];
 };
 
 #endif

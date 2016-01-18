@@ -36,6 +36,7 @@ void MessageThread::init(uint64_t thd_id) {
     buffer[n]->reset(n);
   }
   _thd_id = thd_id;
+  head_qry = NULL;
 }
 
 void MessageThread::run() {
@@ -76,6 +77,7 @@ void MessageThread::run() {
   sthd_prof_start = get_sys_clock();
 
   assert(dest != g_node_id);
+  assert(dest < g_node_cnt + g_client_node_cnt + g_repl_cnt*g_node_cnt);
   sbuf = buffer[dest];
   if(!sbuf->fits(get_msg_size(type,qry))) {
     // send message
