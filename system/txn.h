@@ -66,6 +66,7 @@ public:
   virtual void read_keys(BaseQuery * query) = 0; 
   virtual RC acquire_locks(BaseQuery * query) = 0; 
   void register_thd(Thread * h_thd);
+  void commit_stats(BaseQuery * qry); 
   void update_stats(); 
 	uint64_t 		get_thd_id();
 	uint64_t 		get_node_id();

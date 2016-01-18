@@ -162,6 +162,7 @@ public:
   double time_getqry;
   double client_latency;
 
+
 	uint64_t cc_wait_cnt; // # of times a committed txn has been blocked in the cc algo
 	double cc_wait_time; // time a committed txn has been blocked in this cc algo 
 	double cc_hold_time; // time a committed txn has held a lock in this cc algo
@@ -211,6 +212,11 @@ public:
   double txn_time_q_work;
   double txn_time_net;
   double txn_time_misc;
+
+  // Logging
+  double log_process_time;
+  double log_write_time;
+  double log_flush_time;
 
   StatsArr all_abort;
   StatsArr w_cflt;

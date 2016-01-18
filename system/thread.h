@@ -49,6 +49,7 @@ public:
 	RC 			run_calvin_lock();
 	RC 			run_calvin_seq();
 	RC 			run_calvin();
+	RC 			run_logger();
 
   RC process_rfin(BaseQuery *& m_query,TxnManager *& m_txn);
   RC process_rack(BaseQuery *& m_query,TxnManager *& m_txn);
@@ -58,6 +59,8 @@ public:
   RC process_rprepare(BaseQuery *& m_query,TxnManager *& m_txn);
   RC process_rpass(BaseQuery *& m_query,TxnManager *& m_txn);
   RC process_rtxn(BaseQuery *& m_query,TxnManager *& m_txn);
+  RC process_log_msg(BaseQuery *& m_query,TxnManager *& m_txn);
+  RC process_log_msg_rsp(BaseQuery *& m_query,TxnManager *& m_txn);
   RC init_phase(BaseQuery * m_query, TxnManager * m_txn); 
 
 private:

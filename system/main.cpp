@@ -29,11 +29,13 @@
 #include "msg_queue.h"
 #include "ycsb_query.h"
 #include "sequencer.h"
+#include "logger.h"
 
 void * f(void *);
 void * g(void *);
 void * worker(void *);
 void * nn_worker(void *);
+void * log_worker(void *);
 void * send_worker(void *);
 void * abort_worker(void *);
 void * calvin_lock_worker(void * id); 
@@ -142,12 +144,20 @@ int main(int argc, char* argv[])
   seq_man.init(m_wl);
   printf("Done\n");
 #endif
+#if LOGGING
+  printf("Initializing logger... ");
+  logger.init("logfile.log");
+  printf("Done\n");
+#endif
 
 	// 2. spawn multiple threads
 	uint64_t thd_cnt = g_thread_cnt;
 	uint64_t rthd_cnt = g_rem_thread_cnt;
 	uint64_t sthd_cnt = g_send_thread_cnt;
   uint64_t all_thd_cnt = thd_cnt + rthd_cnt + sthd_cnt + 1;
+#if LOGGING
+  all_thd_cnt += 1; // logger thread
+#endif
 #if CC_ALG == CALVIN
   assert(thd_cnt >= 3);
 #endif
@@ -188,20 +198,6 @@ int main(int argc, char* argv[])
   endtime = get_server_clock();
   printf("Initialization Time = %ld\n", endtime - starttime);
   fflush(stdout);
-	if (WARMUP > 0){
-		printf("WARMUP start!\n");
-		for (uint32_t i = 0; i < thd_cnt - 1; i++) {
-			uint64_t vid = i;
-			CPU_ZERO(&cpus);
-      CPU_SET(i, &cpus);
-      pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
-			pthread_create(&p_thds[i], &attr, f, (void *)vid);
-		}
-		f((void *)(thd_cnt - 1));
-		for (uint32_t i = 0; i < thd_cnt - 1; i++)
-			pthread_join(p_thds[i], NULL);
-		printf("WARMUP finished!\n");
-	}
 	warmup_finish = true;
 	pthread_barrier_init( &warmup_bar, NULL, all_thd_cnt);
 
@@ -252,6 +248,11 @@ int main(int argc, char* argv[])
 		//pthread_create(&p_thds[i], &attr, nn_worker, (void *)vid);
   }
 
+#if LOGGING
+		pthread_create(&p_thds[i], NULL, log_worker, (void *)i);
+    i++;
+#endif
+
   abort_worker((void *)(i));
 
 	for (i = 0; i < all_thd_cnt - 1; i++) 
@@ -291,6 +292,11 @@ void * nn_worker(void * id) {
 	return NULL;
 }
 
+void * log_worker(void * id) {
+	uint64_t tid = (uint64_t)id;
+	m_thds[tid].run_logger();
+	return NULL;
+}
 void * abort_worker(void * id) {
 	uint64_t tid = (uint64_t)id;
 	m_thds[tid].run_abort();

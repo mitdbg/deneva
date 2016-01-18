@@ -142,6 +142,30 @@ void TxnManager::clear() {
   phase = 1;
 }
 
+void TxnManager::commit_stats(BaseQuery * qry) {
+  uint64_t timespan = get_sys_clock() - starttime;
+
+  INC_STATS(get_thd_id(),txn_cnt,1);
+  INC_STATS(get_thd_id(), run_time, timespan);
+  INC_STATS(get_thd_id(), latency, timespan);
+  INC_STATS_ARR(get_thd_id(),all_lat,timespan);
+  if(abort_cnt > 0) { 
+    INC_STATS(get_thd_id(), txn_abort_cnt, 1);
+    INC_STATS_ARR(get_thd_id(), all_abort, abort_cnt);
+  }
+  if(qry->part_num > 1) {
+    INC_STATS(get_thd_id(),mpq_cnt,1);
+  }
+  if(cflt) {
+    INC_STATS(get_thd_id(),cflt_cnt_txn,1);
+  }
+
+  txn_time_q_abrt += qry->time_q_abrt;
+  txn_time_q_work += qry->time_q_work;
+  txn_time_copy += qry->time_copy;
+  txn_time_misc += timespan;
+}
+
 void TxnManager::update_stats() {
   INC_STATS(get_thd_id(), cc_wait_cnt, cc_wait_cnt);
   INC_STATS(get_thd_id(), cc_wait_time, cc_wait_time);
@@ -478,6 +502,12 @@ RC TxnManager::get_row(row_t * row, access_t type, row_t *& row_rtn) {
 			mem_allocator.alloc(sizeof(row_t), part_id);
 		accesses[row_cnt]->orig_data->init(row->get_table(), part_id, 0);
 		accesses[row_cnt]->orig_data->copy(row);
+
+    // ARIES-style physiological logging
+#if LOGGING
+    LogRecord * record = createRecord(LRT_UPDATE,L_UPDATE,get_txn_id(),);
+#endif
+
 	}
 #endif
 	row_cnt ++;

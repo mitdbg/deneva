@@ -45,6 +45,7 @@
 //#include "msg_queue.h"
 #include "pool.h"
 #include "txn_table.h"
+#include "logger.h"
 //#include "sequencer.h"
 
 using namespace std;
@@ -70,6 +71,7 @@ class MessageQueue;
 class Client_query_queue;
 class Client_txn;
 class Sequencer;
+class Logger;
 
 typedef uint32_t UInt32;
 typedef int32_t SInt32;
@@ -105,6 +107,7 @@ extern QWorkQueue abort_queue;
 extern MessageQueue msg_queue;
 extern Client_txn client_man;
 extern Sequencer seq_man;
+extern Logger logger;
 
 extern bool volatile warmup_done;
 extern bool volatile warmup_finish;
@@ -149,6 +152,8 @@ extern bool g_ts_batch_alloc;
 extern UInt32 g_ts_batch_num;
 extern int32_t g_inflight_max;
 extern uint64_t g_msg_size;
+extern uint64_t g_log_buf_max;
+extern uint64_t g_log_flush_timeout;
 
 extern UInt32 g_max_txn_per_part;
 

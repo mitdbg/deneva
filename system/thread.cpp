@@ -34,6 +34,7 @@
 #include "msg_thread.h"
 #include "msg_queue.h"
 #include "sequencer.h"
+#include "logger.h"
 
 void Thread::init(uint64_t thd_id, uint64_t node_id, Workload * workload) {
 	_thd_id = thd_id;
@@ -355,20 +356,7 @@ RC Thread::run() {
 			return FINISH;
 		}
 
-    //FIXME: make abort_queue lock free by transferring implementation to concurrentqueue
-    /*
-		if(abort_queue.poll_abort(get_thd_id()) && (tmp_query = abort_queue.get_next_abort_query(get_thd_id())) != NULL) {
-      //work_queue.add_query(_thd_id,m_query);
-      work_queue.enqueue(get_thd_id(),tmp_query);
-      tmp_query = NULL;
-    }
-    */
-
     INC_STATS(_thd_id,thd_prof_thd1d,get_sys_clock() - thd_prof_start);
-    //thd_prof_start = get_sys_clock();
-    // Get next query from work queue
-		//m_query = work_queue.get_next_query(get_thd_id());
-    //bool got_qry = work_queue.dequeue(m_query);
     INC_STATS(_thd_id,thd_prof_thd1,get_sys_clock() - thd_prof_start_thd1);
 		if(!got_qry)
 			continue;
@@ -419,6 +407,12 @@ RC Thread::run() {
 				break;
 			case RTXN:
         rc = process_rtxn(m_query,m_txn);
+				break;
+			case LOG_MSG:
+        rc = process_log_msg(m_query,m_txn);
+				break;
+			case LOG_MSG_RSP:
+        rc = process_log_msg_rsp(m_query,m_txn);
 				break;
 			default:
         printf("Msg: %d\n",m_query->rtype);
@@ -475,27 +469,8 @@ RC Thread::run() {
 					} else
 						assert(m_txn->state == DONE || MODE!= NORMAL_MODE);
 
-					timespan = get_sys_clock() - m_txn->starttime;
 
-					INC_STATS(get_thd_id(),txn_cnt,1);
-					INC_STATS(get_thd_id(), run_time, timespan);
-					INC_STATS(get_thd_id(), latency, timespan);
-          INC_STATS_ARR(get_thd_id(),all_lat,timespan);
-					if(m_txn->abort_cnt > 0) { 
-						INC_STATS(get_thd_id(), txn_abort_cnt, 1);
-						INC_STATS_ARR(get_thd_id(), all_abort, m_txn->abort_cnt);
-					}
-					if(m_query->part_num > 1) {
-						INC_STATS(get_thd_id(),mpq_cnt,1);
-					}
-          if(m_txn->cflt) {
-						INC_STATS(get_thd_id(),cflt_cnt_txn,1);
-          }
-
-          m_txn->txn_time_q_abrt += m_query->time_q_abrt;
-          m_txn->txn_time_q_work += m_query->time_q_work;
-          m_txn->txn_time_copy += m_query->time_copy;
-          m_txn->txn_time_misc += timespan;
+          m_txn->commit_stats(m_query);
           m_txn->update_stats();
           INC_STATS(get_thd_id(),part_cnt[m_query->part_touched_cnt-1],1);
           for(uint64_t i = 0 ; i < m_query->part_num; i++) {
@@ -1415,6 +1390,15 @@ RC Thread::init_phase(BaseQuery * m_query, TxnManager * m_txn) {
           return rc;
 }
 
+
+RC Thread::process_log_msg(BaseQuery *& m_query,TxnManager *& m_txn) {
+  return RCOK;
+}
+
+RC Thread::process_log_msg_rsp(BaseQuery *& m_query,TxnManager *& m_txn) {
+  return RCOK;
+}
+
 RC Thread::run_calvin_lock() {
 	printf("RunCalvinLock %ld:%ld\n",_node_id, _thd_id);
   fflush(stdout);
@@ -1798,6 +1782,19 @@ RC Thread::run_calvin_seq() {
     qry_pool.put(m_query);
     work_queue.done(_thd_id,tid);
   }
+}
+
+RC Thread::run_logger() {
+	printf("Run_logger %ld:%ld\n",_node_id, _thd_id);
+	pthread_barrier_wait( &warmup_bar );
+	pthread_barrier_wait( &warmup_bar );
+	printf("Run_logger %ld:%ld\n",_node_id, _thd_id);
+	while (!_wl->sim_done) {
+    logger.processRecord();
+    logger.flushBufferCheck();
+  }
+  return FINISH;
+ 
 }
 
 

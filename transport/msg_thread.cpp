@@ -204,8 +204,10 @@ void MessageThread::copy_to_buffer(mbuf * sbuf, RemReqType type, BaseQuery * qry
     case  RPREPARE:   rprepare(sbuf,qry);break;
     case RPASS:       break;
     case RFWD:        rfwd(sbuf,qry);break;
-    case CL_RSP:      cl_rsp(sbuf,qry);break;
     case  RDONE:      rdone(sbuf,qry);break;
+    case CL_RSP:      cl_rsp(sbuf,qry);break;
+    case  LOG_MSG:      log_msg(sbuf,qry);break;
+    case  LOG_MSG_RSP:      log_msg_rsp(sbuf,qry);break;
     case NO_MSG: assert(false);
     default: assert(false);
   }
@@ -350,8 +352,10 @@ uint64_t MessageThread::get_msg_size(RemReqType type,BaseQuery * qry) {
                           size +=sizeof(uint64_t);
 #endif
                           break;
-        case CL_RSP:      size +=sizeof(RC) + sizeof(uint64_t);break;
         case RDONE:      size +=sizeof(uint64_t);break;
+        case CL_RSP:      size +=sizeof(RC) + sizeof(uint64_t);break;
+        case LOG_MSG:      break;
+        case LOG_MSG_RSP:      size +=sizeof(RC);break;
         default: assert(false);
   }
 
@@ -406,6 +410,15 @@ void MessageThread::cl_rsp(mbuf * sbuf, BaseQuery *qry) {
   COPY_BUF(sbuf->buffer,qry->rc,sbuf->ptr);
   COPY_BUF(sbuf->buffer,qry->client_startts,sbuf->ptr);
 
+}
+
+void MessageThread::log_msg(mbuf * sbuf, BaseQuery *qry) {
+  DEBUG("Sending LOG_MSG %ld\n",qry->txn_id);
+}
+
+void MessageThread::log_msg_rsp(mbuf * sbuf, BaseQuery *qry) {
+  DEBUG("Sending LOG_MSG_RSP %ld\n",qry->txn_id);
+  COPY_BUF(sbuf->buffer,qry->rc,sbuf->ptr);
 }
 
 void MessageThread::rinit(mbuf * sbuf,BaseQuery * qry) {

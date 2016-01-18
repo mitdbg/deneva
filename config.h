@@ -145,6 +145,9 @@
 /***********************************************/
 #define LOG_COMMAND         false
 #define LOG_REDO          false
+#define LOGGING true
+#define LOG_BUF_MAX 10
+#define LOG_BUF_TIMEOUT 10 * 1000000UL // 10ms
 
 /***********************************************/
 // Benchmark
@@ -199,6 +202,15 @@
 #define CONTENTION false
 #define STRICT_MPR false //true
 //
+enum TPCCTable {TPCC_WAREHOUSE, 
+          TPCC_DISTRICT,
+          TPCC_CUSTOMER,
+          TPCC_HISTORY,
+          TPCC_NEWORDER,
+          TPCC_ORDER,
+          TPCC_ORDERLINE,
+          TPCC_ITEM,
+          TPCC_STOCK};
 enum TPCCTxnType {TPCC_ALL, 
           TPCC_PAYMENT, 
           TPCC_NEW_ORDER, 

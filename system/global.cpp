@@ -32,6 +32,7 @@
 #include "txn_table.h"
 #include "client_txn.h"
 #include "sequencer.h"
+#include "logger.h"
 
 mem_alloc mem_allocator;
 Stats stats;
@@ -57,6 +58,7 @@ QWorkQueue abort_queue;
 MessageQueue msg_queue;
 Client_txn client_man;
 Sequencer seq_man;
+Logger logger;
 
 bool volatile warmup_done = false;
 bool volatile warmup_finish = false;
@@ -125,6 +127,9 @@ UInt64 g_done_timer = DONE_TIMER;
 UInt64 g_batch_time_limit = BATCH_TIMER;
 UInt64 g_prog_timer = PROG_TIMER;
 UInt64 g_msg_time_limit = MSG_TIME_LIMIT;
+
+UInt64 g_log_buf_max = LOG_BUF_MAX;
+UInt64 g_log_flush_timeout = LOG_BUF_TIMEOUT;
 
 // MVCC
 UInt64 g_max_read_req = MAX_READ_REQ;

@@ -323,6 +323,10 @@ void Remote_query::unmarshall(BaseQuery *& query,char * data,  uint64_t & ptr,ui
 				    assert( _wl->sim_init_done);
         }
       break;
+    case LOG_MSG: break;
+    case LOG_MSG_RSP: 
+        COPY_VAL(query->rc,data,ptr);
+        break;
     case EXP_DONE: break;
     case RPASS: break;
     case RLK: break;

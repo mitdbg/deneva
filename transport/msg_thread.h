@@ -71,6 +71,8 @@ public:
   void rprepare( mbuf * sbuf,BaseQuery * qry);
   void rfin( mbuf * sbuf,BaseQuery * qry);
   void cl_rsp(mbuf * sbuf, BaseQuery *qry);
+  void log_msg(mbuf * sbuf, BaseQuery *qry);
+  void log_msg_rsp(mbuf * sbuf, BaseQuery *qry);
   void rinit(mbuf * sbuf,BaseQuery * qry);
   void rqry( mbuf * sbuf, BaseQuery *qry);
   void rfwd( mbuf * sbuf, BaseQuery *qry);
