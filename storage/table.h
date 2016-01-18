@@ -40,12 +40,14 @@ public:
 	uint64_t get_table_size() { return *cur_tab_size; };
 	Catalog * get_schema() { return schema; };
 	const char * get_table_name() { return table_name; };
+	uint32_t get_table_id() { return table_id; };
 
 	Catalog * 		schema;
 private:
 	const char * 	table_name;
+  uint32_t table_id;
 	uint64_t * 		cur_tab_size;
-	char 			pad[CL_SIZE - sizeof(void *)*3];
+	char 			pad[CL_SIZE - sizeof(void *)*3 - sizeof(uint32_t)];
 };
 
 #endif

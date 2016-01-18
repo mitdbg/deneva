@@ -52,11 +52,12 @@ class Catalog {
 public:
 	// abandoned init function
 	// field_size is the size of each each field.
-	void init(const char * table_name, int field_cnt);
+	void init(const char * table_name, uint32_t table_id, int field_cnt);
 	void add_col(char * col_name, uint64_t size, char * type);
 
 	UInt32 			field_cnt;
  	const char * 	table_name;
+ 	uint32_t 	  table_id;
 	
 	UInt32 			get_tuple_size() { return tuple_size; };
 	

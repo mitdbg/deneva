@@ -23,6 +23,7 @@
 
 void table_t::init(Catalog * schema) {
 	this->table_name = schema->table_name;
+	this->table_id = schema->table_id;
 	this->schema = schema;
 	// FIXME: leaking memory; leave out this line?
 	cur_tab_size = new uint64_t; 

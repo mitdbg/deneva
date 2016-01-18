@@ -504,8 +504,9 @@ RC TxnManager::get_row(row_t * row, access_t type, row_t *& row_rtn) {
 		accesses[row_cnt]->orig_data->copy(row);
 
     // ARIES-style physiological logging
-#if LOGGING
-    LogRecord * record = createRecord(LRT_UPDATE,L_UPDATE,get_txn_id(),);
+#if LOGGING && !LOG_COMMAND
+    LogRecord * record = logger.createRecord(LRT_UPDATE,L_UPDATE,get_txn_id(),part_id,row->get_table()->get_table_id(),row->get_primary_key());
+    logger.enqueueRecord(record);
 #endif
 
 	}

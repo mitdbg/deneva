@@ -46,6 +46,7 @@ RC Workload::init_schema(const char * schema_file) {
     assert(sizeof(uint64_t) == 8);
     assert(sizeof(double) == 8);	
 	string line;
+  uint32_t id = 0;
 	ifstream fin(schema_file);
     Catalog * schema;
     while (getline(fin, line)) {
@@ -61,7 +62,7 @@ RC Workload::init_schema(const char * schema_file) {
 				lines.push_back(line);
 				getline(fin, line);
 			}
-			schema->init( tname.c_str(), lines.size() );
+			schema->init( tname.c_str(), id++, lines.size() );
 			for (UInt32 i = 0; i < lines.size(); i++) {
 				string line = lines[i];
 				vector<string> items;
