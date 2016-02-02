@@ -5,17 +5,17 @@
 /***********************************************/
 // Simulation + Hardware
 /***********************************************/
-#define NODE_CNT 1
-#define THREAD_CNT 1
+#define NODE_CNT 16
+#define THREAD_CNT 6
 #define REM_THREAD_CNT 1
 #define SEND_THREAD_CNT 1
 #define CORE_CNT 8
 // PART_CNT should be at least NODE_CNT
 #define PART_CNT NODE_CNT
 #define CLIENT_NODE_CNT NODE_CNT
-#define CLIENT_THREAD_CNT 1
+#define CLIENT_THREAD_CNT 2
 #define CLIENT_REM_THREAD_CNT 1
-#define CLIENT_SEND_THREAD_CNT 1
+#define CLIENT_SEND_THREAD_CNT 4
 #define CLIENT_RUNTIME false
 
 // Replication
@@ -68,8 +68,8 @@
 // Message Passing
 /***********************************************/
 #define TPORT_TYPE "ipc"
-#define TPORT_TYPE_IPC true 
-#define TPORT_PORT ".ipc"
+#define TPORT_TYPE_IPC true
+#define TPORT_PORT "_.ipc"
 #define SET_AFINITY false
 
 #define MAX_TPORT_NAME 128
@@ -90,7 +90,7 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, OCC, VLL, CALVIN
-#define CC_ALG NO_WAIT
+#define CC_ALG CALVIN
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER         false
@@ -167,7 +167,7 @@
 #define DATA_PERC 100
 #define ACCESS_PERC 0.03
 #define INIT_PARALLELISM 8
-#define SYNTH_TABLE_SIZE 2097152//2097152*8
+#define SYNTH_TABLE_SIZE 2097152*8
 #define ZIPF_THETA 0.6
 #define TXN_WRITE_PERC 0.5
 #define TUP_WRITE_PERC 0.5

@@ -180,7 +180,7 @@ void MessageThread::copy_to_buffer(mbuf * sbuf, RemReqType type, BaseQuery * qry
   COPY_BUF(sbuf->buffer,tmp,sbuf->ptr);
   COPY_BUF(sbuf->buffer,tmp,sbuf->ptr);
 #endif
-  } else {
+  } else if (type != LOG_MSG && type != LOG_MSG_RSP){
   assert(qry);
   COPY_BUF(sbuf->buffer,qry->txn_id,sbuf->ptr);
   COPY_BUF(sbuf->buffer,type,sbuf->ptr);
@@ -188,6 +188,10 @@ void MessageThread::copy_to_buffer(mbuf * sbuf, RemReqType type, BaseQuery * qry
   COPY_BUF(sbuf->buffer,qry->dest_part,sbuf->ptr);
   COPY_BUF(sbuf->buffer,qry->home_part,sbuf->ptr);
 #endif
+  } else {
+    assert(qry);
+    COPY_BUF(sbuf->buffer,((LogRecord*)qry)->rcd.txnid,sbuf->ptr);
+    COPY_BUF(sbuf->buffer,type,sbuf->ptr);
   }
 
   switch(type) {
@@ -416,6 +420,35 @@ void MessageThread::cl_rsp(mbuf * sbuf, BaseQuery *qry) {
 
 void MessageThread::log_msg(mbuf * sbuf, BaseQuery *qry) {
   DEBUG("Sending LOG_MSG %ld\n",qry->txn_id);
+  LogRecord * record = (LogRecord*) qry;
+#if LOG_COMMAND
+
+  COPY_BUF(sbuf->buffer,record->rcd.checksum,sbuf->ptr);
+  COPY_BUF(sbuf->buffer,record->rcd.lsn,sbuf->ptr);
+  COPY_BUF(sbuf->buffer,record->rcd.type,sbuf->ptr);
+  COPY_BUF(sbuf->buffer,record->rcd.txnid,sbuf->ptr);
+  COPY_BUF(sbuf->buffer,record->rcd.partid,sbuf->ptr);
+#if WORKLOAD == TPCC
+  COPY_BUF(sbuf->buffer,record->rcd.txntype,sbuf->ptr);
+#endif
+  COPY_BUF_SIZE(sbuf->buffer,record->rcd.params,record->rcd.params_size,sbuf->ptr);
+
+#else
+
+  COPY_BUF(sbuf->buffer,record->rcd.checksum,sbuf->ptr);
+  COPY_BUF(sbuf->buffer,record->rcd.lsn,sbuf->ptr);
+  COPY_BUF(sbuf->buffer,record->rcd.type,sbuf->ptr);
+  COPY_BUF(sbuf->buffer,record->rcd.iud,sbuf->ptr);
+  COPY_BUF(sbuf->buffer,record->rcd.txnid,sbuf->ptr);
+  COPY_BUF(sbuf->buffer,record->rcd.partid,sbuf->ptr);
+  COPY_BUF(sbuf->buffer,record->rcd.tableid,sbuf->ptr);
+  COPY_BUF(sbuf->buffer,record->rcd.n_cols,sbuf->ptr);
+  COPY_BUF(sbuf->buffer,record->rcd.cols,sbuf->ptr);
+  COPY_BUF_SIZE(sbuf->buffer,record->rcd.before_image,record->rcd.before_image_size,sbuf->ptr);
+  COPY_BUF_SIZE(sbuf->buffer,record->rcd.after_image,record->rcd.after_image_size,sbuf->ptr);
+
+#endif
+
 }
 
 void MessageThread::log_msg_rsp(mbuf * sbuf, BaseQuery *qry) {
