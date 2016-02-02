@@ -90,10 +90,10 @@
 /************************************************/
 #define LIST_GET_HEAD(lhead, ltail, en) {\
 	en = lhead; \
-	lhead = lhead->next; \
+	if (lhead) lhead = lhead->next; \
 	if (lhead) lhead->prev = NULL; \
 	else ltail = NULL; \
-	en->next = NULL; }
+  if (en) en->next = NULL; }
 #define LIST_PUT_TAIL(lhead, ltail, en) {\
 	en->next = NULL; \
 	en->prev = NULL; \

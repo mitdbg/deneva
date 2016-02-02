@@ -235,6 +235,11 @@ void Stats_thd::clear() {
   owned_cnt_rd = 0;
   owned_cnt_wr = 0;
 
+  msg_cnt_serv = 0;
+  msg_cnt_cl = 0;
+  msg_dly_serv = 0;
+  msg_dly_cl = 0;
+
   prof_time_twopc = 0;
   prof_cc_rel_abort = 0;
   prof_cc_rel_commit = 0;
@@ -764,6 +769,10 @@ void Stats::print(bool prog) {
   uint64_t total_rack = 0;
   uint64_t total_qry_cnt = 0;
 
+  double total_msg_dly_cl = 0;
+  double total_msg_dly_serv = 0;
+  uint64_t total_msg_cnt_cl = 0;
+  uint64_t total_msg_cnt_serv = 0;
   uint64_t limit;
   if(g_node_id < g_node_cnt)
     limit =  g_thread_cnt + g_rem_thread_cnt;
@@ -898,6 +907,11 @@ void Stats::print(bool prog) {
  total_rem_wq_dequeue+= _stats[tid]->rem_wq_dequeue;
  total_new_wq_enqueue+= _stats[tid]->new_wq_enqueue;
  total_new_wq_dequeue+= _stats[tid]->new_wq_dequeue;
+
+ total_msg_dly_cl += _stats[tid]->msg_dly_cl;
+ total_msg_dly_serv += _stats[tid]->msg_dly_serv;
+ total_msg_cnt_serv += _stats[tid]->msg_cnt_serv;
+ total_msg_cnt_cl += _stats[tid]->msg_cnt_cl;
 
   for(uint64_t i = 0; i < g_part_cnt; i++) {
     total_part_cnt[i] += _stats[tid]->part_cnt[i];
@@ -1147,6 +1161,8 @@ void Stats::print(bool prog) {
       ",rem_wq_cnt=%ld"
       ",new_wq_cnt=%ld"
       ",aq_cnt=%ld"
+      ",mdly_cl=%f"
+      ",mdly_serv=%f"
       ,total_spec_abort_cnt
       ,total_spec_commit_cnt
 			,total_time_abort / BILLION
@@ -1174,7 +1190,10 @@ void Stats::print(bool prog) {
       ,work_queue.get_wq_cnt()
       ,work_queue.get_rem_wq_cnt()
       ,work_queue.get_new_wq_cnt()
-      ,abort_queue.get_abrt_cnt());
+      ,abort_queue.get_abrt_cnt()
+      ,total_msg_dly_cl / BILLION / total_msg_cnt_cl
+      ,total_msg_dly_serv / BILLION / total_msg_cnt_serv
+      );
 	fprintf(outf, 
   ",txn_time_begintxn=%f"
   ",txn_time_begintxn2=%f"

@@ -56,6 +56,18 @@ void MessageThread::run() {
       ((head_type != NO_MSG) && 
        ((curr_time - head_start >= g_network_delay)  || ISCLIENTN(head_dest) || ISCLIENT))) {
       //printf("Sending %f, %ld, %f\n",((float)g_network_delay)/BILLION,head_start,((float)(curr_time - head_start))/BILLION);
+      if(head_type != NO_MSG && !ISCLIENT && head_start > 0) {
+        if(ISCLIENTN(head_dest)) {
+          INC_STATS(0,msg_dly_cl,curr_time - head_start);
+          INC_STATS(0,msg_cnt_cl,1);
+        } else {
+          INC_STATS(0,msg_dly_serv,curr_time - head_start);
+          INC_STATS(0,msg_cnt_serv,1);
+        }
+      }
+      assert(head_type == NO_MSG || (head_dest < g_node_cnt + g_client_node_cnt));
+      assert(head_type <= NO_MSG);
+
       qry = head_qry;
       type = head_type;
       dest = head_dest;
