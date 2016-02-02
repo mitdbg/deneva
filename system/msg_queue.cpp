@@ -25,24 +25,51 @@ void MessageQueue::init() {
   tail = NULL;
   pthread_mutex_init(&mtx,NULL);
 }
+
 void MessageQueue::enqueue(BaseQuery * qry,RemReqType type,uint64_t dest) {
   msg_entry_t entry;
   msg_pool.get(entry);
-  entry->qry = qry;
+  if(type == RFIN) {
+    BaseQuery * qry2;
+    qry_pool.get(qry2);
+    qry2->pid = qry->pid;
+    qry2->rc = qry->rc;
+    qry2->txn_id = qry->txn_id;
+    qry2->batch_id = qry->batch_id;
+    qry2->ro = qry->ro;
+    qry2->rtype = qry->rtype;
+    entry->qry = qry2;
+  } else {
+    entry->qry = qry;
+  }
   entry->dest = dest;
   entry->type = type;
   entry->next  = NULL;
   entry->prev  = NULL;
   entry->starttime = get_sys_clock();
-
+  ATOM_ADD(cnt,1);
+#ifdef MSG_QUEUE_CONCURRENT_QUEUE
   mq.enqueue(entry);
+#else
+  pthread_mutex_lock(&mtx);
+  LIST_PUT_TAIL(head,tail,entry);
+  pthread_mutex_unlock(&mtx);
+#endif
+
 
 }
 
 uint64_t MessageQueue::dequeue(BaseQuery *& qry, RemReqType & type, uint64_t & dest) {
   msg_entry * entry;
   uint64_t time;
+#ifdef MSG_QUEUE_CONCURRENT_QUEUE
   bool r = mq.try_dequeue(entry);
+#else
+  pthread_mutex_lock(&mtx);
+  LIST_GET_HEAD(head,tail,entry);
+  pthread_mutex_unlock(&mtx);
+  bool r = entry != NULL;
+#endif
   if(r) {
     qry = entry->qry;
     type = entry->type;

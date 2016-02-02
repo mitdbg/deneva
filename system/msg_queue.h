@@ -21,6 +21,8 @@
 #include "helper.h"
 #include "concurrentqueue.h"
 
+//#define MSG_QUEUE_CONCURRENT_QUEUE
+
 class BaseQuery;
 
 struct msg_entry {
@@ -40,7 +42,9 @@ public:
   void enqueue(BaseQuery * qry,RemReqType type, uint64_t dest);
   uint64_t dequeue(BaseQuery *& qry,RemReqType & type,uint64_t & dest);
 private:
+#ifdef MSG_QUEUE_CONCURRENT_QUEUE
   moodycamel::ConcurrentQueue<msg_entry_t,moodycamel::ConcurrentQueueDefaultTraits> mq;
+#endif
   uint64_t last_add_time;
   pthread_mutex_t mtx;
   msg_entry_t head;
