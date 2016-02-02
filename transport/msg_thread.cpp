@@ -49,9 +49,9 @@ void MessageThread::run() {
   uint64_t sthd_prof_start = get_sys_clock();
   uint64_t head_start;
 
-  uint64_t curr_time = get_sys_clock();
   if(!head_qry)
     head_start = msg_queue.dequeue(head_qry,head_type,head_dest);
+  uint64_t curr_time = get_sys_clock();
   if(g_network_delay == 0 || (head_type == NO_MSG || !head_qry) ||
       ((head_type != NO_MSG) && 
        ((curr_time - head_start >= g_network_delay)  || ISCLIENTN(head_dest) || ISCLIENT))) {
