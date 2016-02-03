@@ -42,7 +42,7 @@
 RC InputThread::run() {
 	printf("Run_remote %ld:%ld\n",_node_id, _thd_id);
   fflush(stdout);
-	stats.init(get_thd_id());
+	//stats.init(get_thd_id());
 	pthread_barrier_wait( &warmup_bar );
 	run_starttime = get_sys_clock();
 

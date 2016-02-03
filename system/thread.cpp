@@ -40,6 +40,7 @@ void Thread::init(uint64_t thd_id, uint64_t node_id, Workload * workload) {
 	_thd_id = thd_id;
 	_node_id = node_id;
 	_wl = workload;
+  stats.init(_thd_id);
 }
 
 uint64_t Thread::get_thd_id() { return _thd_id; }

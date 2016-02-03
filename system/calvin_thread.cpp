@@ -40,7 +40,7 @@
 RC CalvinLockThread::run() {
 	printf("RunCalvinLock %ld:%ld\n",_node_id, _thd_id);
   fflush(stdout);
-	stats.init(get_thd_id());
+	//stats.init(get_thd_id());
 	pthread_barrier_wait( &warmup_bar );
 	BaseQuery * m_query = NULL;
 
@@ -106,7 +106,7 @@ RC CalvinLockThread::run() {
 RC CalvinThread::run() {
 	printf("RunCalvin %ld:%ld\n",_node_id, _thd_id);
   fflush(stdout);
-	stats.init(get_thd_id());
+	//stats.init(get_thd_id());
 	pthread_barrier_wait( &warmup_bar );
 	BaseQuery * m_query = NULL;
 
@@ -351,7 +351,7 @@ RC CalvinThread::run() {
 RC CalvinSequencerThread::run() {
 	printf("RunCalvinSequencer %ld:%ld\n",_node_id, _thd_id);
   fflush(stdout);
-	stats.init(get_thd_id());
+	//stats.init(get_thd_id());
 	pthread_barrier_wait( &warmup_bar );
 	BaseQuery * m_query = NULL;
   _wl->epoch = 0;

@@ -37,59 +37,33 @@
 #include "sequencer.h"
 #include "logger.h"
 
-RC WorkerThread::run() {
-	printf("Run %ld:%ld\n",_node_id, _thd_id);
-  fflush(stdout);
-	stats.init(get_thd_id());
-	pthread_barrier_wait( &warmup_bar );
-	BaseQuery * m_query = NULL;
-
-	run_starttime = get_sys_clock();
-
-	if( _thd_id == 0) {
-#if WORKLOAD == YCSB
-    m_query = new YCSBQuery;
-#elif WORKLOAD == TPCC
-    m_query = new TPCCQuery;
-#endif
+void WorkerThread::send_init_done_to_all_nodes() {
 		uint64_t total_nodes = g_node_cnt + g_client_node_cnt;
-    /*
-#if CC_ALG == CALVIN
-		total_nodes++;
-#endif
-*/
 		for(uint64_t i = 0; i < total_nodes; i++) {
 			if(i != g_node_id) {
         msg_queue.enqueue(NULL,INIT_DONE,i);
 			}
 		}
+
+}
+
+RC WorkerThread::run() {
+	printf("Run %ld:%ld\n",_node_id, _thd_id);
+  fflush(stdout);
+	//stats.init(get_thd_id());
+	pthread_barrier_wait( &warmup_bar );
+	BaseQuery * m_query = NULL;
+#if WORKLOAD == YCSB
+    m_query = new YCSBQuery;
+#elif WORKLOAD == TPCC
+    m_query = new TPCCQuery;
+#endif
+
+	run_starttime = get_sys_clock();
+
+	if( _thd_id == 0) {
+    send_init_done_to_all_nodes();
   }
-    /*
-    while(!_wl->sim_init_done) {
-      while(!work_queue.dequeue(_thd_id,m_query)) { }
-      if(m_query->rtype == INIT_DONE) {
-        ATOM_SUB(_wl->rsp_cnt,1);
-        printf("Processed INIT_DONE from %ld -- %ld\n",m_query->return_id,_wl->rsp_cnt);
-        fflush(stdout);
-        if(_wl->rsp_cnt ==0) {
-			    if( !ATOM_CAS(_wl->sim_init_done, false, true) )
-				    assert( _wl->sim_init_done);
-        }
-      } else {
-        // Put other queries aside until all nodes are ready
-        //work_queue.add_query(_thd_id,m_query);
-        work_queue.enqueue(m_query);
-      }
-    if(get_sys_clock() - run_starttime >= g_done_timer)
-      return FINISH;
-	  }
-  } else {
-    while(!_wl->sim_init_done) {
-      if(get_sys_clock() - run_starttime >= g_done_timer)
-        return FINISH;
-    }
-  }
-    */
 	pthread_barrier_wait( &warmup_bar );
 	printf("Run %ld:%ld\n",_node_id, _thd_id);
   fflush(stdout);
@@ -132,33 +106,6 @@ RC WorkerThread::run() {
 
     INC_STATS(_thd_id,thd_prof_thd1a,get_sys_clock() - thd_prof_start);
     thd_prof_start = get_sys_clock();
-    /*
-    if(((get_sys_clock() - run_starttime >= g_done_timer)
-        //|| (_wl->txn_cnt >= g_max_txn_per_part 
-        //  && txn_table.empty(get_node_id()))
-          )
-        && !_wl->sim_done) {
-        if( !ATOM_CAS(_wl->sim_done, false, true) ) {
-          assert( _wl->sim_done);
-        } else {
-          printf("_wl->sim_done=%d\n",_wl->sim_done);
-          fflush(stdout);
-        }
-        stoptime = get_sys_clock();
-        if(stats._stats[get_thd_id()]->finish_time == 0) {
-          printf("Setting final finish time\n");
-          SET_STATS(get_thd_id(), finish_time, stoptime - run_starttime);
-        }
-    }
-
-    INC_STATS(_thd_id,thd_prof_thd1b,get_sys_clock() - thd_prof_start);
-    thd_prof_start = get_sys_clock();
-    */
-    /*
-		while(!work_queue.poll_next_query(get_thd_id())
-                && !abort_queue.poll_abort(get_thd_id())
-                && !_wl->sim_done && !_wl->sim_timeout) {
-                */
     bool got_qry = false;
 		while(!(got_qry = work_queue.dequeue(_thd_id, m_query))
                 && !_wl->sim_done && !_wl->sim_timeout) {
@@ -197,21 +144,6 @@ RC WorkerThread::run() {
       if(get_thd_id() == 0) {
         abort_queue.abort_finish(currtime);
 
-        // Send EXP_DONE to all nodes
-        /*
-        uint64_t nnodes = g_node_cnt + g_client_node_cnt;
-#if CC_ALG == CALVIN
-        nnodes++;
-#endif
-#if WORKLOAD == YCSB
-        m_query = new YCSBQuery;
-#endif
-        for(uint64_t i = 0; i < nnodes; i++) {
-          if(i != g_node_id) {
-            msg_queue.enqueue(NULL,EXP_DONE,i);
-          }
-        }
-      */
       }
 
       printf("FINISH %ld:%ld\n",_node_id,_thd_id);

@@ -24,6 +24,7 @@ class Workload;
 class WorkerThread : public Thread {
 public:
 	RC 			run();
+  void send_init_done_to_all_nodes(); 
   RC process_rfin(BaseQuery *& m_query,TxnManager *& m_txn);
   RC process_rack(BaseQuery *& m_query,TxnManager *& m_txn);
   RC process_rqry_rsp(uint64_t tid, BaseQuery *& m_query,TxnManager *& m_txn);

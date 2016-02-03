@@ -30,7 +30,7 @@
 
 RC ClientThread::run() {
 	printf("Run %ld:%ld\n",_node_id, _thd_id);
-	stats.init(get_thd_id());
+	//stats.init(get_thd_id());
 	pthread_barrier_wait( &warmup_bar );
 	BaseClientQuery * m_query = NULL;
 
