@@ -87,7 +87,7 @@ RC InputThread::client_recv_loop() {
     //while((m_query = work_queue.get_next_query(get_thd_id())) != NULL) {
     while(work_queue.dequeue(0,m_query)) { 
 			rq_time = get_sys_clock();
-			assert(m_query->rtype == CL_RSP || m_query->rtype == EXP_DONE);
+			assert(m_query->rtype == CL_RSP);
 			assert(m_query->dest_id == g_node_id);
 			switch (m_query->rtype) {
 				case CL_RSP:
@@ -97,9 +97,6 @@ RC InputThread::client_recv_loop() {
 					inf = client_man.dec_inflight(return_node_offset);
           assert(inf >=0);
 					break;
-        case EXP_DONE:
-          ATOM_SUB(_wl->done_cnt,1);
-          break;
 				default:
 					assert(false);
 			}

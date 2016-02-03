@@ -166,18 +166,6 @@ RC WorkerThread::run() {
     assert(m_query->rtype <= NO_MSG);
 
 		switch(m_query->rtype) {
-      case EXP_DONE:
-        DEBUG("Received EXP_DONE from %ld\n",m_query->return_id)
-        ATOM_SUB(_wl->done_cnt,1);
-        if(_wl->done_cnt == 0) {
-          if( !ATOM_CAS(_wl->sim_timeout, false, true) )
-            assert( _wl->sim_timeout);
-          if( !ATOM_CAS(_wl->sim_done, false, true) )
-            assert( _wl->sim_done);
-        }
-        qry_pool.put(m_query);
-        m_query = NULL;
-        break;
 			case RPASS:
         rc = process_rpass(m_query,m_txn);
 				break;

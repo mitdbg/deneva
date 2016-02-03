@@ -131,18 +131,6 @@ RC ClientThread::run() {
   SET_STATS(get_thd_id(), tot_run_time, prog_time - run_starttime); 
 
   if( _thd_id == 0) {
-    // Send EXP_DONE to all nodes
-    /*
-    uint64_t nnodes = g_node_cnt + g_client_node_cnt;
-#if WORKLOAD == YCSB
-    m_query = new YCSBClientQuery;
-#endif
-    for(uint64_t i = 0; i < nnodes; i++) {
-      if(i != g_node_id) {
-        msg_queue.enqueue(NULL,EXP_DONE,i);
-      }
-		}
-    */
     if( !ATOM_CAS(_wl->sim_done, false, true) ) {
       assert( _wl->sim_done);
     } else {
