@@ -42,9 +42,6 @@ void Client_thread_t::set_cur_cid(uint64_t cid) {_cur_cid = cid; }
 
 RC Client_thread_t::run_remote() {
 	printf("Run_remote %ld:%ld\n",_node_id, _thd_id);
-	if (warmup_finish) {
-		mem_allocator.register_thread(_thd_id);
-	}
 
 	BaseQuery * m_query = NULL;
 
@@ -171,9 +168,6 @@ RC Client_thread_t::run_remote() {
 RC Client_thread_t::run_send() {
 	printf("Run_send %ld:%ld\n",_node_id, _thd_id);
   fflush(stdout);
-	if (warmup_finish) {
-		mem_allocator.register_thread(_thd_id);
-	}
 	stats.init(get_thd_id());
 	pthread_barrier_wait( &warmup_bar );
 
@@ -204,9 +198,6 @@ RC Client_thread_t::run_send() {
 
 RC Client_thread_t::run() {
 	printf("Run %ld:%ld\n",_node_id, _thd_id);
-	if (warmup_finish) {
-		mem_allocator.register_thread(_thd_id);
-	}
 	stats.init(get_thd_id());
 	pthread_barrier_wait( &warmup_bar );
 	BaseClientQuery * m_query = NULL;

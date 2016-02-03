@@ -40,9 +40,6 @@
 RC WorkerThread::run() {
 	printf("Run %ld:%ld\n",_node_id, _thd_id);
   fflush(stdout);
-	if (warmup_finish) {
-		mem_allocator.register_thread(_thd_id);
-	}
 	stats.init(get_thd_id());
 	pthread_barrier_wait( &warmup_bar );
 	BaseQuery * m_query = NULL;

@@ -139,12 +139,10 @@ void YCSBWorkload::init_table_parallel() {
 		}
 	}
 	enable_thread_mem_pool = false;
-	mem_allocator.unregister();
 }
 
 void * YCSBWorkload::init_table_slice() {
 	UInt32 tid = ATOM_FETCH_ADD(next_tid, 1);
-	mem_allocator.register_thread(tid);
 	RC rc;
 	assert(g_synth_table_size % g_init_parallelism == 0);
 	assert(tid < g_init_parallelism);

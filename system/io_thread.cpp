@@ -40,10 +40,6 @@
 RC InputThread::run() {
 	printf("Run_remote %ld:%ld\n",_node_id, _thd_id);
   fflush(stdout);
-	if (warmup_finish) {
-		mem_allocator.register_thread(_thd_id);
-	}
-
 	stats.init(get_thd_id());
 	pthread_barrier_wait( &warmup_bar );
 	run_starttime = get_sys_clock();
@@ -105,9 +101,6 @@ RC InputThread::run() {
 RC OutputThread::run() {
 	printf("Run_send %ld:%ld\n",_node_id, _thd_id);
   fflush(stdout);
-	if (warmup_finish) {
-		mem_allocator.register_thread(_thd_id);
-	}
 	stats.init(get_thd_id());
 	pthread_barrier_wait( &warmup_bar );
 

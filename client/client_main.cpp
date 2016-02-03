@@ -18,7 +18,6 @@
 #include "ycsb.h"
 #include "tpcc.h"
 #include "client_thread.h"
-#include "mem_alloc.h"
 #include "client_query.h"
 #include "transport.h"
 #include "client_txn.h"
@@ -57,10 +56,6 @@ int main(int argc, char* argv[])
 	int64_t endtime;
     starttime = get_server_clock();
 	// per-partition malloc
-  printf("Initializing memory allocator... ");
-  fflush(stdout);
-	mem_allocator.init(g_part_cnt, MEM_SIZE / g_part_cnt); 
-  printf("Done\n");
   printf("Initializing stats... ");
   fflush(stdout);
 	stats.init();
