@@ -36,6 +36,8 @@
 #include "msg_queue.h"
 #include "sequencer.h"
 #include "logger.h"
+#include "client_txn.h"
+#include "client_query.h"
 
 RC InputThread::run() {
 	printf("Run_remote %ld:%ld\n",_node_id, _thd_id);
@@ -46,15 +48,102 @@ RC InputThread::run() {
 
   while(!_wl->sim_init_done) {
     tport_man.recv_msg();
-    /*
-    if(get_sys_clock() - run_starttime >= g_done_timer)
-      return FINISH;
-      */
+    if(ISCLIENT) {
+      check_for_init_done();
+    }
   }
   warmup_done = true;
 	pthread_barrier_wait( &warmup_bar );
 	printf("Run_remote %ld:%ld\n",_node_id, _thd_id);
   fflush(stdout);
+
+  if(ISCLIENT) {
+    client_recv_loop();
+  } else {
+    server_recv_loop();
+  }
+
+  return FINISH;
+
+}
+
+RC InputThread::client_recv_loop() {
+	int rsp_cnts[g_servers_per_client];
+	memset(rsp_cnts, 0, g_servers_per_client * sizeof(int));
+
+	myrand rdm;
+	rdm.init(get_thd_id());
+	ts_t rq_time = get_sys_clock();
+	run_starttime = get_sys_clock();
+  uint64_t return_node_offset;
+  uint64_t inf;
+  BaseQuery * m_query = NULL;
+
+	while (true) {
+    if(get_sys_clock() - run_starttime >= g_done_timer) {
+      break;
+    }
+		tport_man.recv_msg();
+    //while((m_query = work_queue.get_next_query(get_thd_id())) != NULL) {
+    while(work_queue.dequeue(0,m_query)) { 
+			rq_time = get_sys_clock();
+			assert(m_query->rtype == CL_RSP || m_query->rtype == EXP_DONE);
+			assert(m_query->dest_id == g_node_id);
+			switch (m_query->rtype) {
+				case CL_RSP:
+          return_node_offset = m_query->return_id - g_server_start_node;
+          assert(return_node_offset < g_servers_per_client);
+		      rsp_cnts[return_node_offset]++;
+					inf = client_man.dec_inflight(return_node_offset);
+          assert(inf >=0);
+					break;
+        case EXP_DONE:
+          ATOM_SUB(_wl->done_cnt,1);
+          break;
+				default:
+					assert(false);
+			}
+      qry_pool.put(m_query);
+    }
+		ts_t tend = get_sys_clock(); 
+		if (warmup_finish && 
+        ((_wl->sim_done && ((tend - rq_time) > MSG_TIMEOUT))
+        || (get_sys_clock() - run_starttime >= g_done_timer))) {
+      break;
+		}
+
+    // If all other nodes are done, finish.
+		if (warmup_finish && _wl->done_cnt == 0) {
+			if( !ATOM_CAS(_wl->sim_done, false, true) )
+				assert( _wl->sim_done);
+			if( !ATOM_CAS(_wl->sim_timeout, false, true) )
+				assert( _wl->sim_timeout);
+      printf("starting FINISH %ld:%ld\n",_node_id,_thd_id);
+      fflush(stdout);
+      printf("FINISH %ld:%ld\n",_node_id,_thd_id);
+      fflush(stdout);
+      return FINISH;
+		}
+    if (_wl->sim_done && _wl->sim_timeout) {
+      break;
+    }
+	}
+
+  if( !ATOM_CAS(_wl->sim_timeout, false, true) ) {
+    assert( _wl->sim_timeout);
+  } else {
+    printf("_wl->sim_timeout=%d\n",_wl->sim_timeout);
+    fflush(stdout);
+  }
+
+      printf("starting FINISH %ld:%ld\n",_node_id,_thd_id);
+      fflush(stdout);
+  printf("FINISH %ld:%ld\n",_node_id,_thd_id);
+  fflush(stdout);
+  return FINISH;
+}
+
+RC InputThread::server_recv_loop() {
 
 	myrand rdm;
 	rdm.init(get_thd_id());
@@ -98,6 +187,20 @@ RC InputThread::run() {
 	}
 }
 
+void InputThread::check_for_init_done() {
+  BaseQuery * m_query = NULL;
+    while(work_queue.dequeue(0,m_query)) { 
+      assert(m_query->rtype == INIT_DONE);
+      ATOM_SUB(_wl->rsp_cnt,1);
+      printf("Received INIT_DONE from node %ld -- %ld\n",m_query->return_id,_wl->rsp_cnt);
+      fflush(stdout);
+      if(_wl->rsp_cnt ==0) {
+        if( !ATOM_CAS(_wl->sim_init_done, false, true) )
+          assert( _wl->sim_init_done);
+      }
+    }
+}
+
 RC OutputThread::run() {
 	printf("Run_send %ld:%ld\n",_node_id, _thd_id);
   fflush(stdout);
@@ -110,10 +213,6 @@ RC OutputThread::run() {
   run_starttime = get_sys_clock();
 	while (!_wl->sim_init_done) {
     messager.run();
-    /*
-    if(get_sys_clock() - run_starttime >= g_done_timer)
-      return FINISH;
-      */
   }
 
 	pthread_barrier_wait( &warmup_bar );

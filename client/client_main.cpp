@@ -17,6 +17,8 @@
 #include "global.h"
 #include "ycsb.h"
 #include "tpcc.h"
+#include "thread.h"
+#include "io_thread.h"
 #include "client_thread.h"
 #include "client_query.h"
 #include "transport.h"
@@ -31,10 +33,13 @@ void * nn_worker(void *);
 void * send_worker(void *);
 void network_test();
 void network_test_recv();
+void * run_thread(void *);
 
 
 // TODO the following global variables are HACK
-Client_thread_t * m_thds;
+ClientThread * client_thds;
+InputThread * input_thds;
+OutputThread * output_thds;
 
 // defined in parser.cpp
 void parser(int argc, char * argv[]);
@@ -107,6 +112,7 @@ int main(int argc, char* argv[])
 
 	// 2. spawn multiple threads
 	uint64_t thd_cnt = g_client_thread_cnt;
+	uint64_t cthd_cnt = thd_cnt; 
 	uint64_t rthd_cnt = g_client_rem_thread_cnt;
 	uint64_t sthd_cnt = g_client_send_thread_cnt;
   uint64_t all_thd_cnt = thd_cnt + rthd_cnt + sthd_cnt;
@@ -115,7 +121,10 @@ int main(int argc, char* argv[])
 		(pthread_t *) malloc(sizeof(pthread_t) * (all_thd_cnt));
 	pthread_attr_t attr;
 	pthread_attr_init(&attr);
-	m_thds = new Client_thread_t[all_thd_cnt];
+
+  client_thds = new ClientThread[cthd_cnt];
+  input_thds = new InputThread[rthd_cnt];
+  output_thds = new OutputThread[sthd_cnt];
 	//// query_queue should be the last one to be initialized!!!
 	// because it collects txn latency
   printf("Initializing message queue... ");
@@ -128,11 +137,6 @@ int main(int argc, char* argv[])
   fflush(stdout);
 
 	pthread_barrier_init( &warmup_bar, NULL, thd_cnt );
-  printf("Initializing threads... ");
-  fflush(stdout);
-	for (uint32_t i = 0; i < all_thd_cnt; i++) 
-		m_thds[i].init(i, g_node_id, m_wl);
-  printf("Done\n");
 #if CREATE_TXN_FILE
   return(0);
 #endif
@@ -148,9 +152,8 @@ int main(int argc, char* argv[])
 	// spawn and run txns again.
 	starttime = get_server_clock();
 
-  uint64_t i = 0;
-	for (i = 0; i < thd_cnt; i++) {
-		uint64_t vid = i;
+  uint64_t id = 0;
+	for (uint64_t i = 0; i < thd_cnt; i++) {
 		CPU_ZERO(&cpus);
 #if TPORT_TYPE_IPC
         CPU_SET(g_node_id * thd_cnt + cpu_cnt, &cpus);
@@ -161,23 +164,20 @@ int main(int argc, char* argv[])
 #endif
 		cpu_cnt = (cpu_cnt + 1) % g_servers_per_client;
     pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
-		pthread_create(&p_thds[i], &attr, worker, (void *)vid);
+    client_thds[i].init(id,g_node_id,m_wl);
+		pthread_create(&p_thds[id++], &attr, run_thread, (void *)&client_thds[i]);
     }
 
-	for (; i < thd_cnt + sthd_cnt; i++) {
-		uint64_t vid = i;
-		pthread_create(&p_thds[i], NULL, send_worker, (void *)vid);
-		//pthread_create(&p_thds[i], &attr, send_worker, (void *)vid);
+	for (uint64_t i = 0; i < sthd_cnt; i++) {
+    output_thds[i].init(id,g_node_id,m_wl);
+		pthread_create(&p_thds[id++], NULL, run_thread, (void *)&output_thds[i]);
   }
-	for (; i < thd_cnt + sthd_cnt + rthd_cnt -1; i++) {
-		uint64_t vid = i;
-		pthread_create(&p_thds[i], NULL, nn_worker, (void *)vid);
-		//pthread_create(&p_thds[i], &attr, nn_worker, (void *)vid);
+	for (uint64_t j = 0; j < rthd_cnt ; j++) {
+    input_thds[j].init(id,g_node_id,m_wl);
+		pthread_create(&p_thds[id++], NULL, run_thread, (void *)&input_thds[j]);
   }
 
-    nn_worker((void *)(i));
-
-	for (i = 0; i < all_thd_cnt - 1; i++) 
+	for (uint64_t i = 0; i < all_thd_cnt; i++) 
 		pthread_join(p_thds[i], NULL);
 
 	endtime = get_server_clock();
@@ -194,27 +194,9 @@ int main(int argc, char* argv[])
 	return 0;
 }
 
-void * worker(void * id) {
-	uint64_t tid = (uint64_t)id;
-  printf("Starting client worker: %lu\n", tid);
-  fflush(stdout);
-	m_thds[tid].run();
-	return NULL;
-}
-
-void * nn_worker(void * id) {
-	uint64_t tid = (uint64_t)id;
-  printf("Starting client nn_worker: %lu\n", tid);
-  fflush(stdout);
-	m_thds[tid].run_remote();
-	return NULL;
-}
-
-void * send_worker(void * id) {
-	uint64_t tid = (uint64_t)id;
-  printf("Starting client send_worker: %lu\n", tid);
-  fflush(stdout);
-	m_thds[tid].run_send();
+void * run_thread(void * id) {
+  Thread * thd = (Thread *) id;
+	thd->run();
 	return NULL;
 }
 
