@@ -5,8 +5,8 @@
 /***********************************************/
 // Simulation + Hardware
 /***********************************************/
-#define NODE_CNT 16
-#define THREAD_CNT 6
+#define NODE_CNT 2
+#define THREAD_CNT 2
 #define REM_THREAD_CNT 1
 #define SEND_THREAD_CNT 1
 #define CORE_CNT 8
@@ -90,7 +90,7 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, OCC, VLL, CALVIN
-#define CC_ALG CALVIN
+#define CC_ALG NO_WAIT
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER         false
@@ -145,7 +145,7 @@
 /***********************************************/
 #define LOG_COMMAND         false
 #define LOG_REDO          false
-#define LOGGING true
+#define LOGGING false
 #define LOG_BUF_MAX 10
 #define LOG_BUF_TIMEOUT 10 * 1000000UL // 10ms
 
@@ -155,7 +155,7 @@
 // max number of rows touched per transaction
 #define MAX_ROW_PER_TXN       64
 #define QUERY_INTVL         1UL
-#define MAX_TXN_PER_PART 1000000
+#define MAX_TXN_PER_PART 100000
 #define FIRST_PART_LOCAL      true
 #define MAX_TUPLE_SIZE        1024 // in bytes
 #define GEN_BY_MPR false
@@ -167,7 +167,7 @@
 #define DATA_PERC 100
 #define ACCESS_PERC 0.03
 #define INIT_PARALLELISM 8
-#define SYNTH_TABLE_SIZE 2097152*8
+#define SYNTH_TABLE_SIZE 2056 //2097152*8
 #define ZIPF_THETA 0.6
 #define TXN_WRITE_PERC 0.5
 #define TUP_WRITE_PERC 0.5

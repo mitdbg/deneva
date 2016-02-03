@@ -18,6 +18,11 @@
 #include "ycsb.h"
 #include "tpcc.h"
 #include "thread.h"
+#include "worker_thread.h"
+#include "calvin_thread.h"
+#include "abort_thread.h"
+#include "io_thread.h"
+#include "log_thread.h"
 #include "manager.h"
 #include "math.h"
 #include "mem_alloc.h"
@@ -43,9 +48,19 @@ void * calvin_seq_worker(void * id);
 void * calvin_worker(void * id); 
 void network_test();
 void network_test_recv();
+void * run_thread(void *);
 
 
-Thread * m_thds;
+WorkerThread * worker_thds;
+InputThread * input_thds;
+OutputThread * output_thds;
+AbortThread * abort_thds;
+LogThread * log_thds;
+#if CC_ALG == CALVIN
+CalvinThread * calvin_thds;
+CalvinLockThread * calvin_lock_thds;
+CalvinSequencerThread * calvin_seq_thds;
+#endif
 
 // defined in parser.cpp
 void parser(int argc, char * argv[]);
@@ -152,6 +167,7 @@ int main(int argc, char* argv[])
 
 	// 2. spawn multiple threads
 	uint64_t thd_cnt = g_thread_cnt;
+	uint64_t wthd_cnt = thd_cnt;
 	uint64_t rthd_cnt = g_rem_thread_cnt;
 	uint64_t sthd_cnt = g_send_thread_cnt;
   uint64_t all_thd_cnt = thd_cnt + rthd_cnt + sthd_cnt + 1;
@@ -160,6 +176,7 @@ int main(int argc, char* argv[])
 #endif
 #if CC_ALG == CALVIN
   assert(thd_cnt >= 3);
+  wthd_cnt -= 2;
 #endif
 	
 	pthread_t * p_thds = 
@@ -167,7 +184,17 @@ int main(int argc, char* argv[])
 	pthread_attr_t attr;
 	pthread_attr_init(&attr);
 	cpu_set_t cpus;
-	m_thds = new Thread[all_thd_cnt];
+
+  worker_thds = new WorkerThread[wthd_cnt];
+  input_thds = new InputThread[rthd_cnt];
+  output_thds = new OutputThread[sthd_cnt];
+  abort_thds = new AbortThread[1];
+  log_thds = new LogThread[1];
+#if CC_ALG == CALVIN
+  calvin_thds = new CalvinThread[wthd_cnt];
+  calvin_lock_thds = new CalvinLockThread[1];
+  calvin_seq_thds = new CalvinSequencerThread[1];
+#endif
 	// query_queue should be the last one to be initialized!!!
 	// because it collects txn latency
 	//if (WORKLOAD != TEST) {
@@ -188,12 +215,14 @@ int main(int argc, char* argv[])
   printf("Done\n");
 #endif
 
+  /*
   printf("Initializing threads... ");
   fflush(stdout);
 	for (uint32_t i = 0; i < all_thd_cnt; i++) 
 		m_thds[i].init(i, g_node_id, m_wl);
   printf("Done\n");
   fflush(stdout);
+  */
 
   endtime = get_server_clock();
   printf("Initialization Time = %ld\n", endtime - starttime);
@@ -205,13 +234,8 @@ int main(int argc, char* argv[])
 	// spawn and run txns again.
 	starttime = get_server_clock();
 
-  uint64_t i = 0;
-#if CC_ALG == CALVIN
-	for (i = 0; i < thd_cnt - 2; i++) {
-#else
-	for (i = 0; i < thd_cnt; i++) {
-#endif
-		uint64_t vid = i;
+  uint64_t id = 0;
+	for (uint64_t i = 0; i < wthd_cnt; i++) {
 		CPU_ZERO(&cpus);
 #if TPORT_TYPE_IPC
     CPU_SET((g_node_id * (g_thread_cnt) + cpu_cnt) % g_core_cnt, &cpus);
@@ -223,39 +247,46 @@ int main(int argc, char* argv[])
     pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
 		cpu_cnt++;
 #if CC_ALG == CALVIN
-		pthread_create(&p_thds[i], &attr, calvin_worker, (void *)vid);
+		//pthread_create(&p_thds[i], &attr, calvin_worker, (void *)vid);
+    calvin_thds[i].init(id,g_node_id,m_wl);
+		pthread_create(&p_thds[id++], &attr, run_thread, (void *)&calvin_thds[i]);
 #else
-		pthread_create(&p_thds[i], &attr, worker, (void *)vid);
+    worker_thds[i].init(id,g_node_id,m_wl);
+		pthread_create(&p_thds[id++], &attr, run_thread, (void *)&worker_thds[i]);
 #endif
   }
 
 #if CC_ALG == CALVIN
-  pthread_create(&p_thds[i], &attr, calvin_lock_worker, (void *)i);
-  i++;
-  pthread_create(&p_thds[i], &attr, calvin_seq_worker, (void *)i);
-  i++;
+  calvin_lock_thds[0].init(id,g_node_id,m_wl);
+  pthread_create(&p_thds[id++], &attr, run_thread, (void *)&calvin_lock_thds[0]);
+  calvin_seq_thds[0].init(id,g_node_id,m_wl);
+  pthread_create(&p_thds[id++], &attr, run_thread, (void *)&calvin_seq_thds[0]);
 #endif
-  assert(i == thd_cnt);
 
-	for (; i < thd_cnt + sthd_cnt; i++) {
-		uint64_t vid = i;
-		pthread_create(&p_thds[i], NULL, send_worker, (void *)vid);
+	for (uint64_t j = 0; j < sthd_cnt; j++) {
+		//uint64_t vid = i;
+    output_thds[j].init(id,g_node_id,m_wl);
+		pthread_create(&p_thds[id++], NULL, run_thread, (void *)&output_thds[j]);
 		//pthread_create(&p_thds[i], &attr, send_worker, (void *)vid);
   }
-	for (; i < thd_cnt + sthd_cnt + rthd_cnt ; i++) {
-		uint64_t vid = i;
-		pthread_create(&p_thds[i], NULL, nn_worker, (void *)vid);
-		//pthread_create(&p_thds[i], &attr, nn_worker, (void *)vid);
+	for (uint64_t j = 0; j < rthd_cnt ; j++) {
+		//uint64_t vid = i;
+		//pthread_create(&p_thds[i], NULL, nn_worker, (void *)vid);
+    input_thds[j].init(id,g_node_id,m_wl);
+		pthread_create(&p_thds[id++], NULL, run_thread, (void *)&input_thds[j]);
   }
 
 #if LOGGING
-		pthread_create(&p_thds[i], NULL, log_worker, (void *)i);
-    i++;
+		//pthread_create(&p_thds[i], NULL, log_worker, (void *)i);
+    log_thds[0].init(id,g_node_id,m_wl);
+		pthread_create(&p_thds[id++], NULL, run_thread, (void *)&log_thds[0]);
 #endif
 
-  abort_worker((void *)(i));
+  abort_thds[0].init(id,g_node_id,m_wl);
+  pthread_create(&p_thds[id++], NULL, run_thread, (void *)&abort_thds[0]);
+  //abort_worker((void *)(i));
 
-	for (i = 0; i < all_thd_cnt - 1; i++) 
+	for (uint64_t i = 0; i < all_thd_cnt ; i++) 
 		pthread_join(p_thds[i], NULL);
 
 	endtime = get_server_clock();
@@ -280,6 +311,7 @@ int main(int argc, char* argv[])
 	return 0;
 }
 
+/*
 void * worker(void * id) {
 	uint64_t tid = (uint64_t)id;
 	m_thds[tid].run();
@@ -325,6 +357,13 @@ void * calvin_lock_worker(void * id) {
 void * calvin_worker(void * id) {
 	uint64_t tid = (uint64_t)id;
 	m_thds[tid].run_calvin();
+	return NULL;
+}
+*/
+
+void * run_thread(void * id) {
+  Thread * thd = (Thread *) id;
+	thd->run();
 	return NULL;
 }
 
