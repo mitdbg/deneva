@@ -104,7 +104,7 @@ RC YCSBWorkload::init_table() {
 				new_row->set_value(fid, value);
 			}
             itemid_t * m_item =
-                (itemid_t *) mem_allocator.alloc( sizeof(itemid_t), part_id );
+                (itemid_t *) mem_allocator.alloc( sizeof(itemid_t));
 			assert(m_item != NULL);
             m_item->type = DT_row;
             m_item->location = new_row;
@@ -176,7 +176,7 @@ void * YCSBWorkload::init_table_slice() {
 		}
 
 		itemid_t * m_item =
-			(itemid_t *) mem_allocator.alloc( sizeof(itemid_t), part_id );
+			(itemid_t *) mem_allocator.alloc( sizeof(itemid_t));
 		assert(m_item != NULL);
 		m_item->type = DT_row;
 		m_item->location = new_row;
@@ -191,7 +191,7 @@ void * YCSBWorkload::init_table_slice() {
 
 RC YCSBWorkload::get_txn_man(TxnManager *& txn_manager){
 	txn_manager = (YCSBTxnManager *)
-		mem_allocator.alloc( sizeof(YCSBTxnManager), 0 );
+		mem_allocator.alloc( sizeof(YCSBTxnManager));
 	new(txn_manager) YCSBTxnManager();
 	txn_manager->init(this); 
 	return RCOK;

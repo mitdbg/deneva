@@ -27,6 +27,7 @@
 #include "catalog.h"
 #include "mem_alloc.h"
 #include "msg_queue.h"
+#include "message.h"
 #if CC_ALG == VLL
 
 void 
@@ -109,7 +110,7 @@ VLLMan::restartQFront() {
   		//rem_qry_man.ack_response(qry);
   		//rem_qry_man.ack_response(RCOK,front_txn);
       BaseQuery * qry = front_txn->get_query();
-      msg_queue.enqueue(qry,RACK,qry->return_id);
+      msg_queue.enqueue(Message::create_message(qry,RACK),qry->return_id);
     }
     else {
       txn_table.restart_txn(front_txn->get_txn_id(),0);
@@ -263,7 +264,7 @@ VLLMan::finishTxn(TxnManager * txn) {
 
 TxnQEntry * 
 VLLMan::getQEntry() {
-	TxnQEntry * entry = (TxnQEntry *) mem_allocator.alloc(sizeof(TxnQEntry), 0);
+	TxnQEntry * entry = (TxnQEntry *) mem_allocator.alloc(sizeof(TxnQEntry));
 	entry->prev = NULL;
 	entry->next = NULL;
 	entry->txn = NULL;

@@ -28,14 +28,14 @@ void QWorkQueue::init(Workload * wl) {
   q_len = 1;
 #endif
 	_wl = wl;
-  hash = (QHash *) mem_allocator.alloc(sizeof(QHash), 0);
+  hash = (QHash *) mem_allocator.alloc(sizeof(QHash));
   hash->init();
-  queue = (QWorkQueueHelper *) mem_allocator.alloc(sizeof(QWorkQueueHelper) * q_len, 0);
+  queue = (QWorkQueueHelper *) mem_allocator.alloc(sizeof(QWorkQueueHelper) * q_len);
   for(int i = 0;i<q_len;i++) {
     queue[i].init(hash); 
   }
   uint64_t limit = g_thread_cnt + g_send_thread_cnt + g_rem_thread_cnt + 1;
-  active_txns = (uint64_t*) mem_allocator.alloc(sizeof(uint64_t) *limit,0);
+  active_txns = (uint64_t*) mem_allocator.alloc(sizeof(uint64_t) *limit);
   for(uint64_t i = 0; i < limit; i++) {
     active_txns[i] = UINT64_MAX;
   }
@@ -51,8 +51,8 @@ void QWorkQueue::init(Workload * wl) {
   new_epoch = false;
   last_sched_dq = NULL;
   sched_ptr = 0;
-  sched_head = (wq_entry_t*) mem_allocator.alloc(sizeof(wq_entry_t*)*g_node_cnt,0);
-  sched_tail = (wq_entry_t*) mem_allocator.alloc(sizeof(wq_entry_t*)*g_node_cnt,0);
+  sched_head = (wq_entry_t*) mem_allocator.alloc(sizeof(wq_entry_t*)*g_node_cnt);
+  sched_tail = (wq_entry_t*) mem_allocator.alloc(sizeof(wq_entry_t*)*g_node_cnt);
   for(uint64_t i = 0; i < g_node_cnt; i++) {
     sched_head[i] = NULL;
     sched_tail[i] = NULL;
@@ -84,7 +84,7 @@ void QWorkQueue::sched_enqueue(BaseQuery * qry) {
   uint64_t id = qry->return_id;
   assert(ISSERVERN(id));
   assert(qry);
-  wq_entry_t en = (wq_entry_t) mem_allocator.alloc(sizeof(struct wq_entry), 0);
+  wq_entry_t en = (wq_entry_t) mem_allocator.alloc(sizeof(struct wq_entry));
   pthread_mutex_lock(&mtx);
   en->qry = qry;
   //DEBUG("SEnq %ld %ld,%ld\n",id,qry->txn_id,qry->batch_id);
@@ -592,7 +592,7 @@ void QWorkQueueHelper::abort_finish(uint64_t time) {
 
 void QWorkQueueHelper::add_query(BaseQuery * qry) {
 
-  wq_entry_t entry = (wq_entry_t) mem_allocator.alloc(sizeof(struct wq_entry), 0);
+  wq_entry_t entry = (wq_entry_t) mem_allocator.alloc(sizeof(struct wq_entry));
   entry->qry = qry;
   entry->next  = NULL;
   entry->starttime = get_sys_clock();
@@ -772,7 +772,7 @@ bool QWorkQueueHelper::poll_abort() {
 int QWorkQueueHelper::add_abort_query(BaseQuery * qry) {
 
   int restarts = 0;
-  wq_entry_t entry = (wq_entry_t) mem_allocator.alloc(sizeof(struct wq_entry), 0);
+  wq_entry_t entry = (wq_entry_t) mem_allocator.alloc(sizeof(struct wq_entry));
 
   /*
   if(qry->penalty == 0)

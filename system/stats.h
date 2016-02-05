@@ -151,10 +151,8 @@ public:
   uint64_t msg_batch_bytes;
   uint64_t msg_batch_cnt;
 
-  uint64_t msg_cnt_serv;
-  uint64_t msg_cnt_cl;
-  double msg_dly_serv;
-  double msg_dly_cl;
+  uint64_t msg_cnt;
+  double msg_dly;
 
   uint32_t batch_cnt;
   // calvin

@@ -59,7 +59,7 @@ void Client_txn::init() {
     //for (uint32_t i = 0; i < g_node_cnt; ++i) {
     for (uint32_t i = 0; i < g_servers_per_client; ++i) {
         inflight_txns[i] = 
-            (Inflight_entry *) mem_allocator.alloc(sizeof(Inflight_entry), 0);
+            (Inflight_entry *) mem_allocator.alloc(sizeof(Inflight_entry));
         inflight_txns[i]->init();
     }
 }

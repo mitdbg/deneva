@@ -27,6 +27,7 @@
 #include "msg_thread.h"
 #include "msg_queue.h"
 #include "wl.h"
+#include "message.h"
 
 RC ClientThread::run() {
 	printf("Run %ld:%ld\n",_node_id, _thd_id);
@@ -49,7 +50,7 @@ RC ClientThread::run() {
 */
 		for(uint64_t i = 0; i < nnodes; i++) {
 			if(i != g_node_id) {
-        msg_queue.enqueue(NULL,INIT_DONE,i);
+        msg_queue.enqueue(Message::create_message(NULL,INIT_DONE),i);
 			}
 		}
   }
@@ -107,7 +108,7 @@ RC ClientThread::run() {
     }
     */
 
-    msg_queue.enqueue((BaseQuery*)((void*)m_query),RTXN,GET_NODE_ID(m_query->pid));
+    msg_queue.enqueue(Message::create_message((BaseQuery*)m_query,RTXN),GET_NODE_ID(m_query->pid));
 		num_txns_sent++;
 		txns_sent[GET_NODE_ID(m_query->pid)-g_server_start_node]++;
     INC_STATS(get_thd_id(),txn_sent,1);

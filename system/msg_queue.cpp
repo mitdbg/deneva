@@ -18,69 +18,55 @@
 #include "mem_alloc.h"
 #include "query.h"
 #include "pool.h"
+#include "message.h"
 
 void MessageQueue::init() {
   cnt = 0;
+#ifndef MSG_QUEUE_CONCURRENT_QUEUE
   head = NULL;
   tail = NULL;
   pthread_mutex_init(&mtx,NULL);
+#endif
 }
 
-void MessageQueue::enqueue(BaseQuery * qry,RemReqType type,uint64_t dest) {
+void MessageQueue::enqueue(Message * msg,uint64_t dest) {
+  assert(dest < g_node_cnt + g_client_node_cnt + g_repl_cnt*g_node_cnt);
+  DEBUG("MQ Enqueue %ld\n",dest)
   msg_entry_t entry;
   msg_pool.get(entry);
-  if(type == RFIN) {
-    BaseQuery * qry2;
-    qry_pool.get(qry2);
-    qry2->pid = qry->pid;
-    qry2->rc = qry->rc;
-    qry2->txn_id = qry->txn_id;
-    qry2->batch_id = qry->batch_id;
-    qry2->ro = qry->ro;
-    qry2->rtype = qry->rtype;
-    entry->qry = qry2;
-  } else {
-    entry->qry = qry;
-  }
-  entry->dest = dest;
-  entry->type = type;
+  entry->msg = msg;
   entry->next  = NULL;
   entry->prev  = NULL;
+  entry->dest = dest;
   entry->starttime = get_sys_clock();
-  ATOM_ADD(cnt,1);
-#ifdef MSG_QUEUE_CONCURRENT_QUEUE
-  mq.enqueue(entry);
-#else
   pthread_mutex_lock(&mtx);
   LIST_PUT_TAIL(head,tail,entry);
+  ATOM_ADD(cnt,1);
   pthread_mutex_unlock(&mtx);
-#endif
 
 
 }
 
-uint64_t MessageQueue::dequeue(BaseQuery *& qry, RemReqType & type, uint64_t & dest) {
-  msg_entry * entry;
-  uint64_t time;
-#ifdef MSG_QUEUE_CONCURRENT_QUEUE
-  bool r = mq.try_dequeue(entry);
-#else
+uint64_t MessageQueue::dequeue(Message *& msg) {
+  msg_entry * entry = NULL;
+  uint64_t dest = UINT64_MAX;
   pthread_mutex_lock(&mtx);
-  LIST_GET_HEAD(head,tail,entry);
+  uint64_t curr_time = get_sys_clock();
+  if(head && (ISCLIENT || (curr_time - head->starttime > g_network_delay))) {
+    LIST_GET_HEAD(head,tail,entry);
+    ATOM_SUB(cnt,1);
+  }
   pthread_mutex_unlock(&mtx);
-  bool r = entry != NULL;
-#endif
-  if(r) {
-    qry = entry->qry;
-    type = entry->type;
+  if(entry) {
+    msg = entry->msg;
     dest = entry->dest;
-    time = entry->starttime;
+    DEBUG("MQ Dequeue %ld\n",dest)
+    INC_STATS(0,msg_dly,curr_time - entry->starttime);
+    INC_STATS(0,msg_cnt,1);
     msg_pool.put(entry);
   } else {
-    qry = NULL;
-    type = NO_MSG;
+    msg = NULL;
     dest = UINT64_MAX;
-    time = 0;
   }
-  return time;
+  return dest;
 }

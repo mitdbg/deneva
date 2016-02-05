@@ -25,7 +25,7 @@
 void TPCCClientQuery::client_init(uint64_t thd_id, Workload * h_wl) {
 	//double x = (double)(rand() % 100) / 100.0;
 	//part_to_access = (uint64_t *) 
-	//	mem_allocator.alloc(sizeof(uint64_t) * g_part_cnt, thd_id);
+	//	mem_allocator.alloc(sizeof(uint64_t) * g_part_cnt);
 	//pid = GET_PART_ID(0,g_node_id);
 	//// TODO
 	//if (x < g_perc_payment)
@@ -38,7 +38,7 @@ void TPCCClientQuery::client_init(uint64_t thd_id, Workload * h_wl) {
 void TPCCClientQuery::client_init(uint64_t thd_id, Workload * h_wl, uint64_t node_id) {
 	double x = (double)(rand() % 100) / 100.0;
 	part_to_access = (uint64_t *) 
-		mem_allocator.alloc(sizeof(uint64_t) * g_part_cnt, thd_id);
+		mem_allocator.alloc(sizeof(uint64_t) * g_part_cnt);
 	pid = GET_PART_ID(0,node_id);
 	// TODO
 	if (x < g_perc_payment)
@@ -366,7 +366,7 @@ void TPCCClientQuery::gen_new_order(uint64_t thd_id) {
 	rbk = false;
 	ol_cnt = URand(5, g_max_items_per_txn);
 	o_entry_d = 2013;
-	items = (Item_no *) mem_allocator.alloc(sizeof(Item_no) * ol_cnt, thd_id);
+	items = (Item_no *) mem_allocator.alloc(sizeof(Item_no) * ol_cnt);
 	part_to_access[0] = wh_to_part(w_id);
 	part_num = 1;
 

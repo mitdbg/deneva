@@ -190,11 +190,11 @@ RC index_btree::make_nl(uint64_t part_id, bt_node *& node) {
 
 RC index_btree::make_node(uint64_t part_id, bt_node *& node) {	
 //	printf("make_node(). part_id=%lld\n", part_id);
-	bt_node * new_node = (bt_node *) mem_allocator.alloc(sizeof(bt_node), part_id);
+	bt_node * new_node = (bt_node *) mem_allocator.alloc(sizeof(bt_node));
 	assert (new_node != NULL);
 	new_node->pointers = NULL;
-	new_node->keys = (idx_key_t *) mem_allocator.alloc((order - 1) * sizeof(idx_key_t), part_id);
-	new_node->pointers = (void **) mem_allocator.alloc(order * sizeof(void *), part_id);
+	new_node->keys = (idx_key_t *) mem_allocator.alloc((order - 1) * sizeof(idx_key_t));
+	new_node->pointers = (void **) mem_allocator.alloc(order * sizeof(void *));
 	assert (new_node->keys != NULL && new_node->pointers != NULL);
 	new_node->is_leaf = false;
 	new_node->num_keys = 0;

@@ -27,7 +27,7 @@
 
 void TxnPool::init(Workload * wl, uint64_t size) {
   _wl = wl;
-  //TxnManager * items = (TxnManager*)mem_allocator.alloc(sizeof(TxnManager)*size,0);
+  //TxnManager * items = (TxnManager*)mem_allocator.alloc(sizeof(TxnManager)*size);
   TxnManager * txn;
   for(uint64_t i = 0; i < size; i++) {
     //put(items[i]);
@@ -57,7 +57,7 @@ void TxnPool::free_all() {
 
 void AccessPool::init(Workload * wl, uint64_t size) {
   _wl = wl;
-  Access * items = (Access*)mem_allocator.alloc(sizeof(Access)*size,0);
+  Access * items = (Access*)mem_allocator.alloc(sizeof(Access)*size);
   for(uint64_t i = 0; i < size; i++) {
     put(&items[i]);
   }
@@ -67,7 +67,7 @@ void AccessPool::get(Access *& item) {
   bool r = pool.try_dequeue(item);
   if(!r) {
     DEBUG_M("access_pool\n");
-    item = (Access*)mem_allocator.alloc(sizeof(Access),0);
+    item = (Access*)mem_allocator.alloc(sizeof(Access));
   }
 }
 
@@ -84,8 +84,8 @@ void AccessPool::free_all() {
 
 void TxnTablePool::init(Workload * wl, uint64_t size) {
   _wl = wl;
-  //TxnManager * items = (TxnManager*)mem_allocator.alloc(sizeof(TxnManager)*size,0);
-    txn_node * t_node = (txn_node *) mem_allocator.alloc(sizeof(struct txn_node) * size, g_thread_cnt);
+  //TxnManager * items = (TxnManager*)mem_allocator.alloc(sizeof(TxnManager)*size);
+    txn_node * t_node = (txn_node *) mem_allocator.alloc(sizeof(struct txn_node) * size);
   for(uint64_t i = 0; i < size; i++) {
     put(&t_node[i]);
   }
@@ -95,7 +95,7 @@ void TxnTablePool::get(txn_node *& item) {
   bool r = pool.try_dequeue(item);
   if(!r) {
     DEBUG_M("txn_table_pool\n");
-    item = (txn_node *) mem_allocator.alloc(sizeof(struct txn_node), g_thread_cnt);
+    item = (txn_node *) mem_allocator.alloc(sizeof(struct txn_node));
   }
   item->txn = NULL;
   item->qry = NULL;
@@ -118,17 +118,17 @@ void QryPool::init(Workload * wl, uint64_t size) {
   for(uint64_t i = 0; i < size; i++) {
     //put(items[i]);
 #if WORKLOAD==TPCC
-    TPCCQuery * m_qry = (TPCCQuery *) mem_allocator.alloc(sizeof(TPCCQuery),0);
+    TPCCQuery * m_qry = (TPCCQuery *) mem_allocator.alloc(sizeof(TPCCQuery));
     m_qry = new TPCCQuery();
-    m_qry->items = (Item_no*) mem_allocator.alloc(sizeof(Item_no)*g_max_items_per_txn,0);
+    m_qry->items = (Item_no*) mem_allocator.alloc(sizeof(Item_no)*g_max_items_per_txn);
 #elif WORKLOAD==YCSB
-    YCSBQuery * m_qry = (YCSBQuery *) mem_allocator.alloc(sizeof(YCSBQuery),0);
+    YCSBQuery * m_qry = (YCSBQuery *) mem_allocator.alloc(sizeof(YCSBQuery));
     m_qry = new YCSBQuery();
-    m_qry->requests = (ycsb_request*)mem_allocator.alloc(sizeof(ycsb_request)*g_req_per_query,0);
+    m_qry->requests = (ycsb_request*)mem_allocator.alloc(sizeof(ycsb_request)*g_req_per_query);
 #endif
     qry = m_qry;
-    qry->part_to_access = (uint64_t*)mem_allocator.alloc(sizeof(uint64_t)*g_part_per_txn,0);
-    qry->part_touched = (uint64_t*)mem_allocator.alloc(sizeof(uint64_t)*g_part_per_txn,0);
+    qry->part_to_access = (uint64_t*)mem_allocator.alloc(sizeof(uint64_t)*g_part_per_txn);
+    qry->part_touched = (uint64_t*)mem_allocator.alloc(sizeof(uint64_t)*g_part_per_txn);
     put(qry);
   }
 }
@@ -138,17 +138,17 @@ void QryPool::get(BaseQuery *& item) {
   if(!r) {
     DEBUG_M("query_pool\n");
 #if WORKLOAD==TPCC
-    TPCCQuery * qry = (TPCCQuery *) mem_allocator.alloc(sizeof(TPCCQuery),0);
+    TPCCQuery * qry = (TPCCQuery *) mem_allocator.alloc(sizeof(TPCCQuery));
     qry = new TPCCQuery();
-    qry->items = (Item_no*) mem_allocator.alloc(sizeof(Item_no)*g_max_items_per_txn,0);
+    qry->items = (Item_no*) mem_allocator.alloc(sizeof(Item_no)*g_max_items_per_txn);
 #elif WORKLOAD==YCSB
     YCSBQuery * qry = NULL;
-    qry = (YCSBQuery *) mem_allocator.alloc(sizeof(YCSBQuery),0);
+    qry = (YCSBQuery *) mem_allocator.alloc(sizeof(YCSBQuery));
     qry = new YCSBQuery();
-    qry->requests = (ycsb_request*)mem_allocator.alloc(sizeof(ycsb_request)*g_req_per_query,0);
+    qry->requests = (ycsb_request*)mem_allocator.alloc(sizeof(ycsb_request)*g_req_per_query);
 #endif
-    qry->part_to_access = (uint64_t*)mem_allocator.alloc(sizeof(uint64_t)*g_part_per_txn,0);
-    qry->part_touched = (uint64_t*)mem_allocator.alloc(sizeof(uint64_t)*g_part_per_txn,0);
+    qry->part_to_access = (uint64_t*)mem_allocator.alloc(sizeof(uint64_t)*g_part_per_txn);
+    qry->part_touched = (uint64_t*)mem_allocator.alloc(sizeof(uint64_t)*g_part_per_txn);
     item = (BaseQuery*)qry;
   }
   //DEBUG_M("get 0x%lx\n",(uint64_t)item);
@@ -179,7 +179,7 @@ void MsgPool::init(Workload * wl, uint64_t size) {
   _wl = wl;
   msg_entry* entry;
   for(uint64_t i = 0; i < size; i++) {
-    entry = (msg_entry*) mem_allocator.alloc(sizeof(struct msg_entry), 0);
+    entry = (msg_entry*) mem_allocator.alloc(sizeof(struct msg_entry));
     put(entry);
   }
 }
@@ -188,7 +188,7 @@ void MsgPool::get(msg_entry* & item) {
   bool r = pool.try_dequeue(item);
   if(!r) {
     DEBUG_M("msg_pool\n");
-    item = (msg_entry*) mem_allocator.alloc(sizeof(struct msg_entry), 0);
+    item = (msg_entry*) mem_allocator.alloc(sizeof(struct msg_entry));
   }
 }
 

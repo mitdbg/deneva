@@ -65,6 +65,8 @@ class MessageThread {
 public:
   void init(uint64_t thd_id);
   void run();
+  void check_and_send_batches(); 
+  void send_batch(uint64_t id); 
   void copy_to_buffer(mbuf * sbuf, RemReqType type, BaseQuery * qry); 
   uint64_t get_msg_size(RemReqType type, BaseQuery * qry); 
   void rack( mbuf * sbuf,BaseQuery * qry);

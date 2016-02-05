@@ -29,7 +29,7 @@ void mem_alloc::free(void * ptr, uint64_t size) {
 #endif
 }
 
-void * mem_alloc::alloc(uint64_t size, uint64_t part_id) {
+void * mem_alloc::alloc(uint64_t size) {
 	void * ptr;
 
 #if TPORT_TYPE_IPC
@@ -41,7 +41,7 @@ void * mem_alloc::alloc(uint64_t size, uint64_t part_id) {
 	return ptr;
 }
 
-void * mem_alloc::realloc(void * ptr, uint64_t size, uint64_t part_id) {
+void * mem_alloc::realloc(void * ptr, uint64_t size) {
 #if TPORT_TYPE_IPC
   void * _ptr = std::realloc(ptr,size);
 #else

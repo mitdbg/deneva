@@ -24,7 +24,6 @@
 
 void Row_ts::init(row_t * row) {
 	_row = row;
-	uint64_t part_id = row->get_part_id();
 	wts = 0;
 	rts = 0;
 	min_wts = UINT64_MAX;
@@ -35,14 +34,13 @@ void Row_ts::init(row_t * row) {
     prereq = NULL;
 	preq_len = 0;
 	latch = (pthread_mutex_t *) 
-		mem_allocator.alloc(sizeof(pthread_mutex_t), part_id);
+		mem_allocator.alloc(sizeof(pthread_mutex_t));
 	pthread_mutex_init( latch, NULL );
 	blatch = false;
 }
 
 TsReqEntry * Row_ts::get_req_entry() {
-	uint64_t part_id = get_part_id(_row);
-	return (TsReqEntry *) mem_allocator.alloc(sizeof(TsReqEntry), part_id);
+	return (TsReqEntry *) mem_allocator.alloc(sizeof(TsReqEntry));
 }
 
 void Row_ts::return_req_entry(TsReqEntry * entry) {

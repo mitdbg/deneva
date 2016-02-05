@@ -23,7 +23,6 @@
 
 void Row_mvcc::init(row_t * row) {
 	_row = row;
-	uint64_t part_id = row->get_part_id();
 	readreq_mvcc = NULL;
 	prereq_mvcc = NULL;
 	readhis = NULL;
@@ -32,7 +31,7 @@ void Row_mvcc::init(row_t * row) {
 	writehistail = NULL;
 	blatch = false;
 	latch = (pthread_mutex_t *) 
-		mem_allocator.alloc(sizeof(pthread_mutex_t), part_id);
+		mem_allocator.alloc(sizeof(pthread_mutex_t));
 	pthread_mutex_init(latch, NULL);
 	whis_len = 0;
 	rhis_len = 0;
@@ -76,8 +75,7 @@ row_t * Row_mvcc::clear_history(TsType type, ts_t ts) {
 }
 
 MVReqEntry * Row_mvcc::get_req_entry() {
-	uint64_t part_id = get_part_id(_row);
-	return (MVReqEntry *) mem_allocator.alloc(sizeof(MVReqEntry), part_id);
+	return (MVReqEntry *) mem_allocator.alloc(sizeof(MVReqEntry));
 }
 
 void Row_mvcc::return_req_entry(MVReqEntry * entry) {
@@ -85,8 +83,7 @@ void Row_mvcc::return_req_entry(MVReqEntry * entry) {
 }
 
 MVHisEntry * Row_mvcc::get_his_entry() {
-	uint64_t part_id = _row->get_part_id();
-	return (MVHisEntry *) mem_allocator.alloc(sizeof(MVHisEntry), part_id);
+	return (MVHisEntry *) mem_allocator.alloc(sizeof(MVHisEntry));
 }
 
 void Row_mvcc::return_his_entry(MVHisEntry * entry) {

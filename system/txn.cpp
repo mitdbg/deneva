@@ -34,6 +34,7 @@
 #include "vll.h"
 #include "msg_queue.h"
 #include "pool.h"
+#include "message.h"
 
 void TxnManager::init(Workload * h_wl) {
 	this->h_wl = h_wl;
@@ -74,13 +75,13 @@ void TxnManager::init(Workload * h_wl) {
   txn_time_net = 0;
   txn_time_misc = 0;
 
-	//accesses = (Access **) mem_allocator.alloc(sizeof(Access **), 0);
+	//accesses = (Access **) mem_allocator.alloc(sizeof(Access **));
 	accesses = new Access * [MAX_ROW_PER_TXN];
 	for (int i = 0; i < MAX_ROW_PER_TXN; i++)
 		accesses[i] = NULL;
 	num_accesses_alloc = 0;
-  participant_nodes = (bool*)mem_allocator.alloc(sizeof(bool)*g_node_cnt,0);
-  active_nodes = (bool*)mem_allocator.alloc(sizeof(bool)*g_node_cnt,0);
+  participant_nodes = (bool*)mem_allocator.alloc(sizeof(bool)*g_node_cnt);
+  active_nodes = (bool*)mem_allocator.alloc(sizeof(bool)*g_node_cnt);
 }
 
 void TxnManager::reset() {
@@ -499,7 +500,7 @@ RC TxnManager::get_row(row_t * row, access_t type, row_t *& row_rtn) {
     uint64_t part_id = row->get_part_id();
     DEBUG_M("TxnManager::get_row alloc\n")
 		accesses[row_cnt]->orig_data = (row_t *) 
-			mem_allocator.alloc(sizeof(row_t), part_id);
+			mem_allocator.alloc(sizeof(row_t));
 		accesses[row_cnt]->orig_data->init(row->get_table(), part_id, 0);
 		accesses[row_cnt]->orig_data->copy(row);
 
@@ -507,7 +508,7 @@ RC TxnManager::get_row(row_t * row, access_t type, row_t *& row_rtn) {
 #if (LOGGING || REPLICA_CNT > 0) && !LOG_COMMAND
     LogRecord * record = logger.createRecord(LRT_UPDATE,L_UPDATE,get_txn_id(),part_id,row->get_table()->get_table_id(),row->get_primary_key());
 #if REPLICA_CNT > 0
-    msg_queue.enqueue(record,LOG_MSG,get_thd_id()); 
+    msg_queue.enqueue(Message::create_message(record,LOG_MSG),get_thd_id()); 
 #endif
 #if LOGGING
     logger.enqueueRecord(record);
@@ -553,7 +554,7 @@ RC TxnManager::get_row_post_wait(row_t *& row_rtn) {
     //printf("alloc 10 %ld\n",get_txn_id());
     DEBUG_M("TxnManager::get_row_post_wait alloc\n");
 		accesses[row_cnt]->orig_data = (row_t *) 
-			mem_allocator.alloc(sizeof(row_t), part_id);
+			mem_allocator.alloc(sizeof(row_t));
 		accesses[row_cnt]->orig_data->init(row->get_table(), part_id, 0);
 		accesses[row_cnt]->orig_data->copy(row);
 	}
@@ -728,7 +729,7 @@ RC TxnManager::finish(BaseQuery * query, bool fin) {
     if(fin || (readonly && CC_ALG != OCC)) {
       if(GET_NODE_ID(part_id) != g_node_id) {
         //query->remote_finish(query, part_node_id);    
-        msg_queue.enqueue(query,RFIN,part_node_id);
+        msg_queue.enqueue(Message::create_message(query,RFIN),part_node_id);
       } else {
         assert(CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC);
          // Model after RFIN
@@ -753,7 +754,7 @@ RC TxnManager::finish(BaseQuery * query, bool fin) {
       //query->rc = RCOK;
       if(GET_NODE_ID(part_id) != g_node_id) {
         //query->remote_prepare(query, part_node_id);    
-        msg_queue.enqueue(query,RPREPARE,part_node_id);
+        msg_queue.enqueue(Message::create_message(query,RPREPARE),part_node_id);
       } else {
         assert(CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC);
          // Model after RPREP
@@ -813,7 +814,7 @@ TxnManager::send_remote_reads(BaseQuery * qry) {
       qry_pool.get(m_qry);
       m_qry->deep_copy(qry);
       assert(m_qry->batch_id != UINT64_MAX);
-      msg_queue.enqueue(m_qry,RFWD,i);
+      msg_queue.enqueue(Message::create_message(m_qry,RFWD),i);
     }
   }
   return RCOK;
@@ -831,7 +832,7 @@ TxnManager::calvin_finish(BaseQuery * qry) {
       qry_pool.get(m_qry);
       m_qry->deep_copy(qry);
       assert(m_qry->batch_id != UINT64_MAX);
-      msg_queue.enqueue(m_qry,RFIN,i);
+      msg_queue.enqueue(Message::create_message(m_qry,RFIN),i);
     }
   }
   return RCOK;

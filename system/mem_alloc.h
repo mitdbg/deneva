@@ -21,8 +21,8 @@
 
 class mem_alloc {
 public:
-    void * alloc(uint64_t size, uint64_t part_id);
-    void * realloc(void * ptr, uint64_t size, uint64_t part_id);
+    void * alloc(uint64_t size);
+    void * realloc(void * ptr, uint64_t size);
     void free(void * block, uint64_t size);
 };
 

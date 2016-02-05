@@ -173,7 +173,7 @@ void Workload::index_insert(INDEX * index, uint64_t key, row_t * row, int64_t pa
 	if (part_id == -1)
 		pid = get_part_id(row);
 	itemid_t * m_item =
-		(itemid_t *) mem_allocator.alloc( sizeof(itemid_t), pid );
+		(itemid_t *) mem_allocator.alloc( sizeof(itemid_t));
 	m_item->init();
 	m_item->type = DT_row;
 	m_item->location = row;

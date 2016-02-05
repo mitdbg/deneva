@@ -49,7 +49,7 @@ RC TPCCWorkload::init() {
 	cout << "reading schema file: " << path << endl;
 	delivering = new bool * [g_num_wh + 1];
 	for (UInt32 wid = 1; wid <= g_num_wh; wid ++)
-		delivering[wid] = (bool *) mem_allocator.alloc(CL_SIZE, wid);
+		delivering[wid] = (bool *) mem_allocator.alloc(CL_SIZE);
 	
   printf("Initializing schema... ");
   fflush(stdout);
@@ -209,7 +209,7 @@ RC TPCCWorkload::init_table() {
 
 RC TPCCWorkload::get_txn_man(TxnManager *& txn_manager) {
 	txn_manager = (TPCCTxnManager *)
-		mem_allocator.alloc( sizeof(TPCCTxnManager),0);
+		mem_allocator.alloc( sizeof(TPCCTxnManager));
 	new(txn_manager) TPCCTxnManager();
 	txn_manager->init( this);
 	return RCOK;

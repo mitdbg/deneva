@@ -25,7 +25,7 @@ void Row_lock::init(row_t * row) {
 	_row = row;
   owners_size = 1;//1031;
 	owners = NULL;
-  owners = (LockEntry**) mem_allocator.alloc(sizeof(LockEntry*)*owners_size,0);
+  owners = (LockEntry**) mem_allocator.alloc(sizeof(LockEntry*)*owners_size);
   for(uint64_t i = 0; i < owners_size; i++)
     owners[i] = NULL;
 	waiters_head = NULL;
@@ -233,7 +233,7 @@ final:
 	if (rc == WAIT && CC_ALG == DL_DETECT) {
 		// Update the waits-for graph
 		ASSERT(waiters_tail->txn == txn);
-		txnids = (uint64_t *) mem_allocator.alloc(sizeof(uint64_t) * (owner_cnt + waiter_cnt), part_id);
+		txnids = (uint64_t *) mem_allocator.alloc(sizeof(uint64_t) * (owner_cnt + waiter_cnt));
 		txncnt = 0;
 		LockEntry * en = waiters_tail->prev;
 		while (en != NULL) {
@@ -417,7 +417,7 @@ bool Row_lock::conflict_lock(lock_t l1, lock_t l2) {
 
 LockEntry * Row_lock::get_entry() {
 	LockEntry * entry = (LockEntry *) 
-		mem_allocator.alloc(sizeof(LockEntry), _row->get_part_id());
+		mem_allocator.alloc(sizeof(LockEntry));
   entry->type = LOCK_NONE;
   entry->txn = NULL;
   //DEBUG_M("row_lock::get_entry alloc %lx\n",(uint64_t)entry);

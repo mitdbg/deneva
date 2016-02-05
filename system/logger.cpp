@@ -21,7 +21,7 @@ LogRecord * Logger::createRecord(
     uint64_t tableid,
     uint64_t key
     ) {
-  LogRecord * record = (LogRecord*)mem_allocator.alloc(sizeof(LogRecord),0);
+  LogRecord * record = (LogRecord*)mem_allocator.alloc(sizeof(LogRecord));
   record->rcd.lsn = ATOM_FETCH_ADD(lsn,1);
   record->rcd.type = type;
   record->rcd.iud = iud;

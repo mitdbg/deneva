@@ -30,7 +30,7 @@ void YCSBQuery::init(uint64_t thd_id, Workload * h_wl) {
 }
 
 void YCSBClientQuery::client_init(uint64_t thd_id, Workload * h_wl, uint64_t node_id) {
-	mrand = (myrand *) mem_allocator.alloc(sizeof(myrand), thd_id);
+	mrand = (myrand *) mem_allocator.alloc(sizeof(myrand));
 	mrand->init(get_sys_clock());
   // FIXME for HSTORE/SPEC, need to generate queries to more than 1 part per node
 	pid = GET_PART_ID(0,node_id);
@@ -39,9 +39,9 @@ void YCSBClientQuery::client_init(uint64_t thd_id, Workload * h_wl, uint64_t nod
   pid = node_id + r * g_node_cnt;
 #endif
 	requests = (ycsb_request *) 
-		mem_allocator.alloc(sizeof(ycsb_request) * g_req_per_query, thd_id);
+		mem_allocator.alloc(sizeof(ycsb_request) * g_req_per_query);
 	part_to_access = (uint64_t *) 
-		mem_allocator.alloc(sizeof(uint64_t) * g_part_per_txn, thd_id);
+		mem_allocator.alloc(sizeof(uint64_t) * g_part_per_txn);
 	zeta_2_theta = zeta(2, g_zipf_theta);
 #if GEN_BY_MPR
 	if (the_n == 0) {
@@ -70,9 +70,9 @@ void YCSBClientQuery::client_init(uint64_t thd_id, Workload * h_wl, uint64_t nod
 
 void YCSBClientQuery::client_init() {
 	requests = (ycsb_request *) 
-		mem_allocator.alloc(sizeof(ycsb_request) * g_req_per_query, 0);
+		mem_allocator.alloc(sizeof(ycsb_request) * g_req_per_query);
 	part_to_access = (uint64_t *) 
-		mem_allocator.alloc(sizeof(uint64_t) * g_part_per_txn, 0);
+		mem_allocator.alloc(sizeof(uint64_t) * g_part_per_txn);
 }
 
 void YCSBQuery::init() {

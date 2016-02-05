@@ -36,6 +36,7 @@
 #include "msg_queue.h"
 #include "sequencer.h"
 #include "logger.h"
+#include "message.h"
 
 RC CalvinLockThread::run() {
 	printf("RunCalvinLock %ld:%ld\n",_node_id, _thd_id);
@@ -124,7 +125,7 @@ RC CalvinThread::run() {
 */
 		for(uint64_t i = 0; i < total_nodes; i++) {
 			if(i != g_node_id) {
-        msg_queue.enqueue(NULL,INIT_DONE,i);
+        msg_queue.enqueue(Message::create_message(NULL,INIT_DONE),i);
 			}
 		}
   }
@@ -336,7 +337,7 @@ RC CalvinThread::run() {
         m_query->rtype = RACK;
         work_queue.enqueue(_thd_id,m_query,false);
       } else {
-        msg_queue.enqueue(m_query,RACK,m_query->return_id);
+        msg_queue.enqueue(Message::create_message(m_query,RACK),m_query->return_id);
       }
       ATOM_SUB(_wl->epoch_txn_cnt,1);
     }

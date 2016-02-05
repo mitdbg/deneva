@@ -44,7 +44,7 @@ Client_query_queue::init(Workload * h_wl) {
 void 
 Client_query_queue::init(int thread_id) {	
 	all_queries[thread_id] = (Client_query_thd *) 
-		mem_allocator.alloc(sizeof(Client_query_thd), thread_id);
+		mem_allocator.alloc(sizeof(Client_query_thd));
 	all_queries[thread_id]->init(_wl, thread_id);
 
 #if CREATE_TXN_FILE
@@ -120,12 +120,12 @@ Client_query_thd::init(Workload * h_wl, int thread_id) {
 #if CLIENT_RUNTIME
 #if WORKLOAD == YCSB	
 	queries = (YCSBClientQuery *) 
-		mem_allocator.alloc(sizeof(YCSBClientQuery) * g_client_thread_cnt, thread_id);
+		mem_allocator.alloc(sizeof(YCSBClientQuery) * g_client_thread_cnt);
   for(uint64_t i=0;i<g_client_thread_cnt;i++)
 	  new(&queries[i]) YCSBClientQuery();
 #elif WORKLOAD == TPCC
 	queries = (TPCCClientQuery *) 
-		mem_allocator.alloc(sizeof(TPCCClientQuery) * g_client_thread_cnt, thread_id);
+		mem_allocator.alloc(sizeof(TPCCClientQuery) * g_client_thread_cnt);
   for(uint64_t i=0;i<g_client_thread_cnt;i++)
     new(&queries[i]) TPCCClientQuery();
 #endif
@@ -137,10 +137,10 @@ Client_query_thd::init(Workload * h_wl, int thread_id) {
 
 #if WORKLOAD == YCSB	
 	queries = (YCSBClientQuery *) 
-		mem_allocator.alloc(sizeof(YCSBClientQuery) * request_cnt, thread_id);
+		mem_allocator.alloc(sizeof(YCSBClientQuery) * request_cnt);
 #elif WORKLOAD == TPCC
 	queries = (TPCCClientQuery *) 
-		mem_allocator.alloc(sizeof(TPCCClientQuery) * request_cnt, thread_id);
+		mem_allocator.alloc(sizeof(TPCCClientQuery) * request_cnt);
 #endif
 
   if(input_file != NULL) {
@@ -183,7 +183,7 @@ Client_query_thd::init_txns_file(const char * txn_file) {
   uint64_t request_cnt;
 	request_cnt = g_max_txn_per_part + 4;
 	ifstream fin(txn_file);
-	myrand * mrand = (myrand *) mem_allocator.alloc(sizeof(myrand), 0);
+	myrand * mrand = (myrand *) mem_allocator.alloc(sizeof(myrand));
 	mrand->init(get_sys_clock());
   assert(g_tup_write_perc + g_tup_read_perc == 1.0);
   assert(g_txn_write_perc + g_txn_read_perc == 1.0);

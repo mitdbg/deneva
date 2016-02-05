@@ -35,7 +35,7 @@ Query_queue::init(Workload * h_wl) {
 
 void 
 Query_queue::init(int thread_id) {	
-	all_queries[thread_id] = (Query_thd *) mem_allocator.alloc(sizeof(Query_thd), thread_id);
+	all_queries[thread_id] = (Query_thd *) mem_allocator.alloc(sizeof(Query_thd));
 	all_queries[thread_id]->init(_wl, thread_id);
 }
 
@@ -52,10 +52,10 @@ Query_thd::init(Workload * h_wl, int thread_id) {
 	request_cnt = WARMUP / g_thread_cnt + MAX_TXN_PER_PART + 4;
 #if WORKLOAD == YCSB	
 	queries = (YCSBQuery *) 
-		mem_allocator.alloc(sizeof(YCSBQuery) * request_cnt, thread_id);
+		mem_allocator.alloc(sizeof(YCSBQuery) * request_cnt);
 #elif WORKLOAD == TPCC
 	queries = (TPCCQuery *) 
-		mem_allocator.alloc(sizeof(TPCCQuery) * request_cnt, thread_id);
+		mem_allocator.alloc(sizeof(TPCCQuery) * request_cnt);
 #endif
 	for (UInt32 qid = 0; qid < request_cnt; qid ++) {
 #if WORKLOAD == YCSB	

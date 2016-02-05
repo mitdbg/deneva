@@ -52,7 +52,7 @@ void StatsArr::quicksort(int low_idx, int high_idx) {
 
 void StatsArr::init(uint64_t size,StatsArrType type) {
 	arr = (uint64_t *)
-		mem_allocator.alloc(sizeof(uint64_t) * (size+1), 0);
+		mem_allocator.alloc(sizeof(uint64_t) * (size+1));
   for(uint64_t i=0;i<size+1;i++) {
     arr[i] = 0;
   }
@@ -64,7 +64,7 @@ void StatsArr::init(uint64_t size,StatsArrType type) {
 void StatsArr::resize() {
   size = size * 2;
 	arr = (uint64_t *)
-		mem_allocator.realloc(arr,sizeof(uint64_t) * size, 0);
+		mem_allocator.realloc(arr,sizeof(uint64_t) * size);
   for(uint64_t i=size/2;i<size;i++) {
     arr[i] = 0;
   }
@@ -130,14 +130,14 @@ uint64_t StatsArr::get_avg() {
 
 
 void Stats_thd::init(uint64_t thd_id) {
-  part_cnt = (uint64_t*) mem_allocator.alloc(sizeof(uint64_t)*g_part_cnt,0);
-  part_acc = (uint64_t*) mem_allocator.alloc(sizeof(uint64_t)*g_part_cnt,0);
+  part_cnt = (uint64_t*) mem_allocator.alloc(sizeof(uint64_t)*g_part_cnt);
+  part_acc = (uint64_t*) mem_allocator.alloc(sizeof(uint64_t)*g_part_cnt);
 	clear();
 //	all_lat = new uint64_t [g_max_txn_per_part]; 
 	all_lat.init(g_max_txn_per_part,ArrIncr);
   /*
 	all_lat = (uint64_t *)
-		mem_allocator.alloc(sizeof(uint64_t) * g_max_txn_per_part, thd_id);
+		mem_allocator.alloc(sizeof(uint64_t) * g_max_txn_per_part);
     */
 
   uint64_t nwh = g_num_wh+1;
@@ -235,10 +235,8 @@ void Stats_thd::clear() {
   owned_cnt_rd = 0;
   owned_cnt_wr = 0;
 
-  msg_cnt_serv = 0;
-  msg_cnt_cl = 0;
-  msg_dly_serv = 0;
-  msg_dly_cl = 0;
+  msg_cnt = 0;
+  msg_dly = 0;
 
   prof_time_twopc = 0;
   prof_cc_rel_abort = 0;
@@ -375,13 +373,13 @@ void Stats::init() {
 	cycle_detect = 0;
 
   last_usr = (long long unsigned int*)
-		mem_allocator.alloc(sizeof(long long unsigned int) * (g_thread_cnt + g_rem_thread_cnt), 0);
+		mem_allocator.alloc(sizeof(long long unsigned int) * (g_thread_cnt + g_rem_thread_cnt));
   last_usr_low = (long long unsigned int*)
-		mem_allocator.alloc(sizeof(long long unsigned int) * (g_thread_cnt + g_rem_thread_cnt), 0);
+		mem_allocator.alloc(sizeof(long long unsigned int) * (g_thread_cnt + g_rem_thread_cnt));
   last_sys = (long long unsigned int*)
-		mem_allocator.alloc(sizeof(long long unsigned int) * (g_thread_cnt + g_rem_thread_cnt), 0);
+		mem_allocator.alloc(sizeof(long long unsigned int) * (g_thread_cnt + g_rem_thread_cnt));
   last_idle = (long long unsigned int*)
-		mem_allocator.alloc(sizeof(long long unsigned int) * (g_thread_cnt + g_rem_thread_cnt), 0);
+		mem_allocator.alloc(sizeof(long long unsigned int) * (g_thread_cnt + g_rem_thread_cnt));
   util_init();
 
 }
@@ -390,9 +388,9 @@ void Stats::init(uint64_t thread_id) {
 	if (!STATS_ENABLE) 
 		return;
 	_stats[thread_id] = (Stats_thd *) 
-		mem_allocator.alloc(sizeof(Stats_thd), thread_id);
+		mem_allocator.alloc(sizeof(Stats_thd));
 	tmp_stats[thread_id] = (Stats_tmp *)
-		mem_allocator.alloc(sizeof(Stats_tmp), thread_id);
+		mem_allocator.alloc(sizeof(Stats_tmp));
 
 	_stats[thread_id]->init(thread_id);
 	tmp_stats[thread_id]->init();
@@ -769,10 +767,8 @@ void Stats::print(bool prog) {
   uint64_t total_rack = 0;
   uint64_t total_qry_cnt = 0;
 
-  double total_msg_dly_cl = 0;
-  double total_msg_dly_serv = 0;
-  uint64_t total_msg_cnt_cl = 0;
-  uint64_t total_msg_cnt_serv = 0;
+  double total_msg_dly = 0;
+  uint64_t total_msg_cnt = 0;
   uint64_t limit;
   if(g_node_id < g_node_cnt)
     limit =  g_thread_cnt + g_rem_thread_cnt;
@@ -908,10 +904,8 @@ void Stats::print(bool prog) {
  total_new_wq_enqueue+= _stats[tid]->new_wq_enqueue;
  total_new_wq_dequeue+= _stats[tid]->new_wq_dequeue;
 
- total_msg_dly_cl += _stats[tid]->msg_dly_cl;
- total_msg_dly_serv += _stats[tid]->msg_dly_serv;
- total_msg_cnt_serv += _stats[tid]->msg_cnt_serv;
- total_msg_cnt_cl += _stats[tid]->msg_cnt_cl;
+ total_msg_dly += _stats[tid]->msg_dly;
+ total_msg_cnt += _stats[tid]->msg_cnt;
 
   for(uint64_t i = 0; i < g_part_cnt; i++) {
     total_part_cnt[i] += _stats[tid]->part_cnt[i];
@@ -1161,8 +1155,7 @@ void Stats::print(bool prog) {
       ",rem_wq_cnt=%ld"
       ",new_wq_cnt=%ld"
       ",aq_cnt=%ld"
-      ",mdly_cl=%f"
-      ",mdly_serv=%f"
+      ",mdly=%f"
       ,total_spec_abort_cnt
       ,total_spec_commit_cnt
 			,total_time_abort / BILLION
@@ -1191,8 +1184,7 @@ void Stats::print(bool prog) {
       ,work_queue.get_rem_wq_cnt()
       ,work_queue.get_new_wq_cnt()
       ,abort_queue.get_abrt_cnt()
-      ,total_msg_dly_cl / BILLION / total_msg_cnt_cl
-      ,total_msg_dly_serv / BILLION / total_msg_cnt_serv
+      ,total_msg_dly / BILLION / total_msg_cnt
       );
 	fprintf(outf, 
   ",txn_time_begintxn=%f"

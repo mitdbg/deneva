@@ -37,9 +37,9 @@ row_t::init(table_t * host_table, uint64_t part_id, uint64_t row_id) {
 	Catalog * schema = host_table->get_schema();
 	tuple_size = schema->get_tuple_size();
 #if SIM_FULL_ROW
-	data = (char *) mem_allocator.alloc(sizeof(char) * tuple_size, _part_id);
+	data = (char *) mem_allocator.alloc(sizeof(char) * tuple_size);
 #else
-	data = (char *) mem_allocator.alloc(sizeof(char) * 1, _part_id);
+	data = (char *) mem_allocator.alloc(sizeof(char) * 1);
 #endif
 	return RCOK;
 }
@@ -56,18 +56,18 @@ void row_t::init_manager(row_t * row) {
 #endif
   DEBUG_M("row_t::init_manager alloc \n");
 #if CC_ALG == DL_DETECT || CC_ALG == NO_WAIT || CC_ALG == WAIT_DIE || CC_ALG == CALVIN
-    manager = (Row_lock *) mem_allocator.alloc(sizeof(Row_lock), _part_id);
+    manager = (Row_lock *) mem_allocator.alloc(sizeof(Row_lock));
 #elif CC_ALG == TIMESTAMP
-    manager = (Row_ts *) mem_allocator.alloc(sizeof(Row_ts), _part_id);
+    manager = (Row_ts *) mem_allocator.alloc(sizeof(Row_ts));
 #elif CC_ALG == MVCC
-    manager = (Row_mvcc *) mem_allocator.alloc(sizeof(Row_mvcc), _part_id);
+    manager = (Row_mvcc *) mem_allocator.alloc(sizeof(Row_mvcc));
 #elif CC_ALG == OCC
-    manager = (Row_occ *) mem_allocator.alloc(sizeof(Row_occ), _part_id);
+    manager = (Row_occ *) mem_allocator.alloc(sizeof(Row_occ));
 #elif CC_ALG == VLL
-    manager = (Row_vll *) mem_allocator.alloc(sizeof(Row_vll), _part_id);
+    manager = (Row_vll *) mem_allocator.alloc(sizeof(Row_vll));
     /*
 #elif CC_ALG == HSTORE_SPEC
-    manager = (Row_specex *) mem_allocator.alloc(sizeof(Row_specex), _part_id);
+    manager = (Row_specex *) mem_allocator.alloc(sizeof(Row_specex));
     */
 #endif
 
@@ -237,7 +237,7 @@ RC row_t::get_row(access_t type, TxnManager * txn, row_t *& row) {
 #if CC_ALG == TIMESTAMP
 	// TIMESTAMP makes a whole copy of the row before reading
   DEBUG_M("row_t::get_row TIMESTAMP alloc \n");
-	txn->cur_row = (row_t *) mem_allocator.alloc(sizeof(row_t), this->get_part_id());
+	txn->cur_row = (row_t *) mem_allocator.alloc(sizeof(row_t));
 	txn->cur_row->init(get_table(), this->get_part_id());
 #endif
 	
@@ -265,7 +265,7 @@ RC row_t::get_row(access_t type, TxnManager * txn, row_t *& row) {
 	}
 	if (rc != Abort && CC_ALG == MVCC && type == WR) {
     DEBUG_M("row_t::get_row MVCC alloc \n");
-		row_t * newr = (row_t *) mem_allocator.alloc(sizeof(row_t), get_part_id());
+		row_t * newr = (row_t *) mem_allocator.alloc(sizeof(row_t));
 		newr->init(this->get_table(), get_part_id());
 		newr->copy(row);
 		row = newr;
@@ -274,7 +274,7 @@ RC row_t::get_row(access_t type, TxnManager * txn, row_t *& row) {
 #elif CC_ALG == OCC
 	// OCC always make a local copy regardless of read or write
   DEBUG_M("row_t::get_row OCC alloc \n");
-	txn->cur_row = (row_t *) mem_allocator.alloc(sizeof(row_t), get_part_id());
+	txn->cur_row = (row_t *) mem_allocator.alloc(sizeof(row_t));
 	txn->cur_row->init(get_table(), get_part_id());
 	rc = this->manager->access(txn, R_REQ);
 	row = txn->cur_row;
@@ -283,7 +283,7 @@ RC row_t::get_row(access_t type, TxnManager * txn, row_t *& row) {
 #if CC_ALG == HSTORE_SPEC
   if(txn_table.spec_mode) {
     DEBUG_M("row_t::get_row HSTORE_SPEC alloc \n");
-	  txn->cur_row = (row_t *) mem_allocator.alloc(sizeof(row_t), get_part_id());
+	  txn->cur_row = (row_t *) mem_allocator.alloc(sizeof(row_t));
 	  txn->cur_row->init(get_table(), get_part_id());
 	  rc = this->manager->access(txn, R_REQ);
 	  row = txn->cur_row;
@@ -325,7 +325,7 @@ RC row_t::get_row_post_wait(access_t type, TxnManager * txn, row_t *& row) {
 			assert(row->get_table_name() != NULL);
 	if (CC_ALG == MVCC && type == WR) {
     DEBUG_M("row_t::get_row_post_wait MVCC alloc \n");
-		row_t * newr = (row_t *) mem_allocator.alloc(sizeof(row_t), get_part_id());
+		row_t * newr = (row_t *) mem_allocator.alloc(sizeof(row_t));
 		newr->init(this->get_table(), get_part_id());
 
 		newr->copy(row);

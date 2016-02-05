@@ -23,18 +23,18 @@
 #include "ycsb_query.h"
 #include "tpcc_query.h"
 #include "msg_queue.h"
+#include "message.h"
 
 /************************************************/
 // per-partition Manager
 /************************************************/
 void PartMan::init(uint64_t node_id, uint64_t part_id) {
-	uint64_t part_id_tmp = get_part_id(this);
   _part_id = part_id;
 	_node_id = node_id; 
 	waiter_cnt = 0;
 	owner = NULL;
 	waiters = (TxnManager **)
-		mem_allocator.alloc(sizeof(TxnManager *) * g_node_cnt * g_inflight_max, part_id_tmp);
+		mem_allocator.alloc(sizeof(TxnManager *) * g_node_cnt * g_inflight_max);
 	pthread_mutex_init( &latch, NULL );
 }
 
@@ -84,10 +84,10 @@ RC PartMan::lock(TxnManager * txn) {
       // Model after RACK
       //printf("Local RACK 3 -- %ld\n",_part_id);
 #if WORKLOAD == TPCC
-	    BaseQuery * tmp_query = (TPCCQuery *) mem_allocator.alloc(sizeof(TPCCQuery), 0);
+	    BaseQuery * tmp_query = (TPCCQuery *) mem_allocator.alloc(sizeof(TPCCQuery));
 	      tmp_query = new TPCCQuery();
 #elif WORKLOAD == YCSB
-	    BaseQuery * tmp_query = (YCSBQuery *) mem_allocator.alloc(sizeof(YCSBQuery), 0);
+	    BaseQuery * tmp_query = (YCSBQuery *) mem_allocator.alloc(sizeof(YCSBQuery));
         tmp_query = new YCSBQuery();
 #endif
         tmp_query->set_txn_id(owner->get_txn_id());
@@ -135,10 +135,10 @@ RC PartMan::lock(TxnManager * txn) {
       // Model after RACK
       //printf("Local RACK 1 -- %ld\n",_part_id);
 #if WORKLOAD == TPCC
-	    BaseQuery * tmp_query = (TPCCQuery *) mem_allocator.alloc(sizeof(TPCCQuery), 0);
+	    BaseQuery * tmp_query = (TPCCQuery *) mem_allocator.alloc(sizeof(TPCCQuery));
 	      tmp_query = new TPCCQuery();
 #elif WORKLOAD == YCSB
-	    BaseQuery * tmp_query = (YCSBQuery *) mem_allocator.alloc(sizeof(YCSBQuery), 0);
+	    BaseQuery * tmp_query = (YCSBQuery *) mem_allocator.alloc(sizeof(YCSBQuery));
         tmp_query = new YCSBQuery();
 #endif
         tmp_query->set_txn_id(txn->get_txn_id());
@@ -201,10 +201,10 @@ void PartMan::unlock(TxnManager * txn) {
           // Model after RACK
       //printf("Local RACK 2 -- %ld\n",_part_id);
 #if WORKLOAD == TPCC
-	    BaseQuery * tmp_query = (TPCCQuery *) mem_allocator.alloc(sizeof(TPCCQuery), 0);
+	    BaseQuery * tmp_query = (TPCCQuery *) mem_allocator.alloc(sizeof(TPCCQuery));
 	      tmp_query = new TPCCQuery();
 #elif WORKLOAD == YCSB
-	    BaseQuery * tmp_query = (YCSBQuery *) mem_allocator.alloc(sizeof(YCSBQuery), 0);
+	    BaseQuery * tmp_query = (YCSBQuery *) mem_allocator.alloc(sizeof(YCSBQuery));
         tmp_query = new YCSBQuery();
 #endif
         tmp_query->set_txn_id(owner->get_txn_id());
@@ -259,7 +259,7 @@ final:
 
 
 void PartMan::remote_rsp(bool l, RC rc, TxnManager * txn) {
-  msg_queue.enqueue(txn->get_query(),RACK,GET_NODE_ID(txn->get_pid()));
+  msg_queue.enqueue(Message::create_message(txn->get_query(),RACK),GET_NODE_ID(txn->get_pid()));
 
 }
 /************************************************/
@@ -303,7 +303,7 @@ RC Plock::lock(uint64_t * parts, uint64_t part_cnt, TxnManager * txn) {
 			// Have some Plock shared object and spin on that instead of txn object?
 			ATOM_ADD(txn->ready_part,1);
 			//remote_qry(true, part_id, txn);
-      msg_queue.enqueue(txn->get_query(),RLK,GET_NODE_ID(part_id));
+      msg_queue.enqueue(Message::create_message(txn->get_query(),RLK),GET_NODE_ID(part_id));
 		}
 		if (rc == Abort || txn->rc == Abort)
 			break;
@@ -343,7 +343,7 @@ RC Plock::unlock(uint64_t * parts, uint64_t part_cnt, TxnManager * txn) {
 		else {
       ATOM_ADD(txn->ready_ulk,1);
 			//remote_qry(false,part_id,txn);
-      msg_queue.enqueue(txn->get_query(),RULK,GET_NODE_ID(part_id));
+      msg_queue.enqueue(Message::create_message(txn->get_query(),RULK),GET_NODE_ID(part_id));
     }
 	}
   if(txn->ready_ulk > 0) {

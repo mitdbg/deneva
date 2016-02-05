@@ -24,6 +24,7 @@
 #include "transport.h"
 #include "plock.h"
 #include "msg_queue.h"
+#include "message.h"
 
 void Remote_query::init(uint64_t node_id, Workload * wl) {
 	q_idx = 0;
@@ -61,14 +62,28 @@ void Remote_query::unmarshall(void * d, uint64_t len) {
   while(txn_cnt > 0) { 
     qry_pool.get(query);
     assert(query);
+    Message * msg = Message::create_message(&data[ptr]);
+    ptr += msg->get_size();
+    msg->copy_to_query(query);
+    query->return_id = return_id;
 
 
-    unmarshall(query,data,ptr,dest_id,return_id);
+    if(query->rtype == INIT_DONE) {
+        ATOM_SUB(_wl->rsp_cnt,1);
+        assert(query->return_id < g_node_cnt + g_client_node_cnt);
+        printf("Processed INIT_DONE from %ld -- %ld\n",query->return_id,_wl->rsp_cnt);
+        fflush(stdout);
+        if(_wl->rsp_cnt ==0) {
+			    if( !ATOM_CAS(_wl->sim_init_done, false, true) )
+				    assert( _wl->sim_init_done);
+        }
+    }
+    //unmarshall(query,data,ptr,dest_id,return_id);
     DEBUG_R("^^got (%ld,%ld) %d 0x%lx\n",query->txn_id,query->batch_id,query->rtype,(uint64_t)query);
 #if MODE==SIMPLE_MODE
     if(query->rtype == RTXN) {
       query->txn_id = g_node_id;
-      msg_queue.enqueue(query,CL_RSP,query->client_id);
+      msg_queue.enqueue(Message::create_message(query,CL_RSP),query->client_id);
 		  INC_STATS(0,txn_cnt,1);
       ATOM_ADD(_wl->txn_cnt,1);
     } else {
@@ -122,7 +137,7 @@ void Remote_query::unmarshall(BaseQuery *& query,char * data,  uint64_t & ptr,ui
       YCSBQuery * m_query = (YCSBQuery*) query;
       COPY_VAL(m_query->request_cnt,data,ptr);
       //m_query->requests = (ycsb_request *) 
-      //mem_allocator.alloc(sizeof(ycsb_request) * m_query->request_cnt, 0);
+      //mem_allocator.alloc(sizeof(ycsb_request) * m_query->request_cnt);
 	    for (uint64_t i = 0; i < m_query->request_cnt; i++) {
         COPY_VAL(m_query->requests[i],data,ptr);
       }
@@ -259,7 +274,7 @@ void Remote_query::unmarshall(BaseQuery *& query,char * data,  uint64_t & ptr,ui
 #endif
       COPY_VAL(m_query->part_num,data,ptr);
       //m_query->part_to_access = (uint64_t *)
-      //      mem_allocator.alloc(sizeof(uint64_t) * m_query->part_num, 0);
+      //      mem_allocator.alloc(sizeof(uint64_t) * m_query->part_num);
       for (uint64_t i = 0; i < m_query->part_num; ++i) {
         COPY_VAL(m_query->part_to_access[i],data,ptr);
       }

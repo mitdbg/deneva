@@ -22,9 +22,8 @@
 void 
 Row_specex::init(row_t * row) {
 	_row = row;
-	int part_id = row->get_part_id();
 	_latch = (pthread_mutex_t *) 
-		mem_allocator.alloc(sizeof(pthread_mutex_t), part_id);
+		mem_allocator.alloc(sizeof(pthread_mutex_t));
 	pthread_mutex_init( _latch, NULL );
 	wts = 0;
 	blatch = false;

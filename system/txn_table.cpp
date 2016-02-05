@@ -63,7 +63,7 @@ void TxnTable::init() {
   cnt = 0;
   table_min_ts = UINT64_MAX;
   pool_size = g_inflight_max * g_node_cnt * 2 + 1;
-  pool = (pool_node_t) mem_allocator.alloc(sizeof(pool_node) * pool_size , g_thread_cnt);
+  pool = (pool_node_t) mem_allocator.alloc(sizeof(pool_node) * pool_size);
   for(uint32_t i = 0; i < pool_size;i++) {
     pool[i].head = NULL;
     pool[i].tail = NULL;
@@ -135,7 +135,7 @@ void TxnTable::add_txn(uint64_t node_id, TxnManager * txn, BaseQuery * qry) {
   }
 
   if(next_txn == NULL) {
-    //t_node = (txn_node_t) mem_allocator.alloc(sizeof(struct txn_node), g_thread_cnt);
+    //t_node = (txn_node_t) mem_allocator.alloc(sizeof(struct txn_node));
   pthread_mutex_lock(&mtx);
     ts_pool.insert(TsMapPair(txn->get_ts(),NULL));
   pthread_mutex_unlock(&mtx);

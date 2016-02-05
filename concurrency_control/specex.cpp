@@ -75,12 +75,12 @@ final:
 }
 
 RC SpecEx::get_rw_set(TxnManager * txn, set_ent * &rset, set_ent *& wset) {
-	wset = (set_ent*) mem_allocator.alloc(sizeof(set_ent), 0);
-	rset = (set_ent*) mem_allocator.alloc(sizeof(set_ent), 0);
+	wset = (set_ent*) mem_allocator.alloc(sizeof(set_ent));
+	rset = (set_ent*) mem_allocator.alloc(sizeof(set_ent));
 	wset->set_size = txn->wr_cnt;
 	rset->set_size = txn->row_cnt - txn->wr_cnt;
-	wset->rows = (row_t **) mem_allocator.alloc(sizeof(row_t *) * wset->set_size, 0);
-	rset->rows = (row_t **) mem_allocator.alloc(sizeof(row_t *) * rset->set_size, 0);
+	wset->rows = (row_t **) mem_allocator.alloc(sizeof(row_t *) * wset->set_size);
+	rset->rows = (row_t **) mem_allocator.alloc(sizeof(row_t *) * rset->set_size);
 	wset->txn = txn;
 	rset->txn = txn;
 

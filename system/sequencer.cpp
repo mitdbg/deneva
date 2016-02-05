@@ -26,6 +26,7 @@
 #include "msg_queue.h"
 #include "msg_thread.h"
 #include "work_queue.h"
+#include "message.h"
 
 void Sequencer::init(Workload * wl) {
   next_txn_id = 0;
@@ -70,7 +71,7 @@ void Sequencer::process_ack(BaseQuery *query, uint64_t thd_id) {
     DEBUG_R("^^got seq cl_rsp 0x%lx\n",(uint64_t)m_query);
     m_query->client_id = wait_list[id].client_id;
     m_query->client_startts = wait_list[id].client_startts;
-    msg_queue.enqueue(m_query,CL_RSP,m_query->client_id);
+    msg_queue.enqueue(Message::create_message(m_query,CL_RSP),m_query->client_id);
 
 	}
   DEBUG("ACK %ld (%ld,%ld) from %ld: %d %d 0x%lx\n",id,query->txn_id,en->epoch,rid,query_acks_left,en->txns_left,(uint64_t)query);
@@ -94,17 +95,17 @@ void Sequencer::process_txn(BaseQuery * query) {
 
   if(!en || en->epoch != _wl->epoch+1) {
     // First txn of new wait list
-    en = (qlite_ll *) mem_allocator.alloc(sizeof(qlite_ll), 0);
+    en = (qlite_ll *) mem_allocator.alloc(sizeof(qlite_ll));
     en->epoch = _wl->epoch+1;
     en->max_size = 1000;
     en->size = 0;
     en->txns_left = 0;
-    en->list = (qlite *) mem_allocator.alloc(sizeof(qlite) * en->max_size, 0);
+    en->list = (qlite *) mem_allocator.alloc(sizeof(qlite) * en->max_size);
     LIST_PUT_TAIL(wl_head,wl_tail,en)
   }
   if(en->size == en->max_size) {
     en->max_size *= 2;
-    en->list = (qlite *) mem_allocator.realloc(en->list,sizeof(qlite) * en->max_size, 0);
+    en->list = (qlite *) mem_allocator.realloc(en->list,sizeof(qlite) * en->max_size);
   }
 
 		txnid_t txn_id = g_node_id + g_node_cnt * next_txn_id;
@@ -118,7 +119,7 @@ void Sequencer::process_txn(BaseQuery * query) {
 #elif WORKLOAD == TPCC
 		TPCCQuery * m_query = (TPCCQuery *) query;
 #endif
-    bool * participating_nodes = (bool*)mem_allocator.alloc(sizeof(bool)*g_node_cnt,0);
+    bool * participating_nodes = (bool*)mem_allocator.alloc(sizeof(bool)*g_node_cnt);
     reset_participating_nodes(participating_nodes);
 		uint32_t server_ack_cnt = m_query->participants(participating_nodes,_wl);
 		assert(server_ack_cnt > 0);
@@ -167,7 +168,7 @@ void Sequencer::send_next_batch(uint64_t thd_id) {
       if(j == g_node_id) {
         work_queue.enqueue(thd_id,query,false);
       } else {
-        msg_queue.enqueue(query,RTXN,j);
+        msg_queue.enqueue(Message::create_message(query,RTXN),j);
       }
     }
     DEBUG("Seq RDONE %ld\n",_wl->epoch)
@@ -178,7 +179,7 @@ void Sequencer::send_next_batch(uint64_t thd_id) {
     if(j == g_node_id)
       work_queue.enqueue(thd_id,query,false);
     else
-      msg_queue.enqueue(query,RDONE,j);
+      msg_queue.enqueue(Message::create_message(query,RDONE),j);
   }
 
   if(last_time_batch > 0) {

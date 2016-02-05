@@ -115,7 +115,7 @@ void Transport::init(uint64_t node_id,Workload * workload) {
 
   s = new Socket[_sock_cnt];
   rr = 0;
-  //endpoint_id = (int*)mem_allocator.alloc(sizeof(int)*_sock_cnt,0);
+  //endpoint_id = (int*)mem_allocator.alloc(sizeof(int)*_sock_cnt);
 	printf("Tport Init %ld: %ld\n",node_id,_sock_cnt);
 
 #if !TPORT_TYPE_IPC
