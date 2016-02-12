@@ -24,6 +24,7 @@ class Workload;
 class ClientThread : public Thread {
 public:
 	RC 			run();
+  void setup();
 };
 
 #endif

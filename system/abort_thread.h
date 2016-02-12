@@ -24,6 +24,7 @@ class Workload;
 class AbortThread : public Thread {
 public:
 	RC 			run();
+  void setup();
 };
 
 #endif

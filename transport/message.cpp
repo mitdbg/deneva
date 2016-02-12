@@ -22,7 +22,7 @@
 #include "message.h"
 
 Message * Message::create_message(char * buf) {
- RemReqType rtype;
+ RemReqType rtype = NO_MSG;
  uint64_t ptr = 0;
  COPY_VAL(rtype,buf,ptr);
  Message * msg = create_message(rtype);
@@ -90,7 +90,7 @@ uint64_t Message::mget_size() {
 }
 
 void Message::mcopy_from_query(BaseQuery * qry) {
-  rtype = qry->rtype;
+  //rtype = qry->rtype;
   txn_id = qry->txn_id;
 }
 

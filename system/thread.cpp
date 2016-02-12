@@ -41,8 +41,25 @@ void Thread::init(uint64_t thd_id, uint64_t node_id, Workload * workload) {
 	_node_id = node_id;
 	_wl = workload;
   stats.init(_thd_id);
+	rdm.init(_thd_id);
 }
 
 uint64_t Thread::get_thd_id() { return _thd_id; }
 uint64_t Thread::get_node_id() { return _node_id; }
+
+void Thread::tsetup() {
+	printf("Setup %ld:%ld\n",_node_id, _thd_id);
+  fflush(stdout);
+	pthread_barrier_wait( &warmup_bar );
+
+  setup();
+
+	pthread_barrier_wait( &warmup_bar );
+	printf("Running %ld:%ld\n",_node_id, _thd_id);
+  fflush(stdout);
+
+	run_starttime = get_sys_clock();
+  simulation->set_starttime(run_starttime);
+
+}
 

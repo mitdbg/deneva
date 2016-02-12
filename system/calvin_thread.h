@@ -24,17 +24,20 @@ class Workload;
 class CalvinThread : public Thread {
 public:
 	RC 			run();
+  void setup();
   uint64_t txn_starttime;
 };
 
 class CalvinLockThread : public Thread {
 public:
 	RC 			run();
+  void setup();
 };
 
 class CalvinSequencerThread : public Thread {
 public:
 	RC 			run();
+  void setup();
 };
 
 #endif

@@ -38,42 +38,25 @@
 #include "logger.h"
 #include "message.h"
 
+void CalvinLockThread::setup() {
+}
+
 RC CalvinLockThread::run() {
-	printf("RunCalvinLock %ld:%ld\n",_node_id, _thd_id);
-  fflush(stdout);
-	//stats.init(get_thd_id());
-	pthread_barrier_wait( &warmup_bar );
+  tsetup();
+
 	BaseQuery * m_query = NULL;
 
-	pthread_barrier_wait( &warmup_bar );
-	printf("RunCalvinLock %ld:%ld\n",_node_id, _thd_id);
-  fflush(stdout);
-
-	myrand rdm;
-	rdm.init(get_thd_id());
 	RC rc = RCOK;
 	TxnManager * m_txn;
   uint64_t thd_prof_start;
-	uint64_t run_starttime = get_sys_clock();
   BaseQuery * tmp_query;
 
-	while(true) {
+	while(!simulation->is_done()) {
     m_query = NULL;
     m_txn = NULL;
 
-    bool got_qry = false;
-		while(!(got_qry = work_queue.dequeue(_thd_id, m_query))
-                && !_wl->sim_done && !_wl->sim_timeout
-                && (get_sys_clock() - run_starttime < g_done_timer)) {
-    }
+    bool got_qry = work_queue.dequeue(_thd_id, m_query);
 
-		// End conditions
-    if((get_sys_clock() - run_starttime >= g_done_timer)
-        ||(_wl->sim_done && _wl->sim_timeout)) { 
-      printf("FINISH %ld:%ld\n",_node_id,_thd_id);
-      fflush(stdout);
-			return FINISH;
-		}
 
 		if(!got_qry)
 			continue;
@@ -102,52 +85,38 @@ RC CalvinLockThread::run() {
 
     work_queue.done(_thd_id,m_txn->get_txn_id());
   }
+  printf("FINISH %ld:%ld\n",_node_id,_thd_id);
+  fflush(stdout);
+  return FINISH;
 }
 
-RC CalvinThread::run() {
-	printf("RunCalvin %ld:%ld\n",_node_id, _thd_id);
-  fflush(stdout);
-	//stats.init(get_thd_id());
-	pthread_barrier_wait( &warmup_bar );
-	BaseQuery * m_query = NULL;
-
+void CalvinThread::setup() {
 	if( _thd_id == 0) {
-#if WORKLOAD == YCSB
-    m_query = new YCSBQuery;
-#elif WORKLOAD == TPCC
-    m_query = new TPCCQuery;
-#endif
 		uint64_t total_nodes = g_node_cnt + g_client_node_cnt;
-    /*
-#if CC_ALG == CALVIN
-		total_nodes++;
-#endif
-*/
 		for(uint64_t i = 0; i < total_nodes; i++) {
 			if(i != g_node_id) {
         msg_queue.enqueue(Message::create_message(NULL,INIT_DONE),i);
 			}
 		}
   }
-	pthread_barrier_wait( &warmup_bar );
-	printf("RunCalvin %ld:%ld\n",_node_id, _thd_id);
-  fflush(stdout);
+}
 
-	myrand rdm;
-	rdm.init(get_thd_id());
+RC CalvinThread::run() {
+  tsetup();
+
+	BaseQuery * m_query = NULL;
 	RC rc = RCOK;
 	TxnManager * m_txn;
 
   BaseQuery * tmp_query;
 	uint64_t starttime;
-	uint64_t stoptime = 0;
 	uint64_t timespan;
 
 	uint64_t run_starttime = get_sys_clock();
 	uint64_t prog_time = run_starttime;
   uint64_t thd_prof_start;
 
-	while(true) {
+	while(!simulation->is_done()) {
     m_query = NULL;
     tmp_query = NULL;
     m_txn = NULL;
@@ -169,43 +138,10 @@ RC CalvinThread::run() {
 
     INC_STATS(_thd_id,thd_prof_thd1a,get_sys_clock() - thd_prof_start);
     thd_prof_start = get_sys_clock();
-    bool got_qry = false;
-		while(!(got_qry = work_queue.dequeue(_thd_id, m_query))
-                && !_wl->sim_done && !_wl->sim_timeout) {
-      if (warmup_finish && 
-          ((get_sys_clock() - run_starttime >= g_done_timer) )) {
-        break;
-      }
-    }
+    bool got_qry = work_queue.dequeue(_thd_id, m_query);
 
     INC_STATS(_thd_id,thd_prof_thd1c,get_sys_clock() - thd_prof_start);
     thd_prof_start = get_sys_clock();
-		// End conditions
-    if((get_sys_clock() - run_starttime >= g_done_timer)
-        ||(_wl->sim_done && _wl->sim_timeout)) { 
-      if( !ATOM_CAS(_wl->sim_done, false, true) ) {
-        assert( _wl->sim_done);
-      } else {
-        printf("_wl->sim_done=%d\n",_wl->sim_done);
-        fflush(stdout);
-      }
-			uint64_t currtime = get_sys_clock();
-      if(stoptime == 0)
-        stoptime = currtime;
-			if(currtime - stoptime > MSG_TIMEOUT) {
-				SET_STATS(get_thd_id(), tot_run_time, currtime - run_starttime - MSG_TIMEOUT); 
-			}
-			else {
-				SET_STATS(get_thd_id(), tot_run_time, stoptime - run_starttime); 
-			}
-#if DEBUG_DISTR
-        txn_table.dump();
-#endif
-
-      printf("FINISH %ld:%ld\n",_node_id,_thd_id);
-      fflush(stdout);
-			return FINISH;
-		}
 
     INC_STATS(_thd_id,thd_prof_thd1d,get_sys_clock() - thd_prof_start);
     INC_STATS(_thd_id,thd_prof_thd1,get_sys_clock() - thd_prof_start_thd1);
@@ -282,20 +218,13 @@ RC CalvinThread::run() {
 				INC_STATS(0,rtxn,1);
 
 				txn_table.get_txn(g_node_id,m_query->txn_id,m_query->batch_id,m_txn,tmp_query);
-        /*
-        if(m_txn != NULL)
-          printf("rtxn %ld %d %d\n",m_query->txn_id,m_txn->lock_ready,m_txn->lock_ready_cnt);
-        else
-          printf("rtxn %ld -- -- \n",m_query->txn_id);
-        fflush(stdout);
-        */
         assert(m_txn != NULL);
         tmp_query = tmp_query->merge(m_query);
         if(m_query != tmp_query) {
           qry_pool.put(m_query);
         }
         m_query = tmp_query;
-        assert(m_query->batch_id == _wl->curr_epoch || m_query->batch_id == _wl->curr_epoch - 1);
+        assert(m_query->batch_id == simulation->get_worker_epoch() || m_query->batch_id == simulation->get_worker_epoch() - 1);
         m_txn->set_query(m_query);
         m_txn->register_thd(this);
 
@@ -329,8 +258,7 @@ RC CalvinThread::run() {
 			INC_STATS(get_thd_id(), latency, timespan);
       // delete_txn does NOT free m_query for CALVIN
       txn_table.delete_txn(m_query->return_id,tid,m_query->batch_id);
-      //assert(_wl->epoch_txn_cnt > 1 || txn_table.get_cnt() == 0);
-      assert(m_query->batch_id == _wl->curr_epoch || m_query->batch_id == _wl->curr_epoch - 1);
+      assert(m_query->batch_id == simulation->get_worker_epoch() || m_query->batch_id == simulation->get_worker_epoch() - 1);
       if(m_query->return_id == g_node_id) {
         DEBUG_R("RACK (%ld,%ld)  0x%lx\n",m_query->txn_id,m_query->batch_id,(uint64_t)m_query);
         //printf("%ld RACK (%ld,%ld)  0x%lx\n",_thd_id,m_query->txn_id,m_query->batch_id,(uint64_t)m_query);
@@ -339,7 +267,6 @@ RC CalvinThread::run() {
       } else {
         msg_queue.enqueue(Message::create_message(m_query,RACK),m_query->return_id);
       }
-      ATOM_SUB(_wl->epoch_txn_cnt,1);
     }
     work_queue.done(_thd_id,tid);
 
@@ -347,47 +274,25 @@ RC CalvinThread::run() {
 		INC_STATS(get_thd_id(),time_work,timespan);
 
   }
+  printf("FINISH %ld:%ld\n",_node_id,_thd_id);
+  fflush(stdout);
+  return FINISH;
 }
 
+void CalvinSequencerThread::setup() {
+}
 RC CalvinSequencerThread::run() {
-	printf("RunCalvinSequencer %ld:%ld\n",_node_id, _thd_id);
-  fflush(stdout);
-	//stats.init(get_thd_id());
-	pthread_barrier_wait( &warmup_bar );
 	BaseQuery * m_query = NULL;
-  _wl->epoch = 0;
 
-	pthread_barrier_wait( &warmup_bar );
-	printf("RunCalvinSequencer %ld:%ld\n",_node_id, _thd_id);
-  fflush(stdout);
-
-	myrand rdm;
-	rdm.init(get_thd_id());
-  //uint64_t thd_prof_start;
-	uint64_t run_starttime = get_sys_clock();
 	uint64_t last_batchtime = run_starttime;
 
-	while(true) {
+	while(!simulation->is_done()) {
     m_query = NULL;
 
-    bool got_qry = false;
-		while(!(got_qry = work_queue.dequeue(_thd_id, m_query))
-                && (get_sys_clock() - last_batchtime < g_batch_time_limit) 
-                && !_wl->sim_done && !_wl->sim_timeout
-                && (get_sys_clock() - run_starttime < g_done_timer)) {
-    }
-
-		// End conditions
-    if((get_sys_clock() - run_starttime >= g_done_timer)
-        ||(_wl->sim_done && _wl->sim_timeout)) { 
-      printf("FINISH %ld:%ld\n",_node_id,_thd_id);
-      fflush(stdout);
-			return FINISH;
-		}
-
+    bool got_qry = work_queue.dequeue(_thd_id, m_query);
 
     if(get_sys_clock() - last_batchtime >= g_batch_time_limit) {
-      ATOM_ADD(_wl->epoch,1);
+      simulation->next_sched_epoch();
       seq_man.send_next_batch(_thd_id);
       last_batchtime = get_sys_clock();
     }
@@ -412,6 +317,10 @@ RC CalvinSequencerThread::run() {
     qry_pool.put(m_query);
     work_queue.done(_thd_id,tid);
   }
+  printf("FINISH %ld:%ld\n",_node_id,_thd_id);
+  fflush(stdout);
+  return FINISH;
+
 }
 
 

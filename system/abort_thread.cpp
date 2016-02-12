@@ -37,12 +37,12 @@
 #include "sequencer.h"
 #include "logger.h"
 
+void AbortThread::setup() {
+}
+
 RC AbortThread::run() {
-	printf("Run_abort %ld:%ld\n",_node_id, _thd_id);
-	pthread_barrier_wait( &warmup_bar );
-	pthread_barrier_wait( &warmup_bar );
-	printf("Run_abort %ld:%ld\n",_node_id, _thd_id);
-	while (!_wl->sim_done) {
+  tsetup();
+	while (!simulation->is_done()) {
     abort_queue.process_aborts();
   }
   return FINISH;

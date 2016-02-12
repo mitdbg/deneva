@@ -292,10 +292,6 @@ void Transport::send_msg(uint64_t sid, uint64_t dest_id, void * sbuf,int size) {
   }
 #endif
   uint64_t idx = id; 
-  if(!_wl->sim_init_done) {
-    printf("d:%ld idx:%ld -- %ld: %ld, %ld, %ld\n",dest_id,idx,id,_node_cnt,dest_id,sid);
-    fflush(stdout);
-  }
   assert(idx < _sock_cnt);
 
 	void * buf = nn_allocmsg(size,0);
@@ -303,8 +299,7 @@ void Transport::send_msg(uint64_t sid, uint64_t dest_id, void * sbuf,int size) {
   int rc = -1;
   //int attempts = 0;
 
-  //while(attempts < 10 && rc < 0 && !_wl->sim_timeout) {
-  while(rc < 0 && !_wl->sim_timeout) {
+  while(rc < 0 && !simulation->is_done()) {
     rc= s[idx].sock.send(&buf,NN_MSG,NN_DONTWAIT);
     // Check for a send error
     /*

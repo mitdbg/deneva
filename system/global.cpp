@@ -17,6 +17,7 @@
 #include "global.h"
 #include "mem_alloc.h"
 #include "stats.h"
+#include "sim_manager.h"
 #include "manager.h"
 #include "query.h"
 #include "client_query.h"
@@ -36,6 +37,7 @@
 
 mem_alloc mem_allocator;
 Stats stats;
+SimManager * simulation;
 Manager glob_manager;
 Query_queue query_queue;
 Client_query_queue client_query_queue;

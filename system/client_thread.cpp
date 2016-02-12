@@ -29,47 +29,21 @@
 #include "wl.h"
 #include "message.h"
 
-RC ClientThread::run() {
-	printf("Run %ld:%ld\n",_node_id, _thd_id);
-	//stats.init(get_thd_id());
-	pthread_barrier_wait( &warmup_bar );
-	BaseClientQuery * m_query = NULL;
-
-	run_starttime = get_sys_clock();
+void ClientThread::setup() {
 	if( _thd_id == 0) {
-#if WORKLOAD == YCSB
-    m_query = new YCSBClientQuery;
-#elif WORKLOAD == TPCC
-    m_query = new TPCCClientQuery;
-#endif
 		uint64_t nnodes = g_node_cnt + g_client_node_cnt;
-    /*
-#if CC_ALG == CALVIN
-		nnodes++;
-#endif
-*/
 		for(uint64_t i = 0; i < nnodes; i++) {
 			if(i != g_node_id) {
         msg_queue.enqueue(Message::create_message(NULL,INIT_DONE),i);
 			}
 		}
   }
-  /*
-    if(get_sys_clock() - run_starttime >= g_done_timer)
-      return FINISH;
-	} else {
-    while(!_wl->sim_init_done) {
-      if(get_sys_clock() - run_starttime >= g_done_timer)
-        return FINISH;
-    }
-  }
-  */
-	pthread_barrier_wait( &warmup_bar );
-	printf("Run %ld:%ld\n",_node_id, _thd_id);
+}
 
-	myrand rdm;
-	rdm.init(get_thd_id());
+RC ClientThread::run() {
 
+  tsetup();
+  BaseClientQuery * m_query;
 	uint64_t iters = 0;
 	uint32_t num_txns_sent = 0;
 	int txns_sent[g_servers_per_client];
@@ -79,8 +53,7 @@ RC ClientThread::run() {
 	run_starttime = get_sys_clock();
 	uint64_t prog_time = run_starttime;
 
-	//while (num_txns_sent < g_servers_per_client * MAX_TXN_PER_PART) {
-  while(true) {
+  while(!simulation->is_done()) {
 		//uint32_t next_node = iters++ % g_node_cnt;
 		if(get_sys_clock() - run_starttime >= g_done_timer) {
       break;
@@ -131,16 +104,6 @@ RC ClientThread::run() {
   prog_time = get_sys_clock();
   SET_STATS(get_thd_id(), tot_run_time, prog_time - run_starttime); 
 
-  if( _thd_id == 0) {
-    if( !ATOM_CAS(_wl->sim_done, false, true) ) {
-      assert( _wl->sim_done);
-    } else {
-      printf("_wl->sim_done=%d\n",_wl->sim_done);
-      fflush(stdout);
-    }
-  }
-      printf("starting FINISH %ld:%ld\n",_node_id,_thd_id);
-      fflush(stdout);
   printf("FINISH %ld:%ld\n",_node_id,_thd_id);
   fflush(stdout);
 	return FINISH;

@@ -34,6 +34,7 @@
 #include "ycsb_query.h"
 #include "sequencer.h"
 #include "logger.h"
+#include "sim_manager.h"
 
 void * f(void *);
 void * g(void *);
@@ -100,6 +101,11 @@ int main(int argc, char* argv[])
 	m_wl->init();
 	printf("Workload initialized!\n");
   fflush(stdout);
+  printf("Initializing simulation... ");
+  fflush(stdout);
+  simulation = new SimManager;
+  simulation->init();
+  printf("Done\n");
 #if NETWORK_TEST
 	tport_man.init(g_node_id,m_wl);
 	sleep(3);

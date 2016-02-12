@@ -42,16 +42,16 @@
 #include "config.h"
 #include "stats.h"
 #include "work_queue.h"
-//#include "msg_queue.h"
 #include "pool.h"
 #include "txn_table.h"
 #include "logger.h"
-//#include "sequencer.h"
+#include "sim_manager.h"
 
 using namespace std;
 
 class mem_alloc;
 class Stats;
+class SimManager;
 class Manager;
 class Query_queue;
 class Plock;
@@ -85,6 +85,7 @@ typedef uint64_t ts_t; // time stamp type
 /******************************************/
 extern mem_alloc mem_allocator;
 extern Stats stats;
+extern SimManager * simulation;
 extern Manager glob_manager;
 extern Query_queue query_queue;
 extern Client_query_queue client_query_queue;

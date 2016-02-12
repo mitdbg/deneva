@@ -92,6 +92,7 @@ void MessageThread::run() {
   sthd_prof_start = get_sys_clock();
 
   msg->copy_to_buf(&(sbuf->buffer[sbuf->ptr]));
+  DEBUG("Buffered Msg %d to %ld\n",msg->rtype,dest);
   sbuf->cnt += 1;
   sbuf->ptr += msg->get_size();
   if(sbuf->starttime == 0)

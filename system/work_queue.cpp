@@ -105,7 +105,7 @@ bool QWorkQueue::sched_dequeue(BaseQuery *& qry) {
       break;
     }
     wq_entry_t en = sched_head[sched_ptr];
-    if(!en || _wl->curr_epoch > _wl->epoch || (new_epoch && _wl->epoch_txn_cnt > 0)) {
+    if(!en || simulation->get_worker_epoch() > simulation->get_sched_epoch() || (new_epoch && simulation->epoch_txn_cnt > 0)) {
       qry = NULL;
       break;
       //return false;
@@ -117,10 +117,10 @@ bool QWorkQueue::sched_dequeue(BaseQuery *& qry) {
       LIST_REMOVE_HT(en,sched_head[sched_ptr],sched_tail[sched_ptr])
       qry_pool.put(en->qry);
       mem_allocator.free(en,sizeof(struct wq_entry));
-      DEBUG("RDONE %ld %ld\n",sched_ptr,_wl->curr_epoch);
+      DEBUG("RDONE %ld %ld\n",sched_ptr,simulation->get_worker_epoch());
       sched_ptr++;
       if(sched_ptr == g_node_cnt) {
-        _wl->curr_epoch++;
+        simulation->next_worker_epoch();
         sched_ptr = 0;
         new_epoch = true;
       }
@@ -128,17 +128,11 @@ bool QWorkQueue::sched_dequeue(BaseQuery *& qry) {
     }
 
     ATOM_SUB(sched_wq_cnt,1);
-    ATOM_ADD(_wl->epoch_txn_cnt,1);
+    simulation->inc_epoch_txn_cnt();
     LIST_REMOVE_HT(en,sched_head[sched_ptr],sched_tail[sched_ptr])
     qry = en->qry;
-    DEBUG("SDeq %ld (%ld,%ld) %ld\n",sched_ptr,qry->txn_id,qry->batch_id,_wl->curr_epoch);
-    if(qry->batch_id == UINT64_MAX)
-      assert(false);
-    if(qry->batch_id < _wl->curr_epoch)
-      assert(false);
-    if(qry->batch_id > _wl->curr_epoch)
-      assert(false);
-    assert(qry->batch_id == _wl->curr_epoch);
+    DEBUG("SDeq %ld (%ld,%ld) %ld\n",sched_ptr,qry->txn_id,qry->batch_id,simulation->get_worker_epoch());
+    assert(qry->batch_id == simulation->get_worker_epoch());
     mem_allocator.free(en,sizeof(struct wq_entry));
     result = true;
     break;

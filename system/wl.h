@@ -55,15 +55,8 @@ public:
 	// get the global timestamp.
 //	uint64_t get_ts(uint64_t thread_id);
 	//uint64_t cur_txn_id;
-	bool sim_init_done;
-	bool sim_done;
-	bool sim_timeout;
   uint64_t done_cnt;
   uint64_t txn_cnt;
-  uint64_t rsp_cnt;
-  uint64_t epoch;
-  uint64_t curr_epoch;
-  int64_t epoch_txn_cnt;
 protected:
 	void index_insert(string index_name, uint64_t key, row_t * row);
 	void index_insert(INDEX * index, uint64_t key, row_t * row, int64_t part_id = -1);

@@ -20,6 +20,7 @@
 #include "global.h"
 
 class Workload;
+class MessageThread;
 
 class InputThread : public Thread {
 public:
@@ -27,11 +28,14 @@ public:
   RC  client_recv_loop();
   RC  server_recv_loop();
   void  check_for_init_done();
+  void setup();
 };
 
 class OutputThread : public Thread {
 public:
 	RC 			run();
+  void setup();
+  MessageThread * messager;
 };
 
 #endif

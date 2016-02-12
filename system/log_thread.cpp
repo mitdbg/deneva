@@ -37,12 +37,11 @@
 #include "sequencer.h"
 #include "logger.h"
 
+void LogThread::setup() {
+}
+
 RC LogThread::run() {
-	printf("Run_logger %ld:%ld\n",_node_id, _thd_id);
-	pthread_barrier_wait( &warmup_bar );
-	pthread_barrier_wait( &warmup_bar );
-	printf("Run_logger %ld:%ld\n",_node_id, _thd_id);
-	while (!_wl->sim_done) {
+	while (!simulation->is_done()) {
     logger.processRecord();
     logger.flushBufferCheck();
   }

@@ -48,47 +48,33 @@ void WorkerThread::send_init_done_to_all_nodes() {
 
 }
 
-RC WorkerThread::run() {
-	printf("Run %ld:%ld\n",_node_id, _thd_id);
-  fflush(stdout);
-	//stats.init(get_thd_id());
-	pthread_barrier_wait( &warmup_bar );
-	BaseQuery * m_query = NULL;
-#if WORKLOAD == YCSB
-    m_query = new YCSBQuery;
-#elif WORKLOAD == TPCC
-    m_query = new TPCCQuery;
-#endif
+void WorkerThread::setup() {
 
-	run_starttime = get_sys_clock();
-
-	if( _thd_id == 0) {
+	if( get_thd_id() == 0) {
     send_init_done_to_all_nodes();
   }
-	pthread_barrier_wait( &warmup_bar );
-	printf("Run %ld:%ld\n",_node_id, _thd_id);
-  fflush(stdout);
 
-	myrand rdm;
-	rdm.init(get_thd_id());
+
+}
+
+RC WorkerThread::run() {
+  tsetup();
+
 	RC rc = RCOK;
 #if CC_ALG == HSTORE|| CC_ALG == HSTORE_SPEC
 	RC rc2 = RCOK;
 #endif
 	TxnManager * m_txn = NULL;
-	//rc = _wl->get_txn_man(m_txn, this);
-  //txn_pool.get(m_txn);
-	//glob_manager.set_TxnManager(m_txn);
 
 	BaseQuery * tmp_query __attribute__ ((unused));
   tmp_query = NULL;
-	uint64_t stoptime = 0;
 	uint64_t timespan;
 	run_starttime = get_sys_clock();
 	uint64_t prog_time = run_starttime;
   uint64_t thd_prof_start;
+  BaseQuery * m_query;
 
-	while(true) {
+	while(!simulation->is_done()) {
     m_query = NULL;
     m_txn = NULL;
     tmp_query = NULL;
@@ -107,52 +93,9 @@ RC WorkerThread::run() {
 
     INC_STATS(_thd_id,thd_prof_thd1a,get_sys_clock() - thd_prof_start);
     thd_prof_start = get_sys_clock();
-    bool got_qry = false;
-		while(!(got_qry = work_queue.dequeue(_thd_id, m_query))
-                && !_wl->sim_done && !_wl->sim_timeout) {
-#if CC_ALG == HSTORE_SPEC
-      txn_table.spec_next(_thd_id);
-#endif
+    bool got_qry = work_queue.dequeue(_thd_id, m_query);
 
-      if (warmup_finish && 
-          ((get_sys_clock() - run_starttime >= g_done_timer) 
-           /*|| (_wl->txn_cnt >= g_max_txn_per_part
-           && txn_table.empty(get_node_id()))*/)) {
-        break;
-      }
-    }
 
-    INC_STATS(_thd_id,thd_prof_thd1c,get_sys_clock() - thd_prof_start);
-    thd_prof_start = get_sys_clock();
-		// End conditions
-    if((get_sys_clock() - run_starttime >= g_done_timer)
-        ||(_wl->sim_done && _wl->sim_timeout)) { 
-      if( !ATOM_CAS(_wl->sim_done, false, true) ) {
-        assert( _wl->sim_done);
-      } else {
-        printf("_wl->sim_done=%d\n",_wl->sim_done);
-        fflush(stdout);
-      }
-			uint64_t currtime = get_sys_clock();
-      if(stoptime == 0)
-        stoptime = currtime;
-			if(currtime - stoptime > MSG_TIMEOUT) {
-				SET_STATS(get_thd_id(), tot_run_time, currtime - run_starttime - MSG_TIMEOUT); 
-			}
-			else {
-				SET_STATS(get_thd_id(), tot_run_time, stoptime - run_starttime); 
-			}
-      if(get_thd_id() == 0) {
-        abort_queue.abort_finish(currtime);
-
-      }
-
-      printf("FINISH %ld:%ld\n",_node_id,_thd_id);
-      fflush(stdout);
-			return FINISH;
-		}
-
-    INC_STATS(_thd_id,thd_prof_thd1d,get_sys_clock() - thd_prof_start);
     INC_STATS(_thd_id,thd_prof_thd1,get_sys_clock() - thd_prof_start_thd1);
 		if(!got_qry)
 			continue;
@@ -266,7 +209,7 @@ RC WorkerThread::run() {
 					// Send result back to client
           assert(ISCLIENTN(m_query->client_id));
           msg_queue.enqueue(Message::create_message(m_query,CL_RSP),m_query->client_id);
-					ATOM_ADD(_wl->txn_cnt,1);
+          simulation->inc_txn_cnt();
 
 					break;
 
@@ -289,7 +232,7 @@ RC WorkerThread::run() {
 		      timespan = get_sys_clock() - m_txn->starttime;
 		      INC_STATS(get_thd_id(), run_time, timespan);
 		      INC_STATS(get_thd_id(), latency, timespan);
-					ATOM_ADD(_wl->txn_cnt,1);
+          simulation->inc_txn_cnt();
         //ATOM_SUB(txn_table.inflight_cnt,1);
           msg_queue.enqueue(Message::create_message(m_query,CL_RSP),m_query->client_id);
           break;
@@ -368,6 +311,9 @@ RC WorkerThread::run() {
     INC_STATS(_thd_id,thd_prof_thd3_type[txn_type],thd_prof_end - thd_prof_start);
 
 	}
+  printf("FINISH %ld:%ld\n",_node_id,_thd_id);
+  fflush(stdout);
+  return FINISH;
 }
 
 RC WorkerThread::process_rfin(BaseQuery *& m_query,TxnManager *& m_txn) {
@@ -696,7 +642,6 @@ RC WorkerThread::process_rqry(BaseQuery *& m_query,TxnManager *& m_txn) {
 
         // If transaction not in pool, create one
 				if (m_txn == NULL) {
-					//rc = _wl->get_txn_man(m_txn, this);
           txn_pool.get(m_txn);
 					m_txn->set_txn_id(m_query->txn_id);
 					m_txn->set_ts(m_query->ts);
@@ -860,7 +805,6 @@ RC WorkerThread::process_rinit(BaseQuery *& m_query,TxnManager *& m_txn) {
           tmp_query->active_part = m_query->active_part;
           //m_query = tmp_query;
         } else {
-				  //rc = _wl->get_txn_man(m_txn, this);
           txn_pool.get(m_txn);
           INC_STATS(_thd_id,txn_rem_cnt,1);
         }

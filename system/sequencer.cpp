@@ -93,10 +93,10 @@ void Sequencer::process_txn(BaseQuery * query) {
 
   qlite_ll * en = wl_tail;
 
-  if(!en || en->epoch != _wl->epoch+1) {
+  if(!en || en->epoch != simulation->get_sched_epoch()+1) {
     // First txn of new wait list
     en = (qlite_ll *) mem_allocator.alloc(sizeof(qlite_ll));
-    en->epoch = _wl->epoch+1;
+    en->epoch = simulation->get_sched_epoch()+1;
     en->max_size = 1000;
     en->size = 0;
     en->txns_left = 0;
@@ -157,8 +157,8 @@ void Sequencer::process_txn(BaseQuery * query) {
 void Sequencer::send_next_batch(uint64_t thd_id) {
   uint64_t prof_stat = get_sys_clock();
   qlite_ll * en = wl_tail;
-  if(en && en->epoch == _wl->epoch) {
-    DEBUG("SEND NEXT BATCH %ld [%ld,%ld] %ld\n",thd_id,_wl->epoch,en->epoch,en->size);
+  if(en && en->epoch == simulation->get_sched_epoch()) {
+    DEBUG("SEND NEXT BATCH %ld [%ld,%ld] %ld\n",thd_id,simulation->get_sched_epoch(),en->epoch,en->size);
   }
 
   BaseQuery * query;
@@ -171,11 +171,11 @@ void Sequencer::send_next_batch(uint64_t thd_id) {
         msg_queue.enqueue(Message::create_message(query,RTXN),j);
       }
     }
-    DEBUG("Seq RDONE %ld\n",_wl->epoch)
+    DEBUG("Seq RDONE %ld\n",simulation->get_sched_epoch())
     qry_pool.get(query);
     query->rtype = RDONE;
     query->return_id = g_node_id;
-    query->batch_id = _wl->epoch;
+    query->batch_id = simulation->get_sched_epoch();
     if(j == g_node_id)
       work_queue.enqueue(thd_id,query,false);
     else
