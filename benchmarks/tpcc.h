@@ -26,6 +26,28 @@
 class table_t;
 class INDEX;
 class TPCCQuery;
+enum TPCCRemTxnType {
+  TPCC_PAYMENT_S,
+  TPCC_PAYMENT0,
+  TPCC_PAYMENT1,
+  TPCC_PAYMENT2,
+  TPCC_PAYMENT3,
+  TPCC_PAYMENT4,
+  TPCC_PAYMENT5,
+  TPCC_NEWORDER_S,
+  TPCC_NEWORDER0,
+  TPCC_NEWORDER1,
+  TPCC_NEWORDER2,
+  TPCC_NEWORDER3,
+  TPCC_NEWORDER4,
+  TPCC_NEWORDER5,
+  TPCC_NEWORDER6,
+  TPCC_NEWORDER7,
+  TPCC_NEWORDER8,
+  TPCC_NEWORDER9,
+  TPCC_FIN,
+  TPCC_RDONE};
+
 
 class TPCCWorkload : public Workload {
 public:
@@ -96,31 +118,23 @@ class TPCCTxnManager : public TxnManager
 {
 public:
 	void init( Workload * h_wl);
-  bool conflict(BaseQuery * query1,BaseQuery * query2);
-  void read_keys(BaseQuery * query){ assert(false);}; 
-  RC acquire_locks(BaseQuery * query); 
-	RC run_txn(BaseQuery * query);
-	RC run_calvin_txn(BaseQuery * query); 
-	RC run_rem_txn(BaseQuery * query);
-  RC run_tpcc_phase2(BaseQuery * query); 
-  RC run_tpcc_phase5(BaseQuery * query); 
-	void rem_txn_rsp(BaseQuery * rtn_query,BaseQuery * loc_query); 
-	void rem_txn_rsp(BaseQuery * query); 
-	//void pack(r_query * query, void ** data, int * sizes, int * num);
-	//void unpack(r_query * query, char * data);
+  RC acquire_locks(); 
+	RC run_txn();
+	RC run_calvin_txn(); 
+  RC run_tpcc_phase2(); 
+  RC run_tpcc_phase5(); 
 private:
 	TPCCWorkload * _wl;
 	volatile RC _rc;
-	TPCCQuery * _qry;
   row_t * row;
-  bool rem_done;
-  bool fin;
 
-void merge_txn_rsp(BaseQuery * query1, BaseQuery * query2);
-//RC run_txn(BaseQuery * query, bool rem);
-void rtn_tpcc_state(BaseQuery * query);
-void next_tpcc_state(BaseQuery * query);
-RC run_txn_state(BaseQuery * query);
+	TPCCRemTxnType state;
+  uint64_t next_item_id;
+
+void next_tpcc_state();
+RC run_txn_state();
+  bool is_done();
+  void send_remote_request(); 
 
 	RC run_payment_0(uint64_t w_id, uint64_t d_id, uint64_t d_w_id, double h_amount, row_t *& r_wh_local);
 	RC run_payment_1(uint64_t w_id, uint64_t d_id, uint64_t d_w_id, double h_amount, row_t * r_wh_local);

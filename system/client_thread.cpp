@@ -74,12 +74,6 @@ RC ClientThread::run() {
 		}
 		DEBUG("Client: thread %lu sending query to node: %lu\n",
 				_thd_id, GET_NODE_ID(m_query->pid));
-    /*
-		for (uint32_t k = 0; k < g_servers_per_client; ++k) {
-			DEBUG("Node %u: txns in flight: %d\n", 
-                    k + g_server_start_node, client_man.get_inflight(k));
-    }
-    */
 
     msg_queue.enqueue(Message::create_message((BaseQuery*)m_query,RTXN),GET_NODE_ID(m_query->pid));
 		num_txns_sent++;

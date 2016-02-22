@@ -54,33 +54,9 @@ void WorkerThread::setup() {
     send_init_done_to_all_nodes();
   }
 
-
 }
 
-RC WorkerThread::run() {
-  tsetup();
-
-	RC rc = RCOK;
-#if CC_ALG == HSTORE|| CC_ALG == HSTORE_SPEC
-	RC rc2 = RCOK;
-#endif
-	TxnManager * m_txn = NULL;
-
-	BaseQuery * tmp_query __attribute__ ((unused));
-  tmp_query = NULL;
-	uint64_t timespan;
-	run_starttime = get_sys_clock();
-	uint64_t prog_time = run_starttime;
-  uint64_t thd_prof_start;
-  BaseQuery * m_query;
-
-	while(!simulation->is_done()) {
-    m_query = NULL;
-    m_txn = NULL;
-    tmp_query = NULL;
-    uint64_t thd_prof_start_thd1 = get_sys_clock();
-    thd_prof_start = thd_prof_start_thd1;
-
+void WorkerThread::progress_stats() {
 		if(get_thd_id() == 0) {
       uint64_t now_time = get_sys_clock();
       if (now_time - prog_time >= g_prog_timer) {
@@ -91,88 +67,46 @@ RC WorkerThread::run() {
       }
 		}
 
-    INC_STATS(_thd_id,thd_prof_thd1a,get_sys_clock() - thd_prof_start);
-    thd_prof_start = get_sys_clock();
-    bool got_qry = work_queue.dequeue(_thd_id, m_query);
+}
 
-
-    INC_STATS(_thd_id,thd_prof_thd1,get_sys_clock() - thd_prof_start_thd1);
-		if(!got_qry)
-			continue;
-    thd_prof_start = get_sys_clock();
-
-    assert(m_query);
-    uint64_t txn_id = m_query->txn_id;
-    uint64_t txn_type = (uint64_t)m_query->rtype;
-
-		rc = RCOK;
-		txn_starttime = get_sys_clock();
-    assert(m_query->rtype <= NO_MSG);
-
-		switch(m_query->rtype) {
+void WorkerThread::process(Message * msg) {
+		switch(msg->get_rtype()) {
 			case RPASS:
-        rc = process_rpass(m_query,m_txn);
+        rc = process_rpass(msg);
 				break;
-			case RINIT:
-        rc = process_rinit(m_query,m_txn);
+			case RPREPARE: 
+        rc = process_rprepare(msg);
 				break;
-			case RPREPARE: {
-        rc = process_rprepare(m_query,m_txn);
-				break;
-			}
 			case RQRY:
-        rc = process_rqry(m_query,m_txn);
+        rc = process_rqry(msg);
 				break;
 			case RQRY_RSP:
-        rc = process_rqry_rsp(txn_id, m_query,m_txn);
+        rc = process_rqry_rsp(txn_id, msg);
 				break;
 			case RFIN: 
-        rc = process_rfin(m_query,m_txn);
+        rc = process_rfin(msg);
 				break;
 			case RACK:
-        rc = process_rack(m_query,m_txn);
+        rc = process_rack(msg);
 				break;
 			case RTXN:
-        rc = process_rtxn(m_query,m_txn);
+        rc = process_rtxn(msg);
 				break;
 			case LOG_MSG:
-        rc = process_log_msg(m_query,m_txn);
+        rc = process_log_msg(msg);
 				break;
 			case LOG_MSG_RSP:
-        rc = process_log_msg_rsp(m_query,m_txn);
+        rc = process_log_msg_rsp(msg);
 				break;
 			default:
-        printf("Msg: %d\n",m_query->rtype);
+        printf("Msg: %d\n",msg->get_rtype());
         fflush(stdout);
 				assert(false);
 				break;
 		}
-    if(!(!m_query || m_query->txn_id == m_txn->get_txn_id())) {
-      printf("FAIL2: %ld %lx %lx\n",txn_id,(uint64_t)m_txn,(uint64_t)m_query);
-      fflush(stdout);
-    }
-    assert(!m_query || m_query->txn_id == m_txn->get_txn_id());
+}
 
-    uint64_t thd_prof_end = get_sys_clock();
-    INC_STATS(_thd_id,thd_prof_thd2,thd_prof_end - thd_prof_start);
-    if(IS_LOCAL(txn_id) || txn_id == UINT64_MAX) {
-      INC_STATS(_thd_id,thd_prof_thd2_loc,thd_prof_end - thd_prof_start);
-    } else {
-      INC_STATS(_thd_id,thd_prof_thd2_rem,thd_prof_end - thd_prof_start);
-    }
-    INC_STATS(_thd_id,thd_prof_thd2_type[txn_type],thd_prof_end - thd_prof_start);
-    thd_prof_start = get_sys_clock();
-
-		// If m_query was freed just before this, m_query is NULL
-		if(m_query != NULL && IS_LOCAL(m_query->txn_id)) {
-      if(!ISCLIENTN(m_query->client_id)) {
-        printf("FAIL0: %ld %ld\n",txn_id,txn_type);
-        fflush(stdout);
-      }
-      assert((!m_txn && !m_query)|| m_query->txn_id == m_txn->get_txn_id());
-      assert(ISCLIENTN(m_query->client_id));
-			switch(rc) {
-				case RCOK:
+void WorkerThread::commit() {
 #if CC_ALG == HSTORE_SPEC
 					if(m_txn->spec && m_txn->state != DONE)
 						break;
@@ -211,9 +145,10 @@ RC WorkerThread::run() {
           msg_queue.enqueue(Message::create_message(m_query,CL_RSP),m_query->client_id);
           simulation->inc_txn_cnt();
 
-					break;
+}
 
-				case Abort:
+void WorkerThread::abort() {
+  DEBUG("ABORT %ld %f\n",m_txn->get_txn_id(),(float)(get_sys_clock() - run_starttime) / BILLION);
 					assert(m_txn->get_rsp_cnt() == 0);
 					assert(m_txn != NULL);
 					assert(m_query->txn_id != UINT64_MAX);
@@ -249,7 +184,6 @@ RC WorkerThread::run() {
         m_txn->cc_hold_abrt_time += m_txn->cc_hold_time;
         m_txn->clear();
 
-        DEBUG("ABORT %ld %f\n",m_txn->get_txn_id(),(float)(get_sys_clock() - run_starttime) / BILLION);
         m_txn->penalty_start = get_sys_clock();
 
 #if CC_ALG == HSTORE_SPEC
@@ -265,42 +199,57 @@ RC WorkerThread::run() {
 
           abort_queue.add_abort_query(_thd_id,m_query);
 
-					break;
-				case WAIT:
-					assert(m_txn != NULL);
-					break;
-				case WAIT_REM:
-					// Save transaction information for later
-					assert(m_txn != NULL);
-					m_txn->wait_starttime = get_sys_clock();
-#if WORKLOAD == TPCC
-					// WAIT_REM from finish
-					if(m_query->rem_req_state == TPCC_FIN)
-						break;
-#elif WORKLOAD == YCSB
-					if(m_query->rem_req_state == YCSB_FIN)
-						break;
-#endif
-					assert((CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC) || m_query->dest_id != g_node_id);
-#if CC_ALG != HSTORE && CC_ALG != HSTORE_SPEC
-          uint64_t i;
-          for(i = m_query->part_touched_cnt-1; i > 0;i--) {
-            if(m_query->part_touched[i] == GET_PART_ID(0,m_query->dest_id))
-              break;
-          }
-          if(i == 0)
-            m_query->part_touched[m_query->part_touched_cnt++] = GET_PART_ID(0,m_query->dest_id);
-#endif
-          // Stat start for txn_time_net
-          m_txn->txn_stat_starttime = get_sys_clock();
 
-          msg_queue.enqueue(Message::create_message(m_query,RQRY),m_query->dest_id);
-					break;
-				default:
-					assert(false);
-					break;
-			}
-		} 
+}
+
+RC WorkerThread::run() {
+  tsetup();
+
+	RC rc = RCOK;
+#if CC_ALG == HSTORE|| CC_ALG == HSTORE_SPEC
+	RC rc2 = RCOK;
+#endif
+	TxnManager * m_txn = NULL;
+
+	BaseQuery * tmp_query __attribute__ ((unused));
+  tmp_query = NULL;
+	uint64_t timespan;
+	uint64_t prog_time = get_sys_clock();
+  uint64_t thd_prof_start;
+  BaseQuery * m_query;
+
+	while(!simulation->is_done()) {
+    m_query = NULL;
+    m_txn = NULL;
+    tmp_query = NULL;
+    uint64_t thd_prof_start_thd1 = get_sys_clock();
+    thd_prof_start = thd_prof_start_thd1;
+
+    progress_stats();
+
+    INC_STATS(_thd_id,thd_prof_thd1a,get_sys_clock() - thd_prof_start);
+    thd_prof_start = get_sys_clock();
+    Message * msg = work_queue.dequeue();
+    INC_STATS(_thd_id,thd_prof_thd1,get_sys_clock() - thd_prof_start_thd1);
+    thd_prof_start = get_sys_clock();
+
+    if(!msg)
+      continue;
+
+		rc = RCOK;
+		uint64_t txn_starttime = get_sys_clock();
+
+    process(msg);
+
+    uint64_t thd_prof_end = get_sys_clock();
+    INC_STATS(_thd_id,thd_prof_thd2,thd_prof_end - thd_prof_start);
+    if(IS_LOCAL(txn_id) || txn_id == UINT64_MAX) {
+      INC_STATS(_thd_id,thd_prof_thd2_loc,thd_prof_end - thd_prof_start);
+    } else {
+      INC_STATS(_thd_id,thd_prof_thd2_rem,thd_prof_end - thd_prof_start);
+    }
+    INC_STATS(_thd_id,thd_prof_thd2_type[txn_type],thd_prof_end - thd_prof_start);
+    thd_prof_start = get_sys_clock();
 
     work_queue.done(get_thd_id(),txn_id);
 
@@ -316,799 +265,186 @@ RC WorkerThread::run() {
   return FINISH;
 }
 
-RC WorkerThread::process_rfin(BaseQuery *& m_query,TxnManager *& m_txn) {
+RC WorkerThread::process_rfin(Message * msg) {
         uint64_t thd_prof_thd_rfin_start = get_sys_clock();
         uint64_t starttime = thd_prof_thd_rfin_start;
 				DEBUG("%ld Received RFIN %ld\n",GET_PART_ID_FROM_IDX(_thd_id),m_query->txn_id);
 				INC_STATS(0,rfin,1);
-        /*
-#if MODE==TWOPC
-        // Immediate ack back
-        msg_queue.enqueue(m_query,RACK,m_query->return_id);
-        m_query = NULL;
-        return RCOK;
-#endif
-*/
-        if(m_query->rc == Abort) {
+        if(msg->is_abort()) {
           INC_STATS(_thd_id,abort_rem_cnt,1);
+          abort(msg->get_txn_id());
+          msg_queue.enqueue(Message::create_message(RACK,msg->get_txn_id()),GET_HOME_NODE(msg->get_txn_id()));
+          return Abort;
         } 
-				assert(CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || IS_REMOTE(m_query->txn_id));
-        assert(MODE == NORMAL_MODE || MODE == NOCC_MODE);
+        finish_transaction();
+        commit(msg->get_txn_id());
+        if(!query->is_readonly() || CC_ALG == OCC)
+          msg_queue.enqueue(Message::create_message(RACK,msg->get_txn_id()),GET_HOME_NODE(msg->get_txn_id()));
 
-        // Retrieve transaction from transaction pool
-        // TODO: move outside of process functions?
-        BaseQuery * tmp_query;
-				txn_table.get_txn(m_query->return_id, m_query->txn_id,0,m_txn,tmp_query);
-				bool finish = true;
-#if CC_ALG != HSTORE && CC_ALG != HSTORE_SPEC && CC_ALG != VLL
-				if (m_txn == NULL) {
-					assert(m_query->rc == Abort);
-					finish = false;	
-				}
-#else
-				assert( m_txn != NULL);
-#endif
-
-        INC_STATS(_thd_id,thd_prof_thd_rfin0,get_sys_clock() - thd_prof_thd_rfin_start);
-        thd_prof_thd_rfin_start = get_sys_clock();
-
-#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
-        if(m_txn) {
-          m_txn->register_thd(this);
-          if(GET_NODE_ID(m_query->home_part) != g_node_id || GET_PART_ID_IDX(m_query->home_part) == _thd_id) {
-            tmp_query = tmp_query->merge(m_query);
-            tmp_query->readonly = m_query->readonly;
-            if(m_query != tmp_query) {
-              //YCSBQuery_FREE(m_query)
-              qry_pool.put(m_query);
-            }
-            m_query = tmp_query;
-            m_txn->set_query(m_query);
-            assert(m_query->home_part != GET_PART_ID_FROM_IDX(_thd_id));
-          } 
-        }
-
-				if (finish) {
-          if(GET_NODE_ID(m_query->home_part) != g_node_id || GET_PART_ID_IDX(m_query->home_part) == _thd_id) {
-					  m_txn->state = DONE;
-					  m_txn->rem_fin_txn(m_query);
-          } else {
-					  m_txn->loc_fin_txn(m_query);
-          }
-        }
-        if(GET_NODE_ID(m_query->home_part) != g_node_id) {
-          msg_queue.enqueue(Message::create_message(m_query,RACK),m_query->return_id);
-        } else {
-          m_query->local_rack_query();
-        }
-
-#else // NOT CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
-        // Merge query information
-        if(m_txn) {
-          m_txn->register_thd(this);
-          tmp_query = tmp_query->merge(m_query);
-          tmp_query->ro = m_query->ro;
-          if(m_query != tmp_query) {
-            //YCSBQuery_FREE(m_query)
-            qry_pool.put(m_query);
-          }
-          m_query = tmp_query;
-          m_txn->set_query(m_query);
-        }
-    INC_STATS(_thd_id,prof_time_twopc,get_sys_clock() - starttime);
-        // Clean up transaction
-				if (finish) {
-					m_txn->state = DONE;
-					m_txn->rem_fin_txn(m_query);
-        }
-        INC_STATS(_thd_id,thd_prof_thd_rfin1,get_sys_clock() - thd_prof_thd_rfin_start);
-        thd_prof_thd_rfin_start = get_sys_clock();
-        starttime = thd_prof_thd_rfin_start;
-        // Send ack back to home node
-        //  m_query is used by send thread; do not free
-        //  m_query will be freed by send thread
-        if(m_query->rc == Abort || !m_query->ro || CC_ALG == OCC)
-          msg_queue.enqueue(Message::create_message(m_query,RACK),m_query->return_id);
-#endif
-
-        INC_STATS(_thd_id,thd_prof_thd_rfin2,get_sys_clock() - thd_prof_thd_rfin_start);
-    INC_STATS(_thd_id,prof_time_twopc,get_sys_clock() - starttime);
-        // TODO: change check from null m_query to qry type?
-        //qry_pool.put(m_query);
-				m_query = NULL;
         return RCOK;
 }
 
-RC WorkerThread::process_rack(BaseQuery *& m_query,TxnManager *& m_txn) {
+RC WorkerThread::process_rack(Message * msg) {
 
-        uint64_t thd_prof_start = get_sys_clock();
-        uint64_t thd_prof_thd_rack_start = get_sys_clock();
-#if CC_ALG == VLL
-        uint64_t thd_prof_thd_rack_vll = get_sys_clock();
-#endif
-				DEBUG("%ld Received RACK %ld\n",GET_PART_ID_FROM_IDX(_thd_id),m_query->txn_id);
-				INC_STATS(0,rack,1);
-				assert(IS_LOCAL(m_query->txn_id));
-				assert(!(CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC) || GET_PART_ID_IDX(m_query->home_part) == _thd_id);
-
-        RC rc = RCOK;
-
-        // Retrieve this transaction
-        BaseQuery * tmp_query;
-				txn_table.get_txn(g_node_id, m_query->txn_id,0,m_txn,tmp_query);
-				assert(m_txn != NULL);
-        m_txn->register_thd(this);
-
-        // Merge queries
-        assert(ISCLIENTN(tmp_query->client_id));
-        tmp_query = tmp_query->merge(m_query);
-        if(m_query != tmp_query) {
-          //YCSBQuery_FREE(m_query)
-          qry_pool.put(m_query);
-        }
-        m_query = tmp_query;
-        m_txn->set_query(m_query);
-        assert(ISCLIENTN(m_query->client_id));
-
-        INC_STATS(_thd_id,thd_prof_thd_rack0,get_sys_clock() - thd_prof_thd_rack_start);
-        thd_prof_thd_rack_start = get_sys_clock();
-        // Check if all responses have been received
-        // returns the current response count for this transaction
-				int rsp_cnt = m_txn->decr_rsp(1);
-        assert(rsp_cnt >=0);
-        if(rsp_cnt > 0) {
-          //qry_pool.put(m_query);
-          m_query = NULL;
-          return RCOK;
-        }
-
-        INC_STATS(_thd_id,thd_prof_thd_rack1,get_sys_clock() - thd_prof_thd_rack_start);
-        thd_prof_thd_rack_start = get_sys_clock();
-				if(rsp_cnt == 0) {
-					// Done waiting 
-					INC_STATS(get_thd_id(),time_wait_rem,get_sys_clock() - m_txn->wait_starttime);
-          // Reset status
-					m_txn->rc = RCOK;
-
-					// After RINIT
-					switch(m_txn->state) {
-						case INIT:
-#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
-              
-#if CC_ALG == HSTORE_SPEC
-							txn_table.commit_spec_ex(RCOK,_thd_id);
-							spec_man.clear();
-#endif
-							uint64_t part_arr_s[1];
-							part_arr_s[0] = m_query->part_to_access[0];
-							rc = part_lock_man.rem_lock(part_arr_s, 1, m_txn);
-							m_query->update_rc(rc);
-        INC_STATS(_thd_id,thd_prof_thd_rack2a,get_sys_clock() - thd_prof_thd_rack_start);
-        thd_prof_thd_rack_start = get_sys_clock();
-							if(rc == WAIT) {
-								m_txn->rc = rc;
-                //qry_pool.put(m_query);
-					      m_query = NULL;
-                return WAIT;
-							}
-
-							if(m_txn->ready_part > 0) {
-                //qry_pool.put(m_query);
-					      m_query = NULL;
-                return WAIT;
-              }
-#endif
-#if CC_ALG == VLL
-              // This may return an Abort
-
-              if(m_query->rc == Abort) {
-                    m_txn->state = FIN;
-                    // send rfin messages w/ abort
-                    m_txn->finish(m_query,true);
-                    //qry_pool.put(m_query);
-                    m_query = NULL;
-                    return Abort;
-              }
-
-              thd_prof_thd_rack_vll = get_sys_clock();
-              rc = vll_man.beginTxn(m_txn,m_query);
-              INC_STATS(_thd_id,txn_time_begintxn,get_sys_clock() - thd_prof_thd_rack_vll);
-              if(rc == WAIT)
-                return WAIT;
-              if(rc == Abort) {
-                    m_txn->state = FIN;
-                    // send rfin messages w/ abort
-                    m_txn->finish(m_query,true);
-                    //qry_pool.put(m_query);
-                    m_query = NULL;
-                    return Abort;
-              }
-#endif
-							m_txn->state = EXEC; 
-							txn_table.restart_txn(m_txn->get_txn_id(),0);
-              //qry_pool.put(m_query);
-					    m_query = NULL;
-              INC_STATS(_thd_id,prof_time_twopc,get_sys_clock() - thd_prof_start);
-              break;
-            case PREP:
-							// Validate
-							m_txn->spec = true;
-              INC_STATS(_thd_id,prof_time_twopc,get_sys_clock() - thd_prof_start);
-							rc  = m_txn->validate();
-              thd_prof_start = get_sys_clock();
-							m_txn->spec = false;
-							if(rc == Abort)
-								m_query->rc = rc;
-#if CC_ALG == HSTORE_SPEC
-							if(m_query->rc != Abort) {
-								// allow speculative execution to start
-								txn_table.start_spec_ex(_thd_id);
-							}
-#endif
-
-							m_txn->state = FIN;
-							// After RPREPARE, send rfin messages
-							m_txn->finish(m_query,true);
-              // Note: can't touch m_txn after this, since all other
-              //  RACKs may have been received and FIN processed before this point
-              //qry_pool.put(m_query);
-					    m_query = NULL;
-              INC_STATS(_thd_id,prof_time_twopc,get_sys_clock() - thd_prof_start);
-							break;
-						case FIN:
-							// After RFIN
-							m_txn->state = DONE;
-#if CC_ALG == HSTORE_SPEC
-							txn_table.commit_spec_ex(m_query->rc,_thd_id);
-							spec_man.clear();
-#endif
-              INC_STATS(_thd_id,prof_time_twopc,get_sys_clock() - thd_prof_start);
-							uint64_t part_arr[1];
-							part_arr[0] = m_query->part_to_access[0];
-							rc = m_txn->finish(m_query->rc,part_arr,1);
-							break;
-						default:
-							assert(false);
-					}
-        }
-        else {
-              INC_STATS(_thd_id,prof_time_twopc,get_sys_clock() - thd_prof_start);
-        }
-
-        INC_STATS(_thd_id,thd_prof_thd_rack2,get_sys_clock() - thd_prof_thd_rack_start);
-        return rc;
-}
-
-RC WorkerThread::process_rqry_rsp(uint64_t tid, BaseQuery *& m_query,TxnManager *& m_txn) {
   uint64_t thd_prof_start = get_sys_clock();
-				DEBUG("%ld Received RQRY_RSP %ld\n",GET_PART_ID_FROM_IDX(_thd_id),m_query->txn_id);
-				INC_STATS(0,rqry_rsp,1);
-				assert(IS_LOCAL(m_query->txn_id));
+  INC_STATS(0,rack,1);
 
-        // Retrieve transaction
-        BaseQuery * tmp_query;
-				txn_table.get_txn(g_node_id, m_query->txn_id,0,m_txn,tmp_query);
-				assert(m_txn != NULL);
-        m_txn->register_thd(this);
+  RC rc = RCOK;
 
-        // Collect Stats
-				INC_STATS(get_thd_id(),time_wait_rem,get_sys_clock() - m_txn->wait_starttime);
-        if(m_txn->txn_stat_starttime > 0) {
-          m_txn->txn_time_net += get_sys_clock() - m_txn->txn_stat_starttime;
-          m_txn->txn_stat_starttime = 0;
-        }
+  int responses_left = transaction_table->received_response(msg->get_txn_id());
+  assert(responses_left >=0);
+  if(responses_left > 0) 
+    return;
 
-        // Merge queries
-        tmp_query = tmp_query->merge(m_query);
-        if(m_query != tmp_query) {
-          //YCSBQuery_FREE(m_query)
-          qry_pool.put(m_query);
-        }
-        m_query = tmp_query;
-        m_txn->set_query(m_query);
+  INC_STATS(_thd_id,thd_prof_thd_rack1,get_sys_clock() - thd_prof_thd_rack_start);
+  thd_prof_thd_rack_start = get_sys_clock();
 
-    INC_STATS(_thd_id,thd_prof_thd_rqry_rsp0,get_sys_clock() - thd_prof_start);
-    thd_prof_start = get_sys_clock();
-				// Execute from original txn; Note: txn may finish
-    if(m_txn->get_rsp_cnt() != 0 || m_txn->get_txn_id() != m_query->txn_id) {
-        printf("FAIL1: %ld %lx %lx\n",tid,(uint64_t)m_txn,(uint64_t)m_query);
-        fflush(stdout);
-      }
-        assert(m_txn->get_txn_id() == m_query->txn_id);
-        assert(m_query->txn_id == tid);
-				assert(m_txn->get_rsp_cnt() == 0);
-				RC rc = m_txn->run_txn(m_query);
-    INC_STATS(_thd_id,thd_prof_thd_rqry_rsp1,get_sys_clock() - thd_prof_start);
-        return rc;
+    // Done waiting 
+    INC_STATS(get_thd_id(),time_wait_rem,get_sys_clock() - m_txn->wait_starttime);
 
+    switch(msg->get_rtype()) {
+      case RACK_PREP:
+        // Validate
+        rc  = m_txn->validate();
+        send_rfin_messages(rc);
+        if(rc == Abort)
+          abort();
+        //m_txn->finish(m_query,true);
+        break;
+      case RACK_FIN:
+        uint64_t part_arr[1];
+        part_arr[0] = m_query->part_to_access[0];
+        rc = m_txn->finish(m_query->rc,part_arr,1);
+        break;
+      default:
+        assert(false);
+    }
+  }
+  return rc;
 }
 
-RC WorkerThread::process_rqry(BaseQuery *& m_query,TxnManager *& m_txn) {
+RC WorkerThread::process_rqry_rsp(Message * msg) {
   uint64_t thd_prof_start = get_sys_clock();
-				DEBUG("%ld Received RQRY %ld\n",GET_PART_ID_FROM_IDX(_thd_id),m_query->txn_id);
-				INC_STATS(0,rqry,1);
-#if MODE == QRY_ONLY_MODE
-        uint64_t max_access = m_query->max_access;
-        assert(max_access > 0);
-#endif
-				assert(CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || IS_REMOTE(m_query->txn_id));
-        assert(CC_ALG != VLL || m_query->rc != Abort);
-        RC rc = RCOK;
+  INC_STATS(0,rqry_rsp,1);
 
-				// Theoretically, we could send multiple queries to one node,
-				//    so m_txn could already be in txn_table
-        BaseQuery * tmp_query;
-				txn_table.get_txn(m_query->return_id, m_query->txn_id,0,m_txn,tmp_query);
-
-        // If transaction not in pool, create one
-				if (m_txn == NULL) {
-          txn_pool.get(m_txn);
-					m_txn->set_txn_id(m_query->txn_id);
-					m_txn->set_ts(m_query->ts);
-					m_txn->set_pid(m_query->pid);
-					m_txn->state = INIT;
-					txn_table.add_txn(m_query->return_id,m_txn,m_query);
-          tmp_query = m_query;
-          INC_STATS(_thd_id,txn_rem_cnt,1);
-				}
-				assert(m_txn != NULL);
-        m_txn->register_thd(this);
-				m_txn->set_ts(m_query->ts);
-#if CC_ALG == OCC
-				m_txn->set_start_ts(m_query->start_ts);
-#endif
-
-        // merge queries
-        tmp_query = tmp_query->merge(m_query);
-          if(m_query != tmp_query) {
-            //YCSBQuery_FREE(m_query)
-            qry_pool.put(m_query);
-          }
-        m_query = tmp_query;
-        m_txn->set_query(m_query);
-
-				m_txn->state = EXEC;
-
-    INC_STATS(_thd_id,thd_prof_thd_rqry0,get_sys_clock() - thd_prof_start);
-    thd_prof_start = get_sys_clock();
-
-    // Execute transaction
-    rc = m_txn->run_txn(m_query);
-
-    INC_STATS(_thd_id,thd_prof_thd_rqry1,get_sys_clock() - thd_prof_start);
-    thd_prof_start = get_sys_clock();
-				assert(rc != WAIT_REM);
-
-				uint64_t timespan = get_sys_clock() - txn_starttime;
-				INC_STATS(get_thd_id(),time_rqry,timespan);
-
-        // Send response
-				if(rc != WAIT) {
-#if MODE==QRY_ONLY_MODE
-          // Release locks
-#if CC_ALG == VLL
-          if((uint64_t)m_txn->vll_row_cnt2 == max_access) {
-#else
-          if((uint64_t)m_txn->row_cnt == max_access) {
-#endif
-            m_query->max_done = true;
-            m_txn->state = DONE;
-            m_txn->rem_fin_txn(m_query);
-          } else {
-            m_query->max_done = false;
-          }
-#endif
-          msg_queue.enqueue(Message::create_message(m_query,RQRY_RSP),m_query->return_id);
-        }
-        //qry_pool.put(m_query);
-        m_query = NULL;
-    INC_STATS(_thd_id,thd_prof_thd_rqry2,get_sys_clock() - thd_prof_start);
-        return rc;
+  RC rc = m_txn->run_txn();
+  return rc;
 
 }
 
-RC WorkerThread::process_rprepare(BaseQuery *& m_query,TxnManager *& m_txn) {
+RC WorkerThread::process_rqry(Message * msg) {
+  uint64_t thd_prof_start = get_sys_clock();
+  INC_STATS(0,rqry,1);
+  RC rc = RCOK;
+
+  // Create new transaction table entry if one does not already exist
+  Transaction * txn_man = transaction_table.get_transaction_manager(msg->get_txn_id());
+  txn_man->set_timestamp(msg->get_timestamp());
+  txn_man->set_start_timestamp(msg->get_start_timestamp());
+  msg->copy_to_query(txn_man->query);
+
+  rc = run_txn();
+
+  // Send response
+  if(rc != WAIT) {
+    msg_queue.enqueue(Message::create_message(m_query,RQRY_RSP),m_query->return_id);
+  }
+  return rc;
+
+}
+
+RC WorkerThread::process_rtxn_cont() {
+  run_txn_post_wait();
+  run_txn();
+}
+
+RC WorkerThread::process_rprepare(Message * msg) {
     uint64_t starttime = get_sys_clock();
     uint64_t thd_prof_start = get_sys_clock();
-        DEBUG("%ld Received RPREPARE %ld\n",GET_PART_ID_FROM_IDX(_thd_id),m_query->txn_id);
-				INC_STATS(0,rprep,1);
-				assert(CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || IS_REMOTE(m_query->txn_id));
-        assert(MODE == NORMAL_MODE || MODE == NOCC_MODE);
+    INC_STATS(0,rprep,1);
 
-        /*
-#if MODE==TWOPC
-        msg_queue.enqueue(Message::create_message(m_query,RACK),m_query->return_id);
-        m_query = NULL;
-        return RCOK;
-#endif
-*/
-        // Retrieve transaction
-        BaseQuery * tmp_query;
-				txn_table.get_txn(m_query->return_id, m_query->txn_id,0,m_txn,tmp_query);
+    // Validate transaction
+    if (!msg->is_abort()) {
+      rc  = m_txn->validate();
+    } 
+    // FIXME: need to add RC into message
+    msg_queue.enqueue(Message::create_message(m_query,RACK),m_query->return_id);
 
-				bool validate = true;
-        RC rc = RCOK;
-
-#if CC_ALG != HSTORE && CC_ALG != HSTORE_SPEC && CC_ALG != VLL
-				if (m_txn == NULL) {
-					validate = false;
-				}
-#else
-				assert(m_txn != NULL);
-#endif
-        if(m_txn) {
-          m_txn->register_thd(this);
-
-          // Merge queries
-          tmp_query = tmp_query->merge(m_query);
-          if(m_query != tmp_query) {
-            //YCSBQuery_FREE(m_query)
-            qry_pool.put(m_query);
-          }
-          m_query = tmp_query;
-          m_txn->set_query(m_query);
-          assert(!(CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC) || m_query->home_part != GET_PART_ID_FROM_IDX(_thd_id));
-        }
-
-    INC_STATS(_thd_id,thd_prof_thd_rprep0,get_sys_clock() - thd_prof_start);
-    thd_prof_start = get_sys_clock();
-
-        INC_STATS(_thd_id,prof_time_twopc,get_sys_clock() - starttime);
-			  // Validate transaction
-				if (validate && m_query->rc == RCOK) {
-					m_txn->state = PREP;
-					rc  = m_txn->validate();
-				} else {
-          assert(m_query->rc == Abort);
-          rc = m_query->rc;
-        }
-    INC_STATS(_thd_id,thd_prof_thd_rprep1,get_sys_clock() - thd_prof_start);
-    thd_prof_start = get_sys_clock();
-    starttime = thd_prof_start;
-				// Send ACK w/ commit/abort
-#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
-        if(GET_NODE_ID(m_query->active_part) != GET_NODE_ID(m_query->home_part)) {
-          if(validate)
-					  m_query->rc = rc;
-          msg_queue.enqueue(Message::create_message(m_query,RACK),m_query->return_id);
-        } else {
-          m_query->local_rack_query();
-        }
-#else
-        if(validate)
-				  m_query->rc = rc;
-        // Send back ack
-        msg_queue.enqueue(Message::create_message(m_query,RACK),m_query->return_id);
-#endif
-
-    INC_STATS(_thd_id,thd_prof_thd_rprep2,get_sys_clock() - thd_prof_start);
-        //qry_pool.put(m_query);
-        m_query = NULL;
-    INC_STATS(_thd_id,prof_time_twopc,get_sys_clock() - starttime);
-        return rc;
+    return rc;
 }
 
-RC WorkerThread::process_rinit(BaseQuery *& m_query,TxnManager *& m_txn) {
-    uint64_t thd_prof_start = get_sys_clock();
-        DEBUG("%ld Received RINIT %ld\n",GET_PART_ID_FROM_IDX(_thd_id),m_query->txn_id)
-				INC_STATS(0,rinit,1);
-        assert(CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || CC_ALG == VLL);
-				assert( ((CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC) 
-              && m_query->home_part != GET_PART_ID_FROM_IDX(_thd_id)) 
-              || IS_REMOTE(m_query->txn_id));
-        RC rc = RCOK;
-
-				// Set up txn_table
-        if((CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC) && IS_LOCAL(m_query->txn_id)) {
-          BaseQuery * tmp_query;
-          txn_table.get_txn(m_query->return_id, m_query->txn_id,0,m_txn,tmp_query);
-          tmp_query->active_part = m_query->active_part;
-          //m_query = tmp_query;
-        } else {
-          txn_pool.get(m_txn);
-          INC_STATS(_thd_id,txn_rem_cnt,1);
-        }
-				//assert(rc == RCOK);
-        m_txn->register_thd(this);
-				m_txn->set_txn_id(m_query->txn_id);
-				m_txn->set_ts(m_query->ts);
-				m_txn->set_pid(m_query->pid);
-				m_txn->state = INIT;
-
-#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
-        m_txn->home_part = m_query->home_part;
-        m_txn->active_part = m_query->active_part;
-#endif
-    INC_STATS(_thd_id,thd_prof_thd_rqry0,get_sys_clock() - thd_prof_start);
-    thd_prof_start = get_sys_clock();
-
-        if( !IS_LOCAL(m_query->txn_id)) {
-				  txn_table.add_txn(m_query->return_id,m_txn,m_query);
-        }
-
-    INC_STATS(_thd_id,thd_prof_thd_rqry1,get_sys_clock() - thd_prof_start);
-    thd_prof_start = get_sys_clock();
-#if CC_ALG == VLL
-        uint64_t debug3 = get_sys_clock();
-        rc = vll_man.beginTxn(m_txn,m_query);
-        INC_STATS(_thd_id,txn_time_begintxn,get_sys_clock() - debug3);
-        if(rc == WAIT)
-          return rc;
-				// Send back ACK
-        msg_queue.enqueue(Message::create_message(m_query,RACK),m_query->return_id);
-#endif
-				// HStore: lock partitions at this node
-#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
-				part_lock_man.rem_lock(m_query->parts, m_query->part_cnt, m_txn);
-#endif
-    INC_STATS(_thd_id,thd_prof_thd_rqry2,get_sys_clock() - thd_prof_start);
-        //qry_pool.put(m_query);
-        m_query = NULL;
-        return rc;
+uint64_t WorkerThread::get_next_txn_id() {
+  uint64_t txn_id = ( get_node_id() + get_thd_id() * g_node_cnt) 
+							+ (g_thread_cnt * g_node_cnt * _thd_txn_id);
+  ++_thd_txn_id;
+  return txn_id;
 }
 
-RC WorkerThread::process_rpass(BaseQuery *& m_query,TxnManager *& m_txn) {
-        BaseQuery * tmp_query;
-				txn_table.get_txn(m_query->return_id, m_query->txn_id,0,m_txn,tmp_query);
-				assert(m_txn != NULL);
-        m_txn->register_thd(this);
-        return m_txn->rc;
-}
-
-RC WorkerThread::process_rtxn(BaseQuery *& m_query,TxnManager *& m_txn) {
-    uint64_t thd_prof_start = get_sys_clock();
-    uint64_t thd_prof_start1 = thd_prof_start;
+RC WorkerThread::process_rtxn(Message * msg) {
 				INC_STATS(0,rtxn,1);
-				assert(m_query->txn_id == UINT64_MAX || IS_LOCAL(m_query->txn_id) );
         RC rc = RCOK;
-        bool restart = true;
+        TransactionManager * txn_man;
+        uint64_t txn_id = UINT64_MAX;
 
-				if(m_query->txn_id == UINT64_MAX) {
-          restart = false;
+        if(msg->get_rtype() == CL_QRY) {
           // This is a new transaction
-          txn_pool.get(m_txn);
-          INC_STATS(_thd_id,debug1, get_sys_clock()-thd_prof_start1);
-          thd_prof_start1 = get_sys_clock();
-
-					m_txn->abort_cnt = 0;
-					if (CC_ALG == WAIT_DIE || CC_ALG == VLL) {
-						m_txn->set_ts(get_next_ts());
-						m_query->ts = m_txn->get_ts();
-					}
-					if (CC_ALG == MVCC) {
-						m_query->thd_id = _thd_id;
-					}
-
-#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
-          m_txn->home_part = m_query->home_part;
-          m_txn->active_part = m_query->active_part;
-#endif
-					m_txn->set_pid(m_query->pid);
 
 					// Only set new txn_id when txn first starts
-					m_txn->set_txn_id( ( get_node_id() + get_thd_id() * g_node_cnt) 
-							+ (g_thread_cnt * g_node_cnt * _thd_txn_id));
-					_thd_txn_id ++;
-					m_query->set_txn_id(m_txn->get_txn_id());
-          INC_STATS(_thd_id,debug2, get_sys_clock()-thd_prof_start1);
-          thd_prof_start1 = get_sys_clock();
-          work_queue.update_hash(get_thd_id(),m_txn->get_txn_id());
+          txn_id = get_next_txn_id();
+          work_queue.update_hash(get_thd_id(),txn_id);
 
 					// Put txn in txn_table
-          assert(ISCLIENTN(m_query->client_id));
-					txn_table.add_txn(g_node_id,m_txn,m_query);
-          INC_STATS(_thd_id,debug3, get_sys_clock()-thd_prof_start1);
-          thd_prof_start1 = get_sys_clock();
+          transaction_table.create_entry(txn_id);
+          txn_man = transaction_table.get_transaction_manager(txn_id);
+					if (CC_ALG == WAIT_DIE || CC_ALG == VLL) {
+            txn_man->set_timestamp(get_next_ts());
+          }
 
-          m_query->penalty = 0;
-          m_query->abort_restart = false;
-
-					m_txn->starttime = get_sys_clock();
-          m_txn->txn_time_misc += m_query->time_q_work;
-          m_txn->txn_time_misc += m_query->time_copy;
-          m_txn->register_thd(this);
-    INC_STATS(_thd_id,thd_prof_thd_rtxn1a,get_sys_clock() - thd_prof_start);
-				}
-				else {
-					// Re-executing transaction
-          BaseQuery * tmp_query;
-					txn_table.get_txn(g_node_id,m_query->txn_id,0,m_txn,tmp_query);
-					assert(m_txn != NULL);
-          m_txn->register_thd(this);
-    INC_STATS(_thd_id,thd_prof_thd_rtxn1b,get_sys_clock() - thd_prof_start);
-				}
-    thd_prof_start = get_sys_clock();
-
-				if(m_txn->rc != WAIT && m_txn->state == START) {
+				} else {
+          txn_man = transaction_table.get_transaction_manager(msg->get_txn_id());
+        }
 
           // Get new timestamps
-					if ((CC_ALG == HSTORE && !HSTORE_LOCAL_TS)
+          if(is_cc_new_timestamp())
+            txn_man->set_timestamp(get_next_ts());
+					}
+
+#if CC_ALG == OCC
+          txn_man->set_start_timestamp(get_next_ts());
+#endif
+      DEBUG("START %ld %f %lu\n",txn_man->get_txn_id(),simulation->seconds_from_start(get_sys_clock()),txn_man->get_timestamp());
+    msg->copy_to_query(txn_man->query);
+
+    rc = init_phase();
+    if(rc != RCOK)
+      return rc;
+
+    // Execute transaction
+    rc = txn_man->run_txn();
+    return rc;
+}
+
+RC WorkerThread::init_phase() {
+  RC rc = RCOK;
+  //m_query->part_touched[m_query->part_touched_cnt++] = m_query->part_to_access[0];
+  return rc;
+}
+
+
+RC WorkerThread::process_log_msg() {
+  return RCOK;
+}
+
+RC WorkerThread::process_log_msg_rsp() {
+  return RCOK;
+}
+
+bool WorkerThread::is_cc_new_timestamp() {
+  return (CC_ALG == HSTORE && !HSTORE_LOCAL_TS)
 							|| (CC_ALG == HSTORE_SPEC && !HSTORE_LOCAL_TS)
 							|| CC_ALG == MVCC 
               || CC_ALG == VLL
-							|| CC_ALG == TIMESTAMP) { 
-						m_txn->set_ts(get_next_ts());
-						m_query->ts = m_txn->get_ts();
-					}
-
-#if CC_ALG == OCC
-					m_txn->start_ts = get_next_ts(); 
-					m_query->start_ts = m_txn->get_start_ts();
-#endif
-    if(restart) {
-					DEBUG("RESTART %ld %f %lu\n",m_txn->get_txn_id(),(double)(m_txn->starttime - run_starttime) / BILLION,m_txn->get_ts());
-    } else {
-					DEBUG("START %ld %f %lu\n",m_txn->get_txn_id(),(double)(m_txn->starttime - run_starttime) / BILLION,m_txn->get_ts());
-    }
-
-    INC_STATS(_thd_id,thd_prof_thd_rtxn2,get_sys_clock() - thd_prof_start);
-    thd_prof_start = get_sys_clock();
-		uint64_t ttime = get_sys_clock();
-
-          rc = init_phase(m_query,m_txn);
-
-    INC_STATS(_thd_id,thd_prof_thd_rtxn3,get_sys_clock() - thd_prof_start);
-    thd_prof_start = get_sys_clock();
-					INC_STATS(get_thd_id(),time_msg_sent,get_sys_clock() - ttime);
-				} //if(m_txn->rc != WAIT) 
-
-				if(m_query->rc == Abort && rc == WAIT) {
-          //qry_pool.put(m_query);
-					m_query = NULL;
-          return rc;
-				}
-
-        // Execute transaction
-				if(rc == RCOK) {
-					assert(m_txn->get_rsp_cnt() == 0);
-					m_txn->state = EXEC;
-					rc = m_txn->run_txn(m_query);
-        }
-    INC_STATS(_thd_id,thd_prof_thd_rtxn4,get_sys_clock() - thd_prof_start);
-          return rc;
-}
-
-RC WorkerThread::init_phase(BaseQuery * m_query, TxnManager * m_txn) {
-  RC rc = RCOK;
-#if CC_ALG != HSTORE && CC_ALG != HSTORE_SPEC && CC_ALG != VLL
-  /*
-#if MODE==TWOPC
-          // Only 2PC, touch all partitions
-          for(uint64_t i = 0; i < m_query->part_num; i++) {
-            m_query->part_touched[m_query->part_touched_cnt++] = m_query->part_to_access[i];
-          }
-#else
-*/
-          // Touch first partition
-          m_query->part_touched[m_query->part_touched_cnt++] = m_query->part_to_access[0];
-//#endif
-#endif
-#if (CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || CC_ALG == VLL)
-          /*
-#if MODE != NORMAL_MODE
-					for(uint64_t i = 0; i < m_query->part_num; i++) {
-            m_query->part_touched[m_query->part_touched_cnt++] = m_query->part_to_access[i];
-          }
-#else
-*/
-					m_txn->state = INIT;
-					for(uint64_t i = 0; i < m_query->part_num; i++) {
-						uint64_t part_id = m_query->part_to_access[i];
-						// Check for duplicate partitions so we don't send init twice
-						uint64_t j;
-						bool sent = false;
-						for(j = 0; j < i; j++) {
-							if(part_id == m_query->part_to_access[j]) {
-								sent = true;
-							}
-						}
-						if(sent)
-							continue;
-						//if(GET_NODE_ID(part_id) != g_node_id) {
-#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
-						if(part_id != m_query->home_part) {
-							m_txn->incr_rsp(1);
-						}
-#else
-						if(GET_NODE_ID(part_id) != g_node_id) {
-							m_txn->incr_rsp(1);
-						}
-#endif
-					}
-
-#if CC_ALG == HSTORE_SPEC
-          if(m_query->part_num > 1) {
-						txn_table.start_spec_ex(_thd_id);
-          }
-#endif
-
-          if(CC_ALG != HSTORE_SPEC || !m_txn->spec) {
-
-					// Send RINIT message to all involved nodes
-					for(uint64_t i = 0; i < m_query->part_num; i++) {
-						uint64_t part_id = m_query->part_to_access[i];
-						// Check for duplicate partitions so we don't send init twice
-						uint64_t j;
-						bool sent = false;
-						for(j = 0; j < i; j++) {
-							if(part_id == m_query->part_to_access[j]) {
-								sent = true;
-							}
-						}
-						if(sent)
-							continue;
-
-#if CC_ALG == VLL
-              if(GET_NODE_ID(part_id) != g_node_id) {
-                //m_txn->incr_rsp(1);
-                rc = WAIT;
-                m_txn->rc = rc;
-                m_query->dest_part = part_id;
-                msg_queue.enqueue(Message::create_message(m_query,RINIT),GET_NODE_ID(part_id));
-                m_txn->wait_starttime = get_sys_clock();
-                m_query->part_touched[m_query->part_touched_cnt++] = part_id;
-              } else {
-							// local init: MPQ Moved to after RINITs return
-                if(m_query->part_num == 1) {
-                  uint64_t debug3 = get_sys_clock();
-                  rc = vll_man.beginTxn(m_txn,m_query);
-                  INC_STATS(_thd_id,txn_time_begintxn,get_sys_clock() - debug3);
-                  if(rc == WAIT) {
-                    break;
-                    //m_txn->rc = rc;
-                  }
-                }
-              }
-#elif CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
-            assert(m_query->active_part == m_query->home_part);
-						if(part_id != m_query->home_part) {
-              if(GET_NODE_ID(part_id) != g_node_id) {
-                //m_txn->incr_rsp(1);
-                rc = WAIT;
-                m_txn->rc = rc;
-                m_query->dest_part = part_id;
-                msg_queue.enqueue(Message::create_message(m_query,RINIT),GET_NODE_ID(part_id));
-                m_txn->wait_starttime = get_sys_clock();
-                m_query->part_touched[m_query->part_touched_cnt++] = part_id;
-              } else {
-                assert(CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC);
-                rc = WAIT;
-                m_txn->rc = rc;
-                m_query->part_touched[m_query->part_touched_cnt++] = part_id;
-                // initialize new query and place on work queue
-                m_query->local_rinit_query(part_id);
-               
-
-              }
-						} else {
-							// local init: MPQ Moved to after RINITs return
-              if(m_query->part_num == 1) {
-							uint64_t part_arr[1];
-							part_arr[0] = part_id;
-							rc2 = part_lock_man.rem_lock(part_arr, 1, m_txn);
-							m_query->update_rc(rc2);
-							if(rc2 == WAIT) {
-								rc = WAIT;
-								m_txn->rc = rc;
-							}
-              }
-						}
-#endif //CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
-					} // for(uint64_t i = 0; i < m_query->part_num; i++) 
-        }
-
-//#endif
-#endif // MODE<QRY && (CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || CC_ALG == VLL)
-          return rc;
-}
-
-
-RC WorkerThread::process_log_msg(BaseQuery *& m_query,TxnManager *& m_txn) {
-  return RCOK;
-}
-
-RC WorkerThread::process_log_msg_rsp(BaseQuery *& m_query,TxnManager *& m_txn) {
-  return RCOK;
+							|| CC_ALG == TIMESTAMP;
 }
 
 ts_t WorkerThread::get_next_ts() {

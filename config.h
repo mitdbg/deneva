@@ -198,10 +198,6 @@
 #define MPR 1.0
 #define MPIR 0.01
 #define MPR_NEWORDER      20 // In %
-// Smaller item selection to model contention
-#define CONTENTION false
-#define STRICT_MPR false //true
-//
 enum TPCCTable {TPCC_WAREHOUSE, 
           TPCC_DISTRICT,
           TPCC_CUSTOMER,

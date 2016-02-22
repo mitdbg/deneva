@@ -26,23 +26,23 @@ public:
 	RC 			run();
   void setup();
   void send_init_done_to_all_nodes(); 
-  RC process_rfin(BaseQuery *& m_query,TxnManager *& m_txn);
-  RC process_rack(BaseQuery *& m_query,TxnManager *& m_txn);
-  RC process_rqry_rsp(uint64_t tid, BaseQuery *& m_query,TxnManager *& m_txn);
-  RC process_rqry(BaseQuery *& m_query,TxnManager *& m_txn);
-  RC process_rinit(BaseQuery *& m_query,TxnManager *& m_txn);
-  RC process_rprepare(BaseQuery *& m_query,TxnManager *& m_txn);
-  RC process_rpass(BaseQuery *& m_query,TxnManager *& m_txn);
-  RC process_rtxn(BaseQuery *& m_query,TxnManager *& m_txn);
-  RC process_log_msg(BaseQuery *& m_query,TxnManager *& m_txn);
-  RC process_log_msg_rsp(BaseQuery *& m_query,TxnManager *& m_txn);
-  RC init_phase(BaseQuery * m_query, TxnManager * m_txn); 
+  RC process_rfin(Message * msg);
+  RC process_rack(Message * msg);
+  RC process_rqry_rsp(Message * msg);
+  RC process_rqry(Message * msg);
+  RC process_rinit(Message * msg);
+  RC process_rprepare(Message * msg);
+  RC process_rpass(Message * msg);
+  RC process_rtxn(Message * msg);
+  RC process_log_msg(Message * msg);
+  RC process_log_msg_rsp(Message * msg);
+  RC init_phase(); 
 
 private:
   uint64_t _thd_txn_id;
 	ts_t 		_curr_ts;
 	ts_t 		get_next_ts();
-  uint64_t txn_starttime;
+  uint64_t prog_time;
 
 
 };

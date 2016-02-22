@@ -27,6 +27,21 @@ class BaseQuery;
 class BaseClientQuery;
 class Workload;
 
+struct abort_entry {
+  uint64_t penalty_end;
+  uint64_t txn_id;
+  struct abort_entry * next;
+  struct abort_entry * prev;
+  abort_entry() {
+  }
+  abort_entry(uint64_t penalty_end, uint64_t txn_id) {
+    this->penalty_end = penalty_end;
+    this->txn_id = txn_id;
+    this->next = NULL;
+    this->prev = NULL;
+  }
+};
+
 struct wq_entry {
   BaseQuery * qry;
   uint64_t starttime;
@@ -58,36 +73,12 @@ private:
   pthread_mutex_t mtx;
 };
 
-// Really a linked list
-class QWorkQueueHelper {
+class AbortQueue {
 public:
-  void init(QHash * hash);
-  bool poll_next_query();
-  uint64_t get_cnt() {return cnt;}
-  void finish(uint64_t time); 
-  void abort_finish(uint64_t time); 
-  void add_query(BaseQuery * qry);
-  int add_abort_query(BaseQuery * qry);
-  int check_abort_query();
-  BaseQuery * get_next_query(int id);
-  BaseQuery * get_next_query_client();
-  void remove_query(BaseQuery * qry);
-  void done(uint64_t id);
-  bool poll_abort(); 
-  BaseQuery * get_next_abort_query();
-
-
-private:
-  uint64_t cnt;
-  pthread_mutex_t mtx;
-  pthread_cond_t cond;
-  wq_entry_t head;
-  wq_entry_t tail;
-  uint64_t last_add_time;
-  QHash * hash;
+  abort_entry * head;
+  abort_entry * tail;
 
 };
-
 
 class QWorkQueue {
 public:
@@ -124,10 +115,7 @@ private:
   moodycamel::ConcurrentQueue<BaseQuery*,moodycamel::ConcurrentQueueDefaultTraits> wq;
   moodycamel::ConcurrentQueue<BaseQuery*,moodycamel::ConcurrentQueueDefaultTraits> new_wq;
   moodycamel::ConcurrentQueue<BaseQuery*,moodycamel::ConcurrentQueueDefaultTraits> rem_wq;
-  moodycamel::ConcurrentQueue<BaseQuery*,moodycamel::ConcurrentQueueDefaultTraits> aq;
   //moodycamel::ConcurrentQueue<BaseQuery*,moodycamel::ConcurrentQueueDefaultTraits> sched_wq;
-  BaseQuery * aq_head;
-  QWorkQueueHelper * queue;
   QHash * hash;
   int q_len;
   uint64_t wq_cnt;

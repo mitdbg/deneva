@@ -24,12 +24,7 @@
 
 class Workload;
 
-enum YCSBRemTxnType {
-  YCSB_0,
-  YCSB_1,
-  YCSB_FIN,
-  YCSB_RDONE
-};
+
 // Each YCSBQuery contains several ycsb_requests, 
 // each of which is a RD, WR or SCAN 
 // to a single table
@@ -39,30 +34,17 @@ public:
 //	char table_name[80];
 	access_t acctype; 
 	uint64_t key;
-	// for each field (string) in the row, shift the string to left by 1 character
-	// and fill the right most character with value
 	char value;
 	// only for (qtype == SCAN)
 	UInt32 scan_len;
 };
 
-class YCSBClientQuery : public BaseClientQuery {
-  public:
-	void client_init(uint64_t thd_id, Workload * h_wl);
-  void client_init(uint64_t thd_id, Workload * h_wl, uint64_t node_id);
-  void client_init();
-  
-  // calvin
-  //void client_query(BaseClientQuery * query, uint64_t dest_id, uint64_t batch_num,
-//		  txnid_t txn_id);
-
-	uint64_t request_cnt;
-	ycsb_request * requests;
+class YCSBQueryGenerator : public QueryGenerator {
+public:
+  BaseQuery * create_query(Workload * h_wl, uint64_t home_partition_id);
 
 private:
-	void gen_requests(uint64_t thd_id, Workload * h_wl);
-	void gen_requests2(uint64_t thd_id, Workload * h_wl);
-	void gen_requests3(uint64_t thd_id, Workload * h_wl);
+	BaseQuery * gen_requests(uint64_t home_partition_id, Workload * h_wl);
 	// for Zipfian distribution
 	double zeta(uint64_t n, double theta);
 	uint64_t zipf(uint64_t n, double theta);
@@ -72,31 +54,23 @@ private:
 	static double denom;
 	double zeta_2_theta;
 
+
 };
 
-// Beware diamond inheritance...
 class YCSBQuery : public BaseQuery {
 public:
+
+  void print();
+  
+  std::vector<ycsb_request *> requests;
 	void init(uint64_t thd_id, Workload * h_wl);
   void init();
-  void reset();
-  void unpack_rsp(BaseQuery * query, void * d); 
-  void client_query(BaseQuery * query, uint64_t dest_id) {} 
   uint64_t participants(bool *& pps,Workload * wl); 
-  void deep_copy(BaseQuery * qry); 
   bool readonly();
 	
-  BaseQuery * merge(BaseQuery * query); 
-void unpack(BaseQuery * query, void * d) ;
-void remote_qry(BaseQuery * query, int type, int dest_id) ;
-void remote_rsp(BaseQuery * query) ;
-//void unpack_client(BaseQuery * query, void * d) ;
-
   uint64_t access_cnt;
 	uint64_t request_cnt;
-	ycsb_request * requests;
 
-	YCSBRemTxnType txn_rtype;
   uint64_t rid;
 	uint64_t req_i;
   ycsb_request req;

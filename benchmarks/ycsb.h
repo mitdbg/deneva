@@ -25,6 +25,13 @@
 class YCSBQuery;
 class ycsb_request;
 
+enum YCSBRemTxnType {
+  YCSB_0,
+  YCSB_1,
+  YCSB_FIN,
+  YCSB_RDONE
+};
+
 class YCSBWorkload : public Workload {
 public :
 	RC init();
@@ -50,26 +57,24 @@ class YCSBTxnManager : public TxnManager
 {
 public:
 	void init(Workload * h_wl);
-  bool conflict(BaseQuery * query1,BaseQuery * query2);
-  void read_keys(BaseQuery * query); 
-  RC acquire_locks(BaseQuery * query); 
-	RC run_txn(BaseQuery * query);
-	RC run_rem_txn(BaseQuery * query);
-	RC run_calvin_txn(BaseQuery * query);
-	void rem_txn_rsp(BaseQuery * query);
+  RC acquire_locks(); 
+	RC run_txn();
+  RC run_txn_post_wait(); 
+	RC run_calvin_txn();
 private:
-void 		merge_txn_rsp(BaseQuery * m_query1, BaseQuery *m_query2) ;
-void rtn_ycsb_state(BaseQuery * query);
-void next_ycsb_state(BaseQuery * query);
-RC run_txn_state(BaseQuery * query);
-RC run_ycsb_0(ycsb_request * req,row_t *& row_local);
-RC run_ycsb_1(access_t acctype, row_t * row_local);
-RC run_ycsb(BaseQuery * query);
-	uint64_t row_cnt;
-  bool fin;
-  bool rem_done;
+  void next_ycsb_state();
+  RC run_txn_state();
+  RC run_ycsb_0(ycsb_request * req,row_t *& row_local);
+  RC run_ycsb_1(access_t acctype, row_t * row_local);
+  RC run_ycsb();
+  bool is_done() ;
+  bool is_local_request(uint64_t idx) ;
+  RC send_remote_request() ;
+
   row_t * row;
 	YCSBWorkload * _wl;
+	YCSBRemTxnType state;
+  uint64_t next_record_id;
 };
 
 #endif

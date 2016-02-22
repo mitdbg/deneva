@@ -94,12 +94,6 @@ void Message::mcopy_from_query(BaseQuery * qry) {
   txn_id = qry->txn_id;
 }
 
-void Message::mcopy_to_query(BaseQuery * qry) {
-  qry->rtype = rtype;
-  qry->txn_id = txn_id;
-
-}
-
 void Message::mcopy_from_buf(char * buf) {
   uint64_t ptr = 0;
   COPY_VAL(rtype,buf,ptr);
@@ -677,3 +671,4 @@ void YCSBQueryMessage::copy_to_buf(char * buf) {
     COPY_BUF(buf,requests[i],ptr);
   }
 }
+

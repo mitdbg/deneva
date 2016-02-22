@@ -32,16 +32,15 @@ public:
   uint64_t txn_id;
 
   uint64_t mget_size();
+  uint64_t get_txn_id() {return txn_id;}
   void mcopy_from_buf(char * buf);
   void mcopy_to_buf(char * buf);
   void mcopy_from_query(BaseQuery * qry);
-  void mcopy_to_query(BaseQuery * qry);
+  RemReqType get_rtype() {return rtype;}
 
   virtual uint64_t get_size() = 0;
   virtual void copy_from_buf(char * buf) = 0;
   virtual void copy_to_buf(char * buf) = 0;
-  virtual void copy_from_query(BaseQuery * qry) = 0;
-  virtual void copy_to_query(BaseQuery * qry) = 0;
   virtual void init() = 0;
 };
 
@@ -64,6 +63,7 @@ public:
   void copy_to_query(BaseQuery * qry);
   uint64_t get_size();
   void init() {}
+  bool is_abort() { return rc == Abort;}
 
   uint64_t pid;
   RC rc;
@@ -236,6 +236,20 @@ public:
   ycsb_request * requests;
 
 };
+
+class TPCCQueryMessage : public QueryMessage {
+public:
+  void copy_from_buf(char * buf);
+  void copy_to_buf(char * buf);
+  void copy_from_query(BaseQuery * qry);
+  void copy_to_query(BaseQuery * qry);
+  uint64_t get_size();
+  void init();
+
+	TPCCRemTxnType state;
+
+};
+
 
 
 #endif

@@ -25,14 +25,17 @@ class BaseQuery;
 class row_t;
 
 struct txn_node {
- public:
-    TxnManager * txn;
-    BaseQuery * qry;
-    struct txn_node * next;
-    struct txn_node * prev;
+  TxnManager * txn_man;
+  uint64_t return_id; // Client ID or Home partition ID
+  uint64_t client_startts; // For sequencer
+  uint64_t abort_penalty;
+  txn_node * next;
+  txn_node * prev;
+
 };
 
 typedef txn_node * txn_node_t;
+
 
 struct pool_node {
  public:
@@ -61,8 +64,6 @@ public:
   bool empty(uint64_t node_id);
   void add_txn(uint64_t node_id, TxnManager * txn, BaseQuery * qry);
   void get_txn(uint64_t node_id, uint64_t txn_id,uint64_t batch_id,TxnManager *& txn,BaseQuery *& qry);
-  //TxnManager * get_txn(uint64_t node_id, uint64_t txn_id);
-  //BaseQuery * get_qry(uint64_t node_id, uint64_t txn_id);
   void dump();
   void restart_txn(uint64_t txn_id,uint64_t batch_id);
   void delete_all();

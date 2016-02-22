@@ -32,56 +32,22 @@
 #include "mem_alloc.h"
 #include "query.h"
 #include "msg_queue.h"
+#include "message.h"
 
 void YCSBTxnManager::init(Workload * h_wl) {
 	TxnManager::init(h_wl);
 	_wl = (YCSBWorkload *) h_wl;
+  state = YCSB_0;
+  next_record_id = 0;
 }
 
-bool YCSBTxnManager::conflict(BaseQuery * query1,BaseQuery * query2){
-  return false;
-}
-
-void YCSBTxnManager::merge_txn_rsp(BaseQuery * query1, BaseQuery *query2) { 
-	YCSBQuery * m_query1 = (YCSBQuery *) query1;
-	YCSBQuery * m_query2 = (YCSBQuery *) query2;
-
-  if(m_query1->rc == Abort) {
-    m_query2->rc = m_query1->rc;
-    m_query2->txn_rtype = YCSB_FIN;
-    //assert(GET_NODE_ID(m_query2->pid) == g_node_id);
-    //assert(GET_NODE_ID(m_query1->pid) == g_node_id);
-  }
-
-}
-
-void YCSBTxnManager::read_keys(BaseQuery * query) {
-  assert(CC_ALG == VLL);
-	YCSBQuery * m_query = (YCSBQuery *) query;
-	// access the indexes. This is not in the critical section
-	for (uint32_t rid = 0; rid < m_query->request_cnt; rid ++) {
-		ycsb_request * req = &m_query->requests[rid];
-		uint64_t part_id = _wl->key_to_part( req->key );
-    if(GET_NODE_ID(part_id) != g_node_id)
-      continue;
-		INDEX * index = _wl->the_index;
-		itemid_t * item;
-		item = index_read(index, req->key, part_id);
-		row_t * row = ((row_t *)item->location);
-    row_t * row_local;
-		// the following line adds the read/write sets to txn->accesses
-		get_row(row, req->acctype, row_local);
-	}
-}
-
-RC YCSBTxnManager::acquire_locks(BaseQuery * query) {
+RC YCSBTxnManager::acquire_locks() {
   assert(CC_ALG == VLL || CC_ALG == CALVIN);
-	YCSBQuery * m_query = (YCSBQuery *) query;
   locking_done = false;
   RC rc = RCOK;
   incr_lr();
-	for (uint32_t rid = 0; rid < m_query->request_cnt; rid ++) {
-		ycsb_request * req = &m_query->requests[rid];
+	for (uint32_t rid = 0; rid < query->request_cnt; rid ++) {
+		ycsb_request * req = query->requests[rid];
 		uint64_t part_id = _wl->key_to_part( req->key );
     if(GET_NODE_ID(part_id) != g_node_id)
       continue;
@@ -110,203 +76,113 @@ RC YCSBTxnManager::acquire_locks(BaseQuery * query) {
 }
 
 
-RC YCSBTxnManager::run_txn(BaseQuery * query) {
-  /*
-#if MODE==TWOPC
-  YCSBQuery * m_query = (YCSBQuery*) query;
-  m_query->rem_req_state = YCSB_FIN;
-	return finish(query,false);
-#endif
-*/
-#if MODE == SETUP_MODE
-  return RCOK;
-#endif
+RC YCSBTxnManager::run_txn() {
   RC rc = RCOK;
-  rem_done = false;
-  fin = false;
   uint64_t thd_prof_start = get_sys_clock();
 
 #if CC_ALG == CALVIN
   rc = run_ycsb(query);
   return rc;
 #endif
-#if DEBUG_DISTR
-	YCSBQuery * m_query = (YCSBQuery *) query;
-  if(IS_LOCAL(m_query->txn_id) && m_query->txn_rtype == YCSB_0 && m_query->rid == 0) {
-    printf("REQ %ld: %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld\n",m_query->txn_id
-        ,GET_NODE_ID(m_query->requests[0].key)
-        ,GET_NODE_ID(m_query->requests[1].key)
-        ,GET_NODE_ID(m_query->requests[2].key)
-        ,GET_NODE_ID(m_query->requests[3].key)
-        ,GET_NODE_ID(m_query->requests[4].key)
-        ,GET_NODE_ID(m_query->requests[5].key)
-        ,GET_NODE_ID(m_query->requests[6].key)
-        ,GET_NODE_ID(m_query->requests[7].key)
-        ,GET_NODE_ID(m_query->requests[8].key)
-        ,GET_NODE_ID(m_query->requests[9].key)
-        );
-  }
-#endif
-
-  // Resume query after hold
-  if(query->rc == WAIT_REM) {
-    rtn_ycsb_state(query);
+  if(IS_LOCAL(txn->txn_id) && state == YCSB_0 && next_record_id == 0) {
+    DEBUG("Running txn %ld\n",txn->txn_id);
+    query->print();
   }
 
-  if((CC_ALG != HSTORE && CC_ALG != HSTORE_SPEC) && this->rc == WAIT) {
-    assert(query->rc == WAIT || query->rc == RCOK);
-    get_row_post_wait(row);
-    next_ycsb_state(query);
-    this->rc = RCOK;
+  while(rc == RCOK && !is_done()) {
+    rc = run_txn_state();
   }
 
-  do {
-    rc = run_txn_state(query);
-    if(rc != RCOK)
-      break;
-    next_ycsb_state(query);
-  } while(!fin && !rem_done);
-
-  assert(rc != WAIT_REM || GET_NODE_ID(query->pid) == g_node_id);
+  if(is_done()) {
+    if(rc == RCOK) {
+      if(!IS_LOCAL(txn->txn_id)) {
+      } else {
+        commit();
+      }
+    }
+    if(rc == Abort)
+      abort();
+  }
 
   INC_STATS(get_thd_id(),thd_prof_wl1,get_sys_clock() - thd_prof_start);
   return rc;
 
 }
 
-void YCSBTxnManager::next_ycsb_state(BaseQuery * query) {
-	YCSBQuery * m_query = (YCSBQuery *) query;
-  switch(m_query->txn_rtype) {
+RC YCSBTxnManager::run_txn_post_wait() {
+    get_row_post_wait(row);
+    next_ycsb_state();
+    return RCOK;
+}
+
+bool YCSBTxnManager::is_done() {
+  return next_record_id == query->request_cnt;
+}
+
+void YCSBTxnManager::next_ycsb_state() {
+  switch(state) {
     case YCSB_0:
-      m_query->txn_rtype = YCSB_1;
+      state = YCSB_1;
       break;
-      //m_query->req = m_query->requests[m_query->rid];
     case YCSB_1:
-      /*
-      if(GET_NODE_ID(m_query->pid) != g_node_id) {
-        rem_done = true;
-        break;
-      }
-      */
-      m_query->rid++;
-      if(m_query->rid < m_query->request_cnt && m_query->rc !=Abort ) {
-        m_query->txn_rtype = YCSB_0;
-        m_query->req = m_query->requests[m_query->rid];
-        m_query->rc = RCOK;
+      next_record_id++;
+      if(next_record_id < query->request_cnt) {
+        state = YCSB_0;
       }
       else {
-        if(GET_NODE_ID(m_query->pid) == g_node_id) {
-          m_query->txn_rtype = YCSB_FIN;
-        } else {
-          rem_done = true;
-          break;
-        }
+        state = YCSB_FIN;
       }
+      break;
     case YCSB_FIN:
       break;
     default:
       assert(false);
   }
 }
-void YCSBTxnManager::rtn_ycsb_state(BaseQuery * query) {
-	YCSBQuery * m_query = (YCSBQuery *) query;
 
-  switch(m_query->txn_rtype) {
-    case YCSB_0:
-      m_query->rid+=m_query->rqry_req_cnt;
-      //m_query->rid++;
-      if(m_query->rid < m_query->request_cnt && m_query->rc != Abort) {
-        m_query->rc = RCOK;
-        m_query->txn_rtype = YCSB_0;
-        m_query->req = m_query->requests[m_query->rid];
-      }
-      else {
-        if(m_query->rc != Abort)
-          m_query->rc = RCOK;
-        m_query->txn_rtype = YCSB_FIN;
-        assert(GET_NODE_ID(m_query->pid) == g_node_id);
-      }
-      break;
-    case YCSB_1:
-      assert(false);
-    case YCSB_FIN:
-      if(m_query->rc != Abort)
-        m_query->rc = RCOK;
-      break;
-    default:
-      assert(false);
-  }
+bool YCSBTxnManager::is_local_request(uint64_t idx) {
+  return GET_NODE_ID(_wl->key_to_part(query->requests[idx]->key)) == g_node_id;
 }
 
-RC YCSBTxnManager::run_txn_state(BaseQuery * query) {
-	YCSBQuery * m_query = (YCSBQuery *) query;
-	//ycsb_request * req = &m_query->requests[m_query->rid];
-	ycsb_request * req = &m_query->req;
+RC YCSBTxnManager::send_remote_request() {
+  YCSBQuery * temp = new YCSBQuery;
+  uint64_t dest_node_id = GET_NODE_ID(query->requests[next_record_id]->key);
+  while(!is_local_request(next_record_id)) {
+    temp->requests.push_back(query->requests[next_record_id++]);
+  }
+  msg_queue.enqueue(Message::create_message((BaseQuery*)temp,RQRY),dest_node_id);
+  return WAIT_REM;
+}
+
+RC YCSBTxnManager::run_txn_state() {
+	ycsb_request * req = query->requests[next_record_id];
 	uint64_t part_id = _wl->key_to_part( req->key );
-  /*
-#if CC_ALG == HSTORE || CC_ALG == HSTORE_PART
-  bool loc = part_id == query->active_part;
-#else
-*/
-  bool loc = GET_NODE_ID(part_id) == get_node_id();
-//#endif
+  bool loc = GET_NODE_ID(part_id) == g_node_id;
 
 	RC rc = RCOK;
 
-	switch (m_query->txn_rtype) {
+	switch (state) {
 		case YCSB_0 :
       if(loc) {
         rc = run_ycsb_0(req,row);
       } else {
-        assert(GET_NODE_ID(m_query->pid) == g_node_id);
-
-#if MODE==QRY_ONLY_MODE
-
-        query->max_access = 0;
-        for(uint64_t i = 0; i < m_query->request_cnt; i++) {
-          if((uint64_t)_wl->key_to_part(m_query->requests[i].key) == part_id)
-            query->max_access++;
-        }
-#endif
-        this->rem_row_cnt++;
-
-        m_query->rqry_req_cnt = 0;
-        for(uint64_t i = m_query->rid; i < m_query->request_cnt; i++) {
-          if(GET_NODE_ID(_wl->key_to_part(m_query->requests[i].key)) == get_node_id()
-              || GET_NODE_ID(_wl->key_to_part(m_query->requests[i].key)) != GET_NODE_ID(part_id))
-            break;
-          m_query->rqry_req_cnt++;
-        }
-        assert(m_query->rqry_req_cnt > 0);
-        query->dest_part = part_id;
-        query->dest_id = GET_NODE_ID(part_id);
-        query->rem_req_state = YCSB_0;
-        rc = WAIT_REM;
+        send_remote_request();
       }
+
       break;
 		case YCSB_1 :
       rc = run_ycsb_1(req->acctype,row);
       break;
     case YCSB_FIN :
-      fin = true;
-      query->rem_req_state = YCSB_FIN;
-      assert(GET_NODE_ID(m_query->pid) == g_node_id);
-		  return finish(m_query,false);
+      state = YCSB_FIN;
+		  return finish(query,false);
     default:
 			assert(false);
   }
 
-  if(rc == WAIT) {
-    assert(CC_ALG != HSTORE && CC_ALG != HSTORE_SPEC);
-    return rc;
-  }
-  m_query->rc = rc;
-  if(rc == Abort && !fin && GET_NODE_ID(m_query->pid) == g_node_id) {
-    query->rem_req_state = YCSB_FIN;
-    rc = finish(m_query,false);
-    if(rc == RCOK)
-      rc = m_query->rc;
-  }
+  if(rc == RCOK)
+    next_ycsb_state();
+
   return rc;
 }
 
@@ -314,11 +190,6 @@ RC YCSBTxnManager::run_ycsb_0(ycsb_request * req,row_t *& row_local) {
     RC rc = RCOK;
 		int part_id = _wl->key_to_part( req->key );
 		access_t type = req->acctype;
-    // TODO: remove for parallel YCSB!
-#if CC_ALG == VLL
-    get_row_vll(type,row_local);
-    return rc;
-#endif
 	  itemid_t * m_item;
 		m_item = index_read(_wl->the_index, req->key, part_id);
 
@@ -335,48 +206,24 @@ RC YCSBTxnManager::run_ycsb_1(access_t acctype, row_t * row_local) {
 		char * data = row_local->get_data();
 		uint64_t fval __attribute__ ((unused));
     fval = *(uint64_t *)(&data[fid * 100]);
-    //INC_STATS(get_thd_id(), debug1, fval);
 
   } else {
     assert(acctype == WR);
 		int fid = 0;
-	  //char * data = row->get_data();
 	  char * data = row_local->get_data();
 	  *(uint64_t *)(&data[fid * 100]) = 0;
   } 
   return RCOK;
 }
-RC YCSBTxnManager::run_calvin_txn(BaseQuery * query) {
-	YCSBQuery * m_query = (YCSBQuery *) query;
+RC YCSBTxnManager::run_calvin_txn() {
   RC rc = RCOK;
+  uint64_t participant_cnt;
+  uint64_t active_cnt;
+  uint64_t participant_nodes[10];
+  uint64_t active_nodes[10];
   while(rc == RCOK && this->phase < 6) {
     switch(this->phase) {
       case 1:
-#if DEBUG_DISTR
-    printf("REQ (%ld,%ld): %ld,%d; %ld,%d; %ld,%d; %ld,%d; %ld,%d; %ld,%d; %ld,%d; %ld,%d; %ld,%d; %ld,%d;\n",m_query->txn_id,m_query->batch_id
-        ,GET_NODE_ID(m_query->requests[0].key)
-        ,GET_NODE_ID(m_query->requests[0].acctype)
-        ,GET_NODE_ID(m_query->requests[1].key)
-        ,GET_NODE_ID(m_query->requests[1].acctype)
-        ,GET_NODE_ID(m_query->requests[2].key)
-        ,GET_NODE_ID(m_query->requests[2].acctype)
-        ,GET_NODE_ID(m_query->requests[3].key)
-        ,GET_NODE_ID(m_query->requests[3].acctype)
-        ,GET_NODE_ID(m_query->requests[4].key)
-        ,GET_NODE_ID(m_query->requests[4].acctype)
-        ,GET_NODE_ID(m_query->requests[5].key)
-        ,GET_NODE_ID(m_query->requests[5].acctype)
-        ,GET_NODE_ID(m_query->requests[6].key)
-        ,GET_NODE_ID(m_query->requests[6].acctype)
-        ,GET_NODE_ID(m_query->requests[7].key)
-        ,GET_NODE_ID(m_query->requests[7].acctype)
-        ,GET_NODE_ID(m_query->requests[8].key)
-        ,GET_NODE_ID(m_query->requests[8].acctype)
-        ,GET_NODE_ID(m_query->requests[9].key)
-        ,GET_NODE_ID(m_query->requests[9].acctype)
-        );
-#endif
-
 
         // Phase 1: Read/write set analysis
         participant_cnt = 0;
@@ -386,13 +233,13 @@ RC YCSBTxnManager::run_calvin_txn(BaseQuery * query) {
           active_nodes[i] = false;
         }
 
-        for(uint64_t i = 0; i < m_query->request_cnt; i++) {
-          uint64_t req_nid = GET_NODE_ID(_wl->key_to_part(m_query->requests[i].key));
+        for(uint64_t i = 0; i < query->request_cnt; i++) {
+          uint64_t req_nid = GET_NODE_ID(_wl->key_to_part(query->requests[i]->key));
           if(!participant_nodes[req_nid]) {
             participant_cnt++;
             participant_nodes[req_nid] = true;
           }
-          if(m_query->requests[i].acctype == WR && !active_nodes[req_nid]) {
+          if(query->requests[i]->acctype == WR && !active_nodes[req_nid]) {
             active_cnt++;
             active_nodes[req_nid] = true;
           }
@@ -401,7 +248,7 @@ RC YCSBTxnManager::run_calvin_txn(BaseQuery * query) {
         break;
       case 2:
         // Phase 2: Perform local reads
-        rc = run_ycsb(query);
+        rc = run_ycsb();
         //release_read_locks(query);
 
         ATOM_ADD(this->phase,1); //3
@@ -414,7 +261,7 @@ RC YCSBTxnManager::run_calvin_txn(BaseQuery * query) {
           if(get_rsp_cnt() == participant_cnt-1) {
             rc = RCOK;
           } else {
-            DEBUG("Phase4 (%ld,%ld)\n",query->txn_id,query->batch_id);
+            DEBUG("Phase4 (%ld,%ld)\n",txn->txn_id,txn->batch_id);
             rc = WAIT;
           }
         } else { // Done
@@ -429,14 +276,13 @@ RC YCSBTxnManager::run_calvin_txn(BaseQuery * query) {
         break;
       case 5:
         // Phase 5: Execute transaction / perform local writes
-        rc = run_ycsb(query);
-        query->rc = rc;
+        rc = run_ycsb();
         rc = calvin_finish(query);
         ATOM_ADD(this->phase,1); //6
         if(get_rsp2_cnt() == active_cnt-1) {
           rc = RCOK;
         } else {
-        DEBUG("Phase6 (%ld,%ld)\n",query->txn_id,query->batch_id);
+        DEBUG("Phase6 (%ld,%ld)\n",txn->txn_id,txn->batch_id);
             rc = WAIT;
         }
         break;
@@ -447,20 +293,19 @@ RC YCSBTxnManager::run_calvin_txn(BaseQuery * query) {
   return rc;
 }
 
-RC YCSBTxnManager::run_ycsb(BaseQuery * query) {
+RC YCSBTxnManager::run_ycsb() {
   RC rc = RCOK;
-	YCSBQuery * m_query = (YCSBQuery *) query;
   assert(CC_ALG == CALVIN);
   
-  for (uint64_t i = 0; i < m_query->request_cnt; i++) {
-	  ycsb_request * req = &m_query->requests[i];
+  for (uint64_t i = 0; i < query->request_cnt; i++) {
+	  ycsb_request * req = query->requests[i];
     if(this->phase == 2 && req->acctype == WR)
       continue;
     if(this->phase == 5 && req->acctype == RD)
       continue;
 
 		uint64_t part_id = _wl->key_to_part( req->key );
-    bool loc = GET_NODE_ID(part_id) == get_node_id();
+    bool loc = GET_NODE_ID(part_id) == g_node_id;
 
     if(!loc)
       continue;
@@ -472,7 +317,6 @@ RC YCSBTxnManager::run_ycsb(BaseQuery * query) {
     rc = run_ycsb_1(req->acctype,row);
     assert(rc == RCOK);
   }
-	m_query->rc = rc;
   return rc;
 
 }
