@@ -214,7 +214,6 @@ RC row_t::get_row(access_t type, TxnManager * txn, row_t *& row) {
 #endif
 
 	if (rc == RCOK) {
-    txn->rc = rc; 
 		row = this;
 	} else if (rc == Abort) {} 
 	else if (rc == WAIT) {

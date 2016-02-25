@@ -19,7 +19,6 @@
 
 #include "wl.h"
 #include "txn.h"
-#include "remote_query.h"
 #include "query.h"
 #include "row.h"
 

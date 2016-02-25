@@ -36,7 +36,7 @@ Row_occ::access(TxnManager * txn, TsType type) {
 	//pthread_mutex_lock( _latch );
   sem_wait(&_semaphore);
 	if (type == R_REQ) {
-		if (txn->start_ts < wts) {
+		if (txn->get_start_timestamp() < wts) {
       INC_STATS(txn->get_thd_id(),abort_from_ts,1);
 			rc = Abort;
     }

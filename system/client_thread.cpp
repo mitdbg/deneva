@@ -34,7 +34,7 @@ void ClientThread::setup() {
 		uint64_t nnodes = g_node_cnt + g_client_node_cnt;
 		for(uint64_t i = 0; i < nnodes; i++) {
 			if(i != g_node_id) {
-        msg_queue.enqueue(Message::create_message(NULL,INIT_DONE),i);
+        msg_queue.enqueue(Message::create_message(INIT_DONE),i);
 			}
 		}
   }
@@ -43,7 +43,7 @@ void ClientThread::setup() {
 RC ClientThread::run() {
 
   tsetup();
-  BaseClientQuery * m_query;
+  BaseQuery * m_query;
 	uint64_t iters = 0;
 	uint32_t num_txns_sent = 0;
 	int txns_sent[g_servers_per_client];
@@ -59,6 +59,7 @@ RC ClientThread::run() {
       break;
     }
 		uint32_t next_node = (((iters++) * g_client_thread_cnt) + _thd_id )% g_servers_per_client;
+		uint32_t next_node_id = next_node + g_server_start_node;
 		// Just in case...
 		if (iters == UINT64_MAX)
 			iters = 0;
@@ -72,12 +73,12 @@ RC ClientThread::run() {
         break;
 			continue;
 		}
-		DEBUG("Client: thread %lu sending query to node: %lu\n",
-				_thd_id, GET_NODE_ID(m_query->pid));
+		DEBUG("Client: thread %lu sending query to node: %u\n",
+				_thd_id, next_node_id);
 
-    msg_queue.enqueue(Message::create_message((BaseQuery*)m_query,RTXN),GET_NODE_ID(m_query->pid));
+    msg_queue.enqueue(Message::create_message((BaseQuery*)m_query,RTXN),next_node_id);
 		num_txns_sent++;
-		txns_sent[GET_NODE_ID(m_query->pid)-g_server_start_node]++;
+		txns_sent[next_node]++;
     INC_STATS(get_thd_id(),txn_sent,1);
 
 		if(get_sys_clock() - prog_time >= g_prog_timer) {

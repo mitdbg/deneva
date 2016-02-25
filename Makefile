@@ -1,5 +1,6 @@
 CC=g++
 CFLAGS=-Wall -g -gdwarf-3 -std=c++0x
+#CFLAGS=-Wall -g -gdwarf-3 -std=c++11
 JEMALLOC=./jemalloc-4.0.3
 NNMSG=./nanomsg-0.5-beta
 
@@ -10,6 +11,7 @@ DEPS = -I. -I./benchmarks -I./client/ -I./concurrency_control -I./storage -I./tr
 
 CFLAGS += $(DEPS) -D NOGRAPHITE=1 -Werror -Wno-sizeof-pointer-memaccess
 LDFLAGS = -Wall -L. -L$(NNMSG) -L$(JEMALLOC)/lib -Wl,-rpath,$(JEMALLOC)/lib -pthread -gdwarf-3 -lrt -std=c++0x
+#LDFLAGS = -Wall -L. -L$(NNMSG) -L$(JEMALLOC)/lib -Wl,-rpath,$(JEMALLOC)/lib -pthread -gdwarf-3 -lrt -std=c++11
 LDFLAGS += $(CFLAGS)
 LIBS = -lnanomsg -lanl -ljemalloc 
 

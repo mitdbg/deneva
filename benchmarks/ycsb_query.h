@@ -20,7 +20,6 @@
 #include "global.h"
 #include "helper.h"
 #include "query.h"
-#include "remote_query.h"
 
 class Workload;
 
@@ -63,8 +62,8 @@ public:
   void print();
   
   std::vector<ycsb_request *> requests;
-	void init(uint64_t thd_id, Workload * h_wl);
-  void init();
+	void init(uint64_t thd_id, Workload * h_wl) {};
+  void init() {};
   uint64_t participants(bool *& pps,Workload * wl); 
   bool readonly();
 	

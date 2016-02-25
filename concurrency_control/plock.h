@@ -19,7 +19,6 @@
 
 #include "global.h"
 #include "helper.h"
-#include "remote_query.h"
 #include "query.h"
 
 class TxnManager;

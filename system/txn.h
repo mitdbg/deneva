@@ -49,8 +49,8 @@ public:
 
 class Transaction {
 public:
-	Access **		accesses;
-	int 			num_accesses_alloc;
+  void init();
+  vector<Access*> accesses;
   uint64_t timestamp;
 	// For OCC
   uint64_t start_timestamp;
@@ -60,7 +60,7 @@ public:
   uint64_t row_cnt;
   // Internal state
   TxnState state;
-  std::vector<row_t*> insert_rows;
+  vector<row_t*> insert_rows;
 	txnid_t 		txn_id;
   uint64_t batch_id;
 };
@@ -91,24 +91,22 @@ public:
   void set_query(BaseQuery * qry);
   BaseQuery * get_query();
   bool is_done();
+  void commit_stats(); 
 
-  void      set_pid(uint64_t pid);
-  uint64_t get_pid();
-	void 			set_ts(ts_t timestamp);
-	ts_t 			get_ts();
-	void 			set_start_ts(uint64_t start_ts);
-	ts_t 			get_start_ts();
-  uint64_t get_rsp_cnt(); 
-  uint64_t get_rsp2_cnt(); 
+	void 			set_timestamp(ts_t timestamp);
+	ts_t 			get_timestamp();
+	void 			set_start_timestamp(uint64_t start_timestamp);
+	ts_t 			get_start_timestamp();
+  uint64_t get_rsp_cnt() {return rsp_cnt;} 
   uint64_t incr_rsp(int i); 
   uint64_t decr_rsp(int i);
-  uint64_t incr_rsp2(int i); 
-  uint64_t decr_rsp2(int i);
   uint64_t incr_lr(); 
   uint64_t decr_lr();
 
-  void commit() {assert(false);};
-  void abort() {assert(false);};
+  void commit() {assert(false);}
+  void abort() {assert(false);}
+
+  void release_locks(RC rc);
 
 	pthread_mutex_t txn_lock;
 	row_t * volatile cur_row;
@@ -121,20 +119,38 @@ public:
 	int volatile 	ready_ulk;
   RC        validate();
 	RC 				finish(RC rc, uint64_t * parts, uint64_t part_cnt);
-	RC 				finish_local(RC rc, uint64_t * parts, uint64_t part_cnt);
-	RC 				finish(BaseQuery * query,bool fin);
+	RC 				finish(bool fin);
 	void 			cleanup(RC rc);
-  RC              rem_fin_txn(BaseQuery * query);
-  RC              loc_fin_txn(BaseQuery * query);
   RC send_remote_reads(BaseQuery * qry); 
   RC calvin_finish(BaseQuery * qry); 
+  void set_end_timestamp(uint64_t timestamp) {txn->end_timestamp = timestamp;}
+  uint64_t get_write_set_size() {return txn->write_cnt;}
+  uint64_t get_read_set_size() {return txn->row_cnt - txn->write_cnt;}
+  access_t get_access_type(uint64_t access_id) {return txn->accesses[access_id]->type;}
+  row_t * get_access_original_row(uint64_t access_id) {return txn->accesses[access_id]->orig_row;}
+  void swap_accesses(uint64_t a, uint64_t b) {
+					Access * tmp = txn->accesses[a]; 
+					txn->accesses[a] = txn->accesses[b];
+					txn->accesses[b] = tmp;
+  }
+  uint64_t get_batch_id() {return txn->batch_id;}
 
 	////////////////////////////////
 	// LOGGING
 	////////////////////////////////
 //	void 			gen_log_entry(int &length, void * log);
+  Transaction * txn;
+  BaseQuery * query;
+  uint64_t client_startts;
+  uint64_t client_id;
+  uint64_t get_abort_cnt() {assert(false);}
+  uint64_t abort_cnt;
+  int received_response(RC rc) {assert(false);}
+  RC get_rc() {assert(false);}
+  void send_rfin_messages(RC rc) {assert(false);}
 
 protected:	
+
   int rsp_cnt;
 	void 			insert_row(row_t * row, table_t * table);
 
@@ -157,15 +173,7 @@ protected:
   row_t * last_row_rtn;
   access_t last_type;
 
-  Transaction * txn;
-  BaseQuery * query;
-  /*
-#if WORKLOAD == YCSB
-  YCSBQuery * query;
-#elif WORKLOAD == TPCC
-  TPCCQuery * query;
-#endif
-*/
+  sem_t rsp_mutex;
 };
 
 #endif

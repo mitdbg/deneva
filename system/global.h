@@ -31,6 +31,7 @@
 #include <list>
 #include <map>
 #include <set>
+#include <queue>
 #include <string>
 #include <vector>
 #include <sstream>
@@ -41,7 +42,7 @@
 #include "pthread.h"
 #include "config.h"
 #include "stats.h"
-#include "work_queue.h"
+//#include "work_queue.h"
 #include "pool.h"
 #include "txn_table.h"
 #include "logger.h"
@@ -67,6 +68,7 @@ class MsgPool;
 class QryPool;
 class TxnTable;
 class QWorkQueue;
+class AbortQueue;
 class MessageQueue;
 class Client_query_queue;
 class Client_txn;
@@ -104,7 +106,7 @@ extern MsgPool msg_pool;
 extern QryPool qry_pool;
 extern TxnTable txn_table;
 extern QWorkQueue work_queue;
-extern QWorkQueue abort_queue;
+extern AbortQueue abort_queue;
 extern MessageQueue msg_queue;
 extern Client_txn client_man;
 extern Sequencer seq_man;
@@ -210,7 +212,7 @@ extern UInt32 g_repl_type;
 extern UInt32 g_repl_cnt;
 
 enum RC { RCOK, Commit, Abort, WAIT, WAIT_REM, ERROR, FINISH, NONE };
-enum RemReqType {INIT_DONE,RLK, RULK, RQRY, RFIN, RLK_RSP, RULK_RSP, RQRY_RSP, RACK, RTXN, RINIT, RPREPARE,RPASS,RFWD,RDONE,CL_RSP,LOG_MSG,LOG_MSG_RSP,NO_MSG};
+enum RemReqType {INIT_DONE,RLK, RULK, CL_QRY, RQRY, RFIN, RLK_RSP, RULK_RSP, RQRY_RSP, RACK,RACK_PREP,RACK_FIN, RTXN, RINIT, RPREPARE,RPASS,RFWD,RDONE,CL_RSP,LOG_MSG,LOG_MSG_RSP,NO_MSG};
 
 /* Thread */
 typedef uint64_t txnid_t;

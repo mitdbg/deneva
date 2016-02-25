@@ -21,6 +21,28 @@
 #include "global.h"
 #include "message.h"
 
+std::vector<Message*> Message::create_messages(char * buf) {
+  std::vector<Message*> all_msgs;
+  char * data = buf;
+	uint64_t ptr = 0;
+  uint32_t dest_id;
+  uint32_t return_id;
+  uint32_t txn_cnt;
+  COPY_VAL(dest_id,data,ptr);
+  COPY_VAL(return_id,data,ptr);
+  COPY_VAL(txn_cnt,data,ptr);
+  assert(dest_id == g_node_id);
+  assert(ISCLIENTN(return_id) || ISSERVERN(return_id));
+  while(txn_cnt > 0) {
+    Message * msg = create_message(&data[ptr]);
+    msg->return_node_id = return_id;
+    ptr += msg->get_size();
+    all_msgs.push_back(msg);
+    --txn_cnt;
+  }
+  return all_msgs;
+}
+
 Message * Message::create_message(char * buf) {
  RemReqType rtype = NO_MSG;
  uint64_t ptr = 0;
@@ -30,12 +52,19 @@ Message * Message::create_message(char * buf) {
  return msg;
 }
 
-Message * Message::create_message(BaseQuery * qry, RemReqType rtype) {
+Message * Message::create_message(TxnManager * txn, RemReqType rtype) {
  Message * msg = create_message(rtype);
- msg->copy_from_query(qry);
+ msg->mcopy_from_txn(txn);
  return msg;
 }
 
+Message * Message::create_message(BaseQuery * query, RemReqType rtype) {
+  assert(rtype == RTXN);
+ Message * msg = create_message(rtype);
+ ((YCSBClientQueryMessage*)msg)->copy_from_query(query);
+ assert(false);// FIXME
+ return msg;
+}
 
 Message * Message::create_message(RemReqType rtype) {
   Message * msg;
@@ -62,9 +91,6 @@ Message * Message::create_message(RemReqType rtype) {
       msg = new ClientQueryMessage;
       msg->init();
       break;
-    case RINIT:
-      msg = new InitMessage;
-      break;
     case RPREPARE:
       msg = new PrepareMessage;
       break;
@@ -89,10 +115,14 @@ uint64_t Message::mget_size() {
   return size;
 }
 
-void Message::mcopy_from_query(BaseQuery * qry) {
-  //rtype = qry->rtype;
-  txn_id = qry->txn_id;
+void Message::mcopy_from_txn(TxnManager * txn) {
+  //rtype = query->rtype;
+  txn_id = txn->get_txn_id();
 }
+
+void Message::mcopy_to_txn(TxnManager * txn) {
+}
+
 
 void Message::mcopy_from_buf(char * buf) {
   uint64_t ptr = 0;
@@ -113,106 +143,89 @@ uint64_t QueryMessage::get_size() {
   return size;
 }
 
-void QueryMessage::copy_from_query(BaseQuery * qry) {
-  Message::mcopy_from_query(qry);
-  pid = qry->pid;
+void QueryMessage::copy_from_txn(TxnManager * txn) {
+  Message::mcopy_from_txn(txn);
 #if CC_ALG == WAIT_DIE || CC_ALG == TIMESTAMP || CC_ALG == MVCC || CC_ALG == VLL
-  ts = qry->ts;
+  ts = txn->get_timestamp();
 #endif
-#if CC_ALG == MVCC 
-  thd_id = qry->thd_id;
-#elif CC_ALG == OCC 
-  start_ts = qry->start_ts;
-#endif
-#if MODE==QRY_ONLY_MODE
-  max_access = qry->max_access;
+#if CC_ALG == OCC 
+  start_ts = txn->get_start_timestamp();
 #endif
 }
 
-void QueryMessage::copy_to_query(BaseQuery * qry) {
-  Message::mcopy_to_query(qry);
-  qry->pid = pid;
+void QueryMessage::copy_to_txn(TxnManager * txn) {
+  Message::mcopy_to_txn(txn);
 #if CC_ALG == WAIT_DIE || CC_ALG == TIMESTAMP || CC_ALG == MVCC || CC_ALG == VLL
-  qry->ts = ts;
+  query->ts = ts;
 #endif
-#if CC_ALG == MVCC 
-  qry->thd_id = thd_id;
-#elif CC_ALG == OCC 
-  qry->start_ts = start_ts;
-#endif
-#if MODE==QRY_ONLY_MODE
-  qry->max_access = max_access;
+#if CC_ALG == OCC 
+  query->start_ts = start_ts;
 #endif
 
 }
 
 void QueryMessage::copy_from_buf(char * buf) {
   Message::mcopy_from_buf(buf);
-  uint64_t ptr = Message::mget_size();
- COPY_VAL(pid,buf,ptr);
+  uint64_t ptr __attribute__ ((unused));
+  ptr = Message::mget_size();
 #if CC_ALG == WAIT_DIE || CC_ALG == TIMESTAMP || CC_ALG == MVCC || CC_ALG == VLL
  COPY_VAL(ts,buf,ptr);
 #endif
-#if CC_ALG == MVCC 
- COPY_VAL(thd_id,buf,ptr);
-#elif CC_ALG == OCC 
+#if CC_ALG == OCC 
  COPY_VAL(start_ts,buf,ptr);
-#endif
-#if MODE==QRY_ONLY_MODE
- COPY_VAL(max_access,buf,ptr);
 #endif
 }
 
 void QueryMessage::copy_to_buf(char * buf) {
   Message::mcopy_to_buf(buf);
-  uint64_t ptr = Message::mget_size();
- COPY_BUF(buf,pid,ptr);
+  uint64_t ptr __attribute__ ((unused));
+  ptr = Message::mget_size();
 #if CC_ALG == WAIT_DIE || CC_ALG == TIMESTAMP || CC_ALG == MVCC || CC_ALG == VLL
  COPY_BUF(buf,ts,ptr);
 #endif
-#if CC_ALG == MVCC 
- COPY_BUF(buf,thd_id,ptr);
-#elif CC_ALG == OCC 
+#if CC_ALG == OCC 
  COPY_BUF(buf,start_ts,ptr);
-#endif
-#if MODE==QRY_ONLY_MODE
- COPY_BUF(buf,max_access,ptr);
 #endif
 }
 
 /************************/
 
 void YCSBClientQueryMessage::init() {
-  requests = (ycsb_request*)mem_allocator.alloc(sizeof(ycsb_request)*g_req_per_query);
 }
 
 uint64_t YCSBClientQueryMessage::get_size() {
   uint64_t size = sizeof(YCSBClientQueryMessage);
-  size += sizeof(ycsb_request) * req_cnt;
+  size += sizeof(size_t);
+  size += sizeof(ycsb_request) * requests.size();
   return size;
 }
 
-void YCSBClientQueryMessage::copy_from_query(BaseQuery * qry) {
-  ClientQueryMessage::mcopy_from_query(qry);
-  req_cnt = ((YCSBQuery*)qry)->request_cnt;
-  for(uint64_t i = 0 ; i < req_cnt;i++) {
-    requests[i] = ((YCSBQuery*)qry)->requests[i];
-  }
+void YCSBClientQueryMessage::copy_from_query(BaseQuery * query) {
+  //ClientQueryMessage::mcopy_from_txn(txn);
+  requests.clear();
+  requests.insert(requests.begin(),((YCSBQuery*)(query))->requests.begin(),((YCSBQuery*)(query))->requests.end());
 }
 
-void YCSBClientQueryMessage::copy_to_query(BaseQuery * qry) {
-  ClientQueryMessage::copy_to_query(qry);
-  ((YCSBQuery*)qry)->request_cnt = req_cnt;
-  for(uint64_t i = 0 ; i < req_cnt;i++) {
-    ((YCSBQuery*)qry)->requests[i] = requests[i];
-  }
+
+void YCSBClientQueryMessage::copy_from_txn(TxnManager * txn) {
+  ClientQueryMessage::mcopy_from_txn(txn);
+  requests.clear();
+  requests.insert(requests.begin(),((YCSBQuery*)(txn->query))->requests.begin(),((YCSBQuery*)(txn->query))->requests.end());
+}
+
+void YCSBClientQueryMessage::copy_to_txn(TxnManager * txn) {
+  ClientQueryMessage::copy_to_txn(txn);
+  ((YCSBQuery*)(txn->query))->requests.clear();
+  ((YCSBQuery*)(txn->query))->requests.insert(((YCSBQuery*)(txn->query))->requests.begin(),requests.begin(),requests.end());
 }
 
 void YCSBClientQueryMessage::copy_from_buf(char * buf) {
   ClientQueryMessage::copy_from_buf(buf);
   uint64_t ptr = ClientQueryMessage::get_size();
-  COPY_VAL(req_cnt,buf,ptr);
-  for(uint64_t i = 0 ; i < req_cnt;i++) {
+  size_t size;
+  COPY_VAL(size,buf,ptr);
+  requests.resize(size);
+  for(uint64_t i = 0 ; i < size;i++) {
     COPY_VAL(requests[i],buf,ptr);
   }
 }
@@ -220,8 +233,9 @@ void YCSBClientQueryMessage::copy_from_buf(char * buf) {
 void YCSBClientQueryMessage::copy_to_buf(char * buf) {
   ClientQueryMessage::copy_to_buf(buf);
   uint64_t ptr = ClientQueryMessage::get_size();
-  COPY_BUF(buf,req_cnt,ptr);
-  for(uint64_t i = 0; i < req_cnt; i++) {
+  size_t size = requests.size();
+  COPY_BUF(buf,size,ptr);
+  for(uint64_t i = 0; i < requests.size(); i++) {
     COPY_BUF(buf,requests[i],ptr);
   }
 }
@@ -229,72 +243,66 @@ void YCSBClientQueryMessage::copy_to_buf(char * buf) {
 /************************/
 
 void ClientQueryMessage::init() {
-  part_to_access = (uint64_t*)mem_allocator.alloc(sizeof(uint64_t)*g_part_cnt);
 }
-
-
 
 uint64_t ClientQueryMessage::get_size() {
   uint64_t size = sizeof(ClientQueryMessage);
-  size += sizeof(uint64_t) * part_num;
+  size += sizeof(size_t);
+  size += sizeof(uint64_t) * partitions.size();
   return size;
 }
 
-void ClientQueryMessage::copy_from_query(BaseQuery * qry) {
-  Message::mcopy_from_query(qry);
-  pid = qry->pid;
-  ts = qry->ts;
+void ClientQueryMessage::copy_from_txn(TxnManager * txn) {
+  Message::mcopy_from_txn(txn);
+  ts = txn->txn->timestamp;
 #if CC_ALG == CALVIN
-  batch_id = qry->batch_id;
-  txn_id = qry->txn_id;
+  batch_id = txn->txn->batch_id;
+  txn_id = txn->txn->txn_id;
 #endif
-  part_num = qry->part_num;
-  for(uint64_t i = 0; i < part_num; i++) {
-    part_to_access[i] = qry->part_to_access[i];
-  }
+  partitions.clear();
+  partitions.insert(partitions.begin(),txn->query->partitions.begin(),txn->query->partitions.end());
 }
 
-void ClientQueryMessage::copy_to_query(BaseQuery * qry) {
-  Message::mcopy_to_query(qry);
-  qry->pid = pid;
-  qry->ts = ts;
+void ClientQueryMessage::copy_to_txn(TxnManager * txn) {
+  Message::mcopy_to_txn(txn);
+  txn->txn->timestamp = ts;
 #if CC_ALG == CALVIN
-  qry->batch_id = batch_id;
-  qry->txn_id = txn_id;
+  txn->txn->batch_id = batch_id;
+  txn->txn->txn_id = txn_id;
 #endif
-  qry->part_num = part_num;
-  for(uint64_t i = 0; i < part_num; i++) {
-    qry->part_to_access[i] = part_to_access[i];
-  }
+  txn->query->partitions.clear();
+  txn->query->partitions.insert(txn->query->partitions.begin(),partitions.begin(),partitions.end());
 }
 
 void ClientQueryMessage::copy_from_buf(char * buf) {
   Message::mcopy_from_buf(buf);
   uint64_t ptr = Message::mget_size();
-  COPY_VAL(pid,buf,ptr);
   COPY_VAL(ts,buf,ptr);
 #if CC_ALG == CALVIN
   COPY_VAL(batch_id,buf,ptr);
   COPY_VAL(txn_id,buf,ptr);
 #endif
-  COPY_VAL(part_num,buf,ptr);
-  for(uint64_t i = 0; i < part_num; i++) {
-    COPY_VAL(part_to_access[i],buf,ptr);
+  size_t size;
+  COPY_VAL(size,buf,ptr);
+  partitions.resize(size);
+  for(uint64_t i = 0; i < size; i++) {
+    COPY_VAL(partitions[i],buf,ptr);
   }
 }
 
 void ClientQueryMessage::copy_to_buf(char * buf) {
   Message::mcopy_to_buf(buf);
   uint64_t ptr = Message::mget_size();
-  COPY_BUF(buf,pid,ptr);
   COPY_BUF(buf,ts,ptr);
 #if CC_ALG == CALVIN
   COPY_BUF(buf,batch_id,ptr);
   COPY_BUF(buf,txn_id,ptr);
 #endif
-  COPY_BUF(buf,part_num,ptr);
-  for(uint64_t i = 0; i < part_num; i++) {
-    COPY_BUF(buf,part_to_access[i],ptr);
+  size_t size;
+  COPY_BUF(buf,size,ptr);
+  partitions.resize(size,UINT64_MAX);
+  for(uint64_t i = 0; i < size; i++) {
+    COPY_BUF(buf,partitions[i],ptr);
   }
 }
 
@@ -306,29 +314,25 @@ uint64_t ClientResponseMessage::get_size() {
   return size;
 }
 
-void ClientResponseMessage::copy_from_query(BaseQuery * qry) {
-  Message::mcopy_from_query(qry);
-  rc = qry->rc;
-  client_startts = qry->client_startts;
+void ClientResponseMessage::copy_from_txn(TxnManager * txn) {
+  Message::mcopy_from_txn(txn);
+  client_startts = txn->client_startts;
 }
 
-void ClientResponseMessage::copy_to_query(BaseQuery * qry) {
-  Message::mcopy_to_query(qry);
-  qry->rc = rc;
-  qry->client_startts = client_startts;
+void ClientResponseMessage::copy_to_txn(TxnManager * txn) {
+  Message::mcopy_to_txn(txn);
+  txn->client_startts = client_startts;
 }
 
 void ClientResponseMessage::copy_from_buf(char * buf) {
   Message::mcopy_from_buf(buf);
   uint64_t ptr = Message::mget_size();
-  COPY_VAL(rc,buf,ptr);
   COPY_VAL(client_startts,buf,ptr);
 }
 
 void ClientResponseMessage::copy_to_buf(char * buf) {
   Message::mcopy_to_buf(buf);
   uint64_t ptr = Message::mget_size();
-  COPY_BUF(buf,rc,ptr);
   COPY_BUF(buf,client_startts,ptr);
 }
 
@@ -340,14 +344,14 @@ uint64_t DoneMessage::get_size() {
   return size;
 }
 
-void DoneMessage::copy_from_query(BaseQuery * qry) {
-  Message::mcopy_from_query(qry);
-  batch_id = qry->batch_id;
+void DoneMessage::copy_from_txn(TxnManager * txn) {
+  Message::mcopy_from_txn(txn);
+  batch_id = txn->txn->batch_id;
 }
 
-void DoneMessage::copy_to_query(BaseQuery * qry) {
-  Message::mcopy_to_query(qry);
-  qry->batch_id = batch_id;
+void DoneMessage::copy_to_txn(TxnManager * txn) {
+  Message::mcopy_to_txn(txn);
+  txn->txn->batch_id = batch_id;
 }
 
 void DoneMessage::copy_from_buf(char * buf) {
@@ -370,21 +374,21 @@ uint64_t ForwardMessage::get_size() {
   return size;
 }
 
-void ForwardMessage::copy_from_query(BaseQuery * qry) {
-  Message::mcopy_from_query(qry);
-  txn_id = qry->txn_id;
-  batch_id = qry->batch_id;
+void ForwardMessage::copy_from_txn(TxnManager * txn) {
+  Message::mcopy_from_txn(txn);
+  txn_id = txn->txn->txn_id;
+  batch_id = txn->txn->batch_id;
 #if WORKLOAD == TPCC
-  o_id = ((TPCCQuery*)qry)->o_id;
+  o_id = ((TPCCQuery*)txn->query)->o_id;
 #endif
 }
 
-void ForwardMessage::copy_to_query(BaseQuery * qry) {
-  Message::mcopy_to_query(qry);
-  qry->txn_id = txn_id;
-  qry->batch_id = batch_id;
+void ForwardMessage::copy_to_txn(TxnManager * txn) {
+  Message::mcopy_to_txn(txn);
+  txn->txn->txn_id = txn_id;
+  txn->txn->batch_id = batch_id;
 #if WORKLOAD == TPCC
-  ((TPCCQuery*)qry)->o_id = o_id;
+  ((TPCCQuery*)txn->query)->o_id = o_id;
 #endif
 }
 
@@ -415,92 +419,48 @@ uint64_t PrepareMessage::get_size() {
   return size;
 }
 
-void PrepareMessage::copy_from_query(BaseQuery * qry) {
-  Message::mcopy_from_query(qry);
-  pid = qry->pid;
-  rc = qry->rc;
-  txn_id = qry->txn_id;
+void PrepareMessage::copy_from_txn(TxnManager * txn) {
+  Message::mcopy_from_txn(txn);
+  txn_id = txn->txn->txn_id;
 }
 
-void PrepareMessage::copy_to_query(BaseQuery * qry) {
-  Message::mcopy_to_query(qry);
-  qry->pid = pid;
-  qry->rc = rc;
-  qry->txn_id = txn_id;
+void PrepareMessage::copy_to_txn(TxnManager * txn) {
+  Message::mcopy_to_txn(txn);
+  txn->txn->txn_id = txn_id;
 }
 
 void PrepareMessage::copy_from_buf(char * buf) {
   Message::mcopy_from_buf(buf);
   uint64_t ptr = Message::mget_size();
-  COPY_VAL(pid,buf,ptr);
-  COPY_VAL(rc,buf,ptr);
   COPY_VAL(txn_id,buf,ptr);
 }
 
 void PrepareMessage::copy_to_buf(char * buf) {
   Message::mcopy_to_buf(buf);
   uint64_t ptr = Message::mget_size();
-  COPY_BUF(buf,pid,ptr);
-  COPY_BUF(buf,rc,ptr);
   COPY_BUF(buf,txn_id,ptr);
 }
 
 /************************/
-
-
-
-
-uint64_t InitMessage::get_size() {
-  uint64_t size = sizeof(InitMessage);
-  return size;
-}
-
-void InitMessage::copy_from_query(BaseQuery * qry) {
-  Message::mcopy_from_query(qry);
-  ts = qry->ts;
-  part_id = GET_PART_ID(0,g_node_id);
-}
-
-void InitMessage::copy_to_query(BaseQuery * qry) {
-  Message::mcopy_to_query(qry);
-  qry->ts = ts;
-}
-
-void InitMessage::copy_from_buf(char * buf) {
-  Message::mcopy_from_buf(buf);
-  uint64_t ptr = Message::mget_size();
-  COPY_VAL(ts,buf,ptr);
-  COPY_VAL(part_id,buf,ptr);
-}
-
-void InitMessage::copy_to_buf(char * buf) {
-  Message::mcopy_to_buf(buf);
-  uint64_t ptr = Message::mget_size();
-  COPY_BUF(buf,ts,ptr);
-  COPY_BUF(buf,part_id,ptr);
-}
-
-/************************/
-
 
 uint64_t AckMessage::get_size() {
   uint64_t size = sizeof(AckMessage);
   return size;
 }
 
-void AckMessage::copy_from_query(BaseQuery * qry) {
-  Message::mcopy_from_query(qry);
-  rc = qry->rc;
+void AckMessage::copy_from_txn(TxnManager * txn) {
+  Message::mcopy_from_txn(txn);
+  //rc = query->rc;
 #if CC_ALG == CALVIN
-  batch_id = qry->batch_id;
+  batch_id = txn->txn->batch_id;
 #endif
 }
 
-void AckMessage::copy_to_query(BaseQuery * qry) {
-  Message::mcopy_to_query(qry);
-  qry->rc = rc;
+void AckMessage::copy_to_txn(TxnManager * txn) {
+  Message::mcopy_to_txn(txn);
+  //query->rc = rc;
 #if CC_ALG == CALVIN
-  qry->batch_id = batch_id;
+  txn->txn->batch_id = batch_id;
 #endif
 }
 
@@ -529,30 +489,26 @@ uint64_t QueryResponseMessage::get_size() {
   return size;
 }
 
-void QueryResponseMessage::copy_from_query(BaseQuery * qry) {
-  Message::mcopy_from_query(qry);
-  rc = qry->rc;
-  pid = qry->pid;
+void QueryResponseMessage::copy_from_txn(TxnManager * txn) {
+  Message::mcopy_from_txn(txn);
+  //rc = query->rc;
 }
 
-void QueryResponseMessage::copy_to_query(BaseQuery * qry) {
-  Message::mcopy_to_query(qry);
-  qry->rc = rc;
-  qry->pid = pid;
+void QueryResponseMessage::copy_to_txn(TxnManager * txn) {
+  Message::mcopy_to_txn(txn);
+  //query->rc = rc;
 }
 
 void QueryResponseMessage::copy_from_buf(char * buf) {
   Message::mcopy_from_buf(buf);
   uint64_t ptr = Message::mget_size();
   COPY_VAL(rc,buf,ptr);
-  COPY_VAL(pid,buf,ptr);
 }
 
 void QueryResponseMessage::copy_to_buf(char * buf) {
   Message::mcopy_to_buf(buf);
   uint64_t ptr = Message::mget_size();
   COPY_BUF(buf,rc,ptr);
-  COPY_BUF(buf,pid,ptr);
 }
 
 /************************/
@@ -564,22 +520,18 @@ uint64_t FinishMessage::get_size() {
   return size;
 }
 
-void FinishMessage::copy_from_query(BaseQuery * qry) {
-  Message::mcopy_from_query(qry);
-  pid = qry->pid;
-  rc = qry->rc;
-  txn_id = qry->txn_id;
-  batch_id = qry->batch_id;
-  ro = qry->ro;
+void FinishMessage::copy_from_txn(TxnManager * txn) {
+  Message::mcopy_from_txn(txn);
+  //rc = query->rc;
+  txn_id = txn->txn->txn_id;
+  batch_id = txn->txn->batch_id;
 }
 
-void FinishMessage::copy_to_query(BaseQuery * qry) {
-  Message::mcopy_to_query(qry);
-  qry->pid = pid;
-  qry->rc = rc;
-  qry->txn_id = txn_id;
-  qry->batch_id = batch_id;
-  qry->ro = ro;
+void FinishMessage::copy_to_txn(TxnManager * txn) {
+  Message::mcopy_to_txn(txn);
+  //query->rc = rc;
+  txn->txn->txn_id = txn_id;
+  txn->txn->batch_id = batch_id;
 }
 
 void FinishMessage::copy_from_buf(char * buf) {
@@ -609,11 +561,11 @@ uint64_t InitDoneMessage::get_size() {
   return size;
 }
 
-void InitDoneMessage::copy_from_query(BaseQuery * qry) {
+void InitDoneMessage::copy_from_txn(TxnManager * txn) {
 }
 
-void InitDoneMessage::copy_to_query(BaseQuery * qry) {
-  Message::mcopy_to_query(qry);
+void InitDoneMessage::copy_to_txn(TxnManager * txn) {
+  Message::mcopy_to_txn(txn);
 }
 
 void InitDoneMessage::copy_from_buf(char * buf) {
@@ -627,38 +579,35 @@ void InitDoneMessage::copy_to_buf(char * buf) {
 /************************/
 
 void YCSBQueryMessage::init() {
-  requests = (ycsb_request*)mem_allocator.alloc(sizeof(ycsb_request)*g_req_per_query);
 }
 
 uint64_t YCSBQueryMessage::get_size() {
   uint64_t size = sizeof(YCSBQueryMessage);
-  size += req_cnt * sizeof(ycsb_request);
+  size += sizeof(size_t);
+  size += sizeof(ycsb_request) * requests.size();
   return size;
 }
 
-void YCSBQueryMessage::copy_from_query(BaseQuery * qry) {
-  QueryMessage::copy_from_query(qry);
-  req_cnt = ((YCSBQuery*)qry)->request_cnt;
-  for(uint64_t i = 0 ; i < req_cnt;i++) {
-    requests[i] = ((YCSBQuery*)qry)->requests[i];
-  }
+void YCSBQueryMessage::copy_from_txn(TxnManager * txn) {
+  QueryMessage::copy_from_txn(txn);
+  requests.clear();
+  requests.insert(requests.begin(),((YCSBQuery*)(txn->query))->requests.begin(),((YCSBQuery*)(txn->query))->requests.end());
 }
 
-void YCSBQueryMessage::copy_to_query(BaseQuery * qry) {
-  QueryMessage::copy_to_query(qry);
-  ((YCSBQuery*)qry)->request_cnt = req_cnt;
-  for(uint64_t i = 0 ; i < req_cnt;i++) {
-    ((YCSBQuery*)qry)->requests[i] = requests[i];
-  }
+void YCSBQueryMessage::copy_to_txn(TxnManager * txn) {
+  QueryMessage::copy_to_txn(txn);
+  ((YCSBQuery*)(txn->query))->requests.clear();
+  ((YCSBQuery*)(txn->query))->requests.insert(((YCSBQuery*)(txn->query))->requests.begin(),requests.begin(),requests.end());
 }
 
 
 void YCSBQueryMessage::copy_from_buf(char * buf) {
   QueryMessage::copy_from_buf(buf);
   uint64_t ptr = QueryMessage::get_size();
-
-  COPY_VAL(req_cnt,buf,ptr);
-  for(uint64_t i = 0 ; i < req_cnt;i++) {
+  size_t size;
+  COPY_VAL(size,buf,ptr);
+  requests.resize(size);
+  for(uint64_t i = 0 ; i < size;i++) {
     COPY_VAL(requests[i],buf,ptr);
   }
 }
@@ -666,8 +615,9 @@ void YCSBQueryMessage::copy_from_buf(char * buf) {
 void YCSBQueryMessage::copy_to_buf(char * buf) {
   QueryMessage::copy_to_buf(buf);
   uint64_t ptr = Message::mget_size();
-  COPY_BUF(buf,req_cnt,ptr);
-  for(uint64_t i = 0; i < req_cnt; i++) {
+  size_t size = requests.size();
+  COPY_BUF(buf,size,ptr);
+  for(uint64_t i = 0; i < requests.size(); i++) {
     COPY_BUF(buf,requests[i],ptr);
   }
 }

@@ -67,21 +67,19 @@ OptCC::per_row_validate(TxnManager * txn) {
 	// TODO for migration, should first sort by partition id
 	for (int i = txn->row_cnt - 1; i > 0; i--) {
 		for (int j = 0; j < i; j ++) {
-			int tabcmp = strcmp(txn->accesses[j]->orig_row->get_table_name(), 
-				txn->accesses[j+1]->orig_row->get_table_name());
-			if (tabcmp > 0 || (tabcmp == 0 && txn->accesses[j]->orig_row->get_primary_key() > txn->accesses[j+1]->orig_row->get_primary_key())) {
-					Access * tmp = txn->accesses[j]; 
-					txn->accesses[j] = txn->accesses[j+1];
-					txn->accesses[j+1] = tmp;
+			int tabcmp = strcmp(txn->get_access_original_row(j)->get_table_name(), 
+				txn->get_access_original_row(j+1)->get_table_name());
+			if (tabcmp > 0 || (tabcmp == 0 && txn->get_access_original_row(j)->get_primary_key() > txn->get_access_original_row(j+1)->get_primary_key())) {
+        txn->swap_accesses(j,j+1);
 			}
 		}
 	}
 #if DEBUG_ASSERT
 	for (int i = txn->row_cnt - 1; i > 0; i--) {
-		int tabcmp = strcmp(txn->accesses[i-1]->orig_row->get_table_name(), 
-			txn->accesses[i]->orig_row->get_table_name());
-		assert(tabcmp < 0 || tabcmp == 0 && txn->accesses[i]->orig_row->get_primary_key() > 
-			txn->accesses[i-1]->orig_row->get_primary_key());
+		int tabcmp = strcmp(txn->get_access_original_row(i-1)->get_table_name(), 
+			txn->get_access_original_row(i)->get_table_name());
+		assert(tabcmp < 0 || tabcmp == 0 && txn->get_access_original_row(i)->get_primary_key() > 
+			txn->get_access_original_row(i-1)->get_primary_key());
 	}
 #endif
 	// lock all rows in the readset and writeset.
@@ -90,8 +88,8 @@ OptCC::per_row_validate(TxnManager * txn) {
 	int lock_cnt = 0;
 	for (int i = 0; i < txn->row_cnt && ok; i++) {
 		lock_cnt ++;
-		txn->accesses[i]->orig_row->manager->latch();
-		ok = txn->accesses[i]->orig_row->manager->validate( txn->start_ts );
+		txn->get_access_original_row(i)->manager->latch();
+		ok = txn->get_access_original_row(i)->manager->validate( txn->start_ts );
 	}
   rc = ok ? RCOK : Abort;
   /*
@@ -120,7 +118,7 @@ RC OptCC::central_validate(TxnManager * txn) {
 	RC rc;
   uint64_t starttime = get_sys_clock();
   uint64_t total_starttime = starttime;
-	uint64_t start_tn = txn->start_ts;
+	uint64_t start_tn = txn->get_start_timestamp();
 	uint64_t finish_tn;
 	//set_ent ** finish_active;
 	//set_ent * finish_active[f_active_len];
@@ -234,7 +232,7 @@ final:
 void OptCC::per_row_finish(RC rc, TxnManager * txn) {
   if(rc == RCOK) {
 		// advance the global timestamp and get the end_ts
-		txn->end_ts = glob_manager.get_ts( txn->get_thd_id() );
+		txn->set_end_timestamp(glob_manager.get_ts( txn->get_thd_id() ));
   }
 }
 
@@ -290,19 +288,19 @@ void OptCC::central_finish(RC rc, TxnManager * txn) {
 RC OptCC::get_rw_set(TxnManager * txn, set_ent * &rset, set_ent *& wset) {
 	wset = (set_ent*) mem_allocator.alloc(sizeof(set_ent));
 	rset = (set_ent*) mem_allocator.alloc(sizeof(set_ent));
-	wset->set_size = txn->wr_cnt;
-	rset->set_size = txn->row_cnt - txn->wr_cnt;
+	wset->set_size = txn->get_write_set_size();
+	rset->set_size = txn->get_read_set_size();
 	wset->rows = (row_t **) mem_allocator.alloc(sizeof(row_t *) * wset->set_size);
 	rset->rows = (row_t **) mem_allocator.alloc(sizeof(row_t *) * rset->set_size);
 	wset->txn = txn;
 	rset->txn = txn;
 
 	UInt32 n = 0, m = 0;
-	for (int i = 0; i < txn->row_cnt; i++) {
-		if (txn->accesses[i]->type == WR)
-			wset->rows[n ++] = txn->accesses[i]->orig_row;
+	for (uint64_t i = 0; i < wset->set_size + rset->set_size; i++) {
+		if (txn->get_access_type(i) == WR)
+			wset->rows[n ++] = txn->get_access_original_row(i);
 		else 
-			rset->rows[m ++] = txn->accesses[i]->orig_row;
+			rset->rows[m ++] = txn->get_access_original_row(i);
 	}
 
 	assert(n == wset->set_size);

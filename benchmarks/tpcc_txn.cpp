@@ -25,7 +25,6 @@
 #include "index_hash.h"
 #include "index_btree.h"
 #include "tpcc_const.h"
-#include "remote_query.h"
 #include "transport.h"
 #include "msg_queue.h"
 #include "message.h"
@@ -271,10 +270,9 @@ void TPCCTxnManager::next_tpcc_state() {
 
 void TPCCTxnManager::send_remote_request() {
   TPCCQuery* tpcc_query = (TPCCQuery*) query;
-  TPCCQuery* temp = new TPCCQuery;
 	uint64_t w_id = tpcc_query->w_id;
   uint64_t c_w_id = tpcc_query->c_w_id;
-  TPCCQueryMessage * msg = (TPCCQueryMessage*)Message::create_message(tpcc_query,RQRY);
+  TPCCQueryMessage * msg = (TPCCQueryMessage*)Message::create_message(this,RQRY);
   uint64_t dest_node_id = UINT64_MAX;
   if(state == TPCC_PAYMENT0) {
     dest_node_id = GET_NODE_ID(wh_to_part(w_id));
@@ -285,9 +283,8 @@ void TPCCTxnManager::send_remote_request() {
   } else if(state == TPCC_NEWORDER8) {
     dest_node_id = GET_NODE_ID(wh_to_part(tpcc_query->items[next_item_id]->ol_supply_w_id));
     while(GET_NODE_ID(wh_to_part(tpcc_query->items[next_item_id]->ol_supply_w_id)) != dest_node_id) {
-      temp->items.push_back(tpcc_query->items[next_item_id++]);
+      msg->items.push_back(tpcc_query->items[next_item_id++]);
     }
-    msg->copy_from_query(temp);
   } else {
     assert(false);
   }
@@ -358,7 +355,6 @@ RC TPCCTxnManager::run_txn_state() {
       if(w_loc)
 			  rc = new_order_0( w_id, d_id, c_id, remote, ol_cnt, o_entry_d, &tpcc_query->o_id, row); 
       else {
-		    //rem_qry_man.remote_qry(tpcc_query,TPCC_NEWORDER0,GET_NODE_ID(part_id_w),this);
         send_remote_request();
         rc = WAIT_REM;
       }
@@ -400,7 +396,8 @@ RC TPCCTxnManager::run_txn_state() {
       state = TPCC_FIN;
       if(tpcc_query->rbk)
         return Abort;
-		  return finish(tpcc_query,false);
+		  //return finish(tpcc_query,false);
+      break;
 		default:
 			assert(false);
 	}
@@ -975,12 +972,15 @@ RC TPCCTxnManager::run_calvin_txn() {
         rc = run_tpcc_phase5();
         rc = calvin_finish(tpcc_query);
         ATOM_ADD(this->phase,1); //6
+        //FIXME
+        /*
         if(get_rsp2_cnt() == active_cnt-1) {
           rc = RCOK;
         } else {
         //DEBUG("Phase6 (%ld,%ld)\n",tpcc_query->txn_id,tpcc_query->batch_id);
             rc = WAIT;
         }
+        */
         break;
       default:
         assert(false);

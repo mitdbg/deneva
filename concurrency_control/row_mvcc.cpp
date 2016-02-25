@@ -100,7 +100,7 @@ void Row_mvcc::buffer_req(TsType type, TxnManager * txn)
 	MVReqEntry * req_entry = get_req_entry();
 	assert(req_entry != NULL);
 	req_entry->txn = txn;
-	req_entry->ts = txn->get_ts();
+	req_entry->ts = txn->get_timestamp();
 	req_entry->starttime = get_sys_clock();
 	if (type == R_REQ) {
 		rreq_len ++;
@@ -250,7 +250,7 @@ bool Row_mvcc::conflict(TsType type, ts_t ts) {
 
 RC Row_mvcc::access(TxnManager * txn, TsType type, row_t * row) {
 	RC rc = RCOK;
-	ts_t ts = txn->get_ts();
+	ts_t ts = txn->get_timestamp();
 
   uint64_t starttime = get_sys_clock();
 	if (g_central_man)
@@ -264,8 +264,7 @@ RC Row_mvcc::access(TxnManager * txn, TsType type, row_t * row) {
 		bool conf = conflict(type, ts);
 		if ( conf && rreq_len < g_max_read_req) {
 			rc = WAIT;
-      txn->rc = rc;
-      txn->wait_starttime = get_sys_clock();
+      //txn->wait_starttime = get_sys_clock();
         DEBUG("buf R_REQ %ld %ld\n",txn->get_txn_id(),_row->get_primary_key());
 			buffer_req(R_REQ, txn);
 			txn->ts_ready = false;

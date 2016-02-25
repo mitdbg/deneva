@@ -18,7 +18,6 @@
 #include "row.h"
 #include "txn.h"
 #include "pthread.h"
-#include "remote_query.h"
 //#include <jemallloc.h>
 
 void Manager::init() {

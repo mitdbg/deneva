@@ -24,8 +24,9 @@
 #include "txn.h"
 #include "mem_alloc.h"
 #include "row.h"
-#include "plock.h"
 #include "pool.h"
+#include "work_queue.h"
+#include "message.h"
 
 #define MODIFY_START(i) {\
     pthread_mutex_lock(&pool[i].mtx);\
@@ -89,13 +90,7 @@ void TxnTable::dump() {
       txn_node_t t_node = pool[i].head;
 
       while (t_node != NULL) {
-        printf("TT (%ld,%ld) %d %d %d, %d %ld %ld\n",t_node->qry->txn_id,t_node->qry->batch_id
-            ,t_node->txn->locking_done
-            ,t_node->txn->lock_ready
-            ,t_node->txn->lock_ready_cnt
-            ,t_node->txn->phase
-            ,t_node->txn->get_rsp_cnt()
-            ,t_node->txn->get_rsp2_cnt()
+        printf("TT (%ld,%ld)\n",t_node->txn_man->get_txn_id(),t_node->txn_man->get_batch_id()
             );
         t_node = t_node->next;
       }
@@ -104,16 +99,13 @@ void TxnTable::dump() {
   }
 }
 
-void TxnTable::add_txn(uint64_t node_id, TxnManager * txn, BaseQuery * qry) {
+void TxnTable::add_txn(TxnManager * txn_man) {
 
-  DEBUG_R("Add (%ld,%ld) 0x%lx\n",qry->txn_id,qry->batch_id,(uint64_t)qry);
+  DEBUG_R("Add (%ld,%ld)\n",txn_man->get_txn_id(),txn_man->get_batch_id());
   uint64_t thd_prof_start = get_sys_clock();
-  txn->set_query(qry);
-  uint64_t txn_id = txn->get_txn_id();
-  assert(txn_id == qry->txn_id);
+  uint64_t txn_id = txn_man->get_txn_id();
 
   TxnManager * next_txn = NULL;
-  assert(txn->get_txn_id() == qry->txn_id);
 
   MODIFY_START(txn_id % pool_size);
 
@@ -121,13 +113,13 @@ void TxnTable::add_txn(uint64_t node_id, TxnManager * txn, BaseQuery * qry) {
 
   while (t_node != NULL) {
 #if CC_ALG == CALVIN
-    if (t_node->txn->get_txn_id() == txn_id && t_node->qry->batch_id == qry->batch_id) {
+    if (t_node->txn_man->get_txn_id() == txn_id && t_node->txn_man->get_batch_id() == txn_man->get_batch_id()) {
       next_txn = t_node->txn;
       break;
     }
 #else
-    if (t_node->txn->get_txn_id() == txn_id) {
-      next_txn = t_node->txn;
+    if (t_node->txn_man->get_txn_id() == txn_id) {
+      next_txn = t_node->txn_man;
       break;
     }
 #endif
@@ -137,11 +129,10 @@ void TxnTable::add_txn(uint64_t node_id, TxnManager * txn, BaseQuery * qry) {
   if(next_txn == NULL) {
     //t_node = (txn_node_t) mem_allocator.alloc(sizeof(struct txn_node));
   pthread_mutex_lock(&mtx);
-    ts_pool.insert(TsMapPair(txn->get_ts(),NULL));
+    ts_pool.insert(TsMapPair(txn_man->get_timestamp(),NULL));
   pthread_mutex_unlock(&mtx);
     txn_table_pool.get(t_node);
-    t_node->txn = txn;
-    t_node->qry = qry;
+    t_node->txn_man = txn_man;
     LIST_PUT_TAIL(pool[txn_id % pool_size].head,pool[txn_id % pool_size].tail,t_node);
     pool[txn_id % pool_size].cnt++;
     if(pool[txn_id % pool_size].cnt > 1) {
@@ -151,43 +142,35 @@ void TxnTable::add_txn(uint64_t node_id, TxnManager * txn, BaseQuery * qry) {
     ATOM_ADD(cnt,1);
   }
   else {
-    if(txn->get_ts() != t_node->txn->get_ts()) {
+    if(txn_man->get_timestamp() != t_node->txn_man->get_timestamp()) {
   pthread_mutex_lock(&mtx);
-      ts_pool.erase(t_node->txn->get_ts());
-      ts_pool.insert(TsMapPair(txn->get_ts(),NULL));
+      ts_pool.erase(t_node->txn_man->get_timestamp());
+      ts_pool.insert(TsMapPair(txn_man->get_timestamp(),NULL));
   pthread_mutex_unlock(&mtx);
     }
-    if(t_node->qry) {
-      assert(t_node->qry->batch_id == qry->batch_id);
-      assert(t_node->qry->txn_id == qry->txn_id);
-    }
-    t_node->txn = txn;
-    t_node->qry = qry;
+    t_node->txn_man = txn_man;
   }
 
   MODIFY_END(txn_id % pool_size);
   INC_STATS(0,thd_prof_txn_table_add,get_sys_clock() - thd_prof_start);
 }
 
-void TxnTable::get_txn(uint64_t node_id, uint64_t txn_id,uint64_t batch_id,TxnManager *& txn,BaseQuery *& qry){
+TxnManager * TxnTable::get_transaction_manager(uint64_t txn_id,uint64_t batch_id){
 
   uint64_t thd_prof_start = get_sys_clock();
-  txn = NULL;
-  qry = NULL;
   INC_STATS(0,thd_prof_get_txn_cnt,1);
   ACCESS_START(txn_id % pool_size);
 
   txn_node_t t_node = pool[txn_id % pool_size].head;
+  TxnManager * txn_man = NULL;
 
   while (t_node != NULL) {
 #if CC_ALG == CALVIN
-    if (t_node->txn->get_txn_id() == txn_id && t_node->qry->batch_id == batch_id) {
+    if (t_node->txn_man->get_txn_id() == txn_id && t_node->txn_man->get_batch_id() == batch_id) {
 #else
-    if (t_node->txn->get_txn_id() == txn_id) {
+    if (t_node->txn_man->get_txn_id() == txn_id) {
 #endif
-      txn = t_node->txn;
-      qry = t_node->qry;
-      assert(txn->get_txn_id() == qry->txn_id);
+      txn_man = t_node->txn_man;
       break;
     }
     t_node = t_node->next;
@@ -195,6 +178,7 @@ void TxnTable::get_txn(uint64_t node_id, uint64_t txn_id,uint64_t batch_id,TxnMa
 
   ACCESS_END(txn_id % pool_size);
   INC_STATS(0,thd_prof_txn_table_get,get_sys_clock() - thd_prof_start);
+  return txn_man;
 
 }
 
@@ -205,15 +189,14 @@ void TxnTable::restart_txn(uint64_t txn_id,uint64_t batch_id){
 
   while (t_node != NULL) {
 #if CC_ALG == CALVIN
-    if (t_node->txn->get_txn_id() == txn_id && t_node->qry->batch_id == batch_id) {
+    if (t_node->txn_man->get_txn_id() == txn_id && t_node->txn_man_man->get_batch_id() == batch_id) {
 #else
-    if (t_node->txn->get_txn_id() == txn_id) {
+    if (t_node->txn_man->get_txn_id() == txn_id) {
 #endif
       if(txn_id % g_node_cnt == g_node_id)
-        t_node->qry->rtype = RTXN;
+        work_queue.enqueue(0,Message::create_message(t_node->txn_man,RTXN),false);
       else
-        t_node->qry->rtype = RQRY;
-      work_queue.enqueue(0,t_node->qry,false);
+        work_queue.enqueue(0,Message::create_message(t_node->txn_man,RQRY),false);
       break;
     }
     t_node = t_node->next;
@@ -223,7 +206,7 @@ void TxnTable::restart_txn(uint64_t txn_id,uint64_t batch_id){
 
 }
 
-void TxnTable::delete_txn(uint64_t node_id, uint64_t txn_id, uint64_t batch_id){
+void TxnTable::delete_txn(uint64_t txn_id, uint64_t batch_id){
   uint64_t thd_prof_start = get_sys_clock();
   uint64_t starttime = thd_prof_start;
 
@@ -233,9 +216,9 @@ void TxnTable::delete_txn(uint64_t node_id, uint64_t txn_id, uint64_t batch_id){
 
   while (t_node != NULL) {
 #if CC_ALG == CALVIN
-    if (t_node->txn->get_txn_id() == txn_id && t_node->qry->batch_id == batch_id) {
+    if (t_node->txn_man->get_txn_id() == txn_id && t_node->txn_man->get_batch_id() == batch_id) {
 #else
-    if (t_node->txn->get_txn_id() == txn_id) {
+    if (t_node->txn_man->get_txn_id() == txn_id) {
 #endif
       LIST_REMOVE_HT(t_node,pool[txn_id % pool_size].head,pool[txn_id % pool_size].tail);
       pool[txn_id % pool_size].cnt--;
@@ -245,7 +228,7 @@ void TxnTable::delete_txn(uint64_t node_id, uint64_t txn_id, uint64_t batch_id){
     t_node = t_node->next;
   }
   pthread_mutex_lock(&mtx);
-  TsMap::iterator it2 = ts_pool.find(t_node->txn->get_ts());
+  TsMap::iterator it2 = ts_pool.find(t_node->txn_man->get_timestamp());
   if(it2 != ts_pool.end())
     ts_pool.erase(it2);
   pthread_mutex_unlock(&mtx);
@@ -255,20 +238,13 @@ void TxnTable::delete_txn(uint64_t node_id, uint64_t txn_id, uint64_t batch_id){
   if(t_node != NULL) {
     INC_STATS(0,thd_prof_txn_table1a,get_sys_clock() - thd_prof_start);
     thd_prof_start = get_sys_clock();
-    assert(!t_node->txn->spec || t_node->txn->state == DONE);
 
-    if(t_node->txn) {
-      t_node->txn->release();
-      txn_pool.put(t_node->txn);
+    if(t_node->txn_man) {
+      t_node->txn_man->release();
+      txn_pool.put(t_node->txn_man);
     }
     
-    DEBUG_R("Delete (%ld,%ld) 0x%lx\n",t_node->qry->txn_id,t_node->qry->batch_id,(uint64_t)t_node->qry);
-#if CC_ALG != CALVIN
-    if(t_node->qry) {
-      qry_pool.put(t_node->qry);
-    }
-#endif
-    //mem_allocator.free(t_node, sizeof(struct txn_node));
+    DEBUG_R("Delete (%ld,%ld)\n",txn_id,batch_id);
     txn_table_pool.put(t_node);
     INC_STATS(0,thd_prof_txn_table2a,get_sys_clock() - thd_prof_start);
   }

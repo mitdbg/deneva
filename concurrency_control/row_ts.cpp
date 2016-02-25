@@ -68,7 +68,7 @@ void Row_ts::buffer_req(TsType type, TxnManager * txn, row_t * row)
 	assert(req_entry != NULL);
 	req_entry->txn = txn;
 	req_entry->row = row;
-	req_entry->ts = txn->get_ts();
+	req_entry->ts = txn->get_timestamp();
 	if (type == R_REQ) {
 		req_entry->next = readreq;
 		readreq = req_entry;
@@ -169,7 +169,7 @@ ts_t Row_ts::cal_min(TsType type) {
 
 RC Row_ts::access(TxnManager * txn, TsType type, row_t * row) {
 	RC rc;
-	ts_t ts = txn->get_ts();
+	ts_t ts = txn->get_timestamp();
   uint64_t starttime = get_sys_clock();
 	if (g_central_man)
 		glob_manager.lock_row(_row);
@@ -186,8 +186,7 @@ RC Row_ts::access(TxnManager * txn, TsType type, row_t * row) {
 			buffer_req(R_REQ, txn, NULL);
 			txn->ts_ready = false;
 			rc = WAIT;
-      txn->rc = rc;
-      txn->wait_starttime = get_sys_clock();
+      //txn->wait_starttime = get_sys_clock();
 		} else { // read is ok
 			// return the value.
 			txn->cur_row->copy(_row);

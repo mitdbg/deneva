@@ -24,6 +24,7 @@
 #include "transport.h"
 #include "client_txn.h"
 #include "msg_queue.h"
+#include "work_queue.h"
 //#include <jemallloc.h>
 
 void * f(void *);
@@ -88,10 +89,6 @@ int main(int argc, char* argv[])
 #endif
 
 
-  printf("Initializing remote query manager... ");
-  fflush(stdout);
-	rem_qry_man.init(g_node_id,m_wl);
-  printf("Done\n");
   printf("Initializing transport manager... ");
   fflush(stdout);
 	tport_man.init(g_node_id,m_wl);
@@ -100,7 +97,7 @@ int main(int argc, char* argv[])
   client_man.init();
   printf("Done\n");
   printf("Initializing work queue... ");
-  work_queue.init(m_wl);
+  work_queue.init();
   printf("Done\n");
   printf("Initializing query pool... ");
   qry_pool.init(m_wl,g_inflight_max);

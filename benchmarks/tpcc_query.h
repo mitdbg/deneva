@@ -20,7 +20,6 @@
 #include "global.h"
 #include "helper.h"
 #include "query.h"
-#include "remote_query.h"
 
 class Workload;
 

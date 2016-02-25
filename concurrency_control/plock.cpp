@@ -19,7 +19,6 @@
 #include "plock.h"
 #include "mem_alloc.h"
 #include "txn.h"
-#include "remote_query.h"
 #include "ycsb_query.h"
 #include "tpcc_query.h"
 #include "msg_queue.h"
@@ -28,6 +27,7 @@
 /************************************************/
 // per-partition Manager
 /************************************************/
+/*
 void PartMan::init(uint64_t node_id, uint64_t part_id) {
   _part_id = part_id;
 	_node_id = node_id; 
@@ -233,20 +233,12 @@ void PartMan::unlock(TxnManager * txn) {
       if (find && i < waiter_cnt - 1) 
         waiters[i] = waiters[i + 1];
     }
-    /*
-		if(GET_NODE_ID(txn->get_pid()) == _node_id)
-      ATOM_SUB(txn->ready_ulk, 1);
-      */
 		// We may not find a remote request among the waiters; ignore
     //assert(find);
 		if(find)
       waiter_cnt --;
   }
 	// Send response for rulk
-  /*
-  if(GET_NODE_ID(txn->get_pid()) != _node_id)
-	  remote_rsp(false,RCOK,txn);
-    */
   // If local, decr ready_ulk
 //final:
 	//if(GET_NODE_ID(txn->get_pid()) == _node_id)
@@ -262,10 +254,12 @@ void PartMan::remote_rsp(bool l, RC rc, TxnManager * txn) {
   msg_queue.enqueue(Message::create_message(txn->get_query(),RACK),GET_NODE_ID(txn->get_pid()));
 
 }
+*/
 /************************************************/
 // Partition Lock
 /************************************************/
 
+/*
 void Plock::init(uint64_t node_id) {
 	_node_id = node_id;
 	ARR_PTR(PartMan, part_mans, g_part_cnt);
@@ -424,3 +418,4 @@ void Plock::rem_unlock_rsp(TxnManager * txn) {
 	ATOM_SUB(txn->ready_ulk, 1);
 	INC_STATS(txn->get_thd_id(), time_lock_man, get_sys_clock() - starttime);
 }
+*/

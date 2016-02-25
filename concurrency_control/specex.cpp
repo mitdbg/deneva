@@ -77,19 +77,20 @@ final:
 RC SpecEx::get_rw_set(TxnManager * txn, set_ent * &rset, set_ent *& wset) {
 	wset = (set_ent*) mem_allocator.alloc(sizeof(set_ent));
 	rset = (set_ent*) mem_allocator.alloc(sizeof(set_ent));
-	wset->set_size = txn->wr_cnt;
-	rset->set_size = txn->row_cnt - txn->wr_cnt;
+	wset->set_size = txn->get_write_set_size();
+	rset->set_size = txn->get_read_set_size();
 	wset->rows = (row_t **) mem_allocator.alloc(sizeof(row_t *) * wset->set_size);
 	rset->rows = (row_t **) mem_allocator.alloc(sizeof(row_t *) * rset->set_size);
 	wset->txn = txn;
 	rset->txn = txn;
 
 	UInt32 n = 0, m = 0;
-	for (int i = 0; i < txn->row_cnt; i++) {
-		if (txn->accesses[i]->type == WR)
-			wset->rows[n ++] = txn->accesses[i]->orig_row;
+
+	for (uint64_t i = 0; i < wset->set_size + rset->set_size; i++) {
+		if (txn->get_access_type(i) == WR)
+			wset->rows[n ++] = txn->get_access_original_row(i);
 		else 
-			rset->rows[m ++] = txn->accesses[i]->orig_row;
+			rset->rows[m ++] = txn->get_access_original_row(i);
 	}
 
 	assert(n == wset->set_size);

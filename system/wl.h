@@ -18,8 +18,7 @@
 #define _WORKLOAD_H_
 
 #include "global.h"
-//#include "txn.h"
-//#include "thread.h"
+
 class row_t;
 class table_t;
 class IndexHash;
@@ -32,17 +31,13 @@ class index_base;
 class Timestamp;
 class Mvcc;
 
-// TODO write a new class Partition and put partition specific information 
-// into that class.
-
-// this is the base class for all workload
 class Workload
 {
 public:
 //	table_t * table;
 	// tables indexed by table name
-	map<string, table_t *> tables;
-	map<string, INDEX *> indexes;
+  map<string, table_t *> tables;
+  map<string, INDEX *> indexes;
 
 	
 	// FOR TPCC

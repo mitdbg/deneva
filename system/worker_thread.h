@@ -20,12 +20,17 @@
 #include "global.h"
 
 class Workload;
+class Message;
 
 class WorkerThread : public Thread {
 public:
 	RC 			run();
   void setup();
   void send_init_done_to_all_nodes(); 
+  void progress_stats(); 
+  void process(Message * msg); 
+  void commit(uint64_t txn_id); 
+  void abort(uint64_t txn_id); 
   RC process_rfin(Message * msg);
   RC process_rack(Message * msg);
   RC process_rqry_rsp(Message * msg);
@@ -34,9 +39,12 @@ public:
   RC process_rprepare(Message * msg);
   RC process_rpass(Message * msg);
   RC process_rtxn(Message * msg);
+  RC process_rtxn_cont(Message * msg);
   RC process_log_msg(Message * msg);
   RC process_log_msg_rsp(Message * msg);
   RC init_phase(); 
+  uint64_t get_next_txn_id(); 
+  bool is_cc_new_timestamp(); 
 
 private:
   uint64_t _thd_txn_id;

@@ -28,6 +28,7 @@
 #include "work_queue.h"
 #include "message.h"
 
+/*
 void Sequencer::init(Workload * wl) {
   next_txn_id = 0;
 	rsp_cnt = g_node_cnt + g_client_node_cnt;
@@ -197,3 +198,4 @@ void Sequencer::reset_participating_nodes(bool * part_nodes) {
 		part_nodes[i] = false;
 }
 
+*/

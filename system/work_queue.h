@@ -20,27 +20,12 @@
 
 #include "global.h"
 #include "helper.h"
-#include "concurrentqueue.h"
+#include <queue>
+//#include "message.h"
 
-//template<typename T> class ConcurrentQueue;
 class BaseQuery;
-class BaseClientQuery;
 class Workload;
-
-struct abort_entry {
-  uint64_t penalty_end;
-  uint64_t txn_id;
-  struct abort_entry * next;
-  struct abort_entry * prev;
-  abort_entry() {
-  }
-  abort_entry(uint64_t penalty_end, uint64_t txn_id) {
-    this->penalty_end = penalty_end;
-    this->txn_id = txn_id;
-    this->next = NULL;
-    this->prev = NULL;
-  }
-};
+class Message;
 
 struct wq_entry {
   BaseQuery * qry;
@@ -51,82 +36,78 @@ struct wq_entry {
 
 typedef wq_entry * wq_entry_t;
 
-struct id_entry {
-  uint64_t id;
-  struct id_entry * next;
+struct work_queue_entry {
+  Message * msg;
+  uint64_t batch_id;
+  uint64_t txn_id;
+  RemReqType rtype;
+  uint64_t starttime;
 };
 
-typedef id_entry * id_entry_t;
 
-class QHash {
-public:
-  void init();
-  void lock();
-  void unlock();
-  bool in_qhash(uint64_t id);
-  void add_qhash(uint64_t id);
-  void update_qhash(uint64_t id);
-  void remove_qhash(uint64_t id);
-private:
-  uint64_t id_hash_size;
-  id_entry_t * id_hash;
-  pthread_mutex_t mtx;
+struct CompareSchedEntry {
+  bool operator()(const work_queue_entry* lhs, const work_queue_entry* rhs) {
+    if(lhs->batch_id == rhs->batch_id)
+      return lhs->starttime < rhs->starttime;
+    return lhs->batch_id < rhs->batch_id;
+  }
 };
-
-class AbortQueue {
-public:
-  abort_entry * head;
-  abort_entry * tail;
+struct CompareWQEntry {
+#if PRIORITY == PRIORITY_FCFS
+  bool operator()(const work_queue_entry* lhs, const work_queue_entry* rhs) {
+    return lhs->starttime < rhs->starttime;
+  }
+#elif PRIORITY == PRIORITY_ACTIVE
+  bool operator()(const work_queue_entry* lhs, const work_queue_entry* rhs) {
+    if(lhs->rtype == RTXN && rhs->rtype != RTXN)
+      return true;
+    if(rhs->rtype == RTXN && lhs->rtype != RTXN)
+      return false;
+    return lhs->starttime < rhs->starttime;
+  }
+#elif PRIORITY == PRIORITY_HOME
+  bool operator()(const work_queue_entry* lhs, const work_queue_entry* rhs) {
+    if(ISLOCAL(lhs->txn_id) && !ISLOCAL(rhs->txn_id))
+      return true;
+    if(ISLOCAL(rhs->txn_id) && !ISLOCAL(lhs->txn_id))
+      return false;
+    return lhs->starttime < rhs->starttime;
+  }
+#endif
 
 };
 
 class QWorkQueue {
 public:
-  void init(Workload * wl);
-  int inline get_idx(int input);
-  bool poll_next_query(int tid);
-  void finish(uint64_t time); 
-  void abort_finish(uint64_t time); 
-  void process_aborts(); 
-  void enqueue(uint64_t thd_id,BaseQuery * qry,bool busy); 
-  void sched_enqueue(BaseQuery * qry); 
-  bool sched_dequeue(BaseQuery *& qry); 
-  void enqueue_new(uint64_t thd_id,BaseQuery * qry); 
-  bool dequeue(uint64_t thd_id, BaseQuery *& qry);
-  bool set_active(uint64_t thd_id, uint64_t txn_id);
-  void delete_active(uint64_t thd_id, uint64_t txn_id);
-  void add_query(int tid, BaseQuery * qry);
-  void add_abort_query(int tid, BaseQuery * qry);
-  BaseQuery * get_next_query(int tid);
-  void remove_query(int tid, BaseQuery * qry);
-  void update_hash(int tid, uint64_t id);
-  void done(int tid, uint64_t id);
-  bool poll_abort(int tid); 
-  BaseQuery * get_next_abort_query(int tid);
-  uint64_t get_cnt() {return wq_cnt + rem_wq_cnt + new_wq_cnt;}
-  uint64_t get_wq_cnt() {return wq_cnt;}
-  uint64_t get_sched_wq_cnt() {return sched_wq_cnt;}
-  uint64_t get_rem_wq_cnt() {return rem_wq_cnt;}
-  uint64_t get_new_wq_cnt() {return new_wq_cnt;}
-  uint64_t get_abrt_cnt() {return abrt_cnt;}
+  void init();
+  void enqueue(uint64_t thd_id,Message * msg,bool busy); 
+  Message * dequeue();
+  void sched_enqueue(Message * msg); 
+  Message * sched_dequeue(); 
+
+  uint64_t get_cnt() {return get_wq_cnt() + get_rem_wq_cnt() + get_new_wq_cnt();}
+  uint64_t get_wq_cnt() {return work_queue.size();}
+  uint64_t get_sched_wq_cnt() {return scheduler_queue.size();}
+  uint64_t get_rem_wq_cnt() {return 0;} 
+  uint64_t get_new_wq_cnt() {return 0;}
+  //uint64_t get_rem_wq_cnt() {return remote_op_queue.size();}
+  //uint64_t get_new_wq_cnt() {return new_query_queue.size();}
+
+  void deactivate_txn_id(uint64_t txn_id); 
+  bool activate_txn_id(uint64_t txn_id); 
 
 
 private:
-  moodycamel::ConcurrentQueue<BaseQuery*,moodycamel::ConcurrentQueueDefaultTraits> wq;
-  moodycamel::ConcurrentQueue<BaseQuery*,moodycamel::ConcurrentQueueDefaultTraits> new_wq;
-  moodycamel::ConcurrentQueue<BaseQuery*,moodycamel::ConcurrentQueueDefaultTraits> rem_wq;
-  //moodycamel::ConcurrentQueue<BaseQuery*,moodycamel::ConcurrentQueueDefaultTraits> sched_wq;
-  QHash * hash;
-  int q_len;
-  uint64_t wq_cnt;
-  uint64_t sched_wq_cnt;
-  uint64_t rem_wq_cnt;
-  uint64_t new_wq_cnt;
-  uint64_t abrt_cnt;
-  uint64_t * active_txns;
+  std::priority_queue<work_queue_entry*,std::vector<work_queue_entry*>,CompareWQEntry> work_queue;
+/*  std::queue<Message*> work_queue;
+  std::queue<Message*> new_query_queue;
+  std::queue<Message*> remote_op_queue;
+  */
+  std::priority_queue<work_queue_entry*,std::vector<work_queue_entry*>,CompareSchedEntry> scheduler_queue;
+  std::set<uint64_t> active_txn_ids;
   pthread_mutex_t mtx;
-  pthread_cond_t cond;
-  Workload * _wl;
+  pthread_mutex_t sched_mtx;
+  pthread_mutex_t active_txn_mtx;
   uint64_t sched_ptr;
   BaseQuery * last_sched_dq;
   uint64_t curr_epoch;

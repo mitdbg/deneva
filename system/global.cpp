@@ -21,14 +21,13 @@
 #include "manager.h"
 #include "query.h"
 #include "client_query.h"
-#include "plock.h"
 #include "occ.h"
 #include "specex.h"
 #include "vll.h"
 #include "transport.h"
 #include "work_queue.h"
+#include "abort_queue.h"
 #include "msg_queue.h"
-#include "remote_query.h"
 #include "pool.h"
 #include "txn_table.h"
 #include "client_txn.h"
@@ -41,14 +40,12 @@ SimManager * simulation;
 Manager glob_manager;
 Query_queue query_queue;
 Client_query_queue client_query_queue;
-Plock part_lock_man;
 OptCC occ_man;
 SpecEx spec_man;
 #if CC_ALG == VLL
 VLLMan vll_man;
 #endif 
 Transport tport_man;
-Remote_query rem_qry_man;
 TxnPool txn_pool;
 AccessPool access_pool;
 TxnTablePool txn_table_pool;
@@ -56,7 +53,7 @@ MsgPool msg_pool;
 QryPool qry_pool;
 TxnTable txn_table;
 QWorkQueue work_queue;
-QWorkQueue abort_queue;
+AbortQueue abort_queue;
 MessageQueue msg_queue;
 Client_txn client_man;
 Sequencer seq_man;

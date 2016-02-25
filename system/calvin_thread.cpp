@@ -21,14 +21,10 @@
 #include "txn.h"
 #include "wl.h"
 #include "query.h"
-#include "plock.h"
-#include "occ.h"
-#include "vll.h"
 #include "ycsb_query.h"
 #include "tpcc_query.h"
 #include "mem_alloc.h"
 #include "transport.h"
-#include "remote_query.h"
 #include "math.h"
 #include "specex.h"
 #include "helper.h"
@@ -37,7 +33,9 @@
 #include "sequencer.h"
 #include "logger.h"
 #include "message.h"
+#include "work_queue.h"
 
+/*
 void CalvinLockThread::setup() {
 }
 
@@ -55,32 +53,31 @@ RC CalvinLockThread::run() {
     m_query = NULL;
     m_txn = NULL;
 
-    bool got_qry = work_queue.dequeue(_thd_id, m_query);
+    Message * msg = work_queue.dequeue();
 
-
-		if(!got_qry)
+		if(!msg)
 			continue;
     thd_prof_start = get_sys_clock();
 
-    assert(m_query->rtype == RTXN);
-    assert(m_query->txn_id != UINT64_MAX);
+    assert(msg->rtype == RTXN);
+    assert(msg->txn_id != UINT64_MAX);
 
-    txn_table.get_txn(g_node_id,m_query->txn_id,m_query->batch_id,m_txn,tmp_query);
+    txn_table.get_txn(g_node_id,msg->txn_id,msg->batch_id,m_txn,tmp_query);
     if(m_txn==NULL) {
       txn_pool.get(m_txn);
-      m_txn->set_txn_id(m_query->txn_id);
+      m_txn->set_txn_id(msg->txn_id);
     } 
-    txn_table.add_txn(g_node_id,m_txn,m_query);
+    txn_table.add_txn(g_node_id,m_txn,msg);
     m_txn->register_thd(this);
-    m_txn->batch_id = m_query->batch_id;
+    m_txn->batch_id = msg->batch_id;
     // Acquire locks
-    rc = m_txn->acquire_locks(m_query);
+    rc = m_txn->acquire_locks(msg);
 
     INC_STATS(_thd_id,thd_prof_thd3,get_sys_clock() - thd_prof_start);
 
 
     if(rc == RCOK) {
-      work_queue.enqueue(_thd_id,m_query,false);
+      work_queue.enqueue(_thd_id,msg,false);
     }
 
     work_queue.done(_thd_id,m_txn->get_txn_id());
@@ -104,7 +101,6 @@ void CalvinThread::setup() {
 RC CalvinThread::run() {
   tsetup();
 
-	BaseQuery * m_query = NULL;
 	RC rc = RCOK;
 	TxnManager * m_txn;
 
@@ -117,7 +113,6 @@ RC CalvinThread::run() {
   uint64_t thd_prof_start;
 
 	while(!simulation->is_done()) {
-    m_query = NULL;
     tmp_query = NULL;
     m_txn = NULL;
     uint64_t thd_prof_start_thd1 = get_sys_clock();
@@ -138,47 +133,47 @@ RC CalvinThread::run() {
 
     INC_STATS(_thd_id,thd_prof_thd1a,get_sys_clock() - thd_prof_start);
     thd_prof_start = get_sys_clock();
-    bool got_qry = work_queue.dequeue(_thd_id, m_query);
+    Message * msg = work_queue.dequeue();
 
     INC_STATS(_thd_id,thd_prof_thd1c,get_sys_clock() - thd_prof_start);
     thd_prof_start = get_sys_clock();
 
     INC_STATS(_thd_id,thd_prof_thd1d,get_sys_clock() - thd_prof_start);
     INC_STATS(_thd_id,thd_prof_thd1,get_sys_clock() - thd_prof_start_thd1);
-		if(!got_qry)
+		if(!msg)
 			continue;
     thd_prof_start = get_sys_clock();
     starttime = get_sys_clock();
 
-    assert(m_query);
+    assert(msg);
 
 		rc = RCOK;
 		txn_starttime = get_sys_clock();
-    assert(m_query->rtype <= NO_MSG);
-    uint64_t txn_type = (uint64_t)m_query->rtype;
-    uint64_t tid = m_query->txn_id;
+    assert(msg->rtype <= NO_MSG);
+    uint64_t txn_type = (uint64_t)msg->rtype;
+    uint64_t tid = msg->txn_id;
     uint64_t bid __attribute__((unused));
-    bid = m_query->batch_id;
+    bid = msg->batch_id;
     bool txn_done = false;
     uint64_t rsp_cnt;
 
-		switch(m_query->rtype) {
+		switch(msg->rtype) {
       case RFIN:
-				DEBUG("%ld RFIN (%ld,%ld)\n",_thd_id,m_query->txn_id,m_query->batch_id);
+				DEBUG("%ld RFIN (%ld,%ld)\n",_thd_id,msg->txn_id,msg->batch_id);
 				INC_STATS(0,rfin,1);
-				txn_table.get_txn(g_node_id,m_query->txn_id,m_query->batch_id,m_txn,tmp_query);
+				txn_table.get_txn(g_node_id,msg->txn_id,msg->batch_id,m_txn,tmp_query);
         assert(m_txn != NULL);
-        tmp_query = tmp_query->merge(m_query);
-        if(m_query != tmp_query) {
-          DEBUG_R("merge2 put 0x%lx\n",(uint64_t)m_query);
-          qry_pool.put(m_query);
+        tmp_query = tmp_query->merge(msg);
+        if(msg != tmp_query) {
+          DEBUG_R("merge2 put 0x%lx\n",(uint64_t)msg);
+          qry_pool.put(msg);
         }
-        m_query = tmp_query;
+        msg = tmp_query;
         m_txn->register_thd(this);
 				rsp_cnt = m_txn->incr_rsp2(1);
         assert(rsp_cnt >=0);
         if(m_txn->phase==6 && rsp_cnt == m_txn->active_cnt-1) {
-          rc = m_query->rc;
+          rc = msg->rc;
           txn_done = true;
         } else {
           rc = WAIT;
@@ -186,24 +181,9 @@ RC CalvinThread::run() {
         break;
       case RFWD:
 				INC_STATS(0,rfwd,1);
-        DEBUG("%ld RFWD (%ld,%ld)\n",_thd_id,m_query->txn_id,m_query->batch_id);
-				txn_table.get_txn(g_node_id,m_query->txn_id,m_query->batch_id,m_txn,tmp_query);
-        if(m_txn == NULL) {
-					rc = _wl->get_txn_man(m_txn);
-					assert(rc == RCOK);
-					m_txn->set_txn_id(m_query->txn_id);
-          m_txn->batch_id = m_query->batch_id;
-					txn_table.add_txn(g_node_id,m_txn,m_query);
-        } else {
-          tmp_query = tmp_query->merge(m_query);
-          if(m_query != tmp_query) {
-            DEBUG_R("merge2 put 0x%lx\n",(uint64_t)m_query);
-            qry_pool.put(m_query);
-          }
-          m_query = tmp_query;
-        }
+        DEBUG("%ld RFWD (%ld,%ld)\n",_thd_id,msg->txn_id,msg->batch_id);
+				txn_table.get_txn(g_node_id,msg->txn_id,msg->batch_id,m_txn,tmp_query);
         m_txn->register_thd(this);
-        m_txn->set_query(m_query);
 				rsp_cnt = m_txn->incr_rsp(1);
         if(m_txn->phase == 4 && rsp_cnt == m_txn->participant_cnt-1) {
           rc = m_txn->run_calvin_txn(m_query);
@@ -225,7 +205,6 @@ RC CalvinThread::run() {
         }
         m_query = tmp_query;
         assert(m_query->batch_id == simulation->get_worker_epoch() || m_query->batch_id == simulation->get_worker_epoch() - 1);
-        m_txn->set_query(m_query);
         m_txn->register_thd(this);
 
 				m_txn->abort_cnt = 0;
@@ -263,7 +242,8 @@ RC CalvinThread::run() {
         DEBUG_R("RACK (%ld,%ld)  0x%lx\n",m_query->txn_id,m_query->batch_id,(uint64_t)m_query);
         //printf("%ld RACK (%ld,%ld)  0x%lx\n",_thd_id,m_query->txn_id,m_query->batch_id,(uint64_t)m_query);
         m_query->rtype = RACK;
-        work_queue.enqueue(_thd_id,m_query,false);
+        // FIXME
+        work_queue.sched_enqueue(_thd_id,m_query);
       } else {
         msg_queue.enqueue(Message::create_message(m_query,RACK),m_query->return_id);
       }
@@ -289,7 +269,7 @@ RC CalvinSequencerThread::run() {
 	while(!simulation->is_done()) {
     m_query = NULL;
 
-    bool got_qry = work_queue.dequeue(_thd_id, m_query);
+    bool got_qry = work_queue.sched_dequeue(_thd_id, m_query);
 
     if(get_sys_clock() - last_batchtime >= g_batch_time_limit) {
       simulation->next_sched_epoch();
@@ -324,3 +304,4 @@ RC CalvinSequencerThread::run() {
 }
 
 
+*/

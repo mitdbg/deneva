@@ -26,7 +26,6 @@
 #include "manager.h"
 #include "math.h"
 #include "query.h"
-#include "plock.h"
 #include "occ.h"
 #include "vll.h"
 #include "transport.h"
@@ -35,6 +34,8 @@
 #include "sequencer.h"
 #include "logger.h"
 #include "sim_manager.h"
+#include "abort_queue.h"
+#include "work_queue.h"
 
 void * f(void *);
 void * g(void *);
@@ -118,20 +119,16 @@ int main(int argc, char* argv[])
 #endif
 
 
-  printf("Initializing remote query manager... ");
-  fflush(stdout);
-	rem_qry_man.init(g_node_id,m_wl);
-  printf("Done\n");
   printf("Initializing transport manager... ");
   fflush(stdout);
 	tport_man.init(g_node_id,m_wl);
   printf("Done\n");
   fflush(stdout);
   printf("Initializing work queue... ");
-  work_queue.init(m_wl);
+  work_queue.init();
   printf("Done\n");
   printf("Initializing abort queue... ");
-  abort_queue.init(m_wl);
+  abort_queue.init();
   printf("Done\n");
   printf("Initializing message queue... ");
   msg_queue.init();
@@ -201,11 +198,7 @@ int main(int argc, char* argv[])
 	//	query_queue.init(m_wl);
 	//}
 	//pthread_barrier_init( &warmup_bar, NULL, g_thread_cnt );
-#if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
-  printf("Initializing partition lock manager... ");
-	part_lock_man.init(g_node_id);
-  printf("Done\n");
-#elif CC_ALG == OCC
+#if CC_ALG == OCC
   printf("Initializing occ lock manager... ");
 	occ_man.init();
   printf("Done\n");

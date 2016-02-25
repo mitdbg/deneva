@@ -92,7 +92,7 @@ RC Row_lock::lock_get(lock_t type, TxnManager * txn, uint64_t* &txnids, int &txn
   conflict = owner_cnt > 0;
 #endif
 	if (CC_ALG == WAIT_DIE && !conflict) {
-		if (waiters_head && txn->get_ts() < waiters_head->txn->get_ts()) {
+		if (waiters_head && txn->get_timestamp() < waiters_head->txn->get_timestamp()) {
 			conflict = true;
       //printf("special ");
     }
@@ -110,7 +110,7 @@ RC Row_lock::lock_get(lock_t type, TxnManager * txn, uint64_t* &txnids, int &txn
 		// Cannot be added to the owner list.
 		if (CC_ALG == NO_WAIT) {
 			rc = Abort;
-      DEBUG("abort %ld,%ld %ld %lx\n",txn->get_txn_id(),txn->batch_id,_row->get_primary_key(),(uint64_t)_row);
+      DEBUG("abort %ld,%ld %ld %lx\n",txn->get_txn_id(),txn->get_batch_id(),_row->get_primary_key(),(uint64_t)_row);
       //printf("abort %ld %ld %lx\n",txn->get_txn_id(),_row->get_primary_key(),(uint64_t)_row);
 			goto final;
 		} else if (CC_ALG == DL_DETECT) {
@@ -123,8 +123,7 @@ RC Row_lock::lock_get(lock_t type, TxnManager * txn, uint64_t* &txnids, int &txn
 			LIST_PUT_TAIL(waiters_head, waiters_tail, entry);
 			waiter_cnt ++;
             rc = WAIT;
-            txn->rc = rc;
-            txn->wait_starttime = get_sys_clock();
+            //txn->wait_starttime = get_sys_clock();
 		} else if (CC_ALG == WAIT_DIE) {
             ///////////////////////////////////////////////////////////
             //  - T is the txn currently running
@@ -134,15 +133,15 @@ RC Row_lock::lock_get(lock_t type, TxnManager * txn, uint64_t* &txnids, int &txn
             //      T should abort
             //////////////////////////////////////////////////////////
 
-      //bool canwait = txn->get_ts() > max_owner_ts;
+      //bool canwait = txn->get_timestamp() > max_owner_ts;
 			bool canwait = true;
       LockEntry * en;
       for(uint64_t i = 0; i < owners_size; i++) {
         en = owners[i];
         while (en != NULL) {
-          if (txn->get_ts() > en->txn->get_ts()) {
-            //printf("abort %ld %ld -- %ld -- %f\n",txn->get_txn_id(),en->txn->get_txn_id(),_row->get_primary_key(),(float)(txn->get_ts() - en->txn->get_ts()) / BILLION);
-            INC_STATS(txn->get_thd_id(),twopl_time_diff,(txn->get_ts() - en->txn->get_ts()));
+          if (txn->get_timestamp() > en->txn->get_timestamp()) {
+            //printf("abort %ld %ld -- %ld -- %f\n",txn->get_txn_id(),en->txn->get_txn_id(),_row->get_primary_key(),(float)(txn->get_timestamp() - en->txn->get_timestamp()) / BILLION);
+            INC_STATS(txn->get_thd_id(),twopl_time_diff,(txn->get_timestamp() - en->txn->get_timestamp()));
             canwait = false;
             break;
           }
@@ -166,7 +165,7 @@ RC Row_lock::lock_get(lock_t type, TxnManager * txn, uint64_t* &txnids, int &txn
         ATOM_CAS(txn->lock_ready,true,false);
         txn->incr_lr();
 				en = waiters_head;
-				while (en != NULL && txn->get_ts() < en->txn->get_ts()) 
+				while (en != NULL && txn->get_timestamp() < en->txn->get_timestamp()) 
 					en = en->next;
 				if (en) {
 					LIST_INSERT_BEFORE(en, entry,waiters_head);
@@ -174,39 +173,30 @@ RC Row_lock::lock_get(lock_t type, TxnManager * txn, uint64_t* &txnids, int &txn
 					LIST_PUT_TAIL(waiters_head, waiters_tail, entry);
 
 			  waiter_cnt ++;
-        DEBUG("wait %ld,%ld %ld %lx\n",txn->get_txn_id(),txn->batch_id,_row->get_primary_key(),(uint64_t)_row);
-        //printf("wait %ld %ld %lx\n",txn->get_txn_id(),_row->get_primary_key(),(uint64_t)_row);
+        DEBUG("wait %ld,%ld %ld %lx\n",txn->get_txn_id(),txn->get_batch_id(),_row->get_primary_key(),(uint64_t)_row);
         rc = WAIT;
-        txn->rc = rc;
-        txn->cc_wait_cnt++;
-        txn->wait_starttime = get_sys_clock();
-        //printf("wait \n");
+        //txn->wait_starttime = get_sys_clock();
       } else {
         INC_STATS(txn->get_thd_id(),abort_from_ts,1);
-        DEBUG("abort %ld,%ld %ld %lx\n",txn->get_txn_id(),txn->batch_id,_row->get_primary_key(),(uint64_t)_row);
-        //printf("abort %ld %ld %lx\n",txn->get_txn_id(),_row->get_primary_key(),(uint64_t)_row);
+        DEBUG("abort %ld,%ld %ld %lx\n",txn->get_txn_id(),txn->get_batch_id(),_row->get_primary_key(),(uint64_t)_row);
         rc = Abort;
-        //printf("abort \n");
       }
     } else if (CC_ALG == CALVIN){
 			LockEntry * entry = get_entry();
       entry->start_ts = get_sys_clock();
 			entry->txn = txn;
 			entry->type = type;
-      DEBUG("wait %ld,%ld %ld\n",txn->get_txn_id(),txn->batch_id,_row->get_primary_key());
-      //printf("wait %ld %ld\n",txn->get_txn_id(),_row->get_primary_key());
+      DEBUG("wait %ld,%ld %ld\n",txn->get_txn_id(),txn->get_batch_id(),_row->get_primary_key());
 			LIST_PUT_TAIL(waiters_head, waiters_tail, entry);
 			waiter_cnt ++;
       //txn->lock_ready = false;
       ATOM_CAS(txn->lock_ready,true,false);
       txn->incr_lr();
       rc = WAIT;
-      txn->rc = rc;
-      txn->wait_starttime = get_sys_clock();
+      //txn->wait_starttime = get_sys_clock();
     }
 	} else { 
-    DEBUG("1lock %ld,%ld %ld %lx\n",txn->get_txn_id(),txn->batch_id,_row->get_primary_key(),(uint64_t)_row);
-    //printf("1lock %ld %ld %lx\n",txn->get_txn_id(),_row->get_primary_key(),(uint64_t)_row);
+    DEBUG("1lock %ld,%ld %ld %lx\n",txn->get_txn_id(),txn->get_batch_id(),_row->get_primary_key(),(uint64_t)_row);
 #if DEBUG_TIMELINE
     printf("LOCK %ld %ld\n",entry->txn->get_txn_id(),entry->start_ts);
 #endif
@@ -217,8 +207,8 @@ RC Row_lock::lock_get(lock_t type, TxnManager * txn, uint64_t* &txnids, int &txn
 		entry->txn = txn;
 		STACK_PUSH(owners[hash(txn->get_txn_id())], entry);
 #endif
-    if(txn->get_ts() > max_owner_ts)
-      max_owner_ts = txn->get_ts();
+    if(txn->get_timestamp() > max_owner_ts)
+      max_owner_ts = txn->get_timestamp();
 		owner_cnt ++;
     if(lock_type == LOCK_NONE)
       own_starttime = get_sys_clock();
@@ -271,8 +261,7 @@ RC Row_lock::lock_release(TxnManager * txn) {
   INC_STATS(txn->get_thd_id(),thd_prof_cc0,get_sys_clock() - thd_prof_start);
   thd_prof_start = get_sys_clock();
 
-  DEBUG("unlock %ld,%ld %ld %lx\n",txn->get_txn_id(),txn->batch_id,_row->get_primary_key(),(uint64_t)_row);
-  //printf("unlock %ld %ld\n",txn->get_txn_id(),_row->get_primary_key());
+  DEBUG("unlock %ld,%ld %ld %lx\n",txn->get_txn_id(),txn->get_batch_id(),_row->get_primary_key(),(uint64_t)_row);
 
   // If CC is NO_WAIT or WAIT_DIE, txn should own this lock
   // What about Calvin?
@@ -336,8 +325,6 @@ RC Row_lock::lock_release(TxnManager * txn) {
 		ASSERT(en);
     uint64_t t = get_sys_clock() - en->start_ts;
     // Stats
-    en->txn->cc_wait_time += t;
-    en->txn->txn_time_wait += t;
 
 		LIST_REMOVE(en);
 		if (en == waiters_head)
@@ -355,39 +342,36 @@ RC Row_lock::lock_release(TxnManager * txn) {
 		ASSERT(lock_type == LOCK_NONE);
 #if DEBUG_ASSERT && CC_ALG == WAIT_DIE 
   for (en = waiters_head; en != NULL && en->next != NULL; en = en->next)
-    assert(en->next->txn->get_ts() < en->txn->get_ts());
+    assert(en->next->txn->get_timestamp() < en->txn->get_timestamp());
   for (en = waiters_head; en != NULL && en->next != NULL; en = en->next)
     assert(en->txn->get_txn_id() !=txn->get_txn_id());
 #endif
 
 	LockEntry * entry;
-    ts_t t;
 	// If any waiter can join the owners, just do it!
 	while (waiters_head && !conflict_lock(lock_type, waiters_head->type)) {
 		LIST_GET_HEAD(waiters_head, waiters_tail, entry);
 #if DEBUG_TIMELINE
     printf("LOCK %ld %ld\n",entry->txn->get_txn_id(),get_sys_clock());
 #endif
-    DEBUG("2lock %ld,%ld %ld %lx\n",entry->txn->get_txn_id(),entry->txn->batch_id,_row->get_primary_key(),(uint64_t)_row);
+    DEBUG("2lock %ld,%ld %ld %lx\n",entry->txn->get_txn_id(),entry->txn->get_batch_id(),_row->get_primary_key(),(uint64_t)_row);
     //printf("2lock %ld %ld %lx\n",entry->txn->get_txn_id(),_row->get_primary_key(),(uint64_t)_row);
     // Stats
-    t = get_sys_clock() - entry->start_ts;
+    //t = get_sys_clock() - entry->start_ts;
     //INC_STATS(0, time_wait_lock, t);
-    entry->txn->cc_wait_time += t;
-    entry->txn->txn_time_wait += t;
 
 #if CC_ALG != NO_WAIT
 		STACK_PUSH(owners[hash(entry->txn->get_txn_id())], entry);
 #endif 
 		owner_cnt ++;
 		waiter_cnt --;
-    if(entry->txn->get_ts() > max_owner_ts)
-      max_owner_ts = entry->txn->get_ts();
+    if(entry->txn->get_timestamp() > max_owner_ts)
+      max_owner_ts = entry->txn->get_timestamp();
 		ASSERT(entry->txn->lock_ready == false);
     //if(entry->txn->decr_lr() == 0 && entry->txn->locking_done) {
     if(entry->txn->decr_lr() == 0) {
       if(ATOM_CAS(entry->txn->lock_ready,false,true))
-        txn_table.restart_txn(entry->txn->get_txn_id(),entry->txn->batch_id);
+        txn_table.restart_txn(entry->txn->get_txn_id(),entry->txn->get_batch_id());
     }
     if(lock_type == LOCK_NONE)
       own_starttime = get_sys_clock();

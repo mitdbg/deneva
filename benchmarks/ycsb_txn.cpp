@@ -43,11 +43,12 @@ void YCSBTxnManager::init(Workload * h_wl) {
 
 RC YCSBTxnManager::acquire_locks() {
   assert(CC_ALG == VLL || CC_ALG == CALVIN);
+  YCSBQuery* ycsb_query = (YCSBQuery*) query;
   locking_done = false;
   RC rc = RCOK;
   incr_lr();
-	for (uint32_t rid = 0; rid < query->request_cnt; rid ++) {
-		ycsb_request * req = query->requests[rid];
+	for (uint32_t rid = 0; rid < ycsb_query->requests.size(); rid ++) {
+		ycsb_request * req = ycsb_query->requests[rid];
 		uint64_t part_id = _wl->key_to_part( req->key );
     if(GET_NODE_ID(part_id) != g_node_id)
       continue;
@@ -86,7 +87,7 @@ RC YCSBTxnManager::run_txn() {
 #endif
   if(IS_LOCAL(txn->txn_id) && state == YCSB_0 && next_record_id == 0) {
     DEBUG("Running txn %ld\n",txn->txn_id);
-    query->print();
+    //query->print();
   }
 
   while(rc == RCOK && !is_done()) {
@@ -116,7 +117,7 @@ RC YCSBTxnManager::run_txn_post_wait() {
 }
 
 bool YCSBTxnManager::is_done() {
-  return next_record_id == query->request_cnt;
+  return next_record_id == ((YCSBQuery*)query)->requests.size();
 }
 
 void YCSBTxnManager::next_ycsb_state() {
@@ -126,7 +127,7 @@ void YCSBTxnManager::next_ycsb_state() {
       break;
     case YCSB_1:
       next_record_id++;
-      if(next_record_id < query->request_cnt) {
+      if(next_record_id < ((YCSBQuery*)query)->requests.size()) {
         state = YCSB_0;
       }
       else {
@@ -141,21 +142,23 @@ void YCSBTxnManager::next_ycsb_state() {
 }
 
 bool YCSBTxnManager::is_local_request(uint64_t idx) {
-  return GET_NODE_ID(_wl->key_to_part(query->requests[idx]->key)) == g_node_id;
+  return GET_NODE_ID(_wl->key_to_part(((YCSBQuery*)query)->requests[idx]->key)) == g_node_id;
 }
 
 RC YCSBTxnManager::send_remote_request() {
   YCSBQuery * temp = new YCSBQuery;
-  uint64_t dest_node_id = GET_NODE_ID(query->requests[next_record_id]->key);
+  YCSBQuery* ycsb_query = (YCSBQuery*) query;
+  uint64_t dest_node_id = GET_NODE_ID(ycsb_query->requests[next_record_id]->key);
   while(!is_local_request(next_record_id)) {
-    temp->requests.push_back(query->requests[next_record_id++]);
+    temp->requests.push_back(ycsb_query->requests[next_record_id++]);
   }
-  msg_queue.enqueue(Message::create_message((BaseQuery*)temp,RQRY),dest_node_id);
+  msg_queue.enqueue(Message::create_message(this,RQRY),dest_node_id);
   return WAIT_REM;
 }
 
 RC YCSBTxnManager::run_txn_state() {
-	ycsb_request * req = query->requests[next_record_id];
+  YCSBQuery* ycsb_query = (YCSBQuery*) query;
+	ycsb_request * req = ycsb_query->requests[next_record_id];
 	uint64_t part_id = _wl->key_to_part( req->key );
   bool loc = GET_NODE_ID(part_id) == g_node_id;
 
@@ -175,7 +178,7 @@ RC YCSBTxnManager::run_txn_state() {
       break;
     case YCSB_FIN :
       state = YCSB_FIN;
-		  return finish(query,false);
+      break;
     default:
 			assert(false);
   }
@@ -217,6 +220,7 @@ RC YCSBTxnManager::run_ycsb_1(access_t acctype, row_t * row_local) {
 }
 RC YCSBTxnManager::run_calvin_txn() {
   RC rc = RCOK;
+  YCSBQuery* ycsb_query = (YCSBQuery*) query;
   uint64_t participant_cnt;
   uint64_t active_cnt;
   uint64_t participant_nodes[10];
@@ -233,13 +237,13 @@ RC YCSBTxnManager::run_calvin_txn() {
           active_nodes[i] = false;
         }
 
-        for(uint64_t i = 0; i < query->request_cnt; i++) {
-          uint64_t req_nid = GET_NODE_ID(_wl->key_to_part(query->requests[i]->key));
+        for(uint64_t i = 0; i < ycsb_query->requests.size(); i++) {
+          uint64_t req_nid = GET_NODE_ID(_wl->key_to_part(ycsb_query->requests[i]->key));
           if(!participant_nodes[req_nid]) {
             participant_cnt++;
             participant_nodes[req_nid] = true;
           }
-          if(query->requests[i]->acctype == WR && !active_nodes[req_nid]) {
+          if(ycsb_query->requests[i]->acctype == WR && !active_nodes[req_nid]) {
             active_cnt++;
             active_nodes[req_nid] = true;
           }
@@ -255,7 +259,7 @@ RC YCSBTxnManager::run_calvin_txn() {
         break;
       case 3:
         // Phase 3: Serve remote reads
-        rc = send_remote_reads(query);
+        rc = send_remote_reads(ycsb_query);
         if(active_nodes[g_node_id]) {
           ATOM_ADD(this->phase,1); //4
           if(get_rsp_cnt() == participant_cnt-1) {
@@ -277,14 +281,17 @@ RC YCSBTxnManager::run_calvin_txn() {
       case 5:
         // Phase 5: Execute transaction / perform local writes
         rc = run_ycsb();
-        rc = calvin_finish(query);
+        rc = calvin_finish(ycsb_query);
         ATOM_ADD(this->phase,1); //6
+        // FIXME
+        /*
         if(get_rsp2_cnt() == active_cnt-1) {
           rc = RCOK;
         } else {
         DEBUG("Phase6 (%ld,%ld)\n",txn->txn_id,txn->batch_id);
             rc = WAIT;
         }
+        */
         break;
       default:
         assert(false);
@@ -296,9 +303,10 @@ RC YCSBTxnManager::run_calvin_txn() {
 RC YCSBTxnManager::run_ycsb() {
   RC rc = RCOK;
   assert(CC_ALG == CALVIN);
+  YCSBQuery* ycsb_query = (YCSBQuery*) query;
   
-  for (uint64_t i = 0; i < query->request_cnt; i++) {
-	  ycsb_request * req = query->requests[i];
+  for (uint64_t i = 0; i < ycsb_query->requests.size(); i++) {
+	  ycsb_request * req = ycsb_query->requests[i];
     if(this->phase == 2 && req->acctype == WR)
       continue;
     if(this->phase == 5 && req->acctype == RD)

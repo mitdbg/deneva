@@ -35,10 +35,10 @@
 #include "transport.h"
 #include "nn.hpp"
 #include "mem_alloc.h"
-#include "remote_query.h"
 #include "tpcc_query.h"
 #include "query.h"
 #include "wl.h"
+#include "message.h"
 
 #define MAX_IFADDR_LEN 20
 
@@ -320,10 +320,11 @@ void Transport::send_msg(uint64_t sid, uint64_t dest_id, void * sbuf,int size) {
 }
 
 // Listens to socket for messages from other nodes
-bool Transport::recv_msg() {
+std::vector<Message*> Transport::recv_msg() {
 	int bytes = 0;
 	void * buf;
   uint64_t starttime = get_sys_clock();
+  std::vector<Message*> msgs;
 	
 	for(uint64_t i=0;i<_sock_cnt;i++) {
 		bytes = s[rr++ % _sock_cnt].sock.recv(&buf, NN_MSG, NN_DONTWAIT);
@@ -347,7 +348,7 @@ bool Transport::recv_msg() {
   */
 	// Discard any messages not intended for this node
 	if(bytes <= 0 ) {
-    return false;
+    return msgs;
 	}
 
 	// Calculate time of message delay
@@ -364,14 +365,15 @@ bool Transport::recv_msg() {
 	starttime = get_sys_clock();
 	INC_STATS(_thd_id,msg_rcv_cnt,1);
 
-  rem_qry_man.unmarshall(buf,bytes);
+  //rem_qry_man.unmarshall(buf,bytes);
+  msgs = Message::create_messages((char*)buf);
 
 	//DEBUG("Msg delay: %d->%d, %d bytes, %f s\n",return_id,
   //          dest_id,bytes,((float)(time2-time))/BILLION);
 	nn::freemsg(buf);	
 
 	INC_STATS(_thd_id,time_unpack,get_sys_clock()-starttime);
-  return true;
+  return msgs;
 }
 
 void Transport::simple_send_msg(int size) {

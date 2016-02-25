@@ -28,6 +28,7 @@ class BaseQuery {
 public:
   virtual bool readonly() = 0;
 	uint64_t waiting_time;
+  void clear();
 
   // Prevent unnecessary remote messages
   std::vector<uint64_t> partitions;

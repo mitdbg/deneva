@@ -15,36 +15,38 @@
 */
 
 #include "global.h"
+#include "helper.h"
 #include "manager.h"
 #include "thread.h"
 #include "io_thread.h"
-#include "txn.h"
-#include "wl.h"
 #include "query.h"
-#include "plock.h"
-#include "occ.h"
-#include "vll.h"
 #include "ycsb_query.h"
 #include "tpcc_query.h"
 #include "mem_alloc.h"
 #include "transport.h"
-#include "remote_query.h"
 #include "math.h"
-#include "specex.h"
-#include "helper.h"
 #include "msg_thread.h"
 #include "msg_queue.h"
-#include "sequencer.h"
-#include "logger.h"
+#include "message.h"
 #include "client_txn.h"
-#include "client_query.h"
+#include "work_queue.h"
 
 void InputThread::setup() {
 
+  std::vector<Message*> msgs;
   while(!simulation->is_setup_done()) {
-    tport_man.recv_msg();
-    if(ISCLIENT) {
-      check_for_init_done();
+    msgs = tport_man.recv_msg();
+    while(!msgs.empty()) {
+      Message * msg = msgs.front();
+      if(msg->rtype == INIT_DONE) {
+        printf("Received INIT_DONE from node %ld\n",msg->return_node_id);
+        fflush(stdout);
+        simulation->process_setup_msg();
+      } else {
+        assert(ISSERVER);
+        work_queue.enqueue(g_thread_cnt,msg,false);
+      }
+      msgs.erase(msgs.begin());
     }
   }
 }
@@ -69,26 +71,23 @@ RC InputThread::client_recv_loop() {
 	run_starttime = get_sys_clock();
   uint64_t return_node_offset;
   uint64_t inf;
-  BaseQuery * m_query = NULL;
+
+  std::vector<Message*> msgs;
 
 	while (!simulation->is_done()) {
-		tport_man.recv_msg();
+		msgs = tport_man.recv_msg();
     //while((m_query = work_queue.get_next_query(get_thd_id())) != NULL) {
-    while(work_queue.dequeue(0,m_query)) { 
-			assert(m_query->rtype == CL_RSP);
-			assert(m_query->dest_id == g_node_id);
-			switch (m_query->rtype) {
-				case CL_RSP:
-          return_node_offset = m_query->return_id - g_server_start_node;
-          assert(return_node_offset < g_servers_per_client);
-		      rsp_cnts[return_node_offset]++;
-					inf = client_man.dec_inflight(return_node_offset);
-          assert(inf >=0);
-					break;
-				default:
-					assert(false);
-			}
-      qry_pool.put(m_query);
+    //Message * msg = work_queue.dequeue();
+    while(!msgs.empty()) {
+      Message * msg = msgs.front();
+			assert(msg->rtype == CL_RSP);
+      return_node_offset = msg->return_node_id - g_server_start_node;
+      assert(return_node_offset < g_servers_per_client);
+      rsp_cnts[return_node_offset]++;
+      inf = client_man.dec_inflight(return_node_offset);
+      assert(inf >=0);
+      // TODO: delete message
+      msgs.erase(msgs.begin());
     }
 
 	}
@@ -106,28 +105,21 @@ RC InputThread::server_recv_loop() {
 	assert (rc == RCOK);
 
   uint64_t thd_prof_start;
+  std::vector<Message*> msgs;
 	while (!simulation->is_done()) {
     thd_prof_start = get_sys_clock();
-    if(tport_man.recv_msg()) {
-      INC_STATS(_thd_id,rthd_prof_1,get_sys_clock() - thd_prof_start);
-    } else {
-      INC_STATS(_thd_id,rthd_prof_2,get_sys_clock() - thd_prof_start);
+		msgs = tport_man.recv_msg();
+    while(!msgs.empty()) {
+      Message * msg = msgs.front();
+      work_queue.enqueue(g_thread_cnt,msg,false);
+      msgs.erase(msgs.begin());
     }
+    INC_STATS(_thd_id,rthd_prof_1,get_sys_clock() - thd_prof_start);
 
 	}
   printf("FINISH %ld:%ld\n",_node_id,_thd_id);
   fflush(stdout);
   return FINISH;
-}
-
-void InputThread::check_for_init_done() {
-  BaseQuery * m_query = NULL;
-    while(work_queue.dequeue(0,m_query)) { 
-      assert(m_query->rtype == INIT_DONE);
-      printf("Received INIT_DONE from node %ld\n",m_query->return_id);
-      fflush(stdout);
-      simulation->process_setup_msg();
-    }
 }
 
 void OutputThread::setup() {

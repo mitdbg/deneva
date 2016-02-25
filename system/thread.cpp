@@ -20,21 +20,8 @@
 #include "txn.h"
 #include "wl.h"
 #include "query.h"
-#include "plock.h"
-#include "occ.h"
-#include "vll.h"
-#include "ycsb_query.h"
-#include "tpcc_query.h"
-#include "mem_alloc.h"
-#include "transport.h"
-#include "remote_query.h"
 #include "math.h"
-#include "specex.h"
 #include "helper.h"
-#include "msg_thread.h"
-#include "msg_queue.h"
-#include "sequencer.h"
-#include "logger.h"
 
 void Thread::init(uint64_t thd_id, uint64_t node_id, Workload * workload) {
 	_thd_id = thd_id;
