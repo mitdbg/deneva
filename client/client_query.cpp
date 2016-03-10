@@ -25,18 +25,16 @@
 //     class Query_queue
 /*************************************************/
 
-Client_query_queue::Client_query_queue() {
+void 
+Client_query_queue::init(Workload * h_wl) {
+	_wl = h_wl;
+
   for ( UInt32 server_id = 0; server_id < g_servers_per_client; server_id ++) {
     std::vector<BaseQuery*> new_queries(g_max_txn_per_part+4,NULL);
     queries.push_back(new_queries);
     query_cnt.push_back(0);
   }
   next_tid = 0;
-}
-
-void 
-Client_query_queue::init(Workload * h_wl) {
-	_wl = h_wl;
 
     pthread_t * p_thds = new pthread_t[g_init_parallelism - 1];
     for (UInt32 i = 0; i < g_init_parallelism - 1; i++) {

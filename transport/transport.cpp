@@ -298,6 +298,7 @@ void Transport::send_msg(uint64_t sid, uint64_t dest_id, void * sbuf,int size) {
 	memcpy(buf,sbuf,size);
   int rc = -1;
   //int attempts = 0;
+  DEBUG("Sending batch of %d bytes to node %ld on socket %ld\n",size,dest_id,idx);
 
   while(rc < 0 && !simulation->is_done()) {
     rc= s[idx].sock.send(&buf,NN_MSG,NN_DONTWAIT);

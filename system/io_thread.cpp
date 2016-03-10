@@ -123,6 +123,7 @@ RC InputThread::server_recv_loop() {
 }
 
 void OutputThread::setup() {
+  messager = (MessageThread *) mem_allocator.alloc(sizeof(MessageThread));
   messager->init(_thd_id);
 	while (!simulation->is_setup_done()) {
     messager->run();

@@ -77,6 +77,12 @@ int main(int argc, char* argv[])
 	}
 	m_wl->Workload::init();
 	printf("workload initialized!\n");
+
+  printf("Initializing simulation... ");
+  fflush(stdout);
+  simulation = new SimManager;
+  simulation->init();
+  printf("Done\n");
 #if NETWORK_TEST
 	tport_man.init(g_node_id,m_wl);
 	sleep(3);

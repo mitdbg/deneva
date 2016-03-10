@@ -59,7 +59,7 @@ uint64_t YCSBQuery::participants(bool *& pps,Workload * wl) {
   for(uint64_t i = 0; i < g_node_cnt; i++)
     pps[i] = false;
 
-  for(uint64_t i = 0; i < request_cnt; i++) {
+  for(uint64_t i = 0; i < requests.size(); i++) {
     uint64_t req_nid = GET_NODE_ID(((YCSBWorkload*)wl)->key_to_part(requests[i]->key));
     if(!pps[req_nid])
       n++;
@@ -69,7 +69,7 @@ uint64_t YCSBQuery::participants(bool *& pps,Workload * wl) {
 }
 
 bool YCSBQuery::readonly() {
-  for(uint64_t i = 0; i < request_cnt; i++) {
+  for(uint64_t i = 0; i < requests.size(); i++) {
     if(requests[i]->acctype == WR) {
       return false;
     }

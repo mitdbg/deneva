@@ -32,7 +32,6 @@ class tpcc_client_query;
 // queue model might be implemented.
 class Client_query_queue {
 public:
-  Client_query_queue();
 	void init(Workload * h_wl);
   bool done(); 
 	BaseQuery * get_next_query(uint64_t server_id,uint64_t thread_id);

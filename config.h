@@ -5,7 +5,7 @@
 /***********************************************/
 // Simulation + Hardware
 /***********************************************/
-#define NODE_CNT 2
+#define NODE_CNT 1
 #define THREAD_CNT 1
 #define REM_THREAD_CNT 1
 #define SEND_THREAD_CNT 1
@@ -13,9 +13,9 @@
 // PART_CNT should be at least NODE_CNT
 #define PART_CNT NODE_CNT
 #define CLIENT_NODE_CNT 1
-#define CLIENT_THREAD_CNT 2
+#define CLIENT_THREAD_CNT 1
 #define CLIENT_REM_THREAD_CNT 1
-#define CLIENT_SEND_THREAD_CNT 2
+#define CLIENT_SEND_THREAD_CNT 1
 #define CLIENT_RUNTIME false
 
 // Replication
@@ -70,7 +70,7 @@
 #define TPORT_TYPE "ipc"
 #define TPORT_TYPE_IPC true
 #define TPORT_PORT "_.ipc"
-#define SET_AFINITY false
+#define SET_AFFINITY true
 
 #define MAX_TPORT_NAME 128
 #define MSG_SIZE 128 // in bytes
@@ -155,7 +155,7 @@
 // max number of rows touched per transaction
 #define MAX_ROW_PER_TXN       64
 #define QUERY_INTVL         1UL
-#define MAX_TXN_PER_PART 100000
+#define MAX_TXN_PER_PART 10
 #define FIRST_PART_LOCAL      true
 #define MAX_TUPLE_SIZE        1024 // in bytes
 #define GEN_BY_MPR false
@@ -166,7 +166,7 @@
 #define SKEW_METHOD HOT
 #define DATA_PERC 100
 #define ACCESS_PERC 0.03
-#define INIT_PARALLELISM 8
+#define INIT_PARALLELISM 1
 #define SYNTH_TABLE_SIZE 2056 //2097152*8
 #define ZIPF_THETA 0.6
 #define TXN_WRITE_PERC 0.5

@@ -61,19 +61,21 @@ public:
 
   void print();
   
-  std::vector<ycsb_request *> requests;
 	void init(uint64_t thd_id, Workload * h_wl) {};
   void init() {};
   uint64_t participants(bool *& pps,Workload * wl); 
   bool readonly();
 	
+
+  std::vector<ycsb_request *> requests;
+  /*
+  uint64_t rid;
   uint64_t access_cnt;
 	uint64_t request_cnt;
-
-  uint64_t rid;
 	uint64_t req_i;
   ycsb_request req;
   uint64_t rqry_req_cnt;
+  */
 
 };
 
