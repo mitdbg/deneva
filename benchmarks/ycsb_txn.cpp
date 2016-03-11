@@ -48,15 +48,19 @@ RC YCSBTxnManager::acquire_locks() {
   RC rc = RCOK;
   incr_lr();
 	for (uint32_t rid = 0; rid < ycsb_query->requests.size(); rid ++) {
-		ycsb_request * req = ycsb_query->requests[rid];
-		uint64_t part_id = _wl->key_to_part( req->key );
+		ycsb_request req = ycsb_query->requests[rid];
+		//ycsb_request * req = ycsb_query->requests[rid];
+		uint64_t part_id = _wl->key_to_part( req.key );
+		//uint64_t part_id = _wl->key_to_part( req->key );
     if(GET_NODE_ID(part_id) != g_node_id)
       continue;
 		INDEX * index = _wl->the_index;
 		itemid_t * item;
-		item = index_read(index, req->key, part_id);
+		item = index_read(index, req.key, part_id);
+		//item = index_read(index, req->key, part_id);
 		row_t * row = ((row_t *)item->location);
-		RC rc2 = get_lock(row,req->acctype);
+		RC rc2 = get_lock(row,req.acctype);
+		//RC rc2 = get_lock(row,req->acctype);
     if(rc2 != RCOK) {
       rc = rc2;
     }
@@ -142,13 +146,15 @@ void YCSBTxnManager::next_ycsb_state() {
 }
 
 bool YCSBTxnManager::is_local_request(uint64_t idx) {
-  return GET_NODE_ID(_wl->key_to_part(((YCSBQuery*)query)->requests[idx]->key)) == g_node_id;
+  return GET_NODE_ID(_wl->key_to_part(((YCSBQuery*)query)->requests[idx].key)) == g_node_id;
+  //return GET_NODE_ID(_wl->key_to_part(((YCSBQuery*)query)->requests[idx]->key)) == g_node_id;
 }
 
 RC YCSBTxnManager::send_remote_request() {
   YCSBQuery * temp = new YCSBQuery;
   YCSBQuery* ycsb_query = (YCSBQuery*) query;
-  uint64_t dest_node_id = GET_NODE_ID(ycsb_query->requests[next_record_id]->key);
+  uint64_t dest_node_id = GET_NODE_ID(ycsb_query->requests[next_record_id].key);
+  //uint64_t dest_node_id = GET_NODE_ID(ycsb_query->requests[next_record_id]->key);
   while(!is_local_request(next_record_id)) {
     temp->requests.push_back(ycsb_query->requests[next_record_id++]);
   }
@@ -158,8 +164,10 @@ RC YCSBTxnManager::send_remote_request() {
 
 RC YCSBTxnManager::run_txn_state() {
   YCSBQuery* ycsb_query = (YCSBQuery*) query;
-	ycsb_request * req = ycsb_query->requests[next_record_id];
-	uint64_t part_id = _wl->key_to_part( req->key );
+	ycsb_request req = ycsb_query->requests[next_record_id];
+	//ycsb_request * req = ycsb_query->requests[next_record_id];
+	uint64_t part_id = _wl->key_to_part( req.key );
+	//uint64_t part_id = _wl->key_to_part( req->key );
   bool loc = GET_NODE_ID(part_id) == g_node_id;
 
 	RC rc = RCOK;
@@ -167,14 +175,15 @@ RC YCSBTxnManager::run_txn_state() {
 	switch (state) {
 		case YCSB_0 :
       if(loc) {
-        rc = run_ycsb_0(req,row);
+        rc = run_ycsb_0(&req,row);
       } else {
         send_remote_request();
       }
 
       break;
 		case YCSB_1 :
-      rc = run_ycsb_1(req->acctype,row);
+      rc = run_ycsb_1(req.acctype,row);
+      //rc = run_ycsb_1(req->acctype,row);
       break;
     case YCSB_FIN :
       state = YCSB_FIN;
@@ -238,12 +247,14 @@ RC YCSBTxnManager::run_calvin_txn() {
         }
 
         for(uint64_t i = 0; i < ycsb_query->requests.size(); i++) {
-          uint64_t req_nid = GET_NODE_ID(_wl->key_to_part(ycsb_query->requests[i]->key));
+          uint64_t req_nid = GET_NODE_ID(_wl->key_to_part(ycsb_query->requests[i].key));
+          //uint64_t req_nid = GET_NODE_ID(_wl->key_to_part(ycsb_query->requests[i]->key));
           if(!participant_nodes[req_nid]) {
             participant_cnt++;
             participant_nodes[req_nid] = true;
           }
-          if(ycsb_query->requests[i]->acctype == WR && !active_nodes[req_nid]) {
+          if(ycsb_query->requests[i].acctype == WR && !active_nodes[req_nid]) {
+          //if(ycsb_query->requests[i]->acctype == WR && !active_nodes[req_nid]) {
             active_cnt++;
             active_nodes[req_nid] = true;
           }
@@ -306,23 +317,29 @@ RC YCSBTxnManager::run_ycsb() {
   YCSBQuery* ycsb_query = (YCSBQuery*) query;
   
   for (uint64_t i = 0; i < ycsb_query->requests.size(); i++) {
-	  ycsb_request * req = ycsb_query->requests[i];
-    if(this->phase == 2 && req->acctype == WR)
+	  ycsb_request req = ycsb_query->requests[i];
+	  //ycsb_request * req = ycsb_query->requests[i];
+    if(this->phase == 2 && req.acctype == WR)
+    //if(this->phase == 2 && req->acctype == WR)
       continue;
-    if(this->phase == 5 && req->acctype == RD)
+    //if(this->phase == 5 && req->acctype == RD)
+    if(this->phase == 5 && req.acctype == RD)
       continue;
 
-		uint64_t part_id = _wl->key_to_part( req->key );
+		uint64_t part_id = _wl->key_to_part( req.key );
+		//uint64_t part_id = _wl->key_to_part( req->key );
     bool loc = GET_NODE_ID(part_id) == g_node_id;
 
     if(!loc)
       continue;
 
-    rc = run_ycsb_0(req,row);
+    rc = run_ycsb_0(&req,row);
+    //rc = run_ycsb_0(req,row);
     assert(rc == RCOK);
     if(rc != RCOK)
       break;
-    rc = run_ycsb_1(req->acctype,row);
+    rc = run_ycsb_1(req.acctype,row);
+    //rc = run_ycsb_1(req->acctype,row);
     assert(rc == RCOK);
   }
   return rc;

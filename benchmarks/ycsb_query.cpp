@@ -41,6 +41,17 @@ BaseQuery * YCSBQueryGenerator::create_query(Workload * h_wl, uint64_t home_part
 void YCSBQuery::print() {
   
     printf("YCSBQuery: %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld\n"
+        ,GET_NODE_ID(requests[0].key)
+        ,GET_NODE_ID(requests[1].key)
+        ,GET_NODE_ID(requests[2].key)
+        ,GET_NODE_ID(requests[3].key)
+        ,GET_NODE_ID(requests[4].key)
+        ,GET_NODE_ID(requests[5].key)
+        ,GET_NODE_ID(requests[6].key)
+        ,GET_NODE_ID(requests[7].key)
+        ,GET_NODE_ID(requests[8].key)
+        ,GET_NODE_ID(requests[9].key)
+        /*
         ,GET_NODE_ID(requests[0]->key)
         ,GET_NODE_ID(requests[1]->key)
         ,GET_NODE_ID(requests[2]->key)
@@ -51,6 +62,7 @@ void YCSBQuery::print() {
         ,GET_NODE_ID(requests[7]->key)
         ,GET_NODE_ID(requests[8]->key)
         ,GET_NODE_ID(requests[9]->key)
+        */
         );
 }
 
@@ -60,7 +72,8 @@ uint64_t YCSBQuery::participants(bool *& pps,Workload * wl) {
     pps[i] = false;
 
   for(uint64_t i = 0; i < requests.size(); i++) {
-    uint64_t req_nid = GET_NODE_ID(((YCSBWorkload*)wl)->key_to_part(requests[i]->key));
+    uint64_t req_nid = GET_NODE_ID(((YCSBWorkload*)wl)->key_to_part(requests[i].key));
+    //uint64_t req_nid = GET_NODE_ID(((YCSBWorkload*)wl)->key_to_part(requests[i]->key));
     if(!pps[req_nid])
       n++;
     pps[req_nid] = true;
@@ -70,7 +83,8 @@ uint64_t YCSBQuery::participants(bool *& pps,Workload * wl) {
 
 bool YCSBQuery::readonly() {
   for(uint64_t i = 0; i < requests.size(); i++) {
-    if(requests[i]->acctype == WR) {
+    //if(requests[i]->acctype == WR) {
+    if(requests[i].acctype == WR) {
       return false;
     }
   }
@@ -180,12 +194,14 @@ BaseQuery * YCSBQueryGenerator::gen_requests(uint64_t home_partition_id, Workloa
     }
 		rid ++;
 
-    query->requests.push_back(req);
+    //query->requests.push_back(req);
+    query->requests.push_back(*req);
 	}
   assert(query->requests.size() == g_req_per_query);
 	// Sort the requests in key order.
 	if (g_key_order) {
-    std::sort(query->requests.begin(),query->requests.end(),[](ycsb_request * lhs, ycsb_request * rhs) { return lhs->key < rhs->key;});
+    //std::sort(query->requests.begin(),query->requests.end(),[](ycsb_request * lhs, ycsb_request * rhs) { return lhs->key < rhs->key;});
+    std::sort(query->requests.begin(),query->requests.end(),[](ycsb_request lhs, ycsb_request rhs) { return lhs.key < rhs.key;});
 	}
 
   return query;

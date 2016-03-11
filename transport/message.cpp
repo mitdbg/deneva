@@ -62,7 +62,6 @@ Message * Message::create_message(BaseQuery * query, RemReqType rtype) {
   assert(rtype == RTXN);
  Message * msg = create_message(rtype);
  ((YCSBClientQueryMessage*)msg)->copy_from_query(query);
- assert(false);// FIXME
  return msg;
 }
 
@@ -202,8 +201,16 @@ uint64_t YCSBClientQueryMessage::get_size() {
 
 void YCSBClientQueryMessage::copy_from_query(BaseQuery * query) {
   //ClientQueryMessage::mcopy_from_txn(txn);
-  requests.clear();
-  requests.insert(requests.begin(),((YCSBQuery*)(query))->requests.begin(),((YCSBQuery*)(query))->requests.end());
+  requests = ((YCSBQuery*)(query))->requests;
+  /*
+  if(requests.size() > 0)
+    requests.clear();
+  //requests.insert(requests.end(),((YCSBQuery*)(query))->requests.begin(),((YCSBQuery*)(query))->requests.end());
+  for(uint64_t i = 0; i < ((YCSBQuery*)(query))->requests.size();i++) {
+    //requests.push_back(((YCSBQuery*)(query))->requests[i]);
+    requests.push_back(((YCSBQuery*)(query))->requests.at(i));
+  }
+  */
 }
 
 
@@ -298,9 +305,8 @@ void ClientQueryMessage::copy_to_buf(char * buf) {
   COPY_BUF(buf,batch_id,ptr);
   COPY_BUF(buf,txn_id,ptr);
 #endif
-  size_t size;
+  size_t size = partitions.size();
   COPY_BUF(buf,size,ptr);
-  partitions.resize(size,UINT64_MAX);
   for(uint64_t i = 0; i < size; i++) {
     COPY_BUF(buf,partitions[i],ptr);
   }

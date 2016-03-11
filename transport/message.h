@@ -191,7 +191,8 @@ public:
   uint64_t get_size();
   void init(); 
 
-  std::vector<ycsb_request *> requests;
+  std::vector<ycsb_request> requests;
+  //std::vector<ycsb_request *> requests;
 
 };
 class QueryMessage : public Message {
@@ -226,7 +227,8 @@ public:
   uint64_t get_size();
   void init();
 
-  std::vector<ycsb_request *> requests;
+  std::vector<ycsb_request> requests;
+  //std::vector<ycsb_request *> requests;
 
 };
 

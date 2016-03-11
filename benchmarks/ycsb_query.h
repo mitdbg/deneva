@@ -30,6 +30,8 @@ class Workload;
 
 class ycsb_request {
 public:
+  ycsb_request() {}
+  ycsb_request(const ycsb_request& req) : acctype(req.acctype), key(req.key), value(req.value), scan_len(req.scan_len) { }
 //	char table_name[80];
 	access_t acctype; 
 	uint64_t key;
@@ -67,7 +69,8 @@ public:
   bool readonly();
 	
 
-  std::vector<ycsb_request *> requests;
+  //std::vector<ycsb_request *> requests;
+  std::vector<ycsb_request> requests;
   /*
   uint64_t rid;
   uint64_t access_cnt;
