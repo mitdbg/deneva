@@ -133,7 +133,10 @@ void QryPool::init(Workload * wl, uint64_t size) {
     qry = m_qry;
     //qry->part_to_access = (uint64_t*)mem_allocator.alloc(sizeof(uint64_t)*g_part_per_txn);
     //qry->part_touched = (uint64_t*)mem_allocator.alloc(sizeof(uint64_t)*g_part_per_txn);
-    qry->partitions_touched.clear();
+    qry->partitions.init(g_part_cnt);
+    qry->partitions_touched.init(g_part_cnt);
+    qry->active_nodes.init(g_node_cnt);
+    qry->participant_nodes.init(g_node_cnt);
     put(qry);
   }
 }
@@ -154,8 +157,10 @@ void QryPool::get(BaseQuery *& item) {
 #endif
     //qry->part_to_access = (uint64_t*)mem_allocator.alloc(sizeof(uint64_t)*g_part_per_txn);
     //qry->part_touched = (uint64_t*)mem_allocator.alloc(sizeof(uint64_t)*g_part_per_txn);
-    qry->partitions.clear();
-    qry->partitions_touched.clear();
+    qry->partitions.init(g_part_cnt);
+    qry->partitions_touched.init(g_part_cnt);
+    qry->active_nodes.init(g_node_cnt);
+    qry->participant_nodes.init(g_node_cnt);
     item = (BaseQuery*)qry;
   }
   //DEBUG_M("get 0x%lx\n",(uint64_t)item);
@@ -164,6 +169,10 @@ void QryPool::get(BaseQuery *& item) {
 
 void QryPool::put(BaseQuery * item) {
   assert(item);
+  item->partitions.clear();
+  item->partitions_touched.clear();
+  item->active_nodes.clear();
+  item->participant_nodes.clear();
   //DEBUG_M("put 0x%lx\n",(uint64_t)item);
   DEBUG_R("put 0x%lx\n",(uint64_t)item);
   //mem_allocator.free(item,sizeof(item));

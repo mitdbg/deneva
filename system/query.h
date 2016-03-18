@@ -29,6 +29,7 @@ class BaseQuery {
 public:
   virtual bool readonly() = 0;
 	uint64_t waiting_time;
+  void init();
   void clear();
 
   // Prevent unnecessary remote messages

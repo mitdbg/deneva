@@ -75,6 +75,13 @@ Query_thd::get_next_query() {
 	return query;
 }
 
+void BaseQuery::init() { 
+  partitions.init(g_part_cnt);
+  partitions_touched.init(g_part_cnt);
+  active_nodes.init(g_node_cnt);
+  participant_nodes.init(g_node_cnt);
+}
+
 void BaseQuery::clear() { 
   partitions.clear();
   partitions_touched.clear();

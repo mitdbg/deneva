@@ -61,7 +61,7 @@ void TxnManager::init(Workload * h_wl) {
     query = (BaseQuery*) mem_allocator.alloc(sizeof(TPCCQuery));
 #endif
   }
-  //query->init();
+  query->init();
 
 	this->h_wl = h_wl;
 	pthread_mutex_init(&txn_lock, NULL);

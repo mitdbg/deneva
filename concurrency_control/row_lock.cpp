@@ -196,7 +196,7 @@ RC Row_lock::lock_get(lock_t type, TxnManager * txn, uint64_t* &txnids, int &txn
       //txn->wait_starttime = get_sys_clock();
     }
 	} else { 
-    DEBUG("1lock %ld,%ld %ld %lx\n",txn->get_txn_id(),txn->get_batch_id(),_row->get_primary_key(),(uint64_t)_row);
+    DEBUG("1lock %ld,%ld: %d %ld %lx\n",txn->get_txn_id(),txn->get_batch_id(),type,_row->get_primary_key(),(uint64_t)_row);
 #if DEBUG_TIMELINE
     printf("LOCK %ld %ld\n",entry->txn->get_txn_id(),entry->start_ts);
 #endif
@@ -261,7 +261,7 @@ RC Row_lock::lock_release(TxnManager * txn) {
   INC_STATS(txn->get_thd_id(),thd_prof_cc0,get_sys_clock() - thd_prof_start);
   thd_prof_start = get_sys_clock();
 
-  DEBUG("unlock %ld,%ld %ld %lx\n",txn->get_txn_id(),txn->get_batch_id(),_row->get_primary_key(),(uint64_t)_row);
+  DEBUG("unlock %ld,%ld: %d %ld %lx\n",txn->get_txn_id(),txn->get_batch_id(),lock_type,_row->get_primary_key(),(uint64_t)_row);
 
   // If CC is NO_WAIT or WAIT_DIE, txn should own this lock
   // What about Calvin?
@@ -354,7 +354,7 @@ RC Row_lock::lock_release(TxnManager * txn) {
 #if DEBUG_TIMELINE
     printf("LOCK %ld %ld\n",entry->txn->get_txn_id(),get_sys_clock());
 #endif
-    DEBUG("2lock %ld,%ld %ld %lx\n",entry->txn->get_txn_id(),entry->txn->get_batch_id(),_row->get_primary_key(),(uint64_t)_row);
+    DEBUG("2lock %ld,%ld: %d %ld %lx\n",entry->txn->get_txn_id(),entry->txn->get_batch_id(),entry->type,_row->get_primary_key(),(uint64_t)_row);
     //printf("2lock %ld %ld %lx\n",entry->txn->get_txn_id(),_row->get_primary_key(),(uint64_t)_row);
     // Stats
     //t = get_sys_clock() - entry->start_ts;

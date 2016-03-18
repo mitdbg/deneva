@@ -150,7 +150,7 @@ public:
   BaseQuery * query;
   uint64_t client_startts;
   uint64_t client_id;
-  uint64_t get_abort_cnt() {assert(false);}
+  uint64_t get_abort_cnt() {return abort_cnt;}
   uint64_t abort_cnt;
   int received_response(RC rc) {assert(false);}
   RC get_rc() {assert(false);}

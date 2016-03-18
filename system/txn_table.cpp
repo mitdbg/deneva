@@ -189,8 +189,8 @@ TxnManager * TxnTable::get_transaction_manager(uint64_t txn_id,uint64_t batch_id
   pthread_mutex_unlock(&mtx);
   */
     //txn_table_pool.get(t_node);
-    t_node = (txn_node *) mem_allocator.alloc(sizeof(struct txn_node));
     txn_man->set_txn_id(txn_id);
+    t_node = (txn_node *) mem_allocator.alloc(sizeof(struct txn_node));
     t_node->txn_man = txn_man;
     LIST_PUT_TAIL(pool[txn_id % pool_size].head,pool[txn_id % pool_size].tail,t_node);
     pool[txn_id % pool_size].cnt++;

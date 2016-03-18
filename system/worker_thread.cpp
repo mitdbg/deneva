@@ -131,7 +131,7 @@ void WorkerThread::abort(TxnManager * txn_man) {
 
   //TxnManager * txn_man = txn_table.get_transaction_manager(txn_id,0);
   DEBUG("ABORT %ld -- %f\n",txn_man->get_txn_id(),(double)get_sys_clock() - run_starttime/ BILLION);
-  txn_man->release_locks(Abort);
+  //txn_man->release_locks(Abort);
           /*
 #if WORKLOAD == TPCC
         if(((TPCCQuery*)m_query)->rbk && m_query->rem_req_state == TPCC_FIN) {

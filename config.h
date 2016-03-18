@@ -6,7 +6,7 @@
 // Simulation + Hardware
 /***********************************************/
 #define NODE_CNT 1
-#define THREAD_CNT 1
+#define THREAD_CNT 2
 #define REM_THREAD_CNT 1
 #define SEND_THREAD_CNT 1
 #define CORE_CNT 8
@@ -41,7 +41,7 @@
 #define TIME_ENABLE         true //STATS_ENABLE
 
 #define FIN_BY_TIME true
-#define MAX_TXN_IN_FLIGHT 1
+#define MAX_TXN_IN_FLIGHT 100 
 
 /***********************************************/
 // Memory System
@@ -326,7 +326,7 @@ extern TestCases          g_test_case;
 #define STAT_ARR_SIZE 1024
 #define PROG_TIMER 100 * BILLION // in s
 #define BATCH_TIMER 10000000
-#define DONE_TIMER 20 * 60 * BILLION // ~2 minutes
+#define DONE_TIMER 5 * 60 * BILLION // ~2 minutes
 
 #define SEED 0
 #define SHMEM_ENV true
