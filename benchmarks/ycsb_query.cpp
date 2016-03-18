@@ -41,17 +41,6 @@ BaseQuery * YCSBQueryGenerator::create_query(Workload * h_wl, uint64_t home_part
 void YCSBQuery::print() {
   
     printf("YCSBQuery: %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld\n"
-        ,GET_NODE_ID(requests[0].key)
-        ,GET_NODE_ID(requests[1].key)
-        ,GET_NODE_ID(requests[2].key)
-        ,GET_NODE_ID(requests[3].key)
-        ,GET_NODE_ID(requests[4].key)
-        ,GET_NODE_ID(requests[5].key)
-        ,GET_NODE_ID(requests[6].key)
-        ,GET_NODE_ID(requests[7].key)
-        ,GET_NODE_ID(requests[8].key)
-        ,GET_NODE_ID(requests[9].key)
-        /*
         ,GET_NODE_ID(requests[0]->key)
         ,GET_NODE_ID(requests[1]->key)
         ,GET_NODE_ID(requests[2]->key)
@@ -62,7 +51,6 @@ void YCSBQuery::print() {
         ,GET_NODE_ID(requests[7]->key)
         ,GET_NODE_ID(requests[8]->key)
         ,GET_NODE_ID(requests[9]->key)
-        */
         );
 }
 
@@ -72,8 +60,7 @@ uint64_t YCSBQuery::participants(bool *& pps,Workload * wl) {
     pps[i] = false;
 
   for(uint64_t i = 0; i < requests.size(); i++) {
-    uint64_t req_nid = GET_NODE_ID(((YCSBWorkload*)wl)->key_to_part(requests[i].key));
-    //uint64_t req_nid = GET_NODE_ID(((YCSBWorkload*)wl)->key_to_part(requests[i]->key));
+    uint64_t req_nid = GET_NODE_ID(((YCSBWorkload*)wl)->key_to_part(requests[i]->key));
     if(!pps[req_nid])
       n++;
     pps[req_nid] = true;
@@ -83,8 +70,7 @@ uint64_t YCSBQuery::participants(bool *& pps,Workload * wl) {
 
 bool YCSBQuery::readonly() {
   for(uint64_t i = 0; i < requests.size(); i++) {
-    //if(requests[i]->acctype == WR) {
-    if(requests[i].acctype == WR) {
+    if(requests[i]->acctype == WR) {
       return false;
     }
   }
@@ -121,7 +107,8 @@ uint64_t YCSBQueryGenerator::zipf(uint64_t n, double theta) {
 
 
 BaseQuery * YCSBQueryGenerator::gen_requests(uint64_t home_partition_id, Workload * h_wl) {
-  YCSBQuery * query = new YCSBQuery;
+  YCSBQuery * query = (YCSBQuery*) mem_allocator.alloc(sizeof(YCSBQuery));
+  query->requests.init(g_req_per_query);
 
 	uint64_t access_cnt = 0;
 	set<uint64_t> all_keys;
@@ -141,7 +128,7 @@ BaseQuery * YCSBQueryGenerator::gen_requests(uint64_t home_partition_id, Workloa
 		double r = (double)(mrand->next() % 10000) / 10000;		
     double hot =  (double)(mrand->next() % 10000) / 10000;
     uint64_t partition_id;
-		ycsb_request * req = new ycsb_request;
+		ycsb_request * req = (ycsb_request*) mem_allocator.alloc(sizeof(ycsb_request));
 		if (r_twr < g_txn_read_perc || r < g_tup_read_perc) 
 			req->acctype = RD;
 		else
@@ -194,15 +181,25 @@ BaseQuery * YCSBQueryGenerator::gen_requests(uint64_t home_partition_id, Workloa
     }
 		rid ++;
 
-    //query->requests.push_back(req);
-    query->requests.push_back(*req);
+    //query->requests.push_back(*req);
+    query->requests.add(req);
 	}
   assert(query->requests.size() == g_req_per_query);
 	// Sort the requests in key order.
 	if (g_key_order) {
-    //std::sort(query->requests.begin(),query->requests.end(),[](ycsb_request * lhs, ycsb_request * rhs) { return lhs->key < rhs->key;});
-    std::sort(query->requests.begin(),query->requests.end(),[](ycsb_request lhs, ycsb_request rhs) { return lhs.key < rhs.key;});
+    for(uint64_t i = 0; i < query->requests.size(); i++) {
+      for(uint64_t j = query->requests.size() - 1; j > i ; j--) {
+        if(query->requests[j]->key < query->requests[j-1]->key) {
+          query->requests.swap(j,j-1);
+        }
+      }
+    }
+    //std::sort(query->requests.begin(),query->requests.end(),[](ycsb_request lhs, ycsb_request rhs) { return lhs.key < rhs.key;});
 	}
+  query->partitions.init(partitions_accessed.size());
+  for(auto it = partitions_accessed.begin(); it != partitions_accessed.end(); ++it) {
+    query->partitions.add(*it);
+  }
 
   return query;
 

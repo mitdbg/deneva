@@ -131,7 +131,8 @@ void TxnTable::add_txn(TxnManager * txn_man) {
   pthread_mutex_lock(&mtx);
     ts_pool.insert(TsMapPair(txn_man->get_timestamp(),NULL));
   pthread_mutex_unlock(&mtx);
-    txn_table_pool.get(t_node);
+    //txn_table_pool.get(t_node);
+    t_node = (txn_node *) mem_allocator.alloc(sizeof(struct txn_node));
     t_node->txn_man = txn_man;
     LIST_PUT_TAIL(pool[txn_id % pool_size].head,pool[txn_id % pool_size].tail,t_node);
     pool[txn_id % pool_size].cnt++;
@@ -176,7 +177,31 @@ TxnManager * TxnTable::get_transaction_manager(uint64_t txn_id,uint64_t batch_id
     t_node = t_node->next;
   }
 
+
   ACCESS_END(txn_id % pool_size);
+  if(!txn_man) {
+  MODIFY_START(txn_id % pool_size);
+  txn_pool.get(txn_man);
+  // create new entry and add to table
+  /*
+  pthread_mutex_lock(&mtx);
+    ts_pool.insert(TsMapPair(txn_man->get_timestamp(),NULL));
+  pthread_mutex_unlock(&mtx);
+  */
+    //txn_table_pool.get(t_node);
+    t_node = (txn_node *) mem_allocator.alloc(sizeof(struct txn_node));
+    txn_man->set_txn_id(txn_id);
+    t_node->txn_man = txn_man;
+    LIST_PUT_TAIL(pool[txn_id % pool_size].head,pool[txn_id % pool_size].tail,t_node);
+    pool[txn_id % pool_size].cnt++;
+    if(pool[txn_id % pool_size].cnt > 1) {
+      INC_STATS(0,txn_table_cflt,1);
+      INC_STATS(0,txn_table_cflt_size,pool[txn_id % pool_size].cnt-1);
+    }
+    ATOM_ADD(cnt,1);
+
+  MODIFY_END(txn_id % pool_size);
+  }
   INC_STATS(0,thd_prof_txn_table_get,get_sys_clock() - thd_prof_start);
   return txn_man;
 
@@ -245,7 +270,8 @@ void TxnTable::delete_txn(uint64_t txn_id, uint64_t batch_id){
     }
     
     DEBUG_R("Delete (%ld,%ld)\n",txn_id,batch_id);
-    txn_table_pool.put(t_node);
+    //txn_table_pool.put(t_node);
+    mem_allocator.free(t_node,sizeof(t_node));
     INC_STATS(0,thd_prof_txn_table2a,get_sys_clock() - thd_prof_start);
   }
   else {

@@ -59,7 +59,7 @@ Message * Message::create_message(TxnManager * txn, RemReqType rtype) {
 }
 
 Message * Message::create_message(BaseQuery * query, RemReqType rtype) {
-  assert(rtype == RTXN);
+  assert(rtype == RTXN || rtype == CL_QRY);
  Message * msg = create_message(rtype);
  ((YCSBClientQueryMessage*)msg)->copy_from_query(query);
  return msg;
@@ -86,8 +86,11 @@ Message * Message::create_message(RemReqType rtype) {
     case RACK:
       msg = new AckMessage;
       break;
+    case CL_QRY:
     case RTXN:
-      msg = new ClientQueryMessage;
+#if WORKLOAD == YCSB
+      msg = new YCSBClientQueryMessage;
+#endif
       msg->init();
       break;
     case RPREPARE:
@@ -200,9 +203,10 @@ uint64_t YCSBClientQueryMessage::get_size() {
 }
 
 void YCSBClientQueryMessage::copy_from_query(BaseQuery * query) {
-  //ClientQueryMessage::mcopy_from_txn(txn);
-  requests = ((YCSBQuery*)(query))->requests;
+  ClientQueryMessage::copy_from_query(query);
+  requests.copy(((YCSBQuery*)(query))->requests);
   /*
+  requests = ((YCSBQuery*)(query))->requests;
   if(requests.size() > 0)
     requests.clear();
   //requests.insert(requests.end(),((YCSBQuery*)(query))->requests.begin(),((YCSBQuery*)(query))->requests.end());
@@ -216,14 +220,14 @@ void YCSBClientQueryMessage::copy_from_query(BaseQuery * query) {
 
 void YCSBClientQueryMessage::copy_from_txn(TxnManager * txn) {
   ClientQueryMessage::mcopy_from_txn(txn);
-  requests.clear();
-  requests.insert(requests.begin(),((YCSBQuery*)(txn->query))->requests.begin(),((YCSBQuery*)(txn->query))->requests.end());
+  requests.copy(((YCSBQuery*)(txn->query))->requests);
 }
 
 void YCSBClientQueryMessage::copy_to_txn(TxnManager * txn) {
+  // TODO this only copies over the pointers, so if msg is freed, we'll lose the request data
   ClientQueryMessage::copy_to_txn(txn);
-  ((YCSBQuery*)(txn->query))->requests.clear();
-  ((YCSBQuery*)(txn->query))->requests.insert(((YCSBQuery*)(txn->query))->requests.begin(),requests.begin(),requests.end());
+  ((YCSBQuery*)(txn->query))->requests.copy(requests);
+  txn->client_id = return_node_id;
 }
 
 void YCSBClientQueryMessage::copy_from_buf(char * buf) {
@@ -231,9 +235,11 @@ void YCSBClientQueryMessage::copy_from_buf(char * buf) {
   uint64_t ptr = ClientQueryMessage::get_size();
   size_t size;
   COPY_VAL(size,buf,ptr);
-  requests.resize(size);
+  requests.init(size);
   for(uint64_t i = 0 ; i < size;i++) {
-    COPY_VAL(requests[i],buf,ptr);
+    ycsb_request * req = (ycsb_request*)mem_allocator.alloc(sizeof(ycsb_request));
+    COPY_VAL(*req,buf,ptr);
+    requests.add(req);
   }
 }
 
@@ -243,7 +249,8 @@ void YCSBClientQueryMessage::copy_to_buf(char * buf) {
   size_t size = requests.size();
   COPY_BUF(buf,size,ptr);
   for(uint64_t i = 0; i < requests.size(); i++) {
-    COPY_BUF(buf,requests[i],ptr);
+    ycsb_request * req = requests[i];
+    COPY_BUF(buf,*req,ptr);
   }
 }
 
@@ -259,6 +266,11 @@ uint64_t ClientQueryMessage::get_size() {
   return size;
 }
 
+void ClientQueryMessage::copy_from_query(BaseQuery * query) {
+  partitions.clear();
+  partitions.copy(query->partitions);
+}
+
 void ClientQueryMessage::copy_from_txn(TxnManager * txn) {
   Message::mcopy_from_txn(txn);
   ts = txn->txn->timestamp;
@@ -267,7 +279,7 @@ void ClientQueryMessage::copy_from_txn(TxnManager * txn) {
   txn_id = txn->txn->txn_id;
 #endif
   partitions.clear();
-  partitions.insert(partitions.begin(),txn->query->partitions.begin(),txn->query->partitions.end());
+  partitions.copy(txn->query->partitions);
 }
 
 void ClientQueryMessage::copy_to_txn(TxnManager * txn) {
@@ -278,7 +290,7 @@ void ClientQueryMessage::copy_to_txn(TxnManager * txn) {
   txn->txn->txn_id = txn_id;
 #endif
   txn->query->partitions.clear();
-  txn->query->partitions.insert(txn->query->partitions.begin(),partitions.begin(),partitions.end());
+  txn->query->partitions.copy(partitions);
 }
 
 void ClientQueryMessage::copy_from_buf(char * buf) {
@@ -291,9 +303,12 @@ void ClientQueryMessage::copy_from_buf(char * buf) {
 #endif
   size_t size;
   COPY_VAL(size,buf,ptr);
-  partitions.resize(size);
+  partitions.init(size);
   for(uint64_t i = 0; i < size; i++) {
-    COPY_VAL(partitions[i],buf,ptr);
+    //COPY_VAL(partitions[i],buf,ptr);
+    uint64_t part;
+    COPY_VAL(part,buf,ptr);
+    partitions.add(part);
   }
 }
 
@@ -308,7 +323,8 @@ void ClientQueryMessage::copy_to_buf(char * buf) {
   size_t size = partitions.size();
   COPY_BUF(buf,size,ptr);
   for(uint64_t i = 0; i < size; i++) {
-    COPY_BUF(buf,partitions[i],ptr);
+    uint64_t part = partitions[i];
+    COPY_BUF(buf,part,ptr);
   }
 }
 
@@ -596,14 +612,12 @@ uint64_t YCSBQueryMessage::get_size() {
 
 void YCSBQueryMessage::copy_from_txn(TxnManager * txn) {
   QueryMessage::copy_from_txn(txn);
-  requests.clear();
-  requests.insert(requests.begin(),((YCSBQuery*)(txn->query))->requests.begin(),((YCSBQuery*)(txn->query))->requests.end());
+  requests.copy(((YCSBQuery*)(txn->query))->requests);
 }
 
 void YCSBQueryMessage::copy_to_txn(TxnManager * txn) {
   QueryMessage::copy_to_txn(txn);
-  ((YCSBQuery*)(txn->query))->requests.clear();
-  ((YCSBQuery*)(txn->query))->requests.insert(((YCSBQuery*)(txn->query))->requests.begin(),requests.begin(),requests.end());
+  ((YCSBQuery*)(txn->query))->requests.copy(requests);
 }
 
 
@@ -612,9 +626,11 @@ void YCSBQueryMessage::copy_from_buf(char * buf) {
   uint64_t ptr = QueryMessage::get_size();
   size_t size;
   COPY_VAL(size,buf,ptr);
-  requests.resize(size);
+  requests.init(size);
   for(uint64_t i = 0 ; i < size;i++) {
-    COPY_VAL(requests[i],buf,ptr);
+    ycsb_request * req = (ycsb_request*)mem_allocator.alloc(sizeof(ycsb_request));
+    COPY_VAL(req,buf,ptr);
+    requests.add(req);
   }
 }
 
@@ -624,7 +640,8 @@ void YCSBQueryMessage::copy_to_buf(char * buf) {
   size_t size = requests.size();
   COPY_BUF(buf,size,ptr);
   for(uint64_t i = 0; i < requests.size(); i++) {
-    COPY_BUF(buf,requests[i],ptr);
+    ycsb_request * req = requests[i];
+    COPY_BUF(buf,req,ptr);
   }
 }
 

@@ -283,7 +283,7 @@ void TPCCTxnManager::send_remote_request() {
   } else if(state == TPCC_NEWORDER8) {
     dest_node_id = GET_NODE_ID(wh_to_part(tpcc_query->items[next_item_id]->ol_supply_w_id));
     while(GET_NODE_ID(wh_to_part(tpcc_query->items[next_item_id]->ol_supply_w_id)) != dest_node_id) {
-      msg->items.push_back(tpcc_query->items[next_item_id++]);
+      msg->items.add(tpcc_query->items[next_item_id++]);
     }
   } else {
     assert(false);

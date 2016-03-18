@@ -21,6 +21,7 @@
 #include "mem_alloc.h"
 #include "wl.h"
 #include "ycsb_query.h"
+#include "ycsb.h"
 #include "tpcc_query.h"
 #include "query.h"
 #include "msg_queue.h"
@@ -85,8 +86,9 @@ void AccessPool::free_all() {
 void TxnTablePool::init(Workload * wl, uint64_t size) {
   _wl = wl;
   //TxnManager * items = (TxnManager*)mem_allocator.alloc(sizeof(TxnManager)*size);
-    txn_node * t_node = (txn_node *) mem_allocator.alloc(sizeof(struct txn_node) * size);
+  txn_node * t_node = (txn_node *) mem_allocator.alloc(sizeof(struct txn_node) * size);
   for(uint64_t i = 0; i < size; i++) {
+    //put(new txn_node());
     put(&t_node[i]);
   }
 }
@@ -96,6 +98,8 @@ void TxnTablePool::get(txn_node *& item) {
   if(!r) {
     DEBUG_M("txn_table_pool\n");
     item = (txn_node *) mem_allocator.alloc(sizeof(struct txn_node));
+    //item = new txn_node;
+    //item->txn_man = new YCSBTxnManager;
   }
   item->txn_man->txn = NULL;
   item->txn_man->query = NULL;

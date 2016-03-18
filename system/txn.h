@@ -20,6 +20,7 @@
 #include "global.h"
 #include "helper.h"
 #include "semaphore.h"
+#include "array.h"
 //#include "wl.h"
 
 class Workload;
@@ -50,7 +51,8 @@ public:
 class Transaction {
 public:
   void init();
-  vector<Access*> accesses;
+  //vector<Access*> accesses;
+  Array<Access*> accesses;
   uint64_t timestamp;
 	// For OCC
   uint64_t start_timestamp;
@@ -65,6 +67,11 @@ public:
   uint64_t batch_id;
 };
 
+class TxnStats {
+  public:
+    uint64_t starttime;
+};
+
 /*
    Execution of transactions
    Manipulates/manages Transaction (contains txn-specific data)
@@ -73,7 +80,7 @@ public:
 class TxnManager
 {
 public:
-	virtual void init(Workload * h_wl);
+  virtual void init(Workload * h_wl);
   void clear();
   void reset();
 	void release();
@@ -92,6 +99,7 @@ public:
   BaseQuery * get_query();
   bool is_done();
   void commit_stats(); 
+  bool is_multi_part();
 
 	void 			set_timestamp(ts_t timestamp);
 	ts_t 			get_timestamp();
@@ -103,8 +111,9 @@ public:
   uint64_t incr_lr(); 
   uint64_t decr_lr();
 
-  void commit() {assert(false);}
-  void abort() {assert(false);}
+  RC commit();
+  RC start_commit();
+  RC abort();
 
   void release_locks(RC rc);
 
@@ -129,9 +138,7 @@ public:
   access_t get_access_type(uint64_t access_id) {return txn->accesses[access_id]->type;}
   row_t * get_access_original_row(uint64_t access_id) {return txn->accesses[access_id]->orig_row;}
   void swap_accesses(uint64_t a, uint64_t b) {
-					Access * tmp = txn->accesses[a]; 
-					txn->accesses[a] = txn->accesses[b];
-					txn->accesses[b] = tmp;
+    txn->accesses.swap(a,b);
   }
   uint64_t get_batch_id() {return txn->batch_id;}
 
@@ -148,6 +155,8 @@ public:
   int received_response(RC rc) {assert(false);}
   RC get_rc() {assert(false);}
   void send_rfin_messages(RC rc) {assert(false);}
+
+  TxnStats txn_stats;
 
 protected:	
 

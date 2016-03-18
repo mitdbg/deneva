@@ -86,6 +86,7 @@ void WorkerThread::process(Message * msg) {
 			case RACK:
         rc = process_rack(msg);
 				break;
+      case CL_QRY:
 			case RTXN:
         rc = process_rtxn(msg);
 				break;
@@ -103,23 +104,32 @@ void WorkerThread::process(Message * msg) {
 		}
 }
 
-void WorkerThread::commit(uint64_t txn_id) {
-  TxnManager * txn_man = txn_table.get_transaction_manager(txn_id,0);
-  txn_man->release_locks(RCOK);
-          txn_man->commit_stats();
+void WorkerThread::check_if_done(RC rc, TxnManager * txn_man) {
+  //TODO: get txn_id in non-hacky way, or change the way commit() is handled
+  if(rc == Commit)
+    commit(txn_man);
+  if(rc == Abort)
+    abort(txn_man);
+}
 
-		uint64_t timespan = get_sys_clock() - txn_man->get_start_timestamp();
-					DEBUG("COMMIT %ld -- %f\n",txn_man->get_txn_id(),(double)timespan/ BILLION);
+void WorkerThread::commit(TxnManager * txn_man) {
+  //TxnManager * txn_man = txn_table.get_transaction_manager(txn_id,0);
+  //txn_man->release_locks(RCOK);
+  //        txn_man->commit_stats();
 
-					// Send result back to client
-          msg_queue.enqueue(Message::create_message(txn_man,CL_RSP),txn_man->client_id);
-          simulation->inc_txn_cnt();
+  uint64_t timespan = get_sys_clock() - txn_man->get_start_timestamp();
+  DEBUG("COMMIT %ld -- %f\n",txn_man->get_txn_id(),(double)timespan/ BILLION);
+
+  // Send result back to client
+  msg_queue.enqueue(Message::create_message(txn_man,CL_RSP),txn_man->client_id);
+  simulation->inc_txn_cnt();
+  // remove txn from pool
 
 }
 
-void WorkerThread::abort(uint64_t txn_id) {
+void WorkerThread::abort(TxnManager * txn_man) {
 
-  TxnManager * txn_man = txn_table.get_transaction_manager(txn_id,0);
+  //TxnManager * txn_man = txn_table.get_transaction_manager(txn_id,0);
   DEBUG("ABORT %ld -- %f\n",txn_man->get_txn_id(),(double)get_sys_clock() - run_starttime/ BILLION);
   txn_man->release_locks(Abort);
           /*
@@ -138,13 +148,13 @@ void WorkerThread::abort(uint64_t txn_id) {
         }
 #endif
 */
-				INC_STATS(get_thd_id(), abort_cnt, 1);
+  INC_STATS(get_thd_id(), abort_cnt, 1);
 
-        ++txn_man->abort_cnt;
-        txn_man->reset();
+  ++txn_man->abort_cnt;
+  txn_man->reset();
 
 
-          abort_queue.enqueue(txn_id,txn_man->get_abort_cnt());
+  abort_queue.enqueue(txn_man->get_txn_id(),txn_man->get_abort_cnt());
 
 }
 
@@ -200,16 +210,16 @@ RC WorkerThread::run() {
 RC WorkerThread::process_rfin(Message * msg) {
         //uint64_t starttime = thd_prof_thd_rfin_start;
 
+  TxnManager * txn_man = txn_table.get_transaction_manager(msg->get_txn_id(),0);
 				DEBUG("%ld Received RFIN %ld\n",GET_PART_ID_FROM_IDX(_thd_id),msg->txn_id);
 				INC_STATS(0,rfin,1);
         if(((FinishMessage*)msg)->rc == Abort) {
           INC_STATS(_thd_id,abort_rem_cnt,1);
-          abort(msg->get_txn_id());
+          abort(txn_man);
           msg_queue.enqueue(Message::create_message(RACK),GET_NODE_ID(msg->get_txn_id()));
           return Abort;
         } 
-        commit(msg->get_txn_id());
-  TxnManager * txn_man = txn_table.get_transaction_manager(msg->get_txn_id(),0);
+        commit(txn_man);
         if(!txn_man->query->readonly() || CC_ALG == OCC)
           msg_queue.enqueue(Message::create_message(RACK),GET_NODE_ID(msg->get_txn_id()));
 
@@ -237,13 +247,13 @@ RC WorkerThread::process_rack(Message * msg) {
         rc  = txn_man->validate();
         txn_man->send_rfin_messages(rc);
         if(rc == Abort)
-          abort(msg->txn_id);
+          abort(txn_man);
         break;
       case RACK_FIN:
         if(txn_man->get_rc() == RCOK) {
-          commit(msg->txn_id);
+          commit(txn_man);
         } else {
-          abort(msg->txn_id);
+          abort(txn_man);
         }
         break;
       default:
@@ -284,7 +294,8 @@ RC WorkerThread::process_rqry(Message * msg) {
 RC WorkerThread::process_rtxn_cont(Message * msg) {
   TxnManager * txn_man = txn_table.get_transaction_manager(msg->get_txn_id(),0);
   //txn_man->run_txn_post_wait();
-  txn_man->run_txn();
+  RC rc = txn_man->run_txn();
+  check_if_done(rc,txn_man);
   return RCOK;
 }
 
@@ -329,6 +340,7 @@ RC WorkerThread::process_rtxn(Message * msg) {
 					if (CC_ALG == WAIT_DIE || CC_ALG == VLL) {
             txn_man->set_timestamp(get_next_ts());
           }
+          txn_man->txn_stats.starttime = get_sys_clock();
 
 				} else {
           txn_man = txn_table.get_transaction_manager(msg->get_txn_id(),0);
@@ -342,7 +354,7 @@ RC WorkerThread::process_rtxn(Message * msg) {
 #if CC_ALG == OCC
           txn_man->set_start_timestamp(get_next_ts());
 #endif
-      DEBUG("START %ld %f %lu\n",txn_man->get_txn_id(),simulation->seconds_from_start(get_sys_clock()),txn_man->get_timestamp());
+      DEBUG("START %ld %f %lu\n",txn_man->get_txn_id(),simulation->seconds_from_start(get_sys_clock()),txn_man->txn_stats.starttime);
     msg->copy_to_txn(txn_man);
 
     rc = init_phase();
@@ -351,6 +363,7 @@ RC WorkerThread::process_rtxn(Message * msg) {
 
     // Execute transaction
     rc = txn_man->run_txn();
+  check_if_done(rc,txn_man);
     return rc;
 }
 

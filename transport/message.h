@@ -167,6 +167,7 @@ class ClientQueryMessage : public Message {
 public:
   void copy_from_buf(char * buf);
   void copy_to_buf(char * buf);
+  void copy_from_query(BaseQuery * query); 
   void copy_from_txn(TxnManager * txn);
   void copy_to_txn(TxnManager * txn);
   uint64_t get_size();
@@ -178,7 +179,7 @@ public:
   uint64_t batch_id;
   uint64_t txn_id;
 #endif
-  std::vector<uint64_t> partitions;
+  Array<uint64_t> partitions;
 };
 
 class YCSBClientQueryMessage : public ClientQueryMessage {
@@ -191,8 +192,7 @@ public:
   uint64_t get_size();
   void init(); 
 
-  std::vector<ycsb_request> requests;
-  //std::vector<ycsb_request *> requests;
+  Array<ycsb_request*> requests;
 
 };
 class QueryMessage : public Message {
@@ -227,8 +227,7 @@ public:
   uint64_t get_size();
   void init();
 
-  std::vector<ycsb_request> requests;
-  //std::vector<ycsb_request *> requests;
+ Array<ycsb_request*> requests;
 
 };
 
@@ -242,7 +241,7 @@ public:
   void init();
 
 	TPCCRemTxnType state;
-  std::vector<Item_no*> items;
+  Array<Item_no*> items;
 
 };
 

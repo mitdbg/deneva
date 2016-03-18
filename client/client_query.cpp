@@ -91,7 +91,7 @@ Client_query_queue::get_next_query(uint64_t server_id,uint64_t thread_id) {
   uint64_t starttime = get_sys_clock();
   uint64_t query_id = ATOM_FETCH_ADD(query_cnt[server_id],1);
   if(query_id > g_max_txn_per_part) {
-    ATOM_CAS(query_cnt[server_id],query_id,0);
+    ATOM_CAS(query_cnt[server_id],query_id+1,0);
     query_id = ATOM_FETCH_ADD(query_cnt[server_id],1);
   }
 	BaseQuery * query = queries[server_id][query_id];

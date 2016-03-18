@@ -33,9 +33,12 @@
 #include "msg_queue.h"
 #include "pool.h"
 #include "message.h"
+#include "ycsb_query.h"
+#include "array.h"
+
 
 void Transaction::init() {
-  accesses.clear();  
+  accesses.init(MAX_ROW_PER_TXN);  
   insert_rows.clear();  
   timestamp = UINT64_MAX;
   start_timestamp = UINT64_MAX;
@@ -48,6 +51,18 @@ void Transaction::init() {
 }
 
 void TxnManager::init(Workload * h_wl) {
+  if(!txn) 
+    txn = (Transaction*) mem_allocator.alloc(sizeof(Transaction));
+  txn->init();
+  if(!query) {
+#if WORKLOAD == YCSB
+    query = (BaseQuery*) mem_allocator.alloc(sizeof(YCSBQuery));
+#elif WORKLOAD == TPCC
+    query = (BaseQuery*) mem_allocator.alloc(sizeof(TPCCQuery));
+#endif
+  }
+  //query->init();
+
 	this->h_wl = h_wl;
 	pthread_mutex_init(&txn_lock, NULL);
 }
@@ -58,6 +73,34 @@ void TxnManager::reset() {
   locking_done = true;
 	ready_part = 0;
 
+}
+
+RC TxnManager::commit() {
+  release_locks(RCOK);
+  commit_stats();
+  return Commit;
+}
+
+RC TxnManager::abort() {
+  release_locks(Abort);
+  commit_stats();
+  return Abort;
+}
+
+RC TxnManager::start_commit() {
+  RC rc = RCOK;
+  if(is_multi_part()) {
+    // send prepare messages
+  } else { // is not multi-part
+    rc = validate();
+    if(rc == RCOK)
+      rc = commit();
+  }
+  return rc;
+}
+
+bool TxnManager::is_multi_part() {
+  return query->partitions.size() > 1;
 }
 
 void TxnManager::commit_stats() {
@@ -104,7 +147,9 @@ Workload * TxnManager::get_wl() {
 }
 
 uint64_t TxnManager::get_thd_id() {
-	return h_thd->get_thd_id();
+  // FIXME
+	//return h_thd->get_thd_id();
+  return 0;
 }
 
 BaseQuery * TxnManager::get_query() {
@@ -171,8 +216,8 @@ void TxnManager::cleanup(RC rc) {
 #endif
 
 	ts_t starttime = get_sys_clock();
-  uint64_t row_cnt = txn->accesses.size();
-  assert(txn->accesses.size() == txn->row_cnt);
+  uint64_t row_cnt = txn->accesses.get_count();
+  assert(txn->accesses.get_count() == txn->row_cnt);
   DEBUG("Cleanup %ld %ld\n",get_txn_id(),row_cnt);
   uint64_t thd_prof_start = starttime;
 	for (int rid = row_cnt - 1; rid >= 0; rid --) {
@@ -256,16 +301,14 @@ RC TxnManager::get_row(row_t * row, access_t type, row_t *& row_rtn) {
 	uint64_t starttime = get_sys_clock();
   uint64_t timespan;
 	RC rc = RCOK;
-  Access * access;
-  access_pool.get(access);
-  txn->accesses.push_back(access);
-  uint64_t row_cnt = txn->row_cnt;
-  assert(txn->accesses.size() == row_cnt -1);
+  Access * access = (Access*) mem_allocator.alloc(sizeof(Access));
+  //uint64_t row_cnt = txn->row_cnt;
+  //assert(txn->accesses.get_count() - 1 == row_cnt);
 
   this->last_row = row;
   this->last_type = type;
 
-  rc = row->get_row(type, this, txn->accesses[ row_cnt ]->data);
+  rc = row->get_row(type, this, access->data);
 
 	if (rc == Abort || rc == WAIT) {
     row_rtn = NULL;
@@ -279,17 +322,17 @@ RC TxnManager::get_row(row_t * row, access_t type, row_t *& row_rtn) {
 #endif
 		return rc;
 	}
-	txn->accesses[row_cnt]->type = type;
-	txn->accesses[row_cnt]->orig_row = row;
+	access->type = type;
+	access->orig_row = row;
 #if ROLL_BACK && (CC_ALG == DL_DETECT || CC_ALG == NO_WAIT || CC_ALG == WAIT_DIE || CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC)
 	if (type == WR) {
     //printf("alloc 10 %ld\n",get_txn_id());
     uint64_t part_id = row->get_part_id();
     DEBUG_M("TxnManager::get_row alloc\n")
-		txn->accesses[row_cnt]->orig_data = (row_t *) 
+		access->orig_data = (row_t *) 
 			mem_allocator.alloc(sizeof(row_t));
-		txn->accesses[row_cnt]->orig_data->init(row->get_table(), part_id, 0);
-		txn->accesses[row_cnt]->orig_data->copy(row);
+		access->orig_data->init(row->get_table(), part_id, 0);
+		access->orig_data->copy(row);
 
     // ARIES-style physiological logging
 #if (LOGGING || REPLICA_CNT > 0) && !LOG_COMMAND
@@ -310,7 +353,10 @@ RC TxnManager::get_row(row_t * row, access_t type, row_t *& row_rtn) {
 	timespan = get_sys_clock() - starttime;
 	INC_STATS(get_thd_id(), time_man, timespan);
 	INC_STATS(get_thd_id(), txn_time_man, timespan);
-	row_rtn  = txn->accesses[row_cnt - 1]->data;
+	row_rtn  = access->data;
+
+  txn->accesses.add(access);
+
   if(CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || CC_ALG == CALVIN)
     assert(rc == RCOK);
   return rc;
@@ -384,7 +430,6 @@ RC TxnManager::validate() {
   return RCOK;
 #endif
   RC rc = RCOK;
-  assert(h_thd->_node_id < g_node_cnt);
   uint64_t starttime = get_sys_clock();
   if(CC_ALG == OCC && rc == RCOK)
     rc = occ_man.validate(this);
@@ -410,7 +455,7 @@ RC TxnManager::finish(bool fin) {
   // Stats start
   bool readonly = false;
 
-  if(query->partitions_touched.empty() || 
+  if(query->partitions_touched.is_empty() || 
       ((CC_ALG != HSTORE && CC_ALG != HSTORE_SPEC && CC_ALG != VLL) 
        && query->partitions_touched.size() == 1 && query->partitions.size() > 1)) {
     txn->state = DONE;
@@ -484,7 +529,7 @@ RC TxnManager::finish(bool fin) {
 
 void
 TxnManager::release() {
-	for (uint64_t i = 0; i < txn->accesses.size(); i++) {
+	for (uint64_t i = 0; i < txn->accesses.get_count(); i++) {
     access_pool.put(txn->accesses[i]);
 		//mem_allocator.free(accesses[i], sizeof(Access));
   }
@@ -520,9 +565,9 @@ void TxnManager::release_locks(RC rc) {
           }
 #endif
 
-					if(query->partitions.size() == 1) {
-  cleanup(rc);
-					} 
+  if(query->partitions.size() == 1) {
+    cleanup(rc);
+  } 
 
 	uint64_t timespan = (get_sys_clock() - starttime);
 	INC_STATS(get_thd_id(), time_cleanup,  timespan);

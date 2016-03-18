@@ -20,6 +20,7 @@
 #include "global.h"
 #include "helper.h"
 #include "query.h"
+#include "array.h"
 
 class Workload;
 
@@ -60,6 +61,10 @@ private:
 
 class YCSBQuery : public BaseQuery {
 public:
+  YCSBQuery() {
+  }
+  ~YCSBQuery() {
+  }
 
   void print();
   
@@ -69,8 +74,8 @@ public:
   bool readonly();
 	
 
-  //std::vector<ycsb_request *> requests;
-  std::vector<ycsb_request> requests;
+  //std::vector<ycsb_request> requests;
+  Array<ycsb_request*> requests;
   /*
   uint64_t rid;
   uint64_t access_cnt;

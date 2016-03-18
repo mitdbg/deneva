@@ -29,8 +29,9 @@ public:
   void send_init_done_to_all_nodes(); 
   void progress_stats(); 
   void process(Message * msg); 
-  void commit(uint64_t txn_id); 
-  void abort(uint64_t txn_id); 
+  void check_if_done(RC rc, TxnManager * txn_man); 
+  void commit(TxnManager * txn_man); 
+  void abort(TxnManager * txn_man); 
   RC process_rfin(Message * msg);
   RC process_rack(Message * msg);
   RC process_rqry_rsp(Message * msg);

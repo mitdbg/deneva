@@ -19,6 +19,7 @@
 
 #include "global.h"
 #include "helper.h"
+#include "array.h"
 
 class Workload;
 class YCSBQuery;
@@ -31,10 +32,10 @@ public:
   void clear();
 
   // Prevent unnecessary remote messages
-  std::vector<uint64_t> partitions;
-  std::vector<uint64_t> partitions_touched;
-  std::vector<uint64_t> active_nodes;
-  std::vector<uint64_t> participant_nodes;
+  Array<uint64_t> partitions;
+  Array<uint64_t> partitions_touched;
+  Array<uint64_t> active_nodes;
+  Array<uint64_t> participant_nodes;
 
 };
 
