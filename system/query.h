@@ -31,6 +31,7 @@ public:
 	uint64_t waiting_time;
   void init();
   void clear();
+  void release();
 
   // Prevent unnecessary remote messages
   Array<uint64_t> partitions;

@@ -54,6 +54,14 @@ void YCSBQuery::print() {
         );
 }
 
+void YCSBQuery::release() {
+  BaseQuery::release();
+  for(uint64_t i = 0; i < requests.size(); i++) {
+    mem_allocator.free(requests[i],sizeof(ycsb_request));
+  }
+  requests.release();
+}
+
 uint64_t YCSBQuery::participants(bool *& pps,Workload * wl) {
   int n = 0;
   for(uint64_t i = 0; i < g_node_cnt; i++)

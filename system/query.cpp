@@ -89,3 +89,9 @@ void BaseQuery::clear() {
   participant_nodes.clear();
 } 
 
+void BaseQuery::release() { 
+  partitions.release();
+  partitions_touched.release();
+  active_nodes.release();
+  participant_nodes.release();
+} 

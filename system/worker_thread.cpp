@@ -112,10 +112,17 @@ void WorkerThread::check_if_done(RC rc, TxnManager * txn_man) {
     abort(txn_man);
 }
 
+void WorkerThread::release_txn_man(TxnManager * txn_man) {
+  txn_table.release_transaction_manager(txn_man->get_txn_id(),txn_man->get_batch_id());
+}
+
+// Can't use txn_man after this function
 void WorkerThread::commit(TxnManager * txn_man) {
   //TxnManager * txn_man = txn_table.get_transaction_manager(txn_id,0);
   //txn_man->release_locks(RCOK);
   //        txn_man->commit_stats();
+  assert(txn_man);
+  assert(IS_LOCAL(txn_man->get_txn_id()));
 
   uint64_t timespan = get_sys_clock() - txn_man->get_start_timestamp();
   DEBUG("COMMIT %ld -- %f\n",txn_man->get_txn_id(),(double)timespan/ BILLION);
@@ -124,6 +131,8 @@ void WorkerThread::commit(TxnManager * txn_man) {
   msg_queue.enqueue(Message::create_message(txn_man,CL_RSP),txn_man->client_id);
   simulation->inc_txn_cnt();
   // remove txn from pool
+  release_txn_man(txn_man);
+  // Do not use txn_man after this
 
 }
 
@@ -200,6 +209,9 @@ RC WorkerThread::run() {
 		INC_STATS(get_thd_id(),time_work,timespan);
     INC_STATS(_thd_id,thd_prof_thd3,thd_prof_end - thd_prof_start);
     INC_STATS(_thd_id,thd_prof_thd3_type[msg->rtype],thd_prof_end - thd_prof_start);
+
+    // delete message
+    msg->release();
 
 	}
   printf("FINISH %ld:%ld\n",_node_id,_thd_id);

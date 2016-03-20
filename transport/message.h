@@ -31,7 +31,6 @@ public:
   static Message * create_message(TxnManager * txn, RemReqType rtype); 
   static Message * create_message(RemReqType rtype); 
   static std::vector<Message*> create_messages(char * buf); 
-  void release();
   RemReqType rtype;
   uint64_t txn_id;
   uint64_t batch_id;
@@ -50,6 +49,7 @@ public:
   virtual void copy_to_buf(char * buf) = 0;
   virtual void copy_to_txn(TxnManager * txn) = 0;
   virtual void init() = 0;
+  virtual void release() = 0;
 };
 
 // Message types
@@ -61,6 +61,7 @@ public:
   void copy_to_txn(TxnManager * txn);
   uint64_t get_size();
   void init() {}
+  void release() {}
 };
 
 class FinishMessage : public Message {
@@ -71,6 +72,7 @@ public:
   void copy_to_txn(TxnManager * txn);
   uint64_t get_size();
   void init() {}
+  void release() {}
   bool is_abort() { return rc == Abort;}
 
   uint64_t pid;
@@ -88,6 +90,7 @@ public:
   void copy_to_txn(TxnManager * txn);
   uint64_t get_size();
   void init() {}
+  void release() {}
 
   RC rc;
   uint64_t pid;
@@ -101,6 +104,7 @@ public:
   void copy_to_txn(TxnManager * txn);
   uint64_t get_size();
   void init() {}
+  void release() {}
 
   RC rc;
 #if CC_ALG == CALVIN
@@ -116,6 +120,7 @@ public:
   void copy_to_txn(TxnManager * txn);
   uint64_t get_size();
   void init() {}
+  void release() {}
 
   uint64_t pid;
   RC rc;
@@ -130,6 +135,7 @@ public:
   void copy_to_txn(TxnManager * txn);
   uint64_t get_size();
   void init() {}
+  void release() {}
 
   uint64_t txn_id;
   uint64_t batch_id;
@@ -147,6 +153,7 @@ public:
   void copy_to_txn(TxnManager * txn);
   uint64_t get_size();
   void init() {}
+  void release() {}
   uint64_t batch_id;
 };
 
@@ -158,6 +165,7 @@ public:
   void copy_to_txn(TxnManager * txn);
   uint64_t get_size();
   void init() {}
+  void release() {}
 
   RC rc;
   uint64_t client_startts;
@@ -172,6 +180,7 @@ public:
   void copy_to_txn(TxnManager * txn);
   uint64_t get_size();
   void init();
+  void release();
 
   uint64_t pid;
   uint64_t ts;
@@ -191,6 +200,7 @@ public:
   void copy_to_txn(TxnManager * txn);
   uint64_t get_size();
   void init(); 
+  void release(); 
 
   Array<ycsb_request*> requests;
 
@@ -203,6 +213,7 @@ public:
   void copy_to_txn(TxnManager * txn);
   uint64_t get_size();
   void init() {}
+  void release() {}
 
   uint64_t pid;
 #if CC_ALG == WAIT_DIE || CC_ALG == TIMESTAMP || CC_ALG == MVCC || CC_ALG == VLL
@@ -226,6 +237,7 @@ public:
   void copy_to_txn(TxnManager * txn);
   uint64_t get_size();
   void init();
+  void release(); 
 
  Array<ycsb_request*> requests;
 
@@ -239,6 +251,7 @@ public:
   void copy_to_txn(TxnManager * txn);
   uint64_t get_size();
   void init();
+  void release() {assert(false);} // FIXME
 
 	TPCCRemTxnType state;
   Array<Item_no*> items;

@@ -41,7 +41,7 @@
 #define TIME_ENABLE         true //STATS_ENABLE
 
 #define FIN_BY_TIME true
-#define MAX_TXN_IN_FLIGHT 100 
+#define MAX_TXN_IN_FLIGHT 100
 
 /***********************************************/
 // Memory System
@@ -261,7 +261,7 @@ extern TestCases          g_test_case;
 #define DEBUG_SYNTH         false
 #define DEBUG_ASSERT        false
 #define DEBUG_DISTR true
-#define DEBUG_ALLOC false
+#define DEBUG_ALLOC true
 #define DEBUG_RACE false
 #define DEBUG_TIMELINE        false
 #define DEBUG_BREAKDOWN       false
@@ -324,9 +324,9 @@ extern TestCases          g_test_case;
 // Stats and timeout
 #define BILLION 1000000000UL // in ns => 1 second
 #define STAT_ARR_SIZE 1024
-#define PROG_TIMER 100 * BILLION // in s
+#define PROG_TIMER 10000 * BILLION // in s
 #define BATCH_TIMER 10000000
-#define DONE_TIMER 5 * 60 * BILLION // ~2 minutes
+#define DONE_TIMER 1 * 60 * BILLION // ~2 minutes
 
 #define SEED 0
 #define SHMEM_ENV true

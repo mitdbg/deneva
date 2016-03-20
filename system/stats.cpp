@@ -582,6 +582,9 @@ void Stats::print_client(bool prog) {
     } else {
 
       uint64_t tid = 0;
+      uint64_t max_idx = 0;
+      if(_stats[tid]->all_lat.cnt > 0)
+        max_idx = _stats[tid]->all_lat.cnt -1;
       _stats[tid]->all_lat.quicksort(0,_stats[tid]->all_lat.cnt-1);
 	    fprintf(outf, 
           ",lat_min=%ld"
@@ -603,7 +606,7 @@ void Stats::print_client(bool prog) {
           ",lat_10ile=%ld"
           ",lat_5ile=%ld\n"
           ,_stats[tid]->all_lat.get_idx(0)
-          ,_stats[tid]->all_lat.get_idx(_stats[tid]->all_lat.cnt-1)
+          ,_stats[tid]->all_lat.get_idx(max_idx)
           ,_stats[tid]->all_lat.get_avg()
           ,_stats[tid]->all_lat.get_percentile(99)
           ,_stats[tid]->all_lat.get_percentile(98)
@@ -1621,7 +1624,7 @@ void Stats::print_prof(FILE * outf) {
         total_thd_prof_txn_table1b +=_stats[tid]->thd_prof_txn_table1b;
         total_thd_prof_txn_table2a +=_stats[tid]->thd_prof_txn_table2a;
         total_thd_prof_txn_table2 +=_stats[tid]->thd_prof_txn_table2;
-        for(int i = 0; i < 17;i++) {
+        for(int i = 0; i < 16;i++) {
           total_thd_prof_type[i] +=_stats[tid]->thd_prof_thd2_type[i];
           total_thd_prof_type[i] +=_stats[tid]->thd_prof_thd3_type[i];
         }

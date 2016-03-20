@@ -50,6 +50,13 @@ void Transaction::init() {
   state = START;
 }
 
+void Transaction::release() {
+  DEBUG("Transaction release\n");
+  for(uint64_t i = 0; i < accesses.size(); i++)
+    mem_allocator.free(accesses[i],sizeof(Access));
+  accesses.release();
+}
+
 void TxnManager::init(Workload * h_wl) {
   if(!txn) 
     txn = (Transaction*) mem_allocator.alloc(sizeof(Transaction));
@@ -121,6 +128,7 @@ void TxnManager::commit_stats() {
     INC_STATS(get_thd_id(),cflt_cnt_txn,1);
   }*/
 
+  assert(query->partitions_touched.size() > 0);
   INC_STATS(get_thd_id(),part_cnt[query->partitions_touched.size()-1],1);
   for(uint64_t i = 0 ; i < query->partitions.size(); i++) {
     INC_STATS(get_thd_id(),part_acc[query->partitions[i]],1);
@@ -529,11 +537,10 @@ RC TxnManager::finish(bool fin) {
 
 void
 TxnManager::release() {
-	for (uint64_t i = 0; i < txn->accesses.get_count(); i++) {
-    access_pool.put(txn->accesses[i]);
-		//mem_allocator.free(accesses[i], sizeof(Access));
-  }
-	//mem_allocator.free(accesses, 0);
+  ((YCSBQuery*)query)->release();
+  mem_allocator.free(query,sizeof(YCSBQuery));
+  txn->release();
+  mem_allocator.free(txn,sizeof(Transaction));
 }
 
 RC

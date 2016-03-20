@@ -39,7 +39,7 @@ row_t::init(table_t * host_table, uint64_t part_id, uint64_t row_id) {
 #if SIM_FULL_ROW
 	data = (char *) mem_allocator.alloc(sizeof(char) * tuple_size);
 #else
-	data = (char *) mem_allocator.alloc(sizeof(char) * 1);
+	data = (char *) mem_allocator.alloc(sizeof(uint64_t) * 1);
 #endif
 	return RCOK;
 }
@@ -153,7 +153,10 @@ char * row_t::get_value(char * col_name) {
 #endif
 }
 
-char * row_t::get_data() { return data; }
+char * row_t::get_data() { 
+  return data; 
+}
+
 void row_t::set_data(char * data) { 
 	int tuple_size = get_schema()->get_tuple_size();
 #if SIM_FULL_ROW

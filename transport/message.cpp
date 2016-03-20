@@ -195,6 +195,11 @@ void QueryMessage::copy_to_buf(char * buf) {
 void YCSBClientQueryMessage::init() {
 }
 
+void YCSBClientQueryMessage::release() {
+  ClientQueryMessage::release();
+  requests.release();
+}
+
 uint64_t YCSBClientQueryMessage::get_size() {
   uint64_t size = sizeof(YCSBClientQueryMessage);
   size += sizeof(size_t);
@@ -257,6 +262,10 @@ void YCSBClientQueryMessage::copy_to_buf(char * buf) {
 /************************/
 
 void ClientQueryMessage::init() {
+}
+
+void ClientQueryMessage::release() {
+  partitions.release();
 }
 
 uint64_t ClientQueryMessage::get_size() {
@@ -601,6 +610,11 @@ void InitDoneMessage::copy_to_buf(char * buf) {
 /************************/
 
 void YCSBQueryMessage::init() {
+}
+
+void YCSBQueryMessage::release() {
+  QueryMessage::release();
+  requests.release();
 }
 
 uint64_t YCSBQueryMessage::get_size() {

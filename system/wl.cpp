@@ -52,28 +52,14 @@ RC Workload::init_schema(const char * schema_file) {
 			for (UInt32 i = 0; i < lines.size(); i++) {
 				string line = lines[i];
 				vector<string> items;
-			    size_t pos = 0;
-				string token;
-				int elem_num = 0;
-				int size;
-				char * type;
-				char * name;
-				while (line.length() != 0) {
-					pos = line.find(","); // != std::string::npos) {
-					if (pos == string::npos)
-						pos = line.length();
-	    			token = line.substr(0, pos);
-			    	line.erase(0, pos + 1);
-					switch (elem_num) {
-					case 0: size = atoi(token.c_str()); break;
-					case 1: type = const_cast<char*> (token.c_str()); break;
-					case 2: name = const_cast<char*> (token.c_str()); break;
-					default: assert(false);
-					}
-					elem_num ++;
-				}
-				assert(elem_num == 3);
-                schema->add_col(name, size, type);
+
+        char * line_cstr = new char [line.length()+1];
+        strcpy(line_cstr,line.c_str());
+        int size = atoi(strtok(line_cstr,","));
+        char * type = strtok(NULL,",");
+        char * name = strtok(NULL,",");
+
+        schema->add_col(name, size, type);
 				col_count ++;
 			} 
 			tmp = new char[CL_SIZE * 2 + sizeof(table_t)];

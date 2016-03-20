@@ -163,7 +163,7 @@ void * YCSBWorkload::init_table_slice() {
 //		uint64_t value = rand();
 		uint64_t primary_key = key;
 		new_row->set_primary_key(primary_key);
-		new_row->set_value(0, &primary_key);
+		new_row->set_value(0, &primary_key,sizeof(uint64_t));
 		Catalog * schema = the_table->get_schema();
 		
 		for (UInt32 fid = 0; fid < schema->get_field_cnt(); fid ++) {
@@ -172,7 +172,7 @@ void * YCSBWorkload::init_table_slice() {
 //			for (int i = 0; i < field_size; i++) 
 //				value[i] = (char)rand() % (1<<8) ;
 			char value[6] = "hello";
-			new_row->set_value(fid, value);
+			new_row->set_value(fid, value,sizeof(value));
 		}
 
 		itemid_t * m_item =

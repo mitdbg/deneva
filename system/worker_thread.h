@@ -30,6 +30,7 @@ public:
   void progress_stats(); 
   void process(Message * msg); 
   void check_if_done(RC rc, TxnManager * txn_man); 
+  void release_txn_man(TxnManager * txn_man); 
   void commit(TxnManager * txn_man); 
   void abort(TxnManager * txn_man); 
   RC process_rfin(Message * msg);

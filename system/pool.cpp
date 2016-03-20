@@ -28,6 +28,7 @@
 
 void TxnPool::init(Workload * wl, uint64_t size) {
   _wl = wl;
+  return; //FIXME?
   //TxnManager * items = (TxnManager*)mem_allocator.alloc(sizeof(TxnManager)*size);
   TxnManager * txn;
   for(uint64_t i = 0; i < size; i++) {

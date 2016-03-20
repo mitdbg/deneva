@@ -51,6 +51,7 @@ public:
 class Transaction {
 public:
   void init();
+	void release();
   //vector<Access*> accesses;
   Array<Access*> accesses;
   uint64_t timestamp;

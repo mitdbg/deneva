@@ -88,7 +88,9 @@ RC YCSBTxnManager::run_txn() {
   if(IS_LOCAL(txn->txn_id) && state == YCSB_0 && next_record_id == 0) {
     DEBUG("Running txn %ld\n",txn->txn_id);
     //query->print();
+    query->partitions_touched.add_unique(GET_PART_ID(0,g_node_id));
   }
+
 
   while(rc == RCOK && !is_done()) {
     rc = run_txn_state();
@@ -148,6 +150,7 @@ bool YCSBTxnManager::is_local_request(uint64_t idx) {
 RC YCSBTxnManager::send_remote_request() {
   YCSBQuery * temp = new YCSBQuery;
   YCSBQuery* ycsb_query = (YCSBQuery*) query;
+  ycsb_query->partitions_touched.add_unique(GET_PART_ID(0,GET_NODE_ID(ycsb_query->requests[next_record_id]->key)));
   uint64_t dest_node_id = GET_NODE_ID(ycsb_query->requests[next_record_id]->key);
   while(!is_local_request(next_record_id)) {
     temp->requests.add(ycsb_query->requests[next_record_id++]);
