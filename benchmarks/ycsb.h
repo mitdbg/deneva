@@ -23,6 +23,7 @@
 #include "helper.h"
 
 class YCSBQuery;
+class YCSBQueryMessage;
 class ycsb_request;
 
 enum YCSBRemTxnType {
@@ -61,6 +62,7 @@ public:
 	RC run_txn();
   RC run_txn_post_wait(); 
 	RC run_calvin_txn();
+  void copy_remote_requests(YCSBQueryMessage * msg); 
 private:
   void next_ycsb_state();
   RC run_txn_state();

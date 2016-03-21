@@ -48,6 +48,7 @@ public:
   virtual void copy_from_buf(char * buf) = 0;
   virtual void copy_to_buf(char * buf) = 0;
   virtual void copy_to_txn(TxnManager * txn) = 0;
+  virtual void copy_from_txn(TxnManager * txn) = 0;
   virtual void init() = 0;
   virtual void release() = 0;
 };

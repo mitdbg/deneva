@@ -49,6 +49,7 @@ void WorkerThread::setup() {
 	if( get_thd_id() == 0) {
     send_init_done_to_all_nodes();
   }
+  _thd_txn_id = 0;
 
 }
 
@@ -280,6 +281,7 @@ RC WorkerThread::process_rqry_rsp(Message * msg) {
 
   TxnManager * txn_man = txn_table.get_transaction_manager(msg->get_txn_id(),0);
   RC rc = txn_man->run_txn();
+  check_if_done(rc,txn_man);
   return rc;
 
 }
@@ -346,6 +348,7 @@ RC WorkerThread::process_rtxn(Message * msg) {
 					// Only set new txn_id when txn first starts
           txn_id = get_next_txn_id();
           work_queue.activate_txn_id(txn_id);
+          msg->txn_id = txn_id;
 
 					// Put txn in txn_table
           txn_man = txn_table.get_transaction_manager(txn_id,0);

@@ -17,7 +17,9 @@
 #include "mem_alloc.h"
 #include "query.h"
 #include "ycsb_query.h"
+#include "ycsb.h"
 #include "tpcc_query.h"
+#include "tpcc.h"
 #include "global.h"
 #include "message.h"
 
@@ -55,6 +57,7 @@ Message * Message::create_message(char * buf) {
 Message * Message::create_message(TxnManager * txn, RemReqType rtype) {
  Message * msg = create_message(rtype);
  msg->mcopy_from_txn(txn);
+ msg->copy_from_txn(txn);
  return msg;
 }
 
@@ -626,7 +629,8 @@ uint64_t YCSBQueryMessage::get_size() {
 
 void YCSBQueryMessage::copy_from_txn(TxnManager * txn) {
   QueryMessage::copy_from_txn(txn);
-  requests.copy(((YCSBQuery*)(txn->query))->requests);
+  ((YCSBTxnManager*)txn)->copy_remote_requests(this);
+  //requests.copy(((YCSBQuery*)(txn->query))->requests);
 }
 
 void YCSBQueryMessage::copy_to_txn(TxnManager * txn) {
@@ -640,22 +644,23 @@ void YCSBQueryMessage::copy_from_buf(char * buf) {
   uint64_t ptr = QueryMessage::get_size();
   size_t size;
   COPY_VAL(size,buf,ptr);
+  assert(size<=g_req_per_query);
   requests.init(size);
   for(uint64_t i = 0 ; i < size;i++) {
     ycsb_request * req = (ycsb_request*)mem_allocator.alloc(sizeof(ycsb_request));
-    COPY_VAL(req,buf,ptr);
+    COPY_VAL(*req,buf,ptr);
     requests.add(req);
   }
 }
 
 void YCSBQueryMessage::copy_to_buf(char * buf) {
   QueryMessage::copy_to_buf(buf);
-  uint64_t ptr = Message::mget_size();
+  uint64_t ptr = QueryMessage::get_size();
   size_t size = requests.size();
   COPY_BUF(buf,size,ptr);
   for(uint64_t i = 0; i < requests.size(); i++) {
     ycsb_request * req = requests[i];
-    COPY_BUF(buf,req,ptr);
+    COPY_BUF(buf,*req,ptr);
   }
 }
 

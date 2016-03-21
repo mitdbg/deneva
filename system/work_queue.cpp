@@ -85,27 +85,20 @@ Message * QWorkQueue::sched_dequeue() {
 void QWorkQueue::enqueue(uint64_t thd_id, Message * msg,bool busy) {
   uint64_t starttime = get_sys_clock();
   assert(msg);
-  RemReqType rtype = NO_MSG;
-  uint64_t batch_id = UINT64_MAX;
-  uint64_t return_id = UINT64_MAX;
-  uint64_t txn_id = UINT64_MAX;
-  if(msg) {
-    rtype = msg->rtype;
-    batch_id = msg->batch_id;
-    return_id =msg->return_node_id;
-    txn_id =msg->txn_id;
-  }
   work_queue_entry * entry = (work_queue_entry*)mem_allocator.alloc(sizeof(work_queue_entry));
   entry->msg = msg;
+  entry->rtype = msg->rtype;
+  entry->txn_id = msg->txn_id;
+  entry->batch_id = msg->batch_id;
   entry->starttime = get_sys_clock();
   assert(ISSERVER);
 
   // FIXME: May need alternative queue for some calvin threads
   pthread_mutex_lock(&mtx);
+  DEBUG("%ld ENQUEUE (%ld,%ld); %ld; %d,0x%lx\n",thd_id,entry->txn_id,entry->batch_id,msg->return_node_id,entry->rtype,(uint64_t)msg);
   work_queue.push(entry);
   pthread_mutex_unlock(&mtx);
 
-  DEBUG("%ld ENQUEUE (%ld,%ld); %ld; %d,0x%lx\n",thd_id,txn_id,batch_id,return_id,rtype,(uint64_t)msg);
   INC_STATS(thd_id,all_wq_enqueue,get_sys_clock() - starttime);
 }
 

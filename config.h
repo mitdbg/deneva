@@ -5,8 +5,8 @@
 /***********************************************/
 // Simulation + Hardware
 /***********************************************/
-#define NODE_CNT 1
-#define THREAD_CNT 2
+#define NODE_CNT 2
+#define THREAD_CNT 1
 #define REM_THREAD_CNT 1
 #define SEND_THREAD_CNT 1
 #define CORE_CNT 8
@@ -41,7 +41,7 @@
 #define TIME_ENABLE         true //STATS_ENABLE
 
 #define FIN_BY_TIME true
-#define MAX_TXN_IN_FLIGHT 100
+#define MAX_TXN_IN_FLIGHT 1
 
 /***********************************************/
 // Memory System
@@ -175,7 +175,7 @@
 #define SCAN_LEN          20
 #define PART_PER_TXN NODE_CNT
 #define PERC_MULTI_PART     MPR 
-#define REQ_PER_QUERY 10
+#define REQ_PER_QUERY 2 
 #define FIELD_PER_TUPLE       10
 #define CREATE_TXN_FILE false
 #define STRICT_PPT 0
@@ -326,7 +326,7 @@ extern TestCases          g_test_case;
 #define STAT_ARR_SIZE 1024
 #define PROG_TIMER 10000 * BILLION // in s
 #define BATCH_TIMER 10000000
-#define DONE_TIMER 1 * 60 * BILLION // ~2 minutes
+#define DONE_TIMER 10 * 60 * BILLION // ~2 minutes
 
 #define SEED 0
 #define SHMEM_ENV true

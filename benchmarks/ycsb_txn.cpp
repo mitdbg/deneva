@@ -148,15 +148,22 @@ bool YCSBTxnManager::is_local_request(uint64_t idx) {
 }
 
 RC YCSBTxnManager::send_remote_request() {
-  YCSBQuery * temp = new YCSBQuery;
   YCSBQuery* ycsb_query = (YCSBQuery*) query;
   ycsb_query->partitions_touched.add_unique(GET_PART_ID(0,GET_NODE_ID(ycsb_query->requests[next_record_id]->key)));
   uint64_t dest_node_id = GET_NODE_ID(ycsb_query->requests[next_record_id]->key);
-  while(!is_local_request(next_record_id)) {
-    temp->requests.add(ycsb_query->requests[next_record_id++]);
-  }
   msg_queue.enqueue(Message::create_message(this,RQRY),dest_node_id);
   return WAIT_REM;
+}
+
+void YCSBTxnManager::copy_remote_requests(YCSBQueryMessage * msg) {
+  YCSBQuery* ycsb_query = (YCSBQuery*) query;
+  msg->requests.init(ycsb_query->requests.size());
+  uint64_t dest_node_id = GET_NODE_ID(ycsb_query->requests[next_record_id]->key);
+  while(next_record_id < ycsb_query->requests.size() && !is_local_request(next_record_id) && GET_NODE_ID(ycsb_query->requests[next_record_id]->key) == dest_node_id) {
+    ycsb_request * req = (ycsb_request*) mem_allocator.alloc(sizeof(ycsb_request));
+    req->copy(ycsb_query->requests[next_record_id++]);
+    msg->requests.add(req);
+  }
 }
 
 RC YCSBTxnManager::run_txn_state() {

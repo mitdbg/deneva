@@ -32,13 +32,18 @@ class Workload;
 class ycsb_request {
 public:
   ycsb_request() {}
-  ycsb_request(const ycsb_request& req) : acctype(req.acctype), key(req.key), value(req.value), scan_len(req.scan_len) { }
+  ycsb_request(const ycsb_request& req) : acctype(req.acctype), key(req.key), value(req.value) { }
+  void copy(ycsb_request * req) {
+    this->acctype = req->acctype;
+    this->key = req->key;
+    this->value = req->value;
+  }
 //	char table_name[80];
 	access_t acctype; 
 	uint64_t key;
 	char value;
 	// only for (qtype == SCAN)
-	UInt32 scan_len;
+	//UInt32 scan_len;
 };
 
 class YCSBQueryGenerator : public QueryGenerator {
