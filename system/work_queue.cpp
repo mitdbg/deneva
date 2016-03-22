@@ -95,7 +95,7 @@ void QWorkQueue::enqueue(uint64_t thd_id, Message * msg,bool busy) {
 
   // FIXME: May need alternative queue for some calvin threads
   pthread_mutex_lock(&mtx);
-  DEBUG("%ld ENQUEUE (%ld,%ld); %ld; %d,0x%lx\n",thd_id,entry->txn_id,entry->batch_id,msg->return_node_id,entry->rtype,(uint64_t)msg);
+  DEBUG("%ld ENQUEUE (%lld,%lld); %ld; %d,0x%lx\n",thd_id,entry->txn_id,entry->batch_id,msg->return_node_id,entry->rtype,(uint64_t)msg);
   work_queue.push(entry);
   pthread_mutex_unlock(&mtx);
 
@@ -130,7 +130,7 @@ Message * QWorkQueue::dequeue() {
     INC_STATS(0,qq_cnt,1);
     INC_STATS(0,qq_lat,queue_time);
     INC_STATS(0,wq_dequeue,get_sys_clock() - starttime);
-    DEBUG("DEQUEUE (%ld,%ld) %ld; %ld; %d, 0x%lx\n",msg->txn_id,msg->batch_id,msg->return_node_id,queue_time,msg->rtype,(uint64_t)msg);
+    DEBUG("DEQUEUE (%lld,%lld) %ld; %ld; %d, 0x%lx\n",msg->txn_id,msg->batch_id,msg->return_node_id,queue_time,msg->rtype,(uint64_t)msg);
     mem_allocator.free(entry,sizeof(work_queue_entry));
   } else {
     assert(msg == NULL);
