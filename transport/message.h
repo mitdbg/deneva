@@ -29,6 +29,7 @@ public:
   static Message * create_message(char * buf); 
   static Message * create_message(BaseQuery * query, RemReqType rtype); 
   static Message * create_message(TxnManager * txn, RemReqType rtype); 
+  static Message * create_message(uint64_t txn_id, RemReqType rtype); 
   static Message * create_message(RemReqType rtype); 
   static std::vector<Message*> create_messages(char * buf); 
   RemReqType rtype;
@@ -83,6 +84,43 @@ public:
   //uint64_t batch_id;
   bool ro;
 };
+
+class LogMessage : public Message {
+public:
+  void copy_from_buf(char * buf);
+  void copy_to_buf(char * buf);
+  void copy_from_txn(TxnManager * txn);
+  void copy_to_txn(TxnManager * txn);
+  uint64_t get_size();
+  void init() {}
+  void release(); 
+
+  Array<LogRecord*> log_records;
+};
+
+class LogRspMessage : public Message {
+public:
+  void copy_from_buf(char * buf);
+  void copy_to_buf(char * buf);
+  void copy_from_txn(TxnManager * txn);
+  void copy_to_txn(TxnManager * txn);
+  uint64_t get_size();
+  void init() {}
+  void release() {}
+};
+
+class LogFlushedMessage : public Message {
+public:
+  void copy_from_buf(char * buf) {}
+  void copy_to_buf(char * buf) {}
+  void copy_from_txn(TxnManager * txn) {}
+  void copy_to_txn(TxnManager * txn) {}
+  uint64_t get_size() {return sizeof(LogFlushedMessage);}
+  void init() {}
+  void release() {}
+
+};
+
 
 class QueryResponseMessage : public Message {
 public:

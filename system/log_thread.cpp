@@ -24,9 +24,10 @@ void LogThread::setup() {
 }
 
 RC LogThread::run() {
+  tsetup();
 	while (!simulation->is_done()) {
     logger.processRecord();
-    logger.flushBufferCheck();
+    //logger.flushBufferCheck();
   }
   return FINISH;
  

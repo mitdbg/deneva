@@ -96,6 +96,9 @@ void WorkerThread::process(Message * msg) {
 			case RTXN:
         rc = process_rtxn(msg);
 				break;
+			case LOG_FLUSHED:
+        rc = process_log_flushed(msg);
+				break;
 			case LOG_MSG:
         rc = process_log_msg(msg);
 				break;
@@ -422,6 +425,13 @@ RC WorkerThread::process_log_msg(Message * msg) {
 
 RC WorkerThread::process_log_msg_rsp(Message * msg) {
   return RCOK;
+}
+
+RC WorkerThread::process_log_flushed(Message * msg) {
+  DEBUG("LOG FLUSHED %ld\n",msg->get_txn_id());
+  TxnManager * txn_man = txn_table.get_transaction_manager(msg->get_txn_id(),0);
+  commit(txn_man);
+  return RCOK; 
 }
 
 bool WorkerThread::is_cc_new_timestamp() {

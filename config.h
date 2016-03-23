@@ -5,8 +5,8 @@
 /***********************************************/
 // Simulation + Hardware
 /***********************************************/
-#define NODE_CNT 2
-#define THREAD_CNT 2
+#define NODE_CNT 1
+#define THREAD_CNT 1
 #define REM_THREAD_CNT 1
 #define SEND_THREAD_CNT 1
 #define CORE_CNT 8
@@ -41,7 +41,7 @@
 #define TIME_ENABLE         true //STATS_ENABLE
 
 #define FIN_BY_TIME true
-#define MAX_TXN_IN_FLIGHT 10
+#define MAX_TXN_IN_FLIGHT 1
 
 /***********************************************/
 // Memory System
@@ -145,7 +145,7 @@
 /***********************************************/
 #define LOG_COMMAND         false
 #define LOG_REDO          false
-#define LOGGING false
+#define LOGGING true
 #define LOG_BUF_MAX 10
 #define LOG_BUF_TIMEOUT 10 * 1000000UL // 10ms
 

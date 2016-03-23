@@ -68,6 +68,13 @@ Message * Message::create_message(BaseQuery * query, RemReqType rtype) {
  return msg;
 }
 
+Message * Message::create_message(uint64_t txn_id, RemReqType rtype) {
+ Message * msg = create_message(rtype);
+ msg->txn_id = txn_id;
+ return msg;
+}
+
+
 Message * Message::create_message(RemReqType rtype) {
   Message * msg;
   switch(rtype) {
@@ -85,6 +92,15 @@ Message * Message::create_message(RemReqType rtype) {
       break;
     case RQRY_RSP:
       msg = new QueryResponseMessage;
+      break;
+    case LOG_MSG:
+      msg = new LogMessage;
+      break;
+    case LOG_MSG_RSP:
+      msg = new LogRspMessage;
+      break;
+    case LOG_FLUSHED:
+      msg = new LogFlushedMessage;
       break;
     case RACK_PREP:
     case RACK_FIN:
@@ -575,6 +591,64 @@ void FinishMessage::copy_to_buf(char * buf) {
   COPY_BUF(buf,rc,ptr);
   COPY_BUF(buf,ro,ptr);
 }
+
+/************************/
+
+void LogMessage::release() {
+  log_records.release();
+}
+
+uint64_t LogMessage::get_size() {
+  uint64_t size = sizeof(LogMessage);
+  size += sizeof(size_t);
+  size += sizeof(LogRecord) * log_records.size();
+  return size;
+}
+
+void LogMessage::copy_from_txn(TxnManager * txn) {
+  Message::mcopy_from_txn(txn);
+}
+
+void LogMessage::copy_to_txn(TxnManager * txn) {
+  Message::mcopy_to_txn(txn);
+}
+
+void LogMessage::copy_from_buf(char * buf) {
+  Message::mcopy_from_buf(buf);
+  //uint64_t ptr = Message::mget_size();
+}
+
+void LogMessage::copy_to_buf(char * buf) {
+  Message::mcopy_to_buf(buf);
+  //uint64_t ptr = Message::mget_size();
+}
+
+/************************/
+
+uint64_t LogRspMessage::get_size() {
+  uint64_t size = sizeof(LogRspMessage);
+  return size;
+}
+
+void LogRspMessage::copy_from_txn(TxnManager * txn) {
+  Message::mcopy_from_txn(txn);
+}
+
+void LogRspMessage::copy_to_txn(TxnManager * txn) {
+  Message::mcopy_to_txn(txn);
+}
+
+void LogRspMessage::copy_from_buf(char * buf) {
+  Message::mcopy_from_buf(buf);
+  //uint64_t ptr = Message::mget_size();
+}
+
+void LogRspMessage::copy_to_buf(char * buf) {
+  Message::mcopy_to_buf(buf);
+  //uint64_t ptr = Message::mget_size();
+}
+
+
 
 /************************/
 
