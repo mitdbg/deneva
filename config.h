@@ -261,7 +261,7 @@ extern TestCases          g_test_case;
 #define DEBUG_SYNTH         false
 #define DEBUG_ASSERT        false
 #define DEBUG_DISTR true
-#define DEBUG_ALLOC true
+#define DEBUG_ALLOC false
 #define DEBUG_RACE false
 #define DEBUG_TIMELINE        false
 #define DEBUG_BREAKDOWN       false

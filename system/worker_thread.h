@@ -34,7 +34,8 @@ public:
   void commit(TxnManager * txn_man); 
   void abort(TxnManager * txn_man); 
   RC process_rfin(Message * msg);
-  RC process_rack(Message * msg);
+  RC process_rack_rfin(Message * msg);
+  RC process_rack_prep(Message * msg);
   RC process_rqry_rsp(Message * msg);
   RC process_rqry(Message * msg);
   RC process_rinit(Message * msg);

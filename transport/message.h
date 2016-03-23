@@ -38,6 +38,7 @@ public:
 
   uint64_t mget_size();
   uint64_t get_txn_id() {return txn_id;}
+  uint64_t get_batch_id() {return batch_id;}
   void mcopy_from_buf(char * buf);
   void mcopy_to_buf(char * buf);
   void mcopy_from_txn(TxnManager * txn);
@@ -78,8 +79,8 @@ public:
 
   uint64_t pid;
   RC rc;
-  uint64_t txn_id;
-  uint64_t batch_id;
+  //uint64_t txn_id;
+  //uint64_t batch_id;
   bool ro;
 };
 
@@ -108,9 +109,6 @@ public:
   void release() {}
 
   RC rc;
-#if CC_ALG == CALVIN
-  uint64_t batch_id;
-#endif
 };
 
 class PrepareMessage : public Message {

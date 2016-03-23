@@ -66,6 +66,7 @@ public:
   vector<row_t*> insert_rows;
 	txnid_t 		txn_id;
   uint64_t batch_id;
+  RC rc;
 };
 
 class TxnStats {
@@ -114,6 +115,7 @@ public:
 
   RC commit();
   RC start_commit();
+  RC start_abort();
   RC abort();
 
   void release_locks(RC rc);
@@ -153,9 +155,12 @@ public:
   uint64_t client_id;
   uint64_t get_abort_cnt() {return abort_cnt;}
   uint64_t abort_cnt;
-  int received_response(RC rc) {assert(false);}
-  RC get_rc() {assert(false);}
-  void send_rfin_messages(RC rc) {assert(false);}
+  int received_response(RC rc);
+  RC get_rc() {return txn->rc;}
+  void set_rc(RC rc) {txn->rc = rc;}
+  //void send_rfin_messages(RC rc) {assert(false);}
+  void send_finish_messages();
+  void send_prepare_messages();
 
   TxnStats txn_stats;
 

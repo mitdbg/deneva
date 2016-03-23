@@ -48,6 +48,7 @@ void Transaction::init() {
   write_cnt = 0;
   row_cnt = 0;
   state = START;
+  rc = RCOK;
 }
 
 void Transaction::release() {
@@ -64,11 +65,14 @@ void TxnManager::init(Workload * h_wl) {
   if(!query) {
 #if WORKLOAD == YCSB
     query = (BaseQuery*) mem_allocator.alloc(sizeof(YCSBQuery));
+    new(query) YCSBQuery();
 #elif WORKLOAD == TPCC
     query = (BaseQuery*) mem_allocator.alloc(sizeof(TPCCQuery));
+    new(query) TPCCQuery();
 #endif
   }
   query->init();
+  reset();
 
 	this->h_wl = h_wl;
 	pthread_mutex_init(&txn_lock, NULL);
@@ -79,6 +83,7 @@ void TxnManager::reset() {
   lock_ready_cnt = 0;
   locking_done = true;
 	ready_part = 0;
+  rsp_cnt = 0;
 
 }
 
@@ -94,10 +99,25 @@ RC TxnManager::abort() {
   return Abort;
 }
 
+RC TxnManager::start_abort() {
+  if(query->partitions_touched.size() > 1) {
+    send_finish_messages();
+    return Abort;
+  } 
+  return abort();
+}
+
 RC TxnManager::start_commit() {
   RC rc = RCOK;
   if(is_multi_part()) {
-    // send prepare messages
+    if(!((YCSBQuery*)query)->readonly() || CC_ALG == OCC) {
+      // send prepare messages
+      send_prepare_messages();
+      rc = WAIT_REM;
+    } else {
+      send_finish_messages();
+      rc = commit();
+    }
   } else { // is not multi-part
     rc = validate();
     if(rc == RCOK)
@@ -106,11 +126,43 @@ RC TxnManager::start_commit() {
   return rc;
 }
 
+void TxnManager::send_prepare_messages() {
+  rsp_cnt = query->partitions_touched.size() - 1;
+  DEBUG("%ld Send PREPARE messages to %d\n",get_txn_id(),rsp_cnt);
+  for(uint64_t i = 0; i < query->partitions_touched.size(); i++) {
+    if(GET_NODE_ID(query->partitions_touched[i]) == g_node_id) {
+      continue;
+    }
+    msg_queue.enqueue(Message::create_message(this,RPREPARE),GET_NODE_ID(query->partitions_touched[i]));
+  }
+}
+
+void TxnManager::send_finish_messages() {
+  rsp_cnt = query->partitions_touched.size() - 1;
+  DEBUG("%ld Send FINISH messages to %d\n",get_txn_id(),rsp_cnt);
+  for(uint64_t i = 0; i < query->partitions_touched.size(); i++) {
+    if(GET_NODE_ID(query->partitions_touched[i]) == g_node_id) {
+      continue;
+    }
+    msg_queue.enqueue(Message::create_message(this,RFIN),GET_NODE_ID(query->partitions_touched[i]));
+  }
+}
+
+int TxnManager::received_response(RC rc) {
+  assert(txn->rc == RCOK || txn->rc == Abort);
+  if(txn->rc == RCOK)
+    txn->rc = rc;
+  --rsp_cnt;
+  return rsp_cnt;
+}
+
 bool TxnManager::is_multi_part() {
   return query->partitions.size() > 1;
 }
 
 void TxnManager::commit_stats() {
+  if(!IS_LOCAL(get_txn_id()))
+    return;
   uint64_t timespan = get_sys_clock(); //FIXME
 
   INC_STATS(get_thd_id(),txn_cnt,1);

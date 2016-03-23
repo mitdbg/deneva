@@ -96,15 +96,11 @@ RC YCSBTxnManager::run_txn() {
     rc = run_txn_state();
   }
 
-  if(is_done()) {
-    if(rc == RCOK) {
-      if(!IS_LOCAL(txn->txn_id)) {
-      } else {
-        rc = start_commit();
-      }
-    }
-    if(rc == Abort)
-      abort();
+  if(is_done() && IS_LOCAL(get_txn_id())) {
+    if(rc == RCOK) 
+      rc = start_commit();
+    else if(rc == Abort)
+      rc = start_abort();
   }
 
   INC_STATS(get_thd_id(),thd_prof_wl1,get_sys_clock() - thd_prof_start);
@@ -179,7 +175,8 @@ RC YCSBTxnManager::run_txn_state() {
       if(loc) {
         rc = run_ycsb_0(req,row);
       } else {
-        send_remote_request();
+        rc = send_remote_request();
+        
       }
 
       break;

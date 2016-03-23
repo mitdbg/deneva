@@ -68,6 +68,8 @@ void WorkerThread::progress_stats() {
 
 void WorkerThread::process(Message * msg) {
   RC rc __attribute__ ((unused));
+  DEBUG("%ld Processing %d %ld\n",get_thd_id(),msg->get_rtype(),msg->get_txn_id());
+  assert(msg->get_rtype() == CL_QRY || msg->get_txn_id() != UINT64_MAX);
 		switch(msg->get_rtype()) {
 			case RPASS:
         //rc = process_rpass(msg);
@@ -84,8 +86,11 @@ void WorkerThread::process(Message * msg) {
 			case RFIN: 
         rc = process_rfin(msg);
 				break;
-			case RACK:
-        rc = process_rack(msg);
+			case RACK_PREP:
+        rc = process_rack_prep(msg);
+				break;
+			case RACK_FIN:
+        rc = process_rack_rfin(msg);
 				break;
       case CL_QRY:
 			case RTXN:
@@ -103,6 +108,7 @@ void WorkerThread::process(Message * msg) {
 				assert(false);
 				break;
 		}
+  DEBUG("%ld EndProcessing %d %ld\n",get_thd_id(),msg->get_rtype(),msg->get_txn_id());
 }
 
 void WorkerThread::check_if_done(RC rc, TxnManager * txn_man) {
@@ -223,26 +229,27 @@ RC WorkerThread::run() {
 RC WorkerThread::process_rfin(Message * msg) {
         //uint64_t starttime = thd_prof_thd_rfin_start;
 
+  assert(!IS_LOCAL(msg->get_txn_id()));
   TxnManager * txn_man = txn_table.get_transaction_manager(msg->get_txn_id(),0);
-				DEBUG("%ld Received RFIN %ld\n",GET_PART_ID_FROM_IDX(_thd_id),msg->txn_id);
-				INC_STATS(0,rfin,1);
-        if(((FinishMessage*)msg)->rc == Abort) {
-          INC_STATS(_thd_id,abort_rem_cnt,1);
-          abort(txn_man);
-          msg_queue.enqueue(Message::create_message(RACK),GET_NODE_ID(msg->get_txn_id()));
-          return Abort;
-        } 
-        commit(txn_man);
-        if(!txn_man->query->readonly() || CC_ALG == OCC)
-          msg_queue.enqueue(Message::create_message(RACK),GET_NODE_ID(msg->get_txn_id()));
+  DEBUG("%ld Received RFIN %ld\n",GET_PART_ID_FROM_IDX(_thd_id),msg->txn_id);
+  INC_STATS(0,rfin,1);
+  if(((FinishMessage*)msg)->rc == Abort) {
+    INC_STATS(_thd_id,abort_rem_cnt,1);
+    abort(txn_man);
+    msg_queue.enqueue(Message::create_message(txn_man,RACK_FIN),GET_NODE_ID(msg->get_txn_id()));
+    return Abort;
+  } 
+  txn_man->commit();
+  if(!txn_man->query->readonly() || CC_ALG == OCC)
+    msg_queue.enqueue(Message::create_message(txn_man,RACK_FIN),GET_NODE_ID(msg->get_txn_id()));
 
-        return RCOK;
+  return RCOK;
 }
 
-RC WorkerThread::process_rack(Message * msg) {
+RC WorkerThread::process_rack_prep(Message * msg) {
 
   //uint64_t starttime = get_sys_clock();
-  INC_STATS(0,rack,1);
+  //INC_STATS(0,rack_prep,1);
 
   RC rc = RCOK;
 
@@ -252,25 +259,39 @@ RC WorkerThread::process_rack(Message * msg) {
   if(responses_left > 0) 
     return WAIT;
 
-    // Done waiting 
+  // Done waiting 
+  if(txn_man->get_rc() == RCOK)
+    rc  = txn_man->validate();
+  if(rc == Abort || txn_man->get_rc() == Abort) {
+    txn_man->txn->rc = Abort;
+    rc = Abort;
+  }
+  txn_man->send_finish_messages();
+  if(rc == Abort)
+    abort(txn_man);
 
-    switch(msg->get_rtype()) {
-      case RACK_PREP:
-        // Validate
-        rc  = txn_man->validate();
-        txn_man->send_rfin_messages(rc);
-        if(rc == Abort)
-          abort(txn_man);
-        break;
-      case RACK_FIN:
-        if(txn_man->get_rc() == RCOK) {
-          commit(txn_man);
-        } else {
-          abort(txn_man);
-        }
-        break;
-      default:
-        assert(false);
+  return rc;
+}
+
+RC WorkerThread::process_rack_rfin(Message * msg) {
+
+  //uint64_t starttime = get_sys_clock();
+  //INC_STATS(0,rack_rfin,1);
+
+  RC rc = RCOK;
+
+  TxnManager * txn_man = txn_table.get_transaction_manager(msg->get_txn_id(),0);
+  int responses_left = txn_man->received_response(((AckMessage*)msg)->rc);
+  assert(responses_left >=0);
+  if(responses_left > 0) 
+    return WAIT;
+
+  // Done waiting 
+
+  if(txn_man->get_rc() == RCOK) {
+    commit(txn_man);
+  } else {
+    abort(txn_man);
   }
   return rc;
 }
@@ -320,11 +341,10 @@ RC WorkerThread::process_rprepare(Message * msg) {
   TxnManager * txn_man = txn_table.get_transaction_manager(msg->get_txn_id(),0);
 
     // Validate transaction
-    if (!((FinishMessage*)msg)->is_abort()) {
-      rc  = txn_man->validate();
-    } 
+    rc  = txn_man->validate();
+    txn_man->set_rc(rc);
     // FIXME: need to add RC into message
-    msg_queue.enqueue(Message::create_message(RACK),msg->return_node_id);
+    msg_queue.enqueue(Message::create_message(txn_man,RACK_PREP),msg->return_node_id);
 
     return rc;
 }

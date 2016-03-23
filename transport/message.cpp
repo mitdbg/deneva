@@ -62,7 +62,7 @@ Message * Message::create_message(TxnManager * txn, RemReqType rtype) {
 }
 
 Message * Message::create_message(BaseQuery * query, RemReqType rtype) {
-  assert(rtype == RTXN || rtype == CL_QRY);
+ assert(rtype == RQRY || rtype == CL_QRY);
  Message * msg = create_message(rtype);
  ((YCSBClientQueryMessage*)msg)->copy_from_query(query);
  return msg;
@@ -86,7 +86,8 @@ Message * Message::create_message(RemReqType rtype) {
     case RQRY_RSP:
       msg = new QueryResponseMessage;
       break;
-    case RACK:
+    case RACK_PREP:
+    case RACK_FIN:
       msg = new AckMessage;
       break;
     case CL_QRY:
@@ -112,6 +113,8 @@ Message * Message::create_message(RemReqType rtype) {
   }
   assert(msg);
   msg->rtype = rtype;
+  msg->txn_id = UINT64_MAX;
+  msg->batch_id = UINT64_MAX;
   return msg;
 }
 
@@ -123,6 +126,7 @@ uint64_t Message::mget_size() {
 void Message::mcopy_from_txn(TxnManager * txn) {
   //rtype = query->rtype;
   txn_id = txn->get_txn_id();
+  batch_id = txn->get_batch_id();
 }
 
 void Message::mcopy_to_txn(TxnManager * txn) {
@@ -485,35 +489,24 @@ uint64_t AckMessage::get_size() {
 void AckMessage::copy_from_txn(TxnManager * txn) {
   Message::mcopy_from_txn(txn);
   //rc = query->rc;
-#if CC_ALG == CALVIN
-  batch_id = txn->txn->batch_id;
-#endif
+  rc = txn->get_rc();
 }
 
 void AckMessage::copy_to_txn(TxnManager * txn) {
   Message::mcopy_to_txn(txn);
   //query->rc = rc;
-#if CC_ALG == CALVIN
-  txn->txn->batch_id = batch_id;
-#endif
 }
 
 void AckMessage::copy_from_buf(char * buf) {
   Message::mcopy_from_buf(buf);
   uint64_t ptr = Message::mget_size();
   COPY_VAL(rc,buf,ptr);
-#if CC_ALG == CALVIN
-  COPY_VAL(batch_id,buf,ptr);
-#endif
 }
 
 void AckMessage::copy_to_buf(char * buf) {
   Message::mcopy_to_buf(buf);
   uint64_t ptr = Message::mget_size();
   COPY_BUF(buf,rc,ptr);
-#if CC_ALG == CALVIN
-  COPY_BUF(buf,batch_id,ptr);
-#endif
 }
 
 /************************/
@@ -556,16 +549,11 @@ uint64_t FinishMessage::get_size() {
 
 void FinishMessage::copy_from_txn(TxnManager * txn) {
   Message::mcopy_from_txn(txn);
-  //rc = query->rc;
-  txn_id = txn->txn->txn_id;
-  batch_id = txn->txn->batch_id;
+  rc = txn->get_rc();
 }
 
 void FinishMessage::copy_to_txn(TxnManager * txn) {
   Message::mcopy_to_txn(txn);
-  //query->rc = rc;
-  txn->txn->txn_id = txn_id;
-  txn->txn->batch_id = batch_id;
 }
 
 void FinishMessage::copy_from_buf(char * buf) {
@@ -573,8 +561,6 @@ void FinishMessage::copy_from_buf(char * buf) {
   uint64_t ptr = Message::mget_size();
   COPY_VAL(pid,buf,ptr);
   COPY_VAL(rc,buf,ptr);
-  COPY_VAL(txn_id,buf,ptr);
-  COPY_VAL(batch_id,buf,ptr);
   COPY_VAL(ro,buf,ptr);
 }
 
@@ -583,8 +569,6 @@ void FinishMessage::copy_to_buf(char * buf) {
   uint64_t ptr = Message::mget_size();
   COPY_BUF(buf,pid,ptr);
   COPY_BUF(buf,rc,ptr);
-  COPY_BUF(buf,txn_id,ptr);
-  COPY_BUF(buf,batch_id,ptr);
   COPY_BUF(buf,ro,ptr);
 }
 
