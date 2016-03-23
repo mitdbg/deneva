@@ -187,6 +187,7 @@ public:
   uint64_t batch_id;
   uint64_t txn_id;
 #endif
+  uint64_t client_startts;
   Array<uint64_t> partitions;
 };
 

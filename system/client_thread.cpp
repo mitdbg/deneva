@@ -76,7 +76,9 @@ RC ClientThread::run() {
 		DEBUG("Client: thread %lu sending query to node: %u\n",
 				_thd_id, next_node_id);
 
-    msg_queue.enqueue(Message::create_message((BaseQuery*)m_query,CL_QRY),next_node_id);
+    Message * msg = Message::create_message((BaseQuery*)m_query,CL_QRY);
+    ((ClientQueryMessage*)msg)->client_startts = get_sys_clock();
+    msg_queue.enqueue(msg,next_node_id);
 		num_txns_sent++;
 		txns_sent[next_node]++;
     INC_STATS(get_thd_id(),txn_sent,1);

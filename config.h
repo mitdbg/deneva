@@ -326,7 +326,7 @@ extern TestCases          g_test_case;
 #define STAT_ARR_SIZE 1024
 #define PROG_TIMER 10000 * BILLION // in s
 #define BATCH_TIMER 10000000
-#define DONE_TIMER 10 * 60 * BILLION // ~2 minutes
+#define DONE_TIMER 1 * 60 * BILLION // ~2 minutes
 
 #define SEED 0
 #define SHMEM_ENV true

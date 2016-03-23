@@ -60,6 +60,7 @@ void StatsArr::init(uint64_t size,StatsArrType type) {
   this->size = size+1;
   this->type = type;
   cnt = 0;
+  pthread_mutex_init(&mtx,NULL);
 }
 
 void StatsArr::resize() {
@@ -72,20 +73,23 @@ void StatsArr::resize() {
 }
 
 void StatsArr::insert(uint64_t item) {
+  pthread_mutex_lock(&mtx);
   if(type == ArrIncr) {
-    if(cnt == size)
+    uint64_t my_cnt = ATOM_FETCH_ADD(cnt,1);
+    if(my_cnt == size)
       resize();
-    arr[cnt++] = item;
+    arr[my_cnt] = item;
   }
   else if(type == ArrInsert) {
     if(item >= size) {
-      arr[size-1]++;
+      ATOM_ADD(arr[size-1],1);
     }
     else {
-      arr[item]++;
+      ATOM_ADD(arr[item],1);
     }
-    cnt++;
+    ATOM_ADD(cnt,1);
   }
+  pthread_mutex_unlock(&mtx);
 }
 
 void StatsArr::print(FILE * f) {

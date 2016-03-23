@@ -84,6 +84,10 @@ RC InputThread::client_recv_loop() {
       return_node_offset = msg->return_node_id - g_server_start_node;
       assert(return_node_offset < g_servers_per_client);
       rsp_cnts[return_node_offset]++;
+      INC_STATS(0,txn_cnt,1);
+      uint64_t timespan = get_sys_clock() - ((ClientResponseMessage*)msg)->client_startts; 
+      INC_STATS(0,latency, timespan);
+      INC_STATS_ARR(0,all_lat,timespan);
       inf = client_man.dec_inflight(return_node_offset);
       assert(inf >=0);
       // TODO: delete message

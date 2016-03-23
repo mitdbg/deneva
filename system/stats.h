@@ -34,6 +34,8 @@ class StatsArr {
       uint64_t size;
       uint64_t cnt;
       StatsArrType type;
+    private:
+      pthread_mutex_t mtx;
 };
 
 class Stats_thd {

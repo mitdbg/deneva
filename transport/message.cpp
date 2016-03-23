@@ -296,6 +296,7 @@ void ClientQueryMessage::copy_from_txn(TxnManager * txn) {
 #endif
   partitions.clear();
   partitions.copy(txn->query->partitions);
+  client_startts = txn->client_startts;
 }
 
 void ClientQueryMessage::copy_to_txn(TxnManager * txn) {
@@ -307,6 +308,7 @@ void ClientQueryMessage::copy_to_txn(TxnManager * txn) {
 #endif
   txn->query->partitions.clear();
   txn->query->partitions.copy(partitions);
+  txn->client_startts = client_startts;
 }
 
 void ClientQueryMessage::copy_from_buf(char * buf) {
@@ -317,6 +319,7 @@ void ClientQueryMessage::copy_from_buf(char * buf) {
   COPY_VAL(batch_id,buf,ptr);
   COPY_VAL(txn_id,buf,ptr);
 #endif
+  COPY_VAL(client_startts,buf,ptr);
   size_t size;
   COPY_VAL(size,buf,ptr);
   partitions.init(size);
@@ -336,6 +339,7 @@ void ClientQueryMessage::copy_to_buf(char * buf) {
   COPY_BUF(buf,batch_id,ptr);
   COPY_BUF(buf,txn_id,ptr);
 #endif
+  COPY_BUF(buf,client_startts,ptr);
   size_t size = partitions.size();
   COPY_BUF(buf,size,ptr);
   for(uint64_t i = 0; i < size; i++) {
