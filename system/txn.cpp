@@ -88,12 +88,14 @@ void TxnManager::reset() {
 }
 
 RC TxnManager::commit() {
+  DEBUG("Commit %ld\n",get_txn_id());
   release_locks(RCOK);
   commit_stats();
   return Commit;
 }
 
 RC TxnManager::abort() {
+  DEBUG("Abort %ld\n",get_txn_id());
   release_locks(Abort);
   commit_stats();
   return Abort;
@@ -116,7 +118,8 @@ RC TxnManager::start_commit() {
       rc = WAIT_REM;
     } else {
       send_finish_messages();
-      rc = commit();
+      commit();
+      rc = WAIT_REM;
     }
   } else { // is not multi-part
     rc = validate();
@@ -617,16 +620,8 @@ TxnManager::calvin_finish(BaseQuery * qry) {
 void TxnManager::release_locks(RC rc) {
   // FIXME: Handle aborts?
 	uint64_t starttime = get_sys_clock();
-#if MODE==QRY_ONLY_MODE
-          // Release locks
-          if(query->partitions.size() > 1) {
-  cleanup(rc);
-          }
-#endif
 
-  if(query->partitions.size() == 1) {
-    cleanup(rc);
-  } 
+  cleanup(rc);
 
 	uint64_t timespan = (get_sys_clock() - starttime);
 	INC_STATS(get_thd_id(), time_cleanup,  timespan);

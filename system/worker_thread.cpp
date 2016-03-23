@@ -235,13 +235,13 @@ RC WorkerThread::process_rfin(Message * msg) {
   INC_STATS(0,rfin,1);
   if(((FinishMessage*)msg)->rc == Abort) {
     INC_STATS(_thd_id,abort_rem_cnt,1);
-    abort(txn_man);
+    txn_man->abort();
     msg_queue.enqueue(Message::create_message(txn_man,RACK_FIN),GET_NODE_ID(msg->get_txn_id()));
     return Abort;
   } 
   txn_man->commit();
-  if(!txn_man->query->readonly() || CC_ALG == OCC)
-    msg_queue.enqueue(Message::create_message(txn_man,RACK_FIN),GET_NODE_ID(msg->get_txn_id()));
+  //if(!txn_man->query->readonly() || CC_ALG == OCC)
+  msg_queue.enqueue(Message::create_message(txn_man,RACK_FIN),GET_NODE_ID(msg->get_txn_id()));
 
   return RCOK;
 }
@@ -267,8 +267,11 @@ RC WorkerThread::process_rack_prep(Message * msg) {
     rc = Abort;
   }
   txn_man->send_finish_messages();
-  if(rc == Abort)
-    abort(txn_man);
+  if(rc == Abort) {
+    txn_man->abort();
+  } else {
+    txn_man->commit();
+  }
 
   return rc;
 }
@@ -289,8 +292,10 @@ RC WorkerThread::process_rack_rfin(Message * msg) {
   // Done waiting 
 
   if(txn_man->get_rc() == RCOK) {
+    //txn_man->commit();
     commit(txn_man);
   } else {
+    //txn_man->abort();
     abort(txn_man);
   }
   return rc;
@@ -376,11 +381,15 @@ RC WorkerThread::process_rtxn(Message * msg) {
             txn_man->set_timestamp(get_next_ts());
           }
           txn_man->txn_stats.starttime = get_sys_clock();
+          msg->copy_to_txn(txn_man);
+          DEBUG("START %ld %f %lu\n",txn_man->get_txn_id(),simulation->seconds_from_start(get_sys_clock()),txn_man->txn_stats.starttime);
 
 				} else {
           txn_man = txn_table.get_transaction_manager(msg->get_txn_id(),0);
+          DEBUG("RESTART %ld %f %lu\n",txn_man->get_txn_id(),simulation->seconds_from_start(get_sys_clock()),txn_man->txn_stats.starttime);
         }
 
+        // FIXME: Make sure we are coming from a new txn or restart, not a wait
           // Get new timestamps
           if(is_cc_new_timestamp()) {
             txn_man->set_timestamp(get_next_ts());
@@ -389,8 +398,6 @@ RC WorkerThread::process_rtxn(Message * msg) {
 #if CC_ALG == OCC
           txn_man->set_start_timestamp(get_next_ts());
 #endif
-      DEBUG("START %ld %f %lu\n",txn_man->get_txn_id(),simulation->seconds_from_start(get_sys_clock()),txn_man->txn_stats.starttime);
-    msg->copy_to_txn(txn_man);
 
     rc = init_phase();
     if(rc != RCOK)
