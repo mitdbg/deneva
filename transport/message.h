@@ -21,8 +21,10 @@
 #include "helper.h"
 #include "tpcc.h"
 #include "tpcc_query.h"
+#include "logger.h"
 
 class ycsb_request;
+class LogRecord;
 
 class Message {
 public:
@@ -30,6 +32,7 @@ public:
   static Message * create_message(BaseQuery * query, RemReqType rtype); 
   static Message * create_message(TxnManager * txn, RemReqType rtype); 
   static Message * create_message(uint64_t txn_id, RemReqType rtype); 
+  static Message * create_message(LogRecord * record, RemReqType rtype); 
   static Message * create_message(RemReqType rtype); 
   static std::vector<Message*> create_messages(char * buf); 
   RemReqType rtype;
@@ -94,8 +97,10 @@ public:
   uint64_t get_size();
   void init() {}
   void release(); 
+  void copy_from_record(LogRecord * record);
 
-  Array<LogRecord*> log_records;
+  //Array<LogRecord*> log_records;
+  LogRecord record;
 };
 
 class LogRspMessage : public Message {

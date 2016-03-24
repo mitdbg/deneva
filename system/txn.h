@@ -149,6 +149,8 @@ public:
 	// LOGGING
 	////////////////////////////////
 //	void 			gen_log_entry(int &length, void * log);
+  bool log_flushed;
+  bool repl_finished;
   Transaction * txn;
   BaseQuery * query;
   uint64_t client_startts;

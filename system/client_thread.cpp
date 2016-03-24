@@ -31,7 +31,7 @@
 
 void ClientThread::setup() {
 	if( _thd_id == 0) {
-		uint64_t nnodes = g_node_cnt + g_client_node_cnt;
+		uint64_t nnodes = g_node_cnt + g_client_node_cnt + g_node_cnt*g_repl_cnt;
 		for(uint64_t i = 0; i < nnodes; i++) {
 			if(i != g_node_id) {
         msg_queue.enqueue(Message::create_message(INIT_DONE),i);

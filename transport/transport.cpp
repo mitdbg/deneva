@@ -88,7 +88,7 @@ void Transport::read_ifconfig(const char * ifaddr_file) {
 
 void Transport::init(uint64_t node_id,Workload * workload) {
 	_wl = workload;
-  _node_cnt = g_node_cnt + g_client_node_cnt;
+  _node_cnt = g_node_cnt + g_client_node_cnt + g_repl_cnt * g_node_cnt;
   /*
 #if CC_ALG == CALVIN
 	_node_cnt++;	// account for the sequencer

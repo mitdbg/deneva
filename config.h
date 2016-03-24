@@ -6,7 +6,7 @@
 // Simulation + Hardware
 /***********************************************/
 #define NODE_CNT 1
-#define THREAD_CNT 1
+#define THREAD_CNT 2
 #define REM_THREAD_CNT 1
 #define SEND_THREAD_CNT 1
 #define CORE_CNT 8
@@ -19,7 +19,7 @@
 #define CLIENT_RUNTIME false
 
 // Replication
-#define REPLICA_CNT 0
+#define REPLICA_CNT 1
 // AA (Active-Active), AP (Active-Passive)
 #define REPL_TYPE AP
 

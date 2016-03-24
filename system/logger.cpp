@@ -19,17 +19,42 @@ void Logger::release() {
 
 LogRecord * Logger::createRecord( 
     uint64_t txn_id,
+    LogIUD iud,
     uint64_t table_id,
     uint64_t key
     ) {
   LogRecord * record = (LogRecord*)mem_allocator.alloc(sizeof(LogRecord));
   record->rcd.init();
   record->rcd.lsn = ATOM_FETCH_ADD(lsn,1);
+  record->rcd.iud = iud;
   record->rcd.txn_id = txn_id;
   record->rcd.table_id = table_id;
   record->rcd.key = key;
   return record;
 }
+
+LogRecord * Logger::createRecord( 
+    LogRecord * record
+    ) {
+  LogRecord * my_record = (LogRecord*)mem_allocator.alloc(sizeof(LogRecord));
+  my_record->rcd.init();
+  my_record->copyRecord(record);
+  return my_record;
+}
+
+
+void LogRecord::copyRecord( 
+    LogRecord * record
+    ) {
+  rcd.init();
+  rcd.lsn = record->rcd.lsn;
+  rcd.iud = record->rcd.iud;
+  rcd.type = record->rcd.type;
+  rcd.txn_id = record->rcd.txn_id;
+  rcd.table_id = record->rcd.table_id;
+  rcd.key = record->rcd.key;
+}
+
 
 void Logger::enqueueRecord(LogRecord* record) {
   DEBUG("Enqueue Log Record %ld\n",record->rcd.txn_id);

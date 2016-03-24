@@ -49,7 +49,7 @@ struct AriesLogRecord {
   uint64_t key; // primary key (determines the partition ID)
   // TODO: column list
   
-  /*
+  /*lsn
   uint32_t n_cols; //how many columns are being updated
   uint32_t* cols; //ids of modified columns
   uint32_t before_image_size; 
@@ -62,8 +62,9 @@ struct AriesLogRecord {
 
 class LogRecord {
 public:
-  LogRecord();
+  //LogRecord();
   LogRecType getType() { return rcd.type; }
+  void copyRecord( LogRecord * record);
   // FIXME: compute a reasonable checksum
   uint64_t computeChecksum() {return (uint64_t)rcd.txn_id;};
 #if LOG_COMMAND
@@ -81,10 +82,12 @@ public:
   void init(const char * log_file);
   void release();
   void flushBufferCheck();
+  LogRecord * createRecord(LogRecord* record);
+
   LogRecord * createRecord(
     //LogRecType type,
-    //LogIUD iud,
     uint64_t txn_id,
+    LogIUD iud,
     //uint64_t partid,
     uint64_t table_id,
     uint64_t key);

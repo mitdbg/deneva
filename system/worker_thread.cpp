@@ -35,7 +35,7 @@
 #include "abort_queue.h"
 
 void WorkerThread::send_init_done_to_all_nodes() {
-		uint64_t total_nodes = g_node_cnt + g_client_node_cnt;
+		uint64_t total_nodes = g_node_cnt + g_client_node_cnt + g_node_cnt*g_repl_cnt;
 		for(uint64_t i = 0; i < total_nodes; i++) {
 			if(i != g_node_id) {
         msg_queue.enqueue(Message::create_message(INIT_DONE),i);
@@ -420,17 +420,33 @@ RC WorkerThread::init_phase() {
 
 
 RC WorkerThread::process_log_msg(Message * msg) {
+  assert(ISREPLICA);
+  DEBUG("REPLICA PROCESS %ld\n",msg->get_txn_id());
+  LogRecord * record = logger.createRecord(&((LogMessage*)msg)->record);
+  logger.enqueueRecord(record);
   return RCOK;
 }
 
 RC WorkerThread::process_log_msg_rsp(Message * msg) {
+  DEBUG("REPLICA RSP %ld\n",msg->get_txn_id());
+  TxnManager * txn_man = txn_table.get_transaction_manager(msg->get_txn_id(),0);
+  txn_man->repl_finished = true;
+  if(txn_man->log_flushed)
+    commit(txn_man);
   return RCOK;
 }
 
 RC WorkerThread::process_log_flushed(Message * msg) {
   DEBUG("LOG FLUSHED %ld\n",msg->get_txn_id());
+  if(ISREPLICA) {
+    msg_queue.enqueue(Message::create_message(msg->txn_id,LOG_MSG_RSP),GET_NODE_ID(msg->txn_id)); 
+    return RCOK;
+  }
+
   TxnManager * txn_man = txn_table.get_transaction_manager(msg->get_txn_id(),0);
-  commit(txn_man);
+  txn_man->log_flushed = true;
+  if(g_repl_cnt == 0 || txn_man->repl_finished)
+    commit(txn_man);
   return RCOK; 
 }
 

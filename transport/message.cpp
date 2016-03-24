@@ -34,7 +34,7 @@ std::vector<Message*> Message::create_messages(char * buf) {
   COPY_VAL(return_id,data,ptr);
   COPY_VAL(txn_cnt,data,ptr);
   assert(dest_id == g_node_id);
-  assert(ISCLIENTN(return_id) || ISSERVERN(return_id));
+  assert(ISCLIENTN(return_id) || ISSERVERN(return_id) || ISREPLICAN(return_id));
   while(txn_cnt > 0) {
     Message * msg = create_message(&data[ptr]);
     msg->return_node_id = return_id;
@@ -60,6 +60,14 @@ Message * Message::create_message(TxnManager * txn, RemReqType rtype) {
  msg->copy_from_txn(txn);
  return msg;
 }
+
+Message * Message::create_message(LogRecord * record, RemReqType rtype) {
+ Message * msg = create_message(rtype);
+ ((LogMessage*)msg)->copy_from_record(record);
+ msg->txn_id = record->rcd.txn_id;
+ return msg;
+}
+
 
 Message * Message::create_message(BaseQuery * query, RemReqType rtype) {
  assert(rtype == RQRY || rtype == CL_QRY);
@@ -595,13 +603,13 @@ void FinishMessage::copy_to_buf(char * buf) {
 /************************/
 
 void LogMessage::release() {
-  log_records.release();
+  //log_records.release();
 }
 
 uint64_t LogMessage::get_size() {
   uint64_t size = sizeof(LogMessage);
-  size += sizeof(size_t);
-  size += sizeof(LogRecord) * log_records.size();
+  //size += sizeof(size_t);
+  //size += sizeof(LogRecord) * log_records.size();
   return size;
 }
 
@@ -613,14 +621,22 @@ void LogMessage::copy_to_txn(TxnManager * txn) {
   Message::mcopy_to_txn(txn);
 }
 
+void LogMessage::copy_from_record(LogRecord * record) {
+  this->record.copyRecord(record);
+  
+}
+
+
 void LogMessage::copy_from_buf(char * buf) {
   Message::mcopy_from_buf(buf);
-  //uint64_t ptr = Message::mget_size();
+  uint64_t ptr = Message::mget_size();
+  COPY_VAL(record,buf,ptr);
 }
 
 void LogMessage::copy_to_buf(char * buf) {
   Message::mcopy_to_buf(buf);
-  //uint64_t ptr = Message::mget_size();
+  uint64_t ptr = Message::mget_size();
+  COPY_BUF(buf,record,ptr);
 }
 
 /************************/

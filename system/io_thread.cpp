@@ -43,7 +43,7 @@ void InputThread::setup() {
         fflush(stdout);
         simulation->process_setup_msg();
       } else {
-        assert(ISSERVER);
+        assert(ISSERVER || ISREPLICA);
         work_queue.enqueue(g_thread_cnt,msg,false);
       }
       msgs.erase(msgs.begin());

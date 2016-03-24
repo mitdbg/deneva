@@ -91,7 +91,7 @@ void QWorkQueue::enqueue(uint64_t thd_id, Message * msg,bool busy) {
   entry->txn_id = msg->txn_id;
   entry->batch_id = msg->batch_id;
   entry->starttime = get_sys_clock();
-  assert(ISSERVER);
+  assert(ISSERVER || ISREPLICA);
 
   // FIXME: May need alternative queue for some calvin threads
   pthread_mutex_lock(&mtx);
@@ -104,7 +104,7 @@ void QWorkQueue::enqueue(uint64_t thd_id, Message * msg,bool busy) {
 
 Message * QWorkQueue::dequeue() {
   uint64_t starttime = get_sys_clock();
-  assert(ISSERVER);
+  assert(ISSERVER || ISREPLICA);
   Message * msg = NULL;
   work_queue_entry * entry = NULL;
   uint64_t prof_starttime = get_sys_clock();

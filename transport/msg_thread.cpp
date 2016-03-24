@@ -26,7 +26,7 @@
 #include "global.h"
 
 void MessageThread::init(uint64_t thd_id) { 
-  buffer_cnt = g_node_cnt + g_client_node_cnt;
+  buffer_cnt = g_node_cnt + g_client_node_cnt + g_repl_cnt * g_node_cnt;
 #if CC_ALG == CALVIN
   buffer_cnt++;
 #endif
