@@ -15,7 +15,8 @@ CONFIG_PARAMS = [
     "MODE",
     "WORKLOAD",
     "PRIORITY",
-    "TWOPL_LITE"
+    "TWOPL_LITE",
+    "LOGGING"
 #    "SHMEM_ENV"
     ]
 
@@ -24,6 +25,7 @@ FLAG = {
     "CLIENT_THREAD_CNT" : "-ct",
     "CLIENT_REM_THREAD_CNT" : "-ctr",
     "CLIENT_SEND_THREAD_CNT" : "-cts",
+    "REPLICA_CNT":"-rn",
     "NODE_CNT" : "-n",
     "PART_CNT" : "-p",
     "THREAD_CNT" : "-t",
@@ -80,6 +82,7 @@ SHORTNAMES = {
     "ABORT_PENALTY":"PENALTY",
     "STRICT_PPT":"SPPT",
     "NETWORK_DELAY":"NDLY",
+    "REPLICA_CNT":"RN",
 }
 
 stat_map = {

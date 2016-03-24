@@ -34,6 +34,7 @@ SHORTNAMES = {
     "ABORT_PENALTY":"PENALTY",
     "STRICT_PPT":"SPPT",
     "NETWORK_DELAY":"NDLY",
+    "REPLICA_CNT":"RN",
 }
 
 #config_names=["CLIENT_NODE_CNT","NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","CLIENT_THREAD_CNT","CLIENT_REM_THREAD_CNT","CLIENT_SEND_THREAD_CNT","THREAD_CNT","REM_THREAD_CNT","SEND_THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","TXN_WRITE_PERC","TUP_WRITE_PERC","PART_PER_TXN","PART_CNT","MSG_TIME_LIMIT","MSG_SIZE_MAX","MODE","DATA_PERC","ACCESS_PERC","REQ_PER_QUERY"]
@@ -114,6 +115,18 @@ def ycsb_parts():
 ##############################
 # /END/ SIGMOD PAPER PLOTS
 ##############################
+
+def replica_test():
+    wl = 'YCSB'
+    nnodes = [1]
+    nrepl = [0,1]
+    nwr = [0.2]
+    nalgos=['NO_WAIT']
+    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PART_PER_TXN","TUP_WRITE_PERC","MAX_TXN_IN_FLIGHT","REPLICA_CNT","LOGGING"]
+    exp = [[wl,n,cc,2,wr,1000,repl,"true"] for n,cc,wr,repl in itertools.product(nnodes,nalgos,nwr,nrepl)]
+    exp += [[wl,n,cc,2,wr,1000,0,"false"] for n,cc,wr in itertools.product(nnodes,nalgos,nwr)]
+    return fmt,exp
+
 
 
 def test():
@@ -851,6 +864,7 @@ experiment_map = {
     'ycsb_calvin': ycsb_calvin,
     'ycsb_scaling_low_mpr': ycsb_scaling_low_mpr,
     'ycsb_scaling_low_mpr_plot': ycsb_scaling_low_mpr_plot,
+    'replica_test': replica_test,
 }
 
 
@@ -858,6 +872,8 @@ experiment_map = {
 configs = {
     "NODE_CNT" : 16,
     "THREAD_CNT": 6,
+    "REPLICA_CNT": 0,
+    "REPLICA_TYPE": "AP",
     "REM_THREAD_CNT": 1,
     "SEND_THREAD_CNT": 1,
     "CLIENT_NODE_CNT" : "NODE_CNT",
@@ -898,12 +914,13 @@ configs = {
 #TPCC
     "NUM_WH": 'PART_CNT',
     "PERC_PAYMENT":0.0,
-    "DEBUG_DISTR":"false",
+    "DEBUG_DISTR":"true",
     "DEBUG_ALLOC":"false",
     "DEBUG_RACE":"false",
     "MODE":"NORMAL_MODE",
     "SHMEM_ENV":"false",
     "STRICT_PPT":0,
     "SET_AFFINITY":"true",
+    "LOGGING":"false",
 }
 

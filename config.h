@@ -5,21 +5,21 @@
 /***********************************************/
 // Simulation + Hardware
 /***********************************************/
-#define NODE_CNT 1
-#define THREAD_CNT 2
+#define NODE_CNT 16
+#define THREAD_CNT 6
 #define REM_THREAD_CNT 1
 #define SEND_THREAD_CNT 1
 #define CORE_CNT 8
 // PART_CNT should be at least NODE_CNT
 #define PART_CNT NODE_CNT
-#define CLIENT_NODE_CNT 1
-#define CLIENT_THREAD_CNT 1
+#define CLIENT_NODE_CNT NODE_CNT
+#define CLIENT_THREAD_CNT 2
 #define CLIENT_REM_THREAD_CNT 1
-#define CLIENT_SEND_THREAD_CNT 1
+#define CLIENT_SEND_THREAD_CNT 4
 #define CLIENT_RUNTIME false
 
 // Replication
-#define REPLICA_CNT 1
+#define REPLICA_CNT 0
 // AA (Active-Active), AP (Active-Passive)
 #define REPL_TYPE AP
 
@@ -41,7 +41,7 @@
 #define TIME_ENABLE         true //STATS_ENABLE
 
 #define FIN_BY_TIME true
-#define MAX_TXN_IN_FLIGHT 10
+#define MAX_TXN_IN_FLIGHT 50000
 
 /***********************************************/
 // Memory System
@@ -67,9 +67,9 @@
 /***********************************************/
 // Message Passing
 /***********************************************/
-#define TPORT_TYPE "ipc"
-#define TPORT_TYPE_IPC true
-#define TPORT_PORT "_.ipc"
+#define TPORT_TYPE "tcp"
+#define TPORT_TYPE_IPC false
+#define TPORT_PORT 17000
 #define SET_AFFINITY true
 
 #define MAX_TPORT_NAME 128
@@ -145,7 +145,7 @@
 /***********************************************/
 #define LOG_COMMAND         false
 #define LOG_REDO          false
-#define LOGGING true
+#define LOGGING false
 #define LOG_BUF_MAX 10
 #define LOG_BUF_TIMEOUT 10 * 1000000UL // 10ms
 
@@ -155,7 +155,7 @@
 // max number of rows touched per transaction
 #define MAX_ROW_PER_TXN       64
 #define QUERY_INTVL         1UL
-#define MAX_TXN_PER_PART 10
+#define MAX_TXN_PER_PART 1000000
 #define FIRST_PART_LOCAL      true
 #define MAX_TUPLE_SIZE        1024 // in bytes
 #define GEN_BY_MPR false
@@ -166,8 +166,8 @@
 #define SKEW_METHOD HOT
 #define DATA_PERC 100
 #define ACCESS_PERC 0.03
-#define INIT_PARALLELISM 1
-#define SYNTH_TABLE_SIZE 2056 //2097152*8
+#define INIT_PARALLELISM 8
+#define SYNTH_TABLE_SIZE 2097152*8
 #define ZIPF_THETA 0.6
 #define TXN_WRITE_PERC 0.5
 #define TUP_WRITE_PERC 0.5
@@ -175,7 +175,7 @@
 #define SCAN_LEN          20
 #define PART_PER_TXN NODE_CNT
 #define PERC_MULTI_PART     MPR 
-#define REQ_PER_QUERY 2 
+#define REQ_PER_QUERY 10
 #define FIELD_PER_TUPLE       10
 #define CREATE_TXN_FILE false
 #define STRICT_PPT 0
@@ -324,7 +324,7 @@ extern TestCases          g_test_case;
 // Stats and timeout
 #define BILLION 1000000000UL // in ns => 1 second
 #define STAT_ARR_SIZE 1024
-#define PROG_TIMER 10000 * BILLION // in s
+#define PROG_TIMER 10 * BILLION // in s
 #define BATCH_TIMER 10000000
 #define DONE_TIMER 1 * 60 * BILLION // ~2 minutes
 

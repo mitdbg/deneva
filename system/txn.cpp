@@ -91,14 +91,12 @@ RC TxnManager::commit() {
   DEBUG("Commit %ld\n",get_txn_id());
   release_locks(RCOK);
   commit_stats();
-#if (LOGGING || REPLICA_CNT > 0) && !LOG_COMMAND
-    LogRecord * record = logger.createRecord(get_txn_id(),L_NOTIFY,0,0);
-#if REPLICA_CNT > 0
-    msg_queue.enqueue(Message::create_message(record,LOG_MSG),g_node_id + g_node_cnt + g_client_node_cnt); 
-#endif
 #if LOGGING
+    LogRecord * record = logger.createRecord(get_txn_id(),L_NOTIFY,0,0);
+    if(g_repl_cnt > 0) {
+      msg_queue.enqueue(Message::create_message(record,LOG_MSG),g_node_id + g_node_cnt + g_client_node_cnt); 
+    }
   logger.enqueueRecord(record);
-#endif
   return WAIT;
 #endif
   return Commit;
@@ -408,16 +406,14 @@ RC TxnManager::get_row(row_t * row, access_t type, row_t *& row_rtn) {
 		access->orig_data->copy(row);
 
     // ARIES-style physiological logging
-#if (LOGGING || REPLICA_CNT > 0) && !LOG_COMMAND
+#if LOGGING
     //LogRecord * record = logger.createRecord(LRT_UPDATE,L_UPDATE,get_txn_id(),part_id,row->get_table()->get_table_id(),row->get_primary_key());
     LogRecord * record = logger.createRecord(get_txn_id(),L_UPDATE,row->get_table()->get_table_id(),row->get_primary_key());
-#if REPLICA_CNT > 0
-    // FIXME > 1 replica
-    msg_queue.enqueue(Message::create_message(record,LOG_MSG),g_node_id + g_node_cnt + g_client_node_cnt); 
-#endif
-#if LOGGING
+    if(g_repl_cnt > 0) {
+      // FIXME > 1 replica
+      msg_queue.enqueue(Message::create_message(record,LOG_MSG),g_node_id + g_node_cnt + g_client_node_cnt); 
+    }
     logger.enqueueRecord(record);
-#endif
 #endif
 
 	}

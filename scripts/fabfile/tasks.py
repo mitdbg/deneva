@@ -298,6 +298,16 @@ def deploy(schema_path,nids,exps,fmt):
                         cmd += "(/dev/shm/runcl -nid{} {}>> /dev/shm/results{}.out 2>&1 &);".format(nn,args,nn)  
                     else:
                         cmd += "(./runcl -nid{} {}>> results{}.out 2>&1 &);".format(nn,args,nn)  
+            for r in env.roledefs["replicas"]:
+                if r == env.host:
+                    nn = nid.next()
+                    args = get_args(fmt,exp.next())
+                    if env.shmem:
+                        cmd += "(/dev/shm/rundb -nid{} {}>> /dev/shm/results{}.out 2>&1 &);".format(nn,args,nn)  
+#                        cmd += "(/dev/shm/rundb -nid{} >> /dev/shm/results{}.out 2>&1 &);".format(nn,nn)  
+                    else:
+                        cmd += "(./rundb -nid{} {}>> results{}.out 2>&1 &);".format(nn,args,nn)  
+
 #            for r in env.roledefs["sequencer"]:
 #                if r == env.host:
 #                    nn = nid.next()
@@ -424,6 +434,16 @@ def write_ifconfig(roles,exp):
                 nids[client].append(nid)
                 exps[client].append(exp)
             nid += 1
+        for replica in roles['replicas']:
+            f.write(replica + "\n")
+            if replica not in nids:
+                nids[replica] = [nid]
+                exps[replica] = [exp]
+            else:
+                nids[replica].append(nid)
+                exps[replica].append(exp)
+            nid += 1
+
 #        if "sequencer" in roles:
 #            assert CC_ALG == "CALVIN"
 #            sequencer = roles['sequencer'][0]
@@ -435,18 +455,23 @@ def write_ifconfig(roles,exp):
             
 @task
 @hosts('localhost')
-def assign_roles(server_cnt,client_cnt,append=False):
+def assign_roles(server_cnt,client_cnt,replica_per_server_cnt,append=False):
+    replica_cnt = replica_per_server_cnt * server_cnt
     if env.same_node:
         servers=[env.hosts[0]] * server_cnt
         clients=[env.hosts[0]] * client_cnt
+        replicas=[env.hosts[0]] * replica_cnt
     elif env.cram:
         ncnt = max(max(server_cnt,client_cnt) / 8,1)
         servers = []
         clients = []
+        replicas = []
         for r in range(server_cnt):
             servers.append(env.hosts[r%ncnt])
         for r in range(client_cnt):
             clients.append(env.hosts[r%ncnt])
+        for r in range(replica_cnt):
+            replicas.append(env.hosts[r%ncnt])
     else:
 #        if len(env.hosts) < server_cnt+client_cnt:
 #            with color("error"):
@@ -459,6 +484,7 @@ def assign_roles(server_cnt,client_cnt,append=False):
             clients=env.hosts[0:client_cnt]
         else:
             clients=env.hosts[server_cnt:server_cnt+client_cnt]
+        replicas=env.hosts[server_cnt+client_cnt:server_cnt+client_cnt+replica_cnt]
     new_roles = {}
 #    if CC_ALG == 'CALVIN':
 #        sequencer = env.hosts[server_cnt+client_cnt:server_cnt+client_cnt+1]
@@ -466,21 +492,18 @@ def assign_roles(server_cnt,client_cnt,append=False):
         env.roledefs={}
         env.roledefs['clients']=[]
         env.roledefs['servers']=[]
-        env.roledefs['sequencer']=[]
+        env.roledefs['replicas']=[]
     if append:
         env.roledefs['clients'].extend(clients)
         env.roledefs['servers'].extend(servers)
-#        if CC_ALG == 'CALVIN':
-#            env.roledefs['sequencer'].extend(sequencer)
+        env.roledefs['replicas'].extend(replicas)
     else:
         env.roledefs['clients']=clients
         env.roledefs['servers']=servers
-#        if CC_ALG == 'CALVIN':
-#            env.roledefs['sequencer']=sequencer
+        env.roledefs['replicas']=replicas
     new_roles['clients']=clients
     new_roles['servers']=servers
-#    if CC_ALG == 'CALVIN':
-#        new_roles['sequencer']=sequencer
+    new_roles['replicas']=replicas
     with color():
         puts("Assigned the following roles:",show_prefix=True)
         puts(pprint.pformat(new_roles,depth=3) + "\n",show_prefix=False)
@@ -601,6 +624,7 @@ def run_exp_old(exps,network_test=False,delay=''):
     nids = {} 
     outfiles = {}
     exps = {}
+    nrepl = 0
 
     for e in experiments:
         cfgs = get_cfgs(fmt,e)
@@ -630,11 +654,12 @@ def run_exp_old(exps,network_test=False,delay=''):
             local("cp {} {}".format(cfg_srcpath,cfg_destpath))
             nnodes = cfgs["NODE_CNT"]
             nclnodes = cfgs["CLIENT_NODE_CNT"]
+            nrepl = cfgs["REPLICA_CNT"]
             try:
-                ntotal = nnodes + nclnodes
+                ntotal = nnodes + nclnodes + nrepl*nnodes
             except TypeError:
                 nclnodes = cfgs[cfgs["CLIENT_NODE_CNT"]]
-                ntotal = nnodes + nclnodes
+                ntotal = nnodes + nclnodes + nrepl*nnodes
 #            if CC_ALG == 'CALVIN':
 #                ntotal += 1
             if env.same_node:
@@ -693,7 +718,7 @@ def run_exp_old(exps,network_test=False,delay=''):
                         machines = env.hosts[:ntotal]
 
                     set_hosts(machines)
-                    new_roles=execute(assign_roles,nnodes,nclnodes,append=env.batch_mode)[env.host]
+                    new_roles=execute(assign_roles,nnodes,nclnodes,nrepl,append=env.batch_mode)[env.host]
                     new_nids,new_exps = execute(write_ifconfig,new_roles,e)[env.host]
                     nids.update(new_nids)
                     exps.update(new_exps)
@@ -908,6 +933,7 @@ def run_exp(exps,network_test=False,delay=''):
     nids = {} 
     outfiles = {}
     exps = {}
+    nrepl = 0
 
     if SKIP:
         for e in experiments[:]:
@@ -984,7 +1010,7 @@ def run_exp(exps,network_test=False,delay=''):
             machines = env.hosts[batch_size : batch_size + ntotal]
             batch_size += ntotal
             set_hosts(machines)
-            new_roles=execute(assign_roles,nnodes,nclnodes,append=env.batch_mode)[env.host]
+            new_roles=execute(assign_roles,nnodes,nclnodes,nrepl,append=env.batch_mode)[env.host]
             new_nids,new_exps = execute(write_ifconfig,new_roles,e)[env.host]
             nids.update(new_nids)
             exps.update(new_exps)

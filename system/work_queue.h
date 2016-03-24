@@ -59,9 +59,9 @@ struct CompareWQEntry {
   }
 #elif PRIORITY == PRIORITY_ACTIVE
   bool operator()(const work_queue_entry* lhs, const work_queue_entry* rhs) {
-    if(lhs->rtype == RTXN && rhs->rtype != RTXN)
+    if(lhs->rtype == CL_QRY && rhs->rtype != CL_QRY)
       return true;
-    if(rhs->rtype == RTXN && lhs->rtype != RTXN)
+    if(rhs->rtype == CL_QRY && lhs->rtype != CL_QRY)
       return false;
     return lhs->starttime < rhs->starttime;
   }
