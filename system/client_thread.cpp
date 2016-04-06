@@ -81,11 +81,11 @@ RC ClientThread::run() {
     msg_queue.enqueue(msg,next_node_id);
 		num_txns_sent++;
 		txns_sent[next_node]++;
-    INC_STATS(get_thd_id(),txn_sent,1);
+    INC_STATS(get_thd_id(),txn_sent_cnt,1);
 
 		if(get_sys_clock() - prog_time >= g_prog_timer) {
 			prog_time = get_sys_clock();
-			SET_STATS(get_thd_id(), tot_run_time, prog_time - run_starttime); 
+			SET_STATS(get_thd_id(), total_runtime, prog_time - run_starttime); 
       if(get_thd_id() == 0)
         stats.print_client(true);
     }
@@ -99,7 +99,7 @@ RC ClientThread::run() {
 		printf("Txns sent to node %lu: %d\n", l+g_server_start_node, txns_sent[l]);
 
   prog_time = get_sys_clock();
-  SET_STATS(get_thd_id(), tot_run_time, prog_time - run_starttime); 
+  SET_STATS(get_thd_id(), total_runtime, prog_time - run_starttime); 
 
   printf("FINISH %ld:%ld\n",_node_id,_thd_id);
   fflush(stdout);

@@ -103,6 +103,7 @@ void Logger::writeToBuffer(char * data, uint64_t size) {
   uint64_t starttime = get_sys_clock();
   log_file.write(data,size);
   INC_STATS(0,log_write_time,get_sys_clock() - starttime);
+  INC_STATS(0,log_write_cnt,1);
 
 }
 
@@ -164,6 +165,7 @@ void Logger::flushBuffer() {
   uint64_t starttime = get_sys_clock();
   log_file.flush();
   INC_STATS(0,log_flush_time,get_sys_clock() - starttime);
+  INC_STATS(0,log_flush_cnt,1);
 
   last_flush = get_sys_clock();
   log_buf_cnt = 0;

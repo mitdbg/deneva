@@ -37,8 +37,14 @@
 void YCSBTxnManager::init(Workload * h_wl) {
 	TxnManager::init(h_wl);
 	_wl = (YCSBWorkload *) h_wl;
+  reset();
+	TxnManager::reset();
+}
+
+void YCSBTxnManager::reset() {
   state = YCSB_0;
   next_record_id = 0;
+	TxnManager::reset();
 }
 
 RC YCSBTxnManager::acquire_locks() {
@@ -79,7 +85,6 @@ RC YCSBTxnManager::acquire_locks() {
 
 RC YCSBTxnManager::run_txn() {
   RC rc = RCOK;
-  uint64_t thd_prof_start = get_sys_clock();
 
 #if CC_ALG == CALVIN
   rc = run_ycsb(query);
@@ -96,14 +101,13 @@ RC YCSBTxnManager::run_txn() {
     rc = run_txn_state();
   }
 
-  if(is_done() && IS_LOCAL(get_txn_id())) {
-    if(rc == RCOK) 
+  if(IS_LOCAL(get_txn_id())) {
+    if(is_done() && rc == RCOK) 
       rc = start_commit();
     else if(rc == Abort)
       rc = start_abort();
   }
 
-  INC_STATS(get_thd_id(),thd_prof_wl1,get_sys_clock() - thd_prof_start);
   return rc;
 
 }

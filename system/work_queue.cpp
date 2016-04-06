@@ -99,7 +99,7 @@ void QWorkQueue::enqueue(uint64_t thd_id, Message * msg,bool busy) {
   work_queue.push(entry);
   pthread_mutex_unlock(&mtx);
 
-  INC_STATS(thd_id,all_wq_enqueue,get_sys_clock() - starttime);
+  INC_STATS(thd_id,work_queue_enqueue_time,get_sys_clock() - starttime);
 }
 
 Message * QWorkQueue::dequeue() {
@@ -107,7 +107,6 @@ Message * QWorkQueue::dequeue() {
   assert(ISSERVER || ISREPLICA);
   Message * msg = NULL;
   work_queue_entry * entry = NULL;
-  uint64_t prof_starttime = get_sys_clock();
   if(!work_queue.empty()) {
     pthread_mutex_lock(&mtx);
     if(!work_queue.empty()) {
@@ -116,6 +115,7 @@ Message * QWorkQueue::dequeue() {
       if(activate_txn_id(msg->get_txn_id())) {
         work_queue.pop();
       } else {
+        INC_STATS(0,work_queue_conflict_cnt,1);
         entry = NULL;
         msg = NULL;
       }
@@ -127,15 +127,21 @@ Message * QWorkQueue::dequeue() {
   if(entry) {
     assert(msg);
     uint64_t queue_time = get_sys_clock() - entry->starttime;
-    INC_STATS(0,qq_cnt,1);
-    INC_STATS(0,qq_lat,queue_time);
-    INC_STATS(0,wq_dequeue,get_sys_clock() - starttime);
+    INC_STATS(0,work_queue_wait_time,queue_time);
+    INC_STATS(0,work_queue_cnt,1);
+    if(msg->rtype == CL_QRY) {
+      INC_STATS(0,work_queue_new_wait_time,queue_time);
+      INC_STATS(0,work_queue_new_cnt,1);
+    } else {
+      INC_STATS(0,work_queue_old_wait_time,queue_time);
+      INC_STATS(0,work_queue_old_cnt,1);
+    }
     DEBUG("DEQUEUE (%ld,%ld) %ld; %ld; %d, 0x%lx\n",msg->txn_id,msg->batch_id,msg->return_node_id,queue_time,msg->rtype,(uint64_t)msg);
     mem_allocator.free(entry,sizeof(work_queue_entry));
+    INC_STATS(0,work_queue_dequeue_time,get_sys_clock() - starttime);
   } else {
     assert(msg == NULL);
   }
-  INC_STATS(0,all_wq_dequeue,get_sys_clock() - prof_starttime);
   return msg;
 }
 

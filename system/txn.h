@@ -51,6 +51,7 @@ public:
 class Transaction {
 public:
   void init();
+  void reset();
 	void release();
   //vector<Access*> accesses;
   Array<Access*> accesses;
@@ -83,8 +84,9 @@ class TxnManager
 {
 public:
   virtual void init(Workload * h_wl);
+  virtual void reset();
   void clear();
-  void reset();
+  //void reset();
 	void release();
 	Thread * h_thd;
 	Workload * h_wl;

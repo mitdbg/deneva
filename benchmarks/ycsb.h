@@ -58,6 +58,7 @@ class YCSBTxnManager : public TxnManager
 {
 public:
 	void init(Workload * h_wl);
+	void reset();
   RC acquire_locks(); 
 	RC run_txn();
   RC run_txn_post_wait(); 

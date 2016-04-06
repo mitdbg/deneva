@@ -86,8 +86,8 @@ RC InputThread::client_recv_loop() {
       rsp_cnts[return_node_offset]++;
       INC_STATS(0,txn_cnt,1);
       uint64_t timespan = get_sys_clock() - ((ClientResponseMessage*)msg)->client_startts; 
-      INC_STATS(0,latency, timespan);
-      INC_STATS_ARR(0,all_lat,timespan);
+      INC_STATS(0,txn_run_time, timespan);
+      //INC_STATS_ARR(0,all_lat,timespan);
       inf = client_man.dec_inflight(return_node_offset);
       assert(inf >=0);
       // TODO: delete message
@@ -108,17 +108,14 @@ RC InputThread::server_recv_loop() {
 	RC rc = RCOK;
 	assert (rc == RCOK);
 
-  uint64_t thd_prof_start;
   std::vector<Message*> msgs;
 	while (!simulation->is_done()) {
-    thd_prof_start = get_sys_clock();
 		msgs = tport_man.recv_msg();
     while(!msgs.empty()) {
       Message * msg = msgs.front();
       work_queue.enqueue(g_thread_cnt,msg,false);
       msgs.erase(msgs.begin());
     }
-    INC_STATS(_thd_id,rthd_prof_1,get_sys_clock() - thd_prof_start);
 
 	}
   printf("FINISH %ld:%ld\n",_node_id,_thd_id);

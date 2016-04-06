@@ -58,7 +58,6 @@ class Query_queue;
 class Plock;
 class OptCC;
 class SpecEx;
-class VLLMan;
 class Transport;
 class Remote_query;
 class TxnPool;
@@ -94,9 +93,6 @@ extern Client_query_queue client_query_queue;
 extern Plock part_lock_man;
 extern OptCC occ_man;
 extern SpecEx spec_man;
-#if CC_ALG == VLL
-extern VLLMan vll_man;
-#endif
 extern Transport tport_man;
 extern Remote_query rem_qry_man;
 extern TxnPool txn_pool;
@@ -140,7 +136,11 @@ extern UInt32 g_node_cnt;
 extern UInt32 g_part_cnt;
 extern UInt32 g_virtual_part_cnt;
 extern UInt32 g_core_cnt;
+extern UInt32 g_total_node_cnt;
+extern UInt32 g_total_thread_cnt;
+extern UInt32 g_total_client_thread_cnt;
 extern UInt32 g_thread_cnt;
+extern UInt32 g_abort_thread_cnt;
 extern UInt32 g_send_thread_cnt;
 extern UInt32 g_rem_thread_cnt;
 extern ts_t g_abort_penalty; 
@@ -212,7 +212,7 @@ extern UInt32 g_repl_type;
 extern UInt32 g_repl_cnt;
 
 enum RC { RCOK, Commit, Abort, WAIT, WAIT_REM, ERROR, FINISH, NONE };
-enum RemReqType {INIT_DONE,RLK, RULK, CL_QRY, RQRY, RFIN, RLK_RSP, RULK_RSP, RQRY_RSP, RACK,RACK_PREP,RACK_FIN, RTXN, RINIT, RPREPARE,RPASS,RFWD,RDONE,CL_RSP,LOG_MSG,LOG_MSG_RSP,LOG_FLUSHED,NO_MSG};
+enum RemReqType {INIT_DONE=0,RLK, RULK, CL_QRY, RQRY, RFIN, RLK_RSP, RULK_RSP, RQRY_RSP, RACK,RACK_PREP,RACK_FIN, RTXN, RINIT, RPREPARE,RPASS,RFWD,RDONE,CL_RSP,LOG_MSG,LOG_MSG_RSP,LOG_FLUSHED,NO_MSG};
 
 /* Thread */
 typedef uint64_t txnid_t;

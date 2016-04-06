@@ -61,8 +61,8 @@ uint64_t MessageQueue::dequeue(Message *& msg) {
     msg = entry->msg;
     dest = entry->dest;
     DEBUG("MQ Dequeue %ld\n",dest)
-    INC_STATS(0,msg_dly,curr_time - entry->starttime);
-    INC_STATS(0,msg_cnt,1);
+    INC_STATS(0,msg_queue_delay_time,curr_time - entry->starttime);
+    INC_STATS(0,msg_queue_cnt,1);
     msg_pool.put(entry);
   } else {
     msg = NULL;

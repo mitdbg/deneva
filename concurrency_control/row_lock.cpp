@@ -85,7 +85,7 @@ RC Row_lock::lock_get(lock_t type, TxnManager * txn, uint64_t* &txnids, int &txn
 #endif
 
   if(owner_cnt > 0) {
-    INC_STATS(txn->get_thd_id(),cc_busy_cnt,1);
+    INC_STATS(txn->get_thd_id(),twopl_already_owned_cnt,1);
   }
 	bool conflict = conflict_lock(lock_type, type);
 #if TWOPL_LITE
@@ -141,7 +141,7 @@ RC Row_lock::lock_get(lock_t type, TxnManager * txn, uint64_t* &txnids, int &txn
         while (en != NULL) {
           if (txn->get_timestamp() > en->txn->get_timestamp()) {
             //printf("abort %ld %ld -- %ld -- %f\n",txn->get_txn_id(),en->txn->get_txn_id(),_row->get_primary_key(),(float)(txn->get_timestamp() - en->txn->get_timestamp()) / BILLION);
-            INC_STATS(txn->get_thd_id(),twopl_time_diff,(txn->get_timestamp() - en->txn->get_timestamp()));
+            INC_STATS(txn->get_thd_id(),twopl_diff_time,(txn->get_timestamp() - en->txn->get_timestamp()));
             canwait = false;
             break;
           }
@@ -177,7 +177,6 @@ RC Row_lock::lock_get(lock_t type, TxnManager * txn, uint64_t* &txnids, int &txn
         rc = WAIT;
         //txn->wait_starttime = get_sys_clock();
       } else {
-        INC_STATS(txn->get_thd_id(),abort_from_ts,1);
         DEBUG("abort %ld,%ld %ld %lx\n",txn->get_txn_id(),txn->get_batch_id(),_row->get_primary_key(),(uint64_t)_row);
         rc = Abort;
       }
@@ -196,7 +195,7 @@ RC Row_lock::lock_get(lock_t type, TxnManager * txn, uint64_t* &txnids, int &txn
       //txn->wait_starttime = get_sys_clock();
     }
 	} else { 
-    DEBUG("1lock %ld,%ld: %d %ld %lx\n",txn->get_txn_id(),txn->get_batch_id(),type,_row->get_primary_key(),(uint64_t)_row);
+    DEBUG("1lock %ld,%ld: %d, %d %ld %lx\n",txn->get_txn_id(),txn->get_batch_id(),owner_cnt,type,_row->get_primary_key(),(uint64_t)_row);
 #if DEBUG_TIMELINE
     printf("LOCK %ld %ld\n",entry->txn->get_txn_id(),entry->start_ts);
 #endif
@@ -216,6 +215,7 @@ RC Row_lock::lock_get(lock_t type, TxnManager * txn, uint64_t* &txnids, int &txn
 		if (CC_ALG == DL_DETECT) 
 			ASSERT(waiters_head == NULL);
     rc = RCOK;
+
 	}
 final:
 	
@@ -252,16 +252,13 @@ final:
 
 RC Row_lock::lock_release(TxnManager * txn) {	
 
-  uint64_t thd_prof_start = get_sys_clock();
 	if (g_central_man)
 		glob_manager.lock_row(_row);
 	else 
 		pthread_mutex_lock( latch );
 
-  INC_STATS(txn->get_thd_id(),thd_prof_cc0,get_sys_clock() - thd_prof_start);
-  thd_prof_start = get_sys_clock();
 
-  DEBUG("unlock %ld,%ld: %d %ld %lx\n",txn->get_txn_id(),txn->get_batch_id(),lock_type,_row->get_primary_key(),(uint64_t)_row);
+  DEBUG("unlock %ld,%ld: %d, %d %ld %lx\n",txn->get_txn_id(),txn->get_batch_id(),owner_cnt,lock_type,_row->get_primary_key(),(uint64_t)_row);
 
   // If CC is NO_WAIT or WAIT_DIE, txn should own this lock
   // What about Calvin?
@@ -269,16 +266,16 @@ RC Row_lock::lock_release(TxnManager * txn) {
   assert(owner_cnt > 0);
   owner_cnt--;
   if (owner_cnt == 0) {
-    INC_STATS(txn->get_thd_id(),owned_cnt,1);
+    INC_STATS(txn->get_thd_id(),twopl_owned_cnt,1);
     uint64_t endtime = get_sys_clock();
-    INC_STATS(txn->get_thd_id(),owned_time,endtime - own_starttime);
+    INC_STATS(txn->get_thd_id(),twopl_owned_time,endtime - own_starttime);
     if(lock_type == LOCK_SH) {
-      INC_STATS(txn->get_thd_id(),owned_time_rd,endtime - own_starttime);
-      INC_STATS(txn->get_thd_id(),owned_cnt_rd,1);
+      INC_STATS(txn->get_thd_id(),twopl_sh_owned_time,endtime - own_starttime);
+      INC_STATS(txn->get_thd_id(),twopl_sh_owned_cnt,1);
     }
     else {
-      INC_STATS(txn->get_thd_id(),owned_time_wr,endtime - own_starttime);
-      INC_STATS(txn->get_thd_id(),owned_cnt_wr,1);
+      INC_STATS(txn->get_thd_id(),twopl_ex_owned_time,endtime - own_starttime);
+      INC_STATS(txn->get_thd_id(),twopl_ex_owned_cnt,1);
     }
     lock_type = LOCK_NONE;
   }
@@ -294,29 +291,27 @@ RC Row_lock::lock_release(TxnManager * txn) {
 		en = en->next;
 	}
 
-  INC_STATS(txn->get_thd_id(),thd_prof_cc1,get_sys_clock() - thd_prof_start);
-  thd_prof_start = get_sys_clock();
-
 	if (en) { // find the entry in the owner list
     en->txn->cc_hold_time = get_sys_clock() - en->start_ts;
 		if (prev) prev->next = en->next;
 		else owners[hash(txn->get_txn_id())] = en->next;
 		return_entry(en);
 		owner_cnt --;
-    if(owner_cnt == 0){
-      INC_STATS(txn->get_thd_id(),owned_cnt,1);
+    if (owner_cnt == 0) {
+      INC_STATS(txn->get_thd_id(),twopl_owned_cnt,1);
       uint64_t endtime = get_sys_clock();
-      INC_STATS(txn->get_thd_id(),owned_time,endtime - own_starttime);
+      INC_STATS(txn->get_thd_id(),twopl_owned_time,endtime - own_starttime);
       if(lock_type == LOCK_SH) {
-        INC_STATS(txn->get_thd_id(),owned_time_rd,endtime - own_starttime);
-        INC_STATS(txn->get_thd_id(),owned_cnt_rd,1);
+        INC_STATS(txn->get_thd_id(),twopl_sh_owned_time,endtime - own_starttime);
+        INC_STATS(txn->get_thd_id(),twopl_sh_owned_cnt,1);
       }
       else {
-        INC_STATS(txn->get_thd_id(),owned_time_wr,endtime - own_starttime);
-        INC_STATS(txn->get_thd_id(),owned_cnt_wr,1);
+        INC_STATS(txn->get_thd_id(),twopl_ex_owned_time,endtime - own_starttime);
+        INC_STATS(txn->get_thd_id(),twopl_ex_owned_cnt,1);
       }
       lock_type = LOCK_NONE;
     }
+
   } else {
     assert(false);
 		en = waiters_head;
@@ -336,8 +331,6 @@ RC Row_lock::lock_release(TxnManager * txn) {
 	}
 #endif
 
-  INC_STATS(txn->get_thd_id(),thd_prof_cc2,get_sys_clock() - thd_prof_start);
-  thd_prof_start = get_sys_clock();
 	if (owner_cnt == 0)
 		ASSERT(lock_type == LOCK_NONE);
 #if DEBUG_ASSERT && CC_ALG == WAIT_DIE 
@@ -354,11 +347,10 @@ RC Row_lock::lock_release(TxnManager * txn) {
 #if DEBUG_TIMELINE
     printf("LOCK %ld %ld\n",entry->txn->get_txn_id(),get_sys_clock());
 #endif
-    DEBUG("2lock %ld,%ld: %d %ld %lx\n",entry->txn->get_txn_id(),entry->txn->get_batch_id(),entry->type,_row->get_primary_key(),(uint64_t)_row);
+    DEBUG("2lock %ld,%ld: %d, %d %ld %lx\n",entry->txn->get_txn_id(),entry->txn->get_batch_id(),owner_cnt,entry->type,_row->get_primary_key(),(uint64_t)_row);
     //printf("2lock %ld %ld %lx\n",entry->txn->get_txn_id(),_row->get_primary_key(),(uint64_t)_row);
     // Stats
     //t = get_sys_clock() - entry->start_ts;
-    //INC_STATS(0, time_wait_lock, t);
 
 #if CC_ALG != NO_WAIT
 		STACK_PUSH(owners[hash(entry->txn->get_txn_id())], entry);
@@ -386,7 +378,6 @@ RC Row_lock::lock_release(TxnManager * txn) {
 	else
 		pthread_mutex_unlock( latch );
 
-  INC_STATS(txn->get_thd_id(),thd_prof_cc3,get_sys_clock() - thd_prof_start);
 	return RCOK;
 }
 

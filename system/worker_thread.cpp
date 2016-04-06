@@ -58,7 +58,7 @@ void WorkerThread::progress_stats() {
       uint64_t now_time = get_sys_clock();
       if (now_time - prog_time >= g_prog_timer) {
         prog_time = now_time;
-        SET_STATS(get_thd_id(), tot_run_time, prog_time - run_starttime); 
+        SET_STATS(get_thd_id(), total_runtime, prog_time - simulation->run_starttime); 
 
         stats.print(true);
       }
@@ -70,6 +70,7 @@ void WorkerThread::process(Message * msg) {
   RC rc __attribute__ ((unused));
   DEBUG("%ld Processing %d %ld\n",get_thd_id(),msg->get_rtype(),msg->get_txn_id());
   assert(msg->get_rtype() == CL_QRY || msg->get_txn_id() != UINT64_MAX);
+  uint64_t starttime = get_sys_clock();
 		switch(msg->get_rtype()) {
 			case RPASS:
         //rc = process_rpass(msg);
@@ -111,6 +112,11 @@ void WorkerThread::process(Message * msg) {
 				assert(false);
 				break;
 		}
+  uint64_t timespan = get_sys_clock() - starttime;
+  INC_STATS(get_thd_id(),worker_process_cnt,1);
+  INC_STATS(get_thd_id(),worker_process_time,timespan);
+  INC_STATS(get_thd_id(),worker_process_cnt_by_type[msg->rtype],1);
+  INC_STATS(get_thd_id(),worker_process_time_by_type[msg->rtype],timespan);
   DEBUG("%ld EndProcessing %d %ld\n",get_thd_id(),msg->get_rtype(),msg->get_txn_id());
 }
 
@@ -148,30 +154,12 @@ void WorkerThread::commit(TxnManager * txn_man) {
 
 void WorkerThread::abort(TxnManager * txn_man) {
 
-  //TxnManager * txn_man = txn_table.get_transaction_manager(txn_id,0);
   DEBUG("ABORT %ld -- %f\n",txn_man->get_txn_id(),(double)get_sys_clock() - run_starttime/ BILLION);
-  //txn_man->release_locks(Abort);
-          /*
-#if WORKLOAD == TPCC
-        if(((TPCCQuery*)m_query)->rbk && m_query->rem_req_state == TPCC_FIN) {
-          INC_STATS(get_thd_id(),txn_cnt,1);
-			    INC_STATS(get_thd_id(), rbk_abort_cnt, 1);
-		      timespan = get_sys_clock() - m_txn->starttime;
-		      INC_STATS(get_thd_id(), run_time, timespan);
-		      INC_STATS(get_thd_id(), latency, timespan);
-          simulation->inc_txn_cnt();
-        //ATOM_SUB(txn_table.inflight_cnt,1);
-          msg_queue.enqueue(Message::create_message(m_query,CL_RSP),m_query->client_id);
-          break;
-        
-        }
-#endif
-*/
-  INC_STATS(get_thd_id(), abort_cnt, 1);
+  // TODO: TPCC Rollback here
+  INC_STATS(get_thd_id(), txn_abort_cnt, 1);
 
   ++txn_man->abort_cnt;
   txn_man->reset();
-
 
   abort_queue.enqueue(txn_man->get_txn_id(),txn_man->get_abort_cnt());
 
@@ -180,45 +168,19 @@ void WorkerThread::abort(TxnManager * txn_man) {
 RC WorkerThread::run() {
   tsetup();
 
-	uint64_t timespan;
-  uint64_t thd_prof_start;
-
 	while(!simulation->is_done()) {
-    uint64_t thd_prof_start_thd1 = get_sys_clock();
-    thd_prof_start = thd_prof_start_thd1;
 
     progress_stats();
 
-    INC_STATS(_thd_id,thd_prof_thd1a,get_sys_clock() - thd_prof_start);
-    thd_prof_start = get_sys_clock();
     Message * msg = work_queue.dequeue();
-    INC_STATS(_thd_id,thd_prof_thd1,get_sys_clock() - thd_prof_start_thd1);
-    thd_prof_start = get_sys_clock();
 
     if(!msg)
       continue;
 
-		uint64_t txn_starttime = get_sys_clock();
-
     process(msg);
 
-    uint64_t thd_prof_end = get_sys_clock();
-    INC_STATS(_thd_id,thd_prof_thd2,thd_prof_end - thd_prof_start);
-    if(IS_LOCAL(msg->txn_id) || msg->txn_id == UINT64_MAX) {
-      INC_STATS(_thd_id,thd_prof_thd2_loc,thd_prof_end - thd_prof_start);
-    } else {
-      INC_STATS(_thd_id,thd_prof_thd2_rem,thd_prof_end - thd_prof_start);
-    }
-    INC_STATS(_thd_id,thd_prof_thd2_type[msg->rtype],thd_prof_end - thd_prof_start);
-    thd_prof_start = get_sys_clock();
 
     work_queue.deactivate_txn_id(msg->txn_id);
-
-		timespan = get_sys_clock() - txn_starttime;
-    thd_prof_end = get_sys_clock();
-		INC_STATS(get_thd_id(),time_work,timespan);
-    INC_STATS(_thd_id,thd_prof_thd3,thd_prof_end - thd_prof_start);
-    INC_STATS(_thd_id,thd_prof_thd3_type[msg->rtype],thd_prof_end - thd_prof_start);
 
     // delete message
     msg->release();
@@ -230,14 +192,11 @@ RC WorkerThread::run() {
 }
 
 RC WorkerThread::process_rfin(Message * msg) {
-        //uint64_t starttime = thd_prof_thd_rfin_start;
 
   assert(!IS_LOCAL(msg->get_txn_id()));
   TxnManager * txn_man = txn_table.get_transaction_manager(msg->get_txn_id(),0);
   DEBUG("%ld Received RFIN %ld\n",GET_PART_ID_FROM_IDX(_thd_id),msg->txn_id);
-  INC_STATS(0,rfin,1);
   if(((FinishMessage*)msg)->rc == Abort) {
-    INC_STATS(_thd_id,abort_rem_cnt,1);
     txn_man->abort();
     msg_queue.enqueue(Message::create_message(txn_man,RACK_FIN),GET_NODE_ID(msg->get_txn_id()));
     return Abort;
@@ -250,9 +209,6 @@ RC WorkerThread::process_rfin(Message * msg) {
 }
 
 RC WorkerThread::process_rack_prep(Message * msg) {
-
-  //uint64_t starttime = get_sys_clock();
-  //INC_STATS(0,rack_prep,1);
 
   RC rc = RCOK;
 
@@ -281,9 +237,6 @@ RC WorkerThread::process_rack_prep(Message * msg) {
 
 RC WorkerThread::process_rack_rfin(Message * msg) {
 
-  //uint64_t starttime = get_sys_clock();
-  //INC_STATS(0,rack_rfin,1);
-
   RC rc = RCOK;
 
   TxnManager * txn_man = txn_table.get_transaction_manager(msg->get_txn_id(),0);
@@ -305,8 +258,6 @@ RC WorkerThread::process_rack_rfin(Message * msg) {
 }
 
 RC WorkerThread::process_rqry_rsp(Message * msg) {
-  //uint64_t thd_prof_start = get_sys_clock();
-  INC_STATS(0,rqry_rsp,1);
 
   TxnManager * txn_man = txn_table.get_transaction_manager(msg->get_txn_id(),0);
   RC rc = txn_man->run_txn();
@@ -316,8 +267,6 @@ RC WorkerThread::process_rqry_rsp(Message * msg) {
 }
 
 RC WorkerThread::process_rqry(Message * msg) {
-  //uint64_t thd_prof_start = get_sys_clock();
-  INC_STATS(0,rqry,1);
   RC rc = RCOK;
 
   // Create new transaction table entry if one does not already exist
@@ -343,8 +292,6 @@ RC WorkerThread::process_rtxn_cont(Message * msg) {
 }
 
 RC WorkerThread::process_rprepare(Message * msg) {
-    //uint64_t starttime = get_sys_clock();
-    INC_STATS(0,rprep,1);
     RC rc = RCOK;
   TxnManager * txn_man = txn_table.get_transaction_manager(msg->get_txn_id(),0);
 
@@ -365,7 +312,6 @@ uint64_t WorkerThread::get_next_txn_id() {
 }
 
 RC WorkerThread::process_rtxn(Message * msg) {
-				INC_STATS(0,rtxn,1);
         RC rc = RCOK;
         TxnManager * txn_man;
         uint64_t txn_id = UINT64_MAX;

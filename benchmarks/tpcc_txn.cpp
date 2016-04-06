@@ -39,7 +39,6 @@ RC TPCCTxnManager::run_txn() {
   return RCOK;
 #endif
   RC rc = RCOK;
-  uint64_t thd_prof_start = get_sys_clock();
 
 #if CC_ALG == CALVIN
   rc = run_calvin_txn();
@@ -52,8 +51,6 @@ RC TPCCTxnManager::run_txn() {
 
   if(rc == Abort)
     abort();
-
-  INC_STATS(get_thd_id(),thd_prof_wl1,get_sys_clock() - thd_prof_start);
 
   return rc;
 
@@ -434,10 +431,6 @@ inline RC TPCCTxnManager::run_payment_0(uint64_t w_id, uint64_t d_id, uint64_t d
 	else 
 		rc = get_row(r_wh, RD, r_wh_local);
 
-  if(rc == WAIT)
-    INC_STATS_ARR(0,w_cflt,key);
-  if(rc == Abort)
-    INC_STATS_ARR(0,w_abrt,key);
   return rc;
 }
 
@@ -476,10 +469,6 @@ inline RC TPCCTxnManager::run_payment_2(uint64_t w_id, uint64_t d_id, uint64_t d
 	assert(item != NULL);
 	row_t * r_dist = ((row_t *)item->location);
 	RC rc = get_row(r_dist, WR, r_dist_local);
-  if(rc == WAIT)
-    INC_STATS_ARR(0,d_cflt,key);
-  if(rc == Abort)
-    INC_STATS_ARR(0,d_abrt,key);
   return rc;
 
 }
@@ -578,18 +567,6 @@ inline RC TPCCTxnManager::run_payment_4(uint64_t w_id, uint64_t d_id,uint64_t c_
    		WHERE c_w_id = :c_w_id AND c_d_id = :c_d_id AND c_id = :c_id;
    	+======================================================================*/
 	RC rc  = get_row(r_cust, WR, r_cust_local);
-  if(rc == WAIT) {
-    if(by_last_name) {
-      INC_STATS_ARR(0,cnp_cflt,key);
-    } else
-      INC_STATS_ARR(0,c_cflt,key);
-  }
-  if(rc == Abort) {
-    if(by_last_name) {
-      INC_STATS_ARR(0,cnp_abrt,key);
-    } else
-      INC_STATS_ARR(0,c_abrt,key);
-  }
 
   return rc;
 }
@@ -651,10 +628,6 @@ inline RC TPCCTxnManager::new_order_0(uint64_t w_id, uint64_t d_id, uint64_t c_i
 	assert(item != NULL);
 	row_t * r_wh = ((row_t *)item->location);
   RC rc = get_row(r_wh, RD, r_wh_local);
-  if(rc == WAIT)
-    INC_STATS_ARR(0,w_cflt,key);
-  if(rc == Abort)
-    INC_STATS_ARR(0,w_abrt,key);
   return rc;
 }
 
@@ -674,10 +647,6 @@ inline RC TPCCTxnManager::new_order_2(uint64_t w_id, uint64_t d_id, uint64_t c_i
 	assert(item != NULL);
 	row_t * r_cust = (row_t *) item->location;
   RC rc = get_row(r_cust, RD, r_cust_local);
-  if(rc == WAIT)
-    INC_STATS_ARR(0,c_cflt,key);
-  if(rc == Abort)
-    INC_STATS_ARR(0,c_abrt,key);
   return rc;
 }
 
@@ -707,11 +676,6 @@ inline RC TPCCTxnManager::new_order_4(uint64_t w_id, uint64_t d_id, uint64_t c_i
 	assert(item != NULL);
 	row_t * r_dist = ((row_t *)item->location);
   RC rc = get_row(r_dist, WR, r_dist_local);
-  if(rc == WAIT)
-    INC_STATS_ARR(0,d_cflt,key);
-  if(rc == Abort) {
-    INC_STATS_ARR(0,d_abrt,key);
-  }
   return rc;
 }
 
@@ -774,10 +738,6 @@ inline RC TPCCTxnManager::new_order_6(uint64_t ol_i_id, row_t *& r_item_local) {
 		row_t * r_item = ((row_t *)item->location);
 
     RC rc = get_row(r_item, RD, r_item_local);
-    if(rc == WAIT)
-      INC_STATS_ARR(0,ol_cflt,key);
-    if(rc == Abort)
-      INC_STATS_ARR(0,ol_abrt,key);
     return rc;
 }
 
@@ -820,10 +780,6 @@ inline RC TPCCTxnManager::new_order_8(uint64_t w_id,uint64_t  d_id,bool remote, 
 		assert(item != NULL);
 		row_t * r_stock = ((row_t *)item->location);
     RC rc = get_row(r_stock, WR, r_stock_local);
-    if(rc == WAIT)
-      INC_STATS_ARR(0,s_cflt,key);
-    if(rc == Abort)
-      INC_STATS_ARR(0,s_abrt,key);
     return rc;
 }
 		

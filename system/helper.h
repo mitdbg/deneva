@@ -118,6 +118,10 @@
 /************************************************/
 // STATS helper
 /************************************************/
+#define INC_STATS_NEW(tid, name, value) \
+	if (STATS_ENABLE) \
+		stats._stats[tid]->insert(name,value);
+
 #define SET_STATS(tid, name, value) \
 	if (STATS_ENABLE) \
 		stats._stats[tid]->name = value;
@@ -129,10 +133,6 @@
 #define INC_STATS_ARR(tid, name, value) \
 	if (STATS_ENABLE) \
 		stats._stats[tid]->name.insert(value);
-
-#define INC_TMP_STATS(tid, name, value) \
-	if (STATS_ENABLE) \
-		stats.tmp_stats[tid]->name += value;
 
 #define INC_GLOB_STATS(name, value) \
 	if (STATS_ENABLE) \

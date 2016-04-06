@@ -52,13 +52,13 @@ void MessageThread::send_batch(uint64_t id) {
     mbuf * sbuf = buffer[id];
     assert(sbuf->cnt > 0);
 	  ((uint32_t*)sbuf->buffer)[2] = sbuf->cnt;
-    INC_STATS(_thd_id,mbuf_send_time,get_sys_clock() - sbuf->starttime);
+    INC_STATS(_thd_id,mbuf_send_intv_time,get_sys_clock() - sbuf->starttime);
 
     DEBUG("Send batch of %ld msgs to %ld\n",sbuf->cnt,id);
     tport_man.send_msg(_thd_id,id,sbuf->buffer,sbuf->ptr);
 
-    INC_STATS(_thd_id,msg_batch_size,sbuf->cnt);
-    INC_STATS(_thd_id,msg_batch_bytes,sbuf->ptr);
+    INC_STATS(_thd_id,msg_batch_size_msgs,sbuf->cnt);
+    INC_STATS(_thd_id,msg_batch_size_bytes,sbuf->ptr);
     INC_STATS(_thd_id,msg_batch_cnt,1);
     sbuf->reset(id);
 }
@@ -68,12 +68,9 @@ void MessageThread::run() {
   Message * msg;
   uint64_t dest;
   mbuf * sbuf;
-  uint64_t sthd_prof_start = get_sys_clock();
 
 
   dest = msg_queue.dequeue(msg);
-  INC_STATS(_thd_id,sthd_prof_1b,get_sys_clock() - sthd_prof_start);
-  sthd_prof_start = get_sys_clock();
   if(!msg) {
     check_and_send_batches();
     return;
@@ -88,18 +85,12 @@ void MessageThread::run() {
     send_batch(dest);
   }
 
-  INC_STATS(_thd_id,sthd_prof_2,get_sys_clock() - sthd_prof_start);
-  sthd_prof_start = get_sys_clock();
-
   msg->copy_to_buf(&(sbuf->buffer[sbuf->ptr]));
   DEBUG("Buffered Msg %d to %ld\n",msg->rtype,dest);
   sbuf->cnt += 1;
   sbuf->ptr += msg->get_size();
   if(sbuf->starttime == 0)
     sbuf->starttime = get_sys_clock();
-
-  INC_STATS(_thd_id,sthd_prof_3,get_sys_clock() - sthd_prof_start);
-  sthd_prof_start = get_sys_clock();
 
   check_and_send_batches();
 

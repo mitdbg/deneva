@@ -27,7 +27,6 @@
 #include "math.h"
 #include "query.h"
 #include "occ.h"
-#include "vll.h"
 #include "transport.h"
 #include "msg_queue.h"
 #include "ycsb_query.h"
@@ -201,10 +200,6 @@ int main(int argc, char* argv[])
 #if CC_ALG == OCC
   printf("Initializing occ lock manager... ");
 	occ_man.init();
-  printf("Done\n");
-#elif CC_ALG == VLL
-  printf("Initializing vll lock manager... ");
-	vll_man.init();
   printf("Done\n");
 #endif
 

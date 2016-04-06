@@ -29,7 +29,6 @@
 #include "catalog.h"
 #include "index_btree.h"
 #include "index_hash.h"
-#include "vll.h"
 #include "msg_queue.h"
 #include "pool.h"
 #include "message.h"
@@ -38,13 +37,18 @@
 
 
 void Transaction::init() {
-  accesses.init(MAX_ROW_PER_TXN);  
-  insert_rows.clear();  
   timestamp = UINT64_MAX;
   start_timestamp = UINT64_MAX;
   end_timestamp = UINT64_MAX;
   txn_id = UINT64_MAX;
   batch_id = UINT64_MAX;
+
+  reset();
+}
+
+void Transaction::reset() {
+  accesses.init(MAX_ROW_PER_TXN);  
+  insert_rows.clear();  
   write_cnt = 0;
   row_cnt = 0;
   state = START;
@@ -72,7 +76,7 @@ void TxnManager::init(Workload * h_wl) {
 #endif
   }
   query->init();
-  reset();
+  //reset();
 
 	this->h_wl = h_wl;
 	pthread_mutex_init(&txn_lock, NULL);
@@ -84,6 +88,7 @@ void TxnManager::reset() {
   locking_done = true;
 	ready_part = 0;
   rsp_cnt = 0;
+  txn->reset();
 
 }
 
@@ -172,20 +177,27 @@ bool TxnManager::is_multi_part() {
 }
 
 void TxnManager::commit_stats() {
-  if(!IS_LOCAL(get_txn_id()))
+  INC_STATS(get_thd_id(),txn_commit_cnt,1);
+  if(!IS_LOCAL(get_txn_id())) {
+    INC_STATS(get_thd_id(),remote_txn_cnt,1);
     return;
-  uint64_t timespan = get_sys_clock(); //FIXME
+  }
+  uint64_t timespan = get_sys_clock() - txn_stats.starttime; 
 
   INC_STATS(get_thd_id(),txn_cnt,1);
-  INC_STATS(get_thd_id(), run_time, timespan);
-  INC_STATS(get_thd_id(), latency, timespan);
-  INC_STATS_ARR(get_thd_id(),all_lat,timespan);
+  INC_STATS(get_thd_id(),local_txn_cnt,1);
+  INC_STATS(get_thd_id(), txn_run_time, timespan);
+  //INC_STATS_ARR(get_thd_id(),all_lat,timespan);
   /*if(abort_cnt > 0) { 
     INC_STATS(get_thd_id(), txn_abort_cnt, 1);
     INC_STATS_ARR(get_thd_id(), all_abort, abort_cnt);
   }*/
   if(query->partitions.size() > 1) {
-    INC_STATS(get_thd_id(),mpq_cnt,1);
+    INC_STATS(get_thd_id(),multi_part_txn_cnt,1);
+    INC_STATS(get_thd_id(),multi_part_txn_run_time,timespan);
+  } else {
+    INC_STATS(get_thd_id(),single_part_txn_cnt,1);
+    INC_STATS(get_thd_id(),single_part_txn_run_time,timespan);
   }
   /*if(cflt) {
     INC_STATS(get_thd_id(),cflt_cnt_txn,1);
@@ -289,15 +301,14 @@ void TxnManager::cleanup(RC rc) {
 	ts_t starttime = get_sys_clock();
   uint64_t row_cnt = txn->accesses.get_count();
   assert(txn->accesses.get_count() == txn->row_cnt);
+  assert(row_cnt <= g_req_per_query);
   DEBUG("Cleanup %ld %ld\n",get_txn_id(),row_cnt);
-  uint64_t thd_prof_start = starttime;
 	for (int rid = row_cnt - 1; rid >= 0; rid --) {
 		row_t * orig_r = txn->accesses[rid]->orig_row;
 		access_t type = txn->accesses[rid]->type;
 		if (type == WR && rc == Abort)
 			type = XP;
 
-    uint64_t cc_rel_starttime = get_sys_clock();
 		if (ROLL_BACK && type == XP &&
 					(CC_ALG == DL_DETECT || 
 					CC_ALG == NO_WAIT || 
@@ -311,11 +322,6 @@ void TxnManager::cleanup(RC rc) {
 			orig_r->return_row(type, this, txn->accesses[rid]->data);
 		}
 
-    if(rc == Abort) {
-      INC_STATS(get_thd_id(),prof_cc_rel_abort,get_sys_clock() - cc_rel_starttime);
-    } else {
-      INC_STATS(get_thd_id(),prof_cc_rel_commit,get_sys_clock() - cc_rel_starttime);
-    }
 #if ROLL_BACK && (CC_ALG == DL_DETECT || CC_ALG == NO_WAIT || CC_ALG == WAIT_DIE || CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC)
 		if (type == WR) {
       //printf("free 10 %ld\n",get_txn_id());
@@ -326,14 +332,6 @@ void TxnManager::cleanup(RC rc) {
 #endif
 		txn->accesses[rid]->data = NULL;
 	}
-
-  INC_STATS(get_thd_id(),thd_prof_txn1,get_sys_clock() - thd_prof_start);
-  thd_prof_start = get_sys_clock();
-
-#if CC_ALG == VLL && MODE == NORMAL_MODE
-  vll_man.finishTxn(this);
-  //vll_man.restartQFront();
-#endif
 
 	if (rc == Abort) {
 		for (UInt32 i = 0; i < txn->insert_rows.size(); i ++) {
@@ -347,23 +345,14 @@ void TxnManager::cleanup(RC rc) {
       DEBUG_M("TxnManager::cleanup row free\n");
 			mem_allocator.free(row, sizeof(row));
 		}
-    uint64_t t = get_sys_clock() - starttime;
-		INC_STATS(get_thd_id(), time_abort, t);
-	} else {
-    if(IS_LOCAL(get_txn_id())) {
-      INC_STATS(get_thd_id(), write_cnt, txn->write_cnt);
-      INC_STATS(get_thd_id(), access_cnt, txn->row_cnt);
-    } else {
-      INC_STATS(get_thd_id(), rem_row_cnt, txn->row_cnt);
-    }
-  }
-  INC_STATS(get_thd_id(),thd_prof_txn2,get_sys_clock() - thd_prof_start);
+		INC_STATS(get_thd_id(), abort_time, get_sys_clock() - starttime);
+	} 
 }
 
 RC TxnManager::get_lock(row_t * row, access_t type) {
   RC rc = row->get_lock(type, this);
   if(rc == WAIT) {
-    INC_STATS(get_thd_id(), cflt_cnt, 1);
+    INC_STATS(get_thd_id(), txn_wait_cnt, 1);
   }
   return rc;
 }
@@ -384,9 +373,8 @@ RC TxnManager::get_row(row_t * row, access_t type, row_t *& row_rtn) {
 	if (rc == Abort || rc == WAIT) {
     row_rtn = NULL;
 	  timespan = get_sys_clock() - starttime;
-	  INC_STATS(get_thd_id(), time_man, timespan);
-	  INC_STATS(get_thd_id(), txn_time_man, timespan);
-    INC_STATS(get_thd_id(), cflt_cnt, 1);
+	  INC_STATS(get_thd_id(), txn_manager_time, timespan);
+    INC_STATS(get_thd_id(), txn_conflict_cnt, 1);
     //cflt = true;
 #if DEBUG_TIMELINE
     printf("CONFLICT %ld %ld\n",get_txn_id(),get_sys_clock());
@@ -422,8 +410,7 @@ RC TxnManager::get_row(row_t * row, access_t type, row_t *& row_rtn) {
 	if (type == WR)
 		++txn->write_cnt;
 	timespan = get_sys_clock() - starttime;
-	INC_STATS(get_thd_id(), time_man, timespan);
-	INC_STATS(get_thd_id(), txn_time_man, timespan);
+	INC_STATS(get_thd_id(), txn_manager_time, timespan);
 	row_rtn  = access->data;
 
   txn->accesses.add(access);
@@ -435,13 +422,6 @@ RC TxnManager::get_row(row_t * row, access_t type, row_t *& row_rtn) {
 
 RC TxnManager::get_row_post_wait(row_t *& row_rtn) {
   assert(CC_ALG != HSTORE && CC_ALG != HSTORE_SPEC);
-/*  uint64_t timespan = get_sys_clock() - this->wait_starttime;
-  if(get_txn_id() % g_node_cnt == g_node_id) {
-    INC_STATS(get_thd_id(),time_wait_lock,timespan);
-  }
-  else {
-    INC_STATS(get_thd_id(),time_wait_lock_rem,timespan);
-  } */
 
 	uint64_t starttime = get_sys_clock();
   row_t * row = this->last_row;
@@ -467,8 +447,7 @@ RC TxnManager::get_row_post_wait(row_t *& row_rtn) {
 	if (type == WR)
 		++txn->write_cnt;
 	uint64_t timespan = get_sys_clock() - starttime;
-	INC_STATS(get_thd_id(), time_man, timespan);
-	INC_STATS(get_thd_id(), txn_time_man, timespan);
+	INC_STATS(get_thd_id(), txn_manager_time, timespan);
 	this->last_row_rtn  = txn->accesses[txn->row_cnt - 1]->data;
 	row_rtn  = txn->accesses[txn->row_cnt - 1]->data;
   return RCOK;
@@ -490,7 +469,7 @@ TxnManager::index_read(INDEX * index, idx_key_t key, int part_id) {
 	index->index_read(key, item, part_id, get_thd_id());
 
   uint64_t t = get_sys_clock() - starttime;
-  INC_STATS(get_thd_id(), time_index, t);
+  INC_STATS(get_thd_id(), txn_index_time, t);
   //txn_time_idx += t;
 
 	return item;
@@ -504,13 +483,12 @@ RC TxnManager::validate() {
   uint64_t starttime = get_sys_clock();
   if(CC_ALG == OCC && rc == RCOK)
     rc = occ_man.validate(this);
-  INC_STATS(0,time_validate,get_sys_clock() - starttime);
+  INC_STATS(0,txn_validate_time,get_sys_clock() - starttime);
   return rc;
 }
 
 RC TxnManager::finish(bool fin) {
   // Only home node should execute
-  uint64_t starttime = get_sys_clock();
 #if CC_ALG != CALVIN
   assert(IS_LOCAL(txn->txn_id));
 #endif
@@ -527,7 +505,7 @@ RC TxnManager::finish(bool fin) {
   bool readonly = false;
 
   if(query->partitions_touched.is_empty() || 
-      ((CC_ALG != HSTORE && CC_ALG != HSTORE_SPEC && CC_ALG != VLL) 
+      ((CC_ALG != HSTORE && CC_ALG != HSTORE_SPEC) 
        && query->partitions_touched.size() == 1 && query->partitions.size() > 1)) {
     txn->state = DONE;
     release_locks(RCOK);
@@ -582,8 +560,6 @@ RC TxnManager::finish(bool fin) {
     }
   }
 
-  uint64_t timespan = get_sys_clock() - starttime;
-  INC_STATS(get_thd_id(),time_msg_sent,timespan);
 
   //if(query->rc != Abort && readonly && CC_ALG!=OCC) {
   if(readonly && CC_ALG!=OCC) {
@@ -632,5 +608,5 @@ void TxnManager::release_locks(RC rc) {
   cleanup(rc);
 
 	uint64_t timespan = (get_sys_clock() - starttime);
-	INC_STATS(get_thd_id(), time_cleanup,  timespan);
+	INC_STATS(get_thd_id(), txn_cleanup_time,  timespan);
 }

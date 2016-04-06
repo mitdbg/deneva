@@ -315,9 +315,9 @@ void Transport::send_msg(uint64_t sid, uint64_t dest_id, void * sbuf,int size) {
 	//int rc= s[idx].sock.send(&sbuf,NN_MSG,0);
   //nn_freemsg(sbuf);
 
-  INC_STATS(_thd_id,time_tport_send,get_sys_clock() - starttime);
-	INC_STATS(_thd_id,msg_sent_cnt,1);
-	INC_STATS(_thd_id,msg_bytes,size);
+  INC_STATS(_thd_id,msg_send_time,get_sys_clock() - starttime);
+	//INC_STATS(_thd_id,msg_batch_cnt,1);
+	//INC_STATS(_thd_id,msg_batch_size_bytes,size);
 }
 
 // Listens to socket for messages from other nodes
@@ -359,12 +359,11 @@ std::vector<Message*> Transport::recv_msg() {
   */
 
 	ts_t time2 = get_sys_clock();
-	//INC_STATS(_thd_id,tport_lat,time2 - time);
 
-  INC_STATS(_thd_id,time_tport_rcv, time2 - starttime);
+  INC_STATS(_thd_id,msg_recv_time, time2 - starttime);
 
 	starttime = get_sys_clock();
-	INC_STATS(_thd_id,msg_rcv_cnt,1);
+	INC_STATS(_thd_id,msg_recv_cnt,1);
 
   //rem_qry_man.unmarshall(buf,bytes);
   msgs = Message::create_messages((char*)buf);
@@ -373,7 +372,7 @@ std::vector<Message*> Transport::recv_msg() {
   //          dest_id,bytes,((float)(time2-time))/BILLION);
 	nn::freemsg(buf);	
 
-	INC_STATS(_thd_id,time_unpack,get_sys_clock()-starttime);
+	INC_STATS(_thd_id,msg_unpack_time,get_sys_clock()-starttime);
   return msgs;
 }
 

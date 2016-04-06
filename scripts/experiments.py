@@ -118,7 +118,7 @@ def ycsb_parts():
 
 def replica_test():
     wl = 'YCSB'
-    nnodes = [1]
+    nnodes = [1,2]
     nrepl = [0,1]
     nwr = [0.2]
     nalgos=['NO_WAIT']

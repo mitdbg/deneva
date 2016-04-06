@@ -24,7 +24,6 @@
 #include "row_mvcc.h"
 #include "row_occ.h"
 #include "row_specex.h"
-#include "row_vll.h"
 #include "mem_alloc.h"
 #include "manager.h"
 
@@ -63,8 +62,6 @@ void row_t::init_manager(row_t * row) {
     manager = (Row_mvcc *) mem_allocator.alloc(sizeof(Row_mvcc));
 #elif CC_ALG == OCC
     manager = (Row_occ *) mem_allocator.alloc(sizeof(Row_occ));
-#elif CC_ALG == VLL
-    manager = (Row_vll *) mem_allocator.alloc(sizeof(Row_vll));
     /*
 #elif CC_ALG == HSTORE_SPEC
     manager = (Row_specex *) mem_allocator.alloc(sizeof(Row_specex));
@@ -188,12 +185,10 @@ void row_t::free_row() {
 
 RC row_t::get_lock(access_t type, TxnManager * txn) {
   RC rc = RCOK;
-  uint64_t thd_prof_start = get_sys_clock();
 #if CC_ALG == CALVIN
 	lock_t lt = (type == RD || type == SCAN)? LOCK_SH : LOCK_EX;
 	rc = this->manager->lock_get(lt, txn);
 #endif
-  INC_STATS(txn->get_thd_id(),thd_prof_row1,get_sys_clock() - thd_prof_start);
   return rc;
 }
 
@@ -204,7 +199,6 @@ RC row_t::get_row(access_t type, TxnManager * txn, row_t *& row) {
   row = this;
   return rc;
 #endif
-  uint64_t thd_prof_start = get_sys_clock();
 #if CC_ALG == WAIT_DIE || CC_ALG == NO_WAIT || CC_ALG == DL_DETECT 
 	//uint64_t thd_id = txn->get_thd_id();
 	lock_t lt = (type == RD || type == SCAN)? LOCK_SH : LOCK_EX;
@@ -226,7 +220,6 @@ RC row_t::get_row(access_t type, TxnManager * txn, row_t *& row) {
 #endif
     // lock_abort only used by DL_DETECT
 		//txn->lock_abort = false;
-		INC_STATS(0, wait_cnt, 1);
 
 	}
 	goto end;
@@ -281,7 +274,7 @@ RC row_t::get_row(access_t type, TxnManager * txn, row_t *& row) {
 	rc = this->manager->access(txn, R_REQ);
 	row = txn->cur_row;
 	goto end;
-#elif CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || CC_ALG == VLL || CC_ALG == CALVIN
+#elif CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || CC_ALG == CALVIN
 #if CC_ALG == HSTORE_SPEC
   if(txn_table.spec_mode) {
     DEBUG_M("row_t::get_row HSTORE_SPEC alloc \n");
@@ -299,21 +292,18 @@ RC row_t::get_row(access_t type, TxnManager * txn, row_t *& row) {
 #endif
 
 end:
-  INC_STATS(txn->get_thd_id(),thd_prof_row1,get_sys_clock() - thd_prof_start);
   return rc;
 }
 
 // Return call for get_row if waiting 
 RC row_t::get_row_post_wait(access_t type, TxnManager * txn, row_t *& row) {
 
-  uint64_t thd_prof_start = get_sys_clock();
   RC rc = RCOK;
   assert(CC_ALG == WAIT_DIE || CC_ALG == MVCC || CC_ALG == TIMESTAMP);
 #if CC_ALG == WAIT_DIE
   assert(txn->lock_ready);
 	rc = RCOK;
 	//ts_t endtime = get_sys_clock();
-	//INC_STATS(thd_id, time_wait, endtime - starttime);
 	row = this;
 
 #elif CC_ALG == MVCC || CC_ALG == TIMESTAMP
@@ -334,7 +324,6 @@ RC row_t::get_row_post_wait(access_t type, TxnManager * txn, row_t *& row) {
 		row = newr;
 	}
 #endif
-  INC_STATS(txn->get_thd_id(),thd_prof_row2,get_sys_clock() - thd_prof_start);
   return rc;
 }
 
@@ -349,7 +338,6 @@ void row_t::return_row(access_t type, TxnManager * txn, row_t * row) {
 #if MODE==NOCC_MODE || MODE==QRY_ONLY_MODE
   return;
 #endif
-  uint64_t thd_prof_start = get_sys_clock();
 #if CC_ALG == WAIT_DIE || CC_ALG == NO_WAIT || CC_ALG == DL_DETECT || CC_ALG == CALVIN
 	assert (row == NULL || row == this || type == XP);
 	if (ROLL_BACK && type == XP) {// recover from previous writes.
@@ -385,8 +373,7 @@ void row_t::return_row(access_t type, TxnManager * txn, row_t * row) {
 	mem_allocator.free(row, sizeof(row_t));
   manager->release();
 	return;
-  // FIXME: VLL?
-#elif CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC || CC_ALG == VLL
+#elif CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC 
 	assert (row != NULL);
 	if (ROLL_BACK && type == XP) {// recover from previous writes.
 		this->copy(row);
@@ -395,6 +382,5 @@ void row_t::return_row(access_t type, TxnManager * txn, row_t * row) {
 #else 
 	assert(false);
 #endif
-  INC_STATS(txn->get_thd_id(),thd_prof_row3,get_sys_clock() - thd_prof_start);
 }
 

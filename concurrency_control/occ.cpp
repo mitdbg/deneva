@@ -47,7 +47,7 @@ RC OptCC::validate(TxnManager * txn) {
 #else
 	rc = central_validate(txn);
 #endif
-  INC_STATS(txn->get_thd_id(),thd_prof_occ_val2,get_sys_clock() - starttime);
+  INC_STATS(txn->get_thd_id(),occ_validate_time,get_sys_clock() - starttime);
 	return rc;
 }
 
@@ -136,15 +136,13 @@ RC OptCC::central_validate(TxnManager * txn) {
 
 	//pthread_mutex_lock( &latch );
   sem_wait(&_semaphore);
-  INC_STATS(txn->get_thd_id(),thd_prof_mvcc1,get_sys_clock() - starttime);
+  INC_STATS(txn->get_thd_id(),occ_cs_wait_time,get_sys_clock() - starttime);
   starttime = get_sys_clock();
 	finish_tn = tnc;
 	ent = active;
 	f_active_len = active_len;
 	set_ent * finish_active[f_active_len];
 	//finish_active = (set_ent**) mem_allocator.alloc(sizeof(set_ent *) * f_active_len);
-  INC_STATS(txn->get_thd_id(),thd_prof_mvcc2,get_sys_clock() - starttime);
-  starttime = get_sys_clock();
 	while (ent != NULL) {
 		finish_active[n++] = ent;
 		ent = ent->next;
@@ -156,7 +154,8 @@ RC OptCC::central_validate(TxnManager * txn) {
 	his = history;
 	//pthread_mutex_unlock( &latch );
   sem_post(&_semaphore);
-  INC_STATS(txn->get_thd_id(),thd_prof_mvcc3,get_sys_clock() - starttime);
+  INC_STATS(txn->get_thd_id(),occ_cs_time,get_sys_clock() - starttime);
+  starttime = get_sys_clock();
   starttime = get_sys_clock();
 
   uint64_t checked = 0;
@@ -167,13 +166,15 @@ RC OptCC::central_validate(TxnManager * txn) {
 		while (his && his->tn > start_tn) {
       checked++;
 			valid = test_valid(his, rset);
-			if (!valid) 
+			if (!valid) { 
+        INC_STATS(txn->get_thd_id(),occ_hist_validate_fail_time,get_sys_clock() - starttime);
 				goto final;
+      }
 			his = his->next;
 		}
 	}
 
-  INC_STATS(txn->get_thd_id(),thd_prof_mvcc4,get_sys_clock() - starttime);
+  INC_STATS(txn->get_thd_id(),occ_hist_validate_time,get_sys_clock() - starttime);
   starttime = get_sys_clock();
   stop = 1;
 	for (UInt32 i = 0; i < f_active_len; i++) {
@@ -184,14 +185,14 @@ RC OptCC::central_validate(TxnManager * txn) {
       checked++;
 			valid = test_valid(wact, wset);
 		} 
-    if (!valid)
-			goto final;
+    if (!valid) {
+      INC_STATS(txn->get_thd_id(),occ_act_validate_fail_time,get_sys_clock() - starttime);
+      goto final;
+    }
 	}
-  INC_STATS(txn->get_thd_id(),thd_prof_mvcc5,get_sys_clock() - starttime);
+  INC_STATS(txn->get_thd_id(),occ_act_validate_time,get_sys_clock() - starttime);
   starttime = get_sys_clock();
 final:
-  INC_STATS(txn->get_thd_id(),thd_prof_mvcc6,get_sys_clock() - starttime);
-  starttime = get_sys_clock();
   /*
 	if (valid) 
 		txn->cleanup(RCOK);
@@ -225,7 +226,7 @@ final:
         }
       sem_post(&_semaphore);
 	}
-  INC_STATS(txn->get_thd_id(),thd_prof_occ_val1,get_sys_clock() - total_starttime);
+  INC_STATS(txn->get_thd_id(),occ_validate_time,get_sys_clock() - total_starttime);
 	return rc;
 }
 
@@ -247,8 +248,6 @@ void OptCC::central_finish(RC rc, TxnManager * txn) {
   uint64_t starttime = get_sys_clock();
 //		pthread_mutex_lock( &latch );
   sem_wait(&_semaphore);
-  INC_STATS(txn->get_thd_id(),thd_prof_mvcc7,get_sys_clock() - starttime);
-  starttime = get_sys_clock();
 		set_ent * act = active;
 		set_ent * prev = NULL;
 		while (act != NULL && act->txn != txn) {
@@ -259,7 +258,6 @@ void OptCC::central_finish(RC rc, TxnManager * txn) {
       assert(rc == Abort);
 		  //pthread_mutex_unlock( &latch );
       sem_post(&_semaphore);
-      INC_STATS(txn->get_thd_id(),thd_prof_mvcc8,get_sys_clock() - starttime);
       return;
     }
 		assert(act->txn == txn);
@@ -281,7 +279,7 @@ void OptCC::central_finish(RC rc, TxnManager * txn) {
 		}
 	//	pthread_mutex_unlock( &latch );
   sem_post(&_semaphore);
-  INC_STATS(txn->get_thd_id(),thd_prof_mvcc9,get_sys_clock() - starttime);
+  INC_STATS(txn->get_thd_id(),occ_finish_time,get_sys_clock() - starttime);
 	}
 }
 
