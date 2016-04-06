@@ -1,0 +1,106 @@
+/*
+   Copyright 2015 Rachael Harding
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
+#ifndef _ARR_H_
+#define _ARR_H_
+
+#include "global.h"
+#include "helper.h"
+#include "mem_alloc.h"
+
+template <class T> class Array {
+public:
+  Array() : items(NULL) {
+  }
+  void init(uint64_t size) {
+    /*
+    if(!items) {
+      DEBUG("Array init: %ld * %ld = %ld\n",sizeof(T),size,sizeof(T)*size);
+      items = (T*) mem_allocator.alloc(sizeof(T)*size);
+    }
+    */
+    //DEBUG("Array init: %ld * %ld = %ld\n",sizeof(T),size,sizeof(T)*size);
+    items = (T*) mem_allocator.alloc(sizeof(T)*size);
+    capacity = size;
+    assert(items);
+    assert(capacity == size);
+    count = 0;
+  }
+
+  void clear() {
+    count = 0;
+  }
+
+  void copy(Array a) {
+    init(a.size());
+    for(uint64_t i = 0; i < a.size(); i++) {
+      add(a[i]);
+    }
+    assert(size() == a.size());
+  }
+
+
+  void release() {
+    //DEBUG("Array release: %ld * %ld = %ld\n",sizeof(T),capacity,sizeof(T)*capacity);
+    mem_allocator.free(items,sizeof(T)*capacity);
+    items = NULL;
+    count = 0;
+    capacity = 0;
+  }
+
+  void add_unique(T item){
+    for(uint64_t i = 0; i < count; i++) {
+      if(items[i] == item)
+        return;
+    }
+    add(item);
+  }
+
+  void add(T item){
+    assert(count < capacity);
+    items[count] = item;
+    ++count;
+  }
+
+  void add() {
+    assert(count < capacity);
+    //items[count] = (T*)mem_allocator.alloc(sizeof(T));
+    ++count;
+  }
+
+  T get(uint64_t idx) {
+    assert(idx < count);
+    return items[idx];
+  }
+
+  void swap(uint64_t i, uint64_t j) {
+    T tmp = items[i];
+    items[i] = items[j];
+    items[j] = tmp;
+  }
+  T operator[](uint64_t idx) {assert(idx < count); return items[idx];}
+  uint64_t get_count() {return count;}
+  uint64_t size() {return count;}
+  bool is_full() { return count == capacity;}
+  bool is_empty() { return count == 0;}
+private:
+  uint64_t count;
+  uint64_t capacity;
+  T * items;
+};
+
+
+#endif
