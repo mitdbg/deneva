@@ -52,6 +52,13 @@ public:
     assert(size() == a.size());
   }
 
+  void append(Array a) {
+    assert(count + a.size() <= capacity); 
+    for(uint64_t i = 0; i < a.size(); i++) {
+      add(a[i]);
+    }
+  }
+
 
   void release() {
     //DEBUG("Array release: %ld * %ld = %ld\n",sizeof(T),capacity,sizeof(T)*capacity);

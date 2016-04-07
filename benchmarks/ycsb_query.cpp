@@ -54,6 +54,10 @@ void YCSBQuery::print() {
         );
 }
 
+void YCSBQuery::init() {
+  requests.init(g_req_per_query);
+  BaseQuery::init();
+}
 void YCSBQuery::release() {
   BaseQuery::release();
   for(uint64_t i = 0; i < requests.size(); i++) {

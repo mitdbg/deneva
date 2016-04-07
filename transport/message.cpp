@@ -262,7 +262,7 @@ void YCSBClientQueryMessage::copy_from_txn(TxnManager * txn) {
 void YCSBClientQueryMessage::copy_to_txn(TxnManager * txn) {
   // TODO this only copies over the pointers, so if msg is freed, we'll lose the request data
   ClientQueryMessage::copy_to_txn(txn);
-  ((YCSBQuery*)(txn->query))->requests.copy(requests);
+  ((YCSBQuery*)(txn->query))->requests.append(requests);
   txn->client_id = return_node_id;
 }
 
@@ -331,7 +331,7 @@ void ClientQueryMessage::copy_to_txn(TxnManager * txn) {
   txn->txn->txn_id = txn_id;
 #endif
   txn->query->partitions.clear();
-  txn->query->partitions.copy(partitions);
+  txn->query->partitions.append(partitions);
   txn->client_startts = client_startts;
 }
 
@@ -713,7 +713,8 @@ void YCSBQueryMessage::copy_from_txn(TxnManager * txn) {
 
 void YCSBQueryMessage::copy_to_txn(TxnManager * txn) {
   QueryMessage::copy_to_txn(txn);
-  ((YCSBQuery*)(txn->query))->requests.copy(requests);
+  //((YCSBQuery*)(txn->query))->requests.copy(requests);
+  ((YCSBQuery*)(txn->query))->requests.append(requests);
 }
 
 

@@ -74,7 +74,7 @@ public:
   void print();
   
 	void init(uint64_t thd_id, Workload * h_wl) {};
-  void init() {};
+  void init();
   void release();
   uint64_t participants(bool *& pps,Workload * wl); 
   bool readonly();

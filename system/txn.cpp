@@ -88,8 +88,14 @@ void TxnManager::reset() {
   locking_done = true;
 	ready_part = 0;
   rsp_cnt = 0;
+  aborted = false;
   txn->reset();
 
+}
+
+void TxnManager::reset_query() {
+  ((YCSBQuery*)query)->release();
+  ((YCSBQuery*)query)->init();
 }
 
 RC TxnManager::commit() {
@@ -108,15 +114,21 @@ RC TxnManager::commit() {
 }
 
 RC TxnManager::abort() {
+  if(aborted)
+    return Abort;
   DEBUG("Abort %ld\n",get_txn_id());
+  txn->rc = Abort;
+  aborted = true;
   release_locks(Abort);
   commit_stats();
   return Abort;
 }
 
 RC TxnManager::start_abort() {
+  txn->rc = Abort;
   if(query->partitions_touched.size() > 1) {
     send_finish_messages();
+    abort();
     return Abort;
   } 
   return abort();
@@ -170,6 +182,10 @@ int TxnManager::received_response(RC rc) {
     txn->rc = rc;
   --rsp_cnt;
   return rsp_cnt;
+}
+
+bool TxnManager::waiting_for_response() {
+  return rsp_cnt > 0;
 }
 
 bool TxnManager::is_multi_part() {

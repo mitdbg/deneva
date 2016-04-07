@@ -129,7 +129,7 @@ void YCSBTxnManager::next_ycsb_state() {
       break;
     case YCSB_1:
       next_record_id++;
-      if(next_record_id < ((YCSBQuery*)query)->requests.size()) {
+      if(!IS_LOCAL(txn->txn_id) || !is_done()) {
         state = YCSB_0;
       }
       else {

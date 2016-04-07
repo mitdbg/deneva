@@ -122,6 +122,8 @@ void WorkerThread::process(Message * msg) {
 
 void WorkerThread::check_if_done(RC rc, TxnManager * txn_man) {
   //TODO: get txn_id in non-hacky way, or change the way commit() is handled
+  if(txn_man->waiting_for_response())
+    return;
   if(rc == Commit)
     commit(txn_man);
   if(rc == Abort)
@@ -198,6 +200,8 @@ RC WorkerThread::process_rfin(Message * msg) {
   DEBUG("%ld Received RFIN %ld\n",GET_PART_ID_FROM_IDX(_thd_id),msg->txn_id);
   if(((FinishMessage*)msg)->rc == Abort) {
     txn_man->abort();
+    txn_man->reset();
+    txn_man->reset_query();
     msg_queue.enqueue(Message::create_message(txn_man,RACK_FIN),GET_NODE_ID(msg->get_txn_id()));
     return Abort;
   } 

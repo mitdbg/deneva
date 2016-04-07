@@ -87,6 +87,7 @@ public:
   virtual void reset();
   void clear();
   //void reset();
+  void reset_query();
 	void release();
 	Thread * h_thd;
 	Workload * h_wl;
@@ -131,6 +132,7 @@ public:
 	// [HSTORE, HSTORE_SPEC]
 	int volatile 	ready_part;
 	int volatile 	ready_ulk;
+  bool aborted;
   RC        validate();
 	RC 				finish(RC rc, uint64_t * parts, uint64_t part_cnt);
 	RC 				finish(bool fin);
@@ -160,6 +162,7 @@ public:
   uint64_t get_abort_cnt() {return abort_cnt;}
   uint64_t abort_cnt;
   int received_response(RC rc);
+  bool waiting_for_response();
   RC get_rc() {return txn->rc;}
   void set_rc(RC rc) {txn->rc = rc;}
   //void send_rfin_messages(RC rc) {assert(false);}
