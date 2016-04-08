@@ -142,6 +142,8 @@ public:
   RC send_remote_reads(BaseQuery * qry); 
   RC calvin_finish(BaseQuery * qry); 
   void set_end_timestamp(uint64_t timestamp) {txn->end_timestamp = timestamp;}
+  uint64_t get_end_timestamp() {return txn->end_timestamp;}
+  uint64_t get_access_cnt() {return txn->row_cnt;}
   uint64_t get_write_set_size() {return txn->write_cnt;}
   uint64_t get_read_set_size() {return txn->row_cnt - txn->write_cnt;}
   access_t get_access_type(uint64_t access_id) {return txn->accesses[access_id]->type;}

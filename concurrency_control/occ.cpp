@@ -65,8 +65,8 @@ OptCC::per_row_validate(TxnManager * txn) {
 #if CC_ALG == OCC
 	// sort all rows accessed in primary key order.
 	// TODO for migration, should first sort by partition id
-	for (int i = txn->row_cnt - 1; i > 0; i--) {
-		for (int j = 0; j < i; j ++) {
+	for (uint64_t i = txn->get_access_cnt() - 1; i > 0; i--) {
+		for (uint64_t j = 0; j < i; j ++) {
 			int tabcmp = strcmp(txn->get_access_original_row(j)->get_table_name(), 
 				txn->get_access_original_row(j+1)->get_table_name());
 			if (tabcmp > 0 || (tabcmp == 0 && txn->get_access_original_row(j)->get_primary_key() > txn->get_access_original_row(j+1)->get_primary_key())) {
@@ -75,7 +75,7 @@ OptCC::per_row_validate(TxnManager * txn) {
 		}
 	}
 #if DEBUG_ASSERT
-	for (int i = txn->row_cnt - 1; i > 0; i--) {
+	for (uint64_t i = txn->get_access_cnt() - 1; i > 0; i--) {
 		int tabcmp = strcmp(txn->get_access_original_row(i-1)->get_table_name(), 
 			txn->get_access_original_row(i)->get_table_name());
 		assert(tabcmp < 0 || tabcmp == 0 && txn->get_access_original_row(i)->get_primary_key() > 
@@ -86,10 +86,10 @@ OptCC::per_row_validate(TxnManager * txn) {
 	// Validate each access
 	bool ok = true;
 	int lock_cnt = 0;
-	for (int i = 0; i < txn->row_cnt && ok; i++) {
+	for (uint64_t i = 0; i < txn->get_access_cnt() && ok; i++) {
 		lock_cnt ++;
 		txn->get_access_original_row(i)->manager->latch();
-		ok = txn->get_access_original_row(i)->manager->validate( txn->start_ts );
+		ok = txn->get_access_original_row(i)->manager->validate( txn->get_start_timestamp() );
 	}
   rc = ok ? RCOK : Abort;
   /*

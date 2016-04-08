@@ -367,7 +367,7 @@ void row_t::return_row(access_t type, TxnManager * txn, row_t * row) {
 #elif CC_ALG == OCC
 	assert (row != NULL);
 	if (type == WR)
-		manager->write( row, txn->end_ts );
+		manager->write( row, txn->get_end_timestamp() );
 	row->free_row();
   DEBUG_M("row_t::return_row OCC free \n");
 	mem_allocator.free(row, sizeof(row_t));
