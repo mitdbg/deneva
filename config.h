@@ -324,7 +324,7 @@ extern TestCases          g_test_case;
 // Stats and timeout
 #define BILLION 1000000000UL // in ns => 1 second
 #define STAT_ARR_SIZE 1024
-#define PROG_TIMER 10 * BILLION // in s
+#define PROG_TIMER 1000 * BILLION // in s
 #define BATCH_TIMER 10000000
 #define DONE_TIMER 10 * 60 * BILLION // ~2 minutes
 
