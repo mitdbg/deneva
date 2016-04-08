@@ -125,6 +125,7 @@ RC Row_lock::lock_get(lock_t type, TxnManager * txn, uint64_t* &txnids, int &txn
         en = owners[i];
         while (en != NULL) {
           assert(txn->get_txn_id() != en->txn->get_txn_id());
+          assert(txn->get_timestamp() != en->txn->get_timestamp());
           if (txn->get_timestamp() > en->txn->get_timestamp()) {
             //printf("abort %ld %ld -- %ld -- %f\n",txn->get_txn_id(),en->txn->get_txn_id(),_row->get_primary_key(),(float)(txn->get_timestamp() - en->txn->get_timestamp()) / BILLION);
             INC_STATS(txn->get_thd_id(),twopl_diff_time,(txn->get_timestamp() - en->txn->get_timestamp()));

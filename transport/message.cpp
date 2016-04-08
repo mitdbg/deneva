@@ -185,6 +185,7 @@ void QueryMessage::copy_from_txn(TxnManager * txn) {
   Message::mcopy_from_txn(txn);
 #if CC_ALG == WAIT_DIE || CC_ALG == TIMESTAMP || CC_ALG == MVCC || CC_ALG == VLL
   ts = txn->get_timestamp();
+  assert(ts != 0);
 #endif
 #if CC_ALG == OCC 
   start_ts = txn->get_start_timestamp();
@@ -194,6 +195,7 @@ void QueryMessage::copy_from_txn(TxnManager * txn) {
 void QueryMessage::copy_to_txn(TxnManager * txn) {
   Message::mcopy_to_txn(txn);
 #if CC_ALG == WAIT_DIE || CC_ALG == TIMESTAMP || CC_ALG == MVCC || CC_ALG == VLL
+  assert(ts != 0);
   txn->set_timestamp(ts);
 #endif
 #if CC_ALG == OCC 
@@ -208,6 +210,7 @@ void QueryMessage::copy_from_buf(char * buf) {
   ptr = Message::mget_size();
 #if CC_ALG == WAIT_DIE || CC_ALG == TIMESTAMP || CC_ALG == MVCC || CC_ALG == VLL
  COPY_VAL(ts,buf,ptr);
+  assert(ts != 0);
 #endif
 #if CC_ALG == OCC 
  COPY_VAL(start_ts,buf,ptr);
@@ -220,6 +223,7 @@ void QueryMessage::copy_to_buf(char * buf) {
   ptr = Message::mget_size();
 #if CC_ALG == WAIT_DIE || CC_ALG == TIMESTAMP || CC_ALG == MVCC || CC_ALG == VLL
  COPY_BUF(buf,ts,ptr);
+  assert(ts != 0);
 #endif
 #if CC_ALG == OCC 
  COPY_BUF(buf,start_ts,ptr);
@@ -318,7 +322,7 @@ void ClientQueryMessage::copy_from_query(BaseQuery * query) {
 
 void ClientQueryMessage::copy_from_txn(TxnManager * txn) {
   Message::mcopy_from_txn(txn);
-  ts = txn->txn->timestamp;
+  //ts = txn->txn->timestamp;
 #if CC_ALG == CALVIN
   batch_id = txn->txn->batch_id;
   txn_id = txn->txn->txn_id;
@@ -330,7 +334,7 @@ void ClientQueryMessage::copy_from_txn(TxnManager * txn) {
 
 void ClientQueryMessage::copy_to_txn(TxnManager * txn) {
   Message::mcopy_to_txn(txn);
-  txn->txn->timestamp = ts;
+  //txn->txn->timestamp = ts;
 #if CC_ALG == CALVIN
   txn->txn->batch_id = batch_id;
   txn->txn->txn_id = txn_id;
@@ -343,7 +347,7 @@ void ClientQueryMessage::copy_to_txn(TxnManager * txn) {
 void ClientQueryMessage::copy_from_buf(char * buf) {
   Message::mcopy_from_buf(buf);
   uint64_t ptr = Message::mget_size();
-  COPY_VAL(ts,buf,ptr);
+  //COPY_VAL(ts,buf,ptr);
 #if CC_ALG == CALVIN
   COPY_VAL(batch_id,buf,ptr);
   COPY_VAL(txn_id,buf,ptr);
@@ -363,7 +367,7 @@ void ClientQueryMessage::copy_from_buf(char * buf) {
 void ClientQueryMessage::copy_to_buf(char * buf) {
   Message::mcopy_to_buf(buf);
   uint64_t ptr = Message::mget_size();
-  COPY_BUF(buf,ts,ptr);
+  //COPY_BUF(buf,ts,ptr);
 #if CC_ALG == CALVIN
   COPY_BUF(buf,batch_id,ptr);
   COPY_BUF(buf,txn_id,ptr);

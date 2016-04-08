@@ -351,7 +351,7 @@ RC WorkerThread::process_rtxn(Message * msg) {
 
 					// Put txn in txn_table
           txn_man = txn_table.get_transaction_manager(txn_id,0);
-					if (CC_ALG == WAIT_DIE || CC_ALG == VLL) {
+					if (CC_ALG == WAIT_DIE) {
             txn_man->set_timestamp(get_next_ts());
           }
           txn_man->txn_stats.starttime = get_sys_clock();
