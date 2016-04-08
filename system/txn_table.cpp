@@ -221,9 +221,9 @@ void TxnTable::restart_txn(uint64_t txn_id,uint64_t batch_id){
     if (t_node->txn_man->get_txn_id() == txn_id) {
 #endif
       if(txn_id % g_node_cnt == g_node_id)
-        work_queue.enqueue(0,Message::create_message(t_node->txn_man,RTXN),false);
+        work_queue.enqueue(0,Message::create_message(t_node->txn_man,RTXN_CONT),false);
       else
-        work_queue.enqueue(0,Message::create_message(t_node->txn_man,RQRY),false);
+        work_queue.enqueue(0,Message::create_message(t_node->txn_man,RQRY_CONT),false);
       break;
     }
     t_node = t_node->next;

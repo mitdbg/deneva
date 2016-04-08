@@ -30,8 +30,9 @@ void MessageQueue::init() {
 }
 
 void MessageQueue::enqueue(Message * msg,uint64_t dest) {
-  assert(dest < g_node_cnt + g_client_node_cnt + g_repl_cnt*g_node_cnt);
   DEBUG("MQ Enqueue %ld\n",dest)
+  assert(dest < g_node_cnt + g_client_node_cnt + g_repl_cnt*g_node_cnt);
+  assert(dest != g_node_id);
   msg_entry_t entry;
   msg_pool.get(entry);
   entry->msg = msg;

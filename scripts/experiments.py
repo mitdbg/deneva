@@ -128,13 +128,32 @@ def replica_test():
     return fmt,exp
 
 
+def malviya():
+    wl = 'YCSB'
+    nnodes = [1]
+    nrepl = [0,1]
+    nwr = [0.2]
+    nalgos=['NO_WAIT']
+    ntif = [5000,10000,25000,50000,100000,150000,200000,250000,300000,350000]
+    nload=[]
+    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PART_PER_TXN","TUP_WRITE_PERC","MAX_TXN_IN_FLIGHT","REPLICA_CNT","MAX_TXN_IN_FLIGHT","LOGGING"]
+    exp = [[wl,n,cc,2,wr,1000,repl,tif,"true"] for n,cc,wr,repl,tif in itertools.product(nnodes,nalgos,nwr,nrepl,ntif)]
+    exp += [[wl,n,cc,2,wr,1000,0,tif,"false"] for n,cc,wr,tif in itertools.product(nnodes,nalgos,nwr,ntif)]
+    return fmt,exp
+
+def malviya_plot(summary,summary_client,summary_seq):
+    nfmt,nexp = malviya()
+    x_name = "MAX_TXN_IN_FLIGHT"
+    v_name = "REPLICA_CNT"
+    tput_setup(summary,summary_client,summary_seq,nfmt,nexp,x_name,v_name)
+    v_name = "LOGGING"
+    tput_setup(summary,summary_client,summary_seq,nfmt,nexp,x_name,v_name)
 
 def test():
     wl = 'YCSB'
-    nnodes = [1,2,4,8,16,32,64]
-    nnodes = [2]
+    nnodes = [1,2]
     nwr = [0.2]
-    nalgos=['OCC']
+    nalgos=['NO_WAIT','WAIT_DIE','MVCC','TIMESTAMP','OCC']
     fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PART_PER_TXN","TUP_WRITE_PERC","MAX_TXN_IN_FLIGHT"]
     exp = [[wl,n,cc,2,wr,20000] for n,cc,wr in itertools.product(nnodes,nalgos,nwr)]
     return fmt,exp
@@ -865,6 +884,8 @@ experiment_map = {
     'ycsb_scaling_low_mpr': ycsb_scaling_low_mpr,
     'ycsb_scaling_low_mpr_plot': ycsb_scaling_low_mpr_plot,
     'replica_test': replica_test,
+    'malviya': malviya,
+    'malviya_plot': malviya_plot,
 }
 
 

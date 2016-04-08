@@ -34,6 +34,7 @@ std::vector<Message*> Message::create_messages(char * buf) {
   COPY_VAL(return_id,data,ptr);
   COPY_VAL(txn_cnt,data,ptr);
   assert(dest_id == g_node_id);
+  assert(return_id != g_node_id);
   assert(ISCLIENTN(return_id) || ISSERVERN(return_id) || ISREPLICAN(return_id));
   while(txn_cnt > 0) {
     Message * msg = create_message(&data[ptr]);
@@ -90,6 +91,7 @@ Message * Message::create_message(RemReqType rtype) {
       msg = new InitDoneMessage;
       break;
     case RQRY:
+    case RQRY_CONT:
 #if WORKLOAD == YCSB
       msg = new YCSBQueryMessage;
       msg->init();
@@ -116,6 +118,7 @@ Message * Message::create_message(RemReqType rtype) {
       break;
     case CL_QRY:
     case RTXN:
+    case RTXN_CONT:
 #if WORKLOAD == YCSB
       msg = new YCSBClientQueryMessage;
 #endif
@@ -139,6 +142,7 @@ Message * Message::create_message(RemReqType rtype) {
   msg->rtype = rtype;
   msg->txn_id = UINT64_MAX;
   msg->batch_id = UINT64_MAX;
+  msg->return_node_id = g_node_id;
   return msg;
 }
 
@@ -154,6 +158,7 @@ void Message::mcopy_from_txn(TxnManager * txn) {
 }
 
 void Message::mcopy_to_txn(TxnManager * txn) {
+  txn->return_id = return_node_id;
 }
 
 
@@ -189,10 +194,10 @@ void QueryMessage::copy_from_txn(TxnManager * txn) {
 void QueryMessage::copy_to_txn(TxnManager * txn) {
   Message::mcopy_to_txn(txn);
 #if CC_ALG == WAIT_DIE || CC_ALG == TIMESTAMP || CC_ALG == MVCC || CC_ALG == VLL
-  query->ts = ts;
+  txn->set_timestamp(ts);
 #endif
 #if CC_ALG == OCC 
-  query->start_ts = start_ts;
+  txn->set_start_timestamp(start_ts);
 #endif
 
 }
@@ -383,6 +388,7 @@ uint64_t ClientResponseMessage::get_size() {
 void ClientResponseMessage::copy_from_txn(TxnManager * txn) {
   Message::mcopy_from_txn(txn);
   client_startts = txn->client_startts;
+  txn_id = txn->get_txn_id();
 }
 
 void ClientResponseMessage::copy_to_txn(TxnManager * txn) {
@@ -394,12 +400,14 @@ void ClientResponseMessage::copy_from_buf(char * buf) {
   Message::mcopy_from_buf(buf);
   uint64_t ptr = Message::mget_size();
   COPY_VAL(client_startts,buf,ptr);
+  COPY_VAL(txn_id,buf,ptr);
 }
 
 void ClientResponseMessage::copy_to_buf(char * buf) {
   Message::mcopy_to_buf(buf);
   uint64_t ptr = Message::mget_size();
   COPY_BUF(buf,client_startts,ptr);
+  COPY_BUF(buf,txn_id,ptr);
 }
 
 /************************/

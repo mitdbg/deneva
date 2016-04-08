@@ -63,7 +63,8 @@ RC ClientThread::run() {
 		// Just in case...
 		if (iters == UINT64_MAX)
 			iters = 0;
-		if (client_man.inc_inflight(next_node) < 0)
+    int32_t inf_cnt;
+		if ((inf_cnt = client_man.inc_inflight(next_node)) < 0)
 			continue;
 
 		m_query = client_query_queue.get_next_query(next_node,_thd_id);
@@ -73,8 +74,8 @@ RC ClientThread::run() {
         break;
 			continue;
 		}
-		DEBUG("Client: thread %lu sending query to node: %u\n",
-				_thd_id, next_node_id);
+		DEBUG("Client: thread %lu sending query to node: %u, %d\n",
+				_thd_id, next_node_id,inf_cnt);
 
     Message * msg = Message::create_message((BaseQuery*)m_query,CL_QRY);
     ((ClientQueryMessage*)msg)->client_startts = get_sys_clock();

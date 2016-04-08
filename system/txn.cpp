@@ -77,6 +77,8 @@ void TxnManager::init(Workload * h_wl) {
   }
   query->init();
   //reset();
+  sem_init(&rsp_mutex, 0, 1);
+  return_id = UINT64_MAX;
 
 	this->h_wl = h_wl;
 	pthread_mutex_init(&txn_lock, NULL);
@@ -89,6 +91,7 @@ void TxnManager::reset() {
 	ready_part = 0;
   rsp_cnt = 0;
   aborted = false;
+  return_id = UINT64_MAX;
   txn->reset();
 
 }
@@ -384,6 +387,10 @@ RC TxnManager::get_row(row_t * row, access_t type, row_t *& row_rtn) {
   this->last_row = row;
   this->last_type = type;
 
+	++txn->row_cnt;
+	if (type == WR)
+		++txn->write_cnt;
+
   rc = row->get_row(type, this, access->data);
 
 	if (rc == Abort || rc == WAIT) {
@@ -395,6 +402,7 @@ RC TxnManager::get_row(row_t * row, access_t type, row_t *& row_rtn) {
 #if DEBUG_TIMELINE
     printf("CONFLICT %ld %ld\n",get_txn_id(),get_sys_clock());
 #endif
+    txn->accesses.add(access);
 		return rc;
 	}
 	access->type = type;
@@ -422,9 +430,6 @@ RC TxnManager::get_row(row_t * row, access_t type, row_t *& row_rtn) {
 
 	}
 #endif
-	++txn->row_cnt;
-	if (type == WR)
-		++txn->write_cnt;
 	timespan = get_sys_clock() - starttime;
 	INC_STATS(get_thd_id(), txn_manager_time, timespan);
 	row_rtn  = access->data;
@@ -443,29 +448,27 @@ RC TxnManager::get_row_post_wait(row_t *& row_rtn) {
   row_t * row = this->last_row;
   access_t type = this->last_type;
   assert(row != NULL);
+  uint64_t row_id = txn->row_cnt -1;
 
-  row->get_row_post_wait(type,this,txn->accesses[ txn->row_cnt ]->data);
+  row->get_row_post_wait(type,this,txn->accesses[ row_id ]->data);
 
-	txn->accesses[txn->row_cnt]->type = type;
-	txn->accesses[txn->row_cnt]->orig_row = row;
+	txn->accesses[row_id]->type = type;
+	txn->accesses[row_id]->orig_row = row;
 #if ROLL_BACK && (CC_ALG == DL_DETECT || CC_ALG == NO_WAIT || CC_ALG == WAIT_DIE)
 	if (type == WR) {
 	  uint64_t part_id = row->get_part_id();
     //printf("alloc 10 %ld\n",get_txn_id());
     DEBUG_M("TxnManager::get_row_post_wait alloc\n");
-		txn->accesses[txn->row_cnt]->orig_data = (row_t *) 
+		txn->accesses[row_id]->orig_data = (row_t *) 
 			mem_allocator.alloc(sizeof(row_t));
-		txn->accesses[txn->row_cnt]->orig_data->init(row->get_table(), part_id, 0);
-		txn->accesses[txn->row_cnt]->orig_data->copy(row);
+		txn->accesses[row_id]->orig_data->init(row->get_table(), part_id, 0);
+		txn->accesses[row_id]->orig_data->copy(row);
 	}
 #endif
-	++txn->row_cnt;
-	if (type == WR)
-		++txn->write_cnt;
 	uint64_t timespan = get_sys_clock() - starttime;
 	INC_STATS(get_thd_id(), txn_manager_time, timespan);
-	this->last_row_rtn  = txn->accesses[txn->row_cnt - 1]->data;
-	row_rtn  = txn->accesses[txn->row_cnt - 1]->data;
+	this->last_row_rtn  = txn->accesses[row_id]->data;
+	row_rtn  = txn->accesses[row_id]->data;
   return RCOK;
 
 }

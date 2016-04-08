@@ -34,6 +34,7 @@ void TxnPool::init(Workload * wl, uint64_t size) {
   for(uint64_t i = 0; i < size; i++) {
     //put(items[i]);
     _wl->get_txn_man(txn);
+    txn->init(wl);
     put(txn);
   }
 }

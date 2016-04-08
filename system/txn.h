@@ -93,6 +93,7 @@ public:
 	Workload * h_wl;
 
 	virtual RC 		run_txn() = 0;
+	virtual RC 		run_txn_post_wait() = 0;
   virtual RC run_calvin_txn() = 0; 
   virtual RC acquire_locks() = 0; 
   void register_thd(Thread * h_thd);
@@ -133,6 +134,7 @@ public:
 	int volatile 	ready_part;
 	int volatile 	ready_ulk;
   bool aborted;
+  uint64_t return_id;
   RC        validate();
 	RC 				finish(RC rc, uint64_t * parts, uint64_t part_cnt);
 	RC 				finish(bool fin);

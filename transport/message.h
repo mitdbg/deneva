@@ -211,6 +211,7 @@ public:
 
   RC rc;
   uint64_t client_startts;
+  uint64_t txn_id; // TODO: Remove
 };
 
 class ClientQueryMessage : public Message {

@@ -81,6 +81,9 @@ void WorkerThread::process(Message * msg) {
 			case RQRY:
         rc = process_rqry(msg);
 				break;
+			case RQRY_CONT:
+        rc = process_rqry_cont(msg);
+				break;
 			case RQRY_RSP:
         rc = process_rqry_rsp(msg);
 				break;
@@ -92,6 +95,9 @@ void WorkerThread::process(Message * msg) {
 				break;
 			case RACK_FIN:
         rc = process_rack_rfin(msg);
+				break;
+			case RTXN_CONT:
+        rc = process_rtxn_cont(msg);
 				break;
       case CL_QRY:
 			case RTXN:
@@ -281,15 +287,30 @@ RC WorkerThread::process_rqry(Message * msg) {
 
   // Send response
   if(rc != WAIT) {
-    msg_queue.enqueue(Message::create_message(txn_man,RQRY_RSP),msg->return_node_id);
+    msg_queue.enqueue(Message::create_message(txn_man,RQRY_RSP),txn_man->return_id);
   }
   return rc;
-
 }
+
+RC WorkerThread::process_rqry_cont(Message * msg) {
+  RC rc = RCOK;
+
+  // Create new transaction table entry if one does not already exist
+  TxnManager * txn_man = txn_table.get_transaction_manager(msg->get_txn_id(),0);
+  txn_man->run_txn_post_wait();
+  rc = txn_man->run_txn();
+
+  // Send response
+  if(rc != WAIT) {
+    msg_queue.enqueue(Message::create_message(txn_man,RQRY_RSP),txn_man->return_id);
+  }
+  return rc;
+}
+
 
 RC WorkerThread::process_rtxn_cont(Message * msg) {
   TxnManager * txn_man = txn_table.get_transaction_manager(msg->get_txn_id(),0);
-  //txn_man->run_txn_post_wait();
+  txn_man->run_txn_post_wait();
   RC rc = txn_man->run_txn();
   check_if_done(rc,txn_man);
   return RCOK;

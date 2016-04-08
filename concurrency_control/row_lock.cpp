@@ -50,9 +50,8 @@ RC Row_lock::lock_get(lock_t type, TxnManager * txn) {
 }
 
 RC Row_lock::lock_get(lock_t type, TxnManager * txn, uint64_t* &txnids, int &txncnt) {
-	assert (CC_ALG == DL_DETECT || CC_ALG == NO_WAIT || CC_ALG == WAIT_DIE || CC_ALG == CALVIN);
+	assert (CC_ALG == NO_WAIT || CC_ALG == WAIT_DIE || CC_ALG == CALVIN);
 	RC rc;
-	//int part_id =_row->get_part_id(); // This was for DL_DETECT
 	if (g_central_man)
 		glob_manager.lock_row(_row);
 	else 
@@ -101,9 +100,6 @@ RC Row_lock::lock_get(lock_t type, TxnManager * txn, uint64_t* &txnids, int &txn
     if(waiters_head)
       conflict = true;
   }
-	// Some txns coming earlier is waiting. Should also wait.
-	if (CC_ALG == DL_DETECT && waiters_head != NULL)
-		conflict = true;
 	
 	if (conflict) { 
     //printf("conflict! rid%ld txnid%ld ",_row->get_primary_key(),txn->get_txn_id());
@@ -113,17 +109,6 @@ RC Row_lock::lock_get(lock_t type, TxnManager * txn, uint64_t* &txnids, int &txn
       DEBUG("abort %ld,%ld %ld %lx\n",txn->get_txn_id(),txn->get_batch_id(),_row->get_primary_key(),(uint64_t)_row);
       //printf("abort %ld %ld %lx\n",txn->get_txn_id(),_row->get_primary_key(),(uint64_t)_row);
 			goto final;
-		} else if (CC_ALG == DL_DETECT) {
-			LockEntry * entry = get_entry();
-			entry->txn = txn;
-			entry->type = type;
-      //txn->lock_ready = false;
-      ATOM_CAS(txn->lock_ready,true,false);
-      txn->incr_lr();
-			LIST_PUT_TAIL(waiters_head, waiters_tail, entry);
-			waiter_cnt ++;
-            rc = WAIT;
-            //txn->wait_starttime = get_sys_clock();
 		} else if (CC_ALG == WAIT_DIE) {
             ///////////////////////////////////////////////////////////
             //  - T is the txn currently running
@@ -139,6 +124,7 @@ RC Row_lock::lock_get(lock_t type, TxnManager * txn, uint64_t* &txnids, int &txn
       for(uint64_t i = 0; i < owners_size; i++) {
         en = owners[i];
         while (en != NULL) {
+          assert(txn->get_txn_id() != en->txn->get_txn_id());
           if (txn->get_timestamp() > en->txn->get_timestamp()) {
             //printf("abort %ld %ld -- %ld -- %f\n",txn->get_txn_id(),en->txn->get_txn_id(),_row->get_primary_key(),(float)(txn->get_timestamp() - en->txn->get_timestamp()) / BILLION);
             INC_STATS(txn->get_thd_id(),twopl_diff_time,(txn->get_timestamp() - en->txn->get_timestamp()));
@@ -212,35 +198,11 @@ RC Row_lock::lock_get(lock_t type, TxnManager * txn, uint64_t* &txnids, int &txn
     if(lock_type == LOCK_NONE)
       own_starttime = get_sys_clock();
 		lock_type = type;
-		if (CC_ALG == DL_DETECT) 
-			ASSERT(waiters_head == NULL);
     rc = RCOK;
 
 	}
 final:
 	
-  /*
-	if (rc == WAIT && CC_ALG == DL_DETECT) {
-		// Update the waits-for graph
-		ASSERT(waiters_tail->txn == txn);
-		txnids = (uint64_t *) mem_allocator.alloc(sizeof(uint64_t) * (owner_cnt + waiter_cnt));
-		txncnt = 0;
-		LockEntry * en = waiters_tail->prev;
-		while (en != NULL) {
-			if (conflict_lock(type, en->type)) 
-				txnids[txncnt++] = en->txn->get_txn_id();
-			en = en->prev;
-		}
-		en = owners;
-		if (conflict_lock(type, lock_type)) 
-			while (en != NULL) {
-				txnids[txncnt++] = en->txn->get_txn_id();
-				en = en->next;
-			}
-		ASSERT(txncnt > 0);
-	}
-  */
-
 	if (g_central_man)
 		glob_manager.release_row(_row);
 	else
@@ -292,7 +254,6 @@ RC Row_lock::lock_release(TxnManager * txn) {
 	}
 
 	if (en) { // find the entry in the owner list
-    en->txn->cc_hold_time = get_sys_clock() - en->start_ts;
 		if (prev) prev->next = en->next;
 		else owners[hash(txn->get_txn_id())] = en->next;
 		return_entry(en);
@@ -318,8 +279,6 @@ RC Row_lock::lock_release(TxnManager * txn) {
 		while (en != NULL && en->txn != txn)
 			en = en->next;
 		ASSERT(en);
-    uint64_t t = get_sys_clock() - en->start_ts;
-    // Stats
 
 		LIST_REMOVE(en);
 		if (en == waiters_head)
