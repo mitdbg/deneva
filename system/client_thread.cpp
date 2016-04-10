@@ -38,6 +38,13 @@ void ClientThread::setup() {
 			}
 		}
   }
+#if LOAD_METHOD == LOAD_RATE
+  assert(g_load_per_server > 0);
+  // send ~twice as frequently due to delays in context switching
+  send_interval = (g_client_thread_cnt * BILLION) / g_load_per_server / 1.8;
+  printf("Client interval: %ld\n",send_interval);
+#endif
+
 }
 
 RC ClientThread::run() {
@@ -58,22 +65,36 @@ RC ClientThread::run() {
 		if(get_sys_clock() - run_starttime >= g_done_timer) {
       break;
     }
+    int32_t inf_cnt;
 		uint32_t next_node = (((iters++) * g_client_thread_cnt) + _thd_id )% g_servers_per_client;
 		uint32_t next_node_id = next_node + g_server_start_node;
 		// Just in case...
 		if (iters == UINT64_MAX)
 			iters = 0;
-    int32_t inf_cnt;
+#if LOAD_METHOD == LOAD_MAX
 		if ((inf_cnt = client_man.inc_inflight(next_node)) < 0)
 			continue;
 
 		m_query = client_query_queue.get_next_query(next_node,_thd_id);
-		if (m_query == NULL) {
-			client_man.dec_inflight(next_node);
-      if(client_query_queue.done())
-        break;
+    if(last_send_time > 0) {
+      INC_STATS(get_thd_id(),cl_send_intv,get_sys_clock() - last_send_time);
+    }
+    last_send_time = get_sys_clock();
+#elif LOAD_METHOD == LOAD_RATE
+		if ((inf_cnt = client_man.inc_inflight(next_node)) < 0)
 			continue;
-		}
+    uint64_t gate_time;
+    while((gate_time = get_sys_clock()) - last_send_time < send_interval) { }
+    if(last_send_time > 0) {
+      INC_STATS(get_thd_id(),cl_send_intv,gate_time - last_send_time);
+    }
+    last_send_time = gate_time;
+		m_query = client_query_queue.get_next_query(next_node,_thd_id);
+#else
+    assert(false);
+#endif
+    assert(m_query);
+
 		DEBUG("Client: thread %lu sending query to node: %u, %d\n",
 				_thd_id, next_node_id,inf_cnt);
 

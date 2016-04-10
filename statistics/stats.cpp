@@ -51,6 +51,7 @@ void Stats_thd::clear() {
 
   // Client
   txn_sent_cnt=0;
+  cl_send_intv=0;
 
   // Work queue
   work_queue_wait_time=0;
@@ -141,11 +142,13 @@ void Stats_thd::print_client(FILE * outf) {
       ",txn_sent_cnt=%ld"
       ",txn_run_time=%f"
       ",txn_run_avg_time=%f"
+      ",cl_send_intv=%f"
       ,total_runtime/BILLION
       ,txn_cnt
       ,txn_sent_cnt
       ,txn_run_time / BILLION
       ,txn_run_avg_time / BILLION
+      ,cl_send_intv / BILLION
   );
 }
 
@@ -417,6 +420,7 @@ void Stats_thd::combine(Stats_thd * stats) {
 
   // Client
   txn_sent_cnt+=stats->txn_sent_cnt;
+  cl_send_intv+=stats->cl_send_intv;
 
   // Work queue
   work_queue_wait_time+=stats->work_queue_wait_time;

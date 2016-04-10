@@ -138,7 +138,9 @@ RC OptCC::central_validate(TxnManager * txn) {
   sem_wait(&_semaphore);
   INC_STATS(txn->get_thd_id(),occ_cs_wait_time,get_sys_clock() - starttime);
   starttime = get_sys_clock();
-	finish_tn = tnc;
+	//finish_tn = tnc;
+  assert(!g_ts_batch_alloc);
+	finish_tn = glob_manager.get_ts(txn->get_thd_id());
 	ent = active;
 	f_active_len = active_len;
 	set_ent * finish_active[f_active_len];
@@ -153,18 +155,22 @@ RC OptCC::central_validate(TxnManager * txn) {
 	}
 	his = history;
 	//pthread_mutex_unlock( &latch );
+  DEBUG("Start Validation %ld: start_ts %ld, finish_ts %ld, active size %ld\n",txn->get_txn_id(),start_tn,finish_tn,f_active_len);
   sem_post(&_semaphore);
   INC_STATS(txn->get_thd_id(),occ_cs_time,get_sys_clock() - starttime);
   starttime = get_sys_clock();
   starttime = get_sys_clock();
 
   uint64_t checked = 0;
+  uint64_t active_checked = 0;
+  uint64_t hist_checked = 0;
   stop = 0;
 	if (finish_tn > start_tn) {
 		while (his && his->tn > finish_tn) 
 			his = his->next;
 		while (his && his->tn > start_tn) {
-      checked++;
+      ++hist_checked;
+      ++checked;
 			valid = test_valid(his, rset);
 			if (!valid) { 
         INC_STATS(txn->get_thd_id(),occ_hist_validate_fail_time,get_sys_clock() - starttime);
@@ -179,10 +185,12 @@ RC OptCC::central_validate(TxnManager * txn) {
   stop = 1;
 	for (UInt32 i = 0; i < f_active_len; i++) {
 		set_ent * wact = finish_active[i];
-    checked++;
+    ++checked;
+    ++active_checked;
 		valid = test_valid(wact, rset);
 		if (valid) {
-      checked++;
+      ++checked;
+      ++active_checked;
 			valid = test_valid(wact, wset);
 		} 
     if (!valid) {
@@ -226,6 +234,7 @@ final:
         }
       sem_post(&_semaphore);
 	}
+  DEBUG("End Validation %ld: active# %ld, hist# %ld\n",txn->get_txn_id(),active_checked,hist_checked);
   INC_STATS(txn->get_thd_id(),occ_validate_time,get_sys_clock() - total_starttime);
 	return rc;
 }

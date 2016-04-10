@@ -25,6 +25,9 @@ class ClientThread : public Thread {
 public:
 	RC 			run();
   void setup();
+private:
+  uint64_t last_send_time;
+  uint64_t send_interval;
 };
 
 #endif

@@ -73,6 +73,7 @@ UInt32 g_ts_batch_num = TS_BATCH_NUM;
 int32_t g_inflight_max = MAX_TXN_IN_FLIGHT;
 //int32_t g_inflight_max = MAX_TXN_IN_FLIGHT/NODE_CNT;
 uint64_t g_msg_size = MSG_SIZE_MAX;
+int32_t g_load_per_server = LOAD_PER_SERVER;
 
 bool g_hw_migrate = HW_MIGRATE;
 

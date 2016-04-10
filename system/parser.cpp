@@ -115,6 +115,8 @@ void parser(int argc, char * argv[]) {
 			g_client_rem_thread_cnt = atoi( &argv[i][4] );
     else if (argv[i][1] == 'c' && argv[i][2] == 't' && argv[i][3] == 's')
 			g_client_send_thread_cnt = atoi( &argv[i][4] );
+    else if (argv[i][1] == 'l' && argv[i][2] == 'p' && argv[i][3] == 's')
+			g_load_per_server = atoi( &argv[i][4] );
     else if (argv[i][1] == 't' && argv[i][2] == 'p' && argv[i][3] == 'p')
 			g_max_txn_per_part = atoi( &argv[i][4] );
     else if (argv[i][1] == 't' && argv[i][2] == 'i' && argv[i][3] == 'f')
@@ -214,6 +216,7 @@ void parser(int argc, char * argv[]) {
 			printf("g_client_rem_thread_cnt %d\n",g_client_rem_thread_cnt );
 			printf("g_client_send_thread_cnt %d\n",g_client_send_thread_cnt );
 			printf("g_max_txn_per_part %d\n",g_max_txn_per_part );
+			printf("g_load_per_server %d\n",g_load_per_server );
 			printf("g_inflight_max %d\n",g_inflight_max );
 			printf("g_mpr %f\n",g_mpr );
 			printf("g_mpitem %f\n",g_mpitem );

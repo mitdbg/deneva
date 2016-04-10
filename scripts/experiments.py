@@ -153,10 +153,16 @@ def test():
     wl = 'YCSB'
     nnodes = [1,2]
     nwr = [0.2]
-    nalgos=['NO_WAIT','WAIT_DIE','MVCC','TIMESTAMP','OCC']
+    nalgos=['NO_WAIT','WAIT_DIE','OCC']
     fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PART_PER_TXN","TUP_WRITE_PERC","MAX_TXN_IN_FLIGHT"]
     exp = [[wl,n,cc,2,wr,20000] for n,cc,wr in itertools.product(nnodes,nalgos,nwr)]
     return fmt,exp
+
+def test_plot(summary,summary_client,summary_seq):
+    nfmt,nexp = test()
+    x_name = "NODE_CNT"
+    v_name = "CC_ALG"
+    tput_setup(summary,summary_client,summary_seq,nfmt,nexp,x_name,v_name)
 
 def tpcc_priorities():
     wl = 'TPCC'
@@ -562,7 +568,7 @@ def ft_mode_plot(summary,summary_client,summary_seq):
     v_name = "CC_ALG"
     tput_setup(summary,summary_seq,nfmt,nexp,x_name,v_name)
 
-def test_plot(summary,summary_client,summary_seq):
+def test_plot3(summary,summary_client,summary_seq):
     nfmt,nexp = test()
 #    tput_setup(summary,summary_client,nfmt,nexp,x_name="MAX_TXN_IN_FLIGHT",v_name="MODE")
     tput_setup(summary,summary_client,summary_seq,nfmt,nexp,x_name="NODE_CNT",v_name="MODE",extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128,'PERC_PAYMENT':0.0})
@@ -910,14 +916,14 @@ configs = {
     "TPORT_PORT":"\"_.ipc\"",
     "PART_CNT": "NODE_CNT", #2,
     "PART_PER_TXN": "NODE_CNT",
-    "MAX_TXN_IN_FLIGHT": 50000,
+    "MAX_TXN_IN_FLIGHT": 100000,
     "NETWORK_DELAY": '0UL',
-    "DONE_TIMER": "1 * 60 * BILLION // ~2 minutes",
+    "DONE_TIMER": "1 * 60 * BILLION // ~1 minutes",
     "BATCH_TIMER" : "10000000",
     "PROG_TIMER" : "10 * BILLION // in s",
     "NETWORK_TEST" : "false",
-    "ABORT_PENALTY": "1 * 1000000UL   // in ns.",
-    "ABORT_PENALTY_MAX": "100 * 1000000UL   // in ns.",
+    "ABORT_PENALTY": "10 * 1000000UL   // in ns.",
+    "ABORT_PENALTY_MAX": "5 * 100 * 1000000UL   // in ns.",
     "MSG_TIME_LIMIT": "10 * 1000000UL",
     "MSG_SIZE_MAX": 4096,
 #    "PRT_LAT_DISTR": "true",
@@ -943,5 +949,6 @@ configs = {
     "STRICT_PPT":0,
     "SET_AFFINITY":"true",
     "LOGGING":"false",
+    "LOAD_METHOD": "LOAD_MAX" #"LOAD_RATE","LOAD_MAX"
 }
 

@@ -159,6 +159,7 @@ extern uint64_t g_log_buf_max;
 extern uint64_t g_log_flush_timeout;
 
 extern UInt32 g_max_txn_per_part;
+extern int32_t g_load_per_server;
 
 extern bool g_hw_migrate;
 extern UInt32 g_network_delay;

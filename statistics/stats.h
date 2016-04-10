@@ -61,6 +61,7 @@ public:
 
   // Client
   uint64_t txn_sent_cnt;
+  double cl_send_intv;
 
   // Breakdown
   double ts_alloc_time;
