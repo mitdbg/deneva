@@ -5,17 +5,17 @@
 /***********************************************/
 // Simulation + Hardware
 /***********************************************/
-#define NODE_CNT 1
-#define THREAD_CNT 4
+#define NODE_CNT 16
+#define THREAD_CNT 6
 #define REM_THREAD_CNT 1
 #define SEND_THREAD_CNT 1
 #define CORE_CNT 8
 // PART_CNT should be at least NODE_CNT
 #define PART_CNT NODE_CNT
-#define CLIENT_NODE_CNT 1
+#define CLIENT_NODE_CNT NODE_CNT
 #define CLIENT_THREAD_CNT 2
 #define CLIENT_REM_THREAD_CNT 1
-#define CLIENT_SEND_THREAD_CNT 2
+#define CLIENT_SEND_THREAD_CNT 4
 #define CLIENT_RUNTIME false
 
 #define LOAD_METHOD LOAD_MAX
@@ -44,7 +44,7 @@
 #define TIME_ENABLE         true //STATS_ENABLE
 
 #define FIN_BY_TIME true
-#define MAX_TXN_IN_FLIGHT 10000
+#define MAX_TXN_IN_FLIGHT 100000
 
 /***********************************************/
 // Memory System
@@ -70,9 +70,9 @@
 /***********************************************/
 // Message Passing
 /***********************************************/
-#define TPORT_TYPE "ipc"
-#define TPORT_TYPE_IPC true
-#define TPORT_PORT ".ipc"
+#define TPORT_TYPE "tcp"
+#define TPORT_TYPE_IPC false
+#define TPORT_PORT 17000
 #define SET_AFFINITY true
 
 #define MAX_TPORT_NAME 128
@@ -93,7 +93,7 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, OCC, VLL, CALVIN
-#define CC_ALG WAIT_DIE
+#define CC_ALG OCC
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER         false
@@ -158,7 +158,7 @@
 // max number of rows touched per transaction
 #define MAX_ROW_PER_TXN       64
 #define QUERY_INTVL         1UL
-#define MAX_TXN_PER_PART 100000
+#define MAX_TXN_PER_PART 1000000
 #define FIRST_PART_LOCAL      true
 #define MAX_TUPLE_SIZE        1024 // in bytes
 #define GEN_BY_MPR false
@@ -170,7 +170,7 @@
 #define DATA_PERC 100
 #define ACCESS_PERC 0.03
 #define INIT_PARALLELISM 8
-#define SYNTH_TABLE_SIZE 1097152
+#define SYNTH_TABLE_SIZE 2097152*8
 #define ZIPF_THETA 0.6
 #define TXN_WRITE_PERC 0.5
 #define TUP_WRITE_PERC 0.5
@@ -263,7 +263,7 @@ extern TestCases          g_test_case;
 #define DEBUG_TIMESTAMP       false
 #define DEBUG_SYNTH         false
 #define DEBUG_ASSERT        false
-#define DEBUG_DISTR true
+#define DEBUG_DISTR false
 #define DEBUG_ALLOC false
 #define DEBUG_RACE false
 #define DEBUG_TIMELINE        false
@@ -332,7 +332,7 @@ extern TestCases          g_test_case;
 #define STAT_ARR_SIZE 1024
 #define PROG_TIMER 10 * BILLION // in s
 #define BATCH_TIMER 10000000
-#define DONE_TIMER 1 * 20 * BILLION // ~1 minutes
+#define DONE_TIMER 1 * 60 * BILLION // ~1 minutes
 
 #define SEED 0
 #define SHMEM_ENV true

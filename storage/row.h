@@ -51,7 +51,6 @@ class Row_mvcc;
 class Row_ts;
 class Row_occ;
 class Row_specex;
-class Row_vll;
 
 class row_t
 {
@@ -113,8 +112,6 @@ public:
   	Row_mvcc * manager;
   #elif CC_ALG == OCC
   	Row_occ * manager;
-  #elif CC_ALG == VLL
-  	Row_vll * manager;
   #elif CC_ALG == HSTORE_SPEC
   	Row_specex * manager;
   #elif CC_ALG == AVOID

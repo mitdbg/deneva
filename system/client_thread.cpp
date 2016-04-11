@@ -95,8 +95,8 @@ RC ClientThread::run() {
 #endif
     assert(m_query);
 
-		DEBUG("Client: thread %lu sending query to node: %u, %d\n",
-				_thd_id, next_node_id,inf_cnt);
+		DEBUG("Client: thread %lu sending query to node: %u, %d, %f\n",
+				_thd_id, next_node_id,inf_cnt,simulation->seconds_from_start(get_sys_clock()));
 
     Message * msg = Message::create_message((BaseQuery*)m_query,CL_QRY);
     ((ClientQueryMessage*)msg)->client_startts = get_sys_clock();

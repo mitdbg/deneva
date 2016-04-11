@@ -41,9 +41,9 @@ void Thread::tsetup() {
 
   setup();
 
-	pthread_barrier_wait( &warmup_bar );
 	printf("Running %ld:%ld\n",_node_id, _thd_id);
   fflush(stdout);
+	pthread_barrier_wait( &warmup_bar );
 
 	run_starttime = get_sys_clock();
   simulation->set_starttime(run_starttime);

@@ -297,23 +297,23 @@ void Transport::send_msg(uint64_t sid, uint64_t dest_id, void * sbuf,int size) {
 	void * buf = nn_allocmsg(size,0);
 	memcpy(buf,sbuf,size);
   int rc = -1;
-  //int attempts = 0;
   DEBUG("Sending batch of %d bytes to node %ld on socket %ld\n",size,dest_id,idx);
+  int attempts = 0;
 
   while(rc < 0 && !simulation->is_done()) {
     rc= s[idx].sock.send(&buf,NN_MSG,NN_DONTWAIT);
     // Check for a send error
-    /*
     if(rc < 0 || rc != size) {
-      printf("send Error: %d %s; Done: %d\n",errno,strerror(errno),_wl->sim_timeout);
+      if(attempts % 100 == 0)
+        printf("send %d bytes -> %ld on sock %ld Error: %d %s; Time: %f\n",size,dest_id,idx,errno,strerror(errno),simulation->seconds_from_start(get_sys_clock()));
       sleep(10);
     }
-    */
-    //attempts++;
+    attempts++;
   }
   //assert(rc == size);
 	//int rc= s[idx].sock.send(&sbuf,NN_MSG,0);
   //nn_freemsg(sbuf);
+  DEBUG("Batch of %d bytes sent to node %ld on socket %ld\n",size,dest_id,idx);
 
   INC_STATS(_thd_id,msg_send_time,get_sys_clock() - starttime);
 	//INC_STATS(_thd_id,msg_batch_cnt,1);
@@ -367,6 +367,7 @@ std::vector<Message*> Transport::recv_msg() {
 
   //rem_qry_man.unmarshall(buf,bytes);
   msgs = Message::create_messages((char*)buf);
+  DEBUG("Batch of %d bytes recv from node %ld; Time: %f\n",bytes,msgs[0]->return_node_id,simulation->seconds_from_start(get_sys_clock()));
 
 	//DEBUG("Msg delay: %d->%d, %d bytes, %f s\n",return_id,
   //          dest_id,bytes,((float)(time2-time))/BILLION);

@@ -425,7 +425,6 @@ bool WorkerThread::is_cc_new_timestamp() {
   return (CC_ALG == HSTORE && !HSTORE_LOCAL_TS)
 							|| (CC_ALG == HSTORE_SPEC && !HSTORE_LOCAL_TS)
 							|| CC_ALG == MVCC 
-              || CC_ALG == VLL
 							|| CC_ALG == TIMESTAMP;
 }
 

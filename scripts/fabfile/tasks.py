@@ -42,7 +42,8 @@ STRNOW=NOW.strftime("%Y%m%d-%H%M%S")
 
 os.chdir('../..')
 
-MAX_TIME_PER_EXP = 60 * 10   # in seconds
+#MAX_TIME_PER_EXP = 60 * 2   # in seconds
+MAX_TIME_PER_EXP = 60 * 3   # in seconds
 
 EXECUTE_EXPS = True
 SKIP = False
@@ -151,6 +152,70 @@ def delete_remote_results():
             run("rm -f /home/%s/results*.out" % env.user)
     else:
         run("rm -f /home/ubuntu/results*.out")
+
+@task
+@parallel
+def copy_schema():
+    if env.dry_run:
+        return
+    schemas = ["benchmarks/TPCC_full_schema.txt","benchmarks/YCSB_schema.txt"]
+    # Copying regular files should always succeed unless node is down
+    for schema in schemas:
+        if env.shmem:
+            put(schema,"/dev/shm/")
+        else:
+            put(schema,env.rem_homedir)
+
+@task
+@parallel
+def copy_binaries(exp_fname):
+    if env.dry_run:
+        return
+    executable_files = ["rundb","runcl"]
+    succeeded = True
+    # Copying executable files may fail if a process is running the executable
+    with settings(warn_only=True):
+        for f in (executable_files):
+            local_fpath = os.path.join("binaries","{}{}".format(exp_fname,f))
+            if env.shmem:
+                remote_fpath = os.path.join("/dev/shm/","{}{}".format(exp_fname,f))
+            else:
+                remote_fpath = os.path.join(env.rem_homedir,"{}{}".format(exp_fname,f))
+            #res = put(f,env.rem_homedir,mirror_local_mode=True)
+            res = put(local_fpath,remote_fpath,mirror_local_mode=True)
+            if not res.succeeded:
+                with color("warn"):
+                    puts("WARN: put: {} -> {} failed!".format(f,env.rem_homedir),show_prefix=True)
+                succeeded = False
+                break
+        if not succeeded:
+            with color("warn"):
+                puts("WARN: killing all executables and retrying...",show_prefix=True)
+            killall()
+            # If this fails again then we abort
+            for f in (executable_files):
+                local_fpath = os.path.join("binaries","{}{}".format(exp_fname,f))
+                if env.shmem:
+                    remote_fpath = os.path.join("/dev/shm",f)
+                else:
+                    remote_fpath = os.path.join(env.rem_homedir,f)
+                #res = put(f,env.rem_homedir,mirror_local_mode=True)
+                res = put(local_fpath,remote_fpath,mirror_local_mode=True)
+            if not res.succeeded:
+                with color("error"):
+                    puts("ERROR: put: {} -> {} failed! (2nd attempt)... Aborting".format(f,env.rem_homedir),show_prefix=True)
+                    abort()
+
+@task
+@parallel
+def copy_ifconfig():
+    files = ["ifconfig.txt"]
+    # Copying regular files should always succeed unless node is down
+    for f in files:
+        if env.shmem:
+            put(f,"/dev/shm/")
+        else:
+            put(f,env.rem_homedir)
 
 @task
 @parallel
@@ -273,9 +338,10 @@ def run_cmd(cmd):
 
 @task
 @parallel
-def deploy(schema_path,nids,exps,fmt):
+def deploy(schema_path,nids,exps,runfiles,fmt):
     nid = iter(nids[env.host])
     exp = iter(exps[env.host])
+    runfile = iter(runfiles[env.host])
     succeeded = True
     with shell_env(SCHEMA_PATH=schema_path):
         with settings(warn_only=True,command_timeout=MAX_TIME_PER_EXP):
@@ -284,30 +350,22 @@ def deploy(schema_path,nids,exps,fmt):
             for r in env.roledefs["servers"]:
                 if r == env.host:
                     nn = nid.next()
+                    rfile = runfile.next()
                     args = get_args(fmt,exp.next())
                     if env.shmem:
-                        cmd += "(/dev/shm/rundb -nid{} {}>> /dev/shm/results{}.out 2>&1 &);".format(nn,args,nn)  
+                        cmd += "(/dev/shm/{}rundb -nid{} {}>> /dev/shm/results{}.out 2>&1 &);".format(rfile,nn,args,nn)  
 #                        cmd += "(/dev/shm/rundb -nid{} >> /dev/shm/results{}.out 2>&1 &);".format(nn,nn)  
                     else:
-                        cmd += "(./rundb -nid{} {}>> results{}.out 2>&1 &);".format(nn,args,nn)  
+                        cmd += "(./{}rundb -nid{} {}>> results{}.out 2>&1 &);".format(rfile,nn,args,nn)  
             for r in env.roledefs["clients"]:
                 if r == env.host:
                     nn = nid.next()
+                    rfile = runfile.next()
                     args = get_args(fmt,exp.next())
                     if env.shmem:
-                        cmd += "(/dev/shm/runcl -nid{} {}>> /dev/shm/results{}.out 2>&1 &);".format(nn,args,nn)  
+                        cmd += "(/dev/shm/{}runcl -nid{} {}>> /dev/shm/results{}.out 2>&1 &);".format(rfile,nn,args,nn)  
                     else:
-                        cmd += "(./runcl -nid{} {}>> results{}.out 2>&1 &);".format(nn,args,nn)  
-            for r in env.roledefs["replicas"]:
-                if r == env.host:
-                    nn = nid.next()
-                    args = get_args(fmt,exp.next())
-                    if env.shmem:
-                        cmd += "(/dev/shm/rundb -nid{} {}>> /dev/shm/results{}.out 2>&1 &);".format(nn,args,nn)  
-#                        cmd += "(/dev/shm/rundb -nid{} >> /dev/shm/results{}.out 2>&1 &);".format(nn,nn)  
-                    else:
-                        cmd += "(./rundb -nid{} {}>> results{}.out 2>&1 &);".format(nn,args,nn)  
-
+                        cmd += "(./{}runcl -nid{} {}>> results{}.out 2>&1 &);".format(rfile,nn,args,nn)  
 #            for r in env.roledefs["sequencer"]:
 #                if r == env.host:
 #                    nn = nid.next()
@@ -407,12 +465,13 @@ def write_config(cfgs):
 
 @task
 @hosts('localhost')
-def write_ifconfig(roles,exp):
+def write_ifconfig(roles,exp,rfile):
     with color():
         puts("writing roles to the ifconfig file:",show_prefix=True)
         puts(pprint.pformat(roles,depth=3),show_prefix=False)
     nids = {}
     exps = {}
+    rfiles = {}
     nid = 0
     print(roles)
     with open("ifconfig.txt",'w') as f:
@@ -421,29 +480,23 @@ def write_ifconfig(roles,exp):
             if server not in nids:
                 nids[server] = [nid]
                 exps[server] = [exp]
+                rfiles[server] = [rfile]
             else:
                 nids[server].append(nid)
                 exps[server].append(exp)
+                rfiles[server].append(rfile)
             nid += 1
         for client in roles['clients']:
             f.write(client + "\n")
             if client not in nids:
                 nids[client] = [nid]
                 exps[client] = [exp]
+                rfiles[client] = [rfile]
             else:
                 nids[client].append(nid)
                 exps[client].append(exp)
+                rfiles[client].append(rfile)
             nid += 1
-        for replica in roles['replicas']:
-            f.write(replica + "\n")
-            if replica not in nids:
-                nids[replica] = [nid]
-                exps[replica] = [exp]
-            else:
-                nids[replica].append(nid)
-                exps[replica].append(exp)
-            nid += 1
-
 #        if "sequencer" in roles:
 #            assert CC_ALG == "CALVIN"
 #            sequencer = roles['sequencer'][0]
@@ -451,27 +504,22 @@ def write_ifconfig(roles,exp):
 #            nids[sequencer] = [nid]
 #            exps[sequencer] = [exp]
 #            nid += 1
-    return nids,exps
+    return nids,exps,rfiles
             
 @task
 @hosts('localhost')
-def assign_roles(server_cnt,client_cnt,replica_per_server_cnt,append=False):
-    replica_cnt = replica_per_server_cnt * server_cnt
+def assign_roles(server_cnt,client_cnt,append=False):
     if env.same_node:
         servers=[env.hosts[0]] * server_cnt
         clients=[env.hosts[0]] * client_cnt
-        replicas=[env.hosts[0]] * replica_cnt
     elif env.cram:
         ncnt = max(max(server_cnt,client_cnt) / 8,1)
         servers = []
         clients = []
-        replicas = []
         for r in range(server_cnt):
             servers.append(env.hosts[r%ncnt])
         for r in range(client_cnt):
             clients.append(env.hosts[r%ncnt])
-        for r in range(replica_cnt):
-            replicas.append(env.hosts[r%ncnt])
     else:
 #        if len(env.hosts) < server_cnt+client_cnt:
 #            with color("error"):
@@ -484,7 +532,6 @@ def assign_roles(server_cnt,client_cnt,replica_per_server_cnt,append=False):
             clients=env.hosts[0:client_cnt]
         else:
             clients=env.hosts[server_cnt:server_cnt+client_cnt]
-        replicas=env.hosts[server_cnt+client_cnt:server_cnt+client_cnt+replica_cnt]
     new_roles = {}
 #    if CC_ALG == 'CALVIN':
 #        sequencer = env.hosts[server_cnt+client_cnt:server_cnt+client_cnt+1]
@@ -492,18 +539,21 @@ def assign_roles(server_cnt,client_cnt,replica_per_server_cnt,append=False):
         env.roledefs={}
         env.roledefs['clients']=[]
         env.roledefs['servers']=[]
-        env.roledefs['replicas']=[]
+        env.roledefs['sequencer']=[]
     if append:
         env.roledefs['clients'].extend(clients)
         env.roledefs['servers'].extend(servers)
-        env.roledefs['replicas'].extend(replicas)
+#        if CC_ALG == 'CALVIN':
+#            env.roledefs['sequencer'].extend(sequencer)
     else:
         env.roledefs['clients']=clients
         env.roledefs['servers']=servers
-        env.roledefs['replicas']=replicas
+#        if CC_ALG == 'CALVIN':
+#            env.roledefs['sequencer']=sequencer
     new_roles['clients']=clients
     new_roles['servers']=servers
-    new_roles['replicas']=replicas
+#    if CC_ALG == 'CALVIN':
+#        new_roles['sequencer']=sequencer
     with color():
         puts("Assigned the following roles:",show_prefix=True)
         puts(pprint.pformat(new_roles,depth=3) + "\n",show_prefix=False)
@@ -534,10 +584,15 @@ def compile_binary(fmt,e):
         if c not in CONFIG_PARAMS and c in FLAG:
             del ecfgs[c]
     cfgs.update(ecfgs)
-    if env.remote and not env.same_node:
+#    if env.remote and not env.same_node:
+    if env.remote:
         cfgs["TPORT_TYPE"],cfgs["TPORT_TYPE_IPC"],cfgs["TPORT_PORT"]="\"tcp\"","false",17000
+#    else:
+#        cfgs["TPORT_TYPE"],cfgs["TPORT_TYPE_IPC"],cfgs["TPORT_PORT"]="\"ipc\"","true","\".ipc\""
     if env.shmem:
         cfgs["SHMEM_ENV"]="true"
+    else:
+        cfgs["SHMEM_ENV"]="false"
 
     execute(write_config,cfgs)
     execute(compile)
@@ -553,6 +608,8 @@ def compile_binary(fmt,e):
     if EXECUTE_EXPS:
         cmd = "mkdir -p {}".format(env.result_dir)
         local(cmd)
+        set_hosts() #????
+        execute(copy_binaries,output_f)
         #cmd = "cp config.h {}.cfg".format(os.path.join(env.result_dir,output_f))
         #local(cmd)
 
@@ -582,10 +639,15 @@ def check_binaries(exps):
 
     for e in experiments:
         cfgs = get_cfgs(fmt,e)
-        if env.remote and not env.same_node:
+#        if env.remote and not env.same_node:
+        if env.remote:
             cfgs["TPORT_TYPE"],cfgs["TPORT_TYPE_IPC"],cfgs["TPORT_PORT"]="\"tcp\"","false",17000
+#        else:
+#            cfgs["TPORT_TYPE"],cfgs["TPORT_TYPE_IPC"],cfgs["TPORT_PORT"]="\"ipc\"","true",".ipc"
         if env.shmem:
             cfgs["SHMEM_ENV"]="true"
+        else:
+            cfgs["SHMEM_ENV"]="false"
         
 #        output_f = get_outfile_name(cfgs,fmt,env.hosts) 
         output_f = get_execfile_name(cfgs,fmt,env.hosts) 
@@ -619,12 +681,13 @@ def run_exp_old(exps,network_test=False,delay=''):
         good_hosts = get_good_hosts()
         with color():
             puts("good host list =\n{}".format(pprint.pformat(good_hosts,depth=3)),show_prefix=True)
+        execute(copy_schema)
     fmt,experiments = experiment_map[exps]()
     batch_size = 0 
     nids = {} 
     outfiles = {}
     exps = {}
-    nrepl = 0
+    runfiles = {}
 
     for e in experiments:
         cfgs = get_cfgs(fmt,e)
@@ -654,12 +717,11 @@ def run_exp_old(exps,network_test=False,delay=''):
             local("cp {} {}".format(cfg_srcpath,cfg_destpath))
             nnodes = cfgs["NODE_CNT"]
             nclnodes = cfgs["CLIENT_NODE_CNT"]
-            nrepl = cfgs["REPLICA_CNT"]
             try:
-                ntotal = nnodes + nclnodes + nrepl*nnodes
+                ntotal = nnodes + nclnodes
             except TypeError:
                 nclnodes = cfgs[cfgs["CLIENT_NODE_CNT"]]
-                ntotal = nnodes + nclnodes + nrepl*nnodes
+                ntotal = nnodes + nclnodes
 #            if CC_ALG == 'CALVIN':
 #                ntotal += 1
             if env.same_node:
@@ -697,7 +759,7 @@ def run_exp_old(exps,network_test=False,delay=''):
                             set_hosts(env.hosts[:batch_size])
                             with color():
                                 puts("Starttime: {}".format(datetime.datetime.now().strftime("%H:%M:%S")),show_prefix=True)
-                            execute(deploy,schema_path,nids,exps,fmt)
+                            execute(deploy,schema_path,nids,exps,runfiles,fmt)
                             with color():
                                 puts("Endtime: {}".format(datetime.datetime.now().strftime("%H:%M:%S")),show_prefix=True)
                             execute(get_results,outfiles,nids)
@@ -707,6 +769,7 @@ def run_exp_old(exps,network_test=False,delay=''):
                             batch_size = 0
                             nids = {}
                             exps = {}
+                            runfiles = {}
                             outfiles = {}
                             set_hosts(good_hosts)
                         else:
@@ -718,10 +781,12 @@ def run_exp_old(exps,network_test=False,delay=''):
                         machines = env.hosts[:ntotal]
 
                     set_hosts(machines)
-                    new_roles=execute(assign_roles,nnodes,nclnodes,nrepl,append=env.batch_mode)[env.host]
-                    new_nids,new_exps = execute(write_ifconfig,new_roles,e)[env.host]
+                    new_roles=execute(assign_roles,nnodes,nclnodes,append=env.batch_mode)[env.host]
+
+                    new_nids,new_exps,new_runfiles = execute(write_ifconfig,new_roles,e,output_exec_fname)[env.host]
                     nids.update(new_nids)
                     exps.update(new_exps)
+                    runfiles.update(new_runfiles)
                     for host,nid in new_nids.iteritems():
                         outfiles[host] = "{}.out".format(output_f) 
 #                    if env.same_node:
@@ -740,7 +805,8 @@ def run_exp_old(exps,network_test=False,delay=''):
                     # flag in environment.py to true to kill these processes. This
                     # is useful for running real experiments but dangerous when both
                     # of us are debugging...
-                    execute(copy_files,schema,output_exec_fname)
+#                    execute(copy_files,schema,output_exec_fname)
+                    execute(copy_ifconfig)
                     
                 if not env.batch_mode or last_exp and len(exps) > 0:
                     if env.batch_mode:
@@ -758,7 +824,7 @@ def run_exp_old(exps,network_test=False,delay=''):
                         execute(set_delay,delay=delay)
                     with color():
                         puts("Starttime: {}".format(datetime.datetime.now().strftime("%H:%M:%S")),show_prefix=True)
-                    execute(deploy,schema_path,nids,exps,fmt)
+                    execute(deploy,schema_path,nids,exps,runfiles,fmt)
                     with color():
                         puts("Endtime: {}".format(datetime.datetime.now().strftime("%H:%M:%S")),show_prefix=True)
                     if delay != '':
@@ -933,7 +999,6 @@ def run_exp(exps,network_test=False,delay=''):
     nids = {} 
     outfiles = {}
     exps = {}
-    nrepl = 0
 
     if SKIP:
         for e in experiments[:]:
@@ -1010,7 +1075,7 @@ def run_exp(exps,network_test=False,delay=''):
             machines = env.hosts[batch_size : batch_size + ntotal]
             batch_size += ntotal
             set_hosts(machines)
-            new_roles=execute(assign_roles,nnodes,nclnodes,nrepl,append=env.batch_mode)[env.host]
+            new_roles=execute(assign_roles,nnodes,nclnodes,append=env.batch_mode)[env.host]
             new_nids,new_exps = execute(write_ifconfig,new_roles,e)[env.host]
             nids.update(new_nids)
             exps.update(new_exps)
@@ -1026,7 +1091,8 @@ def run_exp(exps,network_test=False,delay=''):
             # flag in environment.py to true to kill these processes. This
             # is useful for running real experiments but dangerous when both
             # of us are debugging...
-            execute(copy_files,schema,output_exec_fname)
+#            execute(copy_files,schema,output_exec_fname)
+            execute(copy_ifconfig)
 
         if env.remote:
         
@@ -1040,7 +1106,7 @@ def run_exp(exps,network_test=False,delay=''):
                 puts(pprint.pformat(outfiles,depth=3),show_prefix=False)
             with color():
                 puts("Starttime: {}".format(datetime.datetime.now().strftime("%H:%M:%S")),show_prefix=True)
-            execute(deploy,schema_path,nids,exps,fmt)
+            execute(deploy,schema_path,nids,exps,runfiles,fmt)
             with color():
                 puts("Endtime: {}".format(datetime.datetime.now().strftime("%H:%M:%S")),show_prefix=True)
             execute(get_results,outfiles,nids)

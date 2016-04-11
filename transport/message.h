@@ -260,7 +260,7 @@ public:
   void release() {}
 
   uint64_t pid;
-#if CC_ALG == WAIT_DIE || CC_ALG == TIMESTAMP || CC_ALG == MVCC || CC_ALG == VLL
+#if CC_ALG == WAIT_DIE || CC_ALG == TIMESTAMP || CC_ALG == MVCC
   uint64_t ts;
 #endif
 #if CC_ALG == MVCC 

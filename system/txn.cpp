@@ -123,7 +123,7 @@ RC TxnManager::abort() {
   txn->rc = Abort;
   aborted = true;
   release_locks(Abort);
-  commit_stats();
+  //commit_stats();
   return Abort;
 }
 

@@ -48,7 +48,7 @@ void YCSBTxnManager::reset() {
 }
 
 RC YCSBTxnManager::acquire_locks() {
-  assert(CC_ALG == VLL || CC_ALG == CALVIN);
+  assert(CC_ALG == CALVIN);
   YCSBQuery* ycsb_query = (YCSBQuery*) query;
   locking_done = false;
   RC rc = RCOK;

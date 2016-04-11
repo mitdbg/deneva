@@ -34,9 +34,6 @@ class YCSBQuery;
 class TPCCQuery;
 //class r_query;
 
-//For VLL
-enum TxnType {VLL_Blocked, VLL_Free};
-
 enum TxnState {START,INIT,EXEC,PREP,FIN,DONE};
 
 class Access {
