@@ -1,5 +1,6 @@
 import os,re,sys,math
 from experiments import configs
+from collections import OrderedDict
 #from experiments import config_names
 import glob
 import pprint
@@ -85,263 +86,218 @@ SHORTNAMES = {
     "REPLICA_CNT":"RN",
 }
 
-stat_map = {
-'latency': [],
- 'txn_sent': [],
- 'all_lat': [],
- 'msg_sent': [],
- 'time_msg_sent': [],
- 'msg_rcv': [],
- 'txn_cnt': [],
- 'txn_rem_cnt': [],
- 'time_tport_rcv': [],
- 'tport_lat': [],
- 'time_tport_send': [],
- 'clock_time': [],
- 'finish_time': [],
- 'prof_time_twopc': [],
- 'msg_bytes': [],
- 'time_getqry': [],
-'cc_hold_time': [],
- 'access_cnt': [],
- 'write_cnt': [],
- 'rem_row_cnt': [],
- 'abort_from_ts': [],
- 'occ_check_cnt': [],
- 'occ_abort_check_cnt': [],
- 'abort_cnt': [],
- 'owned_time': [],
- 'owned_time_rd': [],
- 'owned_time_wr': [],
- 'owned_cnt': [],
- 'owned_cnt_rd': [],
- 'owned_cnt_wr': [],
- 'abort_rem_row_cnt': [],
- 'avg_abort_rem_row_cnt': [],
- 'abort_row_cnt': [],
- 'avg_abort_row_cnt': [],
- 'tot_avg_abort_row_cnt': [],
- 'time_abort': [],
- 'txn_time_wait': [],
- 'time_validate': [],
- 'txn_time_copy': [],
- 'msg_rcv': [],
- 'cc_wait_cnt': [],
- 'qry_rprep': [],
- 'time_index': [],
- 'time_tport_send': [],
- 'tport_lat': [],
- 'cc_wait_abrt_time': [],
- 'time_cleanup': [],
- 'time_lock_man': [],
- 'qq_full': [],
- 'cc_hold_abrt_time': [],
- 'spec_abort_cnt': [],
- 'time_msg_sent': [],
- 'qry_rack': [],
- 'qq_lat': [],
- 'time_man': [],
- 'txn_time_begintxn': [],
- 'time_rqry': [],
- 'qry_rfin': [],
- 'aq_full': [],
- 'cc_wait_time': [],
- 'time_wait': [],
- 'msg_bytes': [],
- 'clock_time': [],
- 'qry_rqry_rsp': [],
- 'time_tport_rcv': [],
- 'rbk_abort_cnt': [],
- 'txn_abort_cnt': [],
- 'qry_rinit': [],
- 'txn_time_q_work': [],
- 'txn_time_man': [],
- 'txn_time_ts': [],
- 'txn_time_net': [],
- 'time_clock_rwait': [],
- 'run_time': [],
- 'txn_time_clean': [],
- 'txn_time_misc': [],
- 'qry_rqry': [],
- 'cc_wait_abrt_cnt': [],
- 'time_qq': [],
- 'txn_time_twopc': [],
- 'mpq_cnt': [],
- 'cflt_cnt': [],
- 'time_wait_rem': [],
- 'qry_cnt': [],
- 'time_wait_lock': [],
- 'txn_time_idx': [],
- 'txn_time_abrt': [],
- 'msg_sent': [],
- 'qry_rtxn': [],
- 'time_clock_wait': [],
- 'time_work': [],
- 'time_wait_lock_rem': [],
- 'spec_commit_cnt': [],
- 'time_ts_alloc': [],
- 'txn_time_q_abrt': [],
- 'lat_min': [],
- 'lat_max': [],
- 'lat_mean': [],
- 'lat_99ile': [],
- 'lat_98ile': [],
- 'lat_95ile': [],
- 'lat_90ile': [],
- 'lat_80ile': [],
- 'lat_75ile': [],
- 'lat_70ile': [],
- 'lat_60ile': [],
- 'lat_50ile': [],
- 'lat_40ile': [],
- 'lat_30ile': [],
- 'lat_25ile': [],
- 'lat_20ile': [],
- 'lat_10ile': [],
- 'lat_5ile': [],
- 'cpu_ttl':[],
- 'virt_mem_usage':[],
- 'phys_mem_usage':[],
- 'mbuf_send_time':[],
- 'msg_batch_size':[],
- 'msg_batch_cnt':[],
- 'avg_msg_batch':[],
- 'avg_msg_batch_bytes':[],
-'prof_cc_rel_abort':[],
-'prof_cc_rel_commit':[],
+stat_map = OrderedDict([
+   ('total_runtime', []),
 
- 'seq_batch_cnt':[],
- 'seq_txn_cnt':[],
- 'time_seq_batch':[],
- 'time_seq_batch':[],
- 'time_seq_prep':[],
- 'time_seq_ack':[],
+  # Execution
+  ('txn_cnt', []),
+  ('remote_txn_cnt', []),
+  ('local_txn_cnt', []),
+  ('txn_commit_cnt', []),
+  ('txn_abort_cnt', []),
+  ('txn_run_time', []),
+  ('multi_part_txn_cnt', []),
+  ('multi_part_txn_run_time', []),
+  ('single_part_txn_cnt', []),
+  ('single_part_txn_run_time', []),
 
-'sthd_prof_1a':[],
-'sthd_prof_2':[],
-'sthd_prof_3':[],
-'sthd_prof_4':[],
-'sthd_prof_5a':[],
-'sthd_prof_1b':[],
-'sthd_prof_5b':[],
-'rthd_prof_1':[],
-'rthd_prof_2':[],
-'mvcc1':[],
-'mvcc2':[],
-'mvcc3':[],
-'mvcc4':[],
-'mvcc5':[],
-'mvcc6':[],
-'mvcc7':[],
-'mvcc8':[],
-'mvcc9':[],
-'occ_val1':[],
-'occ_val2a':[],
-'occ_val2':[],
-'occ_val3':[],
-'occ_val4':[],
-'occ_val5':[],
-'thd1':[],
-'thd2':[],
-'thd3':[],
-'thd_sum':[],
-'thd1a':[],
-'thd1b':[],
-'thd1c':[],
-'thd1d':[],
-'thd2_loc':[],
-'thd2_rem':[],
-'rfin0':[],
-'rfin1':[],
-'rfin2':[],
-'rprep0':[],
-'rprep1':[],
-'rprep2':[],
-'rqry_rsp0':[],
-'rqry_rsp1':[],
-'rqry0':[],
-'rqry1':[],
-'rqry2':[],
-'rack0':[],
-'rack1':[],
-'rack2a':[],
-'rack2':[],
-'rack3':[],
-'rack4':[],
-'rtxn1a':[],
-'rtxn1b':[],
-'rtxn2':[],
-'rtxn3':[],
-'rtxn4':[],
-'ycsb1':[],
-'row1':[],
-'row2':[],
-'row3':[],
-'cc0':[],
-'cc1':[],
-'cc2':[],
-'cc3':[],
-'wq1':[],
-'wq2':[],
-'wq3':[],
-'wq4':[],
-'txn1':[],
-'txn2':[],
-'txn_table_add':[],
-'txn_table_get':[],
-'txn_table_mints1':[],
-'txn_table_mints2':[],
-'txn_table0a':[],
-'txn_table1a':[],
-'txn_table0b':[],
-'txn_table1b':[],
-'txn_table2a':[],
-'txn_table2':[],
-'type0':[],
-'type1':[],
-'type2':[],
-'type3':[],
-'type4':[],
-'type5':[],
-'type6':[],
-'type7':[],
-'type8':[],
-'type9':[],
-'type10':[],
-'type11':[],
-'type12':[],
-'type13':[],
-'type14':[],
-'type15':[],
-'part_cnt1':[],
-'part_cnt2':[],
-'part_cnt3':[],
-'part_cnt4':[],
-'part_cnt5':[],
-'part_cnt6':[],
-'part_cnt7':[],
-'part_cnt8':[],
-'part_cnt9':[],
-'part_cnt10':[],
-'part_cnt11':[],
-'part_cnt12':[],
-'part_cnt13':[],
-'part_cnt14':[],
-'part_cnt15':[],
-'part_cnt16':[],
+  # Client
+  ('txn_sent_cnt', []),
+  ('cl_send_intv', []),
 
-'txn_table_cnt':[],
-'txn_table_cflt':[],
-'txn_table_cflt_size':[],
-'wq_cnt':[],
-'new_wq_cnt':[],
-'aq_cnt':[],
-'wq_enqueue':[],
-'new_wq_enqueue':[],
-'aq_enqueue':[],
-'wq_dequeue':[],
-'new_wq_dequeue':[],
-'aq_dequeue':[],
+  # Breakdown
+  ('ts_alloc_time', []),
+  ('abort_time', []),
+  ('txn_manager_time', []),
+  ('txn_index_time', []),
+  ('txn_validate_time', []),
+  ('txn_cleanup_time', []),
+
+  # Work queue
+  ('work_queue_wait_time', []),
+  ('work_queue_cnt', []),
+  ('work_queue_new_cnt', []),
+  ('work_queue_new_wait_time', []),
+  ('work_queue_old_cnt', []),
+  ('work_queue_old_wait_time', []),
+  ('work_queue_enqueue_time', []),
+  ('work_queue_dequeue_time', []),
+  ('work_queue_conflict_cnt', []),
+
+  # Abort queue
+  ('abort_queue_enqueue_time', []),
+  ('abort_queue_dequeue_time', []),
+
+  # Worker thread
+  ('worker_process_time', []),
+  ('worker_process_cnt', []),
+  ('worker_process_cnt_by_type', []),
+  ('worker_process_time_by_type', []),
+
+  # IO
+  ('msg_queue_delay_time', []),
+  ('msg_queue_cnt', []),
+  ('msg_send_time', []),
+  ('msg_recv_time', []),
+  ('msg_batch_cnt', []),
+  ('msg_batch_size_msgs', []),
+  ('msg_batch_size_bytes', []),
+  ('msg_send_cnt', []),
+  ('msg_recv_cnt', []),
+  ('msg_unpack_time', []),
+  ('mbuf_send_intv_time', []),
+
+  # Concurrency control), general
+  ('cc_conflict_cnt', []),
+  ('txn_wait_cnt', []),
+  ('txn_conflict_cnt', []),
+
+  # 2PL
+  ('twopl_already_owned_cnt', []),
+  ('twopl_owned_cnt', []),
+  ('twopl_sh_owned_cnt', []),
+  ('twopl_ex_owned_cnt', []),
+  ('twopl_owned_time', []),
+  ('twopl_sh_owned_time', []),
+  ('twopl_ex_owned_time', []),
+  ('twopl_diff_time', []),
+
+  # OCC
+  ('occ_validate_time', []),
+  ('occ_cs_wait_time', []),
+  ('occ_cs_time', []),
+  ('occ_hist_validate_time', []),
+  ('occ_act_validate_time', []),
+  ('occ_hist_validate_fail_time', []),
+  ('occ_act_validate_fail_time', []),
+  ('occ_check_cnt', []),
+  ('occ_abort_check_cnt', []),
+  ('occ_ts_abort_cnt', []),
+  ('occ_finish_time', []),
+
+  # Logging
+  ('log_write_cnt', []),
+  ('log_write_time', []),
+  ('log_flush_cnt', []),
+  ('log_flush_time', []),
+  ('log_process_time', []),
+
+  # Transaction Table
+  ('txn_table_new_cnt', []),
+  ('txn_table_get_cnt', []),
+  ('txn_table_release_cnt', []),
+  ('txn_table_cflt_cnt', []),
+  ('txn_table_cflt_size', []),
+  ('txn_table_get_time', []),
+  ('txn_table_release_time', []),
+])
+
+stat_map2 = {
+  'total_runtime': [],
+
+  # Execution
+  'txn_cnt': [],
+  'remote_txn_cnt': [],
+  'local_txn_cnt': [],
+  'txn_commit_cnt': [],
+  'txn_abort_cnt': [],
+  'txn_run_time': [],
+  'multi_part_txn_cnt': [],
+  'multi_part_txn_run_time': [],
+  'single_part_txn_cnt': [],
+  'single_part_txn_run_time': [],
+
+  # Client
+  'txn_sent_cnt': [],
+  'cl_send_intv': [],
+
+  # Breakdown
+  'ts_alloc_time': [],
+  'abort_time': [],
+  'txn_manager_time': [],
+  'txn_index_time': [],
+  'txn_validate_time': [],
+  'txn_cleanup_time': [],
+
+  # Work queue
+  'work_queue_wait_time': [],
+  'work_queue_cnt': [],
+  'work_queue_new_cnt': [],
+  'work_queue_new_wait_time': [],
+  'work_queue_old_cnt': [],
+  'work_queue_old_wait_time': [],
+  'work_queue_enqueue_time': [],
+  'work_queue_dequeue_time': [],
+  'work_queue_conflict_cnt': [],
+
+  # Abort queue
+  'abort_queue_enqueue_time': [],
+  'abort_queue_dequeue_time': [],
+
+  # Worker thread
+  'worker_process_time': [],
+  'worker_process_cnt': [],
+  'worker_process_cnt_by_type': [],
+  'worker_process_time_by_type': [],
+
+  # IO
+  'msg_queue_delay_time': [],
+  'msg_queue_cnt': [],
+  'msg_send_time': [],
+  'msg_recv_time': [],
+  'msg_batch_cnt': [],
+  'msg_batch_size_msgs': [],
+  'msg_batch_size_bytes': [],
+  'msg_send_cnt': [],
+  'msg_recv_cnt': [],
+  'msg_unpack_time': [],
+  'mbuf_send_intv_time': [],
+
+  # Concurrency control, general
+  'cc_conflict_cnt': [],
+  'txn_wait_cnt': [],
+  'txn_conflict_cnt': [],
+
+  # 2PL
+  'twopl_already_owned_cnt': [],
+  'twopl_owned_cnt': [],
+  'twopl_sh_owned_cnt': [],
+  'twopl_ex_owned_cnt': [],
+  'twopl_owned_time': [],
+  'twopl_sh_owned_time': [],
+  'twopl_ex_owned_time': [],
+  'twopl_diff_time': [],
+
+  # OCC
+  'occ_validate_time': [],
+  'occ_cs_wait_time': [],
+  'occ_cs_time': [],
+  'occ_hist_validate_time': [],
+  'occ_act_validate_time': [],
+  'occ_hist_validate_fail_time': [],
+  'occ_act_validate_fail_time': [],
+  'occ_check_cnt': [],
+  'occ_abort_check_cnt': [],
+  'occ_ts_abort_cnt': [],
+  'occ_finish_time': [],
+
+  # Logging
+  'log_write_cnt': [],
+  'log_write_time': [],
+  'log_flush_cnt': [],
+  'log_flush_time': [],
+  'log_process_time': [],
+
+  # Transaction Table
+  'txn_table_new_cnt': [],
+  'txn_table_get_cnt': [],
+  'txn_table_release_cnt': [],
+  'txn_table_cflt_cnt': [],
+  'txn_table_cflt_size': [],
+  'txn_table_get_time': [],
+  'txn_table_release_time': [],
+
+
 }
 
 cnts = ["all_abort"]
@@ -445,11 +401,18 @@ def get_prog(sfile):
 #return summary['txn_cnt'],[int(x) for x in summary['clock_time']]
 
 def get_summary(sfile,summary={}):
+    prog = []
     with open(sfile,'r') as f:
         found = False
         last_line = ""
         for line in f:
             if re.search("prog",line):
+                line = line.rstrip('\n')
+                line = line[7:] #remove '[prog] ' from start of line 
+                results = re.split(',',line)
+                prog_tmp = {}
+                process_results(prog_tmp,results)
+                prog.append(prog_tmp)
                 last_line = line
             if re.search("summary",line):
                 found = True
@@ -473,12 +436,12 @@ def get_summary(sfile,summary={}):
                         process_lats(summary,line,l)
         if not found:
             if re.search("prog",last_line):
-                line = last_line.rstrip('\n')
-                line = line[7:] #remove '[prog] ' from start of line 
                 results = re.split(',',line)
                 process_results(summary,results)
 #    pp = pprint.PrettyPrinter()
 #    pp.pprint(summary['txn_cnt'])
+    summary["progress"] = prog
+    print("Added progress: " + str(len(prog)))
     return summary
 
 def get_network_stats(n_file):
@@ -513,6 +476,15 @@ def get_network_stats(n_file):
     return stats
 
 def merge(summary,tmp):
+    merge_helper(summary,tmp)
+    if "progress" not in summary:
+        summary["progress"] = []
+        for p in range(len(tmp["progress"])):
+            summary["progress"].append({})
+    for p in range(len(tmp["progress"])):
+        merge_helper(summary["progress"][p],tmp["progress"][p])
+
+def merge_helper(summary,tmp):
 #    for k in summary.keys():
     for k in stat_map.keys():
         try:
@@ -534,6 +506,13 @@ def merge(summary,tmp):
 
 
 def merge_results(summary,cnt,drop,gap):
+    new_summary = merge_results_helper(summary,cnt,drop,gap)
+    new_summary["progress"] = []
+    for p in range(len(summary["progress"])):
+        new_summary["progress"].append( merge_results_helper(summary["progress"][p],cnt,drop,gap))
+    return new_summary
+
+def merge_results_helper(summary,cnt,drop,gap):
 #    for k in summary.keys():
     new_summary = {}
     for k in stat_map.keys():
@@ -771,152 +750,22 @@ def print_keys(result_dir="../results",keys=['txn_cnt']):
     print("Total missing files (files not in dir): {}".format(missing_files))
     print("Total missing server results (no [summary] or [prog]): {}".format(missing_results))
 
-def get_summary_stats(stats,summary,summary_cl,summary_sq,x,v,cc):
-    print(summary_cl['txn_cnt'])
-    nthd = 6
-    s = summary_cl
-    tot_txn_cnt = sum(s['txn_cnt'])
-    avg_txn_cnt = avg(s['txn_cnt'])
-    tot_time = sum(s['clock_time'])
-    avg_time = avg(s['clock_time'])
-    sk = {}
-    sk['sys_txn_cnt'] = tot_txn_cnt
-    sk['avg_txn_rem_cnt'] = avg(summary['txn_rem_cnt'])
-    sk['avg_txn_cnt'] = avg_txn_cnt
-    sk['time'] = avg_time
-    sk['sys_tput'] = tot_txn_cnt / avg_time
-    sk['per_node_tput'] = avg_txn_cnt / avg_time
-    sk['thd1'] = avg(summary['thd1'])
-    sk['row1'] = avg(summary['row1'])
-    sk['row2'] = avg(summary['row2'])
-    sk['row3'] = avg(summary['row3'])
-    sk['cflt_cnt'] = avg(summary['cflt_cnt'])
-    try:
-        sk['txn_time_begintxn'] = avg(summary['txn_time_begintxn']) / nthd
-        sk['time_validate'] = avg(summary['time_validate']) / nthd
-        sk['prof_time_twopc'] = avg(summary['prof_time_twopc']) / nthd
-        sk['time_msg_sent'] = avg(summary['time_msg_sent']) / nthd
-        sk['time_index'] = avg(summary['time_index']) / nthd
-        sk['prof_cc_rel_abort'] = avg(summary['prof_cc_rel_abort']) / nthd
-        sk['prof_cc_rel_commit'] = avg(summary['prof_cc_rel_commit']) / nthd
-# time_abort contains some row3
-        sk['time_abort'] = avg(summary['time_abort']) / nthd
-#    sk['time_abort'] = avg(summary['time_abort']) / nthd
-#    sk['time_ccman'] = avg(summary['row1']) + avg(summary['row2']) + avg(summary['txn_time_begintxn']) + avg(summary['time_validate'])
-        sk['time_ccman'] = sk['row1'] + sk['row2'] + sk['prof_cc_rel_commit']+ sk['txn_time_begintxn'] + sk['time_validate']
-#    sk['time_ccman'] = avg(summary['row1']) + avg(summary['row2']) +avg(summary['row3']) + avg(summary['txn_time_begintxn']) + avg(summary['time_validate'])
-#    sk['time_ccman'] = avg(summary['time_man']) + avg(summary['txn_time_begintxn']) + avg(summary['time_validate'])
-        sk['time_twopc'] = sk['prof_time_twopc'] + sk['time_msg_sent'] 
-#    sk['time_twopc'] = avg(summary['prof_time_twopc']) + avg(summary['time_msg_sent']) 
-#    sk['time_twopc'] = avg(summary['type9']) + avg(summary['type12']) +avg(summary['type5']) + avg(summary['time_msg_sent']) - avg(summary['time_validate']) - avg(summary['row3'])
-        sk['time_work'] = sk['time'] - sk['thd1'] - (sk['time_index'] + sk['time_abort'] + sk['time_ccman'] + sk['time_twopc'])
-    except KeyError:
-        sk['time_index'] = 0
-        sk['time_abort'] = 0
-        sk['time_ccman'] = 0
-        sk['time_twopc'] = 0
-        sk['time_work'] = 0
-#    sk['time_work'] = avg(summary['clock_time']) - avg(summary['thd1']) - (sk['time_index'] + sk['time_abort'] + sk['time_ccman'] + sk['time_twopc'])
-#    sk['time_work'] = avg(summary['type10']) + avg(summary['type8'])
-    total = sk['time_index'] + sk['time_abort'] + sk['time_ccman'] + sk['time_twopc'] + sk['time_work'] 
-    if total == 0:
-        total = 1
-    sk['perc_index'] = sk['time_index'] / total * 100
-    sk['perc_abort'] = sk['time_abort'] / total * 100
-    sk['perc_ccman'] = sk['time_ccman'] / total * 100
-    sk['perc_twopc'] = sk['time_twopc'] / total * 100
-    sk['perc_work'] = sk['time_work'] / total * 100
-    total = sum(summary['thd2'])
-    if total == 0:
-        total = 1
-    sk['rqry'] =  sum(summary['type4']) / total
-    sk['rfin'] =  sum(summary['type5']) / total
-    sk['rqry_rsp'] =  sum(summary['type8']) / total
-    sk['rack'] =  sum(summary['type9']) / total
-    sk['rtxn'] =  sum(summary['type10']) / total
-    sk['rinit'] =  sum(summary['type11']) / total
-    sk['rprep'] =  sum(summary['type12']) / total
-    sk['tot_abort_cnt'] = sum(summary['abort_cnt'])
-    sk['abort_cnt'] = avg(summary['abort_cnt'])
-    sk['txn_abort_cnt'] = avg(summary['txn_abort_cnt'])
-    try:
-        sk['avg_abort_cnt'] = avg(summary['abort_cnt']) / avg(summary['txn_abort_cnt'])
-    except ZeroDivisionError:
-        sk['avg_abort_cnt'] = 0
-    try:
-        sk['abort_rate'] = avg(summary['abort_cnt']) / avg_txn_cnt
-    except ZeroDivisionError:
-        sk['abort_rate'] = 0
-    sk['abort_row_cnt'] = avg(summary['tot_avg_abort_row_cnt'])
-    try:
-        sk['write_perc'] = sum(summary['write_cnt']) / sum(summary['access_cnt'])
-    except ZeroDivisionError:
-        sk['write_perc'] = 0
-    total = avg(summary['thd1']) + avg(summary['thd2']) + avg(summary['thd3'])
-    sk['stage1'] = avg(summary['thd1']) / total * 100
-    sk['stage2'] = avg(summary['thd2']) / total * 100
-    sk['stage3'] = avg(summary['thd3']) / total * 100
-    sk['latency'] = avg(summary['latency'])
-    sk['memory'] = avg(summary['phys_mem_usage']) / 1000000
-    sk['wq_cnt'] = avg(summary['wq_cnt'])
-    sk['new_wq_cnt'] = avg(summary['new_wq_cnt'])
-    sk['aq_cnt'] = avg(summary['aq_cnt'])
-    sk['wq_enqueue'] = avg(summary['wq_enqueue'])
-    sk['wq_dequeue'] = avg(summary['wq_dequeue'])
-    sk['new_wq_enqueue'] = avg(summary['new_wq_enqueue'])
-    sk['new_wq_dequeue'] = avg(summary['new_wq_dequeue'])
-    sk['aq_enqueue'] = avg(summary['aq_enqueue'])
-    sk['aq_dequeue'] = avg(summary['aq_dequeue'])
-    sk['txn_table_cnt'] = avg(summary['txn_table_cnt'])
-    sk['txn_table_add'] = avg(summary['txn_table_add'])
-    sk['txn_table_get'] = avg(summary['txn_table_get'])
-    sk['mpq_cnt'] = avg(summary['mpq_cnt'])
-    try:
-        sk['owned_time'] = avg(summary['owned_time'])
-        sk['owned_time_rd'] = avg(summary['owned_time_rd'])
-        sk['owned_time_wr'] = avg(summary['owned_time_wr'])
-        sk['owned_cnt'] = avg(summary['owned_cnt'])
-        sk['owned_cnt_rd'] = avg(summary['owned_cnt_rd'])
-        sk['owned_cnt_wr'] = avg(summary['owned_cnt_wr'])
-    except KeyError:
-        sk['owned_time'] = 0
-        sk['owned_time_rd'] = 0
-        sk['owned_time_wr'] = 0
-        sk['owned_cnt'] = 0
-        sk['owned_cnt_rd'] = 0
-        sk['owned_cnt_wr'] = 0
-    for i in range(10):
+def get_summary_stats(stats,summary,summary_cl,x,v,cc):
+    sk = OrderedDict() 
+    for k in stat_map.keys():
         try:
-            sk['part'+str(i)] = avg(summary['part_cnt'+str(i)])
+            sk[k] = avg(summary[k])
         except KeyError:
-            sk['part'+str(i)] = 0 
-    try:
-        sk['batch_cnt'] = avg(summary['seq_batch_cnt'])
-        if sk['batch_cnt'] == 0:
-            sk['txn_per_batch'] = 0
-            sk['batch_intv'] = 0
-        else:
-            sk['txn_per_batch'] = avg(summary['seq_txn_cnt'])/sk['batch_cnt']
-            sk['batch_intv'] = avg(summary['time_seq_batch'])/sk['batch_cnt']
-        sk['seq_prep'] = avg(summary['time_seq_prep'])
-        sk['seq_ack'] = avg(summary['time_seq_ack'])
-    except KeyError:
-        sk['batch_cnt'] = 0
-        sk['batch_intv'] = 0
-        sk['txn_per_batch'] = 0
-        sk['seq_prep'] = 0
-        sk['seq_ack'] = 0
-    print(sk['batch_intv'])
-    sk['mvcc1'] = avg(summary['mvcc1'])
-    sk['mvcc2'] = avg(summary['mvcc2'])
-    sk['mvcc3'] = avg(summary['mvcc3'])
-    sk['mvcc4'] = avg(summary['mvcc4'])
-    sk['mvcc5'] = avg(summary['mvcc5'])
-    sk['mvcc6'] = avg(summary['mvcc6'])
-    sk['mvcc7'] = avg(summary['mvcc7'])
-    sk['mvcc8'] = avg(summary['mvcc8'])
-
-
+            sk[k] = 0
+    if "progress" in summary:
+        for p in range(len(summary["progress"])):
+            for k in stat_map.keys():
+                try:
+                    sk[(p,k)] = avg(summary["progress"][p][k])
+                except KeyError:
+                    sk[(p,k)] = 0
+    else:
+         print("No progress")
     if v == '':
         key = (x)
     else:
@@ -926,108 +775,10 @@ def get_summary_stats(stats,summary,summary_cl,summary_sq,x,v,cc):
    
 def write_summary_file(fname,stats,x_vals,v_vals):
 
-    ps =  [
-    'sys_txn_cnt',
-    'avg_txn_cnt',
-    'avg_txn_rem_cnt',
-    'mpq_cnt',
-    'time',
-    'sys_tput',
-    'per_node_tput',
-    'thd1',
-    'time_index',
-    'time_abort',
-    'time_ccman',
-    'time_twopc',
-    'time_work',
-    'perc_index',
-    'perc_abort',
-    'perc_ccman',
-    'perc_twopc',
-    'perc_work',
-    'rqry',
-    'rfin',
-    'rqry_rsp',
-    'rack',
-    'rtxn',
-    'rinit',
-    'rprep',
-    'cflt_cnt',
-    'tot_abort_cnt',
-    'abort_cnt',
-    'txn_abort_cnt',
-    'avg_abort_cnt',
-    'abort_rate',
-    'abort_row_cnt',
-    'write_perc',
-    'stage1',
-    'stage2',
-    'stage3',
-    'txn_table_add',
-    'txn_table_get',
-    'latency',
-    'memory',
-    'txn_table_cnt',
-    'wq_cnt',
-    'new_wq_cnt',
-    'aq_cnt',
-    'wq_enqueue',
-    'wq_dequeue',
-    'new_wq_enqueue',
-    'new_wq_dequeue',
-    'aq_enqueue',
-    'aq_dequeue',
-    'owned_time',
-    'owned_time_rd',
-    'owned_time_wr',
-    'owned_cnt',
-    'owned_cnt_rd',
-    'owned_cnt_wr',
-    'batch_cnt',
-    'batch_intv',
-    'txn_per_batch',
-    'seq_prep',
-    'seq_ack',
-    'part1',
-    'part2',
-    'part3',
-    'part4',
-    'part5',
-    'part6',
-    'part7',
-    'part8',
-    'part9',
-    'mvcc1',
-    'mvcc2',
-    'mvcc3',
-    'mvcc4',
-    'mvcc5',
-    'mvcc6',
-    'mvcc7',
-    'mvcc8',
-    ]
-#    ps = [
-#    'time',
-#    'thd1',
-#    'row1',
-#    'row2',
-#    'row3',
-#    'txn_time_begintxn',
-#    'time_validate',
-#    'prof_time_twopc',
-#    'time_msg_sent',
-#    'prof_cc_rel_abort',
-#    'prof_cc_rel_commit',
-#    'time_index',
-#    'time_abort',
-#    'time_ccman',
-#    'time_twopc',
-#    'time_work',
-#    ]
     with open('../figs/' + fname+'.csv','w') as f:
         if v_vals == []:
             f.write(', ' + ', '.join(x_vals) +'\n')
-            for p in ps:
+            for p in stat_map.keys():
                 s = p + ', '
                 for x in x_vals:
                     k = (x)
@@ -1036,7 +787,7 @@ def write_summary_file(fname,stats,x_vals,v_vals):
         else:
             for x in x_vals:
                 f.write(str(x) + ', ' + ', '.join([str(v) for v in v_vals]) +'\n')
-                for p in ps:
+                for p in stat_map.keys():
                     s = p + ', '
                     for v in v_vals:
                         k = (x,v)
@@ -1049,7 +800,7 @@ def write_summary_file(fname,stats,x_vals,v_vals):
                 f.write('\n')
             for v in v_vals:
                 f.write(str(v) + ', ' + ', '.join([str(x) for x in x_vals]) +'\n')
-                for p in ps:
+                for p in stat_map.keys():
                     s = p + ', '
                     for x in x_vals:
                         k = (x,v)
@@ -1059,4 +810,17 @@ def write_summary_file(fname,stats,x_vals,v_vals):
                             s += '--, '
                     f.write(s+'\n')
                 f.write('\n')
+        for x,v in itertools.product(x_vals,v_vals):
+            f.write(str(x) + "," + str(v) + "\n")
+            for p in stat_map.keys():
+                s = p + ', '
+                for prog in range(7):
+                    k1 = (x,v)
+                    k2 = (prog,p)
+                    try:
+                        s += '{0:0.2f}'.format(stats[k1][k2]) + ', '
+                    except KeyError:
+                        s += '--, '
+                f.write(s+'\n')
+            f.write('\n')
  

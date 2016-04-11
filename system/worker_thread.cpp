@@ -149,7 +149,7 @@ void WorkerThread::commit(TxnManager * txn_man) {
   assert(IS_LOCAL(txn_man->get_txn_id()));
 
   uint64_t timespan = get_sys_clock() - txn_man->get_start_timestamp();
-  DEBUG("COMMIT %ld -- %f\n",txn_man->get_txn_id(),(double)timespan/ BILLION);
+  DEBUG("COMMIT %ld %f -- %f\n",txn_man->get_txn_id(),simulation->seconds_from_start(get_sys_clock()),(double)timespan/ BILLION);
 
   // Send result back to client
   msg_queue.enqueue(Message::create_message(txn_man,CL_RSP),txn_man->client_id);

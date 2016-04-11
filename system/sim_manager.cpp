@@ -56,7 +56,7 @@ void SimManager::set_setup_done() {
 }
 
 void SimManager::set_done() {
-    if(!ATOM_CAS(sim_done, false, true)) {
+    if(ATOM_CAS(sim_done, false, true)) {
 				SET_STATS(0, total_runtime, get_sys_clock() - run_starttime); 
     }
 }

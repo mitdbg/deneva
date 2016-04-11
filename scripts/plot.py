@@ -72,7 +72,7 @@ if res_dir:
 ############################################
 summary = {}
 summary_client = {}
-summary_seq = {}
+pp = pprint.PrettyPrinter()
 
 for exp in exps:
 #    summary = {}
@@ -82,7 +82,6 @@ for exp in exps:
     for e in experiments:
         s = {}
         s2 = {}
-        s3 = {}
         timestamp = 0
 #        if "HSTORE" in e or "HSTORE_SPEC" in e:
 #            nfmt=fmt
@@ -210,33 +209,38 @@ for exp in exps:
                 if s == {}:
                     s = r
                     s2 = r2
-                    s3 = r3
                 else:
                     merge(s,r)
                     merge(s2,r2)
-                    merge(s3,r3)
                     print(s['txn_cnt'])
+#                pp.pprint(s)
+#                pp.pprint(s2)
 
             if plot:
+                print("Pre-Merge:")
+#                pp.pprint(s)
+                pp.pprint(s2)
                 s = merge_results(s,exp_cnt,drop,nnodes)
                 s2 = merge_results(s2,exp_cnt,drop,nclients)
-                s3 = merge_results(s3,exp_cnt,drop,1)
                 summary[output_f] = s
-                pp = pprint.PrettyPrinter()
 #                pp.pprint(summary[output_f]['txn_cnt'])
 #                pp.pprint(summary[output_f]['thd1'])
 #                pp.pprint(summary[output_f]['thd2'])
 #                pp.pprint(summary[output_f]['thd3'])
                 summary_client[output_f] = s2
-                summary_seq[output_f] = s3
+                print("Post-Merge:")
+#                pp.pprint(s)
+                pp.pprint(s2)
 #                print(output_f)
 #                print(summary[output_f])
 
     if plot:
+#        pp.pprint(summary)
+        pp.pprint(summary_client)
         exp_plot = exp + '_plot'
         if is_network_test:
             experiment_map[exp_plot](all_exps,all_nodes,timestamps)
         else:
-            experiment_map[exp_plot](summary,summary_client,summary_seq)
+            experiment_map[exp_plot](summary,summary_client)
 
 exit()
