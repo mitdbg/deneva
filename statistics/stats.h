@@ -83,8 +83,12 @@ public:
   uint64_t work_queue_conflict_cnt;
 
   // Abort queue
+  uint64_t abort_queue_enqueue_cnt;
+  uint64_t abort_queue_dequeue_cnt;
   double abort_queue_enqueue_time;
   double abort_queue_dequeue_time;
+  double abort_queue_penalty;
+  double abort_queue_penalty_extra;
 
   // Worker thread
   double worker_process_time;

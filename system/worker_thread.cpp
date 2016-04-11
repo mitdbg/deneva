@@ -68,7 +68,7 @@ void WorkerThread::progress_stats() {
 
 void WorkerThread::process(Message * msg) {
   RC rc __attribute__ ((unused));
-  DEBUG("%ld Processing %d %ld\n",get_thd_id(),msg->get_rtype(),msg->get_txn_id());
+  DEBUG("%ld Processing %ld %d\n",get_thd_id(),msg->get_txn_id(),msg->get_rtype());
   assert(msg->get_rtype() == CL_QRY || msg->get_txn_id() != UINT64_MAX);
   uint64_t starttime = get_sys_clock();
 		switch(msg->get_rtype()) {
@@ -200,10 +200,10 @@ RC WorkerThread::run() {
 }
 
 RC WorkerThread::process_rfin(Message * msg) {
+  DEBUG("RFIN %ld\n",msg->get_txn_id());
 
   assert(!IS_LOCAL(msg->get_txn_id()));
   TxnManager * txn_man = txn_table.get_transaction_manager(msg->get_txn_id(),0);
-  DEBUG("%ld Received RFIN %ld\n",GET_PART_ID_FROM_IDX(_thd_id),msg->txn_id);
   if(((FinishMessage*)msg)->rc == Abort) {
     txn_man->abort();
     txn_man->reset();
@@ -219,6 +219,7 @@ RC WorkerThread::process_rfin(Message * msg) {
 }
 
 RC WorkerThread::process_rack_prep(Message * msg) {
+  DEBUG("RPREP_ACK %ld\n",msg->get_txn_id());
 
   RC rc = RCOK;
 
@@ -246,6 +247,7 @@ RC WorkerThread::process_rack_prep(Message * msg) {
 }
 
 RC WorkerThread::process_rack_rfin(Message * msg) {
+  DEBUG("RFIN_ACK %ld\n",msg->get_txn_id());
 
   RC rc = RCOK;
 
@@ -268,6 +270,7 @@ RC WorkerThread::process_rack_rfin(Message * msg) {
 }
 
 RC WorkerThread::process_rqry_rsp(Message * msg) {
+  DEBUG("RQRY_RSP %ld\n",msg->get_txn_id());
 
   TxnManager * txn_man = txn_table.get_transaction_manager(msg->get_txn_id(),0);
   RC rc = txn_man->run_txn();
@@ -277,6 +280,7 @@ RC WorkerThread::process_rqry_rsp(Message * msg) {
 }
 
 RC WorkerThread::process_rqry(Message * msg) {
+  DEBUG("RQRY %ld\n",msg->get_txn_id());
   RC rc = RCOK;
 
   // Create new transaction table entry if one does not already exist
@@ -293,6 +297,7 @@ RC WorkerThread::process_rqry(Message * msg) {
 }
 
 RC WorkerThread::process_rqry_cont(Message * msg) {
+  DEBUG("RQRY_CONT %ld\n",msg->get_txn_id());
   RC rc = RCOK;
 
   // Create new transaction table entry if one does not already exist
@@ -309,6 +314,7 @@ RC WorkerThread::process_rqry_cont(Message * msg) {
 
 
 RC WorkerThread::process_rtxn_cont(Message * msg) {
+  DEBUG("RTXN_CONT %ld\n",msg->get_txn_id());
   TxnManager * txn_man = txn_table.get_transaction_manager(msg->get_txn_id(),0);
   txn_man->run_txn_post_wait();
   RC rc = txn_man->run_txn();
@@ -317,6 +323,7 @@ RC WorkerThread::process_rtxn_cont(Message * msg) {
 }
 
 RC WorkerThread::process_rprepare(Message * msg) {
+  DEBUG("RPREP %ld\n",msg->get_txn_id());
     RC rc = RCOK;
   TxnManager * txn_man = txn_table.get_transaction_manager(msg->get_txn_id(),0);
 

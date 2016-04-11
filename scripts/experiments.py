@@ -154,8 +154,8 @@ def test():
     nnodes = [1,2]
     nwr = [0.2]
     nalgos=['NO_WAIT','WAIT_DIE','OCC']
-#    nnodes = [1]
-#    nalgos=['WAIT_DIE']
+    nnodes = [2]
+    nalgos=['OCC']
     fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PART_PER_TXN","TUP_WRITE_PERC","MAX_TXN_IN_FLIGHT"]
     exp = [[wl,n,cc,2,wr,20000] for n,cc,wr in itertools.product(nnodes,nalgos,nwr)]
     return fmt,exp
@@ -943,8 +943,8 @@ configs = {
 #TPCC
     "NUM_WH": 'PART_CNT',
     "PERC_PAYMENT":0.0,
-    "DEBUG_DISTR":"false",
-#    "DEBUG_DISTR":"true",
+#    "DEBUG_DISTR":"false",
+    "DEBUG_DISTR":"true",
     "DEBUG_ALLOC":"false",
     "DEBUG_RACE":"false",
     "MODE":"NORMAL_MODE",

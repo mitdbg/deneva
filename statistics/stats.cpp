@@ -53,6 +53,14 @@ void Stats_thd::clear() {
   txn_sent_cnt=0;
   cl_send_intv=0;
 
+  // Abort queue
+  abort_queue_enqueue_cnt=0;
+  abort_queue_dequeue_cnt=0;
+  abort_queue_enqueue_time=0;
+  abort_queue_dequeue_time=0;
+  abort_queue_penalty=0;
+  abort_queue_penalty_extra=0;
+
   // Work queue
   work_queue_wait_time=0;
   work_queue_cnt=0;
@@ -195,6 +203,34 @@ void Stats_thd::print(FILE * outf) {
   ,single_part_txn_run_time / BILLION
   ,single_part_txn_avg_time / BILLION
   );
+
+  // Abort queue
+  double abort_queue_penalty_avg = 0;
+  double abort_queue_penalty_extra_avg = 0;
+  if(abort_queue_enqueue_cnt > 0)
+    abort_queue_penalty_extra_avg = abort_queue_penalty_extra / abort_queue_enqueue_cnt;
+  if(abort_queue_dequeue_cnt > 0)
+    abort_queue_penalty_avg = abort_queue_penalty / abort_queue_enqueue_cnt;
+  fprintf(outf,
+  ",abort_queue_enqueue_cnt=%ld"
+  ",abort_queue_dequeue_cnt=%ld"
+  ",abort_queue_enqueue_time=%f"
+  ",abort_queue_dequeue_time=%f"
+  ",abort_queue_penalty=%f"
+  ",abort_queue_penalty_extra=%f"
+  ",abort_queue_penalty_avg=%f"
+  ",abort_queue_penalty_extra_avg=%f"
+  // Abort queue
+  ,abort_queue_enqueue_cnt
+  ,abort_queue_dequeue_cnt
+  ,abort_queue_enqueue_time / BILLION
+  ,abort_queue_dequeue_time / BILLION
+  ,abort_queue_penalty / BILLION
+  ,abort_queue_penalty_extra / BILLION
+  ,abort_queue_penalty_avg / BILLION
+  ,abort_queue_penalty_extra_avg / BILLION
+  );
+
 
   double work_queue_wait_avg_time = 0;
   double work_queue_new_wait_avg_time = 0;
@@ -421,6 +457,14 @@ void Stats_thd::combine(Stats_thd * stats) {
   // Client
   txn_sent_cnt+=stats->txn_sent_cnt;
   cl_send_intv+=stats->cl_send_intv;
+
+  // Abort queue
+  abort_queue_enqueue_cnt+=stats->abort_queue_enqueue_cnt;
+  abort_queue_dequeue_cnt+=stats->abort_queue_dequeue_cnt;
+  abort_queue_enqueue_time+=stats->abort_queue_enqueue_time;
+  abort_queue_dequeue_time+=stats->abort_queue_dequeue_time;
+  abort_queue_penalty+=stats->abort_queue_penalty;
+  abort_queue_penalty_extra+=stats->abort_queue_penalty_extra;
 
   // Work queue
   work_queue_wait_time+=stats->work_queue_wait_time;

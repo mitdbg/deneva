@@ -36,7 +36,8 @@ struct abort_entry {
 
 struct CompareAbortEntry {
   bool operator()(const abort_entry* lhs, const abort_entry* rhs) {
-    return lhs->penalty_end < rhs->penalty_end;
+    return lhs->penalty_end > rhs->penalty_end;
+    //return lhs->penalty_end < rhs->penalty_end;
   }
 };
 

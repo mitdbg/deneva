@@ -206,11 +206,6 @@ void TxnManager::commit_stats() {
   INC_STATS(get_thd_id(),txn_cnt,1);
   INC_STATS(get_thd_id(),local_txn_cnt,1);
   INC_STATS(get_thd_id(), txn_run_time, timespan);
-  //INC_STATS_ARR(get_thd_id(),all_lat,timespan);
-  /*if(abort_cnt > 0) { 
-    INC_STATS(get_thd_id(), txn_abort_cnt, 1);
-    INC_STATS_ARR(get_thd_id(), all_abort, abort_cnt);
-  }*/
   if(query->partitions.size() > 1) {
     INC_STATS(get_thd_id(),multi_part_txn_cnt,1);
     INC_STATS(get_thd_id(),multi_part_txn_run_time,timespan);

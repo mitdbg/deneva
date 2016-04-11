@@ -30,12 +30,15 @@ void AbortQueue::enqueue(uint64_t txn_id, uint64_t abort_cnt) {
 #if BACKOFF
   penalty = max(penalty * 2^abort_cnt,g_abort_penalty_max);
 #endif
-  penalty += get_sys_clock();
+  penalty += starttime;
   //abort_entry * entry = new abort_entry(penalty,txn_id);
   abort_entry * entry = (abort_entry*)mem_allocator.alloc(sizeof(abort_entry));
   entry->penalty_end = penalty;
   entry->txn_id = txn_id;
   pthread_mutex_lock(&mtx);
+  DEBUG("AQ Enqueue %ld %f -- %f\n",entry->txn_id,float(penalty - starttime)/BILLION,simulation->seconds_from_start(starttime));
+  INC_STATS(0,abort_queue_penalty,penalty - starttime);
+  INC_STATS(0,abort_queue_enqueue_cnt,1);
   queue.push(entry);
   pthread_mutex_unlock(&mtx);
   
@@ -45,14 +48,17 @@ void AbortQueue::enqueue(uint64_t txn_id, uint64_t abort_cnt) {
 void AbortQueue::process() {
   if(queue.empty())
     return;
-  uint64_t starttime = get_sys_clock();
   abort_entry * entry;
   pthread_mutex_lock(&mtx);
+  uint64_t starttime = get_sys_clock();
   while(!queue.empty()) {
     entry = queue.top();
     if(entry->penalty_end < starttime) {
       queue.pop();
       // FIXME: add restart to work queue
+      DEBUG("AQ Dequeue %ld %f -- %f\n",entry->txn_id,float(starttime - entry->penalty_end)/BILLION,simulation->seconds_from_start(starttime));
+      INC_STATS(0,abort_queue_penalty_extra,starttime - entry->penalty_end);
+      INC_STATS(0,abort_queue_dequeue_cnt,1);
       Message * msg = Message::create_message(RTXN);
       msg->txn_id = entry->txn_id;
       work_queue.enqueue(g_thread_cnt,msg,false);

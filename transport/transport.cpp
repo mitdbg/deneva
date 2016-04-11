@@ -298,17 +298,19 @@ void Transport::send_msg(uint64_t sid, uint64_t dest_id, void * sbuf,int size) {
 	memcpy(buf,sbuf,size);
   int rc = -1;
   DEBUG("Sending batch of %d bytes to node %ld on socket %ld\n",size,dest_id,idx);
-  int attempts = 0;
+  //int attempts = 0;
 
   while(rc < 0 && !simulation->is_done()) {
     rc= s[idx].sock.send(&buf,NN_MSG,NN_DONTWAIT);
     // Check for a send error
+    /*
     if(rc < 0 || rc != size) {
       if(attempts % 100 == 0)
         printf("send %d bytes -> %ld on sock %ld Error: %d %s; Time: %f\n",size,dest_id,idx,errno,strerror(errno),simulation->seconds_from_start(get_sys_clock()));
       sleep(10);
     }
     attempts++;
+    */
   }
   //assert(rc == size);
 	//int rc= s[idx].sock.send(&sbuf,NN_MSG,0);
