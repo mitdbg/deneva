@@ -22,11 +22,15 @@
 #include "query.h"
 #include "row.h"
 
+class TPCCQuery;
+class TPCCQueryMessage;
+struct Item_no;
+
 class table_t;
 class INDEX;
 class TPCCQuery;
 enum TPCCRemTxnType {
-  TPCC_PAYMENT_S,
+  TPCC_PAYMENT_S=0,
   TPCC_PAYMENT0,
   TPCC_PAYMENT1,
   TPCC_PAYMENT2,
@@ -117,12 +121,14 @@ class TPCCTxnManager : public TxnManager
 {
 public:
 	void init( Workload * h_wl);
+  void reset();
   RC acquire_locks(); 
 	RC run_txn();
 	RC run_txn_post_wait() {return RCOK;}
 	RC run_calvin_txn(); 
   RC run_tpcc_phase2(); 
   RC run_tpcc_phase5(); 
+  void copy_remote_items(TPCCQueryMessage * msg); 
 private:
 	TPCCWorkload * _wl;
 	volatile RC _rc;
@@ -134,7 +140,8 @@ private:
 void next_tpcc_state();
 RC run_txn_state();
   bool is_done();
-  void send_remote_request(); 
+  bool is_local_item(uint64_t idx);
+  RC send_remote_request(); 
 
 	RC run_payment_0(uint64_t w_id, uint64_t d_id, uint64_t d_w_id, double h_amount, row_t *& r_wh_local);
 	RC run_payment_1(uint64_t w_id, uint64_t d_id, uint64_t d_w_id, double h_amount, row_t * r_wh_local);

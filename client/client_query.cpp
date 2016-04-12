@@ -72,6 +72,7 @@ Client_query_queue::initQueriesParallel() {
 #if WORKLOAD == YCSB	
     YCSBQueryGenerator * gen = new YCSBQueryGenerator;
 #elif WORKLOAD == TPCC
+    TPCCQueryGenerator * gen = new TPCCQueryGenerator;
 #endif
   for ( UInt32 server_id = 0; server_id < g_servers_per_client; server_id ++) {
     for (UInt32 query_id = request_cnt / g_init_parallelism * tid; query_id < final_request; query_id ++) {

@@ -125,8 +125,12 @@ stat_map = OrderedDict([
   ('work_queue_conflict_cnt', []),
 
   # Abort queue
+  ('abort_queue_enqueue_cnt', []),
+  ('abort_queue_dequeue_cnt', []),
   ('abort_queue_enqueue_time', []),
   ('abort_queue_dequeue_time', []),
+  ('abort_queue_penalty', []),
+  ('abort_queue_penalty_extra', []),
 
   # Worker thread
   ('worker_process_time', []),

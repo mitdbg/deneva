@@ -95,8 +95,10 @@ Message * Message::create_message(RemReqType rtype) {
     case RQRY_CONT:
 #if WORKLOAD == YCSB
       msg = new YCSBQueryMessage;
-      msg->init();
+#elif WORKLOAD == TPCC 
+      msg = new TPCCQueryMessage;
 #endif
+      msg->init();
       break;
     case RFIN:
       msg = new FinishMessage;
@@ -122,6 +124,8 @@ Message * Message::create_message(RemReqType rtype) {
     case RTXN_CONT:
 #if WORKLOAD == YCSB
       msg = new YCSBClientQueryMessage;
+#elif WORKLOAD == TPCC 
+      msg = new TPCCClientQueryMessage;
 #endif
       msg->init();
       break;
@@ -241,6 +245,7 @@ void YCSBClientQueryMessage::release() {
   requests.release();
 }
 
+// FIXME: does sizeof(YCSBClientQueryMessage) include ptr to requests?
 uint64_t YCSBClientQueryMessage::get_size() {
   uint64_t size = sizeof(YCSBClientQueryMessage);
   size += sizeof(size_t);
@@ -251,16 +256,6 @@ uint64_t YCSBClientQueryMessage::get_size() {
 void YCSBClientQueryMessage::copy_from_query(BaseQuery * query) {
   ClientQueryMessage::copy_from_query(query);
   requests.copy(((YCSBQuery*)(query))->requests);
-  /*
-  requests = ((YCSBQuery*)(query))->requests;
-  if(requests.size() > 0)
-    requests.clear();
-  //requests.insert(requests.end(),((YCSBQuery*)(query))->requests.begin(),((YCSBQuery*)(query))->requests.end());
-  for(uint64_t i = 0; i < ((YCSBQuery*)(query))->requests.size();i++) {
-    //requests.push_back(((YCSBQuery*)(query))->requests[i]);
-    requests.push_back(((YCSBQuery*)(query))->requests.at(i));
-  }
-  */
 }
 
 
@@ -299,6 +294,91 @@ void YCSBClientQueryMessage::copy_to_buf(char * buf) {
     COPY_BUF(buf,*req,ptr);
   }
 }
+
+/************************/
+
+void TPCCClientQueryMessage::init() {
+}
+
+void TPCCClientQueryMessage::release() {
+  ClientQueryMessage::release();
+}
+
+uint64_t TPCCClientQueryMessage::get_size() {
+  uint64_t size = sizeof(TPCCClientQueryMessage);
+  size += sizeof(size_t);
+  size += sizeof(Item_no) * items.size();
+  return size;
+}
+
+void TPCCClientQueryMessage::copy_from_query(BaseQuery * query) {
+  ClientQueryMessage::copy_from_query(query);
+  TPCCQuery* tpcc_query = (TPCCQuery*)(query);
+  
+  txn_type = tpcc_query->txn_type;
+  state = tpcc_query->state;
+	// common txn input for both payment & new-order
+  w_id = tpcc_query->w_id;
+  d_id = tpcc_query->d_id;
+  c_id = tpcc_query->c_id;
+
+  // payment
+  d_w_id = tpcc_query->d_w_id;
+  c_w_id = tpcc_query->c_w_id;
+  c_d_id = tpcc_query->c_d_id;
+	c_last = tpcc_query->c_last;
+  h_amount = tpcc_query->h_amount;
+  by_last_name = tpcc_query->by_last_name;
+
+  // new order
+  items.copy(tpcc_query->items);
+	rbk = tpcc_query->rbk;
+  remote = tpcc_query->remote;
+  ol_cnt = tpcc_query->ol_cnt;
+  o_entry_d = tpcc_query->o_entry_d;
+}
+
+
+void TPCCClientQueryMessage::copy_from_txn(TxnManager * txn) {
+  ClientQueryMessage::mcopy_from_txn(txn);
+  copy_from_query(txn->query);
+}
+
+void TPCCClientQueryMessage::copy_to_txn(TxnManager * txn) {
+  ClientQueryMessage::copy_to_txn(txn);
+  TPCCQuery* tpcc_query = (TPCCQuery*)(txn->query);
+	// common txn input for both payment & new-order
+  tpcc_query->w_id = w_id;
+  tpcc_query->d_id = d_id;
+  tpcc_query->c_id = c_id;
+
+  // payment
+  tpcc_query->d_w_id = d_w_id;
+  tpcc_query->c_w_id = c_w_id;
+  tpcc_query->c_d_id = c_d_id;
+	tpcc_query->c_last = c_last;
+  tpcc_query->h_amount = h_amount;
+  tpcc_query->by_last_name = by_last_name;
+
+  // new order
+  (tpcc_query->query)->items.append(items);
+	tpcc_query->rbk = rbk;
+  tpcc_query->remote = remote;
+  tpcc_query->ol_cnt = ol_cnt;
+  tpcc_query->o_entry_d = o_entry_d;
+
+}
+
+void TPCCClientQueryMessage::copy_from_buf(char * buf) {
+  ClientQueryMessage::copy_from_buf(buf);
+  //uint64_t ptr = ClientQueryMessage::get_size();
+}
+
+void TPCCClientQueryMessage::copy_to_buf(char * buf) {
+  ClientQueryMessage::copy_to_buf(buf);
+  //uint64_t ptr = ClientQueryMessage::get_size();
+}
+
 
 /************************/
 
@@ -754,5 +834,37 @@ void YCSBQueryMessage::copy_to_buf(char * buf) {
     ycsb_request * req = requests[i];
     COPY_BUF(buf,*req,ptr);
   }
+}
+/************************/
+
+void TPCCQueryMessage::init() {
+}
+
+void TPCCQueryMessage::release() {
+  QueryMessage::release();
+}
+
+uint64_t TPCCQueryMessage::get_size() {
+  uint64_t size = sizeof(TPCCQueryMessage);
+  return size;
+}
+
+void TPCCQueryMessage::copy_from_txn(TxnManager * txn) {
+  QueryMessage::copy_from_txn(txn);
+}
+
+void TPCCQueryMessage::copy_to_txn(TxnManager * txn) {
+  QueryMessage::copy_to_txn(txn);
+}
+
+
+void TPCCQueryMessage::copy_from_buf(char * buf) {
+  QueryMessage::copy_from_buf(buf);
+  //uint64_t ptr = QueryMessage::get_size();
+}
+
+void TPCCQueryMessage::copy_to_buf(char * buf) {
+  QueryMessage::copy_to_buf(buf);
+  //uint64_t ptr = QueryMessage::get_size();
 }
 

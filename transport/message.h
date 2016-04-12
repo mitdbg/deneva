@@ -19,12 +19,12 @@
 
 #include "global.h"
 #include "helper.h"
-#include "tpcc.h"
-#include "tpcc_query.h"
 #include "logger.h"
+#include "array.h"
 
 class ycsb_request;
 class LogRecord;
+struct Item_no;
 
 class Message {
 public:
@@ -249,6 +249,40 @@ public:
   Array<ycsb_request*> requests;
 
 };
+
+class TPCCClientQueryMessage : public ClientQueryMessage {
+public:
+  void copy_from_buf(char * buf);
+  void copy_to_buf(char * buf);
+  void copy_from_query(BaseQuery * query);
+  void copy_from_txn(TxnManager * txn);
+  void copy_to_txn(TxnManager * txn);
+  uint64_t get_size();
+  void init(); 
+  void release(); 
+
+	// common txn input for both payment & new-order
+  uint64_t w_id;
+  uint64_t d_id;
+  uint64_t c_id;
+
+  // payment
+  uint64_t d_w_id;
+  uint64_t c_w_id;
+  uint64_t c_d_id;
+	char c_last[LASTNAME_LEN];
+  uint64_t h_amount;
+  bool by_last_name;
+
+  // new order
+  Array<Item_no*> items;
+	bool rbk;
+  bool remote;
+  uint64_t ol_cnt;
+  uint64_t o_entry_d;
+
+};
+
 class QueryMessage : public Message {
 public:
   void copy_from_buf(char * buf);
@@ -295,13 +329,30 @@ public:
   void copy_to_txn(TxnManager * txn);
   uint64_t get_size();
   void init();
-  void release() {assert(false);} // FIXME
+  void release(); 
 
-	TPCCRemTxnType state;
+  uint64_t txn_type;
+  uint64_t state; 
+	// common txn input for both payment & new-order
+  uint64_t w_id;
+  uint64_t d_id;
+  uint64_t c_id;
+
+  // payment
+  uint64_t d_w_id;
+  uint64_t c_w_id;
+  uint64_t c_d_id;
+	char c_last[LASTNAME_LEN];
+  uint64_t h_amount;
+  bool by_last_name;
+
+  // new order
   Array<Item_no*> items;
+	bool rbk;
+  bool remote;
+  uint64_t ol_cnt;
+  uint64_t o_entry_d;
 
 };
-
-
 
 #endif

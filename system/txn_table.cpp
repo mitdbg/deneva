@@ -99,61 +99,6 @@ void TxnTable::dump() {
   }
 }
 
-void TxnTable::add_txn(TxnManager * txn_man) {
-
-  DEBUG_R("Add (%ld,%ld)\n",txn_man->get_txn_id(),txn_man->get_batch_id());
-  uint64_t txn_id = txn_man->get_txn_id();
-
-  TxnManager * next_txn = NULL;
-
-  MODIFY_START(txn_id % pool_size);
-
-  txn_node_t t_node = pool[txn_id % pool_size].head;
-
-  while (t_node != NULL) {
-#if CC_ALG == CALVIN
-    if (t_node->txn_man->get_txn_id() == txn_id && t_node->txn_man->get_batch_id() == txn_man->get_batch_id()) {
-      next_txn = t_node->txn;
-      break;
-    }
-#else
-    if (t_node->txn_man->get_txn_id() == txn_id) {
-      next_txn = t_node->txn_man;
-      break;
-    }
-#endif
-    t_node = t_node->next;
-  }
-
-  if(next_txn == NULL) {
-    //t_node = (txn_node_t) mem_allocator.alloc(sizeof(struct txn_node));
-  pthread_mutex_lock(&mtx);
-    ts_pool.insert(TsMapPair(txn_man->get_timestamp(),NULL));
-  pthread_mutex_unlock(&mtx);
-    //txn_table_pool.get(t_node);
-    t_node = (txn_node *) mem_allocator.alloc(sizeof(struct txn_node));
-    t_node->txn_man = txn_man;
-    LIST_PUT_TAIL(pool[txn_id % pool_size].head,pool[txn_id % pool_size].tail,t_node);
-    pool[txn_id % pool_size].cnt++;
-    if(pool[txn_id % pool_size].cnt > 1) {
-      INC_STATS(0,txn_table_cflt_cnt,1);
-      INC_STATS(0,txn_table_cflt_size,pool[txn_id % pool_size].cnt-1);
-    }
-    ATOM_ADD(cnt,1);
-  }
-  else {
-    if(txn_man->get_timestamp() != t_node->txn_man->get_timestamp()) {
-  pthread_mutex_lock(&mtx);
-      ts_pool.erase(t_node->txn_man->get_timestamp());
-      ts_pool.insert(TsMapPair(txn_man->get_timestamp(),NULL));
-  pthread_mutex_unlock(&mtx);
-    }
-    t_node->txn_man = txn_man;
-  }
-
-  MODIFY_END(txn_id % pool_size);
-}
-
 TxnManager * TxnTable::get_transaction_manager(uint64_t txn_id,uint64_t batch_id){
   DEBUG("TxnTable::get_txn_manager %ld / %ld\n",txn_id,pool_size);
   uint64_t starttime = get_sys_clock();
@@ -216,7 +161,7 @@ void TxnTable::restart_txn(uint64_t txn_id,uint64_t batch_id){
 
   while (t_node != NULL) {
 #if CC_ALG == CALVIN
-    if (t_node->txn_man->get_txn_id() == txn_id && t_node->txn_man_man->get_batch_id() == batch_id) {
+    if (t_node->txn_man->get_txn_id() == txn_id && t_node->txn_man->get_batch_id() == batch_id) {
 #else
     if (t_node->txn_man->get_txn_id() == txn_id) {
 #endif

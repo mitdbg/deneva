@@ -68,7 +68,6 @@ public:
   void init();
   uint64_t get_cnt() {return cnt;}
   bool empty(uint64_t node_id);
-  void add_txn(TxnManager * txn);
   TxnManager* get_transaction_manager(uint64_t txn_id,uint64_t batch_id);
   void dump();
   void restart_txn(uint64_t txn_id,uint64_t batch_id);

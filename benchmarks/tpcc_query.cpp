@@ -31,6 +31,10 @@ BaseQuery * TPCCQueryGenerator::create_query(Workload * h_wl,uint64_t home_parti
 
 }
 
+void TPCCQuery::init(uint64_t thd_id, Workload * h_wl) {
+  // FIXME
+}
+
 uint64_t TPCCQuery::participants(bool *& pps,Workload * wl) {
   int n = 0;
   for(uint64_t i = 0; i < g_node_cnt; i++)
@@ -186,9 +190,13 @@ BaseQuery * TPCCQueryGenerator::gen_new_order(uint64_t home_partition) {
       }
     }
 
-    query->items.push_back(item);
+    query->items.add(item);
   }
 
+  query->partitions.init(partitions_accessed.size());
+  for(auto it = partitions_accessed.begin(); it != partitions_accessed.end(); ++it) {
+    query->partitions.add(*it);
+  }
   return query;
 
 }

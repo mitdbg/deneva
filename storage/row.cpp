@@ -246,7 +246,6 @@ RC row_t::get_row(access_t type, TxnManager * txn, row_t *& row) {
 		if (rc == RCOK ) {
 			row = txn->cur_row;
 		} else if (rc == WAIT) {
-		  INC_STATS(0, wait_cnt, 1);
       rc = WAIT;
       goto end;
 

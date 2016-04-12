@@ -28,6 +28,11 @@ struct Item_no {
 	uint64_t ol_i_id;
 	uint64_t ol_supply_w_id;
 	uint64_t ol_quantity;
+  void copy(Item_no * item) {
+    ol_i_id = item->ol_i_id;
+    ol_supply_w_id = item->ol_supply_w_id;
+    ol_quantity = item->ol_quantity;
+  }
 };
 
 
@@ -63,7 +68,7 @@ public:
 	bool by_last_name;
 	// txn input for new-order
 	//Item_no * items;
-  std::vector<Item_no*> items;
+  Array<Item_no*> items;
 	bool rbk;
 	bool remote;
 	uint64_t ol_cnt;
