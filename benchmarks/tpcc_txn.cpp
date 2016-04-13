@@ -41,7 +41,7 @@ void TPCCTxnManager::reset() {
   state = TPCC_PAYMENT0;
   if(tpcc_query->txn_type == TPCC_PAYMENT) {
     state = TPCC_PAYMENT0;
-  } else if (tpcc_query->txn_type == TPCC_NEWORDER) {
+  } else if (tpcc_query->txn_type == TPCC_NEW_ORDER) {
     state = TPCC_NEWORDER0;
   }
   next_item_id = 0;
@@ -59,9 +59,9 @@ RC TPCCTxnManager::run_txn() {
   return rc;
 #endif
 
-  if(IS_LOCAL(txn->txn_id) && state == TPCC_PAYMENT0 || state == TPCC_NEWORDER0) {
+  if(IS_LOCAL(txn->txn_id) && (state == TPCC_PAYMENT0 || state == TPCC_NEWORDER0)) {
     DEBUG("Running txn %ld\n",txn->txn_id);
-    //query->print();
+    query->print();
     query->partitions_touched.add_unique(GET_PART_ID(0,g_node_id));
   }
 
@@ -361,9 +361,14 @@ RC TPCCTxnManager::run_txn_state() {
 	bool remote = tpcc_query->remote;
 	uint64_t ol_cnt = tpcc_query->ol_cnt;
 	uint64_t o_entry_d = tpcc_query->o_entry_d;
-	uint64_t ol_i_id = tpcc_query->items[next_item_id]->ol_i_id;
-	uint64_t ol_supply_w_id = tpcc_query->items[next_item_id]->ol_supply_w_id;
-	uint64_t ol_quantity = tpcc_query->items[next_item_id]->ol_quantity;
+	uint64_t ol_i_id = 0;
+	uint64_t ol_supply_w_id = 0;
+	uint64_t ol_quantity = 0;
+  if(tpcc_query->txn_type == TPCC_NEW_ORDER) {
+    ol_i_id = tpcc_query->items[next_item_id]->ol_i_id;
+    ol_supply_w_id = tpcc_query->items[next_item_id]->ol_supply_w_id;
+    ol_quantity = tpcc_query->items[next_item_id]->ol_quantity;
+  }
 	uint64_t ol_number = next_item_id;
 	uint64_t ol_amount = tpcc_query->ol_amount;
   uint64_t o_id = tpcc_query->o_id;

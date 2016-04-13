@@ -35,6 +35,20 @@ void TPCCQuery::init(uint64_t thd_id, Workload * h_wl) {
   // FIXME
 }
 
+void TPCCQuery::print() {
+  
+    printf("TPCCQuery: "
+        "w_id: %ld, d_id: %ld, c_id: %ld, d_w_id: %ld, c_w_id: %ld, c_d_id: %ld\n"
+        ,w_id
+        ,d_id
+        ,c_id
+        ,d_w_id
+        ,c_w_id
+        ,c_d_id
+        );
+}
+
+
 uint64_t TPCCQuery::participants(bool *& pps,Workload * wl) {
   int n = 0;
   for(uint64_t i = 0; i < g_node_cnt; i++)

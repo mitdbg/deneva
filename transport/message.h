@@ -261,6 +261,7 @@ public:
   void init(); 
   void release(); 
 
+  uint64_t txn_type;
 	// common txn input for both payment & new-order
   uint64_t w_id;
   uint64_t d_id;

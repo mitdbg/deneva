@@ -28,6 +28,7 @@ class TPCCQuery;
 class BaseQuery {
 public:
   virtual bool readonly() = 0;
+  virtual void print() = 0;
   virtual void init();
 	uint64_t waiting_time;
   void clear();

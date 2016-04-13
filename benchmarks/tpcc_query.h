@@ -51,6 +51,7 @@ class TPCCQuery : public BaseQuery {
 public:
 	void init(uint64_t thd_id, Workload * h_wl);
   void reset();
+  void print();
   uint64_t participants(bool *& pps,Workload * wl); 
   bool readonly();
 

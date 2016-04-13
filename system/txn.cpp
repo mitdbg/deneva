@@ -33,6 +33,7 @@
 #include "pool.h"
 #include "message.h"
 #include "ycsb_query.h"
+#include "tpcc_query.h"
 #include "array.h"
 
 
@@ -599,8 +600,13 @@ RC TxnManager::finish(bool fin) {
 
 void
 TxnManager::release() {
+#if WORKLOAD == YCSB
   ((YCSBQuery*)query)->release();
   mem_allocator.free(query,sizeof(YCSBQuery));
+#elif WORKLOAD == TPCC
+  ((TPCCQuery*)query)->release();
+  mem_allocator.free(query,sizeof(TPCCQuery));
+#endif
   txn->release();
   mem_allocator.free(txn,sizeof(Transaction));
 }

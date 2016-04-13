@@ -74,7 +74,11 @@ Message * Message::create_message(LogRecord * record, RemReqType rtype) {
 Message * Message::create_message(BaseQuery * query, RemReqType rtype) {
  assert(rtype == RQRY || rtype == CL_QRY);
  Message * msg = create_message(rtype);
+#if WORKLOAD == YCSB
  ((YCSBClientQueryMessage*)msg)->copy_from_query(query);
+#elif WORKLOAD == TPCC 
+ ((TPCCClientQueryMessage*)msg)->copy_from_query(query);
+#endif
  return msg;
 }
 
@@ -268,7 +272,6 @@ void YCSBClientQueryMessage::copy_to_txn(TxnManager * txn) {
   // TODO this only copies over the pointers, so if msg is freed, we'll lose the request data
   ClientQueryMessage::copy_to_txn(txn);
   ((YCSBQuery*)(txn->query))->requests.append(requests);
-  txn->client_id = return_node_id;
 }
 
 void YCSBClientQueryMessage::copy_from_buf(char * buf) {
@@ -316,7 +319,6 @@ void TPCCClientQueryMessage::copy_from_query(BaseQuery * query) {
   TPCCQuery* tpcc_query = (TPCCQuery*)(query);
   
   txn_type = tpcc_query->txn_type;
-  state = tpcc_query->state;
 	// common txn input for both payment & new-order
   w_id = tpcc_query->w_id;
   d_id = tpcc_query->d_id;
@@ -326,7 +328,7 @@ void TPCCClientQueryMessage::copy_from_query(BaseQuery * query) {
   d_w_id = tpcc_query->d_w_id;
   c_w_id = tpcc_query->c_w_id;
   c_d_id = tpcc_query->c_d_id;
-	c_last = tpcc_query->c_last;
+  strcpy(c_last,tpcc_query->c_last);
   h_amount = tpcc_query->h_amount;
   by_last_name = tpcc_query->by_last_name;
 
@@ -347,6 +349,11 @@ void TPCCClientQueryMessage::copy_from_txn(TxnManager * txn) {
 void TPCCClientQueryMessage::copy_to_txn(TxnManager * txn) {
   ClientQueryMessage::copy_to_txn(txn);
   TPCCQuery* tpcc_query = (TPCCQuery*)(txn->query);
+
+  txn->client_id = return_node_id;
+
+
+  tpcc_query->txn_type = (TPCCTxnType)txn_type;
 	// common txn input for both payment & new-order
   tpcc_query->w_id = w_id;
   tpcc_query->d_id = d_id;
@@ -356,12 +363,12 @@ void TPCCClientQueryMessage::copy_to_txn(TxnManager * txn) {
   tpcc_query->d_w_id = d_w_id;
   tpcc_query->c_w_id = c_w_id;
   tpcc_query->c_d_id = c_d_id;
-	tpcc_query->c_last = c_last;
+  strcpy(tpcc_query->c_last,c_last);
   tpcc_query->h_amount = h_amount;
   tpcc_query->by_last_name = by_last_name;
 
   // new order
-  (tpcc_query->query)->items.append(items);
+  tpcc_query->items.append(items);
 	tpcc_query->rbk = rbk;
   tpcc_query->remote = remote;
   tpcc_query->ol_cnt = ol_cnt;
@@ -371,12 +378,67 @@ void TPCCClientQueryMessage::copy_to_txn(TxnManager * txn) {
 
 void TPCCClientQueryMessage::copy_from_buf(char * buf) {
   ClientQueryMessage::copy_from_buf(buf);
-  //uint64_t ptr = ClientQueryMessage::get_size();
+  uint64_t ptr = ClientQueryMessage::get_size();
+
+  COPY_VAL(txn_type,buf,ptr); 
+	// common txn input for both payment & new-order
+  COPY_VAL(w_id,buf,ptr);
+  COPY_VAL(d_id,buf,ptr);
+  COPY_VAL(c_id,buf,ptr);
+
+  // payment
+  COPY_VAL(d_w_id,buf,ptr);
+  COPY_VAL(c_w_id,buf,ptr);
+  COPY_VAL(c_d_id,buf,ptr);
+	COPY_VAL(c_last,buf,ptr);
+  COPY_VAL(h_amount,buf,ptr);
+  COPY_VAL(by_last_name,buf,ptr);
+
+  // new order
+  size_t size;
+  COPY_VAL(size,buf,ptr);
+  for(uint64_t i = 0 ; i < size;i++) {
+    Item_no * item = (Item_no*)mem_allocator.alloc(sizeof(Item_no));
+    COPY_VAL(item,buf,ptr);
+     items.add(item);
+  }
+
+	COPY_VAL(rbk,buf,ptr);
+  COPY_VAL(remote,buf,ptr);
+  COPY_VAL(ol_cnt,buf,ptr);
+  COPY_VAL(o_entry_d,buf,ptr);
+
 }
 
 void TPCCClientQueryMessage::copy_to_buf(char * buf) {
   ClientQueryMessage::copy_to_buf(buf);
-  //uint64_t ptr = ClientQueryMessage::get_size();
+  uint64_t ptr = ClientQueryMessage::get_size();
+
+  COPY_BUF(buf,txn_type,ptr); 
+	// common txn input for both payment & new-order
+  COPY_BUF(buf,w_id,ptr);
+  COPY_BUF(buf,d_id,ptr);
+  COPY_BUF(buf,c_id,ptr);
+
+  // payment
+  COPY_BUF(buf,d_w_id,ptr);
+  COPY_BUF(buf,c_w_id,ptr);
+  COPY_BUF(buf,c_d_id,ptr);
+	COPY_BUF(buf,c_last,ptr);
+  COPY_BUF(buf,h_amount,ptr);
+  COPY_BUF(buf,by_last_name,ptr);
+
+  size_t size = items.size();
+  COPY_BUF(buf,size,ptr);
+  for(uint64_t i = 0; i < items.size(); i++) {
+    Item_no * item = items[i];
+    COPY_BUF(buf,*item,ptr);
+  }
+
+	COPY_BUF(buf,rbk,ptr);
+  COPY_BUF(buf,remote,ptr);
+  COPY_BUF(buf,ol_cnt,ptr);
+  COPY_BUF(buf,o_entry_d,ptr);
 }
 
 
@@ -423,6 +485,7 @@ void ClientQueryMessage::copy_to_txn(TxnManager * txn) {
   txn->query->partitions.clear();
   txn->query->partitions.append(partitions);
   txn->client_startts = client_startts;
+  txn->client_id = return_node_id;
 }
 
 void ClientQueryMessage::copy_from_buf(char * buf) {
@@ -846,25 +909,136 @@ void TPCCQueryMessage::release() {
 
 uint64_t TPCCQueryMessage::get_size() {
   uint64_t size = sizeof(TPCCQueryMessage);
+  size += sizeof(size_t);
+  size += sizeof(Item_no) * items.size();
   return size;
 }
 
 void TPCCQueryMessage::copy_from_txn(TxnManager * txn) {
   QueryMessage::copy_from_txn(txn);
+  TPCCQuery* tpcc_query = (TPCCQuery*)(txn->query);
+  
+  txn_type = tpcc_query->txn_type;
+  state = txn->txn->state;
+	// common txn input for both payment & new-order
+  w_id = tpcc_query->w_id;
+  d_id = tpcc_query->d_id;
+  c_id = tpcc_query->c_id;
+
+  // payment
+  d_w_id = tpcc_query->d_w_id;
+  c_w_id = tpcc_query->c_w_id;
+  c_d_id = tpcc_query->c_d_id;
+  strcpy(c_last,tpcc_query->c_last);
+  h_amount = tpcc_query->h_amount;
+  by_last_name = tpcc_query->by_last_name;
+
+  // new order
+  items.copy(tpcc_query->items);
+	rbk = tpcc_query->rbk;
+  remote = tpcc_query->remote;
+  ol_cnt = tpcc_query->ol_cnt;
+  o_entry_d = tpcc_query->o_entry_d;
+
 }
 
 void TPCCQueryMessage::copy_to_txn(TxnManager * txn) {
   QueryMessage::copy_to_txn(txn);
+
+  TPCCQuery* tpcc_query = (TPCCQuery*)(txn->query);
+
+  tpcc_query->txn_type = (TPCCTxnType)txn_type;
+  txn->txn->state = (TxnState)state;
+	// common txn input for both payment & new-order
+  tpcc_query->w_id = w_id;
+  tpcc_query->d_id = d_id;
+  tpcc_query->c_id = c_id;
+
+  // payment
+  tpcc_query->d_w_id = d_w_id;
+  tpcc_query->c_w_id = c_w_id;
+  tpcc_query->c_d_id = c_d_id;
+  strcpy(tpcc_query->c_last,c_last);
+  tpcc_query->h_amount = h_amount;
+  tpcc_query->by_last_name = by_last_name;
+
+  // new order
+  tpcc_query->items.append(items);
+	tpcc_query->rbk = rbk;
+  tpcc_query->remote = remote;
+  tpcc_query->ol_cnt = ol_cnt;
+  tpcc_query->o_entry_d = o_entry_d;
+
+
 }
 
 
 void TPCCQueryMessage::copy_from_buf(char * buf) {
   QueryMessage::copy_from_buf(buf);
-  //uint64_t ptr = QueryMessage::get_size();
+  uint64_t ptr = QueryMessage::get_size();
+
+  COPY_VAL(txn_type,buf,ptr); 
+  COPY_VAL(state,buf,ptr); 
+	// common txn input for both payment & new-order
+  COPY_VAL(w_id,buf,ptr);
+  COPY_VAL(d_id,buf,ptr);
+  COPY_VAL(c_id,buf,ptr);
+
+  // payment
+  COPY_VAL(d_w_id,buf,ptr);
+  COPY_VAL(c_w_id,buf,ptr);
+  COPY_VAL(c_d_id,buf,ptr);
+	COPY_VAL(c_last,buf,ptr);
+  COPY_VAL(h_amount,buf,ptr);
+  COPY_VAL(by_last_name,buf,ptr);
+
+  // new order
+  size_t size;
+  COPY_VAL(size,buf,ptr);
+  for(uint64_t i = 0 ; i < size;i++) {
+    Item_no * item = (Item_no*)mem_allocator.alloc(sizeof(Item_no));
+    COPY_VAL(item,buf,ptr);
+     items.add(item);
+  }
+
+	COPY_VAL(rbk,buf,ptr);
+  COPY_VAL(remote,buf,ptr);
+  COPY_VAL(ol_cnt,buf,ptr);
+  COPY_VAL(o_entry_d,buf,ptr);
+
+
 }
 
 void TPCCQueryMessage::copy_to_buf(char * buf) {
   QueryMessage::copy_to_buf(buf);
-  //uint64_t ptr = QueryMessage::get_size();
+  uint64_t ptr = QueryMessage::get_size();
+
+  COPY_BUF(buf,txn_type,ptr); 
+  COPY_BUF(buf,state,ptr); 
+	// common txn input for both payment & new-order
+  COPY_BUF(buf,w_id,ptr);
+  COPY_BUF(buf,d_id,ptr);
+  COPY_BUF(buf,c_id,ptr);
+
+  // payment
+  COPY_BUF(buf,d_w_id,ptr);
+  COPY_BUF(buf,c_w_id,ptr);
+  COPY_BUF(buf,c_d_id,ptr);
+	COPY_BUF(buf,c_last,ptr);
+  COPY_BUF(buf,h_amount,ptr);
+  COPY_BUF(buf,by_last_name,ptr);
+
+  size_t size = items.size();
+  COPY_BUF(buf,size,ptr);
+  for(uint64_t i = 0; i < items.size(); i++) {
+    Item_no * item = items[i];
+    COPY_BUF(buf,*item,ptr);
+  }
+
+	COPY_BUF(buf,rbk,ptr);
+  COPY_BUF(buf,remote,ptr);
+  COPY_BUF(buf,ol_cnt,ptr);
+  COPY_BUF(buf,o_entry_d,ptr);
+
 }
 
