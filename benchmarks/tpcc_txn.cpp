@@ -88,7 +88,7 @@ bool TPCCTxnManager::is_done() {
     case TPCC_PAYMENT:
       done = state == TPCC_PAYMENT5;
       break;
-    case TPCC_NEWORDER:
+    case TPCC_NEW_ORDER:
       done = next_item_id == tpcc_query->ol_cnt;
       break;
     default: assert(false);

@@ -354,6 +354,11 @@ void TPCCClientQueryMessage::copy_to_txn(TxnManager * txn) {
 
 
   tpcc_query->txn_type = (TPCCTxnType)txn_type;
+  // FIXME: bad programming style
+  if(tpcc_query->txn_type == TPCC_PAYMENT)
+    ((TPCCTxnManager*)txn)->state = TPCC_PAYMENT0;
+  else if (tpcc_query->txn_type == TPCC_NEW_ORDER) 
+    ((TPCCTxnManager*)txn)->state = TPCC_NEWORDER0;
 	// common txn input for both payment & new-order
   tpcc_query->w_id = w_id;
   tpcc_query->d_id = d_id;
@@ -397,10 +402,11 @@ void TPCCClientQueryMessage::copy_from_buf(char * buf) {
   // new order
   size_t size;
   COPY_VAL(size,buf,ptr);
+  items.init(size);
   for(uint64_t i = 0 ; i < size;i++) {
     Item_no * item = (Item_no*)mem_allocator.alloc(sizeof(Item_no));
-    COPY_VAL(item,buf,ptr);
-     items.add(item);
+    COPY_VAL(*item,buf,ptr);
+    items.add(item);
   }
 
 	COPY_VAL(rbk,buf,ptr);
@@ -919,7 +925,7 @@ void TPCCQueryMessage::copy_from_txn(TxnManager * txn) {
   TPCCQuery* tpcc_query = (TPCCQuery*)(txn->query);
   
   txn_type = tpcc_query->txn_type;
-  state = txn->txn->state;
+  state = (uint64_t)((TPCCTxnManager*)txn)->state;
 	// common txn input for both payment & new-order
   w_id = tpcc_query->w_id;
   d_id = tpcc_query->d_id;
@@ -948,7 +954,7 @@ void TPCCQueryMessage::copy_to_txn(TxnManager * txn) {
   TPCCQuery* tpcc_query = (TPCCQuery*)(txn->query);
 
   tpcc_query->txn_type = (TPCCTxnType)txn_type;
-  txn->txn->state = (TxnState)state;
+  ((TPCCTxnManager*)txn)->state = (TPCCRemTxnType)state;
 	// common txn input for both payment & new-order
   tpcc_query->w_id = w_id;
   tpcc_query->d_id = d_id;
@@ -995,10 +1001,11 @@ void TPCCQueryMessage::copy_from_buf(char * buf) {
   // new order
   size_t size;
   COPY_VAL(size,buf,ptr);
+  items.init(size);
   for(uint64_t i = 0 ; i < size;i++) {
     Item_no * item = (Item_no*)mem_allocator.alloc(sizeof(Item_no));
-    COPY_VAL(item,buf,ptr);
-     items.add(item);
+    COPY_VAL(*item,buf,ptr);
+    items.add(item);
   }
 
 	COPY_VAL(rbk,buf,ptr);

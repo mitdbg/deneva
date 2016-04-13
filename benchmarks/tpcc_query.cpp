@@ -32,7 +32,20 @@ BaseQuery * TPCCQueryGenerator::create_query(Workload * h_wl,uint64_t home_parti
 }
 
 void TPCCQuery::init(uint64_t thd_id, Workload * h_wl) {
-  // FIXME
+  items.init(g_max_items_per_txn);
+  BaseQuery::init();
+}
+
+void TPCCQuery::init() {
+  items.init(g_max_items_per_txn);
+  BaseQuery::init();
+}
+void TPCCQuery::release() {
+  BaseQuery::release();
+  for(uint64_t i = 0; i < items.size(); i++) {
+    mem_allocator.free(items[i],sizeof(Item_no));
+  }
+  items.release();
 }
 
 void TPCCQuery::print() {
@@ -46,6 +59,14 @@ void TPCCQuery::print() {
         ,c_w_id
         ,c_d_id
         );
+    if(txn_type == TPCC_NEW_ORDER) {
+      printf("items: ");
+      for(uint64_t size = 0; size < items.size(); size++) {
+        printf("%ld, "
+            ,items[size]->ol_i_id);
+      }
+      printf("\n");
+    }
 }
 
 
@@ -160,6 +181,7 @@ BaseQuery * TPCCQueryGenerator::gen_new_order(uint64_t home_partition) {
 	set<uint64_t> partitions_accessed;
 
 	query->txn_type = TPCC_NEW_ORDER;
+  query->items.init(g_max_items_per_txn);
 	if (FIRST_PART_LOCAL) {
     while(wh_to_part(query->w_id = URand(1, g_num_wh)) != home_partition) {}
   }

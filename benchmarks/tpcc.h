@@ -128,13 +128,13 @@ public:
 	RC run_calvin_txn(); 
   RC run_tpcc_phase2(); 
   RC run_tpcc_phase5(); 
+	TPCCRemTxnType state;
   void copy_remote_items(TPCCQueryMessage * msg); 
 private:
 	TPCCWorkload * _wl;
 	volatile RC _rc;
   row_t * row;
 
-	TPCCRemTxnType state;
   uint64_t next_item_id;
 
 void next_tpcc_state();

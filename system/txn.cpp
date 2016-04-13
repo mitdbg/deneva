@@ -52,7 +52,7 @@ void Transaction::reset() {
   insert_rows.clear();  
   write_cnt = 0;
   row_cnt = 0;
-  state = START;
+  twopc_state = START;
   rc = RCOK;
 }
 
@@ -316,7 +316,7 @@ void TxnManager::cleanup(RC rc) {
 	ts_t starttime = get_sys_clock();
   uint64_t row_cnt = txn->accesses.get_count();
   assert(txn->accesses.get_count() == txn->row_cnt);
-  assert(row_cnt <= g_req_per_query);
+  assert((WORKLOAD == YCSB && row_cnt <= g_req_per_query) || (WORKLOAD == TPCC && row_cnt <= g_max_items_per_txn*2 + 3));
   DEBUG("Cleanup %ld %ld\n",get_txn_id(),row_cnt);
 	for (int rid = row_cnt - 1; rid >= 0; rid --) {
 		row_t * orig_r = txn->accesses[rid]->orig_row;
@@ -531,7 +531,7 @@ RC TxnManager::finish(bool fin) {
   if(query->partitions_touched.is_empty() || 
       ((CC_ALG != HSTORE && CC_ALG != HSTORE_SPEC) 
        && query->partitions_touched.size() == 1 && query->partitions.size() > 1)) {
-    txn->state = DONE;
+    txn->twopc_state = DONE;
     release_locks(RCOK);
     return RCOK;
   }
@@ -539,9 +539,9 @@ RC TxnManager::finish(bool fin) {
   if(!fin) {
     readonly = query->readonly();
     if(readonly && CC_ALG != OCC)
-      txn->state = FIN;
+      txn->twopc_state = FIN;
     else
-      txn->state = PREP;
+      txn->twopc_state = PREP;
   }
   // Send prepare message to all participating transaction
   assert(rsp_cnt == 0);
@@ -587,7 +587,7 @@ RC TxnManager::finish(bool fin) {
 
   //if(query->rc != Abort && readonly && CC_ALG!=OCC) {
   if(readonly && CC_ALG!=OCC) {
-    txn->state = DONE;
+    txn->twopc_state = DONE;
     release_locks(RCOK);
     return RCOK;
   }
