@@ -43,6 +43,7 @@ void Transaction::init() {
   end_timestamp = UINT64_MAX;
   txn_id = UINT64_MAX;
   batch_id = UINT64_MAX;
+  insert_rows.init(g_max_items_per_txn + 10); // FIXME: arbitrary number
 
   reset();
 }
@@ -482,7 +483,7 @@ void TxnManager::insert_row(row_t * row, table_t * table) {
 	if (CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC)
 		return;
 	assert(txn->insert_rows.size() < MAX_ROW_PER_TXN);
-  txn->insert_rows.push_back(row);
+  txn->insert_rows.add(row);
 }
 
 itemid_t *

@@ -48,6 +48,13 @@ void TPCCTxnManager::reset() {
 	TxnManager::reset();
 }
 
+RC TPCCTxnManager::run_txn_post_wait() {
+    get_row_post_wait(row);
+    next_tpcc_state();
+    return RCOK;
+}
+
+
 RC TPCCTxnManager::run_txn() {
 #if MODE == SETUP_MODE
   return RCOK;

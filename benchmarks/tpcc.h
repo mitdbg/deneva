@@ -124,7 +124,7 @@ public:
   void reset();
   RC acquire_locks(); 
 	RC run_txn();
-	RC run_txn_post_wait() {return RCOK;}
+	RC run_txn_post_wait();
 	RC run_calvin_txn(); 
   RC run_tpcc_phase2(); 
   RC run_tpcc_phase5(); 

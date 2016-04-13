@@ -61,7 +61,7 @@ public:
   uint64_t row_cnt;
   // Internal state
   TxnState twopc_state;
-  vector<row_t*> insert_rows;
+  Array<row_t*> insert_rows;
 	txnid_t 		txn_id;
   uint64_t batch_id;
   RC rc;
