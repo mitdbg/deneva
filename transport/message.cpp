@@ -984,6 +984,7 @@ void TPCCQueryMessage::copy_from_buf(char * buf) {
   uint64_t ptr = QueryMessage::get_size();
 
   COPY_VAL(txn_type,buf,ptr); 
+  assert(txn_type == TPCC_PAYMENT || txn_type == TPCC_NEW_ORDER);
   COPY_VAL(state,buf,ptr); 
 	// common txn input for both payment & new-order
   COPY_VAL(w_id,buf,ptr);

@@ -149,8 +149,8 @@ bool YCSBTxnManager::is_local_request(uint64_t idx) {
 
 RC YCSBTxnManager::send_remote_request() {
   YCSBQuery* ycsb_query = (YCSBQuery*) query;
-  ycsb_query->partitions_touched.add_unique(GET_PART_ID(0,GET_NODE_ID(ycsb_query->requests[next_record_id]->key)));
   uint64_t dest_node_id = GET_NODE_ID(ycsb_query->requests[next_record_id]->key);
+  ycsb_query->partitions_touched.add_unique(GET_PART_ID(0,dest_node_id));
   msg_queue.enqueue(Message::create_message(this,RQRY),dest_node_id);
   return WAIT_REM;
 }

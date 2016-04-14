@@ -93,10 +93,11 @@ bool TPCCTxnManager::is_done() {
   TPCCQuery* tpcc_query = (TPCCQuery*) query;
   switch(tpcc_query->txn_type) {
     case TPCC_PAYMENT:
-      done = state == TPCC_PAYMENT5;
+      //done = state == TPCC_PAYMENT5 || state == TPCC_FIN;
+      done = state == TPCC_FIN;
       break;
     case TPCC_NEW_ORDER:
-      done = next_item_id == tpcc_query->ol_cnt;
+      done = next_item_id == tpcc_query->ol_cnt || state == TPCC_FIN;
       break;
     default: assert(false);
   }
@@ -276,7 +277,7 @@ void TPCCTxnManager::next_tpcc_state() {
       state = TPCC_NEWORDER5;
       break;
     case TPCC_NEWORDER5:
-      if(!is_done()) {
+      if(!IS_LOCAL(txn->txn_id) || !is_done()) {
         state = TPCC_NEWORDER6;
       }
       else {
@@ -294,7 +295,7 @@ void TPCCTxnManager::next_tpcc_state() {
       break;
     case TPCC_NEWORDER9:
       ++next_item_id;
-      if(!is_done()) {
+      if(!IS_LOCAL(txn->txn_id) || !is_done()) {
         state = TPCC_NEWORDER6;
       }
       else {
@@ -319,26 +320,36 @@ bool TPCCTxnManager::is_local_item(uint64_t idx) {
 
 RC TPCCTxnManager::send_remote_request() {
   TPCCQuery* tpcc_query = (TPCCQuery*) query;
+  TPCCRemTxnType next_state = TPCC_FIN;
 	uint64_t w_id = tpcc_query->w_id;
   uint64_t c_w_id = tpcc_query->c_w_id;
   TPCCQueryMessage * msg = (TPCCQueryMessage*)Message::create_message(this,RQRY);
   uint64_t dest_node_id = UINT64_MAX;
   if(state == TPCC_PAYMENT0) {
     dest_node_id = GET_NODE_ID(wh_to_part(w_id));
+    next_state = TPCC_PAYMENT2;
   } else if(state == TPCC_PAYMENT4) {
     dest_node_id = GET_NODE_ID(wh_to_part(c_w_id));
+    next_state = TPCC_FIN;
   } else if(state == TPCC_NEWORDER0) {
     dest_node_id = GET_NODE_ID(wh_to_part(w_id));
+    next_state = TPCC_NEWORDER6;
   } else if(state == TPCC_NEWORDER8) {
     dest_node_id = GET_NODE_ID(wh_to_part(tpcc_query->items[next_item_id]->ol_supply_w_id));
     while(GET_NODE_ID(wh_to_part(tpcc_query->items[next_item_id]->ol_supply_w_id)) != dest_node_id) {
       msg->items.add(tpcc_query->items[next_item_id++]);
     }
+    if(is_done())
+      next_state = TPCC_FIN;
+    else 
+      next_state = TPCC_NEWORDER6;
   } else {
     assert(false);
   }
   msg->state = state;
+  query->partitions_touched.add_unique(GET_PART_ID(0,dest_node_id));
   msg_queue.enqueue(msg,dest_node_id);
+  state = next_state;
   return WAIT_REM;
 }
 
@@ -394,8 +405,7 @@ RC TPCCTxnManager::run_txn_state() {
       if(w_loc)
 			  rc = run_payment_0(w_id, d_id, d_w_id, h_amount, row);
       else {
-        send_remote_request();
-        rc = WAIT_REM;
+        rc = send_remote_request();
       }
 			break;
 		case TPCC_PAYMENT1 :
@@ -411,7 +421,7 @@ RC TPCCTxnManager::run_txn_state() {
       if(c_w_loc)
 			  rc = run_payment_4( w_id,  d_id, c_id, c_w_id,  c_d_id, c_last, h_amount, by_last_name, row); 
       else {
-        send_remote_request();
+        rc = send_remote_request();
       }
 			break;
 		case TPCC_PAYMENT5 :
@@ -421,8 +431,7 @@ RC TPCCTxnManager::run_txn_state() {
       if(w_loc)
 			  rc = new_order_0( w_id, d_id, c_id, remote, ol_cnt, o_entry_d, &tpcc_query->o_id, row); 
       else {
-        send_remote_request();
-        rc = WAIT_REM;
+        rc = send_remote_request();
       }
 			break;
 		case TPCC_NEWORDER1 :
@@ -451,8 +460,7 @@ RC TPCCTxnManager::run_txn_state() {
 			  rc = new_order_8( w_id, d_id, remote, ol_i_id, ol_supply_w_id, ol_quantity,  ol_number, o_id, row); 
       }
       else {
-        send_remote_request();
-        rc = WAIT_REM;
+        rc = send_remote_request();
       }
 			break;
 		case TPCC_NEWORDER9 :

@@ -142,7 +142,7 @@ RC TxnManager::start_abort() {
 RC TxnManager::start_commit() {
   RC rc = RCOK;
   if(is_multi_part()) {
-    if(!((YCSBQuery*)query)->readonly() || CC_ALG == OCC) {
+    if(!query->readonly() || CC_ALG == OCC) {
       // send prepare messages
       send_prepare_messages();
       rc = WAIT_REM;

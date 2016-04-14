@@ -50,8 +50,9 @@ void TPCCQuery::release() {
 
 void TPCCQuery::print() {
   
-    printf("TPCCQuery: "
+    printf("TPCCQuery: %d "
         "w_id: %ld, d_id: %ld, c_id: %ld, d_w_id: %ld, c_w_id: %ld, c_d_id: %ld\n"
+        ,(int)txn_type
         ,w_id
         ,d_id
         ,c_id
@@ -173,6 +174,10 @@ BaseQuery * TPCCQueryGenerator::gen_payment(uint64_t home_partition) {
 		query->c_id = NURand(1023, 1, g_cust_per_dist);
 	}
 
+  query->partitions.init(partitions_accessed.size());
+  for(auto it = partitions_accessed.begin(); it != partitions_accessed.end(); ++it) {
+    query->partitions.add(*it);
+  }
   return query;
 }
 
@@ -222,7 +227,7 @@ BaseQuery * TPCCQueryGenerator::gen_new_order(uint64_t home_partition) {
         partitions_accessed.insert(wh_to_part(item->ol_supply_w_id));
       } else {
         // select warehouse from among those already selected
-        while( partitions_accessed.count(wh_to_part(item->ol_supply_w_id = URand(1, g_num_wh))) > 0) {}
+        while( partitions_accessed.count(wh_to_part(item->ol_supply_w_id = URand(1, g_num_wh))) == 0) {}
       }
     }
 
