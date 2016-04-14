@@ -6,7 +6,7 @@
 // Simulation + Hardware
 /***********************************************/
 #define NODE_CNT 2
-#define THREAD_CNT 1
+#define THREAD_CNT 2
 #define REM_THREAD_CNT 1
 #define SEND_THREAD_CNT 1
 #define CORE_CNT 8
@@ -93,7 +93,7 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, OCC, VLL, CALVIN
-#define CC_ALG WAIT_DIE
+#define CC_ALG OCC
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER         false
@@ -219,7 +219,7 @@ enum TPCCTxnType {TPCC_ALL,
 extern TPCCTxnType          g_tpcc_txn_type;
 
 //#define TXN_TYPE          TPCC_ALL
-#define PERC_PAYMENT 0.0
+#define PERC_PAYMENT 1.0
 #define FIRSTNAME_MINLEN      8
 #define FIRSTNAME_LEN         16
 #define LASTNAME_LEN        16

@@ -360,6 +360,8 @@ RC TPCCTxnManager::send_remote_request() {
 void TPCCTxnManager::copy_remote_items(TPCCQueryMessage * msg) {
   TPCCQuery* tpcc_query = (TPCCQuery*) query;
   msg->items.init(tpcc_query->items.size());
+  if(tpcc_query->txn_type == TPCC_PAYMENT)
+    return;
   uint64_t dest_node_id = GET_NODE_ID(wh_to_part(tpcc_query->items[next_item_id]->ol_supply_w_id));
   while(next_item_id < tpcc_query->items.size() && !is_local_item(next_item_id) && GET_NODE_ID(wh_to_part(tpcc_query->items[next_item_id]->ol_supply_w_id)) == dest_node_id) {
     Item_no * req = (Item_no*) mem_allocator.alloc(sizeof(Item_no));
