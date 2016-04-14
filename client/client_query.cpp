@@ -76,7 +76,7 @@ Client_query_queue::initQueriesParallel() {
 #endif
   for ( UInt32 server_id = 0; server_id < g_servers_per_client; server_id ++) {
     for (UInt32 query_id = request_cnt / g_init_parallelism * tid; query_id < final_request; query_id ++) {
-      queries[server_id][query_id] = gen->create_query(_wl,server_id);
+      queries[server_id][query_id] = gen->create_query(_wl,server_id+g_server_start_node);
     }
   }
 

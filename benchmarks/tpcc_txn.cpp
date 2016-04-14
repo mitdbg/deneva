@@ -68,7 +68,9 @@ RC TPCCTxnManager::run_txn() {
 
   if(IS_LOCAL(txn->txn_id) && (state == TPCC_PAYMENT0 || state == TPCC_NEWORDER0)) {
     DEBUG("Running txn %ld\n",txn->txn_id);
+#if DISTR_DEBUG
     query->print();
+#endif
     query->partitions_touched.add_unique(GET_PART_ID(0,g_node_id));
   }
 
