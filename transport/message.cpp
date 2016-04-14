@@ -940,7 +940,8 @@ void TPCCQueryMessage::copy_from_txn(TxnManager * txn) {
   by_last_name = tpcc_query->by_last_name;
 
   // new order
-  items.copy(tpcc_query->items);
+  //items.copy(tpcc_query->items);
+  ((TPCCTxnManager*)txn)->copy_remote_items(this);
 	rbk = tpcc_query->rbk;
   remote = tpcc_query->remote;
   ol_cnt = tpcc_query->ol_cnt;

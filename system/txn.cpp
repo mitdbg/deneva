@@ -99,8 +99,13 @@ void TxnManager::reset() {
 }
 
 void TxnManager::reset_query() {
+#if WORKLOAD == YCSB
   ((YCSBQuery*)query)->release();
   ((YCSBQuery*)query)->init();
+#elif WORKLOAD == TPCC
+  ((TPCCQuery*)query)->release();
+  ((TPCCQuery*)query)->init();
+#endif
 }
 
 RC TxnManager::commit() {

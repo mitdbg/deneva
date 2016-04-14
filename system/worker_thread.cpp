@@ -271,6 +271,7 @@ RC WorkerThread::process_rack_rfin(Message * msg) {
 
 RC WorkerThread::process_rqry_rsp(Message * msg) {
   DEBUG("RQRY_RSP %ld\n",msg->get_txn_id());
+  assert(IS_LOCAL(msg->get_txn_id()));
 
   TxnManager * txn_man = txn_table.get_transaction_manager(msg->get_txn_id(),0);
   RC rc = txn_man->run_txn();
@@ -281,6 +282,7 @@ RC WorkerThread::process_rqry_rsp(Message * msg) {
 
 RC WorkerThread::process_rqry(Message * msg) {
   DEBUG("RQRY %ld\n",msg->get_txn_id());
+  assert(!IS_LOCAL(msg->get_txn_id()));
   RC rc = RCOK;
 
   // Create new transaction table entry if one does not already exist
@@ -298,6 +300,7 @@ RC WorkerThread::process_rqry(Message * msg) {
 
 RC WorkerThread::process_rqry_cont(Message * msg) {
   DEBUG("RQRY_CONT %ld\n",msg->get_txn_id());
+  assert(!IS_LOCAL(msg->get_txn_id()));
   RC rc = RCOK;
 
   // Create new transaction table entry if one does not already exist
@@ -315,6 +318,7 @@ RC WorkerThread::process_rqry_cont(Message * msg) {
 
 RC WorkerThread::process_rtxn_cont(Message * msg) {
   DEBUG("RTXN_CONT %ld\n",msg->get_txn_id());
+  assert(IS_LOCAL(msg->get_txn_id()));
   TxnManager * txn_man = txn_table.get_transaction_manager(msg->get_txn_id(),0);
   txn_man->run_txn_post_wait();
   RC rc = txn_man->run_txn();

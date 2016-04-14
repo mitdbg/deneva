@@ -6,7 +6,7 @@
 // Simulation + Hardware
 /***********************************************/
 #define NODE_CNT 2
-#define THREAD_CNT 2
+#define THREAD_CNT 1
 #define REM_THREAD_CNT 1
 #define SEND_THREAD_CNT 1
 #define CORE_CNT 8
