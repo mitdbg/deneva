@@ -54,7 +54,7 @@ void row_t::init_manager(row_t * row) {
   return;
 #endif
   DEBUG_M("row_t::init_manager alloc \n");
-#if CC_ALG == DL_DETECT || CC_ALG == NO_WAIT || CC_ALG == WAIT_DIE || CC_ALG == CALVIN
+#if CC_ALG == NO_WAIT || CC_ALG == WAIT_DIE || CC_ALG == CALVIN
     manager = (Row_lock *) mem_allocator.alloc(sizeof(Row_lock));
 #elif CC_ALG == TIMESTAMP
     manager = (Row_ts *) mem_allocator.alloc(sizeof(Row_ts));
@@ -199,27 +199,16 @@ RC row_t::get_row(access_t type, TxnManager * txn, row_t *& row) {
   row = this;
   return rc;
 #endif
-#if CC_ALG == WAIT_DIE || CC_ALG == NO_WAIT || CC_ALG == DL_DETECT 
+#if CC_ALG == WAIT_DIE || CC_ALG == NO_WAIT 
 	//uint64_t thd_id = txn->get_thd_id();
 	lock_t lt = (type == RD || type == SCAN)? LOCK_SH : LOCK_EX;
-#if CC_ALG == DL_DETECT
-	uint64_t * txnids;
-	int txncnt; 
-	rc = this->manager->lock_get(lt, txn, txnids, txncnt);	
-#else
 	rc = this->manager->lock_get(lt, txn);
-#endif
 
 	if (rc == RCOK) {
 		row = this;
 	} else if (rc == Abort) {} 
 	else if (rc == WAIT) {
-		ASSERT(CC_ALG == WAIT_DIE || CC_ALG == DL_DETECT);
-#if CC_ALG == DL_DETECT	
-		bool dep_added = false;
-#endif
-    // lock_abort only used by DL_DETECT
-		//txn->lock_abort = false;
+		ASSERT(CC_ALG == WAIT_DIE);
 
 	}
 	goto end;
@@ -337,7 +326,7 @@ void row_t::return_row(access_t type, TxnManager * txn, row_t * row) {
 #if MODE==NOCC_MODE || MODE==QRY_ONLY_MODE
   return;
 #endif
-#if CC_ALG == WAIT_DIE || CC_ALG == NO_WAIT || CC_ALG == DL_DETECT || CC_ALG == CALVIN
+#if CC_ALG == WAIT_DIE || CC_ALG == NO_WAIT || CC_ALG == CALVIN
 	assert (row == NULL || row == this || type == XP);
 	if (ROLL_BACK && type == XP) {// recover from previous writes.
 		this->copy(row);

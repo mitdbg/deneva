@@ -92,8 +92,8 @@
 /***********************************************/
 // Concurrency Control
 /***********************************************/
-// WAIT_DIE, NO_WAIT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, OCC, VLL, CALVIN
-#define CC_ALG OCC
+// WAIT_DIE, NO_WAIT, TIMESTAMP, MVCC, OCC, CALVIN, MAAT
+#define CC_ALG WAIT_DIE
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER         false
@@ -263,7 +263,7 @@ extern TestCases          g_test_case;
 #define DEBUG_TIMESTAMP       false
 #define DEBUG_SYNTH         false
 #define DEBUG_ASSERT        false
-#define DEBUG_DISTR true
+#define DEBUG_DISTR false
 #define DEBUG_ALLOC false
 #define DEBUG_RACE false
 #define DEBUG_TIMELINE        false
@@ -301,6 +301,7 @@ extern TestCases          g_test_case;
 #define OCC             8
 #define VLL             9
 #define CALVIN      10
+#define MAAT      10
 // TIMESTAMP allocation method.
 #define TS_MUTEX          1
 #define TS_CAS            2
