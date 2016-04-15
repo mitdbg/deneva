@@ -11,20 +11,19 @@ DBMS BENCHMARK
 
 == General Features ==
 
-  dbms is a OLTP database benchmark with the following features.
+  ddbms is a OLTP database benchmark with the following features.
   
   1. Seven different concurrency control algorithms are supported.
 	NO_WAIT[1]		: no wait two phase locking
 	WAIT_DIE[1]		: wait and die two phase locking
 	TIMESTAMP[1]	: basic T/O
-	MVCC[1]			: multi-version T/O
-	OCC[2]			: optimistic concurrency control
-	HSTORE[3]		: H-STORE
+	MVCC[2]			: multi-version T/O
+	OCC[3]			: optimistic concurrency control
 	CALVIN[4]		: Calvin
 
   [1] Phlip Bernstein, Nathan Goodman, "Concurrency Control in Distributed Database Systems", Computing Surveys, June 1981
-  [2] H.T. Kung, John Robinson, "On Optimistic Methods for Concurrency Control", Transactions on Database Systems, June 1981
-  [3] R. Kallman et al, "H-Store: a High-Performance, Distributed Main Memory Transaction Processing System,", VLDB 2008
+  [2] Phlip Bernstein, Nathan Goodman, "Multiversion Concurrency Control -- Theory and Algorithms", Transactions on Database Systems, Dec 1983
+  [3] H.T. Kung, John Robinson, "On Optimistic Methods for Concurrency Control", Transactions on Database Systems, June 1981
   [4] A. Thomson et al, "Calvin: Fast Distributed Transactions for Partitioned Database Systems", SIGMOD 2012
 	
   2. Two benchmarks are supported. 
