@@ -47,6 +47,7 @@
 #include "txn_table.h"
 #include "logger.h"
 #include "sim_manager.h"
+//#include "maat.h"
 
 using namespace std;
 
@@ -57,6 +58,7 @@ class Manager;
 class Query_queue;
 class Plock;
 class OptCC;
+class Maat;
 class SpecEx;
 class Transport;
 class Remote_query;
@@ -73,6 +75,7 @@ class Client_query_queue;
 class Client_txn;
 class Sequencer;
 class Logger;
+class TimeTable;
 
 typedef uint32_t UInt32;
 typedef int32_t SInt32;
@@ -92,6 +95,7 @@ extern Query_queue query_queue;
 extern Client_query_queue client_query_queue;
 extern Plock part_lock_man;
 extern OptCC occ_man;
+extern Maat maat_man;
 extern SpecEx spec_man;
 extern Transport tport_man;
 extern Remote_query rem_qry_man;
@@ -107,6 +111,7 @@ extern MessageQueue msg_queue;
 extern Client_txn client_man;
 extern Sequencer seq_man;
 extern Logger logger;
+extern TimeTable time_table;
 
 extern bool volatile warmup_done;
 extern bool volatile warmup_finish;

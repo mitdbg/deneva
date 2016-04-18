@@ -35,6 +35,7 @@
 #include "sim_manager.h"
 #include "abort_queue.h"
 #include "work_queue.h"
+#include "maat.h"
 
 void * f(void *);
 void * g(void *);
@@ -154,6 +155,16 @@ int main(int argc, char* argv[])
   printf("Initializing sequencer... ");
   seq_man.init(m_wl);
   printf("Done\n");
+#endif
+#if CC_ALG == MAAT
+  printf("Initializing Time Table... ");
+  time_table.init();
+  printf("Done\n");
+  /*
+  printf("Initializing MaaT manager... ");
+	maat_man.init();
+  printf("Done\n");
+  */
 #endif
 #if LOGGING
   printf("Initializing logger... ");

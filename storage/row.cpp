@@ -23,6 +23,7 @@
 #include "row_ts.h"
 #include "row_mvcc.h"
 #include "row_occ.h"
+#include "row_maat.h"
 #include "row_specex.h"
 #include "mem_alloc.h"
 #include "manager.h"
@@ -66,6 +67,8 @@ void row_t::init_manager(row_t * row) {
 #elif CC_ALG == HSTORE_SPEC
     manager = (Row_specex *) mem_allocator.alloc(sizeof(Row_specex));
     */
+#elif CC_ALG == MAAT 
+    manager = (Row_maat *) mem_allocator.alloc(sizeof(Row_maat));
 #endif
 
 #if CC_ALG != HSTORE && CC_ALG != HSTORE_SPEC 
@@ -199,6 +202,16 @@ RC row_t::get_row(access_t type, TxnManager * txn, row_t *& row) {
   row = this;
   return rc;
 #endif
+#if CC_ALG == MAAT
+
+  DEBUG_M("row_t::get_row MAAT alloc \n");
+	txn->cur_row = (row_t *) mem_allocator.alloc(sizeof(row_t));
+	txn->cur_row->init(get_table(), get_part_id());
+  rc = this->manager->access(type,txn);
+	row = txn->cur_row;
+  assert(rc == RCOK);
+	goto end;
+#endif
 #if CC_ALG == WAIT_DIE || CC_ALG == NO_WAIT 
 	//uint64_t thd_id = txn->get_thd_id();
 	lock_t lt = (type == RD || type == SCAN)? LOCK_SH : LOCK_EX;
@@ -322,7 +335,7 @@ RC row_t::get_row_post_wait(access_t type, TxnManager * txn, row_t *& row) {
 // delete during history cleanup.
 // For TIMESTAMP, the row will be explicity deleted at the end of access().
 // (c.f. row_ts.cpp)
-void row_t::return_row(access_t type, TxnManager * txn, row_t * row) {	
+void row_t::return_row(RC rc, access_t type, TxnManager * txn, row_t * row) {	
 #if MODE==NOCC_MODE || MODE==QRY_ONLY_MODE
   return;
 #endif
@@ -361,6 +374,17 @@ void row_t::return_row(access_t type, TxnManager * txn, row_t * row) {
 	mem_allocator.free(row, sizeof(row_t));
   manager->release();
 	return;
+#elif CC_ALG == MAAT 
+	assert (row != NULL);
+  if (rc == Abort) {
+    manager->abort(type,txn);
+  } else {
+    manager->commit(type,txn,row);
+  }
+
+	row->free_row();
+  DEBUG_M("row_t::return_row Maat free \n");
+	mem_allocator.free(row, sizeof(row_t));
 #elif CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC 
 	assert (row != NULL);
 	if (ROLL_BACK && type == XP) {// recover from previous writes.

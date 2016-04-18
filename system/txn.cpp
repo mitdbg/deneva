@@ -35,6 +35,7 @@
 #include "ycsb_query.h"
 #include "tpcc_query.h"
 #include "array.h"
+#include "maat.h"
 
 
 void Transaction::init() {
@@ -94,6 +95,12 @@ void TxnManager::reset() {
   rsp_cnt = 0;
   aborted = false;
   return_id = UINT64_MAX;
+
+  // MaaT
+  greatest_write_timestamp = 0;
+  greatest_read_timestamp = 0;
+  commit_timestamp = 0;
+
   txn->reset();
 
 }
@@ -111,6 +118,9 @@ void TxnManager::reset_query() {
 RC TxnManager::commit() {
   DEBUG("Commit %ld\n",get_txn_id());
   release_locks(RCOK);
+#if CC_ALG == MAAT
+  time_table.release(get_txn_id());
+#endif
   commit_stats();
 #if LOGGING
     LogRecord * record = logger.createRecord(get_txn_id(),L_NOTIFY,0,0);
@@ -130,6 +140,9 @@ RC TxnManager::abort() {
   txn->rc = Abort;
   aborted = true;
   release_locks(Abort);
+#if CC_ALG == MAAT
+  assert(time_table.get_state(get_txn_id()) == MAAT_ABORTED);
+#endif
   //commit_stats();
   return Abort;
 }
@@ -327,7 +340,7 @@ void TxnManager::cleanup(RC rc) {
 	for (int rid = row_cnt - 1; rid >= 0; rid --) {
 		row_t * orig_r = txn->accesses[rid]->orig_row;
 		access_t type = txn->accesses[rid]->type;
-		if (type == WR && rc == Abort)
+		if (type == WR && rc == Abort && CC_ALG != MAAT)
 			type = XP;
 
 		if (ROLL_BACK && type == XP &&
@@ -338,9 +351,9 @@ void TxnManager::cleanup(RC rc) {
           CC_ALG == HSTORE_SPEC 
           )) 
 		{
-			orig_r->return_row(type, this, txn->accesses[rid]->orig_data);
+			orig_r->return_row(rc,type, this, txn->accesses[rid]->orig_data);
 		} else {
-			orig_r->return_row(type, this, txn->accesses[rid]->data);
+			orig_r->return_row(rc,type, this, txn->accesses[rid]->data);
 		}
 
 #if ROLL_BACK && (CC_ALG == DL_DETECT || CC_ALG == NO_WAIT || CC_ALG == WAIT_DIE || CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC)
@@ -513,6 +526,8 @@ RC TxnManager::validate() {
   uint64_t starttime = get_sys_clock();
   if(CC_ALG == OCC && rc == RCOK)
     rc = occ_man.validate(this);
+  if(CC_ALG == MAAT && rc == RCOK)
+    rc = maat_man.validate(this);
   INC_STATS(0,txn_validate_time,get_sys_clock() - starttime);
   return rc;
 }

@@ -32,6 +32,7 @@
 #include "client_txn.h"
 #include "sequencer.h"
 #include "logger.h"
+#include "maat.h"
 
 mem_alloc mem_allocator;
 Stats stats;
@@ -40,6 +41,7 @@ Manager glob_manager;
 Query_queue query_queue;
 Client_query_queue client_query_queue;
 OptCC occ_man;
+Maat maat_man;
 SpecEx spec_man;
 Transport tport_man;
 TxnPool txn_pool;
@@ -54,6 +56,7 @@ MessageQueue msg_queue;
 Client_txn client_man;
 Sequencer seq_man;
 Logger logger;
+TimeTable time_table;
 
 bool volatile warmup_done = false;
 bool volatile warmup_finish = false;

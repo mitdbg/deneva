@@ -20,6 +20,7 @@
 #include "mem_alloc.h"
 #include "manager.h"
 #include "helper.h"
+#include "maat.h"
 
 void Row_maat::init(row_t * row) {
 	_row = row;
@@ -30,17 +31,31 @@ void Row_maat::init(row_t * row) {
 	
 }
 
+RC Row_maat::access(access_t type, TxnManager * txn) {
+  if(type == RD)
+    read(txn);
+  if(type == WR)
+    prewrite(txn);
+  return RCOK;
+}
+
 RC Row_maat::read(TxnManager * txn) {
 	assert (CC_ALG == MAAT);
-	RC rc;
+	RC rc = RCOK;
 
   pthread_mutex_lock( &latch );
 
-  //Add to uncommitted reads
-
   // Copy uncommitted writes
+  for(auto it = uncommitted_writes.begin(); it != uncommitted_writes.end(); it++) {
+    txn->uncommitted_writes.insert(*it);
+  }
 
   // Copy write timestamp
+  if(txn->greatest_write_timestamp < timestamp_last_write)
+    txn->greatest_write_timestamp = timestamp_last_write;
+
+  //Add to uncommitted reads (soft lock)
+  uncommitted_reads.insert(txn->get_txn_id());
 
   pthread_mutex_unlock( &latch );
 
@@ -49,17 +64,26 @@ RC Row_maat::read(TxnManager * txn) {
 
 RC Row_maat::prewrite(TxnManager * txn) {
 	assert (CC_ALG == MAAT);
-	RC rc;
+	RC rc = RCOK;
 
   pthread_mutex_lock( &latch );
 
-  //Add to uncommitted writes
-
   // Copy uncommitted reads 
-
-  // Copy read timestamp
+  for(auto it = uncommitted_reads.begin(); it != uncommitted_reads.end(); it++) {
+    txn->uncommitted_reads.insert(*it);
+  }
 
   // Copy uncommitted writes 
+  for(auto it = uncommitted_writes.begin(); it != uncommitted_writes.end(); it++) {
+    txn->uncommitted_writes_y.insert(*it);
+  }
+
+  // Copy read timestamp
+  if(txn->greatest_read_timestamp < timestamp_last_read)
+    txn->greatest_read_timestamp = timestamp_last_read;
+
+  //Add to uncommitted writes (soft lock)
+  uncommitted_writes.insert(txn->get_txn_id());
 
   pthread_mutex_unlock( &latch );
 
@@ -67,25 +91,44 @@ RC Row_maat::prewrite(TxnManager * txn) {
 }
 
 
+RC Row_maat::abort(access_t type, TxnManager * txn) {	
+  pthread_mutex_lock( &latch );
+  if(type == RD) {
+    uncommitted_reads.erase(txn->get_txn_id());
+  }
 
-RC Row_maat::commit(TxnManager * txn) {	
-  /*
-  if(time_table.get_commit_timestamp(txn->get_txn_id()) >  timestamp_last_read)
-    timestamp_last_read = time_table.get_commit_timestamp(txn->get_txn_id());
-  if(time_table.get_commit_timestamp(txn->get_txn_id()) >  timestamp_last_write)
-    timestamp_last_write = time_table.get_commit_timestamp(txn->get_txn_id());
-    */
-  release(txn);
+  if(type == WR) {
+    uncommitted_writes.erase(txn->get_txn_id());
+  }
+
+  pthread_mutex_unlock( &latch );
+  return Abort;
+}
+
+RC Row_maat::commit(access_t type, TxnManager * txn, row_t * data) {	
+  pthread_mutex_lock( &latch );
+
+  if(type == RD) {
+    if(txn->get_commit_timestamp() >  timestamp_last_read)
+      timestamp_last_read = txn->get_commit_timestamp();
+    uncommitted_reads.erase(txn->get_txn_id());
+  }
+
+  if(type == WR) {
+    if(txn->get_commit_timestamp() >  timestamp_last_write)
+      timestamp_last_write = txn->get_commit_timestamp();
+    uncommitted_writes.erase(txn->get_txn_id());
+    // Apply write to DB
+    write(data);
+  }
+
+  pthread_mutex_unlock( &latch );
 	return RCOK;
 }
 
-RC Row_maat::release(TxnManager * txn) {	
-
-  pthread_mutex_lock( &latch );
-
-  pthread_mutex_unlock( &latch );
-
-	return RCOK;
+void
+Row_maat::write(row_t * data) {
+	_row->copy(data);
 }
 
 

@@ -20,10 +20,12 @@
 class Row_maat {
 public:
 	void init(row_t * row);
+  RC access(access_t type, TxnManager * txn);
   RC read(TxnManager * txn);
   RC prewrite(TxnManager * txn);
-  RC commit(TxnManager * txn);
-  RC release(TxnManager * txn);
+  RC abort(access_t type, TxnManager * txn);
+  RC commit(access_t type, TxnManager * txn, row_t * data);
+  void write(row_t * data);
 	
 private:
   pthread_mutex_t latch;
