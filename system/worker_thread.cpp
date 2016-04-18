@@ -33,6 +33,7 @@
 #include "logger.h"
 #include "message.h"
 #include "abort_queue.h"
+#include "maat.h"
 
 void WorkerThread::send_init_done_to_all_nodes() {
 		uint64_t total_nodes = g_node_cnt + g_client_node_cnt + g_node_cnt*g_repl_cnt;
@@ -226,12 +227,24 @@ RC WorkerThread::process_rack_prep(Message * msg) {
   TxnManager * txn_man = txn_table.get_transaction_manager(msg->get_txn_id(),0);
   int responses_left = txn_man->received_response(((AckMessage*)msg)->rc);
   assert(responses_left >=0);
+#if CC_ALG == MAAT
+  // Integrate bounds
+  uint64_t lower = ((AckMessage*)msg)->lower;
+  uint64_t upper = ((AckMessage*)msg)->upper;
+  if(lower > time_table.get_lower(msg->get_txn_id())) {
+    time_table.set_lower(msg->get_txn_id(),lower);
+  }
+  if(upper < time_table.get_upper(msg->get_txn_id())) {
+    time_table.set_upper(msg->get_txn_id(),upper);
+  }
+#endif
   if(responses_left > 0) 
     return WAIT;
 
   // Done waiting 
-  if(txn_man->get_rc() == RCOK)
+  if(txn_man->get_rc() == RCOK) {
     rc  = txn_man->validate();
+  }
   if(rc == Abort || txn_man->get_rc() == Abort) {
     txn_man->txn->rc = Abort;
     rc = Abort;

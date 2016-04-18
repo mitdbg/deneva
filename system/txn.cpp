@@ -526,8 +526,13 @@ RC TxnManager::validate() {
   uint64_t starttime = get_sys_clock();
   if(CC_ALG == OCC && rc == RCOK)
     rc = occ_man.validate(this);
-  if(CC_ALG == MAAT && rc == RCOK)
+  if(CC_ALG == MAAT && rc == RCOK) {
     rc = maat_man.validate(this);
+    // Note: home node must be last to validate
+    if(IS_LOCAL(get_txn_id()) && rc == RCOK) {
+      rc = maat_man.find_bound(this);
+    }
+  }
   INC_STATS(0,txn_validate_time,get_sys_clock() - starttime);
   return rc;
 }

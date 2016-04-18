@@ -22,6 +22,7 @@
 #include "tpcc.h"
 #include "global.h"
 #include "message.h"
+#include "maat.h"
 
 std::vector<Message*> Message::create_messages(char * buf) {
   std::vector<Message*> all_msgs;
@@ -680,6 +681,10 @@ void AckMessage::copy_from_txn(TxnManager * txn) {
   Message::mcopy_from_txn(txn);
   //rc = query->rc;
   rc = txn->get_rc();
+#if CC_ALG == MAAT
+  lower = time_table.get_lower(txn->get_txn_id());
+  upper = time_table.get_upper(txn->get_txn_id());
+#endif
 }
 
 void AckMessage::copy_to_txn(TxnManager * txn) {
@@ -691,12 +696,20 @@ void AckMessage::copy_from_buf(char * buf) {
   Message::mcopy_from_buf(buf);
   uint64_t ptr = Message::mget_size();
   COPY_VAL(rc,buf,ptr);
+#if CC_ALG == MAAT
+  COPY_VAL(lower,buf,ptr);
+  COPY_VAL(upper,buf,ptr);
+#endif
 }
 
 void AckMessage::copy_to_buf(char * buf) {
   Message::mcopy_to_buf(buf);
   uint64_t ptr = Message::mget_size();
   COPY_BUF(buf,rc,ptr);
+#if CC_ALG == MAAT
+  COPY_BUF(buf,lower,ptr);
+  COPY_BUF(buf,upper,ptr);
+#endif
 }
 
 /************************/
@@ -740,10 +753,16 @@ uint64_t FinishMessage::get_size() {
 void FinishMessage::copy_from_txn(TxnManager * txn) {
   Message::mcopy_from_txn(txn);
   rc = txn->get_rc();
+#if CC_ALG == MAAT
+  commit_timestamp = txn->get_commit_timestamp();
+#endif
 }
 
 void FinishMessage::copy_to_txn(TxnManager * txn) {
   Message::mcopy_to_txn(txn);
+#if CC_ALG == MAAT
+  txn->commit_timestamp = commit_timestamp;
+#endif
 }
 
 void FinishMessage::copy_from_buf(char * buf) {
@@ -752,6 +771,9 @@ void FinishMessage::copy_from_buf(char * buf) {
   COPY_VAL(pid,buf,ptr);
   COPY_VAL(rc,buf,ptr);
   COPY_VAL(ro,buf,ptr);
+#if CC_ALG == MAAT
+  COPY_VAL(commit_timestamp,buf,ptr);
+#endif
 }
 
 void FinishMessage::copy_to_buf(char * buf) {
@@ -760,6 +782,9 @@ void FinishMessage::copy_to_buf(char * buf) {
   COPY_BUF(buf,pid,ptr);
   COPY_BUF(buf,rc,ptr);
   COPY_BUF(buf,ro,ptr);
+#if CC_ALG == MAAT
+  COPY_BUF(buf,commit_timestamp,ptr);
+#endif
 }
 
 /************************/

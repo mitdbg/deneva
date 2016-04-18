@@ -86,6 +86,9 @@ public:
   //uint64_t txn_id;
   //uint64_t batch_id;
   bool ro;
+#if CC_ALG == MAAT
+  uint64_t commit_timestamp;
+#endif
 };
 
 class LogMessage : public Message {
@@ -152,6 +155,10 @@ public:
   void release() {}
 
   RC rc;
+#if CC_ALG == MAAT
+  uint64_t lower;
+  uint64_t upper;
+#endif
 };
 
 class PrepareMessage : public Message {
