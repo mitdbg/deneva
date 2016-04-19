@@ -85,6 +85,9 @@ void TxnManager::init(Workload * h_wl) {
 
 	this->h_wl = h_wl;
 	pthread_mutex_init(&txn_lock, NULL);
+  uncommitted_writes = new std::set<uint64_t>();
+  uncommitted_writes_y = new std::set<uint64_t>();
+  uncommitted_reads = new std::set<uint64_t>();
 }
 
 void TxnManager::reset() {
@@ -100,6 +103,9 @@ void TxnManager::reset() {
   greatest_write_timestamp = 0;
   greatest_read_timestamp = 0;
   commit_timestamp = 0;
+  uncommitted_writes->clear();
+  uncommitted_writes_y->clear();
+  uncommitted_reads->clear();
 
   txn->reset();
 

@@ -32,8 +32,8 @@ private:
 	
 	row_t * _row;
 	
-  std::set<uint64_t> uncommitted_reads;
-  std::set<uint64_t> uncommitted_writes;
+  std::set<uint64_t> * uncommitted_reads;
+  std::set<uint64_t> * uncommitted_writes;
   uint64_t timestamp_last_read;
   uint64_t timestamp_last_write;
 };

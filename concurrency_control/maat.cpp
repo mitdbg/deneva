@@ -34,7 +34,7 @@ RC Maat::validate(TxnManager * txn) {
   if(lower <= txn->greatest_write_timestamp)
     lower = txn->greatest_write_timestamp + 1;
   // lower bound of uncommitted writes greater than upper bound of txn
-  for(auto it = txn->uncommitted_writes.begin(); it != txn->uncommitted_writes.end();it++) {
+  for(auto it = txn->uncommitted_writes->begin(); it != txn->uncommitted_writes->end();it++) {
     if(upper <= time_table.get_lower(*it)) {
       MAATState state = time_table.get_state(*it);
       if(state == MAAT_VALIDATED || state == MAAT_COMMITTED) {
@@ -52,7 +52,7 @@ RC Maat::validate(TxnManager * txn) {
   if(lower <= txn->greatest_read_timestamp)
     lower = txn->greatest_read_timestamp + 1;
   // upper bound of uncommitted reads less than lower bound of txn
-  for(auto it = txn->uncommitted_reads.begin(); it != txn->uncommitted_reads.end();it++) {
+  for(auto it = txn->uncommitted_reads->begin(); it != txn->uncommitted_reads->end();it++) {
     if(lower <= time_table.get_upper(*it)) {
       MAATState state = time_table.get_state(*it);
       if(state == MAAT_VALIDATED || state == MAAT_COMMITTED) {
@@ -67,7 +67,7 @@ RC Maat::validate(TxnManager * txn) {
     }
   }
   // upper bound of uncommitted write writes less than lower bound of txn
-  for(auto it = txn->uncommitted_writes.begin(); it != txn->uncommitted_writes.end();it++) {
+  for(auto it = txn->uncommitted_writes->begin(); it != txn->uncommitted_writes->end();it++) {
       MAATState state = time_table.get_state(*it);
       if(state == MAAT_ABORTED) {
         continue;
@@ -93,6 +93,7 @@ RC Maat::validate(TxnManager * txn) {
   }
   time_table.set_lower(txn->get_txn_id(),lower);
   time_table.set_upper(txn->get_txn_id(),upper);
+  DEBUG("MAAT Validate %ld: %d [%ld,%ld]\n",txn->get_txn_id(),rc,lower,upper);
   return rc;
 
 }

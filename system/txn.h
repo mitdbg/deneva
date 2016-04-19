@@ -155,9 +155,9 @@ public:
   uint64_t get_commit_timestamp() {return commit_timestamp;}
   uint64_t greatest_write_timestamp;
   uint64_t greatest_read_timestamp;
-  std::set<uint64_t> uncommitted_reads;
-  std::set<uint64_t> uncommitted_writes;
-  std::set<uint64_t> uncommitted_writes_y;
+  std::set<uint64_t> * uncommitted_reads;
+  std::set<uint64_t> * uncommitted_writes;
+  std::set<uint64_t> * uncommitted_writes_y;
 
 	////////////////////////////////
 	// LOGGING
