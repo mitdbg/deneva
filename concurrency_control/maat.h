@@ -27,8 +27,11 @@ enum MAATState { MAAT_RUNNING=0,MAAT_VALIDATED,MAAT_COMMITTED,MAAT_ABORTED};
 
 class Maat {
 public:
+  void init();
   RC validate(TxnManager * txn);
   RC find_bound(TxnManager * txn); 
+private:
+ 	sem_t 	_semaphore;
 };
 
 struct TimeTableEntry{

@@ -160,11 +160,9 @@ int main(int argc, char* argv[])
   printf("Initializing Time Table... ");
   time_table.init();
   printf("Done\n");
-  /*
   printf("Initializing MaaT manager... ");
 	maat_man.init();
   printf("Done\n");
-  */
 #endif
 #if LOGGING
   printf("Initializing logger... ");

@@ -22,8 +22,16 @@
 #include "mem_alloc.h"
 #include "row_maat.h"
 
+void Maat::init() {
+  sem_init(&_semaphore, 0, 1);
+}
 
 RC Maat::validate(TxnManager * txn) {
+  uint64_t start_time = get_sys_clock();
+  sem_wait(&_semaphore);
+
+  INC_STATS(0,maat_cs_wait_time,get_sys_clock() - start_time);
+  start_time = get_sys_clock();
   DEBUG("MAAT Validate %ld\n",txn->get_txn_id());
   RC rc = RCOK;
   uint64_t lower = time_table.get_lower(txn->get_txn_id());
@@ -34,14 +42,21 @@ RC Maat::validate(TxnManager * txn) {
   if(lower <= txn->greatest_write_timestamp) {
     lower = txn->greatest_write_timestamp + 1;
     DEBUG("MAAT %ld: case1 %ld\n",txn->get_txn_id(),lower);
+    INC_STATS(0,maat_case1_cnt,1);
   }
   // lower bound of uncommitted writes greater than upper bound of txn
   for(auto it = txn->uncommitted_writes->begin(); it != txn->uncommitted_writes->end();it++) {
-    DEBUG("MAAT case2 %ld: %lu < %ld: %lu, %d \n",txn->get_txn_id(),upper,*it,time_table.get_lower(*it),time_table.get_state(*it));
-    if(upper >= time_table.get_lower(*it)) {
+    uint64_t it_lower = time_table.get_lower(*it);
+    if(upper >= it_lower) {
       MAATState state = time_table.get_state(*it);
       if(state == MAAT_VALIDATED || state == MAAT_COMMITTED) {
-        upper = time_table.get_lower(*it) - 1;
+        DEBUG("MAAT case2 %ld: %lu < %ld: %lu, %d \n",txn->get_txn_id(),upper,*it,it_lower,state);
+        INC_STATS(0,maat_case2_cnt,1);
+        if(it_lower > 0) {
+          upper = it_lower - 1;
+        } else {
+          upper = it_lower;
+        }
       }
       /*
       if(state == MAAT_ABORTED) {
@@ -58,14 +73,21 @@ RC Maat::validate(TxnManager * txn) {
   if(lower <= txn->greatest_read_timestamp) {
     lower = txn->greatest_read_timestamp + 1;
     DEBUG("MAAT %ld: case3 %ld\n",txn->get_txn_id(),lower);
+    INC_STATS(0,maat_case3_cnt,1);
   }
   // upper bound of uncommitted reads less than lower bound of txn
   for(auto it = txn->uncommitted_reads->begin(); it != txn->uncommitted_reads->end();it++) {
-    DEBUG("MAAT case4 %ld: %lu > %ld: %lu, %d \n",txn->get_txn_id(),lower,*it,time_table.get_upper(*it),time_table.get_state(*it));
-    if(lower <= time_table.get_upper(*it)) {
+    uint64_t it_upper = time_table.get_upper(*it);
+    if(lower <= it_upper) {
       MAATState state = time_table.get_state(*it);
       if(state == MAAT_VALIDATED || state == MAAT_COMMITTED) {
-        lower = time_table.get_upper(*it) + 1;
+        DEBUG("MAAT case4 %ld: %lu > %ld: %lu, %d \n",txn->get_txn_id(),lower,*it,it_upper,state);
+        INC_STATS(0,maat_case4_cnt,1);
+        if(it_upper < UINT64_MAX) {
+          lower = it_upper + 1;
+        } else {
+          lower = it_upper;
+        }
       }
       /*
       if(state == MAAT_ABORTED) {
@@ -80,13 +102,19 @@ RC Maat::validate(TxnManager * txn) {
   // upper bound of uncommitted write writes less than lower bound of txn
   for(auto it = txn->uncommitted_writes_y->begin(); it != txn->uncommitted_writes_y->end();it++) {
       MAATState state = time_table.get_state(*it);
-    DEBUG("MAAT case5 %ld: %lu > %ld: %lu, %d \n",txn->get_txn_id(),lower,*it,time_table.get_upper(*it),time_table.get_state(*it));
+    uint64_t it_upper = time_table.get_upper(*it);
       if(state == MAAT_ABORTED) {
         continue;
       }
       if(state == MAAT_VALIDATED || state == MAAT_COMMITTED) {
-        if(lower <= time_table.get_upper(*it)) {
-          lower = time_table.get_upper(*it) + 1;
+        if(lower <= it_upper) {
+          DEBUG("MAAT case5 %ld: %lu > %ld: %lu, %d \n",txn->get_txn_id(),lower,*it,it_upper,state);
+          INC_STATS(0,maat_case5_cnt,1);
+          if(it_upper < UINT64_MAX) {
+            lower = it_upper + 1;
+          } else {
+            lower = it_upper;
+          }
         }
       }
       if(state == MAAT_RUNNING) {
@@ -101,11 +129,30 @@ RC Maat::validate(TxnManager * txn) {
     // Validated
     time_table.set_state(txn->get_txn_id(),MAAT_VALIDATED);
     rc = RCOK;
-    // Optimize lower and upper to minimize aborts in before and after
+    // TODO: Optimize lower and upper to minimize aborts in before and after
+    // Hopefully this would keep upper from being max int...
+    for(auto it = after.begin(); it != after.end();it++) {
+      uint64_t it_lower = time_table.get_lower(*it);
+      if(it_lower < upper && it_lower > lower+1) {
+        upper = it_lower - 1;
+      }
+    }
+    for(auto it = before.begin(); it != before.end();it++) {
+      uint64_t it_upper = time_table.get_upper(*it);
+      if(it_upper > lower && it_upper < upper-1) {
+        lower = it_upper + 1;
+      }
+    }
+    assert(lower < upper);
+    INC_STATS(0,maat_range,upper-lower);
+    INC_STATS(0,maat_commit_cnt,1);
   }
   time_table.set_lower(txn->get_txn_id(),lower);
   time_table.set_upper(txn->get_txn_id(),upper);
+  INC_STATS(0,maat_validate_cnt,1);
+  INC_STATS(0,maat_validate_time,get_sys_clock() - start_time);
   DEBUG("MAAT Validate %ld: %d [%lu,%lu]\n",txn->get_txn_id(),rc,lower,upper);
+  sem_post(&_semaphore);
   return rc;
 
 }

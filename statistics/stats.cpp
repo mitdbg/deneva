@@ -123,6 +123,19 @@ void Stats_thd::clear() {
   occ_ts_abort_cnt=0;
   occ_finish_time=0;
 
+  // MAAT
+  maat_validate_cnt=0;
+  maat_validate_time=0;
+  maat_cs_wait_time=0;
+  maat_case1_cnt=0;
+  maat_case2_cnt=0;
+  maat_case3_cnt=0;
+  maat_case4_cnt=0;
+  maat_case5_cnt=0;
+  maat_range=0;
+  maat_commit_cnt=0;
+
+
   // Logging
   log_write_cnt=0;
   log_write_time=0;
@@ -385,6 +398,36 @@ void Stats_thd::print(FILE * outf) {
   ,occ_finish_time / BILLION
   );
 
+  //MAAT
+  double maat_range_avg = 0;
+  if(maat_commit_cnt > 0)
+    maat_range_avg = maat_range / maat_commit_cnt;
+  fprintf(outf,
+  ",maat_validate_cnt=%ld"
+  ",maat_validate_time=%f"
+  ",maat_cs_wait_time=%f"
+  ",maat_case1_cnt=%ld"
+  ",maat_case2_cnt=%ld"
+  ",maat_case3_cnt=%ld"
+  ",maat_case4_cnt=%ld"
+  ",maat_case5_cnt=%ld"
+  ",maat_range=%f"
+  ",maat_commit_cnt=%ld"
+  ",maat_range_avg=%f"
+  ,maat_validate_cnt
+  ,maat_validate_time / BILLION
+  ,maat_cs_wait_time / BILLION
+  ,maat_case1_cnt
+  ,maat_case2_cnt
+  ,maat_case3_cnt
+  ,maat_case4_cnt
+  ,maat_case5_cnt
+  ,maat_range / BILLION
+  ,maat_commit_cnt
+  ,maat_range_avg
+  );
+
+
   // Logging
   double log_write_avg_time = 0;
   if(log_write_cnt > 0)
@@ -526,6 +569,17 @@ void Stats_thd::combine(Stats_thd * stats) {
   occ_ts_abort_cnt+=stats->occ_ts_abort_cnt;
   occ_finish_time+=stats->occ_finish_time;
 
+  // MAAT
+  maat_validate_cnt+=stats->maat_validate_cnt;
+  maat_validate_time+=stats->maat_validate_time;
+  maat_cs_wait_time+=stats->maat_cs_wait_time;
+  maat_case1_cnt+=stats->maat_case1_cnt;
+  maat_case2_cnt+=stats->maat_case2_cnt;
+  maat_case3_cnt+=stats->maat_case3_cnt;
+  maat_case4_cnt+=stats->maat_case4_cnt;
+  maat_case5_cnt+=stats->maat_case5_cnt;
+  maat_range+=stats->maat_range;
+  maat_commit_cnt+=stats->maat_commit_cnt;
 
   // Logging
   log_write_cnt+=stats->log_write_cnt;

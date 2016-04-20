@@ -137,6 +137,18 @@ public:
   uint64_t occ_ts_abort_cnt;
   double occ_finish_time;
 
+  // MAAT
+  uint64_t maat_validate_cnt;
+  double maat_validate_time;
+  double maat_cs_wait_time;
+  uint64_t maat_case1_cnt;
+  uint64_t maat_case2_cnt;
+  uint64_t maat_case3_cnt;
+  uint64_t maat_case4_cnt;
+  uint64_t maat_case5_cnt;
+  double maat_range;
+  uint64_t maat_commit_cnt;
+
   // Logging
   uint64_t log_write_cnt;
   double log_write_time;
