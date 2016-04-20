@@ -237,6 +237,9 @@ RC WorkerThread::process_rack_prep(Message * msg) {
   if(upper < time_table.get_upper(msg->get_txn_id())) {
     time_table.set_upper(msg->get_txn_id(),upper);
   }
+  if(((AckMessage*)msg)->rc != RCOK) {
+    time_table.set_state(msg->get_txn_id(),MAAT_ABORTED);
+  }
 #endif
   if(responses_left > 0) 
     return WAIT;
@@ -301,6 +304,13 @@ RC WorkerThread::process_rqry(Message * msg) {
   // Create new transaction table entry if one does not already exist
   TxnManager * txn_man = txn_table.get_transaction_manager(msg->get_txn_id(),0);
   msg->copy_to_txn(txn_man);
+
+#if CC_ALG == MAAT
+          time_table.init(txn_man->get_txn_id());
+          assert(time_table.get_lower(txn_man->get_txn_id()) == 0);
+          assert(time_table.get_upper(txn_man->get_txn_id()) == UINT64_MAX);
+          assert(time_table.get_state(txn_man->get_txn_id()) == MAAT_RUNNING);
+#endif
 
   rc = txn_man->run_txn();
 
@@ -395,6 +405,12 @@ RC WorkerThread::process_rtxn(Message * msg) {
 
 #if CC_ALG == OCC
           txn_man->set_start_timestamp(get_next_ts());
+#endif
+#if CC_ALG == MAAT
+          time_table.init(txn_man->get_txn_id());
+          assert(time_table.get_lower(txn_man->get_txn_id()) == 0);
+          assert(time_table.get_upper(txn_man->get_txn_id()) == UINT64_MAX);
+          assert(time_table.get_state(txn_man->get_txn_id()) == MAAT_RUNNING);
 #endif
 
     rc = init_phase();

@@ -5,8 +5,8 @@
 /***********************************************/
 // Simulation + Hardware
 /***********************************************/
-#define NODE_CNT 1
-#define THREAD_CNT 1
+#define NODE_CNT 2
+#define THREAD_CNT 2
 #define REM_THREAD_CNT 1
 #define SEND_THREAD_CNT 1
 #define CORE_CNT 8
@@ -44,7 +44,7 @@
 #define TIME_ENABLE         true //STATS_ENABLE
 
 #define FIN_BY_TIME true
-#define MAX_TXN_IN_FLIGHT 1
+#define MAX_TXN_IN_FLIGHT 4
 
 /***********************************************/
 // Memory System
@@ -167,12 +167,12 @@
 //    ZIPF: use ZIPF_THETA distribution
 //    HOT: use ACCESS_PERC of the accesses go to DATA_PERC of the data
 #define SKEW_METHOD HOT
-#define DATA_PERC 100
-#define ACCESS_PERC 0.03
+#define DATA_PERC 0
+#define ACCESS_PERC 0.0
 #define INIT_PARALLELISM 8
-#define SYNTH_TABLE_SIZE 1097152
+#define SYNTH_TABLE_SIZE 64 
 #define ZIPF_THETA 0.6
-#define TXN_WRITE_PERC 0.5
+#define TXN_WRITE_PERC 1.0
 #define TUP_WRITE_PERC 0.5
 #define SCAN_PERC           0
 #define SCAN_LEN          20

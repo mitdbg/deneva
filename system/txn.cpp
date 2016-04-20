@@ -147,7 +147,8 @@ RC TxnManager::abort() {
   aborted = true;
   release_locks(Abort);
 #if CC_ALG == MAAT
-  assert(time_table.get_state(get_txn_id()) == MAAT_ABORTED);
+  //assert(time_table.get_state(get_txn_id()) == MAAT_ABORTED);
+  time_table.release(get_txn_id());
 #endif
   //commit_stats();
   return Abort;
@@ -179,6 +180,8 @@ RC TxnManager::start_commit() {
     rc = validate();
     if(rc == RCOK)
       rc = commit();
+    else
+      start_abort();
   }
   return rc;
 }

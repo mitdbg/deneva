@@ -31,44 +31,56 @@ RC Maat::validate(TxnManager * txn) {
   std::set<uint64_t> after;
   std::set<uint64_t> before;
   // lower bound of txn greater than write timestamp
-  if(lower <= txn->greatest_write_timestamp)
+  if(lower <= txn->greatest_write_timestamp) {
     lower = txn->greatest_write_timestamp + 1;
+    DEBUG("MAAT %ld: case1 %ld\n",txn->get_txn_id(),lower);
+  }
   // lower bound of uncommitted writes greater than upper bound of txn
   for(auto it = txn->uncommitted_writes->begin(); it != txn->uncommitted_writes->end();it++) {
-    if(upper <= time_table.get_lower(*it)) {
+    DEBUG("MAAT case2 %ld: %lu < %ld: %lu, %d \n",txn->get_txn_id(),upper,*it,time_table.get_lower(*it),time_table.get_state(*it));
+    if(upper >= time_table.get_lower(*it)) {
       MAATState state = time_table.get_state(*it);
       if(state == MAAT_VALIDATED || state == MAAT_COMMITTED) {
         upper = time_table.get_lower(*it) - 1;
       }
+      /*
       if(state == MAAT_ABORTED) {
+        //FIXME: potential for race condition if time table entry removed and reinstalled
         time_table.set_lower(*it,upper-1);
       }
+      */
       if(state == MAAT_RUNNING) {
         after.insert(*it);
       }
     }
   }
   // lower bound of txn greater than read timestamp
-  if(lower <= txn->greatest_read_timestamp)
+  if(lower <= txn->greatest_read_timestamp) {
     lower = txn->greatest_read_timestamp + 1;
+    DEBUG("MAAT %ld: case3 %ld\n",txn->get_txn_id(),lower);
+  }
   // upper bound of uncommitted reads less than lower bound of txn
   for(auto it = txn->uncommitted_reads->begin(); it != txn->uncommitted_reads->end();it++) {
+    DEBUG("MAAT case4 %ld: %lu > %ld: %lu, %d \n",txn->get_txn_id(),lower,*it,time_table.get_upper(*it),time_table.get_state(*it));
     if(lower <= time_table.get_upper(*it)) {
       MAATState state = time_table.get_state(*it);
       if(state == MAAT_VALIDATED || state == MAAT_COMMITTED) {
         lower = time_table.get_upper(*it) + 1;
       }
+      /*
       if(state == MAAT_ABORTED) {
         time_table.set_upper(*it,lower+1);
       }
+      */
       if(state == MAAT_RUNNING) {
         before.insert(*it);
       }
     }
   }
   // upper bound of uncommitted write writes less than lower bound of txn
-  for(auto it = txn->uncommitted_writes->begin(); it != txn->uncommitted_writes->end();it++) {
+  for(auto it = txn->uncommitted_writes_y->begin(); it != txn->uncommitted_writes_y->end();it++) {
       MAATState state = time_table.get_state(*it);
+    DEBUG("MAAT case5 %ld: %lu > %ld: %lu, %d \n",txn->get_txn_id(),lower,*it,time_table.get_upper(*it),time_table.get_state(*it));
       if(state == MAAT_ABORTED) {
         continue;
       }
@@ -83,7 +95,7 @@ RC Maat::validate(TxnManager * txn) {
   }
   if(lower >= upper) {
     // Abort
-    //time_table.set_state(txn->get_txn_id(),MAAT_ABORTED);
+    time_table.set_state(txn->get_txn_id(),MAAT_ABORTED);
     rc = Abort;
   } else {
     // Validated
@@ -93,7 +105,7 @@ RC Maat::validate(TxnManager * txn) {
   }
   time_table.set_lower(txn->get_txn_id(),lower);
   time_table.set_upper(txn->get_txn_id(),upper);
-  DEBUG("MAAT Validate %ld: %d [%ld,%ld]\n",txn->get_txn_id(),rc,lower,upper);
+  DEBUG("MAAT Validate %ld: %d [%lu,%lu]\n",txn->get_txn_id(),rc,lower,upper);
   return rc;
 
 }
@@ -103,12 +115,15 @@ RC Maat::find_bound(TxnManager * txn) {
   uint64_t lower = time_table.get_lower(txn->get_txn_id());
   uint64_t upper = time_table.get_upper(txn->get_txn_id());
   if(lower >= upper) {
+    time_table.set_state(txn->get_txn_id(),MAAT_VALIDATED);
     rc = Abort;
   } else {
     time_table.set_state(txn->get_txn_id(),MAAT_COMMITTED);
     // TODO: pick commit_time in a smarter way
-    txn->commit_timestamp = (upper - lower) / 2;
+    //txn->commit_timestamp = (upper - lower) / 2;
+    txn->commit_timestamp = lower; 
   }
+  DEBUG("MAAT Bound %ld: %d [%lu,%lu] %lu\n",txn->get_txn_id(),rc,lower,upper,txn->commit_timestamp);
   return rc;
 }
 

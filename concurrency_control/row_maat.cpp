@@ -48,12 +48,13 @@ RC Row_maat::read(TxnManager * txn) {
 	RC rc = RCOK;
 
   pthread_mutex_lock( &latch );
-  DEBUG("READ %ld -- %ld\n",txn->get_txn_id(),_row->get_primary_key());
+  DEBUG("READ %ld -- %ld: lw %ld\n",txn->get_txn_id(),_row->get_primary_key(),timestamp_last_write);
 
   // Copy uncommitted writes
   for(auto it = uncommitted_writes->begin(); it != uncommitted_writes->end(); it++) {
     uint64_t txn_id = *it;
     txn->uncommitted_writes->insert(txn_id);
+    DEBUG("    UW %ld -- %ld: %ld\n",txn->get_txn_id(),_row->get_primary_key(),txn_id);
   }
 
   // Copy write timestamp
@@ -73,23 +74,29 @@ RC Row_maat::prewrite(TxnManager * txn) {
 	RC rc = RCOK;
 
   pthread_mutex_lock( &latch );
-  DEBUG("PREWRITE %ld -- %ld\n",txn->get_txn_id(),_row->get_primary_key());
+  DEBUG("PREWRITE %ld -- %ld: lw %ld, lr %ld\n",txn->get_txn_id(),_row->get_primary_key(),timestamp_last_write,timestamp_last_read);
 
   // Copy uncommitted reads 
   for(auto it = uncommitted_reads->begin(); it != uncommitted_reads->end(); it++) {
     uint64_t txn_id = *it;
     txn->uncommitted_reads->insert(txn_id);
+    DEBUG("    UR %ld -- %ld: %ld\n",txn->get_txn_id(),_row->get_primary_key(),txn_id);
   }
 
   // Copy uncommitted writes 
   for(auto it = uncommitted_writes->begin(); it != uncommitted_writes->end(); it++) {
     uint64_t txn_id = *it;
     txn->uncommitted_writes_y->insert(txn_id);
+    DEBUG("    UW %ld -- %ld: %ld\n",txn->get_txn_id(),_row->get_primary_key(),txn_id);
   }
 
   // Copy read timestamp
   if(txn->greatest_read_timestamp < timestamp_last_read)
     txn->greatest_read_timestamp = timestamp_last_read;
+
+  // Copy write timestamp
+  if(txn->greatest_write_timestamp < timestamp_last_write)
+    txn->greatest_write_timestamp = timestamp_last_write;
 
   //Add to uncommitted writes (soft lock)
   uncommitted_writes->insert(txn->get_txn_id());
@@ -102,7 +109,7 @@ RC Row_maat::prewrite(TxnManager * txn) {
 
 RC Row_maat::abort(access_t type, TxnManager * txn) {	
   pthread_mutex_lock( &latch );
-  DEBUG("Maat Abort %ld -- %ld\n",txn->get_txn_id(),_row->get_primary_key());
+  DEBUG("Maat Abort %ld: %d -- %ld\n",txn->get_txn_id(),type,_row->get_primary_key());
   if(type == RD) {
     uncommitted_reads->erase(txn->get_txn_id());
   }
@@ -117,7 +124,7 @@ RC Row_maat::abort(access_t type, TxnManager * txn) {
 
 RC Row_maat::commit(access_t type, TxnManager * txn, row_t * data) {	
   pthread_mutex_lock( &latch );
-  DEBUG("Maat Commit %ld -- %ld\n",txn->get_txn_id(),_row->get_primary_key());
+  DEBUG("Maat Commit %ld: %d,%lu -- %ld\n",txn->get_txn_id(),type,txn->get_commit_timestamp(),_row->get_primary_key());
 
   if(type == RD) {
     if(txn->get_commit_timestamp() >  timestamp_last_read)
