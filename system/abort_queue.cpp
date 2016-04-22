@@ -32,6 +32,7 @@ void AbortQueue::enqueue(uint64_t txn_id, uint64_t abort_cnt) {
 #endif
   penalty += starttime;
   //abort_entry * entry = new abort_entry(penalty,txn_id);
+  DEBUG_M("AbortQueue::enqueue entry alloc\n");
   abort_entry * entry = (abort_entry*)mem_allocator.alloc(sizeof(abort_entry));
   entry->penalty_end = penalty;
   entry->txn_id = txn_id;
@@ -63,6 +64,7 @@ void AbortQueue::process() {
       msg->txn_id = entry->txn_id;
       work_queue.enqueue(g_thread_cnt,msg,false);
       //entry = queue.top();
+      DEBUG_M("AbortQueue::dequeue entry free\n");
       mem_allocator.free(entry,sizeof(abort_entry));
     } else {
       break;

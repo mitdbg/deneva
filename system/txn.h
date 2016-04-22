@@ -49,6 +49,8 @@ class Transaction {
 public:
   void init();
   void reset();
+	void release_accesses();
+	void release_inserts();
 	void release();
   //vector<Access*> accesses;
   Array<Access*> accesses;

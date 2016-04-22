@@ -21,7 +21,6 @@
 #include "ycsb_query.h"
 #include "tpcc_query.h"
 #include "client_query.h"
-#include "mem_alloc.h"
 #include "transport.h"
 #include "client_txn.h"
 #include "msg_thread.h"

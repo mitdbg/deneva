@@ -182,7 +182,7 @@ void row_t::free_row() {
 #if SIM_FULL_ROW
 	mem_allocator.free(data, sizeof(char) * get_tuple_size());
 #else
-	mem_allocator.free(data, sizeof(char) * 1);
+	mem_allocator.free(data, sizeof(uint64_t) * 1);
 #endif
 }
 

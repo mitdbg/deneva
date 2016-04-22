@@ -34,7 +34,6 @@
 #include "manager.h"
 #include "transport.h"
 #include "nn.hpp"
-#include "mem_alloc.h"
 #include "tpcc_query.h"
 #include "query.h"
 #include "wl.h"
@@ -52,24 +51,6 @@
 
 	 */
 void Transport::shutdown() {
-  /*
-  printf("Shutting down\n");
-//  for(uint64_t i=0;i<_s_cnt;i++) 
-    //s[i].sock.shutdown(endpoint_id[i]);
-  uint64_t s_thd;
-  if(ISCLIENT)
-    s_thd = g_client_send_thread_cnt;
-  else
-    s_thd = g_send_thread_cnt;
-  for(uint64_t i = 0; i < s_thd; i++) {
-    for(uint64_t j = 0; j < _node_cnt; j++) {
-      if(j == g_node_id)
-        continue;
-      delete &s[i];
-    }
-  }
-  */
-  //mem_allocator.free(endpoint_id,sizeof(int)*_s_cnt);
 }
 
 void Transport::read_ifconfig(const char * ifaddr_file) {
@@ -89,33 +70,15 @@ void Transport::read_ifconfig(const char * ifaddr_file) {
 void Transport::init(uint64_t node_id,Workload * workload) {
 	_wl = workload;
   _node_cnt = g_node_cnt + g_client_node_cnt + g_repl_cnt * g_node_cnt;
-  /*
-#if CC_ALG == CALVIN
-	_node_cnt++;	// account for the sequencer
-#endif
-*/
 	_node_id = node_id;
   if(ISCLIENT)
     _sock_cnt = g_client_send_thread_cnt * g_servers_per_client + (_node_cnt)*2;
-    //_sock_cnt = 1 + g_client_send_thread_cnt * g_servers_per_client + (_node_cnt-1-g_servers_per_client);
-    //_sock_cnt = g_client_send_thread_cnt * (_node_cnt-1) + g_node_cnt * g_send_thread_cnt + (g_client_node_cnt-1) * g_client_send_thread_cnt;
   else
     _sock_cnt = (_node_cnt)*2 + g_client_send_thread_cnt;
-    //_sock_cnt = 1 + (_node_cnt - 1);
-    //_sock_cnt = g_send_thread_cnt  * (_node_cnt-1) + (g_node_cnt-1) * g_send_thread_cnt + g_client_node_cnt * g_client_send_thread_cnt;
-  /*
-#if CC_ALG == CALVIN
-	_thd_id = 0;
-  _sock_cnt = (_node_cnt)*2;
-#else
-	_thd_id = 1;
-#endif
-*/
 	_thd_id = 1;
 
   s = new Socket[_sock_cnt];
   rr = 0;
-  //endpoint_id = (int*)mem_allocator.alloc(sizeof(int)*_sock_cnt);
 	printf("Tport Init %ld: %ld\n",node_id,_sock_cnt);
 
 #if !TPORT_TYPE_IPC

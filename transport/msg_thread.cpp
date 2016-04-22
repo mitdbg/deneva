@@ -30,8 +30,10 @@ void MessageThread::init(uint64_t thd_id) {
 #if CC_ALG == CALVIN
   buffer_cnt++;
 #endif
+  DEBUG_M("MessageThread::init buffer[] alloc\n");
   buffer = (mbuf **) mem_allocator.alloc(sizeof(mbuf*) * buffer_cnt);
   for(uint64_t n = 0; n < buffer_cnt; n++) {
+    DEBUG_M("MessageThread::init mbuf alloc\n");
     buffer[n] = (mbuf *)mem_allocator.alloc(sizeof(mbuf));
     buffer[n]->init(n);
     buffer[n]->reset(n);

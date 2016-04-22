@@ -35,6 +35,7 @@ void QWorkQueue::sched_enqueue(Message * msg) {
   assert(msg);
   assert(ISSERVERN(msg->return_node_id));
 
+  DEBUG_M("QWorkQueue::sched_enqueue work_queue_entry alloc\n");
   work_queue_entry * entry = (work_queue_entry*)mem_allocator.alloc(sizeof(work_queue_entry));
   entry->msg = msg;
   entry->starttime = get_sys_clock();
@@ -53,6 +54,7 @@ Message * QWorkQueue::sched_dequeue() {
   work_queue_entry * entry = scheduler_queue.top();
   if(!(!entry || simulation->get_worker_epoch() > simulation->get_sched_epoch() || (new_epoch && simulation->epoch_txn_cnt > 0))) {
     Message * msg = entry->msg;
+  DEBUG_M("QWorkQueue::sched_enqueue work_queue_entry free\n");
     mem_allocator.free(entry,sizeof(work_queue_entry));
   new_epoch = false;
   if(msg->rtype == RDONE) {
@@ -85,6 +87,7 @@ Message * QWorkQueue::sched_dequeue() {
 void QWorkQueue::enqueue(uint64_t thd_id, Message * msg,bool busy) {
   uint64_t starttime = get_sys_clock();
   assert(msg);
+  DEBUG_M("QWorkQueue::enqueue work_queue_entry alloc\n");
   work_queue_entry * entry = (work_queue_entry*)mem_allocator.alloc(sizeof(work_queue_entry));
   entry->msg = msg;
   entry->rtype = msg->rtype;
@@ -137,6 +140,7 @@ Message * QWorkQueue::dequeue() {
       INC_STATS(0,work_queue_old_cnt,1);
     }
     DEBUG("DEQUEUE (%ld,%ld) %ld; %ld; %d, 0x%lx\n",msg->txn_id,msg->batch_id,msg->return_node_id,queue_time,msg->rtype,(uint64_t)msg);
+  DEBUG_M("QWorkQueue::dequeue work_queue_entry free\n");
     mem_allocator.free(entry,sizeof(work_queue_entry));
     INC_STATS(0,work_queue_dequeue_time,get_sys_clock() - starttime);
   } else {

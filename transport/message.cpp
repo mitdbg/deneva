@@ -247,6 +247,13 @@ void YCSBClientQueryMessage::init() {
 
 void YCSBClientQueryMessage::release() {
   ClientQueryMessage::release();
+  // Freeing requests is the responsibility of txn
+  /*
+  for(uint64_t i = 0; i < requests.size(); i++) {
+    DEBUG_M("YCSBClientQueryMessage::release ycsb_request free\n");
+    mem_allocator.free(requests[i],sizeof(ycsb_request));
+  }
+  */
   requests.release();
 }
 
@@ -272,6 +279,7 @@ void YCSBClientQueryMessage::copy_from_txn(TxnManager * txn) {
 void YCSBClientQueryMessage::copy_to_txn(TxnManager * txn) {
   // TODO this only copies over the pointers, so if msg is freed, we'll lose the request data
   ClientQueryMessage::copy_to_txn(txn);
+  // Copies pointers to txn
   ((YCSBQuery*)(txn->query))->requests.append(requests);
 }
 
@@ -282,6 +290,7 @@ void YCSBClientQueryMessage::copy_from_buf(char * buf) {
   COPY_VAL(size,buf,ptr);
   requests.init(size);
   for(uint64_t i = 0 ; i < size;i++) {
+    DEBUG_M("YCSBClientQueryMessage::copy ycsb_request alloc\n");
     ycsb_request * req = (ycsb_request*)mem_allocator.alloc(sizeof(ycsb_request));
     COPY_VAL(*req,buf,ptr);
     requests.add(req);
@@ -306,6 +315,14 @@ void TPCCClientQueryMessage::init() {
 
 void TPCCClientQueryMessage::release() {
   ClientQueryMessage::release();
+  // Freeing requests is the responsibility of txn
+  /*
+  for(uint64_t i = 0; i < items.size(); i++) {
+    DEBUG_M("TPCCClientQueryMessage::release item free\n");
+    mem_allocator.free(items[i],sizeof(Item_no));
+  }
+  */
+  items.release();
 }
 
 uint64_t TPCCClientQueryMessage::get_size() {
@@ -405,6 +422,7 @@ void TPCCClientQueryMessage::copy_from_buf(char * buf) {
   COPY_VAL(size,buf,ptr);
   items.init(size);
   for(uint64_t i = 0 ; i < size;i++) {
+    DEBUG_M("TPCCClientQueryMessage::copy_from_buf item alloc\n");
     Item_no * item = (Item_no*)mem_allocator.alloc(sizeof(Item_no));
     COPY_VAL(*item,buf,ptr);
     items.add(item);
@@ -882,6 +900,13 @@ void YCSBQueryMessage::init() {
 
 void YCSBQueryMessage::release() {
   QueryMessage::release();
+  // Freeing requests is the responsibility of txn
+  /*
+  for(uint64_t i = 0; i < requests.size(); i++) {
+    DEBUG_M("YCSBQueryMessage::release ycsb_request free\n");
+    mem_allocator.free(requests[i],sizeof(ycsb_request));
+  }
+  */
   requests.release();
 }
 
@@ -913,6 +938,7 @@ void YCSBQueryMessage::copy_from_buf(char * buf) {
   assert(size<=g_req_per_query);
   requests.init(size);
   for(uint64_t i = 0 ; i < size;i++) {
+    DEBUG_M("YCSBQueryMessage::copy ycsb_request alloc\n");
     ycsb_request * req = (ycsb_request*)mem_allocator.alloc(sizeof(ycsb_request));
     COPY_VAL(*req,buf,ptr);
     requests.add(req);
@@ -936,6 +962,14 @@ void TPCCQueryMessage::init() {
 
 void TPCCQueryMessage::release() {
   QueryMessage::release();
+  // Freeing items is the responsibility of txn
+  /*
+  for(uint64_t i = 0; i < items.size(); i++) {
+    DEBUG_M("TPCCQueryMessage::release item free\n");
+    mem_allocator.free(items[i],sizeof(Item_no));
+  }
+  */
+  items.release();
 }
 
 uint64_t TPCCQueryMessage::get_size() {
@@ -1030,6 +1064,7 @@ void TPCCQueryMessage::copy_from_buf(char * buf) {
   COPY_VAL(size,buf,ptr);
   items.init(size);
   for(uint64_t i = 0 ; i < size;i++) {
+    DEBUG_M("TPCCQueryMessage::copy item alloc\n");
     Item_no * item = (Item_no*)mem_allocator.alloc(sizeof(Item_no));
     COPY_VAL(*item,buf,ptr);
     items.add(item);

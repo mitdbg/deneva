@@ -176,6 +176,7 @@ RC Maat::find_bound(TxnManager * txn) {
 
 void TimeTable::init() {
   table_size = g_inflight_max * g_node_cnt * 2 + 1;
+  DEBUG_M("TimeTable::init table alloc\n");
   table = (TimeTableNode*) mem_allocator.alloc(sizeof(TimeTableNode) * table_size);
   for(uint64_t i = 0; i < table_size;i++) {
     table[i].init();
@@ -202,6 +203,7 @@ void TimeTable::init(uint64_t key) {
   pthread_mutex_lock(&table[idx].mtx);
   TimeTableEntry* entry = find(key);
   if(!entry) {
+    DEBUG_M("TimeTable::init entry alloc\n");
     entry = (TimeTableEntry*) mem_allocator.alloc(sizeof(TimeTableEntry));
     entry->init(key);
     LIST_PUT_TAIL(table[idx].head,table[idx].tail,entry);
@@ -215,6 +217,8 @@ void TimeTable::release(uint64_t key) {
   TimeTableEntry* entry = find(key);
   if(entry) {
     LIST_REMOVE_HT(entry,table[idx].head,table[idx].tail);
+    DEBUG_M("TimeTable::release entry free\n");
+    mem_allocator.free(entry,sizeof(TimeTableEntry));
   }
   pthread_mutex_unlock(&table[idx].mtx);
 }

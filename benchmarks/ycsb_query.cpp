@@ -61,7 +61,9 @@ void YCSBQuery::init() {
 }
 void YCSBQuery::release() {
   BaseQuery::release();
+  DEBUG_M("YCSBQuery::release() free\n");
   for(uint64_t i = 0; i < requests.size(); i++) {
+    DEBUG_M("YCSBQuery::release() ycsb_request free\n");
     mem_allocator.free(requests[i],sizeof(ycsb_request));
   }
   requests.release();

@@ -23,7 +23,6 @@
 #include "query.h"
 #include "ycsb_query.h"
 #include "tpcc_query.h"
-#include "mem_alloc.h"
 #include "math.h"
 #include "specex.h"
 #include "helper.h"

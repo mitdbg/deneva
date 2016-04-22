@@ -42,6 +42,7 @@ void TPCCQuery::init() {
 }
 void TPCCQuery::release() {
   BaseQuery::release();
+  DEBUG_M("TPCCQuery::release() free");
   for(uint64_t i = 0; i < items.size(); i++) {
     mem_allocator.free(items[i],sizeof(Item_no));
   }

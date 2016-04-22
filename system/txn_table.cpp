@@ -64,6 +64,7 @@ void TxnTable::init() {
   cnt = 0;
   table_min_ts = UINT64_MAX;
   pool_size = g_inflight_max * g_node_cnt * 2 + 1;
+  DEBUG_M("TxnTable::init pool_node alloc\n");
   pool = (pool_node_t) mem_allocator.alloc(sizeof(pool_node) * pool_size);
   for(uint32_t i = 0; i < pool_size;i++) {
     pool[i].head = NULL;
@@ -124,6 +125,7 @@ TxnManager * TxnTable::get_transaction_manager(uint64_t txn_id,uint64_t batch_id
   ACCESS_END(txn_id % pool_size);
   if(!txn_man) {
   MODIFY_START(txn_id % pool_size);
+    DEBUG_M("TxnTable::get_transaction_manager txn_node alloc\n");
     t_node = (txn_node *) mem_allocator.alloc(sizeof(struct txn_node));
     txn_pool.get(txn_man);
     //txn_man = (TxnManager*) mem_allocator.alloc(sizeof(YCSBTxnManager));
@@ -212,10 +214,16 @@ void TxnTable::release_transaction_manager(uint64_t txn_id, uint64_t batch_id){
   DEBUG_R("TxnTable::release (%ld,%ld)\n",txn_id,batch_id);
 
   t_node->txn_man->release();
+  DEBUG_M("TxnTable::release_transaction_manager TxnManager free\n");
+#if WORKLOAD == YCSB
   mem_allocator.free(t_node->txn_man,sizeof(YCSBTxnManager));
+#elif WORKLOAD == TPCC
+  mem_allocator.free(t_node->txn_man,sizeof(TPCCTxnManager));
+#endif
   //txn_pool.put(t_node->txn_man);
     
   //txn_table_pool.put(t_node);
+  DEBUG_M("TxnTable::release_transaction_manager txn_node free\n");
   mem_allocator.free(t_node,sizeof(txn_node));
 
   INC_STATS(0,txn_table_release_time,get_sys_clock() - starttime);
@@ -259,7 +267,8 @@ void TxnTable::delete_txn(uint64_t txn_id, uint64_t batch_id){
     
     DEBUG_R("Delete (%ld,%ld)\n",txn_id,batch_id);
     //txn_table_pool.put(t_node);
-    mem_allocator.free(t_node,sizeof(t_node));
+  DEBUG_M("TxnTable::delete_transaction txn_node free\n");
+    mem_allocator.free(t_node,sizeof(txn_node));
   }
 }
 

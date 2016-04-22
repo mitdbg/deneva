@@ -60,6 +60,7 @@ void TxnPool::free_all() {
 
 void AccessPool::init(Workload * wl, uint64_t size) {
   _wl = wl;
+  DEBUG_M("AccessPool alloc init\n");
   Access * items = (Access*)mem_allocator.alloc(sizeof(Access)*size);
   for(uint64_t i = 0; i < size; i++) {
     put(&items[i]);
@@ -69,7 +70,7 @@ void AccessPool::init(Workload * wl, uint64_t size) {
 void AccessPool::get(Access *& item) {
   bool r = pool.try_dequeue(item);
   if(!r) {
-    DEBUG_M("access_pool\n");
+    DEBUG_M("access_pool alloc\n");
     item = (Access*)mem_allocator.alloc(sizeof(Access));
   }
 }
@@ -80,6 +81,7 @@ void AccessPool::put(Access * item) {
 
 void AccessPool::free_all() {
   Access * item;
+  DEBUG_M("access_pool free\n");
   while(pool.try_dequeue(item)) {
     mem_allocator.free(item,sizeof(item));
   }
@@ -88,6 +90,7 @@ void AccessPool::free_all() {
 void TxnTablePool::init(Workload * wl, uint64_t size) {
   _wl = wl;
   //TxnManager * items = (TxnManager*)mem_allocator.alloc(sizeof(TxnManager)*size);
+  DEBUG_M("TxnTablePool alloc init\n");
   txn_node * t_node = (txn_node *) mem_allocator.alloc(sizeof(struct txn_node) * size);
   for(uint64_t i = 0; i < size; i++) {
     //put(new txn_node());
@@ -98,7 +101,7 @@ void TxnTablePool::init(Workload * wl, uint64_t size) {
 void TxnTablePool::get(txn_node *& item) {
   bool r = pool.try_dequeue(item);
   if(!r) {
-    DEBUG_M("txn_table_pool\n");
+    DEBUG_M("txn_table_pool alloc\n");
     item = (txn_node *) mem_allocator.alloc(sizeof(struct txn_node));
     //item = new txn_node;
     //item->txn_man = new YCSBTxnManager;
@@ -113,6 +116,7 @@ void TxnTablePool::put(txn_node * item) {
 
 void TxnTablePool::free_all() {
   txn_node * item;
+  DEBUG_M("txn_table_pool free\n");
   while(pool.try_dequeue(item)) {
     mem_allocator.free(item,sizeof(item));
   }
@@ -121,6 +125,7 @@ void TxnTablePool::free_all() {
 void QryPool::init(Workload * wl, uint64_t size) {
   _wl = wl;
   BaseQuery * qry=NULL;
+  DEBUG_M("QryPool alloc init\n");
   for(uint64_t i = 0; i < size; i++) {
     //put(items[i]);
 #if WORKLOAD==TPCC
@@ -146,7 +151,7 @@ void QryPool::init(Workload * wl, uint64_t size) {
 void QryPool::get(BaseQuery *& item) {
   bool r = pool.try_dequeue(item);
   if(!r) {
-    DEBUG_M("query_pool\n");
+    DEBUG_M("query_pool alloc\n");
 #if WORKLOAD==TPCC
     TPCCQuery * qry = (TPCCQuery *) mem_allocator.alloc(sizeof(TPCCQuery));
     qry = new TPCCQuery();
@@ -183,6 +188,7 @@ void QryPool::put(BaseQuery * item) {
 
 void QryPool::free_all() {
   BaseQuery * item;
+  DEBUG_M("query_pool free\n");
   while(pool.try_dequeue(item)) {
     mem_allocator.free(item,sizeof(item));
   }
@@ -191,6 +197,7 @@ void QryPool::free_all() {
 void MsgPool::init(Workload * wl, uint64_t size) {
   _wl = wl;
   msg_entry* entry;
+  DEBUG_M("MsgPool alloc init\n");
   for(uint64_t i = 0; i < size; i++) {
     entry = (msg_entry*) mem_allocator.alloc(sizeof(struct msg_entry));
     put(entry);
@@ -200,7 +207,7 @@ void MsgPool::init(Workload * wl, uint64_t size) {
 void MsgPool::get(msg_entry* & item) {
   bool r = pool.try_dequeue(item);
   if(!r) {
-    DEBUG_M("msg_pool\n");
+    DEBUG_M("msg_pool alloc\n");
     item = (msg_entry*) mem_allocator.alloc(sizeof(struct msg_entry));
   }
 }
@@ -211,6 +218,7 @@ void MsgPool::put(msg_entry* item) {
 
 void MsgPool::free_all() {
   msg_entry * item;
+  DEBUG_M("msg_pool free\n");
   while(pool.try_dequeue(item)) {
     mem_allocator.free(item,sizeof(item));
   }

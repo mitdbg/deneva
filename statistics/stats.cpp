@@ -26,8 +26,14 @@
 #include <sys/vtimes.h>
 
 void Stats_thd::init(uint64_t thd_id) {
+  DEBUG_M("Stats_thd::init part_cnt alloc\n");
   part_cnt = (uint64_t*) mem_allocator.alloc(sizeof(uint64_t)*g_part_cnt);
+  DEBUG_M("Stats_thd::init part_acc alloc\n");
   part_acc = (uint64_t*) mem_allocator.alloc(sizeof(uint64_t)*g_part_cnt);
+  DEBUG_M("Stats_thd::init worker_process_cnt_by_type alloc\n");
+  worker_process_cnt_by_type= (uint64_t *) mem_allocator.alloc(sizeof(uint64_t) * NO_MSG);
+  DEBUG_M("Stats_thd::init worker_process_time_by_type alloc\n");
+  worker_process_time_by_type= (double *) mem_allocator.alloc(sizeof(double) * NO_MSG);
 	clear();
 	//all_lat.init(g_max_txn_per_part,ArrIncr);
 
@@ -75,8 +81,6 @@ void Stats_thd::clear() {
   // Worker thread
   worker_process_time=0;
   worker_process_cnt=0;
-  worker_process_cnt_by_type= (uint64_t *) mem_allocator.alloc(sizeof(uint64_t) * NO_MSG);
-  worker_process_time_by_type= (double *) mem_allocator.alloc(sizeof(double) * NO_MSG);
   for(uint64_t i = 0; i < NO_MSG; i ++) {
     worker_process_cnt_by_type[i]=0;
     worker_process_time_by_type[i]=0;

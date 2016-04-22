@@ -44,13 +44,18 @@ void Transaction::init() {
   end_timestamp = UINT64_MAX;
   txn_id = UINT64_MAX;
   batch_id = UINT64_MAX;
+  DEBUG_M("Transaction::init array insert_rows\n");
   insert_rows.init(g_max_items_per_txn + 10); // FIXME: arbitrary number
+  DEBUG_M("Transaction::reset array accesses\n");
+  accesses.init(MAX_ROW_PER_TXN);  
 
   reset();
 }
 
 void Transaction::reset() {
-  accesses.init(MAX_ROW_PER_TXN);  
+  release_accesses();
+  accesses.clear();
+  release_inserts();
   insert_rows.clear();  
   write_cnt = 0;
   row_cnt = 0;
@@ -58,18 +63,38 @@ void Transaction::reset() {
   rc = RCOK;
 }
 
+void Transaction::release_accesses() {
+  for(uint64_t i = 0; i < accesses.size(); i++) {
+    DEBUG_M("Transaction::release access free\n")
+    mem_allocator.free(accesses[i],sizeof(Access));
+  }
+}
+
+void Transaction::release_inserts() {
+  for(uint64_t i = 0; i < insert_rows.size(); i++) {
+    DEBUG_M("Transaction::release insert_rows free\n")
+    mem_allocator.free(insert_rows[i],sizeof(row_t));
+  }
+}
+
 void Transaction::release() {
   DEBUG("Transaction release\n");
-  for(uint64_t i = 0; i < accesses.size(); i++)
-    mem_allocator.free(accesses[i],sizeof(Access));
+  release_accesses();
+  DEBUG_M("Transaction::release array accesses free\n")
   accesses.release();
+  release_inserts();
+  DEBUG_M("Transaction::release array insert_rows free\n")
+  insert_rows.release();
 }
 
 void TxnManager::init(Workload * h_wl) {
-  if(!txn) 
+  if(!txn)  {
+    DEBUG_M("Transaction alloc\n");
     txn = (Transaction*) mem_allocator.alloc(sizeof(Transaction));
+  }
   txn->init();
   if(!query) {
+    DEBUG_M("TxnManager::init Query alloc\n");
 #if WORKLOAD == YCSB
     query = (BaseQuery*) mem_allocator.alloc(sizeof(YCSBQuery));
     new(query) YCSBQuery();
@@ -369,7 +394,7 @@ void TxnManager::cleanup(RC rc) {
 		if (type == WR) {
       //printf("free 10 %ld\n",get_txn_id());
 			txn->accesses[rid]->orig_data->free_row();
-      DEBUG_M("TxnManager::cleanup WR free\n");
+      DEBUG_M("TxnManager::cleanup row_t free\n");
 			mem_allocator.free(txn->accesses[rid]->orig_data, sizeof(row_t));
 		}
 #endif
@@ -404,6 +429,7 @@ RC TxnManager::get_row(row_t * row, access_t type, row_t *& row_rtn) {
 	uint64_t starttime = get_sys_clock();
   uint64_t timespan;
 	RC rc = RCOK;
+  DEBUG_M("TxnManager::get_row access alloc\n");
   Access * access = (Access*) mem_allocator.alloc(sizeof(Access));
   //uint64_t row_cnt = txn->row_cnt;
   //assert(txn->accesses.get_count() - 1 == row_cnt);
@@ -415,6 +441,7 @@ RC TxnManager::get_row(row_t * row, access_t type, row_t *& row_rtn) {
 
 	if (rc == Abort || rc == WAIT) {
     row_rtn = NULL;
+    DEBUG_M("TxnManager::get_row(abort) access free\n");
     mem_allocator.free(access,sizeof(Access));
 	  timespan = get_sys_clock() - starttime;
 	  INC_STATS(get_thd_id(), txn_manager_time, timespan);
@@ -431,9 +458,9 @@ RC TxnManager::get_row(row_t * row, access_t type, row_t *& row_rtn) {
 	if (type == WR) {
     //printf("alloc 10 %ld\n",get_txn_id());
     uint64_t part_id = row->get_part_id();
-    DEBUG_M("TxnManager::get_row alloc\n")
+    DEBUG_M("TxnManager::get_row row_t alloc\n")
 		access->orig_data = (row_t *) 
-			mem_allocator.alloc(sizeof(row_t));
+    mem_allocator.alloc(sizeof(row_t));
 		access->orig_data->init(row->get_table(), part_id, 0);
 		access->orig_data->copy(row);
 
@@ -474,6 +501,7 @@ RC TxnManager::get_row_post_wait(row_t *& row_rtn) {
   row_t * row = this->last_row;
   access_t type = this->last_type;
   assert(row != NULL);
+  DEBUG_M("TxnManager::get_row_post_wait access alloc\n")
   Access * access = (Access*) mem_allocator.alloc(sizeof(Access));
 
   row->get_row_post_wait(type,this,access->data);
@@ -484,9 +512,9 @@ RC TxnManager::get_row_post_wait(row_t *& row_rtn) {
 	if (type == WR) {
 	  uint64_t part_id = row->get_part_id();
     //printf("alloc 10 %ld\n",get_txn_id());
-    DEBUG_M("TxnManager::get_row_post_wait alloc\n");
+    DEBUG_M("TxnManager::get_row_post_wait row_t alloc\n")
 		access->orig_data = (row_t *) 
-			mem_allocator.alloc(sizeof(row_t));
+    mem_allocator.alloc(sizeof(row_t));
 		access->orig_data->init(row->get_table(), part_id, 0);
 		access->orig_data->copy(row);
 	}
@@ -637,12 +665,15 @@ void
 TxnManager::release() {
 #if WORKLOAD == YCSB
   ((YCSBQuery*)query)->release();
+  DEBUG_M("TxnManager::release YCSBQuery free\n")
   mem_allocator.free(query,sizeof(YCSBQuery));
 #elif WORKLOAD == TPCC
   ((TPCCQuery*)query)->release();
+  DEBUG_M("TxnManager::release TPCCQuery free\n")
   mem_allocator.free(query,sizeof(TPCCQuery));
 #endif
   txn->release();
+  DEBUG_M("TxnManager::release Transaction free\n")
   mem_allocator.free(txn,sizeof(Transaction));
 }
 

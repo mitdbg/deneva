@@ -76,9 +76,13 @@ Query_thd::get_next_query() {
 }
 
 void BaseQuery::init() { 
+  DEBUG_M("BaseQuery::init array partitions\n");
   partitions.init(g_part_cnt);
+  DEBUG_M("BaseQuery::init array partitions_touched\n");
   partitions_touched.init(g_part_cnt);
+  DEBUG_M("BaseQuery::init array active_nodes\n");
   active_nodes.init(g_node_cnt);
+  DEBUG_M("BaseQuery::init array participant_nodes\n");
   participant_nodes.init(g_node_cnt);
 }
 

@@ -33,6 +33,7 @@ public:
     }
     */
     //DEBUG("Array init: %ld * %ld = %ld\n",sizeof(T),size,sizeof(T)*size);
+    DEBUG_M("Array::init %ld*%ld\n",sizeof(T),size);
     items = (T*) mem_allocator.alloc(sizeof(T)*size);
     capacity = size;
     assert(items);
@@ -62,6 +63,7 @@ public:
 
   void release() {
     //DEBUG("Array release: %ld * %ld = %ld\n",sizeof(T),capacity,sizeof(T)*capacity);
+    DEBUG_M("Array::release %ld*%ld\n",sizeof(T),capacity);
     mem_allocator.free(items,sizeof(T)*capacity);
     items = NULL;
     count = 0;
