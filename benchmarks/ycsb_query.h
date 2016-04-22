@@ -51,7 +51,8 @@ public:
   BaseQuery * create_query(Workload * h_wl, uint64_t home_partition_id);
 
 private:
-	BaseQuery * gen_requests(uint64_t home_partition_id, Workload * h_wl);
+	BaseQuery * gen_requests_hot(uint64_t home_partition_id, Workload * h_wl);
+	BaseQuery * gen_requests_zipf(uint64_t home_partition_id, Workload * h_wl);
 	// for Zipfian distribution
 	double zeta(uint64_t n, double theta);
 	uint64_t zipf(uint64_t n, double theta);

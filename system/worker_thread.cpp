@@ -39,6 +39,7 @@ void WorkerThread::send_init_done_to_all_nodes() {
 		uint64_t total_nodes = g_node_cnt + g_client_node_cnt + g_node_cnt*g_repl_cnt;
 		for(uint64_t i = 0; i < total_nodes; i++) {
 			if(i != g_node_id) {
+        printf("Send INIT_DONE to %ld\n",i);
         msg_queue.enqueue(Message::create_message(INIT_DONE),i);
 			}
 		}

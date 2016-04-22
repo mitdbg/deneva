@@ -586,7 +586,7 @@ def compile_binary(fmt,e):
     cfgs.update(ecfgs)
 #    if env.remote and not env.same_node:
     if env.remote:
-        cfgs["TPORT_TYPE"],cfgs["TPORT_TYPE_IPC"],cfgs["TPORT_PORT"]="\"tcp\"","false",17000
+        cfgs["TPORT_TYPE"],cfgs["TPORT_TYPE_IPC"],cfgs["TPORT_PORT"]="\"tcp\"","false",17800
 #    else:
 #        cfgs["TPORT_TYPE"],cfgs["TPORT_TYPE_IPC"],cfgs["TPORT_PORT"]="\"ipc\"","true","\".ipc\""
     if env.shmem:
@@ -641,7 +641,7 @@ def check_binaries(exps):
         cfgs = get_cfgs(fmt,e)
 #        if env.remote and not env.same_node:
         if env.remote:
-            cfgs["TPORT_TYPE"],cfgs["TPORT_TYPE_IPC"],cfgs["TPORT_PORT"]="\"tcp\"","false",17000
+            cfgs["TPORT_TYPE"],cfgs["TPORT_TYPE_IPC"],cfgs["TPORT_PORT"]="\"tcp\"","false",17800
 #        else:
 #            cfgs["TPORT_TYPE"],cfgs["TPORT_TYPE_IPC"],cfgs["TPORT_PORT"]="\"ipc\"","true",".ipc"
         if env.shmem:

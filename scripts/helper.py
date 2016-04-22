@@ -512,8 +512,11 @@ def merge_helper(summary,tmp):
 def merge_results(summary,cnt,drop,gap):
     new_summary = merge_results_helper(summary,cnt,drop,gap)
     new_summary["progress"] = []
-    for p in range(len(summary["progress"])):
-        new_summary["progress"].append( merge_results_helper(summary["progress"][p],cnt,drop,gap))
+    try:
+        for p in range(len(summary["progress"])):
+            new_summary["progress"].append( merge_results_helper(summary["progress"][p],cnt,drop,gap))
+    except KeyError:
+        print("KeyError: progress")
     return new_summary
 
 def merge_results_helper(summary,cnt,drop,gap):
@@ -798,7 +801,7 @@ def write_summary_file(fname,stats,x_vals,v_vals):
                         try:
                             s += '{0:0.2f}'.format(stats[k][p]) + ', '
                         except KeyError:
-                            print("helper keyerror {} {}".format(p,k))
+#print("helper keyerror {} {}".format(p,k))
                             s += '--, '
                     f.write(s+'\n')
                 f.write('\n')
