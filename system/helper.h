@@ -68,9 +68,18 @@
 /************************************************/
 // ASSERT Helper
 /************************************************/
+
+#define M_ASSERT_V(cond, ...) \
+	if (!(cond)) {\
+		fprintf(stdout,"ASSERTION FAILURE [%s : %d]\n", __FILE__, __LINE__);\
+    fprintf(stdout,__VA_ARGS__); \
+    fflush(stdout); \
+    assert(cond); \
+	}
 #define M_ASSERT(cond, str) \
 	if (!(cond)) {\
 		printf("ASSERTION FAILURE [%s : %d] msg:%s\n", __FILE__, __LINE__, str);\
+    fflush(stdout); \
 		exit(0); \
 	}
 #define ASSERT(cond) assert(cond)

@@ -27,6 +27,7 @@ void mem_alloc::free(void * ptr, uint64_t size) {
 #else
   je_free(ptr);
 #endif
+  total_size -= size;
 }
 
 void * mem_alloc::alloc(uint64_t size) {
@@ -38,6 +39,8 @@ void * mem_alloc::alloc(uint64_t size) {
   ptr = je_malloc(size);
 #endif
   DEBUG_M("alloc %ld 0x%lx\n",size,(uint64_t)ptr);
+  M_ASSERT_V(ptr != NULL,"mem_alloc::alloc NULL ptr %ld / %ld\n",size,total_size);
+  total_size += size;
 	return ptr;
 }
 

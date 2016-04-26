@@ -157,7 +157,9 @@ Message * Message::create_message(RemReqType rtype) {
 }
 
 uint64_t Message::mget_size() {
-  uint64_t size = sizeof(Message);
+  uint64_t size = 0;
+  size += sizeof(RemReqType);
+  size += sizeof(uint64_t);
   return size;
 }
 
@@ -187,7 +189,13 @@ void Message::mcopy_to_buf(char * buf) {
 /************************/
 
 uint64_t QueryMessage::get_size() {
-  uint64_t size = sizeof(QueryMessage);
+  uint64_t size = Message::mget_size();
+#if CC_ALG == WAIT_DIE || CC_ALG == TIMESTAMP || CC_ALG == MVCC
+  size += sizeof(ts);
+#endif
+#if CC_ALG == OCC 
+  size += sizeof(start_ts);
+#endif  
   return size;
 }
 
@@ -259,7 +267,7 @@ void YCSBClientQueryMessage::release() {
 
 // FIXME: does sizeof(YCSBClientQueryMessage) include ptr to requests?
 uint64_t YCSBClientQueryMessage::get_size() {
-  uint64_t size = sizeof(YCSBClientQueryMessage);
+  uint64_t size = ClientQueryMessage::get_size();
   size += sizeof(size_t);
   size += sizeof(ycsb_request) * requests.size();
   return size;
@@ -287,25 +295,35 @@ void YCSBClientQueryMessage::copy_from_buf(char * buf) {
   ClientQueryMessage::copy_from_buf(buf);
   uint64_t ptr = ClientQueryMessage::get_size();
   size_t size;
+  //DEBUG("1YCSBClientQuery %ld\n",ptr);
   COPY_VAL(size,buf,ptr);
   requests.init(size);
+  //DEBUG("2YCSBClientQuery %ld\n",ptr);
   for(uint64_t i = 0 ; i < size;i++) {
     DEBUG_M("YCSBClientQueryMessage::copy ycsb_request alloc\n");
     ycsb_request * req = (ycsb_request*)mem_allocator.alloc(sizeof(ycsb_request));
     COPY_VAL(*req,buf,ptr);
+    //DEBUG("3YCSBClientQuery %ld\n",ptr);
+    assert(req->key < g_synth_table_size);
     requests.add(req);
   }
+ assert(ptr == get_size());
 }
 
 void YCSBClientQueryMessage::copy_to_buf(char * buf) {
   ClientQueryMessage::copy_to_buf(buf);
   uint64_t ptr = ClientQueryMessage::get_size();
+  //DEBUG("1YCSBClientQuery %ld\n",ptr);
   size_t size = requests.size();
   COPY_BUF(buf,size,ptr);
+  //DEBUG("2YCSBClientQuery %ld\n",ptr);
   for(uint64_t i = 0; i < requests.size(); i++) {
     ycsb_request * req = requests[i];
+    assert(req->key < g_synth_table_size);
     COPY_BUF(buf,*req,ptr);
+    //DEBUG("3YCSBClientQuery %ld\n",ptr);
   }
+ assert(ptr == get_size());
 }
 
 /************************/
@@ -326,7 +344,10 @@ void TPCCClientQueryMessage::release() {
 }
 
 uint64_t TPCCClientQueryMessage::get_size() {
-  uint64_t size = sizeof(TPCCClientQueryMessage);
+  uint64_t size = ClientQueryMessage::get_size();
+  size += sizeof(uint64_t) * 10; 
+  size += sizeof(char) * LASTNAME_LEN; 
+  size += sizeof(bool) * 3;
   size += sizeof(size_t);
   size += sizeof(Item_no) * items.size();
   return size;
@@ -433,6 +454,7 @@ void TPCCClientQueryMessage::copy_from_buf(char * buf) {
   COPY_VAL(ol_cnt,buf,ptr);
   COPY_VAL(o_entry_d,buf,ptr);
 
+ assert(ptr == get_size());
 }
 
 void TPCCClientQueryMessage::copy_to_buf(char * buf) {
@@ -464,6 +486,7 @@ void TPCCClientQueryMessage::copy_to_buf(char * buf) {
   COPY_BUF(buf,remote,ptr);
   COPY_BUF(buf,ol_cnt,ptr);
   COPY_BUF(buf,o_entry_d,ptr);
+ assert(ptr == get_size());
 }
 
 
@@ -477,7 +500,15 @@ void ClientQueryMessage::release() {
 }
 
 uint64_t ClientQueryMessage::get_size() {
+  uint64_t size = Message::mget_size();
+#if CC_ALG == CALVIN
+  size += sizeof(batch_id);
+  size += sizeof(txn_id);
+#endif
+  size += sizeof(client_startts);
+  /*
   uint64_t size = sizeof(ClientQueryMessage);
+  */
   size += sizeof(size_t);
   size += sizeof(uint64_t) * partitions.size();
   return size;
@@ -554,7 +585,8 @@ void ClientQueryMessage::copy_to_buf(char * buf) {
 
 
 uint64_t ClientResponseMessage::get_size() {
-  uint64_t size = sizeof(ClientResponseMessage);
+  uint64_t size = Message::mget_size();
+  size += sizeof(uint64_t) * 2;
   return size;
 }
 
@@ -574,6 +606,7 @@ void ClientResponseMessage::copy_from_buf(char * buf) {
   uint64_t ptr = Message::mget_size();
   COPY_VAL(client_startts,buf,ptr);
   COPY_VAL(txn_id,buf,ptr);
+ assert(ptr == get_size());
 }
 
 void ClientResponseMessage::copy_to_buf(char * buf) {
@@ -581,13 +614,14 @@ void ClientResponseMessage::copy_to_buf(char * buf) {
   uint64_t ptr = Message::mget_size();
   COPY_BUF(buf,client_startts,ptr);
   COPY_BUF(buf,txn_id,ptr);
+ assert(ptr == get_size());
 }
 
 /************************/
 
 
 uint64_t DoneMessage::get_size() {
-  uint64_t size = sizeof(DoneMessage);
+  uint64_t size = Message::mget_size();
   return size;
 }
 
@@ -605,19 +639,21 @@ void DoneMessage::copy_from_buf(char * buf) {
   Message::mcopy_from_buf(buf);
   uint64_t ptr = Message::mget_size();
   COPY_VAL(batch_id,buf,ptr);
+ assert(ptr == get_size());
 }
 
 void DoneMessage::copy_to_buf(char * buf) {
   Message::mcopy_to_buf(buf);
   uint64_t ptr = Message::mget_size();
   COPY_BUF(buf,batch_id,ptr);
+ assert(ptr == get_size());
 }
 
 /************************/
 
 
 uint64_t ForwardMessage::get_size() {
-  uint64_t size = sizeof(ForwardMessage);
+  uint64_t size = Message::mget_size();
   return size;
 }
 
@@ -647,6 +683,7 @@ void ForwardMessage::copy_from_buf(char * buf) {
 #if WORKLOAD == TPCC
   COPY_VAL(o_id,buf,ptr);
 #endif
+ assert(ptr == get_size());
 }
 
 void ForwardMessage::copy_to_buf(char * buf) {
@@ -657,12 +694,14 @@ void ForwardMessage::copy_to_buf(char * buf) {
 #if WORKLOAD == TPCC
   COPY_BUF(buf,o_id,ptr);
 #endif
+ assert(ptr == get_size());
 }
 
 /************************/
 
 uint64_t PrepareMessage::get_size() {
-  uint64_t size = sizeof(PrepareMessage);
+  uint64_t size = Message::mget_size();
+  size += sizeof(uint64_t);
   return size;
 }
 
@@ -680,18 +719,24 @@ void PrepareMessage::copy_from_buf(char * buf) {
   Message::mcopy_from_buf(buf);
   uint64_t ptr = Message::mget_size();
   COPY_VAL(txn_id,buf,ptr);
+ assert(ptr == get_size());
 }
 
 void PrepareMessage::copy_to_buf(char * buf) {
   Message::mcopy_to_buf(buf);
   uint64_t ptr = Message::mget_size();
   COPY_BUF(buf,txn_id,ptr);
+ assert(ptr == get_size());
 }
 
 /************************/
 
 uint64_t AckMessage::get_size() {
-  uint64_t size = sizeof(AckMessage);
+  uint64_t size = Message::mget_size();
+  size += sizeof(RC);
+#if CC_ALG == MAAT
+  size += sizeof(uint64_t) * 2;
+#endif
   return size;
 }
 
@@ -718,6 +763,7 @@ void AckMessage::copy_from_buf(char * buf) {
   COPY_VAL(lower,buf,ptr);
   COPY_VAL(upper,buf,ptr);
 #endif
+ assert(ptr == get_size());
 }
 
 void AckMessage::copy_to_buf(char * buf) {
@@ -728,12 +774,15 @@ void AckMessage::copy_to_buf(char * buf) {
   COPY_BUF(buf,lower,ptr);
   COPY_BUF(buf,upper,ptr);
 #endif
+ assert(ptr == get_size());
 }
 
 /************************/
 
 uint64_t QueryResponseMessage::get_size() {
-  uint64_t size = sizeof(QueryResponseMessage);
+  uint64_t size = Message::mget_size(); 
+  size += sizeof(RC);
+  //size += sizeof(uint64_t);
   return size;
 }
 
@@ -751,12 +800,14 @@ void QueryResponseMessage::copy_from_buf(char * buf) {
   Message::mcopy_from_buf(buf);
   uint64_t ptr = Message::mget_size();
   COPY_VAL(rc,buf,ptr);
+ assert(ptr == get_size());
 }
 
 void QueryResponseMessage::copy_to_buf(char * buf) {
   Message::mcopy_to_buf(buf);
   uint64_t ptr = Message::mget_size();
   COPY_BUF(buf,rc,ptr);
+ assert(ptr == get_size());
 }
 
 /************************/
@@ -764,7 +815,13 @@ void QueryResponseMessage::copy_to_buf(char * buf) {
 
 
 uint64_t FinishMessage::get_size() {
-  uint64_t size = sizeof(FinishMessage);
+  uint64_t size = Message::mget_size();
+  size += sizeof(uint64_t); 
+  size += sizeof(RC); 
+  size += sizeof(bool); 
+#if CC_ALG == MAAT
+  size += sizeof(uint64_t); 
+#endif
   return size;
 }
 
@@ -792,6 +849,7 @@ void FinishMessage::copy_from_buf(char * buf) {
 #if CC_ALG == MAAT
   COPY_VAL(commit_timestamp,buf,ptr);
 #endif
+ assert(ptr == get_size());
 }
 
 void FinishMessage::copy_to_buf(char * buf) {
@@ -803,6 +861,7 @@ void FinishMessage::copy_to_buf(char * buf) {
 #if CC_ALG == MAAT
   COPY_BUF(buf,commit_timestamp,ptr);
 #endif
+ assert(ptr == get_size());
 }
 
 /************************/
@@ -812,7 +871,7 @@ void LogMessage::release() {
 }
 
 uint64_t LogMessage::get_size() {
-  uint64_t size = sizeof(LogMessage);
+  uint64_t size = Message::mget_size();
   //size += sizeof(size_t);
   //size += sizeof(LogRecord) * log_records.size();
   return size;
@@ -836,18 +895,20 @@ void LogMessage::copy_from_buf(char * buf) {
   Message::mcopy_from_buf(buf);
   uint64_t ptr = Message::mget_size();
   COPY_VAL(record,buf,ptr);
+ assert(ptr == get_size());
 }
 
 void LogMessage::copy_to_buf(char * buf) {
   Message::mcopy_to_buf(buf);
   uint64_t ptr = Message::mget_size();
   COPY_BUF(buf,record,ptr);
+ assert(ptr == get_size());
 }
 
 /************************/
 
 uint64_t LogRspMessage::get_size() {
-  uint64_t size = sizeof(LogRspMessage);
+  uint64_t size = Message::mget_size();
   return size;
 }
 
@@ -874,7 +935,7 @@ void LogRspMessage::copy_to_buf(char * buf) {
 /************************/
 
 uint64_t InitDoneMessage::get_size() {
-  uint64_t size = sizeof(InitDoneMessage);
+  uint64_t size = Message::mget_size();
   return size;
 }
 
@@ -911,7 +972,7 @@ void YCSBQueryMessage::release() {
 }
 
 uint64_t YCSBQueryMessage::get_size() {
-  uint64_t size = sizeof(YCSBQueryMessage);
+  uint64_t size = QueryMessage::get_size();
   size += sizeof(size_t);
   size += sizeof(ycsb_request) * requests.size();
   return size;
@@ -941,8 +1002,10 @@ void YCSBQueryMessage::copy_from_buf(char * buf) {
     DEBUG_M("YCSBQueryMessage::copy ycsb_request alloc\n");
     ycsb_request * req = (ycsb_request*)mem_allocator.alloc(sizeof(ycsb_request));
     COPY_VAL(*req,buf,ptr);
+    ASSERT(req->key < g_synth_table_size);
     requests.add(req);
   }
+ assert(ptr == get_size());
 }
 
 void YCSBQueryMessage::copy_to_buf(char * buf) {
@@ -954,6 +1017,7 @@ void YCSBQueryMessage::copy_to_buf(char * buf) {
     ycsb_request * req = requests[i];
     COPY_BUF(buf,*req,ptr);
   }
+ assert(ptr == get_size());
 }
 /************************/
 
@@ -973,7 +1037,7 @@ void TPCCQueryMessage::release() {
 }
 
 uint64_t TPCCQueryMessage::get_size() {
-  uint64_t size = sizeof(TPCCQueryMessage);
+  uint64_t size = QueryMessage::get_size();
   size += sizeof(size_t);
   size += sizeof(Item_no) * items.size();
   return size;
@@ -1075,6 +1139,7 @@ void TPCCQueryMessage::copy_from_buf(char * buf) {
   COPY_VAL(ol_cnt,buf,ptr);
   COPY_VAL(o_entry_d,buf,ptr);
 
+ assert(ptr == get_size());
 
 }
 
@@ -1108,6 +1173,7 @@ void TPCCQueryMessage::copy_to_buf(char * buf) {
   COPY_BUF(buf,remote,ptr);
   COPY_BUF(buf,ol_cnt,ptr);
   COPY_BUF(buf,o_entry_d,ptr);
+ assert(ptr == get_size());
 
 }
 
