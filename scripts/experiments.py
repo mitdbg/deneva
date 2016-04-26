@@ -154,7 +154,7 @@ def malviya_plot(summary,summary_client):
 def test():
     wl = 'YCSB'
     nnodes = [1,2,4]
-    nnodes = [4]
+#    nnodes = [4]
     nwr = [0.2]
     nalgos=['NO_WAIT','WAIT_DIE','MAAT','OCC']
     nalgos=['NO_WAIT','MAAT','OCC']
@@ -163,7 +163,7 @@ def test():
 #    nnodes = [2]
 #    nalgos=['OCC']
     fmt = ["WORKLOAD","NODE_CNT","CC_ALG","TUP_WRITE_PERC","MAX_TXN_IN_FLIGHT"]
-    exp = [[wl,n,cc,wr,10000] for n,cc,wr in itertools.product(nnodes,nalgos,nwr)]
+    exp = [[wl,n,cc,wr,100] for n,cc,wr in itertools.product(nnodes,nalgos,nwr)]
 
     return fmt,exp
 
@@ -965,8 +965,8 @@ configs = {
     "PART_PER_TXN": "PART_CNT",
     "MAX_TXN_IN_FLIGHT": 100000,
     "NETWORK_DELAY": '0UL',
-    "DONE_TIMER": "10 * 60 * BILLION // ~1 minutes",
-#    "DONE_TIMER": "1 * 60 * BILLION // ~1 minutes",
+#    "DONE_TIMER": "10 * 60 * BILLION // ~1 minutes",
+    "DONE_TIMER": "1 * 60 * BILLION // ~1 minutes",
     "BATCH_TIMER" : "10000000",
     "PROG_TIMER" : "10 * BILLION // in s",
     "NETWORK_TEST" : "false",
