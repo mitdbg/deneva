@@ -74,6 +74,7 @@ public:
   // Work queue
   double work_queue_wait_time;
   uint64_t work_queue_cnt;
+  double work_queue_mtx_wait_time;
   uint64_t work_queue_new_cnt;
   double work_queue_new_wait_time;
   uint64_t work_queue_old_cnt;

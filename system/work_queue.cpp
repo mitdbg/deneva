@@ -97,7 +97,9 @@ void QWorkQueue::enqueue(uint64_t thd_id, Message * msg,bool busy) {
   assert(ISSERVER || ISREPLICA);
 
   // FIXME: May need alternative queue for some calvin threads
+  uint64_t mtx_wait_starttime = get_sys_clock();
   pthread_mutex_lock(&mtx);
+  INC_STATS(thd_id,work_queue_mtx_wait_time,get_sys_clock() - mtx_wait_starttime);
   DEBUG("%ld ENQUEUE (%ld,%ld); %ld; %d,0x%lx\n",thd_id,entry->txn_id,entry->batch_id,msg->return_node_id,entry->rtype,(uint64_t)msg);
   work_queue.push(entry);
   pthread_mutex_unlock(&mtx);
@@ -111,7 +113,9 @@ Message * QWorkQueue::dequeue() {
   Message * msg = NULL;
   work_queue_entry * entry = NULL;
   if(!work_queue.empty()) {
+    uint64_t mtx_wait_starttime = get_sys_clock();
     pthread_mutex_lock(&mtx);
+    INC_STATS(0,work_queue_mtx_wait_time,get_sys_clock() - mtx_wait_starttime);
     if(!work_queue.empty()) {
       entry = work_queue.top();
       msg = entry->msg;

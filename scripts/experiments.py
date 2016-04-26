@@ -154,6 +154,7 @@ def malviya_plot(summary,summary_client):
 def test():
     wl = 'YCSB'
     nnodes = [1,2,4]
+    ntif = [500,1000,5000,10000]
 #    nnodes = [4]
     nwr = [0.2]
     nalgos=['NO_WAIT','WAIT_DIE','MAAT','OCC']
@@ -163,7 +164,7 @@ def test():
 #    nnodes = [2]
 #    nalgos=['OCC']
     fmt = ["WORKLOAD","NODE_CNT","CC_ALG","TUP_WRITE_PERC","MAX_TXN_IN_FLIGHT"]
-    exp = [[wl,n,cc,wr,100] for n,cc,wr in itertools.product(nnodes,nalgos,nwr)]
+    exp = [[wl,n,cc,wr,tif] for n,cc,wr,tif in itertools.product(nnodes,nalgos,nwr,ntif)]
 
     return fmt,exp
 

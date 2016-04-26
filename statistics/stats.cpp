@@ -70,6 +70,7 @@ void Stats_thd::clear() {
   // Work queue
   work_queue_wait_time=0;
   work_queue_cnt=0;
+  work_queue_mtx_wait_time=0;
   work_queue_new_cnt=0;
   work_queue_new_wait_time=0;
   work_queue_old_cnt=0;
@@ -250,10 +251,13 @@ void Stats_thd::print(FILE * outf) {
 
 
   double work_queue_wait_avg_time = 0;
+  double work_queue_mtx_wait_avg = 0;
   double work_queue_new_wait_avg_time = 0;
   double work_queue_old_wait_avg_time = 0;
-  if(work_queue_cnt > 0)
+  if(work_queue_cnt > 0) {
     work_queue_wait_avg_time = work_queue_wait_time / work_queue_cnt;
+    work_queue_mtx_wait_avg = work_queue_mtx_wait_time / work_queue_cnt;
+  }
   if(work_queue_new_cnt > 0)
     work_queue_new_wait_avg_time = work_queue_new_wait_time / work_queue_new_cnt;
   if(work_queue_old_cnt > 0)
@@ -263,6 +267,8 @@ void Stats_thd::print(FILE * outf) {
   ",work_queue_wait_time=%f"
   ",work_queue_cnt=%ld"
   ",work_queue_wait_avg_time=%f"
+  ",work_queue_mtx_wait_time=%f"
+  ",work_queue_mtx_wait_avg=%f"
   ",work_queue_new_cnt=%ld"
   ",work_queue_new_wait_time=%f"
   ",work_queue_new_wait_avg_time=%f"
@@ -275,6 +281,8 @@ void Stats_thd::print(FILE * outf) {
   ,work_queue_wait_time / BILLION
   ,work_queue_cnt
   ,work_queue_wait_avg_time / BILLION
+  ,work_queue_mtx_wait_time / BILLION
+  ,work_queue_mtx_wait_avg / BILLION
   ,work_queue_new_cnt
   ,work_queue_new_wait_time / BILLION
   ,work_queue_new_wait_avg_time / BILLION
@@ -404,12 +412,22 @@ void Stats_thd::print(FILE * outf) {
 
   //MAAT
   double maat_range_avg = 0;
+  double maat_validate_avg = 0;
+  double maat_cs_wait_avg = 0;
+  uint64_t maat_commit_avg = 0;
   if(maat_commit_cnt > 0)
     maat_range_avg = maat_range / maat_commit_cnt;
+  if(maat_validate_cnt > 0) {
+    maat_validate_avg = maat_validate_time / maat_validate_cnt;
+    maat_cs_wait_avg = maat_cs_wait_time / maat_validate_cnt;
+    maat_commit_avg = maat_commit_cnt / maat_validate_cnt;
+  }
   fprintf(outf,
   ",maat_validate_cnt=%ld"
   ",maat_validate_time=%f"
+  ",maat_validate_avg=%f"
   ",maat_cs_wait_time=%f"
+  ",maat_cs_wait_avg=%f"
   ",maat_case1_cnt=%ld"
   ",maat_case2_cnt=%ld"
   ",maat_case3_cnt=%ld"
@@ -417,10 +435,13 @@ void Stats_thd::print(FILE * outf) {
   ",maat_case5_cnt=%ld"
   ",maat_range=%f"
   ",maat_commit_cnt=%ld"
+  ",maat_commit_avg=%ld"
   ",maat_range_avg=%f"
   ,maat_validate_cnt
   ,maat_validate_time / BILLION
+  ,maat_validate_avg / BILLION
   ,maat_cs_wait_time / BILLION
+  ,maat_cs_wait_avg / BILLION
   ,maat_case1_cnt
   ,maat_case2_cnt
   ,maat_case3_cnt
@@ -428,6 +449,7 @@ void Stats_thd::print(FILE * outf) {
   ,maat_case5_cnt
   ,maat_range / BILLION
   ,maat_commit_cnt
+  ,maat_commit_avg
   ,maat_range_avg
   );
 
@@ -516,6 +538,7 @@ void Stats_thd::combine(Stats_thd * stats) {
   // Work queue
   work_queue_wait_time+=stats->work_queue_wait_time;
   work_queue_cnt+=stats->work_queue_cnt;
+  work_queue_mtx_wait_time+=stats->work_queue_mtx_wait_time;
   work_queue_new_cnt+=stats->work_queue_new_cnt;
   work_queue_new_wait_time+=stats->work_queue_new_wait_time;
   work_queue_old_cnt+=stats->work_queue_old_cnt;

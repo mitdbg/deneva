@@ -96,10 +96,13 @@ stat_map = OrderedDict([
   ('txn_commit_cnt', []),
   ('txn_abort_cnt', []),
   ('txn_run_time', []),
+  ('txn_run_avg_time', []),
   ('multi_part_txn_cnt', []),
   ('multi_part_txn_run_time', []),
+  ('multi_part_txn_avg_time', []),
   ('single_part_txn_cnt', []),
   ('single_part_txn_run_time', []),
+  ('single_part_txn_avg_time', []),
 
   # Client
   ('txn_sent_cnt', []),
@@ -116,10 +119,15 @@ stat_map = OrderedDict([
   # Work queue
   ('work_queue_wait_time', []),
   ('work_queue_cnt', []),
+  ('work_queue_wait_avg_time', []),
+  ('work_queue_mtx_wait_time', []),
+  ('work_queue_mtx_wait_avg', []),
   ('work_queue_new_cnt', []),
   ('work_queue_new_wait_time', []),
+  ('work_queue_new_wait_avg_time', []),
   ('work_queue_old_cnt', []),
   ('work_queue_old_wait_time', []),
+  ('work_queue_old_wait_avg_time', []),
   ('work_queue_enqueue_time', []),
   ('work_queue_dequeue_time', []),
   ('work_queue_conflict_cnt', []),
@@ -131,10 +139,13 @@ stat_map = OrderedDict([
   ('abort_queue_dequeue_time', []),
   ('abort_queue_penalty', []),
   ('abort_queue_penalty_extra', []),
+  ('abort_queue_penalty_avg', []),
+  ('abort_queue_penalty_extra_avg', []),
 
   # Worker thread
   ('worker_process_time', []),
   ('worker_process_cnt', []),
+  ('worker_process_avg_time', []),
   ('worker_process_cnt_by_type', []),
   ('worker_process_time_by_type', []),
 
@@ -164,6 +175,8 @@ stat_map = OrderedDict([
   ('twopl_owned_time', []),
   ('twopl_sh_owned_time', []),
   ('twopl_ex_owned_time', []),
+  ('twopl_sh_owned_avg_time', []),
+  ('twopl_ex_owned_avg_time', []),
   ('twopl_diff_time', []),
 
   # OCC
@@ -179,11 +192,28 @@ stat_map = OrderedDict([
   ('occ_ts_abort_cnt', []),
   ('occ_finish_time', []),
 
+  # MAAT
+  ('maat_validate_cnt', []),
+  ('maat_validate_time', []),
+  ('maat_validate_avg', []),
+  ('maat_cs_wait_time', []),
+  ('maat_cs_wait_avg', []),
+  ('maat_case1_cnt', []),
+  ('maat_case2_cnt', []),
+  ('maat_case3_cnt', []),
+  ('maat_case4_cnt', []),
+  ('maat_case5_cnt', []),
+  ('maat_range', []),
+  ('maat_commit_cnt', []),
+  ('maat_range_avg', []),
+
   # Logging
   ('log_write_cnt', []),
   ('log_write_time', []),
+  ('log_write_avg_time', []),
   ('log_flush_cnt', []),
   ('log_flush_time', []),
+  ('log_flush_avg_time', []),
   ('log_process_time', []),
 
   # Transaction Table
@@ -194,6 +224,8 @@ stat_map = OrderedDict([
   ('txn_table_cflt_size', []),
   ('txn_table_get_time', []),
   ('txn_table_release_time', []),
+  ('txn_table_get_avg_time', []),
+  ('txn_table_release_avg_time', []),
 ])
 
 stat_map2 = {
@@ -206,10 +238,13 @@ stat_map2 = {
   'txn_commit_cnt': [],
   'txn_abort_cnt': [],
   'txn_run_time': [],
+  'txn_run_avg_time': [],
   'multi_part_txn_cnt': [],
   'multi_part_txn_run_time': [],
+  'multi_part_txn_avg_time': [],
   'single_part_txn_cnt': [],
   'single_part_txn_run_time': [],
+  'single_part_txn_avg_time': [],
 
   # Client
   'txn_sent_cnt': [],
@@ -226,10 +261,13 @@ stat_map2 = {
   # Work queue
   'work_queue_wait_time': [],
   'work_queue_cnt': [],
+  'work_queue_wait_avg_time': [],
   'work_queue_new_cnt': [],
   'work_queue_new_wait_time': [],
+  'work_queue_new_wait_avg_time': [],
   'work_queue_old_cnt': [],
   'work_queue_old_wait_time': [],
+  'work_queue_old_wait_avg_time': [],
   'work_queue_enqueue_time': [],
   'work_queue_dequeue_time': [],
   'work_queue_conflict_cnt': [],
@@ -237,10 +275,13 @@ stat_map2 = {
   # Abort queue
   'abort_queue_enqueue_time': [],
   'abort_queue_dequeue_time': [],
+  'abort_queue_penalty_avg': [],
+  'abort_queue_penalty_extra_avg': [],
 
   # Worker thread
   'worker_process_time': [],
   'worker_process_cnt': [],
+  'worker_process_avg_time': [],
   'worker_process_cnt_by_type': [],
   'worker_process_time_by_type': [],
 
@@ -270,6 +311,8 @@ stat_map2 = {
   'twopl_owned_time': [],
   'twopl_sh_owned_time': [],
   'twopl_ex_owned_time': [],
+  'twopl_sh_owned_avg_time': [],
+  'twopl_ex_owned_avg_time': [],
   'twopl_diff_time': [],
 
   # OCC
@@ -285,11 +328,26 @@ stat_map2 = {
   'occ_ts_abort_cnt': [],
   'occ_finish_time': [],
 
+  # MAAT
+  'maat_validate_cnt': [],
+  'maat_validate_time': [],
+  'maat_cs_wait_time': [],
+  'maat_case1_cnt': [],
+  'maat_case2_cnt': [],
+  'maat_case3_cnt': [],
+  'maat_case4_cnt': [],
+  'maat_case5_cnt': [],
+  'maat_range': [],
+  'maat_commit_cnt': [],
+  'maat_range_avg': [],
+
   # Logging
   'log_write_cnt': [],
   'log_write_time': [],
+  'log_write_avg_time': [],
   'log_flush_cnt': [],
   'log_flush_time': [],
+  'log_flush_avg_time': [],
   'log_process_time': [],
 
   # Transaction Table
@@ -300,6 +358,8 @@ stat_map2 = {
   'txn_table_cflt_size': [],
   'txn_table_get_time': [],
   'txn_table_release_time': [],
+  'txn_table_get_avg_time': [],
+  'txn_table_release_avg_time': [],
 
 
 }
@@ -569,9 +629,9 @@ def process_results(summary,results):
     for r in results:
         try:
             (name,val) = re.split('=',r)
+            val = float(val)
         except ValueError:
             continue
-        val = float(val)
         if name not in summary.keys():
             summary[name] = [val]
         else:
@@ -799,7 +859,7 @@ def write_summary_file(fname,stats,x_vals,v_vals):
                     for v in v_vals:
                         k = (x,v)
                         try:
-                            s += '{0:0.2f}'.format(stats[k][p]) + ', '
+                            s += '{0:0.4f}'.format(stats[k][p]) + ', '
                         except KeyError:
 #print("helper keyerror {} {}".format(p,k))
                             s += '--, '
@@ -812,7 +872,7 @@ def write_summary_file(fname,stats,x_vals,v_vals):
                     for x in x_vals:
                         k = (x,v)
                         try:
-                            s += '{0:0.2f}'.format(stats[k][p]) + ', '
+                            s += '{0:0.4f}'.format(stats[k][p]) + ', '
                         except KeyError:
                             s += '--, '
                     f.write(s+'\n')
@@ -825,7 +885,7 @@ def write_summary_file(fname,stats,x_vals,v_vals):
                     k1 = (x,v)
                     k2 = (prog,p)
                     try:
-                        s += '{0:0.2f}'.format(stats[k1][k2]) + ', '
+                        s += '{0:0.4f}'.format(stats[k1][k2]) + ', '
                     except KeyError:
                         s += '--, '
                 f.write(s+'\n')
