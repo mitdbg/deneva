@@ -165,7 +165,6 @@ void WorkerThread::abort(TxnManager * txn_man) {
 
   DEBUG("ABORT %ld -- %f\n",txn_man->get_txn_id(),(double)get_sys_clock() - run_starttime/ BILLION);
   // TODO: TPCC Rollback here
-  INC_STATS(get_thd_id(), txn_abort_cnt, 1);
 
   ++txn_man->abort_cnt;
   txn_man->reset();
@@ -228,6 +227,8 @@ RC WorkerThread::process_rack_prep(Message * msg) {
   RC rc = RCOK;
 
   TxnManager * txn_man = txn_table.get_transaction_manager(msg->get_txn_id(),0);
+
+
   int responses_left = txn_man->received_response(((AckMessage*)msg)->rc);
   assert(responses_left >=0);
 #if CC_ALG == MAAT
@@ -278,6 +279,7 @@ RC WorkerThread::process_rack_rfin(Message * msg) {
     return WAIT;
 
   // Done waiting 
+  txn_man->txn_stats.twopc_time += get_sys_clock() - txn_man->txn_stats.wait_starttime;
 
   if(txn_man->get_rc() == RCOK) {
     //txn_man->commit();
@@ -294,6 +296,9 @@ RC WorkerThread::process_rqry_rsp(Message * msg) {
   assert(IS_LOCAL(msg->get_txn_id()));
 
   TxnManager * txn_man = txn_table.get_transaction_manager(msg->get_txn_id(),0);
+
+  txn_man->txn_stats.remote_wait_time += get_sys_clock() - txn_man->txn_stats.wait_starttime;
+
   RC rc = txn_man->run_txn();
   check_if_done(rc,txn_man);
   return rc;
@@ -332,6 +337,7 @@ RC WorkerThread::process_rqry_cont(Message * msg) {
 
   // Create new transaction table entry if one does not already exist
   TxnManager * txn_man = txn_table.get_transaction_manager(msg->get_txn_id(),0);
+
   txn_man->run_txn_post_wait();
   rc = txn_man->run_txn();
 
@@ -347,6 +353,9 @@ RC WorkerThread::process_rtxn_cont(Message * msg) {
   DEBUG("RTXN_CONT %ld\n",msg->get_txn_id());
   assert(IS_LOCAL(msg->get_txn_id()));
   TxnManager * txn_man = txn_table.get_transaction_manager(msg->get_txn_id(),0);
+
+  txn_man->txn_stats.local_wait_time += get_sys_clock() - txn_man->txn_stats.wait_starttime;
+
   txn_man->run_txn_post_wait();
   RC rc = txn_man->run_txn();
   check_if_done(rc,txn_man);

@@ -116,6 +116,24 @@ stat_map = OrderedDict([
   ('txn_validate_time', []),
   ('txn_cleanup_time', []),
 
+  # Transaction Stats
+  ('txn_total_process_time', []),
+  ('txn_process_time', []),
+  ('txn_total_local_wait_time', []),
+  ('txn_local_wait_time', []),
+  ('txn_total_remote_wait_time', []),
+  ('txn_remote_wait_time', []),
+  ('txn_total_twopc_time', []),
+  ('txn_twopc_time', []),
+  ('txn_total_process_time_avg', []),
+  ('txn_process_time_avg', []),
+  ('txn_total_local_wait_time_avg', []),
+  ('txn_local_wait_time_avg', []),
+  ('txn_total_remote_wait_time_avg', []),
+  ('txn_remote_wait_time_avg', []),
+  ('txn_total_twopc_time_avg', []),
+  ('txn_twopc_time_avg', []),
+
   # Work queue
   ('work_queue_wait_time', []),
   ('work_queue_cnt', []),

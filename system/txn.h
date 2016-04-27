@@ -71,7 +71,19 @@ public:
 
 class TxnStats {
   public:
+    void init();
+    void reset();
+    void commit_stats();
     uint64_t starttime;
+    uint64_t wait_starttime;
+    double total_process_time;
+    double process_time;
+    double total_local_wait_time;
+    double local_wait_time;
+    double total_remote_wait_time;
+    double remote_wait_time;
+    double total_twopc_time;
+    double twopc_time;
 };
 
 /*

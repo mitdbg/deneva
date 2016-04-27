@@ -47,13 +47,27 @@ void Stats_thd::clear() {
   txn_cnt=0;
   remote_txn_cnt=0;
   local_txn_cnt=0;
-  txn_commit_cnt=0;
-  txn_abort_cnt=0;
+  total_txn_commit_cnt=0;
+  local_txn_commit_cnt=0;
+  remote_txn_commit_cnt=0;
+  total_txn_abort_cnt=0;
+  local_txn_abort_cnt=0;
+  remote_txn_abort_cnt=0;
   txn_run_time=0;
   multi_part_txn_cnt=0;
   multi_part_txn_run_time=0;
   single_part_txn_cnt=0;
   single_part_txn_run_time=0;
+
+  // Transaction stats
+  txn_total_process_time=0;
+  txn_process_time=0;
+  txn_total_local_wait_time=0;
+  txn_local_wait_time=0;
+  txn_total_remote_wait_time=0;
+  txn_remote_wait_time=0;
+  txn_total_twopc_time=0;
+  txn_twopc_time=0;
 
   // Client
   txn_sent_cnt=0;
@@ -197,8 +211,12 @@ void Stats_thd::print(FILE * outf) {
   ",txn_cnt=%ld"
   ",remote_txn_cnt=%ld"
   ",local_txn_cnt=%ld"
-  ",txn_commit_cnt=%ld"
-  ",txn_abort_cnt=%ld"
+  ",total_txn_commit_cnt=%ld"
+  ",local_txn_commit_cnt=%ld"
+  ",remote_txn_commit_cnt=%ld"
+  ",total_txn_abort_cnt=%ld"
+  ",local_txn_abort_cnt=%ld"
+  ",remote_txn_abort_cnt=%ld"
   ",txn_run_time=%f"
   ",txn_run_avg_time=%f"
   ",multi_part_txn_cnt=%ld"
@@ -210,8 +228,12 @@ void Stats_thd::print(FILE * outf) {
   ,txn_cnt
   ,remote_txn_cnt
   ,local_txn_cnt
-  ,txn_commit_cnt
-  ,txn_abort_cnt
+  ,total_txn_commit_cnt
+  ,local_txn_commit_cnt
+  ,remote_txn_commit_cnt
+  ,total_txn_abort_cnt
+  ,local_txn_abort_cnt
+  ,remote_txn_abort_cnt
   ,txn_run_time / BILLION
   ,txn_run_avg_time / BILLION
   ,multi_part_txn_cnt
@@ -220,6 +242,60 @@ void Stats_thd::print(FILE * outf) {
   ,single_part_txn_cnt
   ,single_part_txn_run_time / BILLION
   ,single_part_txn_avg_time / BILLION
+  );
+
+  // Transaction stats
+  double txn_total_process_time_avg=0;
+  double txn_process_time_avg=0;
+  double txn_total_local_wait_time_avg=0;
+  double txn_local_wait_time_avg=0;
+  double txn_total_remote_wait_time_avg=0;
+  double txn_remote_wait_time_avg=0;
+  double txn_total_twopc_time_avg=0;
+  double txn_twopc_time_avg=0;
+  if(local_txn_commit_cnt > 0) {
+    txn_total_process_time_avg = txn_total_process_time / local_txn_commit_cnt;
+    txn_process_time_avg = txn_process_time / local_txn_commit_cnt;
+    txn_total_local_wait_time_avg = txn_total_local_wait_time / local_txn_commit_cnt;
+    txn_local_wait_time_avg = txn_local_wait_time / local_txn_commit_cnt;
+    txn_total_remote_wait_time_avg = txn_total_remote_wait_time / local_txn_commit_cnt;
+    txn_remote_wait_time_avg = txn_remote_wait_time / local_txn_commit_cnt;
+    txn_total_twopc_time_avg = txn_total_twopc_time / local_txn_commit_cnt;
+    txn_twopc_time_avg = txn_twopc_time / local_txn_commit_cnt;
+  }
+  fprintf(outf,
+  ",txn_total_process_time=%f"
+  ",txn_process_time=%f"
+  ",txn_total_local_wait_time=%f"
+  ",txn_local_wait_time=%f"
+  ",txn_total_remote_wait_time=%f"
+  ",txn_remote_wait_time=%f"
+  ",txn_total_twopc_time=%f"
+  ",txn_twopc_time=%f"
+  ",txn_total_process_time_avg=%f"
+  ",txn_process_time_avg=%f"
+  ",txn_total_local_wait_time_avg=%f"
+  ",txn_local_wait_time_avg=%f"
+  ",txn_total_remote_wait_time_avg=%f"
+  ",txn_remote_wait_time_avg=%f"
+  ",txn_total_twopc_time_avg=%f"
+  ",txn_twopc_time_avg=%f"
+  ,txn_total_process_time / BILLION
+  ,txn_process_time / BILLION
+  ,txn_total_local_wait_time / BILLION
+  ,txn_local_wait_time / BILLION
+  ,txn_total_remote_wait_time / BILLION
+  ,txn_remote_wait_time / BILLION
+  ,txn_total_twopc_time / BILLION
+  ,txn_twopc_time / BILLION
+  ,txn_total_process_time_avg / BILLION
+  ,txn_process_time_avg / BILLION
+  ,txn_total_local_wait_time_avg / BILLION
+  ,txn_local_wait_time_avg / BILLION
+  ,txn_total_remote_wait_time_avg / BILLION
+  ,txn_remote_wait_time_avg / BILLION
+  ,txn_total_twopc_time_avg / BILLION
+  ,txn_twopc_time_avg / BILLION
   );
 
   // Abort queue
@@ -319,29 +395,64 @@ void Stats_thd::print(FILE * outf) {
   }
 
   // IO
+  double mbuf_send_intv_time_avg = 0;
+  double msg_unpack_time_avg = 0;
+  double msg_send_time_avg = 0;
+  double msg_recv_time_avg = 0;
+  double msg_batch_size_msgs_avg = 0;
+  double msg_batch_size_bytes_avg = 0;
+  double msg_queue_delay_time_avg = 0;
+  if(msg_queue_cnt > 0)
+    msg_queue_delay_time_avg = msg_queue_delay_time / msg_queue_cnt;
+  if(msg_batch_cnt > 0) {
+    mbuf_send_intv_time_avg = mbuf_send_intv_time / msg_batch_cnt;
+    msg_batch_size_msgs_avg = msg_batch_size_msgs / msg_batch_cnt;
+    msg_batch_size_bytes_avg = msg_batch_size_bytes / msg_batch_cnt;
+  }
+  if(msg_recv_cnt > 0) {
+    msg_recv_time_avg = msg_recv_time / msg_recv_cnt;
+    msg_unpack_time_avg = msg_unpack_time / msg_recv_cnt;
+  }
+  if(msg_send_cnt > 0) {
+    msg_send_time_avg = msg_send_time / msg_send_cnt;
+  }
   fprintf(outf,
   ",msg_queue_delay_time=%f"
   ",msg_queue_cnt=%ld"
+  ",msg_queue_delay_time_avg=%f"
   ",msg_send_time=%f"
+  ",msg_send_time_avg=%f"
   ",msg_recv_time=%f"
+  ",msg_recv_time_avg=%f"
   ",msg_batch_cnt=%ld"
   ",msg_batch_size_msgs=%ld"
+  ",msg_batch_size_msgs_avg=%f"
   ",msg_batch_size_bytes=%ld"
+  ",msg_batch_size_bytes_avg=%f"
   ",msg_send_cnt=%ld"
   ",msg_recv_cnt=%ld"
   ",msg_unpack_time=%f"
+  ",msg_unpack_time_avg=%f"
   ",mbuf_send_intv_time=%f"
+  ",mbuf_send_intv_time_avg=%f"
   ,msg_queue_delay_time / BILLION
   ,msg_queue_cnt
+  ,msg_queue_delay_time_avg / BILLION
   ,msg_send_time / BILLION
+  ,msg_send_time_avg / BILLION
   ,msg_recv_time / BILLION
+  ,msg_recv_time_avg / BILLION
   ,msg_batch_cnt
   ,msg_batch_size_msgs
+  ,msg_batch_size_msgs_avg
   ,msg_batch_size_bytes
+  ,msg_batch_size_bytes_avg
   ,msg_send_cnt
   ,msg_recv_cnt
   ,msg_unpack_time / BILLION
+  ,msg_unpack_time_avg / BILLION
   ,mbuf_send_intv_time / BILLION
+  ,mbuf_send_intv_time_avg / BILLION
   );
 
   // Concurrency control, general
@@ -515,13 +626,27 @@ void Stats_thd::combine(Stats_thd * stats) {
   txn_cnt+=stats->txn_cnt;
   remote_txn_cnt+=stats->remote_txn_cnt;
   local_txn_cnt+=stats->local_txn_cnt;
-  txn_commit_cnt+=stats->txn_commit_cnt;
-  txn_abort_cnt+=stats->txn_abort_cnt;
+  total_txn_commit_cnt+=stats->total_txn_commit_cnt;
+  local_txn_commit_cnt+=stats->local_txn_commit_cnt;
+  remote_txn_commit_cnt+=stats->remote_txn_commit_cnt;
+  total_txn_abort_cnt+=stats->total_txn_abort_cnt;
+  local_txn_abort_cnt+=stats->local_txn_abort_cnt;
+  remote_txn_abort_cnt+=stats->remote_txn_abort_cnt;
   txn_run_time+=stats->txn_run_time;
   multi_part_txn_cnt+=stats->multi_part_txn_cnt;
   multi_part_txn_run_time+=stats->multi_part_txn_run_time;
   single_part_txn_cnt+=stats->single_part_txn_cnt;
   single_part_txn_run_time+=stats->single_part_txn_run_time;
+
+  // Transaction stats
+  txn_total_process_time+=stats->txn_total_process_time;
+  txn_process_time+=stats->txn_process_time;
+  txn_total_local_wait_time+=stats->txn_total_local_wait_time;
+  txn_local_wait_time+=stats->txn_local_wait_time;
+  txn_total_remote_wait_time+=stats->txn_total_remote_wait_time;
+  txn_remote_wait_time+=stats->txn_remote_wait_time;
+  txn_total_twopc_time+=stats->txn_total_twopc_time;
+  txn_twopc_time+=stats->txn_twopc_time;
 
   // Client
   txn_sent_cnt+=stats->txn_sent_cnt;

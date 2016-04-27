@@ -38,6 +38,48 @@
 #include "maat.h"
 
 
+void TxnStats::init() {
+  starttime=0;
+  wait_starttime=0;
+  total_process_time=0;
+  process_time=0;
+  total_local_wait_time=0;
+  local_wait_time=0;
+  total_remote_wait_time=0;
+  remote_wait_time=0;
+  total_twopc_time=0;
+  twopc_time=0;
+}
+
+void TxnStats::reset() {
+  wait_starttime=0;
+  total_process_time += process_time;
+  process_time = 0;
+  total_local_wait_time += local_wait_time;
+  local_wait_time = 0;
+  total_remote_wait_time += remote_wait_time;
+  remote_wait_time = 0;
+  total_twopc_time += twopc_time;
+  twopc_time = 0;
+}
+
+void TxnStats::commit_stats() {
+  total_process_time += process_time;
+  total_local_wait_time += local_wait_time;
+  total_remote_wait_time += remote_wait_time;
+  total_twopc_time += twopc_time;
+  assert(total_process_time >= process_time);
+  INC_STATS(0,txn_total_process_time,total_process_time);
+  INC_STATS(0,txn_process_time,process_time);
+  INC_STATS(0,txn_total_local_wait_time,total_local_wait_time);
+  INC_STATS(0,txn_local_wait_time,local_wait_time);
+  INC_STATS(0,txn_total_remote_wait_time,total_remote_wait_time);
+  INC_STATS(0,txn_remote_wait_time,remote_wait_time);
+  INC_STATS(0,txn_total_twopc_time,total_twopc_time);
+  INC_STATS(0,txn_twopc_time,twopc_time);
+}
+
+
 void Transaction::init() {
   timestamp = UINT64_MAX;
   start_timestamp = UINT64_MAX;
@@ -113,6 +155,8 @@ void TxnManager::init(Workload * h_wl) {
   uncommitted_writes = new std::set<uint64_t>();
   uncommitted_writes_y = new std::set<uint64_t>();
   uncommitted_reads = new std::set<uint64_t>();
+
+  txn_stats.init();
 }
 
 void TxnManager::reset() {
@@ -133,6 +177,9 @@ void TxnManager::reset() {
   uncommitted_reads->clear();
 
   txn->reset();
+
+  // Stats
+  txn_stats.reset();
 
 }
 
@@ -169,6 +216,10 @@ RC TxnManager::abort() {
     return Abort;
   DEBUG("Abort %ld\n",get_txn_id());
   txn->rc = Abort;
+  INC_STATS(get_thd_id(),total_txn_abort_cnt,1);
+  if(IS_LOCAL(get_txn_id())) {
+    INC_STATS(get_thd_id(), local_txn_abort_cnt, 1);
+  }
   aborted = true;
   release_locks(Abort);
 #if CC_ALG == MAAT
@@ -252,15 +303,15 @@ bool TxnManager::is_multi_part() {
 }
 
 void TxnManager::commit_stats() {
-  INC_STATS(get_thd_id(),txn_commit_cnt,1);
+  INC_STATS(get_thd_id(),total_txn_commit_cnt,1);
   if(!IS_LOCAL(get_txn_id())) {
-    INC_STATS(get_thd_id(),remote_txn_cnt,1);
+    INC_STATS(get_thd_id(),remote_txn_commit_cnt,1);
     return;
   }
   uint64_t timespan = get_sys_clock() - txn_stats.starttime; 
 
   INC_STATS(get_thd_id(),txn_cnt,1);
-  INC_STATS(get_thd_id(),local_txn_cnt,1);
+  INC_STATS(get_thd_id(),local_txn_commit_cnt,1);
   INC_STATS(get_thd_id(), txn_run_time, timespan);
   if(query->partitions.size() > 1) {
     INC_STATS(get_thd_id(),multi_part_txn_cnt,1);
@@ -278,6 +329,7 @@ void TxnManager::commit_stats() {
   for(uint64_t i = 0 ; i < query->partitions.size(); i++) {
     INC_STATS(get_thd_id(),part_acc[query->partitions[i]],1);
   }
+  txn_stats.commit_stats();
 }
 
 void TxnManager::register_thd(Thread * h_thd) {

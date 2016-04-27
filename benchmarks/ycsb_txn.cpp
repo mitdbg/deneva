@@ -96,10 +96,14 @@ RC YCSBTxnManager::run_txn() {
     query->partitions_touched.add_unique(GET_PART_ID(0,g_node_id));
   }
 
+  uint64_t starttime = get_sys_clock();
 
   while(rc == RCOK && !is_done()) {
     rc = run_txn_state();
   }
+
+  txn_stats.process_time += get_sys_clock() - starttime;
+  txn_stats.wait_starttime = get_sys_clock();
 
   if(IS_LOCAL(get_txn_id())) {
     if(is_done() && rc == RCOK) 

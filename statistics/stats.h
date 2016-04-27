@@ -51,13 +51,27 @@ public:
   uint64_t txn_cnt;
   uint64_t remote_txn_cnt;
   uint64_t local_txn_cnt;
-  uint64_t txn_commit_cnt;
-  uint64_t txn_abort_cnt;
+  uint64_t total_txn_commit_cnt;
+  uint64_t local_txn_commit_cnt;
+  uint64_t remote_txn_commit_cnt;
+  uint64_t total_txn_abort_cnt;
+  uint64_t local_txn_abort_cnt;
+  uint64_t remote_txn_abort_cnt;
   double txn_run_time;
   uint64_t multi_part_txn_cnt;
   double multi_part_txn_run_time;
   uint64_t single_part_txn_cnt;
   double single_part_txn_run_time;
+
+  // Transaction stats
+  double txn_total_process_time;
+  double txn_process_time;
+  double txn_total_local_wait_time;
+  double txn_local_wait_time;
+  double txn_total_remote_wait_time;
+  double txn_remote_wait_time;
+  double txn_total_twopc_time;
+  double txn_twopc_time;
 
   // Client
   uint64_t txn_sent_cnt;

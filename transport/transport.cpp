@@ -281,8 +281,7 @@ void Transport::send_msg(uint64_t sid, uint64_t dest_id, void * sbuf,int size) {
   DEBUG("Batch of %d bytes sent to node %ld on socket %ld\n",size,dest_id,idx);
 
   INC_STATS(_thd_id,msg_send_time,get_sys_clock() - starttime);
-	//INC_STATS(_thd_id,msg_batch_cnt,1);
-	//INC_STATS(_thd_id,msg_batch_size_bytes,size);
+  INC_STATS(_thd_id,msg_send_cnt,1);
 }
 
 // Listens to socket for messages from other nodes
@@ -326,9 +325,9 @@ std::vector<Message*> Transport::recv_msg() {
 	ts_t time2 = get_sys_clock();
 
   INC_STATS(_thd_id,msg_recv_time, time2 - starttime);
+	INC_STATS(_thd_id,msg_recv_cnt,1);
 
 	starttime = get_sys_clock();
-	INC_STATS(_thd_id,msg_recv_cnt,1);
 
   //rem_qry_man.unmarshall(buf,bytes);
   msgs = Message::create_messages((char*)buf);
