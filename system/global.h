@@ -217,7 +217,7 @@ extern UInt32 g_seq_thread_cnt;
 extern UInt32 g_repl_type;
 extern UInt32 g_repl_cnt;
 
-enum RC { RCOK, Commit, Abort, WAIT, WAIT_REM, ERROR, FINISH, NONE };
+enum RC { RCOK=0, Commit, Abort, WAIT, WAIT_REM, ERROR, FINISH, NONE };
 enum RemReqType {INIT_DONE=0,RLK, RULK, CL_QRY, RQRY, RQRY_CONT, RFIN, RLK_RSP, RULK_RSP, RQRY_RSP, RACK,RACK_PREP,RACK_FIN, RTXN, RTXN_CONT, RINIT, RPREPARE,RPASS,RFWD,RDONE,CL_RSP,LOG_MSG,LOG_MSG_RSP,LOG_FLUSHED,NO_MSG};
 
 /* Thread */

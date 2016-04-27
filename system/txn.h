@@ -155,6 +155,7 @@ public:
   // For Maat
   uint64_t commit_timestamp;
   uint64_t get_commit_timestamp() {return commit_timestamp;}
+  void set_commit_timestamp(uint64_t timestamp) {commit_timestamp = timestamp;}
   uint64_t greatest_write_timestamp;
   uint64_t greatest_read_timestamp;
   std::set<uint64_t> * uncommitted_reads;

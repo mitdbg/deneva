@@ -100,7 +100,7 @@ void QWorkQueue::enqueue(uint64_t thd_id, Message * msg,bool busy) {
   uint64_t mtx_wait_starttime = get_sys_clock();
   pthread_mutex_lock(&mtx);
   INC_STATS(thd_id,work_queue_mtx_wait_time,get_sys_clock() - mtx_wait_starttime);
-  DEBUG("%ld ENQUEUE (%ld,%ld); %ld; %d,0x%lx\n",thd_id,entry->txn_id,entry->batch_id,msg->return_node_id,entry->rtype,(uint64_t)msg);
+  //DEBUG("%ld ENQUEUE (%ld,%ld); %ld; %d,0x%lx\n",thd_id,entry->txn_id,entry->batch_id,msg->return_node_id,entry->rtype,(uint64_t)msg);
   work_queue.push(entry);
   pthread_mutex_unlock(&mtx);
 
@@ -143,7 +143,7 @@ Message * QWorkQueue::dequeue() {
       INC_STATS(0,work_queue_old_wait_time,queue_time);
       INC_STATS(0,work_queue_old_cnt,1);
     }
-    DEBUG("DEQUEUE (%ld,%ld) %ld; %ld; %d, 0x%lx\n",msg->txn_id,msg->batch_id,msg->return_node_id,queue_time,msg->rtype,(uint64_t)msg);
+    //DEBUG("DEQUEUE (%ld,%ld) %ld; %ld; %d, 0x%lx\n",msg->txn_id,msg->batch_id,msg->return_node_id,queue_time,msg->rtype,(uint64_t)msg);
   DEBUG_M("QWorkQueue::dequeue work_queue_entry free\n");
     mem_allocator.free(entry,sizeof(work_queue_entry));
     INC_STATS(0,work_queue_dequeue_time,get_sys_clock() - starttime);

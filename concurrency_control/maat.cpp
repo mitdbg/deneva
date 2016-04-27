@@ -32,10 +32,10 @@ RC Maat::validate(TxnManager * txn) {
 
   INC_STATS(0,maat_cs_wait_time,get_sys_clock() - start_time);
   start_time = get_sys_clock();
-  DEBUG("MAAT Validate %ld\n",txn->get_txn_id());
   RC rc = RCOK;
   uint64_t lower = time_table.get_lower(txn->get_txn_id());
   uint64_t upper = time_table.get_upper(txn->get_txn_id());
+  DEBUG("MAAT Validate Start %ld: [%lu,%lu]\n",txn->get_txn_id(),lower,upper);
   std::set<uint64_t> after;
   std::set<uint64_t> before;
   // lower bound of txn greater than write timestamp
@@ -151,7 +151,7 @@ RC Maat::validate(TxnManager * txn) {
   time_table.set_upper(txn->get_txn_id(),upper);
   INC_STATS(0,maat_validate_cnt,1);
   INC_STATS(0,maat_validate_time,get_sys_clock() - start_time);
-  DEBUG("MAAT Validate %ld: %d [%lu,%lu]\n",txn->get_txn_id(),rc,lower,upper);
+  DEBUG("MAAT Validate End %ld: %d [%lu,%lu]\n",txn->get_txn_id(),rc==RCOK,lower,upper);
   sem_post(&_semaphore);
   return rc;
 

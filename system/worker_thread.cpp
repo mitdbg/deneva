@@ -149,7 +149,7 @@ void WorkerThread::commit(TxnManager * txn_man) {
   assert(txn_man);
   assert(IS_LOCAL(txn_man->get_txn_id()));
 
-  uint64_t timespan = get_sys_clock() - txn_man->get_start_timestamp();
+  uint64_t timespan = get_sys_clock() - txn_man->txn_stats.starttime;
   DEBUG("COMMIT %ld %f -- %f\n",txn_man->get_txn_id(),simulation->seconds_from_start(get_sys_clock()),(double)timespan/ BILLION);
 
   // Send result back to client
@@ -205,6 +205,9 @@ RC WorkerThread::process_rfin(Message * msg) {
 
   assert(!IS_LOCAL(msg->get_txn_id()));
   TxnManager * txn_man = txn_table.get_transaction_manager(msg->get_txn_id(),0);
+#if CC_ALG == MAAT
+  txn_man->set_commit_timestamp(((FinishMessage*)msg)->commit_timestamp);
+#endif
   if(((FinishMessage*)msg)->rc == Abort) {
     txn_man->abort();
     txn_man->reset();
@@ -237,6 +240,7 @@ RC WorkerThread::process_rack_prep(Message * msg) {
   if(upper < time_table.get_upper(msg->get_txn_id())) {
     time_table.set_upper(msg->get_txn_id(),upper);
   }
+  DEBUG("%ld bound set: [%ld,%ld] -> [%ld,%ld]\n",msg->get_txn_id(),lower,upper,time_table.get_lower(msg->get_txn_id()),time_table.get_upper(msg->get_txn_id()));
   if(((AckMessage*)msg)->rc != RCOK) {
     time_table.set_state(msg->get_txn_id(),MAAT_ABORTED);
   }
@@ -357,8 +361,11 @@ RC WorkerThread::process_rprepare(Message * msg) {
     // Validate transaction
     rc  = txn_man->validate();
     txn_man->set_rc(rc);
-    // FIXME: need to add RC into message
     msg_queue.enqueue(Message::create_message(txn_man,RACK_PREP),msg->return_node_id);
+    // Clean up as soon as abort is possible
+    if(rc == Abort) {
+      txn_man->abort();
+    }
 
     return rc;
 }

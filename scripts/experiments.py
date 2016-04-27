@@ -154,12 +154,13 @@ def malviya_plot(summary,summary_client):
 def test():
     wl = 'YCSB'
     nnodes = [1,2,4]
-    ntif = [500,1000,5000,10000]
-#    nnodes = [4]
+    ntif = [100,500,1000,5000,10000]
+    ntif = [100]
+    nnodes = [2]
     nwr = [0.2]
     nalgos=['NO_WAIT','WAIT_DIE','MAAT','OCC']
-    nalgos=['NO_WAIT','MAAT','OCC']
-    nalgos=['MAAT']
+#    nalgos=['NO_WAIT','MAAT','OCC']
+#    nalgos=['MAAT']
 #    nalgos=['MVCC','TIMESTAMP','CALVIN']
 #    nnodes = [2]
 #    nalgos=['OCC']
@@ -986,12 +987,13 @@ configs = {
     "ACCESS_PERC":0.03,
     "DATA_PERC": 100,
     "REQ_PER_QUERY": 10, #16
-    "SYNTH_TABLE_SIZE":"2097152*8",
+    "SYNTH_TABLE_SIZE":"65536",
+#    "SYNTH_TABLE_SIZE":"2097152*8",
 #TPCC
     "NUM_WH": 'PART_CNT',
     "PERC_PAYMENT":0.0,
-#    "DEBUG_DISTR":"false",
-    "DEBUG_DISTR":"true",
+    "DEBUG_DISTR":"false",
+#    "DEBUG_DISTR":"true",
     "DEBUG_ALLOC":"false",
     "DEBUG_RACE":"false",
     "MODE":"NORMAL_MODE",
