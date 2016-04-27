@@ -181,6 +181,7 @@ RC TxnManager::abort() {
 
 RC TxnManager::start_abort() {
   txn->rc = Abort;
+  DEBUG("%ld start_abort\n",get_txn_id());
   if(query->partitions_touched.size() > 1) {
     send_finish_messages();
     abort();
@@ -191,8 +192,9 @@ RC TxnManager::start_abort() {
 
 RC TxnManager::start_commit() {
   RC rc = RCOK;
+  DEBUG("%ld start_commit RO?%d\n",get_txn_id(),query->readonly());
   if(is_multi_part()) {
-    if(!query->readonly() || CC_ALG == OCC) {
+    if(!query->readonly() || CC_ALG == OCC || CC_ALG == MAAT) {
       // send prepare messages
       send_prepare_messages();
       rc = WAIT_REM;
