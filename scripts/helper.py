@@ -170,15 +170,22 @@ stat_map = OrderedDict([
   # IO
   ('msg_queue_delay_time', []),
   ('msg_queue_cnt', []),
+  ('msg_queue_delay_time_avg', []),
   ('msg_send_time', []),
+  ('msg_send_time_avg', []),
   ('msg_recv_time', []),
+  ('msg_recv_time_avg', []),
   ('msg_batch_cnt', []),
   ('msg_batch_size_msgs', []),
+  ('msg_batch_size_msgs_avg', []),
   ('msg_batch_size_bytes', []),
+  ('msg_batch_size_bytes_avg', []),
   ('msg_send_cnt', []),
   ('msg_recv_cnt', []),
   ('msg_unpack_time', []),
+  ('msg_unpack_time_avg', []),
   ('mbuf_send_intv_time', []),
+  ('mbuf_send_intv_time_avg', []),
 
   # Concurrency control), general
   ('cc_conflict_cnt', []),
@@ -877,7 +884,7 @@ def write_summary_file(fname,stats,x_vals,v_vals):
                     for v in v_vals:
                         k = (x,v)
                         try:
-                            s += '{0:0.4f}'.format(stats[k][p]) + ', '
+                            s += '{0:0.6f}'.format(stats[k][p]) + ', '
                         except KeyError:
 #print("helper keyerror {} {}".format(p,k))
                             s += '--, '
@@ -890,7 +897,7 @@ def write_summary_file(fname,stats,x_vals,v_vals):
                     for x in x_vals:
                         k = (x,v)
                         try:
-                            s += '{0:0.4f}'.format(stats[k][p]) + ', '
+                            s += '{0:0.6f}'.format(stats[k][p]) + ', '
                         except KeyError:
                             s += '--, '
                     f.write(s+'\n')
@@ -903,7 +910,7 @@ def write_summary_file(fname,stats,x_vals,v_vals):
                     k1 = (x,v)
                     k2 = (prog,p)
                     try:
-                        s += '{0:0.4f}'.format(stats[k1][k2]) + ', '
+                        s += '{0:0.6f}'.format(stats[k1][k2]) + ', '
                     except KeyError:
                         s += '--, '
                 f.write(s+'\n')
