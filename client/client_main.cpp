@@ -97,7 +97,7 @@ int main(int argc, char* argv[])
 
   printf("Initializing transport manager... ");
   fflush(stdout);
-	tport_man.init(g_node_id,m_wl);
+	tport_man.init(m_wl);
   printf("Done\n");
   printf("Initializing client manager... ");
   client_man.init();
@@ -171,15 +171,15 @@ int main(int argc, char* argv[])
 		pthread_create(&p_thds[id++], &attr, run_thread, (void *)&client_thds[i]);
     }
 
-	for (uint64_t i = 0; i < sthd_cnt; i++) {
-    output_thds[i].init(id,g_node_id,m_wl);
-		pthread_create(&p_thds[id++], NULL, run_thread, (void *)&output_thds[i]);
-  }
 	for (uint64_t j = 0; j < rthd_cnt ; j++) {
     input_thds[j].init(id,g_node_id,m_wl);
 		pthread_create(&p_thds[id++], NULL, run_thread, (void *)&input_thds[j]);
   }
 
+	for (uint64_t i = 0; i < sthd_cnt; i++) {
+    output_thds[i].init(id,g_node_id,m_wl);
+		pthread_create(&p_thds[id++], NULL, run_thread, (void *)&output_thds[i]);
+  }
 	for (uint64_t i = 0; i < all_thd_cnt; i++) 
 		pthread_join(p_thds[i], NULL);
 
@@ -204,6 +204,7 @@ void * run_thread(void * id) {
 }
 
 void network_test() {
+  /*
 
 	ts_t start;
 	ts_t end;
@@ -223,12 +224,15 @@ void network_test() {
 		printf("Network Bytes: %d, s: %f\n",i,time/BILLION);
         fflush(stdout);
 	}
+  */
 }
 
 void network_test_recv() {
+  /*
 	int bytes;
 	while(1) {
 		if( (bytes = tport_man.simple_recv_msg()) > 0)
 			tport_man.simple_send_msg(bytes);
 	}
+  */
 }

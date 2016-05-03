@@ -122,7 +122,7 @@ int main(int argc, char* argv[])
 
   printf("Initializing transport manager... ");
   fflush(stdout);
-	tport_man.init(g_node_id,m_wl);
+	tport_man.init(m_wl);
   printf("Done\n");
   fflush(stdout);
   printf("Initializing work queue... ");
@@ -245,6 +245,7 @@ int main(int argc, char* argv[])
 #endif
     pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
 		cpu_cnt++;
+    assert(id >= 0 && id < wthd_cnt);
 #if CC_ALG == CALVIN
 		//pthread_create(&p_thds[i], &attr, calvin_worker, (void *)vid);
     calvin_thds[i].init(id,g_node_id,m_wl);
@@ -262,19 +263,22 @@ int main(int argc, char* argv[])
   pthread_create(&p_thds[id++], &attr, run_thread, (void *)&calvin_seq_thds[0]);
 #endif
 
-	for (uint64_t j = 0; j < sthd_cnt; j++) {
-		//uint64_t vid = i;
-    output_thds[j].init(id,g_node_id,m_wl);
-		pthread_create(&p_thds[id++], NULL, run_thread, (void *)&output_thds[j]);
-		//pthread_create(&p_thds[i], &attr, send_worker, (void *)vid);
-  }
 	for (uint64_t j = 0; j < rthd_cnt ; j++) {
 		//uint64_t vid = i;
 		//pthread_create(&p_thds[i], NULL, nn_worker, (void *)vid);
+    assert(id >= wthd_cnt && id < wthd_cnt + rthd_cnt);
     input_thds[j].init(id,g_node_id,m_wl);
 		pthread_create(&p_thds[id++], NULL, run_thread, (void *)&input_thds[j]);
   }
 
+
+	for (uint64_t j = 0; j < sthd_cnt; j++) {
+		//uint64_t vid = i;
+    assert(id >= wthd_cnt + rthd_cnt && id < wthd_cnt + rthd_cnt + sthd_cnt);
+    output_thds[j].init(id,g_node_id,m_wl);
+		pthread_create(&p_thds[id++], NULL, run_thread, (void *)&output_thds[j]);
+		//pthread_create(&p_thds[i], &attr, send_worker, (void *)vid);
+  }
 #if LOGGING
 		//pthread_create(&p_thds[i], NULL, log_worker, (void *)i);
     log_thds[0].init(id,g_node_id,m_wl);
@@ -368,24 +372,12 @@ void * run_thread(void * id) {
 
 void network_test() {
 
+      /*
 	ts_t start;
 	ts_t end;
 	ts_t time;
 	int bytes;
   float total = 0;
-	//for(int i=4; i < 257; i+=4) {
-	//	time = 0;
-	//	for(int j=0;j < 1000; j++) {
-	//		start = get_sys_clock();
-	//		tport_man.simple_send_msg(i);
-	//		while((bytes = tport_man.simple_recv_msg()) == 0) {}
-	//		end = get_sys_clock();
-	//		assert(bytes == i);
-	//		time += end-start;
-	//	}
-	//	time = time/1000;
-	//	printf("Network Bytes: %d, s: %f\n",i,time/BILLION);
-	//}
 	for (int i = 0; i < 4; ++i) {
 		time = 0;
 		int num_bytes = (int) pow(10,i);
@@ -407,13 +399,16 @@ void network_test() {
 		//printf("Network Bytes: %d, ns: %.3f\n",i,time);
 		
 	}
+      */
 
 }
 
 void network_test_recv() {
+  /*
 	int bytes;
 	while(1) {
 		if( (bytes = tport_man.simple_recv_msg()) > 0)
 			tport_man.simple_send_msg(bytes);
 	}
+  */
 }

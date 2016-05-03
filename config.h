@@ -8,14 +8,14 @@
 #define NODE_CNT 16
 #define THREAD_CNT 6
 #define REM_THREAD_CNT 1
-#define SEND_THREAD_CNT 1
+#define SEND_THREAD_CNT 2
 #define CORE_CNT 8
 // PART_CNT should be at least NODE_CNT
 #define PART_CNT NODE_CNT
 #define CLIENT_NODE_CNT NODE_CNT
 #define CLIENT_THREAD_CNT 2
 #define CLIENT_REM_THREAD_CNT 1
-#define CLIENT_SEND_THREAD_CNT 4
+#define CLIENT_SEND_THREAD_CNT 3
 #define CLIENT_RUNTIME false
 
 #define LOAD_METHOD LOAD_MAX
@@ -70,9 +70,8 @@
 /***********************************************/
 // Message Passing
 /***********************************************/
-#define TPORT_TYPE "tcp"
-#define TPORT_TYPE_IPC false
-#define TPORT_PORT 17800
+#define TPORT_TYPE TCP
+#define TPORT_PORT 63200
 #define SET_AFFINITY true
 
 #define MAX_TPORT_NAME 128
@@ -93,7 +92,7 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, OCC, VLL, CALVIN, MAAT
-#define CC_ALG WAIT_DIE
+#define CC_ALG NO_WAIT
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER         false
@@ -327,11 +326,14 @@ extern TestCases          g_test_case;
 // Load
 #define LOAD_MAX 1
 #define LOAD_RATE 2
+// Transport
+#define TCP 1
+#define IPC 2
 
 // Stats and timeout
 #define BILLION 1000000000UL // in ns => 1 second
 #define STAT_ARR_SIZE 1024
-#define PROG_TIMER 10 * BILLION // in s
+#define PROG_TIMER 1 * BILLION // in s
 #define BATCH_TIMER 10000000
 #define DONE_TIMER 1 * 60 * BILLION // ~1 minutes
 

@@ -156,11 +156,10 @@ def test():
     nnodes = [1,2,4]
     ntif = [100,500,1000,5000,10000]
     ntif = [100]
-#    nnodes = [2]
     nwr = [0.2]
     nalgos=['NO_WAIT','WAIT_DIE','MAAT','OCC']
 #    nalgos=['NO_WAIT','MAAT','OCC']
-#    nalgos=['MAAT']
+    nalgos=['NO_WAIT']
 #    nalgos=['MVCC','TIMESTAMP','CALVIN']
 #    nnodes = [2]
 #    nalgos=['OCC']
@@ -951,26 +950,25 @@ configs = {
     "REPLICA_CNT": 0,
     "REPLICA_TYPE": "AP",
     "REM_THREAD_CNT": 1,
-    "SEND_THREAD_CNT": 1,
+    "SEND_THREAD_CNT": 2,
     "CLIENT_NODE_CNT" : "NODE_CNT",
     "CLIENT_THREAD_CNT" : 2,
     "CLIENT_REM_THREAD_CNT" : 1,
-    "CLIENT_SEND_THREAD_CNT" : 4,
+    "CLIENT_SEND_THREAD_CNT" : 3,
     "MAX_TXN_PER_PART" : 1000000,
     "WORKLOAD" : "YCSB",
     "CC_ALG" : "WAIT_DIE",
     "MPR" : 1.0,
-    "TPORT_TYPE":"\"ipc\"",
-    "TPORT_TYPE_IPC":"true",
-    "TPORT_PORT":"\"_.ipc\"",
+    "TPORT_TYPE":"IPC",
+    "TPORT_PORT":"63200",
     "PART_CNT": "NODE_CNT", #2,
     "PART_PER_TXN": "PART_CNT",
     "MAX_TXN_IN_FLIGHT": 100000,
     "NETWORK_DELAY": '0UL',
-#    "DONE_TIMER": "10 * 60 * BILLION // ~1 minutes",
     "DONE_TIMER": "1 * 60 * BILLION // ~1 minutes",
+#    "DONE_TIMER": "1 * 10 * BILLION // ~1 minutes",
     "BATCH_TIMER" : "10000000",
-    "PROG_TIMER" : "10 * BILLION // in s",
+    "PROG_TIMER" : "1 * BILLION // in s",
     "NETWORK_TEST" : "false",
     "ABORT_PENALTY": "10 * 1000000UL   // in ns.",
     "ABORT_PENALTY_MAX": "5 * 100 * 1000000UL   // in ns.",

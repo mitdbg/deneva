@@ -44,6 +44,7 @@ void InputThread::setup() {
         simulation->process_setup_msg();
       } else {
         assert(ISSERVER || ISREPLICA);
+        printf("Received Msg %d from node %ld\n",msg->rtype,msg->return_node_id);
         work_queue.enqueue(g_thread_cnt,msg,false);
       }
       msgs.erase(msgs.begin());

@@ -46,30 +46,31 @@ class Socket {
 
 class Transport {
 	public:
-		//Transport();
-		//~Transport();
-		//Transport() : s(AF_SP,NN_PAIR) {}
 		void read_ifconfig(const char * ifaddr_file);
-		void init(uint64_t node_id,Workload* workload);
+		void init(Workload* workload);
     void shutdown(); 
-		uint64_t get_node_id();
+    uint64_t get_socket_count(); 
+    string get_path(); 
+    Socket * get_socket(); 
+    uint64_t get_port_id(uint64_t src_node_id, uint64_t dest_node_id); 
+    uint64_t get_port_id(uint64_t src_node_id, uint64_t dest_node_id, uint64_t send_thread_id); 
+    Socket * bind(uint64_t port_id); 
+    Socket * connect(uint64_t dest_id,uint64_t port_id); 
 		void send_msg(uint64_t sid, uint64_t dest_id, void * sbuf,int size);
 		void send_msg(uint64_t dest_id, void ** data, int * sizes, int num); 
     std::vector<Message*> recv_msg();
 		void simple_send_msg(int size); 
 		uint64_t simple_recv_msg();
-		//void set_ifaddr(const char * ifaddr, uint64_t n) { this.ifaddr[n] = ifaddr; }
 
 	private:
     uint64_t rr;
-		Socket * s;
+    std::map<std::pair<uint64_t,uint64_t>,Socket*> send_sockets; // dest_node_id,send_thread_id : socket
+    std::vector<Socket*> recv_sockets;
 
-		uint64_t _node_id;
     uint64_t _node_cnt;
     uint64_t _sock_cnt;
     uint64_t _s_cnt;
 		char ** ifaddr;
-		uint32_t _thd_id;	// for stats
     int * endpoint_id;
     Workload * _wl;
 

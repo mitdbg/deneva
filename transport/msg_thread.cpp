@@ -88,7 +88,7 @@ void MessageThread::run() {
   }
 
   msg->copy_to_buf(&(sbuf->buffer[sbuf->ptr]));
-  DEBUG("Buffered Msg %d, id %ld to %ld\n",msg->rtype,msg->txn_id,dest);
+  DEBUG("%ld Buffered Msg %d, id %ld to %ld\n",_thd_id,msg->rtype,msg->txn_id,dest);
   sbuf->cnt += 1;
   sbuf->ptr += msg->get_size();
   if(sbuf->starttime == 0)

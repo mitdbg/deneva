@@ -8,9 +8,6 @@ import latency_stats as ls
 import itertools
 
 CONFIG_PARAMS = [
-#    "TPORT_TYPE",
-#    "TPORT_TYPE_IPC",
-#    "TPORT_PORT",
 #    "DEBUG_DISTR",
     "CC_ALG",
     "MODE",
