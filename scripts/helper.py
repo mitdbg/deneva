@@ -88,10 +88,12 @@ stat_map = OrderedDict([
 
   # Execution
   ('txn_cnt', []),
-  ('remote_txn_cnt', []),
-  ('local_txn_cnt', []),
   ('txn_commit_cnt', []),
+  ('local_txn_commit_cnt', []),
+  ('remote_txn_commit_cnt', []),
   ('txn_abort_cnt', []),
+  ('local_txn_abort_cnt', []),
+  ('remote_txn_abort_cnt', []),
   ('txn_run_time', []),
   ('txn_run_avg_time', []),
   ('multi_part_txn_cnt', []),

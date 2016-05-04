@@ -155,7 +155,7 @@ def test():
     wl = 'YCSB'
     nnodes = [1,2,4]
     ntif = [100,500,1000,5000,10000]
-    ntif = [100]
+    ntif = [10000]
     nwr = [0.2]
     nalgos=['NO_WAIT','WAIT_DIE','MAAT','OCC']
 #    nalgos=['NO_WAIT','MAAT','OCC']
