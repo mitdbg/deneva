@@ -68,12 +68,12 @@ public:
   void init();
   uint64_t get_cnt() {return cnt;}
   bool empty(uint64_t node_id);
-  TxnManager* get_transaction_manager(uint64_t txn_id,uint64_t batch_id);
+  TxnManager* get_transaction_manager(uint64_t thd_id, uint64_t txn_id,uint64_t batch_id);
   void dump();
-  void restart_txn(uint64_t txn_id,uint64_t batch_id);
+  void restart_txn(uint64_t thd_id, uint64_t txn_id,uint64_t batch_id);
   void delete_all();
   void delete_txn(uint64_t txn_id, uint64_t batch_id);
-  void release_transaction_manager(uint64_t txn_id, uint64_t batch_id);
+  void release_transaction_manager(uint64_t thd_id, uint64_t txn_id, uint64_t batch_id);
   uint64_t get_min_ts(); 
   void snapshot(); 
 

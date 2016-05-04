@@ -81,7 +81,7 @@ class Logger {
 public:
   void init(const char * log_file);
   void release();
-  void flushBufferCheck();
+  void flushBufferCheck(uint64_t thd_id);
   LogRecord * createRecord(LogRecord* record);
 
   LogRecord * createRecord(
@@ -92,16 +92,16 @@ public:
     uint64_t table_id,
     uint64_t key);
   void enqueueRecord(LogRecord* record); 
-  void processRecord(); 
-  void writeToBuffer(char * data, uint64_t size); 
-  void writeToBuffer(LogRecord* record); 
+  void processRecord(uint64_t thd_id); 
+  void writeToBuffer(uint64_t thd_id,char * data, uint64_t size); 
+  void writeToBuffer(uint64_t thd_id,LogRecord* record); 
   uint64_t reserveBuffer(uint64_t size); 
   void notify_on_sync(uint64_t txn_id);
 private:
   pthread_mutex_t mtx;
   uint64_t lsn;
 
-  void flushBuffer();
+  void flushBuffer(uint64_t thd_id);
   std::queue<LogRecord*> log_queue;
   const char * log_file_name;
   std::ofstream log_file;

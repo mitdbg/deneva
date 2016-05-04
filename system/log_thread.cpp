@@ -26,7 +26,7 @@ void LogThread::setup() {
 RC LogThread::run() {
   tsetup();
 	while (!simulation->is_done()) {
-    logger.processRecord();
+    logger.processRecord(get_thd_id());
     //logger.flushBufferCheck();
   }
   return FINISH;

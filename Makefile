@@ -17,24 +17,20 @@ LIBS = -lnanomsg -lanl -ljemalloc
 
 DB_MAINS = ./client/client_main.cpp ./system/sequencer_main.cpp ./unit_tests/unit_main.cpp
 CL_MAINS = ./system/main.cpp ./system/sequencer_main.cpp ./unit_tests/unit_main.cpp
-#SQ_MAINS = ./system/main.cpp ./client/client_main.cpp ./unit_tests/unit_main.cpp
 UNIT_MAINS = ./system/main.cpp ./client/client_main.cpp ./system/sequencer_main.cpp
 
 CPPS_DB = $(foreach dir,$(SRC_DIRS),$(filter-out $(DB_MAINS), $(wildcard $(dir)*.cpp))) 
 CPPS_CL = $(foreach dir,$(SRC_DIRS),$(filter-out $(CL_MAINS), $(wildcard $(dir)*.cpp))) 
-#CPPS_SQ = $(foreach dir,$(SRC_DIRS),$(filter-out $(SQ_MAINS), $(wildcard $(dir)*.cpp))) 
 CPPS_UNIT = $(foreach dir,$(SRC_DIRS),$(filter-out $(UNIT_MAINS), $(wildcard $(dir)*.cpp))) 
 
 #CPPS = $(wildcard *.cpp)
 OBJS_DB = $(addprefix obj/, $(notdir $(CPPS_DB:.cpp=.o)))
 OBJS_CL = $(addprefix obj/, $(notdir $(CPPS_CL:.cpp=.o)))
-#OBJS_SQ = $(addprefix obj/, $(notdir $(CPPS_SQ:.cpp=.o)))
 OBJS_UNIT = $(addprefix obj/, $(notdir $(CPPS_UNIT:.cpp=.o)))
 
 #NOGRAPHITE=1
 
 all:rundb runcl 
-#runsq 
 #unit_test
 
 .PHONY: deps_db
@@ -45,8 +41,8 @@ deps:$(CPPS_DB)
 -include obj/deps
 
 unit_test :  $(OBJS_UNIT)
-#	$(CC) -static -o $@ $^ $(LDFLAGS) $(LIBS)
-	$(CC) -o $@ $^ $(LDFLAGS) $(LIBS)
+	$(CC) -static -o $@ $^ $(LDFLAGS) $(LIBS)
+#	$(CC) -o $@ $^ $(LDFLAGS) $(LIBS)
 ./obj/%.o: unit_tests/%.cpp
 	$(CC) -c $(CFLAGS) $(INCLUDE) -o $@ $<
 ./obj/%.o: benchmarks/%.cpp
@@ -54,8 +50,8 @@ unit_test :  $(OBJS_UNIT)
 ./obj/%.o: storage/%.cpp
 	$(CC) -c $(CFLAGS) $(INCLUDE) -o $@ $<
 ./obj/%.o: transport/%.cpp
-#	$(CC) -static -c $(CFLAGS) $(INCLUDE) $(LIBS) -o $@ $<
-	$(CC) -c $(CFLAGS) $(INCLUDE) $(LIBS) -o $@ $<
+	$(CC) -static -c $(CFLAGS) $(INCLUDE) $(LIBS) -o $@ $<
+#	$(CC) -c $(CFLAGS) $(INCLUDE) $(LIBS) -o $@ $<
 ./obj/%.o: system/%.cpp
 	$(CC) -c -DSTATS_ENABLE=false $(CFLAGS) $(INCLUDE) -o $@ $<
 ./obj/%.o: concurrency_control/%.cpp

@@ -82,6 +82,7 @@ public:
   void rqry_rsp( mbuf * sbuf, BaseQuery *qry);
   void rtxn(mbuf * sbuf, BaseQuery *qry);
   void rtxn_seq(mbuf * sbuf, BaseQuery *qry);
+  uint64_t get_thd_id() { return _thd_id;}
 private:
   mbuf ** buffer;
   uint64_t buffer_cnt;

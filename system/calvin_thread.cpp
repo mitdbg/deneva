@@ -160,7 +160,7 @@ RC CalvinThread::run() {
 		switch(msg->rtype) {
       case RFIN:
 				DEBUG("%ld RFIN (%ld,%ld)\n",_thd_id,msg->txn_id,msg->batch_id);
-				INC_STATS(0,rfin,1);
+				INC_STATS(get_thd_id(),rfin,1);
 				txn_table.get_txn(g_node_id,msg->txn_id,msg->batch_id,m_txn,tmp_query);
         assert(m_txn != NULL);
         tmp_query = tmp_query->merge(msg);
@@ -180,7 +180,7 @@ RC CalvinThread::run() {
         }
         break;
       case RFWD:
-				INC_STATS(0,rfwd,1);
+				INC_STATS(get_thd_id(),rfwd,1);
         DEBUG("%ld RFWD (%ld,%ld)\n",_thd_id,msg->txn_id,msg->batch_id);
 				txn_table.get_txn(g_node_id,msg->txn_id,msg->batch_id,m_txn,tmp_query);
         m_txn->register_thd(this);
@@ -195,7 +195,7 @@ RC CalvinThread::run() {
         break;
       case RQRY:
       case RTXN:
-				INC_STATS(0,rtxn,1);
+				INC_STATS(get_thd_id(),rtxn,1);
 
 				txn_table.get_txn(g_node_id,m_query->txn_id,m_query->batch_id,m_txn,tmp_query);
         assert(m_txn != NULL);

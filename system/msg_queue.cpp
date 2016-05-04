@@ -48,7 +48,7 @@ void MessageQueue::enqueue(Message * msg,uint64_t dest) {
 
 }
 
-uint64_t MessageQueue::dequeue(Message *& msg) {
+uint64_t MessageQueue::dequeue(uint64_t thd_id, Message *& msg) {
   msg_entry * entry = NULL;
   uint64_t dest = UINT64_MAX;
   pthread_mutex_lock(&mtx);
@@ -62,8 +62,8 @@ uint64_t MessageQueue::dequeue(Message *& msg) {
     msg = entry->msg;
     dest = entry->dest;
     DEBUG("MQ Dequeue %ld\n",dest)
-    INC_STATS(0,msg_queue_delay_time,curr_time - entry->starttime);
-    INC_STATS(0,msg_queue_cnt,1);
+    INC_STATS(thd_id,msg_queue_delay_time,curr_time - entry->starttime);
+    INC_STATS(thd_id,msg_queue_cnt,1);
     msg_pool.put(entry);
   } else {
     msg = NULL;

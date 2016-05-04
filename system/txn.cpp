@@ -63,20 +63,20 @@ void TxnStats::reset() {
   twopc_time = 0;
 }
 
-void TxnStats::commit_stats() {
+void TxnStats::commit_stats(uint64_t thd_id) {
   total_process_time += process_time;
   total_local_wait_time += local_wait_time;
   total_remote_wait_time += remote_wait_time;
   total_twopc_time += twopc_time;
   assert(total_process_time >= process_time);
-  INC_STATS(0,txn_total_process_time,total_process_time);
-  INC_STATS(0,txn_process_time,process_time);
-  INC_STATS(0,txn_total_local_wait_time,total_local_wait_time);
-  INC_STATS(0,txn_local_wait_time,local_wait_time);
-  INC_STATS(0,txn_total_remote_wait_time,total_remote_wait_time);
-  INC_STATS(0,txn_remote_wait_time,remote_wait_time);
-  INC_STATS(0,txn_total_twopc_time,total_twopc_time);
-  INC_STATS(0,txn_twopc_time,twopc_time);
+  INC_STATS(thd_id,txn_total_process_time,total_process_time);
+  INC_STATS(thd_id,txn_process_time,process_time);
+  INC_STATS(thd_id,txn_total_local_wait_time,total_local_wait_time);
+  INC_STATS(thd_id,txn_local_wait_time,local_wait_time);
+  INC_STATS(thd_id,txn_total_remote_wait_time,total_remote_wait_time);
+  INC_STATS(thd_id,txn_remote_wait_time,remote_wait_time);
+  INC_STATS(thd_id,txn_total_twopc_time,total_twopc_time);
+  INC_STATS(thd_id,txn_twopc_time,twopc_time);
 }
 
 
@@ -329,10 +329,10 @@ void TxnManager::commit_stats() {
   for(uint64_t i = 0 ; i < query->partitions.size(); i++) {
     INC_STATS(get_thd_id(),part_acc[query->partitions[i]],1);
   }
-  txn_stats.commit_stats();
+  txn_stats.commit_stats(get_thd_id());
 }
 
-void TxnManager::register_thd(Thread * h_thd) {
+void TxnManager::register_thread(Thread * h_thd) {
   this->h_thd = h_thd;
 #if CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC
   this->active_part = GET_PART_ID_FROM_IDX(get_thd_id());
@@ -352,9 +352,10 @@ Workload * TxnManager::get_wl() {
 }
 
 uint64_t TxnManager::get_thd_id() {
-  // FIXME
-	//return h_thd->get_thd_id();
-  return 0;
+  if(h_thd)
+    return h_thd->get_thd_id();
+  else
+    return 0;
 }
 
 BaseQuery * TxnManager::get_query() {
@@ -624,7 +625,7 @@ RC TxnManager::validate() {
       rc = maat_man.find_bound(this);
     }
   }
-  INC_STATS(0,txn_validate_time,get_sys_clock() - starttime);
+  INC_STATS(get_thd_id(),txn_validate_time,get_sys_clock() - starttime);
   return rc;
 }
 

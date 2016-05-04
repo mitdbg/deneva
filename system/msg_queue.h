@@ -38,7 +38,7 @@ class MessageQueue {
 public:
   void init();
   void enqueue(Message * msg, uint64_t dest);
-  uint64_t dequeue(Message *& msg);
+  uint64_t dequeue(uint64_t thd_id, Message *& msg);
 private:
   pthread_mutex_t mtx;
   msg_entry_t head;

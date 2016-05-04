@@ -33,6 +33,7 @@ public:
   void release_txn_man(TxnManager * txn_man); 
   void commit(TxnManager * txn_man); 
   void abort(TxnManager * txn_man); 
+  TxnManager * get_transaction_manager(Message * msg); 
   RC process_rfin(Message * msg);
   RC process_rack_rfin(Message * msg);
   RC process_rack_prep(Message * msg);

@@ -138,7 +138,7 @@ void WorkerThread::check_if_done(RC rc, TxnManager * txn_man) {
 }
 
 void WorkerThread::release_txn_man(TxnManager * txn_man) {
-  txn_table.release_transaction_manager(txn_man->get_txn_id(),txn_man->get_batch_id());
+  txn_table.release_transaction_manager(get_thd_id(),txn_man->get_txn_id(),txn_man->get_batch_id());
 }
 
 // Can't use txn_man after this function
@@ -169,8 +169,14 @@ void WorkerThread::abort(TxnManager * txn_man) {
   ++txn_man->abort_cnt;
   txn_man->reset();
 
-  abort_queue.enqueue(txn_man->get_txn_id(),txn_man->get_abort_cnt());
+  abort_queue.enqueue(get_thd_id(), txn_man->get_txn_id(),txn_man->get_abort_cnt());
 
+}
+
+TxnManager * WorkerThread::get_transaction_manager(Message * msg) {
+  TxnManager * txn_man = txn_table.get_transaction_manager(get_thd_id(),msg->get_txn_id(),0);
+  txn_man->register_thread(this);
+  return txn_man;
 }
 
 RC WorkerThread::run() {
@@ -180,7 +186,7 @@ RC WorkerThread::run() {
 
     progress_stats();
 
-    Message * msg = work_queue.dequeue();
+    Message * msg = work_queue.dequeue(get_thd_id());
 
     if(!msg)
       continue;
@@ -203,7 +209,7 @@ RC WorkerThread::process_rfin(Message * msg) {
   DEBUG("RFIN %ld\n",msg->get_txn_id());
 
   assert(!IS_LOCAL(msg->get_txn_id()));
-  TxnManager * txn_man = txn_table.get_transaction_manager(msg->get_txn_id(),0);
+  TxnManager * txn_man = get_transaction_manager(msg);
 #if CC_ALG == MAAT
   txn_man->set_commit_timestamp(((FinishMessage*)msg)->commit_timestamp);
 #endif
@@ -226,7 +232,7 @@ RC WorkerThread::process_rack_prep(Message * msg) {
 
   RC rc = RCOK;
 
-  TxnManager * txn_man = txn_table.get_transaction_manager(msg->get_txn_id(),0);
+  TxnManager * txn_man = get_transaction_manager(msg);
 
 
   int responses_left = txn_man->received_response(((AckMessage*)msg)->rc);
@@ -272,7 +278,7 @@ RC WorkerThread::process_rack_rfin(Message * msg) {
 
   RC rc = RCOK;
 
-  TxnManager * txn_man = txn_table.get_transaction_manager(msg->get_txn_id(),0);
+  TxnManager * txn_man = get_transaction_manager(msg);
   int responses_left = txn_man->received_response(((AckMessage*)msg)->rc);
   assert(responses_left >=0);
   if(responses_left > 0) 
@@ -295,7 +301,7 @@ RC WorkerThread::process_rqry_rsp(Message * msg) {
   DEBUG("RQRY_RSP %ld\n",msg->get_txn_id());
   assert(IS_LOCAL(msg->get_txn_id()));
 
-  TxnManager * txn_man = txn_table.get_transaction_manager(msg->get_txn_id(),0);
+  TxnManager * txn_man = get_transaction_manager(msg);
 
   txn_man->txn_stats.remote_wait_time += get_sys_clock() - txn_man->txn_stats.wait_starttime;
 
@@ -311,7 +317,7 @@ RC WorkerThread::process_rqry(Message * msg) {
   RC rc = RCOK;
 
   // Create new transaction table entry if one does not already exist
-  TxnManager * txn_man = txn_table.get_transaction_manager(msg->get_txn_id(),0);
+  TxnManager * txn_man = get_transaction_manager(msg);
   msg->copy_to_txn(txn_man);
 
 #if CC_ALG == MAAT
@@ -336,7 +342,7 @@ RC WorkerThread::process_rqry_cont(Message * msg) {
   RC rc = RCOK;
 
   // Create new transaction table entry if one does not already exist
-  TxnManager * txn_man = txn_table.get_transaction_manager(msg->get_txn_id(),0);
+  TxnManager * txn_man = get_transaction_manager(msg);
 
   txn_man->run_txn_post_wait();
   rc = txn_man->run_txn();
@@ -352,7 +358,7 @@ RC WorkerThread::process_rqry_cont(Message * msg) {
 RC WorkerThread::process_rtxn_cont(Message * msg) {
   DEBUG("RTXN_CONT %ld\n",msg->get_txn_id());
   assert(IS_LOCAL(msg->get_txn_id()));
-  TxnManager * txn_man = txn_table.get_transaction_manager(msg->get_txn_id(),0);
+  TxnManager * txn_man = get_transaction_manager(msg);
 
   txn_man->txn_stats.local_wait_time += get_sys_clock() - txn_man->txn_stats.wait_starttime;
 
@@ -365,7 +371,7 @@ RC WorkerThread::process_rtxn_cont(Message * msg) {
 RC WorkerThread::process_rprepare(Message * msg) {
   DEBUG("RPREP %ld\n",msg->get_txn_id());
     RC rc = RCOK;
-  TxnManager * txn_man = txn_table.get_transaction_manager(msg->get_txn_id(),0);
+  TxnManager * txn_man = get_transaction_manager(msg);
 
     // Validate transaction
     rc  = txn_man->validate();
@@ -400,7 +406,8 @@ RC WorkerThread::process_rtxn(Message * msg) {
           msg->txn_id = txn_id;
 
 					// Put txn in txn_table
-          txn_man = txn_table.get_transaction_manager(txn_id,0);
+          txn_man = txn_table.get_transaction_manager(get_thd_id(),txn_id,0);
+          txn_man->register_thread(this);
 					if (CC_ALG == WAIT_DIE) {
             txn_man->set_timestamp(get_next_ts());
           }
@@ -409,7 +416,7 @@ RC WorkerThread::process_rtxn(Message * msg) {
           DEBUG("START %ld %f %lu\n",txn_man->get_txn_id(),simulation->seconds_from_start(get_sys_clock()),txn_man->txn_stats.starttime);
 
 				} else {
-          txn_man = txn_table.get_transaction_manager(msg->get_txn_id(),0);
+          txn_man = get_transaction_manager(msg);
           DEBUG("RESTART %ld %f %lu\n",txn_man->get_txn_id(),simulation->seconds_from_start(get_sys_clock()),txn_man->txn_stats.starttime);
         }
 
@@ -456,7 +463,7 @@ RC WorkerThread::process_log_msg(Message * msg) {
 
 RC WorkerThread::process_log_msg_rsp(Message * msg) {
   DEBUG("REPLICA RSP %ld\n",msg->get_txn_id());
-  TxnManager * txn_man = txn_table.get_transaction_manager(msg->get_txn_id(),0);
+  TxnManager * txn_man = get_transaction_manager(msg);
   txn_man->repl_finished = true;
   if(txn_man->log_flushed)
     commit(txn_man);
@@ -470,7 +477,7 @@ RC WorkerThread::process_log_flushed(Message * msg) {
     return RCOK;
   }
 
-  TxnManager * txn_man = txn_table.get_transaction_manager(msg->get_txn_id(),0);
+  TxnManager * txn_man = get_transaction_manager(msg);
   txn_man->log_flushed = true;
   if(g_repl_cnt == 0 || txn_man->repl_finished)
     commit(txn_man);

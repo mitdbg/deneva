@@ -42,7 +42,7 @@ private:
 	TsReqEntry * debuffer_req(TsType type, TxnManager * txn);
 	TsReqEntry * debuffer_req(TsType type, ts_t ts);
 	TsReqEntry * debuffer_req(TsType type, TxnManager * txn, ts_t ts);
-	void update_buffer();
+	void update_buffer(uint64_t thd_id);
 	ts_t cal_min(TsType type);
 	TsReqEntry * get_req_entry();
 	void return_req_entry(TsReqEntry * entry);

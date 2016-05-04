@@ -212,7 +212,7 @@ RC Row_ts::access(TxnManager * txn, TsType type, row_t * row) {
 		if (ts < wts) {
 			TsReqEntry * req = debuffer_req(P_REQ, txn);
 			assert(req != NULL);
-			update_buffer();
+			update_buffer(txn->get_thd_id());
 			return_req_entry(req);
 			row->free_row();
 			mem_allocator.free(row, sizeof(row_t));
@@ -238,7 +238,7 @@ RC Row_ts::access(TxnManager * txn, TsType type, row_t * row) {
 			// debuffer the P_REQ
 			TsReqEntry * req = debuffer_req(P_REQ, txn);
 			assert(req != NULL);
-			update_buffer();
+			update_buffer(txn->get_thd_id());
 			return_req_entry(req);
 			// the "row" is freed after hard copy to "_row"
 			row->free_row();
@@ -247,7 +247,7 @@ RC Row_ts::access(TxnManager * txn, TsType type, row_t * row) {
 	} else if (type == XP_REQ) {
 		TsReqEntry * req = debuffer_req(P_REQ, txn);
 		assert (req != NULL);
-		update_buffer();
+		update_buffer(txn->get_thd_id());
 		return_req_entry(req);
 	} else 
 		assert(false);
@@ -260,7 +260,7 @@ final:
 	return rc;
 }
 
-void Row_ts::update_buffer() {
+void Row_ts::update_buffer(uint64_t thd_id) {
 
 	while (true) {
 		ts_t new_min_pts = cal_min(P_REQ);
@@ -279,7 +279,7 @@ void Row_ts::update_buffer() {
 				rts = req->ts;
       // TODO: Add req->txn to work queue
 			req->txn->ts_ready = true;
-      txn_table.restart_txn(req->txn->get_txn_id(),0);
+      txn_table.restart_txn(thd_id,req->txn->get_txn_id(),0);
 			req = req->next;
 		}
 		// return all the req_entry back to freelist

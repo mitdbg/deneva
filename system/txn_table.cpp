@@ -100,7 +100,7 @@ void TxnTable::dump() {
   }
 }
 
-TxnManager * TxnTable::get_transaction_manager(uint64_t txn_id,uint64_t batch_id){
+TxnManager * TxnTable::get_transaction_manager(uint64_t thd_id, uint64_t txn_id,uint64_t batch_id){
   DEBUG("TxnTable::get_txn_manager %ld / %ld\n",txn_id,pool_size);
   uint64_t starttime = get_sys_clock();
 
@@ -142,21 +142,21 @@ TxnManager * TxnTable::get_transaction_manager(uint64_t txn_id,uint64_t batch_id
     LIST_PUT_TAIL(pool[txn_id % pool_size].head,pool[txn_id % pool_size].tail,t_node);
     pool[txn_id % pool_size].cnt++;
     if(pool[txn_id % pool_size].cnt > 1) {
-      INC_STATS(0,txn_table_cflt_cnt,1);
-      INC_STATS(0,txn_table_cflt_size,pool[txn_id % pool_size].cnt-1);
+      INC_STATS(thd_id,txn_table_cflt_cnt,1);
+      INC_STATS(thd_id,txn_table_cflt_size,pool[txn_id % pool_size].cnt-1);
     }
     ATOM_ADD(cnt,1);
-    INC_STATS(0,txn_table_new_cnt,1);
+    INC_STATS(thd_id,txn_table_new_cnt,1);
 
   MODIFY_END(txn_id % pool_size);
   }
-  INC_STATS(0,txn_table_get_time,get_sys_clock() - starttime);
-  INC_STATS(0,txn_table_get_cnt,1);
+  INC_STATS(thd_id,txn_table_get_time,get_sys_clock() - starttime);
+  INC_STATS(thd_id,txn_table_get_cnt,1);
   return txn_man;
 
 }
 
-void TxnTable::restart_txn(uint64_t txn_id,uint64_t batch_id){
+void TxnTable::restart_txn(uint64_t thd_id, uint64_t txn_id,uint64_t batch_id){
   MODIFY_START(txn_id % pool_size);
 
   txn_node_t t_node = pool[txn_id % pool_size].head;
@@ -168,9 +168,9 @@ void TxnTable::restart_txn(uint64_t txn_id,uint64_t batch_id){
     if (t_node->txn_man->get_txn_id() == txn_id) {
 #endif
       if(txn_id % g_node_cnt == g_node_id)
-        work_queue.enqueue(0,Message::create_message(t_node->txn_man,RTXN_CONT),false);
+        work_queue.enqueue(thd_id,Message::create_message(t_node->txn_man,RTXN_CONT),false);
       else
-        work_queue.enqueue(0,Message::create_message(t_node->txn_man,RQRY_CONT),false);
+        work_queue.enqueue(thd_id,Message::create_message(t_node->txn_man,RQRY_CONT),false);
       break;
     }
     t_node = t_node->next;
@@ -180,7 +180,7 @@ void TxnTable::restart_txn(uint64_t txn_id,uint64_t batch_id){
 
 }
 
-void TxnTable::release_transaction_manager(uint64_t txn_id, uint64_t batch_id){
+void TxnTable::release_transaction_manager(uint64_t thd_id, uint64_t txn_id, uint64_t batch_id){
   uint64_t starttime = get_sys_clock();
 
   MODIFY_START(txn_id % pool_size);
@@ -226,8 +226,8 @@ void TxnTable::release_transaction_manager(uint64_t txn_id, uint64_t batch_id){
   DEBUG_M("TxnTable::release_transaction_manager txn_node free\n");
   mem_allocator.free(t_node,sizeof(txn_node));
 
-  INC_STATS(0,txn_table_release_time,get_sys_clock() - starttime);
-  INC_STATS(0,txn_table_release_cnt,1);
+  INC_STATS(thd_id,txn_table_release_time,get_sys_clock() - starttime);
+  INC_STATS(thd_id,txn_table_release_cnt,1);
 
 }
 

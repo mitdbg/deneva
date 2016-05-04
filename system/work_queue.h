@@ -81,7 +81,7 @@ class QWorkQueue {
 public:
   void init();
   void enqueue(uint64_t thd_id,Message * msg,bool busy); 
-  Message * dequeue();
+  Message * dequeue(uint64_t thd_id);
   void sched_enqueue(Message * msg); 
   Message * sched_dequeue(); 
 

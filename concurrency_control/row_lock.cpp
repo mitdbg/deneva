@@ -323,7 +323,7 @@ RC Row_lock::lock_release(TxnManager * txn) {
     //if(entry->txn->decr_lr() == 0 && entry->txn->locking_done) {
     if(entry->txn->decr_lr() == 0) {
       if(ATOM_CAS(entry->txn->lock_ready,false,true))
-        txn_table.restart_txn(entry->txn->get_txn_id(),entry->txn->get_batch_id());
+        txn_table.restart_txn(txn->get_thd_id(),entry->txn->get_txn_id(),entry->txn->get_batch_id());
     }
     if(lock_type == LOCK_NONE)
       own_starttime = get_sys_clock();

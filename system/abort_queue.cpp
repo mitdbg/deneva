@@ -24,7 +24,7 @@ void AbortQueue::init() {
 }
 
 // FIXME: Rewrite abort queue
-void AbortQueue::enqueue(uint64_t txn_id, uint64_t abort_cnt) {
+void AbortQueue::enqueue(uint64_t thd_id, uint64_t txn_id, uint64_t abort_cnt) {
   uint64_t starttime = get_sys_clock();
   uint64_t penalty = g_abort_penalty;
 #if BACKOFF
@@ -38,15 +38,15 @@ void AbortQueue::enqueue(uint64_t txn_id, uint64_t abort_cnt) {
   entry->txn_id = txn_id;
   pthread_mutex_lock(&mtx);
   DEBUG("AQ Enqueue %ld %f -- %f\n",entry->txn_id,float(penalty - starttime)/BILLION,simulation->seconds_from_start(starttime));
-  INC_STATS(0,abort_queue_penalty,penalty - starttime);
-  INC_STATS(0,abort_queue_enqueue_cnt,1);
+  INC_STATS(thd_id,abort_queue_penalty,penalty - starttime);
+  INC_STATS(thd_id,abort_queue_enqueue_cnt,1);
   queue.push(entry);
   pthread_mutex_unlock(&mtx);
   
-  INC_STATS(0,abort_queue_enqueue_time,get_sys_clock() - starttime);
+  INC_STATS(thd_id,abort_queue_enqueue_time,get_sys_clock() - starttime);
 }
 
-void AbortQueue::process() {
+void AbortQueue::process(uint64_t thd_id) {
   if(queue.empty())
     return;
   abort_entry * entry;
@@ -58,11 +58,11 @@ void AbortQueue::process() {
       queue.pop();
       // FIXME: add restart to work queue
       DEBUG("AQ Dequeue %ld %f -- %f\n",entry->txn_id,float(starttime - entry->penalty_end)/BILLION,simulation->seconds_from_start(starttime));
-      INC_STATS(0,abort_queue_penalty_extra,starttime - entry->penalty_end);
-      INC_STATS(0,abort_queue_dequeue_cnt,1);
+      INC_STATS(thd_id,abort_queue_penalty_extra,starttime - entry->penalty_end);
+      INC_STATS(thd_id,abort_queue_dequeue_cnt,1);
       Message * msg = Message::create_message(RTXN);
       msg->txn_id = entry->txn_id;
-      work_queue.enqueue(g_thread_cnt,msg,false);
+      work_queue.enqueue(thd_id,msg,false);
       //entry = queue.top();
       DEBUG_M("AbortQueue::dequeue entry free\n");
       mem_allocator.free(entry,sizeof(abort_entry));
@@ -73,7 +73,7 @@ void AbortQueue::process() {
   }
   pthread_mutex_unlock(&mtx);
 
-  INC_STATS(0,abort_queue_dequeue_time,get_sys_clock() - starttime);
+  INC_STATS(thd_id,abort_queue_dequeue_time,get_sys_clock() - starttime);
 
 }
 

@@ -35,7 +35,7 @@ void InputThread::setup() {
 
   std::vector<Message*> msgs;
   while(!simulation->is_setup_done()) {
-    msgs = tport_man.recv_msg();
+    msgs = tport_man.recv_msg(get_thd_id());
     while(!msgs.empty()) {
       Message * msg = msgs.front();
       if(msg->rtype == INIT_DONE) {
@@ -45,7 +45,7 @@ void InputThread::setup() {
       } else {
         assert(ISSERVER || ISREPLICA);
         printf("Received Msg %d from node %ld\n",msg->rtype,msg->return_node_id);
-        work_queue.enqueue(g_thread_cnt,msg,false);
+        work_queue.enqueue(get_thd_id(),msg,false);
       }
       msgs.erase(msgs.begin());
     }
@@ -76,7 +76,7 @@ RC InputThread::client_recv_loop() {
   std::vector<Message*> msgs;
 
 	while (!simulation->is_done()) {
-		msgs = tport_man.recv_msg();
+		msgs = tport_man.recv_msg(get_thd_id());
     //while((m_query = work_queue.get_next_query(get_thd_id())) != NULL) {
     //Message * msg = work_queue.dequeue();
     while(!msgs.empty()) {
@@ -85,10 +85,10 @@ RC InputThread::client_recv_loop() {
       return_node_offset = msg->return_node_id - g_server_start_node;
       assert(return_node_offset < g_servers_per_client);
       rsp_cnts[return_node_offset]++;
-      INC_STATS(0,txn_cnt,1);
+      INC_STATS(get_thd_id(),txn_cnt,1);
       uint64_t timespan = get_sys_clock() - ((ClientResponseMessage*)msg)->client_startts; 
-      INC_STATS(0,txn_run_time, timespan);
-      //INC_STATS_ARR(0,all_lat,timespan);
+      INC_STATS(get_thd_id(),txn_run_time, timespan);
+      //INC_STATS_ARR(get_thd_id(),all_lat,timespan);
       inf = client_man.dec_inflight(return_node_offset);
       DEBUG("Recv %ld from %ld, %ld -- %f\n",((ClientResponseMessage*)msg)->txn_id,msg->return_node_id,inf,float(timespan)/BILLION);
       assert(inf >=0);
@@ -112,10 +112,10 @@ RC InputThread::server_recv_loop() {
 
   std::vector<Message*> msgs;
 	while (!simulation->is_done()) {
-		msgs = tport_man.recv_msg();
+		msgs = tport_man.recv_msg(get_thd_id());
     while(!msgs.empty()) {
       Message * msg = msgs.front();
-      work_queue.enqueue(g_thread_cnt,msg,false);
+      work_queue.enqueue(get_thd_id(),msg,false);
       msgs.erase(msgs.begin());
     }
 

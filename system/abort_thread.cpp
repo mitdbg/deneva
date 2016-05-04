@@ -26,7 +26,7 @@ void AbortThread::setup() {
 RC AbortThread::run() {
   tsetup();
 	while (!simulation->is_done()) {
-    abort_queue.process();
+    abort_queue.process(get_thd_id());
   }
   return FINISH;
  

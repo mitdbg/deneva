@@ -73,7 +73,7 @@ class TxnStats {
   public:
     void init();
     void reset();
-    void commit_stats();
+    void commit_stats(uint64_t txn_id);
     uint64_t starttime;
     uint64_t wait_starttime;
     double total_process_time;
@@ -107,7 +107,7 @@ public:
 	virtual RC 		run_txn_post_wait() = 0;
   virtual RC run_calvin_txn() = 0; 
   virtual RC acquire_locks() = 0; 
-  void register_thd(Thread * h_thd);
+  void register_thread(Thread * h_thd);
 	uint64_t 		get_thd_id();
 	Workload * 		get_wl();
 	void 			set_txn_id(txnid_t txn_id);

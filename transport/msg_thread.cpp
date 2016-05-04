@@ -72,7 +72,7 @@ void MessageThread::run() {
   mbuf * sbuf;
 
 
-  dest = msg_queue.dequeue(msg);
+  dest = msg_queue.dequeue(get_thd_id(), msg);
   if(!msg) {
     check_and_send_batches();
     return;

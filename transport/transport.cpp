@@ -28,10 +28,7 @@
 
 void Transport::read_ifconfig(const char * ifaddr_file) {
 
-	ifaddr = new char *[_node_cnt];
-	for(uint64_t i=0;i<_node_cnt;i++) {
-		ifaddr[i] = new char[MAX_IFADDR_LEN];
-	}
+	ifaddr = new char *[g_total_node_cnt];
 
 	uint64_t cnt = 0;
   printf("Reading ifconfig file: %s\n",ifaddr_file);
@@ -39,7 +36,7 @@ void Transport::read_ifconfig(const char * ifaddr_file) {
 	string line;
   while (getline(fin, line)) {
 		//memcpy(ifaddr[cnt],&line[0],12);
-		ifaddr[cnt] = new char[line.length()];
+		ifaddr[cnt] = new char[line.length()+1];
     strcpy(ifaddr[cnt],&line[0]);
 		printf("%ld: %s\n",cnt,ifaddr[cnt]);
 		cnt++;
@@ -210,12 +207,12 @@ void Transport::send_msg(uint64_t send_thread_id, uint64_t dest_node_id, void * 
   //nn_freemsg(sbuf);
   DEBUG("Batch of %d bytes sent to node %ld\n",size,dest_node_id);
 
-  INC_STATS(0,msg_send_time,get_sys_clock() - starttime);
-  INC_STATS(0,msg_send_cnt,1);
+  INC_STATS(send_thread_id,msg_send_time,get_sys_clock() - starttime);
+  INC_STATS(send_thread_id,msg_send_cnt,1);
 }
 
 // Listens to sockets for messages from other nodes
-std::vector<Message*> Transport::recv_msg() {
+std::vector<Message*> Transport::recv_msg(uint64_t thd_id) {
 	int bytes = 0;
 	void * buf;
   uint64_t starttime = get_sys_clock();
@@ -243,8 +240,8 @@ std::vector<Message*> Transport::recv_msg() {
     return msgs;
 	}
 
-  INC_STATS(0,msg_recv_time, get_sys_clock() - starttime);
-	INC_STATS(0,msg_recv_cnt,1);
+  INC_STATS(thd_id,msg_recv_time, get_sys_clock() - starttime);
+	INC_STATS(thd_id,msg_recv_cnt,1);
 
 	starttime = get_sys_clock();
 
@@ -253,7 +250,7 @@ std::vector<Message*> Transport::recv_msg() {
 
 	nn::freemsg(buf);	
 
-	INC_STATS(0,msg_unpack_time,get_sys_clock()-starttime);
+	INC_STATS(thd_id,msg_unpack_time,get_sys_clock()-starttime);
   return msgs;
 }
 
