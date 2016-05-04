@@ -171,8 +171,8 @@
 #define INIT_PARALLELISM 8
 #define SYNTH_TABLE_SIZE 65536
 #define ZIPF_THETA 0.6
-#define TXN_WRITE_PERC 0.5
-#define TUP_WRITE_PERC 0.5
+#define TXN_WRITE_PERC 0.0
+#define TUP_WRITE_PERC 0.0
 #define SCAN_PERC           0
 #define SCAN_LEN          20
 #define PART_PER_TXN PART_CNT

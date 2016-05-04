@@ -223,6 +223,7 @@ RC WorkerThread::process_rfin(Message * msg) {
   txn_man->commit();
   //if(!txn_man->query->readonly() || CC_ALG == OCC)
   msg_queue.enqueue(Message::create_message(txn_man,RACK_FIN),GET_NODE_ID(msg->get_txn_id()));
+  release_txn_man(txn_man);
 
   return RCOK;
 }

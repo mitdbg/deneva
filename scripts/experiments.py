@@ -156,15 +156,16 @@ def test():
     nnodes = [1,2,4]
     ntif = [100,500,1000,5000,10000]
     ntif = [10000]
-    nwr = [0.2]
+    nwr = [0.0] # TXN_WRITE_PERC
+    nwr2 = [0.0] # TUP_WRITE_PERC
     nalgos=['NO_WAIT','WAIT_DIE','MAAT','OCC']
 #    nalgos=['NO_WAIT','MAAT','OCC']
     nalgos=['NO_WAIT']
 #    nalgos=['MVCC','TIMESTAMP','CALVIN']
 #    nnodes = [2]
 #    nalgos=['OCC']
-    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","TUP_WRITE_PERC","MAX_TXN_IN_FLIGHT"]
-    exp = [[wl,n,cc,wr,tif] for n,cc,wr,tif in itertools.product(nnodes,nalgos,nwr,ntif)]
+    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","TXN_WRITE_PERC","TUP_WRITE_PERC","MAX_TXN_IN_FLIGHT"]
+    exp = [[wl,n,cc,wr,wr2,tif] for n,cc,wr,wr2,tif in itertools.product(nnodes,nalgos,nwr,nwr2,ntif)]
 
     return fmt,exp
 
@@ -975,12 +976,12 @@ configs = {
     "MSG_TIME_LIMIT": "10 * 1000000UL",
     "MSG_SIZE_MAX": 4096,
 #    "PRT_LAT_DISTR": "true",
-    "TXN_WRITE_PERC":0.5,
+    "TXN_WRITE_PERC":0.0,
     "PRIORITY":"PRIORITY_ACTIVE",
     "TWOPL_LITE":"false",
 #YCSB
     "INIT_PARALLELISM" : 8, 
-    "TUP_WRITE_PERC":0.5,
+    "TUP_WRITE_PERC":0.0,
     "ZIPF_THETA":0.6,
     "ACCESS_PERC":0.03,
     "DATA_PERC": 100,
