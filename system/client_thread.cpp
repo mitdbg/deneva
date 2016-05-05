@@ -34,7 +34,7 @@ void ClientThread::setup() {
 		for(uint64_t i = 0; i < nnodes; i++) {
 			if(i != g_node_id) {
         printf("Send INIT_DONE to %ld\n",i);
-        msg_queue.enqueue(Message::create_message(INIT_DONE),i);
+        msg_queue.enqueue(get_thd_id(),Message::create_message(INIT_DONE),i);
 			}
 		}
   }
@@ -109,7 +109,7 @@ RC ClientThread::run() {
 */
     Message * msg = Message::create_message((BaseQuery*)m_query,CL_QRY);
     ((ClientQueryMessage*)msg)->client_startts = get_sys_clock();
-    msg_queue.enqueue(msg,next_node_id);
+    msg_queue.enqueue(get_thd_id(),msg,next_node_id);
 		num_txns_sent++;
 		txns_sent[next_node]++;
     INC_STATS(get_thd_id(),txn_sent_cnt,1);

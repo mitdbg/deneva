@@ -36,7 +36,9 @@ void AbortQueue::enqueue(uint64_t thd_id, uint64_t txn_id, uint64_t abort_cnt) {
   abort_entry * entry = (abort_entry*)mem_allocator.alloc(sizeof(abort_entry));
   entry->penalty_end = penalty;
   entry->txn_id = txn_id;
+  uint64_t mtx_time_start = get_sys_clock();
   pthread_mutex_lock(&mtx);
+  INC_STATS(thd_id,mtx[0],get_sys_clock() - mtx_time_start);
   DEBUG("AQ Enqueue %ld %f -- %f\n",entry->txn_id,float(penalty - starttime)/BILLION,simulation->seconds_from_start(starttime));
   INC_STATS(thd_id,abort_queue_penalty,penalty - starttime);
   INC_STATS(thd_id,abort_queue_enqueue_cnt,1);
@@ -50,7 +52,9 @@ void AbortQueue::process(uint64_t thd_id) {
   if(queue.empty())
     return;
   abort_entry * entry;
+  uint64_t mtx_time_start = get_sys_clock();
   pthread_mutex_lock(&mtx);
+  INC_STATS(thd_id,mtx[1],get_sys_clock() - mtx_time_start);
   uint64_t starttime = get_sys_clock();
   while(!queue.empty()) {
     entry = queue.top();

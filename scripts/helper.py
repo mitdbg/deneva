@@ -250,6 +250,28 @@ stat_map = OrderedDict([
   ('txn_table_release_time', []),
   ('txn_table_get_avg_time', []),
   ('txn_table_release_avg_time', []),
+
+  # Mutex profiling
+  ('mtx0', []),
+  ('mtx1', []),
+  ('mtx2', []),
+  ('mtx3', []),
+  ('mtx4', []),
+  ('mtx5', []),
+  ('mtx6', []),
+  ('mtx7', []),
+  ('mtx8', []),
+  ('mtx9', []),
+  ('mtx10', []),
+  ('mtx11', []),
+  ('mtx12', []),
+  ('mtx13', []),
+  ('mtx14', []),
+  ('mtx15', []),
+  ('mtx16', []),
+  ('mtx17', []),
+  ('mtx18', []),
+  ('mtx19', []),
 ])
 
 stat_map2 = {
@@ -385,6 +407,27 @@ stat_map2 = {
   'txn_table_get_avg_time': [],
   'txn_table_release_avg_time': [],
 
+# Mtx profiling
+  'mtx0': [],
+  'mtx1': [],
+  'mtx2': [],
+  'mtx3': [],
+  'mtx4': [],
+  'mtx5': [],
+  'mtx6': [],
+  'mtx7': [],
+  'mtx8': [],
+  'mtx9': [],
+  'mtx10': [],
+  'mtx11': [],
+  'mtx12': [],
+  'mtx13': [],
+  'mtx14': [],
+  'mtx15': [],
+  'mtx16': [],
+  'mtx17': [],
+  'mtx18': [],
+  'mtx19': [],
 
 }
 

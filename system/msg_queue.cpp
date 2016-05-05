@@ -29,7 +29,7 @@ void MessageQueue::init() {
 #endif
 }
 
-void MessageQueue::enqueue(Message * msg,uint64_t dest) {
+void MessageQueue::enqueue(uint64_t thd_id, Message * msg,uint64_t dest) {
   DEBUG("MQ Enqueue %ld\n",dest)
   assert(dest < g_node_cnt + g_client_node_cnt + g_repl_cnt*g_node_cnt);
   assert(dest != g_node_id);
@@ -40,7 +40,9 @@ void MessageQueue::enqueue(Message * msg,uint64_t dest) {
   entry->prev  = NULL;
   entry->dest = dest;
   entry->starttime = get_sys_clock();
+  uint64_t mtx_time_start = get_sys_clock();
   pthread_mutex_lock(&mtx);
+  INC_STATS(thd_id,mtx[3],get_sys_clock() - mtx_time_start);
   LIST_PUT_TAIL(head,tail,entry);
   ATOM_ADD(cnt,1);
   pthread_mutex_unlock(&mtx);
@@ -51,7 +53,9 @@ void MessageQueue::enqueue(Message * msg,uint64_t dest) {
 uint64_t MessageQueue::dequeue(uint64_t thd_id, Message *& msg) {
   msg_entry * entry = NULL;
   uint64_t dest = UINT64_MAX;
+  uint64_t mtx_time_start = get_sys_clock();
   pthread_mutex_lock(&mtx);
+  INC_STATS(thd_id,mtx[4],get_sys_clock() - mtx_time_start);
   uint64_t curr_time = get_sys_clock();
   if(head && (ISCLIENT || (curr_time - head->starttime > g_network_delay))) {
     LIST_GET_HEAD(head,tail,entry);

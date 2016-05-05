@@ -33,8 +33,8 @@ RC Maat::validate(TxnManager * txn) {
   INC_STATS(txn->get_thd_id(),maat_cs_wait_time,get_sys_clock() - start_time);
   start_time = get_sys_clock();
   RC rc = RCOK;
-  uint64_t lower = time_table.get_lower(txn->get_txn_id());
-  uint64_t upper = time_table.get_upper(txn->get_txn_id());
+  uint64_t lower = time_table.get_lower(txn->get_thd_id(),txn->get_txn_id());
+  uint64_t upper = time_table.get_upper(txn->get_thd_id(),txn->get_txn_id());
   DEBUG("MAAT Validate Start %ld: [%lu,%lu]\n",txn->get_txn_id(),lower,upper);
   std::set<uint64_t> after;
   std::set<uint64_t> before;
@@ -46,9 +46,9 @@ RC Maat::validate(TxnManager * txn) {
   }
   // lower bound of uncommitted writes greater than upper bound of txn
   for(auto it = txn->uncommitted_writes->begin(); it != txn->uncommitted_writes->end();it++) {
-    uint64_t it_lower = time_table.get_lower(*it);
+    uint64_t it_lower = time_table.get_lower(txn->get_thd_id(),*it);
     if(upper >= it_lower) {
-      MAATState state = time_table.get_state(*it);
+      MAATState state = time_table.get_state(txn->get_thd_id(),*it);
       if(state == MAAT_VALIDATED || state == MAAT_COMMITTED) {
         DEBUG("MAAT case2 %ld: %lu < %ld: %lu, %d \n",txn->get_txn_id(),upper,*it,it_lower,state);
         INC_STATS(txn->get_thd_id(),maat_case2_cnt,1);
@@ -77,9 +77,9 @@ RC Maat::validate(TxnManager * txn) {
   }
   // upper bound of uncommitted reads less than lower bound of txn
   for(auto it = txn->uncommitted_reads->begin(); it != txn->uncommitted_reads->end();it++) {
-    uint64_t it_upper = time_table.get_upper(*it);
+    uint64_t it_upper = time_table.get_upper(txn->get_thd_id(),*it);
     if(lower <= it_upper) {
-      MAATState state = time_table.get_state(*it);
+      MAATState state = time_table.get_state(txn->get_thd_id(),*it);
       if(state == MAAT_VALIDATED || state == MAAT_COMMITTED) {
         DEBUG("MAAT case4 %ld: %lu > %ld: %lu, %d \n",txn->get_txn_id(),lower,*it,it_upper,state);
         INC_STATS(txn->get_thd_id(),maat_case4_cnt,1);
@@ -101,8 +101,8 @@ RC Maat::validate(TxnManager * txn) {
   }
   // upper bound of uncommitted write writes less than lower bound of txn
   for(auto it = txn->uncommitted_writes_y->begin(); it != txn->uncommitted_writes_y->end();it++) {
-      MAATState state = time_table.get_state(*it);
-    uint64_t it_upper = time_table.get_upper(*it);
+      MAATState state = time_table.get_state(txn->get_thd_id(),*it);
+    uint64_t it_upper = time_table.get_upper(txn->get_thd_id(),*it);
       if(state == MAAT_ABORTED) {
         continue;
       }
@@ -123,22 +123,22 @@ RC Maat::validate(TxnManager * txn) {
   }
   if(lower >= upper) {
     // Abort
-    time_table.set_state(txn->get_txn_id(),MAAT_ABORTED);
+    time_table.set_state(txn->get_thd_id(),txn->get_txn_id(),MAAT_ABORTED);
     rc = Abort;
   } else {
     // Validated
-    time_table.set_state(txn->get_txn_id(),MAAT_VALIDATED);
+    time_table.set_state(txn->get_thd_id(),txn->get_txn_id(),MAAT_VALIDATED);
     rc = RCOK;
     // TODO: Optimize lower and upper to minimize aborts in before and after
     // Hopefully this would keep upper from being max int...
     for(auto it = after.begin(); it != after.end();it++) {
-      uint64_t it_lower = time_table.get_lower(*it);
+      uint64_t it_lower = time_table.get_lower(txn->get_thd_id(),*it);
       if(it_lower < upper && it_lower > lower+1) {
         upper = it_lower - 1;
       }
     }
     for(auto it = before.begin(); it != before.end();it++) {
-      uint64_t it_upper = time_table.get_upper(*it);
+      uint64_t it_upper = time_table.get_upper(txn->get_thd_id(),*it);
       if(it_upper > lower && it_upper < upper-1) {
         lower = it_upper + 1;
       }
@@ -147,8 +147,8 @@ RC Maat::validate(TxnManager * txn) {
     INC_STATS(txn->get_thd_id(),maat_range,upper-lower);
     INC_STATS(txn->get_thd_id(),maat_commit_cnt,1);
   }
-  time_table.set_lower(txn->get_txn_id(),lower);
-  time_table.set_upper(txn->get_txn_id(),upper);
+  time_table.set_lower(txn->get_thd_id(),txn->get_txn_id(),lower);
+  time_table.set_upper(txn->get_thd_id(),txn->get_txn_id(),upper);
   INC_STATS(txn->get_thd_id(),maat_validate_cnt,1);
   INC_STATS(txn->get_thd_id(),maat_validate_time,get_sys_clock() - start_time);
   DEBUG("MAAT Validate End %ld: %d [%lu,%lu]\n",txn->get_txn_id(),rc==RCOK,lower,upper);
@@ -159,13 +159,13 @@ RC Maat::validate(TxnManager * txn) {
 
 RC Maat::find_bound(TxnManager * txn) {
   RC rc = RCOK;
-  uint64_t lower = time_table.get_lower(txn->get_txn_id());
-  uint64_t upper = time_table.get_upper(txn->get_txn_id());
+  uint64_t lower = time_table.get_lower(txn->get_thd_id(),txn->get_txn_id());
+  uint64_t upper = time_table.get_upper(txn->get_thd_id(),txn->get_txn_id());
   if(lower >= upper) {
-    time_table.set_state(txn->get_txn_id(),MAAT_VALIDATED);
+    time_table.set_state(txn->get_thd_id(),txn->get_txn_id(),MAAT_VALIDATED);
     rc = Abort;
   } else {
-    time_table.set_state(txn->get_txn_id(),MAAT_COMMITTED);
+    time_table.set_state(txn->get_thd_id(),txn->get_txn_id(),MAAT_COMMITTED);
     // TODO: pick commit_time in a smarter way
     //txn->commit_timestamp = (upper - lower) / 2;
     txn->commit_timestamp = lower; 
@@ -198,9 +198,11 @@ TimeTableEntry* TimeTable::find(uint64_t key) {
 
 }
 
-void TimeTable::init(uint64_t key) {
+void TimeTable::init(uint64_t thd_id, uint64_t key) {
   uint64_t idx = hash(key);
+  uint64_t mtx_wait_starttime = get_sys_clock();
   pthread_mutex_lock(&table[idx].mtx);
+  INC_STATS(thd_id,mtx[18],get_sys_clock() - mtx_wait_starttime);
   TimeTableEntry* entry = find(key);
   if(!entry) {
     DEBUG_M("TimeTable::init entry alloc\n");
@@ -211,9 +213,11 @@ void TimeTable::init(uint64_t key) {
   pthread_mutex_unlock(&table[idx].mtx);
 }
 
-void TimeTable::release(uint64_t key) {
+void TimeTable::release(uint64_t thd_id, uint64_t key) {
   uint64_t idx = hash(key);
+  uint64_t mtx_wait_starttime = get_sys_clock();
   pthread_mutex_lock(&table[idx].mtx);
+  INC_STATS(thd_id,mtx[19],get_sys_clock() - mtx_wait_starttime);
   TimeTableEntry* entry = find(key);
   if(entry) {
     LIST_REMOVE_HT(entry,table[idx].head,table[idx].tail);
@@ -223,10 +227,12 @@ void TimeTable::release(uint64_t key) {
   pthread_mutex_unlock(&table[idx].mtx);
 }
 
-uint64_t TimeTable::get_lower(uint64_t key) {
+uint64_t TimeTable::get_lower(uint64_t thd_id, uint64_t key) {
   uint64_t idx = hash(key);
   uint64_t value = 0;
+  uint64_t mtx_wait_starttime = get_sys_clock();
   pthread_mutex_lock(&table[idx].mtx);
+  INC_STATS(thd_id,mtx[20],get_sys_clock() - mtx_wait_starttime);
   TimeTableEntry* entry = find(key);
   if(entry) {
     value = entry->lower;
@@ -235,10 +241,12 @@ uint64_t TimeTable::get_lower(uint64_t key) {
   return value;
 }
 
-uint64_t TimeTable::get_upper(uint64_t key) {
+uint64_t TimeTable::get_upper(uint64_t thd_id, uint64_t key) {
   uint64_t idx = hash(key);
   uint64_t value = UINT64_MAX;
+  uint64_t mtx_wait_starttime = get_sys_clock();
   pthread_mutex_lock(&table[idx].mtx);
+  INC_STATS(thd_id,mtx[21],get_sys_clock() - mtx_wait_starttime);
   TimeTableEntry* entry = find(key);
   if(entry) {
     value = entry->upper;
@@ -248,9 +256,11 @@ uint64_t TimeTable::get_upper(uint64_t key) {
 }
 
 
-void TimeTable::set_lower(uint64_t key, uint64_t value) {
+void TimeTable::set_lower(uint64_t thd_id, uint64_t key, uint64_t value) {
   uint64_t idx = hash(key);
+  uint64_t mtx_wait_starttime = get_sys_clock();
   pthread_mutex_lock(&table[idx].mtx);
+  INC_STATS(thd_id,mtx[22],get_sys_clock() - mtx_wait_starttime);
   TimeTableEntry* entry = find(key);
   if(entry) {
     entry->lower = value;
@@ -258,9 +268,11 @@ void TimeTable::set_lower(uint64_t key, uint64_t value) {
   pthread_mutex_unlock(&table[idx].mtx);
 }
 
-void TimeTable::set_upper(uint64_t key, uint64_t value) {
+void TimeTable::set_upper(uint64_t thd_id, uint64_t key, uint64_t value) {
   uint64_t idx = hash(key);
+  uint64_t mtx_wait_starttime = get_sys_clock();
   pthread_mutex_lock(&table[idx].mtx);
+  INC_STATS(thd_id,mtx[23],get_sys_clock() - mtx_wait_starttime);
   TimeTableEntry* entry = find(key);
   if(entry) {
     entry->upper = value;
@@ -268,10 +280,12 @@ void TimeTable::set_upper(uint64_t key, uint64_t value) {
   pthread_mutex_unlock(&table[idx].mtx);
 }
 
-MAATState TimeTable::get_state(uint64_t key) {
+MAATState TimeTable::get_state(uint64_t thd_id, uint64_t key) {
   uint64_t idx = hash(key);
   MAATState state = MAAT_ABORTED;
+  uint64_t mtx_wait_starttime = get_sys_clock();
   pthread_mutex_lock(&table[idx].mtx);
+  INC_STATS(thd_id,mtx[24],get_sys_clock() - mtx_wait_starttime);
   TimeTableEntry* entry = find(key);
   if(entry) {
     state = entry->state;
@@ -280,9 +294,11 @@ MAATState TimeTable::get_state(uint64_t key) {
   return state;
 }
 
-void TimeTable::set_state(uint64_t key, MAATState value) {
+void TimeTable::set_state(uint64_t thd_id, uint64_t key, MAATState value) {
   uint64_t idx = hash(key);
+  uint64_t mtx_wait_starttime = get_sys_clock();
   pthread_mutex_lock(&table[idx].mtx);
+  INC_STATS(thd_id,mtx[25],get_sys_clock() - mtx_wait_starttime);
   TimeTableEntry* entry = find(key);
   if(entry) {
     entry->state = value;

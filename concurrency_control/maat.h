@@ -65,14 +65,14 @@ struct TimeTableNode {
 class TimeTable {
 public:
 	void init();
-	void init(uint64_t key);
-	void release(uint64_t key);
-  uint64_t get_lower(uint64_t key);
-  uint64_t get_upper(uint64_t key);
-  void set_lower(uint64_t key, uint64_t value);
-  void set_upper(uint64_t key, uint64_t value);
-  MAATState get_state(uint64_t key);
-  void set_state(uint64_t key, MAATState value);
+	void init(uint64_t thd_id, uint64_t key);
+	void release(uint64_t thd_id, uint64_t key);
+  uint64_t get_lower(uint64_t thd_id, uint64_t key);
+  uint64_t get_upper(uint64_t thd_id, uint64_t key);
+  void set_lower(uint64_t thd_id, uint64_t key, uint64_t value);
+  void set_upper(uint64_t thd_id, uint64_t key, uint64_t value);
+  MAATState get_state(uint64_t thd_id, uint64_t key);
+  void set_state(uint64_t thd_id, uint64_t key, MAATState value);
 private:
   // hash table
   uint64_t hash(uint64_t key);

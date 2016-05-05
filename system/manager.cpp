@@ -59,7 +59,7 @@ Manager::get_ts(uint64_t thread_id) {
 		assert(false);
 		break;
 	case TS_CLOCK :
-		time = get_sys_clock() * (g_node_cnt + g_thread_cnt) + (g_node_id * g_thread_cnt + thread_id);
+		time = get_wall_clock() * (g_node_cnt + g_thread_cnt) + (g_node_id * g_thread_cnt + thread_id);
 		break;
 	default :
 		assert(false);
@@ -73,7 +73,7 @@ ts_t Manager::get_min_ts(uint64_t tid) {
 	uint64_t now = get_sys_clock();
 	if (now - last_min_ts_time > MIN_TS_INTVL) { 
 		last_min_ts_time = now;
-    uint64_t min = txn_table.get_min_ts();
+    uint64_t min = txn_table.get_min_ts(tid);
     /*
     assert(min != UINT64_MAX);
 		assert(min >= min_ts);
@@ -118,7 +118,9 @@ uint64_t Manager::hash(row_t * row) {
  
 void Manager::lock_row(row_t * row) {
 	int bid = hash(row);
+  uint64_t mtx_time_start = get_sys_clock();
 	pthread_mutex_lock( &mutexes[bid] );	
+  INC_STATS(0,mtx[2],get_sys_clock() - mtx_time_start);
 }
 
 void Manager::release_row(row_t * row) {

@@ -30,7 +30,7 @@ void QWorkQueue::init() {
 
 }
 
-void QWorkQueue::sched_enqueue(Message * msg) {
+void QWorkQueue::sched_enqueue(uint64_t thd_id, Message * msg) {
   assert(CC_ALG == CALVIN);
   assert(msg);
   assert(ISSERVERN(msg->return_node_id));
@@ -43,14 +43,16 @@ void QWorkQueue::sched_enqueue(Message * msg) {
   scheduler_queue.push(entry);
 }
 
-Message * QWorkQueue::sched_dequeue() {
+Message * QWorkQueue::sched_dequeue(uint64_t thd_id) {
 
   assert(CC_ALG == CALVIN);
   if(scheduler_queue.empty())
     return NULL;
   Message * msg = NULL;
 
+  uint64_t mtx_time_start = get_sys_clock();
   pthread_mutex_lock(&sched_mtx);
+  INC_STATS(thd_id,mtx[12],get_sys_clock() - mtx_time_start);
   work_queue_entry * entry = scheduler_queue.top();
   if(!(!entry || simulation->get_worker_epoch() > simulation->get_sched_epoch() || (new_epoch && simulation->epoch_txn_cnt > 0))) {
     Message * msg = entry->msg;
@@ -100,6 +102,7 @@ void QWorkQueue::enqueue(uint64_t thd_id, Message * msg,bool busy) {
   uint64_t mtx_wait_starttime = get_sys_clock();
   pthread_mutex_lock(&mtx);
   INC_STATS(thd_id,work_queue_mtx_wait_time,get_sys_clock() - mtx_wait_starttime);
+  INC_STATS(thd_id,mtx[13],get_sys_clock() - mtx_wait_starttime);
   //DEBUG("%ld ENQUEUE (%ld,%ld); %ld; %d,0x%lx\n",thd_id,entry->txn_id,entry->batch_id,msg->return_node_id,entry->rtype,(uint64_t)msg);
   work_queue.push(entry);
   pthread_mutex_unlock(&mtx);
@@ -116,10 +119,11 @@ Message * QWorkQueue::dequeue(uint64_t thd_id) {
     uint64_t mtx_wait_starttime = get_sys_clock();
     pthread_mutex_lock(&mtx);
     INC_STATS(thd_id,work_queue_mtx_wait_time,get_sys_clock() - mtx_wait_starttime);
+    INC_STATS(thd_id,mtx[14],get_sys_clock() - mtx_wait_starttime);
     if(!work_queue.empty()) {
       entry = work_queue.top();
       msg = entry->msg;
-      if(activate_txn_id(msg->get_txn_id())) {
+      if(activate_txn_id(thd_id,msg->get_txn_id())) {
         work_queue.pop();
       } else {
         INC_STATS(thd_id,work_queue_conflict_cnt,1);
@@ -153,17 +157,21 @@ Message * QWorkQueue::dequeue(uint64_t thd_id) {
   return msg;
 }
 
-void QWorkQueue::deactivate_txn_id(uint64_t txn_id) {
+void QWorkQueue::deactivate_txn_id(uint64_t thd_id, uint64_t txn_id) {
+  uint64_t mtx_wait_starttime = get_sys_clock();
   pthread_mutex_lock(&active_txn_mtx);
+  INC_STATS(thd_id,mtx[15],get_sys_clock() - mtx_wait_starttime);
   active_txn_ids.erase(txn_id);
   pthread_mutex_unlock(&active_txn_mtx);
 }
 
 
-bool QWorkQueue::activate_txn_id(uint64_t txn_id) {
+bool QWorkQueue::activate_txn_id(uint64_t thd_id, uint64_t txn_id) {
   if(txn_id == UINT64_MAX)
     return true;
+  uint64_t mtx_wait_starttime = get_sys_clock();
   pthread_mutex_lock(&active_txn_mtx);
+  INC_STATS(thd_id,mtx[16],get_sys_clock() - mtx_wait_starttime);
   bool success = active_txn_ids.insert(txn_id).second;
   pthread_mutex_unlock(&active_txn_mtx);
   return success;

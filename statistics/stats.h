@@ -180,6 +180,8 @@ public:
   double txn_table_get_time;
   double txn_table_release_time;
 
+  double * mtx;
+
 	char _pad[CL_SIZE];
 };
 

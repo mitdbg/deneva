@@ -39,7 +39,7 @@ void WorkerThread::send_init_done_to_all_nodes() {
 		for(uint64_t i = 0; i < total_nodes; i++) {
 			if(i != g_node_id) {
         printf("Send INIT_DONE to %ld\n",i);
-        msg_queue.enqueue(Message::create_message(INIT_DONE),i);
+        msg_queue.enqueue(get_thd_id(),Message::create_message(INIT_DONE),i);
 			}
 		}
 
@@ -153,7 +153,7 @@ void WorkerThread::commit(TxnManager * txn_man) {
   DEBUG("COMMIT %ld %f -- %f\n",txn_man->get_txn_id(),simulation->seconds_from_start(get_sys_clock()),(double)timespan/ BILLION);
 
   // Send result back to client
-  msg_queue.enqueue(Message::create_message(txn_man,CL_RSP),txn_man->client_id);
+  msg_queue.enqueue(get_thd_id(),Message::create_message(txn_man,CL_RSP),txn_man->client_id);
   simulation->inc_txn_cnt();
   // remove txn from pool
   release_txn_man(txn_man);
@@ -194,7 +194,7 @@ RC WorkerThread::run() {
     process(msg);
 
 
-    work_queue.deactivate_txn_id(msg->txn_id);
+    work_queue.deactivate_txn_id(get_thd_id(), msg->txn_id);
 
     // delete message
     msg->release();
@@ -217,12 +217,12 @@ RC WorkerThread::process_rfin(Message * msg) {
     txn_man->abort();
     txn_man->reset();
     txn_man->reset_query();
-    msg_queue.enqueue(Message::create_message(txn_man,RACK_FIN),GET_NODE_ID(msg->get_txn_id()));
+    msg_queue.enqueue(get_thd_id(),Message::create_message(txn_man,RACK_FIN),GET_NODE_ID(msg->get_txn_id()));
     return Abort;
   } 
   txn_man->commit();
   //if(!txn_man->query->readonly() || CC_ALG == OCC)
-  msg_queue.enqueue(Message::create_message(txn_man,RACK_FIN),GET_NODE_ID(msg->get_txn_id()));
+  msg_queue.enqueue(get_thd_id(),Message::create_message(txn_man,RACK_FIN),GET_NODE_ID(msg->get_txn_id()));
   release_txn_man(txn_man);
 
   return RCOK;
@@ -242,15 +242,15 @@ RC WorkerThread::process_rack_prep(Message * msg) {
   // Integrate bounds
   uint64_t lower = ((AckMessage*)msg)->lower;
   uint64_t upper = ((AckMessage*)msg)->upper;
-  if(lower > time_table.get_lower(msg->get_txn_id())) {
-    time_table.set_lower(msg->get_txn_id(),lower);
+  if(lower > time_table.get_lower(get_thd_id(),msg->get_txn_id())) {
+    time_table.set_lower(get_thd_id(),msg->get_txn_id(),lower);
   }
-  if(upper < time_table.get_upper(msg->get_txn_id())) {
-    time_table.set_upper(msg->get_txn_id(),upper);
+  if(upper < time_table.get_upper(get_thd_id(),msg->get_txn_id())) {
+    time_table.set_upper(get_thd_id(),msg->get_txn_id(),upper);
   }
-  DEBUG("%ld bound set: [%ld,%ld] -> [%ld,%ld]\n",msg->get_txn_id(),lower,upper,time_table.get_lower(msg->get_txn_id()),time_table.get_upper(msg->get_txn_id()));
+  DEBUG("%ld bound set: [%ld,%ld] -> [%ld,%ld]\n",msg->get_txn_id(),lower,upper,time_table.get_lower(get_thd_id(),msg->get_txn_id()),time_table.get_upper(get_thd_id(),msg->get_txn_id()));
   if(((AckMessage*)msg)->rc != RCOK) {
-    time_table.set_state(msg->get_txn_id(),MAAT_ABORTED);
+    time_table.set_state(get_thd_id(),msg->get_txn_id(),MAAT_ABORTED);
   }
 #endif
   if(responses_left > 0) 
@@ -322,17 +322,17 @@ RC WorkerThread::process_rqry(Message * msg) {
   msg->copy_to_txn(txn_man);
 
 #if CC_ALG == MAAT
-          time_table.init(txn_man->get_txn_id());
-          assert(time_table.get_lower(txn_man->get_txn_id()) == 0);
-          assert(time_table.get_upper(txn_man->get_txn_id()) == UINT64_MAX);
-          assert(time_table.get_state(txn_man->get_txn_id()) == MAAT_RUNNING);
+          time_table.init(get_thd_id(),txn_man->get_txn_id());
+          assert(time_table.get_lower(get_thd_id(),txn_man->get_txn_id()) == 0);
+          assert(time_table.get_upper(get_thd_id(),txn_man->get_txn_id()) == UINT64_MAX);
+          assert(time_table.get_state(get_thd_id(),txn_man->get_txn_id()) == MAAT_RUNNING);
 #endif
 
   rc = txn_man->run_txn();
 
   // Send response
   if(rc != WAIT) {
-    msg_queue.enqueue(Message::create_message(txn_man,RQRY_RSP),txn_man->return_id);
+    msg_queue.enqueue(get_thd_id(),Message::create_message(txn_man,RQRY_RSP),txn_man->return_id);
   }
   return rc;
 }
@@ -350,7 +350,7 @@ RC WorkerThread::process_rqry_cont(Message * msg) {
 
   // Send response
   if(rc != WAIT) {
-    msg_queue.enqueue(Message::create_message(txn_man,RQRY_RSP),txn_man->return_id);
+    msg_queue.enqueue(get_thd_id(),Message::create_message(txn_man,RQRY_RSP),txn_man->return_id);
   }
   return rc;
 }
@@ -377,7 +377,7 @@ RC WorkerThread::process_rprepare(Message * msg) {
     // Validate transaction
     rc  = txn_man->validate();
     txn_man->set_rc(rc);
-    msg_queue.enqueue(Message::create_message(txn_man,RACK_PREP),msg->return_node_id);
+    msg_queue.enqueue(get_thd_id(),Message::create_message(txn_man,RACK_PREP),msg->return_node_id);
     // Clean up as soon as abort is possible
     if(rc == Abort) {
       txn_man->abort();
@@ -403,7 +403,7 @@ RC WorkerThread::process_rtxn(Message * msg) {
 
 					// Only set new txn_id when txn first starts
           txn_id = get_next_txn_id();
-          work_queue.activate_txn_id(txn_id);
+          work_queue.activate_txn_id(get_thd_id(), txn_id);
           msg->txn_id = txn_id;
 
 					// Put txn in txn_table
@@ -431,10 +431,10 @@ RC WorkerThread::process_rtxn(Message * msg) {
           txn_man->set_start_timestamp(get_next_ts());
 #endif
 #if CC_ALG == MAAT
-          time_table.init(txn_man->get_txn_id());
-          assert(time_table.get_lower(txn_man->get_txn_id()) == 0);
-          assert(time_table.get_upper(txn_man->get_txn_id()) == UINT64_MAX);
-          assert(time_table.get_state(txn_man->get_txn_id()) == MAAT_RUNNING);
+          time_table.init(get_thd_id(),txn_man->get_txn_id());
+          assert(time_table.get_lower(get_thd_id(),txn_man->get_txn_id()) == 0);
+          assert(time_table.get_upper(get_thd_id(),txn_man->get_txn_id()) == UINT64_MAX);
+          assert(time_table.get_state(get_thd_id(),txn_man->get_txn_id()) == MAAT_RUNNING);
 #endif
 
     rc = init_phase();
@@ -474,7 +474,7 @@ RC WorkerThread::process_log_msg_rsp(Message * msg) {
 RC WorkerThread::process_log_flushed(Message * msg) {
   DEBUG("LOG FLUSHED %ld\n",msg->get_txn_id());
   if(ISREPLICA) {
-    msg_queue.enqueue(Message::create_message(msg->txn_id,LOG_MSG_RSP),GET_NODE_ID(msg->txn_id)); 
+    msg_queue.enqueue(get_thd_id(),Message::create_message(msg->txn_id,LOG_MSG_RSP),GET_NODE_ID(msg->txn_id)); 
     return RCOK;
   }
 

@@ -354,7 +354,7 @@ RC TPCCTxnManager::send_remote_request() {
   TPCCQueryMessage * msg = (TPCCQueryMessage*)Message::create_message(this,RQRY);
   msg->state = state;
   query->partitions_touched.add_unique(GET_PART_ID(0,dest_node_id));
-  msg_queue.enqueue(msg,dest_node_id);
+  msg_queue.enqueue(get_thd_id(),msg,dest_node_id);
   state = next_state;
   return WAIT_REM;
 }

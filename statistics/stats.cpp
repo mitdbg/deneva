@@ -34,6 +34,8 @@ void Stats_thd::init(uint64_t thd_id) {
   worker_process_cnt_by_type= (uint64_t *) mem_allocator.alloc(sizeof(uint64_t) * NO_MSG);
   DEBUG_M("Stats_thd::init worker_process_time_by_type alloc\n");
   worker_process_time_by_type= (double *) mem_allocator.alloc(sizeof(double) * NO_MSG);
+  DEBUG_M("Stats_thd::init mtx alloc\n");
+  mtx= (double *) mem_allocator.alloc(sizeof(double) * 30);
 	clear();
 	//all_lat.init(g_max_txn_per_part,ArrIncr);
 
@@ -170,6 +172,10 @@ void Stats_thd::clear() {
   txn_table_cflt_size=0;
   txn_table_get_time=0;
   txn_table_release_time=0;
+
+  for(uint64_t i = 0; i < 30; i ++) {
+    mtx[i]=0;
+  }
 }
 
 void Stats_thd::print_client(FILE * outf) {
@@ -617,6 +623,14 @@ void Stats_thd::print(FILE * outf) {
     ,txn_table_get_avg_time / BILLION
     ,txn_table_release_avg_time / BILLION
   );
+
+  for(uint64_t i = 0; i < 30; i ++) {
+    fprintf(outf,
+      ",mtx%ld=%f"
+      ,i
+      ,mtx[i] / BILLION
+      );
+  }
 }
 
 void Stats_thd::combine(Stats_thd * stats) {
@@ -748,6 +762,10 @@ void Stats_thd::combine(Stats_thd * stats) {
   txn_table_cflt_size+=stats->txn_table_cflt_size;
   txn_table_get_time+=stats->txn_table_get_time;
   txn_table_release_time+=stats->txn_table_release_time;
+
+  for(uint64_t i = 0; i < 30; i ++) {
+    mtx[i]+=stats->mtx[i];
+  }
 }
 
 

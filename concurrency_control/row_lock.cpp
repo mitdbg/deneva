@@ -54,8 +54,11 @@ RC Row_lock::lock_get(lock_t type, TxnManager * txn, uint64_t* &txnids, int &txn
 	RC rc;
 	if (g_central_man)
 		glob_manager.lock_row(_row);
-	else 
+	else { 
+    uint64_t mtx_wait_starttime = get_sys_clock();
 		pthread_mutex_lock( latch );
+    INC_STATS(txn->get_thd_id(),mtx[17],get_sys_clock() - mtx_wait_starttime);
+  }
 #if DEBUG_ASSERT
   /*
 	if (owners[hash(txn->get_txn_id())] != NULL)
@@ -217,8 +220,11 @@ RC Row_lock::lock_release(TxnManager * txn) {
 
 	if (g_central_man)
 		glob_manager.lock_row(_row);
-	else 
+	else { 
+    uint64_t mtx_wait_starttime = get_sys_clock();
 		pthread_mutex_lock( latch );
+    INC_STATS(txn->get_thd_id(),mtx[18],get_sys_clock() - mtx_wait_starttime);
+  }
 
 
   DEBUG("unlock %ld,%ld: %d, %d %ld %lx\n",txn->get_txn_id(),txn->get_batch_id(),owner_cnt,lock_type,_row->get_primary_key(),(uint64_t)_row);

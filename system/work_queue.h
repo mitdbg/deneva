@@ -82,8 +82,8 @@ public:
   void init();
   void enqueue(uint64_t thd_id,Message * msg,bool busy); 
   Message * dequeue(uint64_t thd_id);
-  void sched_enqueue(Message * msg); 
-  Message * sched_dequeue(); 
+  void sched_enqueue(uint64_t thd_id, Message * msg); 
+  Message * sched_dequeue(uint64_t thd_id); 
 
   uint64_t get_cnt() {return get_wq_cnt() + get_rem_wq_cnt() + get_new_wq_cnt();}
   uint64_t get_wq_cnt() {return work_queue.size();}
@@ -93,8 +93,8 @@ public:
   //uint64_t get_rem_wq_cnt() {return remote_op_queue.size();}
   //uint64_t get_new_wq_cnt() {return new_query_queue.size();}
 
-  void deactivate_txn_id(uint64_t txn_id); 
-  bool activate_txn_id(uint64_t txn_id); 
+  void deactivate_txn_id(uint64_t thd_id, uint64_t txn_id); 
+  bool activate_txn_id(uint64_t thd_id, uint64_t txn_id); 
 
 
 private:

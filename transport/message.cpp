@@ -745,8 +745,8 @@ void AckMessage::copy_from_txn(TxnManager * txn) {
   //rc = query->rc;
   rc = txn->get_rc();
 #if CC_ALG == MAAT
-  lower = time_table.get_lower(txn->get_txn_id());
-  upper = time_table.get_upper(txn->get_txn_id());
+  lower = time_table.get_lower(txn->get_thd_id(),txn->get_txn_id());
+  upper = time_table.get_upper(txn->get_thd_id(),txn->get_txn_id());
 #endif
 }
 

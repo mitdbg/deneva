@@ -72,9 +72,8 @@ public:
   void dump();
   void restart_txn(uint64_t thd_id, uint64_t txn_id,uint64_t batch_id);
   void delete_all();
-  void delete_txn(uint64_t txn_id, uint64_t batch_id);
   void release_transaction_manager(uint64_t thd_id, uint64_t txn_id, uint64_t batch_id);
-  uint64_t get_min_ts(); 
+  uint64_t get_min_ts(uint64_t thd_id); 
   void snapshot(); 
 
   void spec_next(uint64_t tid);

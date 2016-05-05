@@ -197,13 +197,13 @@ RC TxnManager::commit() {
   DEBUG("Commit %ld\n",get_txn_id());
   release_locks(RCOK);
 #if CC_ALG == MAAT
-  time_table.release(get_txn_id());
+  time_table.release(get_thd_id(),get_txn_id());
 #endif
   commit_stats();
 #if LOGGING
     LogRecord * record = logger.createRecord(get_txn_id(),L_NOTIFY,0,0);
     if(g_repl_cnt > 0) {
-      msg_queue.enqueue(Message::create_message(record,LOG_MSG),g_node_id + g_node_cnt + g_client_node_cnt); 
+      msg_queue.enqueue(get_thd_id(),Message::create_message(record,LOG_MSG),g_node_id + g_node_cnt + g_client_node_cnt); 
     }
   logger.enqueueRecord(record);
   return WAIT;
@@ -224,7 +224,7 @@ RC TxnManager::abort() {
   release_locks(Abort);
 #if CC_ALG == MAAT
   //assert(time_table.get_state(get_txn_id()) == MAAT_ABORTED);
-  time_table.release(get_txn_id());
+  time_table.release(get_thd_id(),get_txn_id());
 #endif
   //commit_stats();
   return Abort;
@@ -271,7 +271,7 @@ void TxnManager::send_prepare_messages() {
     if(GET_NODE_ID(query->partitions_touched[i]) == g_node_id) {
       continue;
     }
-    msg_queue.enqueue(Message::create_message(this,RPREPARE),GET_NODE_ID(query->partitions_touched[i]));
+    msg_queue.enqueue(get_thd_id(),Message::create_message(this,RPREPARE),GET_NODE_ID(query->partitions_touched[i]));
   }
 }
 
@@ -282,7 +282,7 @@ void TxnManager::send_finish_messages() {
     if(GET_NODE_ID(query->partitions_touched[i]) == g_node_id) {
       continue;
     }
-    msg_queue.enqueue(Message::create_message(this,RFIN),GET_NODE_ID(query->partitions_touched[i]));
+    msg_queue.enqueue(get_thd_id(),Message::create_message(this,RFIN),GET_NODE_ID(query->partitions_touched[i]));
   }
 }
 
@@ -525,7 +525,7 @@ RC TxnManager::get_row(row_t * row, access_t type, row_t *& row_rtn) {
     LogRecord * record = logger.createRecord(get_txn_id(),L_UPDATE,row->get_table()->get_table_id(),row->get_primary_key());
     if(g_repl_cnt > 0) {
       // FIXME > 1 replica
-      msg_queue.enqueue(Message::create_message(record,LOG_MSG),g_node_id + g_node_cnt + g_client_node_cnt); 
+      msg_queue.enqueue(get_thd_id(),Message::create_message(record,LOG_MSG),g_node_id + g_node_cnt + g_client_node_cnt); 
     }
     logger.enqueueRecord(record);
 #endif
@@ -693,11 +693,11 @@ RC TxnManager::finish(bool fin) {
     if(fin || (readonly && CC_ALG != OCC)) {
       if(GET_NODE_ID(part_id) != g_node_id) {
         //query->remote_finish(query, part_node_id);    
-        msg_queue.enqueue(Message::create_message(query,RFIN),part_node_id);
+        msg_queue.enqueue(get_thd_id(),Message::create_message(query,RFIN),part_node_id);
       }     } else {
       if(GET_NODE_ID(part_id) != g_node_id) {
         //query->remote_prepare(query, part_node_id);    
-        msg_queue.enqueue(Message::create_message(query,RPREPARE),part_node_id);
+        msg_queue.enqueue(get_thd_id(),Message::create_message(query,RPREPARE),part_node_id);
       } 
     }
   }
@@ -736,7 +736,7 @@ RC
 TxnManager::send_remote_reads(BaseQuery * qry) {
   assert(CC_ALG == CALVIN);
   for(uint64_t i = 0; i < query->active_nodes.size(); i++) {
-      msg_queue.enqueue(Message::create_message(query,RFWD),i);
+      msg_queue.enqueue(get_thd_id(),Message::create_message(query,RFWD),i);
   }
   return RCOK;
 
@@ -746,7 +746,7 @@ RC
 TxnManager::calvin_finish(BaseQuery * qry) {
   assert(CC_ALG == CALVIN);
   for(uint64_t i = 0; i < query->active_nodes.size(); i++) {
-    msg_queue.enqueue(Message::create_message(query,RFIN),i);
+    msg_queue.enqueue(get_thd_id(),Message::create_message(query,RFIN),i);
   }
   return RCOK;
 }
