@@ -29,10 +29,10 @@ public:
   void send_init_done_to_all_nodes(); 
   void progress_stats(); 
   void process(Message * msg); 
-  void check_if_done(RC rc, TxnManager * txn_man); 
-  void release_txn_man(TxnManager * txn_man); 
-  void commit(TxnManager * txn_man); 
-  void abort(TxnManager * txn_man); 
+  void check_if_done(RC rc); 
+  void release_txn_man(); 
+  void commit(); 
+  void abort(); 
   TxnManager * get_transaction_manager(Message * msg); 
   RC process_rfin(Message * msg);
   RC process_rack_rfin(Message * msg);
@@ -57,6 +57,7 @@ private:
 	ts_t 		_curr_ts;
 	ts_t 		get_next_ts();
   uint64_t prog_time;
+  TxnManager * txn_man;
 
 
 };

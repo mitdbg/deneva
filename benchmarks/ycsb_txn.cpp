@@ -102,6 +102,7 @@ RC YCSBTxnManager::run_txn() {
     rc = run_txn_state();
   }
 
+  // FIXME: Can't access txn_stats or anything in txn_man after run_txn_state returns if rc is WAIT or WAIT_REM
   txn_stats.process_time += get_sys_clock() - starttime;
   txn_stats.wait_starttime = get_sys_clock();
 

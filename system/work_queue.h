@@ -93,10 +93,6 @@ public:
   //uint64_t get_rem_wq_cnt() {return remote_op_queue.size();}
   //uint64_t get_new_wq_cnt() {return new_query_queue.size();}
 
-  void deactivate_txn_id(uint64_t thd_id, uint64_t txn_id); 
-  bool activate_txn_id(uint64_t thd_id, uint64_t txn_id); 
-
-
 private:
   std::priority_queue<work_queue_entry*,std::vector<work_queue_entry*>,CompareWQEntry> work_queue;
 /*  std::queue<Message*> work_queue;

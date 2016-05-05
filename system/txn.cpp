@@ -155,6 +155,8 @@ void TxnManager::init(Workload * h_wl) {
   uncommitted_writes = new std::set<uint64_t>();
   uncommitted_writes_y = new std::set<uint64_t>();
   uncommitted_reads = new std::set<uint64_t>();
+  
+  ready = true;
 
   txn_stats.init();
 }
@@ -167,6 +169,8 @@ void TxnManager::reset() {
   rsp_cnt = 0;
   aborted = false;
   return_id = UINT64_MAX;
+
+  ready = true;
 
   // MaaT
   greatest_write_timestamp = 0;

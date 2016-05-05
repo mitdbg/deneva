@@ -37,7 +37,6 @@ std::vector<Message*> Message::create_messages(char * buf) {
   assert(dest_id == g_node_id);
   assert(return_id != g_node_id);
   assert(ISCLIENTN(return_id) || ISSERVERN(return_id) || ISREPLICAN(return_id));
-  assert(txn_cnt <= g_inflight_max*g_node_cnt); 
   while(txn_cnt > 0) {
     Message * msg = create_message(&data[ptr]);
     msg->return_node_id = return_id;

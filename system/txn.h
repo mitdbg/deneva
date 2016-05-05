@@ -196,6 +196,11 @@ public:
 
   TxnStats txn_stats;
 
+  bool set_ready() {return ATOM_CAS(ready,false,true);}
+  bool unset_ready() {return ATOM_CAS(ready,true,false);}
+  bool is_ready() {return ready == true;}
+  volatile bool ready;
+
 protected:	
 
   int rsp_cnt;

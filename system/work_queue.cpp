@@ -123,13 +123,7 @@ Message * QWorkQueue::dequeue(uint64_t thd_id) {
     if(!work_queue.empty()) {
       entry = work_queue.top();
       msg = entry->msg;
-      if(activate_txn_id(thd_id,msg->get_txn_id())) {
-        work_queue.pop();
-      } else {
-        INC_STATS(thd_id,work_queue_conflict_cnt,1);
-        entry = NULL;
-        msg = NULL;
-      }
+      work_queue.pop();
     }
     pthread_mutex_unlock(&mtx);
   }
@@ -156,25 +150,4 @@ Message * QWorkQueue::dequeue(uint64_t thd_id) {
   }
   return msg;
 }
-
-void QWorkQueue::deactivate_txn_id(uint64_t thd_id, uint64_t txn_id) {
-  uint64_t mtx_wait_starttime = get_sys_clock();
-  pthread_mutex_lock(&active_txn_mtx);
-  INC_STATS(thd_id,mtx[15],get_sys_clock() - mtx_wait_starttime);
-  active_txn_ids.erase(txn_id);
-  pthread_mutex_unlock(&active_txn_mtx);
-}
-
-
-bool QWorkQueue::activate_txn_id(uint64_t thd_id, uint64_t txn_id) {
-  if(txn_id == UINT64_MAX)
-    return true;
-  uint64_t mtx_wait_starttime = get_sys_clock();
-  pthread_mutex_lock(&active_txn_mtx);
-  INC_STATS(thd_id,mtx[16],get_sys_clock() - mtx_wait_starttime);
-  bool success = active_txn_ids.insert(txn_id).second;
-  pthread_mutex_unlock(&active_txn_mtx);
-  return success;
-}
-
 
