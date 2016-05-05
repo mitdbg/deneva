@@ -30,13 +30,7 @@
 
 void ClientThread::setup() {
 	if( _thd_id == 0) {
-		uint64_t nnodes = g_node_cnt + g_client_node_cnt + g_node_cnt*g_repl_cnt;
-		for(uint64_t i = 0; i < nnodes; i++) {
-			if(i != g_node_id) {
-        printf("Send INIT_DONE to %ld\n",i);
-        msg_queue.enqueue(get_thd_id(),Message::create_message(INIT_DONE),i);
-			}
-		}
+    send_init_done_to_all_nodes();
   }
 #if LOAD_METHOD == LOAD_RATE
   assert(g_load_per_server > 0);

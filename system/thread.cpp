@@ -22,6 +22,17 @@
 #include "query.h"
 #include "math.h"
 #include "helper.h"
+#include "msg_queue.h"
+#include "message.h"
+
+void Thread::send_init_done_to_all_nodes() {
+		for(uint64_t i = 0; i < g_total_node_cnt; i++) {
+			if(i != g_node_id) {
+        printf("Send INIT_DONE to %ld\n",i);
+        msg_queue.enqueue(get_thd_id(),Message::create_message(INIT_DONE),i);
+			}
+		}
+}
 
 void Thread::init(uint64_t thd_id, uint64_t node_id, Workload * workload) {
 	_thd_id = thd_id;

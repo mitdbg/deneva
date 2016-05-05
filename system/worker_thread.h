@@ -26,7 +26,6 @@ class WorkerThread : public Thread {
 public:
 	RC 			run();
   void setup();
-  void send_init_done_to_all_nodes(); 
   void progress_stats(); 
   void process(Message * msg); 
   void check_if_done(RC rc); 

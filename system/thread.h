@@ -23,6 +23,7 @@ class Workload;
 
 class Thread {
 public:
+  void send_init_done_to_all_nodes(); 
 	uint64_t _thd_id;
 	uint64_t _node_id;
 	Workload * _wl;
