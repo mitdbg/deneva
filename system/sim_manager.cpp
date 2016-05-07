@@ -26,7 +26,7 @@ void SimManager::init() {
   txn_cnt = 0;
   epoch_txn_cnt = 0;
   worker_epoch = 0;
-  sched_epoch = 1;
+  seq_epoch = 1;
   rsp_cnt = g_node_cnt + g_client_node_cnt + g_node_cnt*g_repl_cnt - 1;
   run_starttime = get_sys_clock();
 }
@@ -84,12 +84,12 @@ void SimManager::decr_epoch_txn_cnt() {
   ATOM_SUB(epoch_txn_cnt,1);
 }
 
-uint64_t SimManager::get_sched_epoch() {
-  return sched_epoch;
+uint64_t SimManager::get_seq_epoch() {
+  return seq_epoch;
 }
 
-void SimManager::next_sched_epoch() {
-  ATOM_ADD(sched_epoch,1);
+void SimManager::advance_seq_epoch() {
+  ATOM_ADD(seq_epoch,1);
 }
 
 uint64_t SimManager::get_worker_epoch() {

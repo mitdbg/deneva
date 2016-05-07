@@ -90,7 +90,7 @@ void Sequencer::process_ack(BaseQuery *query, uint64_t thd_id) {
 }
 
 // FIXME: Assumes 1 thread does sequencer work
-void Sequencer::process_txn(BaseQuery * query) {
+void Sequencer::process_txn(Message * msg) {
 
   qlite_ll * en = wl_tail;
 
@@ -197,5 +197,4 @@ void Sequencer::reset_participating_nodes(bool * part_nodes) {
 	for (uint32_t i = 0; i < g_node_cnt; ++i)
 		part_nodes[i] = false;
 }
-
 */

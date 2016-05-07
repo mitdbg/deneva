@@ -155,7 +155,8 @@ def test():
     wl = 'YCSB'
     nnodes = [1,2,4]
     ntif = [100,500,1000,5000,10000]
-    ntif = [10000]
+    ntif = [10000,50000]
+    ntif = [50000]
     nwr = [0.0] # TXN_WRITE_PERC
     nwr2 = [0.0] # TUP_WRITE_PERC
     nalgos=['NO_WAIT','WAIT_DIE','MAAT','OCC']
@@ -950,8 +951,8 @@ configs = {
     "THREAD_CNT": 6,
     "REPLICA_CNT": 0,
     "REPLICA_TYPE": "AP",
-    "REM_THREAD_CNT": 1,
-    "SEND_THREAD_CNT": 2,
+    "REM_THREAD_CNT": 5,
+    "SEND_THREAD_CNT": 5,
     "CLIENT_NODE_CNT" : "NODE_CNT",
     "CLIENT_THREAD_CNT" : 2,
     "CLIENT_REM_THREAD_CNT" : 1,

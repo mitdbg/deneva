@@ -96,6 +96,7 @@ void Stats_thd::clear() {
   work_queue_conflict_cnt=0;
 
   // Worker thread
+  worker_idle_time=0;
   worker_activate_txn_time=0;
   worker_deactivate_txn_time=0;
   worker_process_time=0;
@@ -384,11 +385,13 @@ void Stats_thd::print(FILE * outf) {
   if(worker_process_cnt > 0)
     worker_process_avg_time = worker_process_time / worker_process_cnt;
   fprintf(outf,
+    ",worker_idle_time=%f"
     ",worker_activate_txn_time=%f"
     ",worker_deactivate_txn_time=%f"
     ",worker_process_time=%f"
     ",worker_process_cnt=%ld"
     ",worker_process_avg_time=%f"
+    ,worker_idle_time / BILLION
     ,worker_activate_txn_time / BILLION
     ,worker_deactivate_txn_time / BILLION
     ,worker_process_time / BILLION
@@ -693,6 +696,7 @@ void Stats_thd::combine(Stats_thd * stats) {
   work_queue_conflict_cnt+=stats->work_queue_conflict_cnt;
 
   // Worker thread
+  worker_idle_time+=stats->worker_idle_time;
   worker_activate_txn_time+=stats->worker_activate_txn_time;
   worker_deactivate_txn_time+=stats->worker_deactivate_txn_time;
   worker_process_time+=stats->worker_process_time;

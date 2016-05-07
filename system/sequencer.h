@@ -23,6 +23,7 @@
 
 class Workload;
 class BaseQuery;
+class Message;
 
 typedef struct qlite_entry {
   BaseQuery * qry;
@@ -45,8 +46,8 @@ typedef struct qlite_ll_entry {
 class Sequencer {
  public:
 	void init(Workload * wl);	
-	void process_ack(BaseQuery * query, uint64_t thd_id);
-	void process_txn(BaseQuery * query);
+	void process_ack(Message * msg, uint64_t thd_id);
+	void process_txn(Message * msg);
 	void send_next_batch(uint64_t thd_id);
 
  private:

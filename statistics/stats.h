@@ -106,6 +106,7 @@ public:
   double abort_queue_penalty_extra;
 
   // Worker thread
+  double worker_idle_time;
   double worker_activate_txn_time;
   double worker_deactivate_txn_time;
   double worker_process_time;

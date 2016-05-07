@@ -33,7 +33,9 @@ public:
   void commit(); 
   void abort(); 
   TxnManager * get_transaction_manager(Message * msg); 
+  void calvin_wrapup();
   RC process_rfin(Message * msg);
+  RC process_rfwd(Message * msg);
   RC process_rack_rfin(Message * msg);
   RC process_rack_prep(Message * msg);
   RC process_rqry_rsp(Message * msg);

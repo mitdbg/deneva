@@ -28,7 +28,7 @@ public:
 	bool sim_timeout;
   uint64_t run_starttime;
   uint64_t rsp_cnt;
-  uint64_t sched_epoch;
+  uint64_t seq_epoch;
   uint64_t worker_epoch;
   int64_t epoch_txn_cnt;
   uint64_t txn_cnt;
@@ -44,8 +44,8 @@ public:
   void inc_txn_cnt(); 
   uint64_t get_worker_epoch(); 
   void next_worker_epoch(); 
-  uint64_t get_sched_epoch(); 
-  void next_sched_epoch(); 
+  uint64_t get_seq_epoch(); 
+  void advance_seq_epoch(); 
   void inc_epoch_txn_cnt(); 
   void decr_epoch_txn_cnt(); 
   double seconds_from_start(uint64_t time);

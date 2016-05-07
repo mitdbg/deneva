@@ -21,11 +21,14 @@
 #include "global.h"
 #include "helper.h"
 #include <queue>
+#include "lock_free_queue.h"
 //#include "message.h"
 
 class BaseQuery;
 class Workload;
 class Message;
+
+//class LockfreeQueue;
 
 struct wq_entry {
   BaseQuery * qry;
@@ -84,9 +87,12 @@ public:
   Message * dequeue(uint64_t thd_id);
   void sched_enqueue(uint64_t thd_id, Message * msg); 
   Message * sched_dequeue(uint64_t thd_id); 
+  void lock_enqueue(uint64_t thd_id, Message * msg); 
+  Message * lock_dequeue(uint64_t thd_id); 
 
   uint64_t get_cnt() {return get_wq_cnt() + get_rem_wq_cnt() + get_new_wq_cnt();}
-  uint64_t get_wq_cnt() {return work_queue.size();}
+  uint64_t get_wq_cnt() {return 0;}
+  //uint64_t get_wq_cnt() {return work_queue.size();}
   uint64_t get_sched_wq_cnt() {return scheduler_queue.size();}
   uint64_t get_rem_wq_cnt() {return 0;} 
   uint64_t get_new_wq_cnt() {return 0;}
@@ -94,7 +100,8 @@ public:
   //uint64_t get_new_wq_cnt() {return new_query_queue.size();}
 
 private:
-  std::priority_queue<work_queue_entry*,std::vector<work_queue_entry*>,CompareWQEntry> work_queue;
+  //std::priority_queue<work_queue_entry*,std::vector<work_queue_entry*>,CompareWQEntry> work_queue;
+  LockfreeQueue work_queue;
 /*  std::queue<Message*> work_queue;
   std::queue<Message*> new_query_queue;
   std::queue<Message*> remote_op_queue;

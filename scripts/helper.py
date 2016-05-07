@@ -160,6 +160,7 @@ stat_map = OrderedDict([
   ('abort_queue_penalty_extra_avg', []),
 
   # Worker thread
+  ('worker_idle_time', []),
   ('worker_activate_txn_time', []),
   ('worker_deactivate_txn_time', []),
   ('worker_process_time', []),

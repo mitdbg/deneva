@@ -54,7 +54,7 @@ Message * QWorkQueue::sched_dequeue(uint64_t thd_id) {
   pthread_mutex_lock(&sched_mtx);
   INC_STATS(thd_id,mtx[12],get_sys_clock() - mtx_time_start);
   work_queue_entry * entry = scheduler_queue.top();
-  if(!(!entry || simulation->get_worker_epoch() > simulation->get_sched_epoch() || (new_epoch && simulation->epoch_txn_cnt > 0))) {
+  if(!(!entry || simulation->get_worker_epoch() > simulation->get_seq_epoch() || (new_epoch && simulation->epoch_txn_cnt > 0))) {
     Message * msg = entry->msg;
   DEBUG_M("QWorkQueue::sched_enqueue work_queue_entry free\n");
     mem_allocator.free(entry,sizeof(work_queue_entry));
@@ -99,12 +99,17 @@ void QWorkQueue::enqueue(uint64_t thd_id, Message * msg,bool busy) {
   assert(ISSERVER || ISREPLICA);
 
   // FIXME: May need alternative queue for some calvin threads
+  /*
   uint64_t mtx_wait_starttime = get_sys_clock();
   pthread_mutex_lock(&mtx);
   INC_STATS(thd_id,work_queue_mtx_wait_time,get_sys_clock() - mtx_wait_starttime);
   INC_STATS(thd_id,mtx[13],get_sys_clock() - mtx_wait_starttime);
   //DEBUG("%ld ENQUEUE (%ld,%ld); %ld; %d,0x%lx\n",thd_id,entry->txn_id,entry->batch_id,msg->return_node_id,entry->rtype,(uint64_t)msg);
   work_queue.push(entry);
+  */
+  uint64_t mtx_wait_starttime = get_sys_clock();
+  while(!work_queue.enqueue((uintptr_t)entry)) {}
+  INC_STATS(thd_id,mtx[13],get_sys_clock() - mtx_wait_starttime);
   pthread_mutex_unlock(&mtx);
 
   INC_STATS(thd_id,work_queue_enqueue_time,get_sys_clock() - starttime);
@@ -115,6 +120,7 @@ Message * QWorkQueue::dequeue(uint64_t thd_id) {
   assert(ISSERVER || ISREPLICA);
   Message * msg = NULL;
   work_queue_entry * entry = NULL;
+  /*
   if(!work_queue.empty()) {
     uint64_t mtx_wait_starttime = get_sys_clock();
     pthread_mutex_lock(&mtx);
@@ -127,9 +133,18 @@ Message * QWorkQueue::dequeue(uint64_t thd_id) {
     }
     pthread_mutex_unlock(&mtx);
   }
+  */
+  uint64_t mtx_wait_starttime = get_sys_clock();
+  uintptr_t value;
+  bool valid = work_queue.dequeue(value);
+  INC_STATS(thd_id,mtx[14],get_sys_clock() - mtx_wait_starttime);
+  entry = (work_queue_entry *) value;
+  
 
 
-  if(entry) {
+
+  if(valid) {
+    msg = entry->msg;
     assert(msg);
     uint64_t queue_time = get_sys_clock() - entry->starttime;
     INC_STATS(thd_id,work_queue_wait_time,queue_time);

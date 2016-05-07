@@ -7,8 +7,8 @@
 /***********************************************/
 #define NODE_CNT 16
 #define THREAD_CNT 6
-#define REM_THREAD_CNT 1
-#define SEND_THREAD_CNT 2
+#define REM_THREAD_CNT 5
+#define SEND_THREAD_CNT 5
 #define CORE_CNT 8
 // PART_CNT should be at least NODE_CNT
 #define PART_CNT NODE_CNT
