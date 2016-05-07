@@ -199,9 +199,6 @@ void parser(int argc, char * argv[]) {
 			assert(false);
     }
 	}
-#if !SET_AFFINITY
-  g_client_send_thread_cnt = 1;
-#endif
   g_total_thread_cnt = g_thread_cnt + g_rem_thread_cnt + g_send_thread_cnt + g_abort_thread_cnt;
   g_total_client_thread_cnt = g_client_thread_cnt + g_client_rem_thread_cnt + g_client_send_thread_cnt;
   g_total_node_cnt = g_node_cnt + g_client_node_cnt + g_repl_cnt*g_node_cnt;
@@ -247,6 +244,8 @@ void parser(int argc, char * argv[]) {
       printf("g_access_perc %f\n",g_access_perc);
       printf("g_strict_ppt %d\n",g_strict_ppt);
       printf("g_network_delay %d\n",g_network_delay);
+      printf("g_total_thread_cnt %d\n",g_total_thread_cnt);
+      printf("g_total_client_thread_cnt %d\n",g_total_client_thread_cnt);
 
     // Initialize client-specific globals
     if (g_node_id >= g_node_cnt)

@@ -44,6 +44,7 @@ void ClientThread::setup() {
 RC ClientThread::run() {
 
   tsetup();
+  printf("Running ClientThread %ld\n",_thd_id);
   BaseQuery * m_query;
 	uint64_t iters = 0;
 	uint32_t num_txns_sent = 0;
@@ -55,10 +56,9 @@ RC ClientThread::run() {
 	uint64_t prog_time = run_starttime;
 
   while(!simulation->is_done()) {
+    heartbeat();
 		//uint32_t next_node = iters++ % g_node_cnt;
-		if(get_sys_clock() - run_starttime >= g_done_timer) {
-      break;
-    }
+    progress_stats();
     int32_t inf_cnt;
 		uint32_t next_node = (((iters++) * g_client_thread_cnt) + _thd_id )% g_servers_per_client;
 		uint32_t next_node_id = next_node + g_server_start_node;
@@ -89,18 +89,12 @@ RC ClientThread::run() {
 #endif
     assert(m_query);
 
+    // FIXME: Atomic ops could cause bottleneck
+    simulation->inc_inflight_cnt();
+
 		DEBUG("Client: thread %lu sending query to node: %u, %d, %f\n",
 				_thd_id, next_node_id,inf_cnt,simulation->seconds_from_start(get_sys_clock()));
 
-    /*
-#if DEBUG_DISTR
-#if WORKLOAD == TPCC
-    ((TPCCQuery*)m_query)->print();
-#elif WORKLOAD == YCSB
-    ((YCSBQuery*)m_query)->print();
-#endif
-#endif
-*/
     Message * msg = Message::create_message((BaseQuery*)m_query,CL_QRY);
     ((ClientQueryMessage*)msg)->client_startts = get_sys_clock();
     msg_queue.enqueue(get_thd_id(),msg,next_node_id);
@@ -108,15 +102,6 @@ RC ClientThread::run() {
 		txns_sent[next_node]++;
     INC_STATS(get_thd_id(),txn_sent_cnt,1);
 
-		if(get_sys_clock() - prog_time >= g_prog_timer) {
-			prog_time = get_sys_clock();
-			SET_STATS(get_thd_id(), total_runtime, prog_time - run_starttime); 
-      if(get_thd_id() == 0)
-        stats.print_client(true);
-    }
-		if(get_sys_clock() - run_starttime >= g_done_timer) {
-      break;
-    }
 	}
 
 

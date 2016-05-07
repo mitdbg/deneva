@@ -218,14 +218,18 @@ std::vector<Message*> Transport::recv_msg(uint64_t thd_id) {
   uint64_t starttime = get_sys_clock();
   std::vector<Message*> msgs;
   uint64_t ctr = starttime % recv_sockets.size();
+  uint64_t start_ctr = ctr;
   
 	
   while(bytes <= 0 && (!simulation->is_setup_done() || (simulation->is_setup_done() && !simulation->is_done()))) {
     Socket * socket = recv_sockets[ctr++];
 		bytes = socket->sock.recv(&buf, NN_MSG, NN_DONTWAIT);
 
+    // FIXME: Not simple enough?
     if(ctr == recv_sockets.size())
       ctr = 0;
+    if(ctr == start_ctr)
+      break;
 
 		if(bytes <= 0 && errno != 11) {
 		  printf("Recv Error %d %s\n",errno,strerror(errno));

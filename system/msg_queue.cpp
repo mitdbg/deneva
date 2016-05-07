@@ -19,6 +19,7 @@
 #include "query.h"
 #include "pool.h"
 #include "message.h"
+#include <boost/lockfree/queue.hpp>
 
 void MessageQueue::init() {
   cnt = 0;
@@ -49,8 +50,10 @@ void MessageQueue::enqueue(uint64_t thd_id, Message * msg,uint64_t dest) {
   pthread_mutex_unlock(&mtx);
   */
   uint64_t mtx_time_start = get_sys_clock();
-  while(!m_queue.enqueue((uintptr_t)entry)) {}
+  //while(!m_queue.enqueue((uintptr_t)entry)) {}
+  while(!m_queue.push(entry)) {}
   INC_STATS(thd_id,mtx[3],get_sys_clock() - mtx_time_start);
+  INC_STATS(thd_id,msg_queue_enq_cnt,1);
 
 
 }
@@ -70,10 +73,11 @@ uint64_t MessageQueue::dequeue(uint64_t thd_id, Message *& msg) {
   pthread_mutex_unlock(&mtx);
   */
   uint64_t mtx_time_start = get_sys_clock();
-  uintptr_t value;
-  bool valid = m_queue.dequeue(value);
+  //uintptr_t value;
+  //bool valid = m_queue.dequeue(value);
+  //entry = (msg_entry *) value;
+  bool valid = m_queue.pop(entry);
   INC_STATS(thd_id,mtx[4],get_sys_clock() - mtx_time_start);
-  entry = (msg_entry *) value;
   uint64_t curr_time = get_sys_clock();
   if(valid) {
     msg = entry->msg;

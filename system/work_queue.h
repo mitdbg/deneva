@@ -22,6 +22,7 @@
 #include "helper.h"
 #include <queue>
 #include "lock_free_queue.h"
+#include <boost/lockfree/queue.hpp>
 //#include "message.h"
 
 class BaseQuery;
@@ -45,6 +46,7 @@ struct work_queue_entry {
   uint64_t txn_id;
   RemReqType rtype;
   uint64_t starttime;
+
 };
 
 
@@ -101,7 +103,10 @@ public:
 
 private:
   //std::priority_queue<work_queue_entry*,std::vector<work_queue_entry*>,CompareWQEntry> work_queue;
-  LockfreeQueue work_queue;
+  //LockfreeQueue work_queue;
+
+// This is close to max capacity for boost
+  boost::lockfree::queue<work_queue_entry*, boost::lockfree::capacity<65526> > work_queue;
 /*  std::queue<Message*> work_queue;
   std::queue<Message*> new_query_queue;
   std::queue<Message*> remote_op_queue;

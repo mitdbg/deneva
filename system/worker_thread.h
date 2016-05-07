@@ -26,7 +26,6 @@ class WorkerThread : public Thread {
 public:
 	RC 			run();
   void setup();
-  void progress_stats(); 
   void process(Message * msg); 
   void check_if_done(RC rc); 
   void release_txn_man(); 
@@ -57,7 +56,6 @@ private:
   uint64_t _thd_txn_id;
 	ts_t 		_curr_ts;
 	ts_t 		get_next_ts();
-  uint64_t prog_time;
   TxnManager * txn_man;
 
 

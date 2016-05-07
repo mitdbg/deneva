@@ -43,19 +43,6 @@ void WorkerThread::setup() {
 
 }
 
-void WorkerThread::progress_stats() {
-		if(get_thd_id() == 0) {
-      uint64_t now_time = get_sys_clock();
-      if (now_time - prog_time >= g_prog_timer) {
-        prog_time = now_time;
-        SET_STATS(get_thd_id(), total_runtime, prog_time - simulation->run_starttime); 
-
-        stats.print(true);
-      }
-		}
-
-}
-
 void WorkerThread::process(Message * msg) {
   RC rc __attribute__ ((unused));
 
@@ -164,7 +151,9 @@ void WorkerThread::commit() {
 
   // Send result back to client
   msg_queue.enqueue(get_thd_id(),Message::create_message(txn_man,CL_RSP),txn_man->client_id);
+  // FIXME: Atomic operations may contribute bottleneck when multi-threaded
   simulation->inc_txn_cnt();
+  simulation->dec_inflight_cnt();
   // remove txn from pool
   release_txn_man();
   // Do not use txn_man after this
@@ -190,11 +179,13 @@ TxnManager * WorkerThread::get_transaction_manager(Message * msg) {
 
 RC WorkerThread::run() {
   tsetup();
+  printf("Running WorkerThread %ld\n",_thd_id);
 
   uint64_t ready_starttime;
   uint64_t idle_starttime = 0;
 
 	while(!simulation->is_done()) {
+    heartbeat();
 
     progress_stats();
 
@@ -218,6 +209,7 @@ RC WorkerThread::run() {
       if(!ready) {
         // Return to work queue, end processing
         work_queue.enqueue(get_thd_id(),msg,true);
+        continue;
       }
       txn_man->register_thread(this);
     }
@@ -448,6 +440,7 @@ RC WorkerThread::process_rtxn(Message * msg) {
           txn_man->txn_stats.starttime = get_sys_clock();
           msg->copy_to_txn(txn_man);
           DEBUG("START %ld %f %lu\n",txn_man->get_txn_id(),simulation->seconds_from_start(get_sys_clock()),txn_man->txn_stats.starttime);
+          simulation->inc_inflight_cnt();
 
 				} else {
           DEBUG("RESTART %ld %f %lu\n",txn_man->get_txn_id(),simulation->seconds_from_start(get_sys_clock()),txn_man->txn_stats.starttime);

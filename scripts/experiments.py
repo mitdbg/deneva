@@ -154,9 +154,10 @@ def malviya_plot(summary,summary_client):
 def test():
     wl = 'YCSB'
     nnodes = [1,2,4]
+#    nnodes = [1,2]
     ntif = [100,500,1000,5000,10000]
     ntif = [10000,50000]
-    ntif = [50000]
+    ntif = [1000]
     nwr = [0.0] # TXN_WRITE_PERC
     nwr2 = [0.0] # TUP_WRITE_PERC
     nalgos=['NO_WAIT','WAIT_DIE','MAAT','OCC']
@@ -969,12 +970,12 @@ configs = {
     "NETWORK_DELAY": '0UL',
     "DONE_TIMER": "1 * 60 * BILLION // ~1 minutes",
 #    "DONE_TIMER": "1 * 10 * BILLION // ~1 minutes",
-    "BATCH_TIMER" : "10000000",
+    "BATCH_TIMER" : "0",#"10000000",
     "PROG_TIMER" : "1 * BILLION // in s",
     "NETWORK_TEST" : "false",
     "ABORT_PENALTY": "10 * 1000000UL   // in ns.",
     "ABORT_PENALTY_MAX": "5 * 100 * 1000000UL   // in ns.",
-    "MSG_TIME_LIMIT": "10 * 1000000UL",
+    "MSG_TIME_LIMIT": "0",#"10 * 1000000UL",
     "MSG_SIZE_MAX": 4096,
 #    "PRT_LAT_DISTR": "true",
     "TXN_WRITE_PERC":0.0,
@@ -994,6 +995,7 @@ configs = {
     "PERC_PAYMENT":0.0,
     "DEBUG_DISTR":"false",
 #    "DEBUG_DISTR":"true",
+#    "DEBUG_ALLOC":"true",
     "DEBUG_ALLOC":"false",
     "DEBUG_RACE":"false",
     "MODE":"NORMAL_MODE",

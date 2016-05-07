@@ -86,6 +86,7 @@ void Stats_thd::clear() {
   // Work queue
   work_queue_wait_time=0;
   work_queue_cnt=0;
+  work_queue_enq_cnt=0;
   work_queue_mtx_wait_time=0;
   work_queue_new_cnt=0;
   work_queue_new_wait_time=0;
@@ -109,6 +110,7 @@ void Stats_thd::clear() {
   // IO
   msg_queue_delay_time=0;
   msg_queue_cnt=0;
+  msg_queue_enq_cnt=0;
   msg_send_time=0;
   msg_recv_time=0;
   msg_batch_cnt=0;
@@ -118,6 +120,7 @@ void Stats_thd::clear() {
   msg_recv_cnt=0;
   msg_unpack_time=0;
   mbuf_send_intv_time=0;
+  msg_copy_output_time=0;
 
   // Concurrency control, general
   cc_conflict_cnt=0;
@@ -199,6 +202,72 @@ void Stats_thd::print_client(FILE * outf) {
       ,txn_run_avg_time / BILLION
       ,cl_send_intv / BILLION
   );
+  // IO
+  double mbuf_send_intv_time_avg = 0;
+  double msg_unpack_time_avg = 0;
+  double msg_send_time_avg = 0;
+  double msg_recv_time_avg = 0;
+  double msg_batch_size_msgs_avg = 0;
+  double msg_batch_size_bytes_avg = 0;
+  double msg_queue_delay_time_avg = 0;
+  if(msg_queue_cnt > 0)
+    msg_queue_delay_time_avg = msg_queue_delay_time / msg_queue_cnt;
+  if(msg_batch_cnt > 0) {
+    mbuf_send_intv_time_avg = mbuf_send_intv_time / msg_batch_cnt;
+    msg_batch_size_msgs_avg = msg_batch_size_msgs / msg_batch_cnt;
+    msg_batch_size_bytes_avg = msg_batch_size_bytes / msg_batch_cnt;
+  }
+  if(msg_recv_cnt > 0) {
+    msg_recv_time_avg = msg_recv_time / msg_recv_cnt;
+    msg_unpack_time_avg = msg_unpack_time / msg_recv_cnt;
+  }
+  if(msg_send_cnt > 0) {
+    msg_send_time_avg = msg_send_time / msg_send_cnt;
+  }
+  fprintf(outf,
+  ",msg_queue_delay_time=%f"
+  ",msg_queue_cnt=%ld"
+  ",msg_queue_enq_cnt=%ld"
+  ",msg_queue_delay_time_avg=%f"
+  ",msg_send_time=%f"
+  ",msg_send_time_avg=%f"
+  ",msg_recv_time=%f"
+  ",msg_recv_time_avg=%f"
+  ",msg_batch_cnt=%ld"
+  ",msg_batch_size_msgs=%ld"
+  ",msg_batch_size_msgs_avg=%f"
+  ",msg_batch_size_bytes=%ld"
+  ",msg_batch_size_bytes_avg=%f"
+  ",msg_send_cnt=%ld"
+  ",msg_recv_cnt=%ld"
+  ",msg_unpack_time=%f"
+  ",msg_unpack_time_avg=%f"
+  ",mbuf_send_intv_time=%f"
+  ",mbuf_send_intv_time_avg=%f"
+  ",msg_copy_output_time=%f"
+  ,msg_queue_delay_time / BILLION
+  ,msg_queue_cnt
+  ,msg_queue_enq_cnt
+  ,msg_queue_delay_time_avg / BILLION
+  ,msg_send_time / BILLION
+  ,msg_send_time_avg / BILLION
+  ,msg_recv_time / BILLION
+  ,msg_recv_time_avg / BILLION
+  ,msg_batch_cnt
+  ,msg_batch_size_msgs
+  ,msg_batch_size_msgs_avg
+  ,msg_batch_size_bytes
+  ,msg_batch_size_bytes_avg
+  ,msg_send_cnt
+  ,msg_recv_cnt
+  ,msg_unpack_time / BILLION
+  ,msg_unpack_time_avg / BILLION
+  ,mbuf_send_intv_time / BILLION
+  ,mbuf_send_intv_time_avg / BILLION
+  ,msg_copy_output_time / BILLION
+  );
+
+
 }
 
 void Stats_thd::print(FILE * outf) {
@@ -351,6 +420,7 @@ void Stats_thd::print(FILE * outf) {
   fprintf(outf,
   ",work_queue_wait_time=%f"
   ",work_queue_cnt=%ld"
+  ",work_queue_enq_cnt=%ld"
   ",work_queue_wait_avg_time=%f"
   ",work_queue_mtx_wait_time=%f"
   ",work_queue_mtx_wait_avg=%f"
@@ -365,6 +435,7 @@ void Stats_thd::print(FILE * outf) {
   ",work_queue_conflict_cnt=%ld"
   ,work_queue_wait_time / BILLION
   ,work_queue_cnt
+  ,work_queue_enq_cnt
   ,work_queue_wait_avg_time / BILLION
   ,work_queue_mtx_wait_time / BILLION
   ,work_queue_mtx_wait_avg / BILLION
@@ -434,6 +505,7 @@ void Stats_thd::print(FILE * outf) {
   fprintf(outf,
   ",msg_queue_delay_time=%f"
   ",msg_queue_cnt=%ld"
+  ",msg_queue_enq_cnt=%ld"
   ",msg_queue_delay_time_avg=%f"
   ",msg_send_time=%f"
   ",msg_send_time_avg=%f"
@@ -450,8 +522,10 @@ void Stats_thd::print(FILE * outf) {
   ",msg_unpack_time_avg=%f"
   ",mbuf_send_intv_time=%f"
   ",mbuf_send_intv_time_avg=%f"
+  ",msg_copy_output_time=%f"
   ,msg_queue_delay_time / BILLION
   ,msg_queue_cnt
+  ,msg_queue_enq_cnt
   ,msg_queue_delay_time_avg / BILLION
   ,msg_send_time / BILLION
   ,msg_send_time_avg / BILLION
@@ -468,6 +542,7 @@ void Stats_thd::print(FILE * outf) {
   ,msg_unpack_time_avg / BILLION
   ,mbuf_send_intv_time / BILLION
   ,mbuf_send_intv_time_avg / BILLION
+  ,msg_copy_output_time / BILLION
   );
 
   // Concurrency control, general
@@ -686,6 +761,7 @@ void Stats_thd::combine(Stats_thd * stats) {
   // Work queue
   work_queue_wait_time+=stats->work_queue_wait_time;
   work_queue_cnt+=stats->work_queue_cnt;
+  work_queue_enq_cnt+=stats->work_queue_enq_cnt;
   work_queue_mtx_wait_time+=stats->work_queue_mtx_wait_time;
   work_queue_new_cnt+=stats->work_queue_new_cnt;
   work_queue_new_wait_time+=stats->work_queue_new_wait_time;
@@ -709,6 +785,7 @@ void Stats_thd::combine(Stats_thd * stats) {
   // IO
   msg_queue_delay_time+=stats->msg_queue_delay_time;
   msg_queue_cnt+=stats->msg_queue_cnt;
+  msg_queue_enq_cnt+=stats->msg_queue_enq_cnt;
   msg_send_time+=stats->msg_send_time;
   msg_recv_time+=stats->msg_recv_time;
   msg_batch_cnt+=stats->msg_batch_cnt;
@@ -718,6 +795,7 @@ void Stats_thd::combine(Stats_thd * stats) {
   msg_recv_cnt+=stats->msg_recv_cnt;
   msg_unpack_time+=stats->msg_unpack_time;
   mbuf_send_intv_time+=stats->mbuf_send_intv_time;
+  msg_copy_output_time+=stats->msg_copy_output_time;
 
   // Concurrency control, general
   cc_conflict_cnt+=stats->cc_conflict_cnt;
@@ -781,13 +859,15 @@ void Stats_thd::combine(Stats_thd * stats) {
 }
 
 
-void Stats::init() {
+void Stats::init(uint64_t thread_cnt) {
 	if (!STATS_ENABLE) 
 		return;
-	_stats = new Stats_thd * [g_total_thread_cnt];
+
+  thd_cnt = thread_cnt;
+	_stats = new Stats_thd * [thread_cnt];
 	totals = new Stats_thd;
 
-  for(uint64_t i = 0; i < g_total_thread_cnt; i++) {
+  for(uint64_t i = 0; i < thread_cnt; i++) {
     _stats[i] = (Stats_thd *) 
       mem_allocator.alloc(sizeof(Stats_thd));
     _stats[i]->init(i);
@@ -799,11 +879,6 @@ void Stats::init() {
 
 }
 
-void Stats::init(uint64_t thread_id) {
-	if (!STATS_ENABLE) 
-		return;
-}
-
 void Stats::clear(uint64_t tid) {
 }
 
@@ -813,7 +888,7 @@ void Stats::print_client(bool prog) {
     return;
 
   totals->clear();
-  for(uint64_t i = 0; i < g_client_thread_cnt; i++)
+  for(uint64_t i = 0; i < thd_cnt; i++)
     totals->combine(_stats[i]);
 
 
@@ -903,7 +978,7 @@ void Stats::print(bool prog) {
     return;
 	
   totals->clear();
-  for(uint64_t i = 0; i < g_total_thread_cnt; i++) 
+  for(uint64_t i = 0; i < thd_cnt; i++) 
     totals->combine(_stats[i]);
 	FILE * outf;
 	if (output_file != NULL) 

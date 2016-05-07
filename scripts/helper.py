@@ -136,6 +136,7 @@ stat_map = OrderedDict([
   # Work queue
   ('work_queue_wait_time', []),
   ('work_queue_cnt', []),
+  ('work_queue_enq_cnt', []),
   ('work_queue_wait_avg_time', []),
   ('work_queue_mtx_wait_time', []),
   ('work_queue_mtx_wait_avg', []),
@@ -172,6 +173,7 @@ stat_map = OrderedDict([
   # IO
   ('msg_queue_delay_time', []),
   ('msg_queue_cnt', []),
+  ('msg_queue_enq_cnt', []),
   ('msg_queue_delay_time_avg', []),
   ('msg_send_time', []),
   ('msg_send_time_avg', []),
@@ -951,7 +953,7 @@ def write_summary_file(fname,stats,x_vals,v_vals):
             f.write(str(x) + "," + str(v) + "\n")
             for p in stat_map.keys():
                 s = p + ', '
-                for prog in range(7):
+                for prog in range(60):
                     k1 = (x,v)
                     k2 = (prog,p)
                     try:

@@ -18,6 +18,7 @@
 #include "mem_alloc.h"
 #include "query.h"
 #include "message.h"
+#include <boost/lockfree/queue.hpp>
 
 void QWorkQueue::init() {
   pthread_mutex_init(&mtx,NULL);
@@ -106,13 +107,16 @@ void QWorkQueue::enqueue(uint64_t thd_id, Message * msg,bool busy) {
   INC_STATS(thd_id,mtx[13],get_sys_clock() - mtx_wait_starttime);
   //DEBUG("%ld ENQUEUE (%ld,%ld); %ld; %d,0x%lx\n",thd_id,entry->txn_id,entry->batch_id,msg->return_node_id,entry->rtype,(uint64_t)msg);
   work_queue.push(entry);
-  */
-  uint64_t mtx_wait_starttime = get_sys_clock();
-  while(!work_queue.enqueue((uintptr_t)entry)) {}
-  INC_STATS(thd_id,mtx[13],get_sys_clock() - mtx_wait_starttime);
   pthread_mutex_unlock(&mtx);
+  */
+  //printf("%ld WQenqueue %ld\n",thd_id,entry->txn_id);
+  uint64_t mtx_wait_starttime = get_sys_clock();
+  //while(!work_queue.enqueue((uintptr_t)entry)) {}
+  while(!work_queue.push(entry)) {}
+  INC_STATS(thd_id,mtx[13],get_sys_clock() - mtx_wait_starttime);
 
   INC_STATS(thd_id,work_queue_enqueue_time,get_sys_clock() - starttime);
+  INC_STATS(thd_id,work_queue_enq_cnt,1);
 }
 
 Message * QWorkQueue::dequeue(uint64_t thd_id) {
@@ -135,10 +139,11 @@ Message * QWorkQueue::dequeue(uint64_t thd_id) {
   }
   */
   uint64_t mtx_wait_starttime = get_sys_clock();
-  uintptr_t value;
-  bool valid = work_queue.dequeue(value);
+  //uintptr_t value;
+  //bool valid = work_queue.dequeue(value);
+  //entry = (work_queue_entry *) value;
+  bool valid = work_queue.pop(entry);
   INC_STATS(thd_id,mtx[14],get_sys_clock() - mtx_wait_starttime);
-  entry = (work_queue_entry *) value;
   
 
 
@@ -146,6 +151,7 @@ Message * QWorkQueue::dequeue(uint64_t thd_id) {
   if(valid) {
     msg = entry->msg;
     assert(msg);
+    //printf("%ld WQdequeue %ld\n",thd_id,entry->txn_id);
     uint64_t queue_time = get_sys_clock() - entry->starttime;
     INC_STATS(thd_id,work_queue_wait_time,queue_time);
     INC_STATS(thd_id,work_queue_cnt,1);

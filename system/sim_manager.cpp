@@ -24,11 +24,16 @@ void SimManager::init() {
 	sim_init_done = false;
 	sim_timeout = false;
   txn_cnt = 0;
+  inflight_cnt = 0;
   epoch_txn_cnt = 0;
   worker_epoch = 0;
   seq_epoch = 1;
   rsp_cnt = g_node_cnt + g_client_node_cnt + g_node_cnt*g_repl_cnt - 1;
+#if TIME_ENABLE
   run_starttime = get_sys_clock();
+#else
+  run_starttime = get_wall_clock();
+#endif
 }
 
 
@@ -40,7 +45,11 @@ void SimManager::set_starttime(uint64_t starttime) {
 }
 
 bool SimManager::timeout() {
+#if TIME_ENABLE
   return (get_sys_clock() - run_starttime) >= g_done_timer;
+#else
+  return (get_wall_clock() - run_starttime) >= g_done_timer;
+#endif
 }
 
 bool SimManager::is_done() {
@@ -74,6 +83,14 @@ void SimManager::process_setup_msg() {
 
 void SimManager::inc_txn_cnt() {
   ATOM_ADD(txn_cnt,1);
+}
+
+void SimManager::inc_inflight_cnt() {
+  ATOM_ADD(inflight_cnt,1);
+}
+
+void SimManager::dec_inflight_cnt() {
+  ATOM_SUB(inflight_cnt,1);
 }
 
 void SimManager::inc_epoch_txn_cnt() {

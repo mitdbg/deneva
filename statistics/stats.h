@@ -88,6 +88,7 @@ public:
   // Work queue
   double work_queue_wait_time;
   uint64_t work_queue_cnt;
+  uint64_t work_queue_enq_cnt;
   double work_queue_mtx_wait_time;
   uint64_t work_queue_new_cnt;
   double work_queue_new_wait_time;
@@ -117,6 +118,7 @@ public:
   // IO
   double msg_queue_delay_time;
   uint64_t msg_queue_cnt;
+  uint64_t msg_queue_enq_cnt;
   double msg_send_time;
   double msg_recv_time;
   uint64_t msg_batch_cnt;
@@ -126,6 +128,7 @@ public:
   uint64_t msg_recv_cnt;
   double msg_unpack_time;
   double mbuf_send_intv_time;
+  double msg_copy_output_time;
 
   // Concurrency control, general
   uint64_t cc_conflict_cnt;
@@ -194,8 +197,7 @@ public:
 	Stats_thd ** _stats;
 	Stats_thd * totals;
 	
-	void init();
-	void init(uint64_t thread_id);
+	void init(uint64_t thread_cnt);
 	void clear(uint64_t tid);
 	//void add_lat(uint64_t thd_id, uint64_t latency);
 	void commit(uint64_t thd_id);
@@ -215,6 +217,8 @@ public:
   void print_prof(FILE * outf);
 
   clock_t lastCPU, lastSysCPU, lastUserCPU;
+private:
+  uint64_t thd_cnt;
 };
 
 #endif

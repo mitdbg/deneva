@@ -21,6 +21,7 @@
 #include "helper.h"
 #include "concurrentqueue.h"
 #include "lock_free_queue.h"
+#include <boost/lockfree/queue.hpp>
 
 class BaseQuery;
 class Message;
@@ -41,7 +42,9 @@ public:
   void enqueue(uint64_t thd_id, Message * msg, uint64_t dest);
   uint64_t dequeue(uint64_t thd_id, Message *& msg);
 private:
-  LockfreeQueue m_queue;
+ //LockfreeQueue m_queue;
+// This is close to max capacity for boost
+  boost::lockfree::queue<msg_entry*, boost::lockfree::capacity<65526> > m_queue;
   pthread_mutex_t mtx;
   msg_entry_t head;
   msg_entry_t tail;

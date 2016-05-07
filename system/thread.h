@@ -24,6 +24,8 @@ class Workload;
 class Thread {
 public:
   void send_init_done_to_all_nodes(); 
+  void progress_stats(); 
+  void heartbeat();
 	uint64_t _thd_id;
 	uint64_t _node_id;
 	Workload * _wl;
@@ -41,6 +43,9 @@ public:
   virtual RC run() = 0;
   virtual void setup() = 0;
 
+private:
+  uint64_t prog_time;
+  uint64_t heartbeat_time;
 };
 
 #endif

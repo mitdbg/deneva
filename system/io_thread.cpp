@@ -54,6 +54,7 @@ void InputThread::setup() {
 
 RC InputThread::run() {
   tsetup();
+  printf("Running InputThread %ld\n",_thd_id);
 
   if(ISCLIENT) {
     client_recv_loop();
@@ -76,6 +77,7 @@ RC InputThread::client_recv_loop() {
   std::vector<Message*> msgs;
 
 	while (!simulation->is_done()) {
+    heartbeat();
 		msgs = tport_man.recv_msg(get_thd_id());
     //while((m_query = work_queue.get_next_query(get_thd_id())) != NULL) {
     //Message * msg = work_queue.dequeue();
@@ -90,6 +92,9 @@ RC InputThread::client_recv_loop() {
       INC_STATS(get_thd_id(),txn_run_time, timespan);
       //INC_STATS_ARR(get_thd_id(),all_lat,timespan);
       inf = client_man.dec_inflight(return_node_offset);
+      // FIXME: Atomic ops could cause bottleneck
+      simulation->dec_inflight_cnt();
+      simulation->inc_txn_cnt();
       DEBUG("Recv %ld from %ld, %ld -- %f\n",((ClientResponseMessage*)msg)->txn_id,msg->return_node_id,inf,float(timespan)/BILLION);
       assert(inf >=0);
       // TODO: delete message
@@ -112,6 +117,7 @@ RC InputThread::server_recv_loop() {
 
   std::vector<Message*> msgs;
 	while (!simulation->is_done()) {
+    heartbeat();
 		msgs = tport_man.recv_msg(get_thd_id());
     while(!msgs.empty()) {
       Message * msg = msgs.front();
@@ -137,8 +143,10 @@ void OutputThread::setup() {
 RC OutputThread::run() {
 
   tsetup();
+  printf("Running OutputThread %ld\n",_thd_id);
 
 	while (!simulation->is_done()) {
+    heartbeat();
     messager->run();
   }
 

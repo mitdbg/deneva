@@ -53,7 +53,8 @@ struct mbuf {
     return (ptr + s) <= g_msg_size;
   }
   bool ready() {
-    if(starttime == 0)
+    //if(starttime == 0)
+    if(cnt == 0)
       return false;
     if( (get_sys_clock() - starttime) >= g_msg_time_limit )
       return true;

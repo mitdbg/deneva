@@ -86,7 +86,7 @@
 #define PRIORITY_WORK_QUEUE false
 #define PRIORITY PRIORITY_ACTIVE
 #define MSG_SIZE_MAX 4096
-#define MSG_TIME_LIMIT 10 * 1000000UL
+#define MSG_TIME_LIMIT 0
 
 /***********************************************/
 // Concurrency Control
@@ -334,7 +334,7 @@ extern TestCases          g_test_case;
 #define BILLION 1000000000UL // in ns => 1 second
 #define STAT_ARR_SIZE 1024
 #define PROG_TIMER 1 * BILLION // in s
-#define BATCH_TIMER 10000000
+#define BATCH_TIMER 0
 #define DONE_TIMER 1 * 60 * BILLION // ~1 minutes
 
 #define SEED 0

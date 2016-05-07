@@ -85,7 +85,7 @@ int main(int argc, char* argv[])
   starttime = get_server_clock();
   printf("Initializing stats... ");
   fflush(stdout);
-	stats.init();
+	stats.init(g_total_thread_cnt);
   printf("Done\n");
   printf("Initializing global manager... ");
   fflush(stdout);

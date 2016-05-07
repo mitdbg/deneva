@@ -64,7 +64,7 @@ int main(int argc, char* argv[])
 	// per-partition malloc
   printf("Initializing stats... ");
   fflush(stdout);
-	stats.init();
+	stats.init(g_total_client_thread_cnt);
   printf("Done\n");
 	Workload * m_wl;
 	switch (WORKLOAD) {

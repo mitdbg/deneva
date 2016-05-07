@@ -32,6 +32,7 @@ public:
   uint64_t worker_epoch;
   int64_t epoch_txn_cnt;
   uint64_t txn_cnt;
+  uint64_t inflight_cnt;
 
   void init();
   bool is_setup_done();
@@ -42,6 +43,8 @@ public:
   void set_starttime(uint64_t starttime);
   void process_setup_msg();
   void inc_txn_cnt(); 
+  void inc_inflight_cnt(); 
+  void dec_inflight_cnt(); 
   uint64_t get_worker_epoch(); 
   void next_worker_epoch(); 
   uint64_t get_seq_epoch(); 
