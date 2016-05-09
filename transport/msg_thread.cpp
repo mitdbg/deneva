@@ -94,6 +94,9 @@ void MessageThread::run() {
   sbuf->cnt += 1;
   sbuf->ptr += msg->get_size();
   // Free message here, no longer needed unless CALVIN sequencer
+  if(!ISSEQUENCER) {
+    msg->release();
+  }
   if(sbuf->starttime == 0)
     sbuf->starttime = get_sys_clock();
 

@@ -154,7 +154,6 @@ def malviya_plot(summary,summary_client):
 def test():
     wl = 'YCSB'
     nnodes = [1,2,4]
-#    nnodes = [1,2]
     ntif = [100,500,1000,5000,10000]
     ntif = [10000,50000,100000]
     ntif = [100000]
@@ -163,11 +162,20 @@ def test():
     nalgos=['NO_WAIT','WAIT_DIE','MAAT','OCC']
 #    nalgos=['NO_WAIT','MAAT','OCC']
     nalgos=['NO_WAIT']
+    noutthr=[1,2,4]
+    ninthr=[1,2,4]
+    noutthr=[1]
+    ninthr=[1]
+    nworkthr=[1,6]
 #    nalgos=['MVCC','TIMESTAMP','CALVIN']
 #    nnodes = [2]
 #    nalgos=['OCC']
-    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","TXN_WRITE_PERC","TUP_WRITE_PERC","MAX_TXN_IN_FLIGHT"]
-    exp = [[wl,n,cc,wr,wr2,tif] for n,cc,wr,wr2,tif in itertools.product(nnodes,nalgos,nwr,nwr2,ntif)]
+    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","TXN_WRITE_PERC","TUP_WRITE_PERC","MAX_TXN_IN_FLIGHT","SEND_THREAD_CNT","REM_THREAD_CNT","THREAD_CNT"]
+    exp = [[wl,n,cc,wr,wr2,tif,outthr,inthr,workthr] for n,cc,wr,wr2,tif,outthr,inthr,workthr in itertools.product(nnodes,nalgos,nwr,nwr2,ntif,noutthr,ninthr,nworkthr)]
+    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","TXN_WRITE_PERC","TUP_WRITE_PERC","MAX_TXN_IN_FLIGHT","THREAD_CNT","PART_PER_TXN"]
+    exp = [[wl,n,cc,wr,wr2,tif,workthr,1] for n,cc,wr,wr2,tif,workthr in itertools.product(nnodes,nalgos,nwr,nwr2,ntif,nworkthr)]
+#    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","TXN_WRITE_PERC","TUP_WRITE_PERC","MAX_TXN_IN_FLIGHT"]
+#    exp = [[wl,n,cc,wr,wr2,tif] for n,cc,wr,wr2,tif in itertools.product(nnodes,nalgos,nwr,nwr2,ntif)]
 
     return fmt,exp
 

@@ -123,7 +123,7 @@ void Sequencer::process_txn(Message * msg) {
 
     // Add new txn to fill queue
     for(auto participant = participants.begin(); participant != participants.end(); participant++) {
-      while(!fill_queue[*participant].push(msg)) {}
+      while(!fill_queue[*participant].push(msg) && !simulation->is_done()) {}
     }
 
 	ATOM_ADD(total_txns_received,1);

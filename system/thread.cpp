@@ -26,7 +26,7 @@
 #include "message.h"
 
 void Thread::heartbeat() {
-/*
+  /*
 #if TIME_ENABLE
   uint64_t now_time = get_sys_clock();
 #else
@@ -36,8 +36,8 @@ void Thread::heartbeat() {
     printf("Heartbeat %ld %f\n",_thd_id,simulation->seconds_from_start(now_time));
     heartbeat_time = now_time;
   }
+  */
 
-*/
 }
 
 void Thread::send_init_done_to_all_nodes() {

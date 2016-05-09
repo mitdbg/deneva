@@ -109,9 +109,9 @@ void QWorkQueue::enqueue(uint64_t thd_id, Message * msg,bool busy) {
   // FIXME: May need alternative queue for some calvin threads
   uint64_t mtx_wait_starttime = get_sys_clock();
   if(msg->rtype == CL_QRY) {
-    while(!new_txn_queue.push(entry)) {}
+    while(!new_txn_queue.push(entry) && !simulation->is_done()) {}
   } else {
-    while(!work_queue.push(entry)) {}
+    while(!work_queue.push(entry) && !simulation->is_done()) {}
   }
   INC_STATS(thd_id,mtx[13],get_sys_clock() - mtx_wait_starttime);
 

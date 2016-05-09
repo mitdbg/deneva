@@ -107,6 +107,7 @@ RC CalvinSequencerThread::run() {
         // Ack from server
         seq_man.process_ack(msg,get_thd_id());
         // TODO: Free message
+        msg->release();
         break;
       default:
         assert(false);
