@@ -35,7 +35,6 @@
 #include "message.h"
 #include "work_queue.h"
 
-/*
 void CalvinLockThread::setup() {
 }
 
@@ -102,10 +101,12 @@ RC CalvinSequencerThread::run() {
       case RTXN:
         // Query from client
         seq_man.process_txn(msg);
+        // TODO: Don't free message yet
         break;
       case RACK:
         // Ack from server
         seq_man.process_ack(msg,get_thd_id());
+        // TODO: Free message
         break;
       default:
         assert(false);
@@ -116,5 +117,3 @@ RC CalvinSequencerThread::run() {
   return FINISH;
 
 }
-
-*/

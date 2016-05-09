@@ -43,6 +43,7 @@ public:
   uint64_t mget_size();
   uint64_t get_txn_id() {return txn_id;}
   uint64_t get_batch_id() {return batch_id;}
+  uint64_t get_return_id() {return return_node_id;}
   void mcopy_from_buf(char * buf);
   void mcopy_to_buf(char * buf);
   void mcopy_from_txn(TxnManager * txn);

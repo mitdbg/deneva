@@ -746,8 +746,18 @@ TxnManager::send_remote_reads(BaseQuery * qry) {
 
 }
 
+bool TxnManager::calvin_exec_phase_done() {
+  bool ready =  (phase == CALVIN_DONE) && (get_rc() == RCOK);
+  return ready;
+}
+
+bool TxnManager::calvin_collect_phase_done() {
+  bool ready =  (phase == CALVIN_COLLECT_RD) && (get_rsp_cnt() == query->participant_nodes.size()-1);
+  return ready;
+}
+
 RC
-TxnManager::calvin_finish(BaseQuery * qry) {
+TxnManager::calvin_finish() {
   assert(CC_ALG == CALVIN);
   for(uint64_t i = 0; i < query->active_nodes.size(); i++) {
     msg_queue.enqueue(get_thd_id(),Message::create_message(query,RFIN),i);

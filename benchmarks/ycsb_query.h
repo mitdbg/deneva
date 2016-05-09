@@ -23,6 +23,7 @@
 #include "array.h"
 
 class Workload;
+class Message;
 
 
 // Each YCSBQuery contains several ycsb_requests, 
@@ -77,6 +78,7 @@ public:
 	void init(uint64_t thd_id, Workload * h_wl) {};
   void init();
   void release();
+  static std::set<uint64_t> participants(Message * msg, Workload * wl); 
   uint64_t participants(bool *& pps,Workload * wl); 
   bool readonly();
 	

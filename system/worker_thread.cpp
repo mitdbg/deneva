@@ -82,7 +82,11 @@ void WorkerThread::process(Message * msg) {
 				break;
       case CL_QRY:
 			case RTXN:
+#if CC_ALG == CALVIN
+        rc = process_calvin_rtxn(msg);
+#else
         rc = process_rtxn(msg);
+#endif
 				break;
 			case LOG_FLUSHED:
         rc = process_log_flushed(msg);
@@ -509,54 +513,31 @@ RC WorkerThread::process_log_flushed(Message * msg) {
 }
 
 RC WorkerThread::process_rfwd(Message * msg) {
-  /*
-				INC_STATS(get_thd_id(),rfwd,1);
-        DEBUG("%ld RFWD (%ld,%ld)\n",_thd_id,msg->txn_id,msg->batch_id);
-				txn_table.get_txn(g_node_id,msg->txn_id,msg->batch_id,m_txn,tmp_query);
-        m_txn->register_thd(this);
-				rsp_cnt = m_txn->incr_rsp(1);
-        if(m_txn->phase == 4 && rsp_cnt == m_txn->participant_cnt-1) {
-          rc = m_txn->run_calvin_txn(m_query);
-          if(m_txn->phase==6 && rc == RCOK) {
-            calvin_wrapup();
-          }
-        } else {
-          rc = WAIT;
-        }
-        */
+  DEBUG("RFWD %ld,%ld\n",msg->get_txn_id(),msg->get_batch_id());
+  txn_man->incr_rsp(1);
+  if(txn_man->calvin_collect_phase_done()) {
+    txn_man->run_calvin_txn();
+    if(txn_man->calvin_exec_phase_done()) {
+      calvin_wrapup();
+      return RCOK;
+    }   
+  }
+  return WAIT;
+
+}
+
+RC WorkerThread::process_calvin_rtxn(Message * msg) {
+
+  DEBUG("START %ld %f %lu\n",txn_man->get_txn_id(),simulation->seconds_from_start(get_sys_clock()),txn_man->txn_stats.starttime);
+  // Execute
+  txn_man->run_calvin_txn();
+  //if((txn_man->phase==6 && rc == RCOK) || txn_man->active_cnt == 0 || txn_man->participant_cnt == 1) {
+  if(txn_man->calvin_exec_phase_done()) {
+    calvin_wrapup();
+  }
   return RCOK;
 
 }
-
-  /*
-RC WorkerThread::process_calvin_rtxn(Message * msg) {
-				INC_STATS(get_thd_id(),rtxn,1);
-
-				txn_table.get_txn(g_node_id,m_query->txn_id,m_query->batch_id,m_txn,tmp_query);
-        assert(m_txn != NULL);
-        tmp_query = tmp_query->merge(m_query);
-        if(m_query != tmp_query) {
-          qry_pool.put(m_query);
-        }
-        m_query = tmp_query;
-        assert(m_query->batch_id == simulation->get_worker_epoch() || m_query->batch_id == simulation->get_worker_epoch() - 1);
-        m_txn->register_thd(this);
-
-				m_txn->abort_cnt = 0;
-        //m_txn->set_txn_id(m_query->txn_id);
-				m_txn->starttime = get_sys_clock();
-#if DEBUG_TIMELINE
-					printf("START %ld %ld\n",m_txn->get_txn_id(),m_txn->starttime);
-#endif
-        DEBUG("START %ld %ld\n",m_txn->get_txn_id(),m_txn->starttime);
-        // Execute
-				rc = m_txn->run_calvin_txn(m_query);
-        if((m_txn->phase==6 && rc == RCOK) || m_txn->active_cnt == 0 || m_txn->participant_cnt == 1) {
-          calvin_wrapup();
-        }
-
-}
-*/
 
 
 bool WorkerThread::is_cc_new_timestamp() {

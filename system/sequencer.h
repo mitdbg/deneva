@@ -19,7 +19,7 @@
 
 #include "global.h"
 #include "query.h"
-#include "concurrentqueue.h"
+#include <boost/lockfree/queue.hpp>
 
 class Workload;
 class BaseQuery;
@@ -53,7 +53,7 @@ class Sequencer {
  private:
 	void reset_participating_nodes(bool * part_nodes);
 
-  moodycamel::ConcurrentQueue<BaseQuery*,moodycamel::ConcurrentQueueDefaultTraits> * fill_queue;
+  boost::lockfree::queue<Message*, boost::lockfree::capacity<65526> > * fill_queue;
 #if WORKLOAD == YCSB
 	YCSBQuery* node_queries;
 #elif WORKLOAD == TPCC

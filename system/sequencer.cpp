@@ -27,22 +27,22 @@
 #include "msg_thread.h"
 #include "work_queue.h"
 #include "message.h"
+#include <boost/lockfree/queue.hpp>
 
-/*
 void Sequencer::init(Workload * wl) {
   next_txn_id = 0;
 	rsp_cnt = g_node_cnt + g_client_node_cnt;
 	_wl = wl;
   last_time_batch = 0;
-  fill_queue = new moodycamel::ConcurrentQueue<BaseQuery*,moodycamel::ConcurrentQueueDefaultTraits>[g_node_cnt];
   wl_head = NULL;
   wl_tail = NULL;
+  fill_queue = new boost::lockfree::queue<Message*, boost::lockfree::capacity<65526> > [g_node_cnt];
 }
 
 // FIXME: Assumes 1 thread does sequencer work
-void Sequencer::process_ack(BaseQuery *query, uint64_t thd_id) {
+void Sequencer::process_ack(Message * msg, uint64_t thd_id) {
   qlite_ll * en = wl_head;
-  while(en != NULL && en->epoch != query->batch_id) {
+  while(en != NULL && en->epoch != msg->get_batch_id()) {
     en = en->next;
   }
   assert(en);
@@ -50,33 +50,23 @@ void Sequencer::process_ack(BaseQuery *query, uint64_t thd_id) {
 	assert(wait_list != NULL);
 	assert(en->txns_left > 0);
 
-	uint64_t id = query->txn_id / g_node_cnt;
-	uint64_t rid = query->return_id;
+	uint64_t id = msg->get_txn_id() / g_node_cnt;
   uint64_t prof_stat = get_sys_clock();
-	//uint64_t id = query->return_id;
 	assert(wait_list[id].server_ack_cnt > 0);
 
 	// Decrement the number of acks needed for this txn
 	uint32_t query_acks_left = ATOM_SUB_FETCH(wait_list[id].server_ack_cnt, 1);
-
-  //if(query->return_id != g_node_id)
-  //  qry_pool.put(query);
 
 	if (query_acks_left == 0) {
     en->txns_left--;
 		ATOM_FETCH_ADD(total_txns_finished,1);
 		INC_STATS(thd_id,seq_txn_cnt,1);
 
-    BaseQuery * m_query;// = wait_list[id].qry;
-    qry_pool.get(m_query);
-    DEBUG_R("^^got seq cl_rsp 0x%lx\n",(uint64_t)m_query);
-    m_query->client_id = wait_list[id].client_id;
-    m_query->client_startts = wait_list[id].client_startts;
-    msg_queue.enqueue(Message::create_message(m_query,CL_RSP),m_query->client_id);
+    ClientQueryMessage * rsp_msg = (ClientQueryMessage*)Message::create_message(msg->get_txn_id(),CL_RSP);
+    rsp_msg->client_startts = wait_list[id].client_startts;
+    msg_queue.enqueue(thd_id,rsp_msg,wait_list[id].client_id);
 
 	}
-  DEBUG("ACK %ld (%ld,%ld) from %ld: %d %d 0x%lx\n",id,query->txn_id,en->epoch,rid,query_acks_left,en->txns_left,(uint64_t)query);
-
 
 	// If we have all acks for this batch, send qry responses to all clients
 	if (en->txns_left == 0) {
@@ -86,7 +76,7 @@ void Sequencer::process_ack(BaseQuery *query, uint64_t thd_id) {
     mem_allocator.free(en,sizeof(qlite_ll));
 
 	}
-  INC_STATS(thd_id,time_seq_ack,get_sys_clock() - prof_stat);
+  INC_STATS(thd_id,seq_ack_time,get_sys_clock() - prof_stat);
 }
 
 // FIXME: Assumes 1 thread does sequencer work
@@ -94,10 +84,11 @@ void Sequencer::process_txn(Message * msg) {
 
   qlite_ll * en = wl_tail;
 
-  if(!en || en->epoch != simulation->get_sched_epoch()+1) {
+  // FIXME: LL is potentially a bottleneck here
+  if(!en || en->epoch != simulation->get_seq_epoch()+1) {
     // First txn of new wait list
     en = (qlite_ll *) mem_allocator.alloc(sizeof(qlite_ll));
-    en->epoch = simulation->get_sched_epoch()+1;
+    en->epoch = simulation->get_seq_epoch()+1;
     en->max_size = 1000;
     en->size = 0;
     en->txns_left = 0;
@@ -112,44 +103,30 @@ void Sequencer::process_txn(Message * msg) {
 		txnid_t txn_id = g_node_id + g_node_cnt * next_txn_id;
     next_txn_id++;
     uint64_t id = txn_id / g_node_cnt;
-    query->batch_id = en->epoch;
-    query->txn_id = txn_id;
+    msg->batch_id = en->epoch;
+    msg->txn_id = txn_id;
     assert(txn_id != UINT64_MAX);
-#if WORKLOAD == YCSB
-		YCSBQuery * m_query = (YCSBQuery *) query;
-#elif WORKLOAD == TPCC
-		TPCCQuery * m_query = (TPCCQuery *) query;
-#endif
-    bool * participating_nodes = (bool*)mem_allocator.alloc(sizeof(bool)*g_node_cnt);
-    reset_participating_nodes(participating_nodes);
-		uint32_t server_ack_cnt = m_query->participants(participating_nodes,_wl);
+
+    std::set<uint64_t> participants = YCSBQuery::participants(msg,_wl);
+		uint32_t server_ack_cnt = participants.size();
 		assert(server_ack_cnt > 0);
-		assert(ISCLIENTN(query->return_id));
-		en->list[id].client_id = query->return_id;
-		en->list[id].client_startts = query->client_startts;
+		assert(ISCLIENTN(msg->get_return_id()));
+		en->list[id].client_id = msg->get_return_id();
+		en->list[id].client_startts = ((ClientQueryMessage*)msg)->client_startts;
 		en->list[id].server_ack_cnt = server_ack_cnt;
-		//en->list[id].qry = query;
     en->size++;
     en->txns_left++;
-    query->return_id = g_node_id;
+    // Note: Modifying msg!
+    msg->return_node_id = g_node_id;
     assert(en->size == en->txns_left);
     assert(en->size <= ((uint64_t)g_inflight_max * g_node_cnt));
 
     // Add new txn to fill queue
-		for (uint64_t j = 0; j < g_node_cnt; ++j) {
-      // Make several deep copies of this query
-      BaseQuery * m_query;
-      qry_pool.get(m_query);
-      m_query->deep_copy(query);
-      DEBUG_R("^^got seq rtxn (%ld,%ld) %d 0x%lx\n",m_query->txn_id,m_query->batch_id,m_query->rtype,(uint64_t)m_query);
-			if (participating_nodes[j]) {
-        fill_queue[j].enqueue(m_query);
-			}
-		}
-  mem_allocator.free(participating_nodes,sizeof(bool)*g_node_cnt);
+    for(auto participant = participants.begin(); participant != participants.end(); participant++) {
+      while(!fill_queue[*participant].push(msg)) {}
+    }
 
 	ATOM_ADD(total_txns_received,1);
-  DEBUG("FILL %ld %ld, %ld %ld\n",en->epoch,query->txn_id,total_txns_received,total_txns_finished)
 
 }
 
@@ -158,43 +135,36 @@ void Sequencer::process_txn(Message * msg) {
 void Sequencer::send_next_batch(uint64_t thd_id) {
   uint64_t prof_stat = get_sys_clock();
   qlite_ll * en = wl_tail;
-  if(en && en->epoch == simulation->get_sched_epoch()) {
-    DEBUG("SEND NEXT BATCH %ld [%ld,%ld] %ld\n",thd_id,simulation->get_sched_epoch(),en->epoch,en->size);
+  if(en && en->epoch == simulation->get_seq_epoch()) {
+    DEBUG("SEND NEXT BATCH %ld [%ld,%ld] %ld\n",thd_id,simulation->get_seq_epoch(),en->epoch,en->size);
   }
 
-  BaseQuery * query;
+  Message * msg;
   for(uint64_t j = 0; j < g_node_cnt; j++) {
-    while(fill_queue[j].try_dequeue(query)) {
-      assert(query->rtype == RTXN);
+    while(fill_queue[j].pop(msg)) {
       if(j == g_node_id) {
-        work_queue.enqueue(thd_id,query,false);
+        work_queue.enqueue(thd_id,msg,false);
       } else {
-        msg_queue.enqueue(Message::create_message(query,RTXN),j);
+        msg_queue.enqueue(thd_id,msg,j);
       }
     }
-    DEBUG("Seq RDONE %ld\n",simulation->get_sched_epoch())
-    qry_pool.get(query);
-    query->rtype = RDONE;
-    query->return_id = g_node_id;
-    query->batch_id = simulation->get_sched_epoch();
-    if(j == g_node_id)
-      work_queue.enqueue(thd_id,query,false);
-    else
-      msg_queue.enqueue(Message::create_message(query,RDONE),j);
+    DEBUG("Seq RDONE %ld\n",simulation->get_seq_epoch())
+    msg = Message::create_message(RDONE);
+    msg->batch_id = simulation->get_seq_epoch(); 
+    if(j == g_node_id) {
+      work_queue.enqueue(thd_id,msg,false);
+    } else {
+      msg_queue.enqueue(thd_id,msg,j);
+    }
   }
 
   if(last_time_batch > 0) {
-    INC_STATS(thd_id,time_seq_batch,get_sys_clock() - last_time_batch);
+    INC_STATS(thd_id,seq_batch_time,get_sys_clock() - last_time_batch);
   }
   last_time_batch = get_sys_clock();
 
 	INC_STATS(thd_id,seq_batch_cnt,1);
-  INC_STATS(thd_id,time_seq_prep,get_sys_clock() - prof_stat);
+  INC_STATS(thd_id,seq_prep_time,get_sys_clock() - prof_stat);
   next_txn_id = 0;
 }
 
-void Sequencer::reset_participating_nodes(bool * part_nodes) {
-	for (uint32_t i = 0; i < g_node_cnt; ++i)
-		part_nodes[i] = false;
-}
-*/

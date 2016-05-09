@@ -44,6 +44,7 @@ public:
   RC process_rprepare(Message * msg);
   RC process_rpass(Message * msg);
   RC process_rtxn(Message * msg);
+  RC process_calvin_rtxn(Message * msg);
   RC process_rtxn_cont(Message * msg);
   RC process_log_msg(Message * msg);
   RC process_log_msg_rsp(Message * msg);

@@ -93,6 +93,7 @@ void MessageThread::run() {
   DEBUG("%ld Buffered Msg %d, id %ld to %ld\n",_thd_id,msg->rtype,msg->txn_id,dest);
   sbuf->cnt += 1;
   sbuf->ptr += msg->get_size();
+  // Free message here, no longer needed unless CALVIN sequencer
   if(sbuf->starttime == 0)
     sbuf->starttime = get_sys_clock();
 

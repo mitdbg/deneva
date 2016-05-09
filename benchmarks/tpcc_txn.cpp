@@ -927,12 +927,13 @@ inline RC TPCCTxnManager::new_order_9(uint64_t w_id,uint64_t  d_id,bool remote, 
 
 
 RC TPCCTxnManager::run_calvin_txn() {
+  RC rc = RCOK;
+  /*
   TPCCQuery* tpcc_query = (TPCCQuery*) query;
   uint64_t participant_cnt;
   uint64_t active_cnt;
   uint64_t participant_nodes[g_node_cnt];
   uint64_t active_nodes[g_node_cnt];
-  RC rc = RCOK;
   uint64_t home_wh_node;
   while(rc == RCOK && this->phase < 6) {
     switch(this->phase) {
@@ -1013,21 +1014,14 @@ RC TPCCTxnManager::run_calvin_txn() {
         rc = run_tpcc_phase5();
         rc = calvin_finish(tpcc_query);
         ATOM_ADD(this->phase,1); //6
-        //FIXME
-        /*
-        if(get_rsp2_cnt() == active_cnt-1) {
-          rc = RCOK;
-        } else {
-        //DEBUG("Phase6 (%ld,%ld)\n",tpcc_query->txn_id,tpcc_query->batch_id);
-            rc = WAIT;
-        }
-        */
         break;
       default:
         assert(false);
     }
   }
+*/
   return rc;
+  
 }
 
 

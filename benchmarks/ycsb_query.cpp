@@ -21,6 +21,7 @@
 #include "ycsb.h"
 #include "table.h"
 #include "helper.h"
+#include "message.h"
 
 uint64_t YCSBQueryGenerator::the_n = 0;
 double YCSBQueryGenerator::denom = 0;
@@ -81,6 +82,16 @@ uint64_t YCSBQuery::participants(bool *& pps,Workload * wl) {
     pps[req_nid] = true;
   }
   return n;
+}
+
+std::set<uint64_t> YCSBQuery::participants(Message * msg, Workload * wl) {
+  std::set<uint64_t> participant_set;
+  YCSBClientQueryMessage* ycsb_msg = ((YCSBClientQueryMessage*)msg);
+  for(uint64_t i = 0; i < ycsb_msg->requests.size(); i++) {
+    uint64_t req_nid = GET_NODE_ID(((YCSBWorkload*)wl)->key_to_part(ycsb_msg->requests[i]->key));
+    participant_set.insert(req_nid);
+  }
+  return participant_set;
 }
 
 bool YCSBQuery::readonly() {

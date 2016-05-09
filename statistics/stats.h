@@ -145,6 +145,13 @@ public:
   double twopl_ex_owned_time;
   double twopl_diff_time;
 
+  // Calvin
+  uint64_t seq_txn_cnt;
+  uint64_t seq_batch_cnt;
+  double seq_ack_time;
+  double seq_batch_time;
+  double seq_prep_time;
+
   // OCC
   double occ_validate_time;
   double occ_cs_wait_time;

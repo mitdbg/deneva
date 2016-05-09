@@ -241,9 +241,9 @@ RC YCSBTxnManager::run_calvin_txn() {
   uint64_t active_cnt;
   uint64_t participant_nodes[10];
   uint64_t active_nodes[10];
-  while(rc == RCOK && this->phase < 6) {
+  while(!calvin_exec_phase_done() && rc == RCOK) {
     switch(this->phase) {
-      case 1:
+      case CALVIN_RW_ANALYSIS:
 
         // Phase 1: Read/write set analysis
         participant_cnt = 0;
@@ -264,20 +264,20 @@ RC YCSBTxnManager::run_calvin_txn() {
             active_nodes[req_nid] = true;
           }
         }
-        ATOM_ADD(this->phase,1); //2
+        this->phase = CALVIN_LOC_RD;
         break;
-      case 2:
+      case CALVIN_LOC_RD:
         // Phase 2: Perform local reads
         rc = run_ycsb();
         //release_read_locks(query);
 
-        ATOM_ADD(this->phase,1); //3
+        this->phase = CALVIN_SERVE_RD;
         break;
-      case 3:
+      case CALVIN_SERVE_RD:
         // Phase 3: Serve remote reads
         rc = send_remote_reads(ycsb_query);
         if(active_nodes[g_node_id]) {
-          ATOM_ADD(this->phase,1); //4
+          this->phase = CALVIN_COLLECT_RD;
           if(get_rsp_cnt() == participant_cnt-1) {
             rc = RCOK;
           } else {
@@ -286,28 +286,19 @@ RC YCSBTxnManager::run_calvin_txn() {
           }
         } else { // Done
           rc = RCOK;
-          ATOM_ADD(this->phase,3); //6
+          this->phase = CALVIN_DONE;
         }
 
         break;
-      case 4:
+      case CALVIN_COLLECT_RD:
         // Phase 4: Collect remote reads
-        ATOM_ADD(this->phase,1); //5
+        this->phase = CALVIN_EXEC_WR;
         break;
-      case 5:
+      case CALVIN_EXEC_WR:
         // Phase 5: Execute transaction / perform local writes
         rc = run_ycsb();
-        rc = calvin_finish(ycsb_query);
-        ATOM_ADD(this->phase,1); //6
-        // FIXME
-        /*
-        if(get_rsp2_cnt() == active_cnt-1) {
-          rc = RCOK;
-        } else {
-        DEBUG("Phase6 (%ld,%ld)\n",txn->txn_id,txn->batch_id);
-            rc = WAIT;
-        }
-        */
+        rc = calvin_finish(); // Sends msg to all active nodes
+        this->phase = CALVIN_DONE;
         break;
       default:
         assert(false);

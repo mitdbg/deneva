@@ -151,7 +151,6 @@ public:
 	RC 				finish(bool fin);
 	void 			cleanup(RC rc);
   RC send_remote_reads(BaseQuery * qry); 
-  RC calvin_finish(BaseQuery * qry); 
   void set_end_timestamp(uint64_t timestamp) {txn->end_timestamp = timestamp;}
   uint64_t get_end_timestamp() {return txn->end_timestamp;}
   uint64_t get_access_cnt() {return txn->row_cnt;}
@@ -200,20 +199,20 @@ public:
   bool unset_ready() {return ATOM_CAS(ready,true,false);}
   bool is_ready() {return ready == true;}
   volatile bool ready;
+  // Calvin
+  uint32_t lock_ready_cnt;
+  bool locking_done;
+  CALVIN_PHASE phase;
+  bool phase_rsp;
+  bool calvin_exec_phase_done();
+  bool calvin_collect_phase_done();
+  RC calvin_finish(); 
+
 
 protected:	
 
   int rsp_cnt;
 	void 			insert_row(row_t * row, table_t * table);
-
-  // Calvin
-  uint32_t lock_ready_cnt;
-  bool locking_done;
-  
-
-  // For Calvin
-  int phase;
-  bool phase_rsp;
 
 	itemid_t *		index_read(INDEX * index, idx_key_t key, int part_id);
   RC get_lock(row_t * row, access_t type);
