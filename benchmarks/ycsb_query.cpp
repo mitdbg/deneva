@@ -184,7 +184,8 @@ BaseQuery * YCSBQueryGenerator::gen_requests_hot(uint64_t home_partition_id, Wor
         if(partitions_accessed.count(partition_id) > 0)
           break;
         else {
-          if(g_strict_ppt && partitions_accessed.size() < part_limit && (partitions_accessed.size() + (g_req_per_query - rid) >= part_limit))
+          //if(g_strict_ppt && partitions_accessed.size() < part_limit && (partitions_accessed.size() + (g_req_per_query - rid) >= part_limit))
+          if(partitions_accessed.size() == part_limit)
             continue;
           break;
         }

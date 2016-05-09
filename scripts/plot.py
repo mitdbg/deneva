@@ -219,7 +219,7 @@ for exp in exps:
             if plot:
                 print("Pre-Merge:")
 #                pp.pprint(s)
-                pp.pprint(s2)
+#                pp.pprint(s2)
                 s = merge_results(s,exp_cnt,drop,nnodes)
                 s2 = merge_results(s2,exp_cnt,drop,nclients)
                 summary[output_f] = s
@@ -230,13 +230,13 @@ for exp in exps:
                 summary_client[output_f] = s2
                 print("Post-Merge:")
 #                pp.pprint(s)
-                pp.pprint(s2)
+#                pp.pprint(s2)
 #                print(output_f)
 #                print(summary[output_f])
 
     if plot:
 #        pp.pprint(summary)
-        pp.pprint(summary_client)
+#        pp.pprint(summary_client)
         exp_plot = exp + '_plot'
         if is_network_test:
             experiment_map[exp_plot](all_exps,all_nodes,timestamps)
