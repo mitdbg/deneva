@@ -103,6 +103,7 @@ public:
 private:
 // This is close to max capacity for boost
   boost::lockfree::queue<work_queue_entry*, boost::lockfree::capacity<65526> > work_queue;
+  boost::lockfree::queue<work_queue_entry*, boost::lockfree::capacity<65526> > new_txn_queue;
   // TODO: move to many separate lock free queues to avoid bottleneck
   std::priority_queue<work_queue_entry*,std::vector<work_queue_entry*>,CompareSchedEntry> scheduler_queue;
   std::set<uint64_t> active_txn_ids;

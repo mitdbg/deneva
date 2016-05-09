@@ -156,7 +156,8 @@ def test():
     nnodes = [1,2,4]
 #    nnodes = [1,2]
     ntif = [100,500,1000,5000,10000]
-    ntif = [10000,50000]
+    ntif = [10000,50000,100000]
+    ntif = [100000]
     nwr = [0.0] # TXN_WRITE_PERC
     nwr2 = [0.0] # TUP_WRITE_PERC
     nalgos=['NO_WAIT','WAIT_DIE','MAAT','OCC']
