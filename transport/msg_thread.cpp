@@ -43,54 +43,54 @@ void MessageThread::init(uint64_t thd_id) {
 }
 
 void MessageThread::check_and_send_batches() {
-  for(uint64_t n = 0; n < buffer_cnt; n++) {
-    if(buffer[n]->ready()) {
-      send_batch(n);
+  for(uint64_t dest_node_id = 0; dest_node_id < buffer_cnt; dest_node_id++) {
+    if(buffer[dest_node_id]->ready()) {
+      send_batch(dest_node_id);
     }
   }
 }
 
-void MessageThread::send_batch(uint64_t id) {
-    mbuf * sbuf = buffer[id];
+void MessageThread::send_batch(uint64_t dest_node_id) {
+    mbuf * sbuf = buffer[dest_node_id];
     assert(sbuf->cnt > 0);
 	  ((uint32_t*)sbuf->buffer)[2] = sbuf->cnt;
     INC_STATS(_thd_id,mbuf_send_intv_time,get_sys_clock() - sbuf->starttime);
 
-    DEBUG("Send batch of %ld msgs to %ld\n",sbuf->cnt,id);
-    tport_man.send_msg(_thd_id,id,sbuf->buffer,sbuf->ptr);
+    DEBUG("Send batch of %ld msgs to %ld\n",sbuf->cnt,dest_node_id);
+    tport_man.send_msg(_thd_id,dest_node_id,sbuf->buffer,sbuf->ptr);
 
     INC_STATS(_thd_id,msg_batch_size_msgs,sbuf->cnt);
     INC_STATS(_thd_id,msg_batch_size_bytes,sbuf->ptr);
     INC_STATS(_thd_id,msg_batch_cnt,1);
-    sbuf->reset(id);
+    sbuf->reset(dest_node_id);
 }
 
 void MessageThread::run() {
   
   Message * msg;
-  uint64_t dest;
+  uint64_t dest_node_id;
   mbuf * sbuf;
 
 
-  dest = msg_queue.dequeue(get_thd_id(), msg);
+  dest_node_id = msg_queue.dequeue(get_thd_id(), msg);
   if(!msg) {
     check_and_send_batches();
     return;
   }
   assert(msg);
-  assert(dest < g_node_cnt + g_client_node_cnt + g_repl_cnt*g_node_cnt);
-  assert(dest != g_node_id);
+  assert(dest_node_id < g_node_cnt + g_client_node_cnt + g_repl_cnt*g_node_cnt);
+  assert(dest_node_id != g_node_id);
 
-  sbuf = buffer[dest];
+  sbuf = buffer[dest_node_id];
 
   if(!sbuf->fits(msg->get_size())) {
-    send_batch(dest);
+    send_batch(dest_node_id);
   }
 
   uint64_t copy_starttime = get_sys_clock();
   msg->copy_to_buf(&(sbuf->buffer[sbuf->ptr]));
   INC_STATS(_thd_id,msg_copy_output_time,get_sys_clock() - copy_starttime);
-  DEBUG("%ld Buffered Msg %d, id %ld to %ld\n",_thd_id,msg->rtype,msg->txn_id,dest);
+  DEBUG("%ld Buffered Msg %d, id %ld to %ld\n",_thd_id,msg->rtype,msg->txn_id,dest_node_id);
   sbuf->cnt += 1;
   sbuf->ptr += msg->get_size();
   // Free message here, no longer needed unless CALVIN sequencer
