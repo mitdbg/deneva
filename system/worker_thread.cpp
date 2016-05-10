@@ -155,9 +155,6 @@ void WorkerThread::commit() {
 
   // Send result back to client
   msg_queue.enqueue(get_thd_id(),Message::create_message(txn_man,CL_RSP),txn_man->client_id);
-  // FIXME: Atomic operations may contribute bottleneck when multi-threaded
-  simulation->inc_txn_cnt();
-  simulation->dec_inflight_cnt();
   // remove txn from pool
   release_txn_man();
   // Do not use txn_man after this
@@ -444,7 +441,6 @@ RC WorkerThread::process_rtxn(Message * msg) {
           txn_man->txn_stats.starttime = get_sys_clock();
           msg->copy_to_txn(txn_man);
           DEBUG("START %ld %f %lu\n",txn_man->get_txn_id(),simulation->seconds_from_start(get_sys_clock()),txn_man->txn_stats.starttime);
-          simulation->inc_inflight_cnt();
 
 				} else {
           DEBUG("RESTART %ld %f %lu\n",txn_man->get_txn_id(),simulation->seconds_from_start(get_sys_clock()),txn_man->txn_stats.starttime);

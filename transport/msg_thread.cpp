@@ -26,7 +26,7 @@
 #include "global.h"
 
 void MessageThread::init(uint64_t thd_id) { 
-  buffer_cnt = g_node_cnt + g_client_node_cnt + g_repl_cnt * g_node_cnt;
+  buffer_cnt = g_total_node_cnt;
 #if CC_ALG == CALVIN
   buffer_cnt++;
 #endif
@@ -61,6 +61,11 @@ void MessageThread::send_batch(uint64_t dest_node_id) {
 
     INC_STATS(_thd_id,msg_batch_size_msgs,sbuf->cnt);
     INC_STATS(_thd_id,msg_batch_size_bytes,sbuf->ptr);
+    if(ISSERVERN(dest_node_id)) {
+      INC_STATS(_thd_id,msg_batch_size_bytes_to_server,sbuf->ptr);
+    } else if (ISCLIENTN(dest_node_id)){
+      INC_STATS(_thd_id,msg_batch_size_bytes_to_client,sbuf->ptr);
+    }
     INC_STATS(_thd_id,msg_batch_cnt,1);
     sbuf->reset(dest_node_id);
 }

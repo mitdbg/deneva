@@ -124,6 +124,8 @@ public:
   uint64_t msg_batch_cnt;
   uint64_t msg_batch_size_msgs;
   uint64_t msg_batch_size_bytes;
+  uint64_t msg_batch_size_bytes_to_server;
+  uint64_t msg_batch_size_bytes_to_client;
   uint64_t msg_send_cnt;
   uint64_t msg_recv_cnt;
   double msg_unpack_time;

@@ -116,6 +116,8 @@ void Stats_thd::clear() {
   msg_batch_cnt=0;
   msg_batch_size_msgs=0;
   msg_batch_size_bytes=0;
+  msg_batch_size_bytes_to_server=0;
+  msg_batch_size_bytes_to_client=0;
   msg_send_cnt=0;
   msg_recv_cnt=0;
   msg_unpack_time=0;
@@ -186,16 +188,21 @@ void Stats_thd::clear() {
 
 void Stats_thd::print_client(FILE * outf) {
   double txn_run_avg_time = 0;
+  double tput = 0;
   if(txn_cnt > 0)
     txn_run_avg_time = txn_run_time / txn_cnt;
+  if(total_runtime > 0) 
+    tput = txn_cnt / (total_runtime / BILLION);
   fprintf(outf,
       "total_runtime=%f"
+      ",tput=%f"
       ",txn_cnt=%ld"
       ",txn_sent_cnt=%ld"
       ",txn_run_time=%f"
       ",txn_run_avg_time=%f"
       ",cl_send_intv=%f"
       ,total_runtime/BILLION
+      ,tput
       ,txn_cnt
       ,txn_sent_cnt
       ,txn_run_time / BILLION
@@ -238,6 +245,8 @@ void Stats_thd::print_client(FILE * outf) {
   ",msg_batch_size_msgs_avg=%f"
   ",msg_batch_size_bytes=%ld"
   ",msg_batch_size_bytes_avg=%f"
+  ",msg_batch_size_bytes_to_server=%ld"
+  ",msg_batch_size_bytes_to_client=%ld"
   ",msg_send_cnt=%ld"
   ",msg_recv_cnt=%ld"
   ",msg_unpack_time=%f"
@@ -258,6 +267,8 @@ void Stats_thd::print_client(FILE * outf) {
   ,msg_batch_size_msgs_avg
   ,msg_batch_size_bytes
   ,msg_batch_size_bytes_avg
+  ,msg_batch_size_bytes_to_server
+  ,msg_batch_size_bytes_to_client
   ,msg_send_cnt
   ,msg_recv_cnt
   ,msg_unpack_time / BILLION
@@ -276,16 +287,20 @@ void Stats_thd::print(FILE * outf) {
       ,total_runtime/BILLION
   );
   // Execution
+  double tput = 0;
   double txn_run_avg_time = 0;
   double multi_part_txn_avg_time = 0;
   double single_part_txn_avg_time = 0;
-  if(txn_cnt > 0)
+  if(total_runtime > 0) 
+    tput = txn_cnt / (total_runtime / BILLION);
+  if(txn_cnt > 0) 
     txn_run_avg_time = txn_run_time / txn_cnt;
   if(multi_part_txn_cnt > 0)
     multi_part_txn_avg_time = multi_part_txn_run_time / multi_part_txn_cnt;
   if(single_part_txn_cnt > 0)
     single_part_txn_avg_time = single_part_txn_run_time / single_part_txn_cnt;
   fprintf(outf,
+  ",tput=%f"
   ",txn_cnt=%ld"
   ",remote_txn_cnt=%ld"
   ",local_txn_cnt=%ld"
@@ -303,6 +318,7 @@ void Stats_thd::print(FILE * outf) {
   ",single_part_txn_cnt=%ld"
   ",single_part_txn_run_time=%f"
   ",single_part_txn_avg_time=%f"
+  ,tput
   ,txn_cnt
   ,remote_txn_cnt
   ,local_txn_cnt
@@ -516,6 +532,8 @@ void Stats_thd::print(FILE * outf) {
   ",msg_batch_size_msgs_avg=%f"
   ",msg_batch_size_bytes=%ld"
   ",msg_batch_size_bytes_avg=%f"
+  ",msg_batch_size_bytes_to_server=%ld"
+  ",msg_batch_size_bytes_to_client=%ld"
   ",msg_send_cnt=%ld"
   ",msg_recv_cnt=%ld"
   ",msg_unpack_time=%f"
@@ -536,6 +554,8 @@ void Stats_thd::print(FILE * outf) {
   ,msg_batch_size_msgs_avg
   ,msg_batch_size_bytes
   ,msg_batch_size_bytes_avg
+  ,msg_batch_size_bytes_to_server
+  ,msg_batch_size_bytes_to_client
   ,msg_send_cnt
   ,msg_recv_cnt
   ,msg_unpack_time / BILLION
@@ -791,6 +811,8 @@ void Stats_thd::combine(Stats_thd * stats) {
   msg_batch_cnt+=stats->msg_batch_cnt;
   msg_batch_size_msgs+=stats->msg_batch_size_msgs;
   msg_batch_size_bytes+=stats->msg_batch_size_bytes;
+  msg_batch_size_bytes_to_server+=stats->msg_batch_size_bytes_to_server;
+  msg_batch_size_bytes_to_client+=stats->msg_batch_size_bytes_to_client;
   msg_send_cnt+=stats->msg_send_cnt;
   msg_recv_cnt+=stats->msg_recv_cnt;
   msg_unpack_time+=stats->msg_unpack_time;

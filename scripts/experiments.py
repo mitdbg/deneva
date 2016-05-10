@@ -157,7 +157,7 @@ def test():
     nnodes = [1,2]
     ntif = [100,500,1000,5000,10000]
     ntif = [10000,50000,100000]
-    ntif = [100000]
+    ntif = [60000]
     nwr = [0.0] # TXN_WRITE_PERC
     nwr2 = [0.0] # TUP_WRITE_PERC
     nalgos=['NO_WAIT','WAIT_DIE','MAAT','OCC']
@@ -165,8 +165,8 @@ def test():
     nalgos=['NO_WAIT']
     noutthr=[1,2,4]
     ninthr=[1,2,4]
-    noutthr=[1,2]
-    ninthr=[1,2]
+    noutthr=[1,3]
+    ninthr=[1,3]
     nworkthr=[1,2,3,4,5,6]
 #    nworkthr=[6]
 #    nalgos=['MVCC','TIMESTAMP','CALVIN']
@@ -199,6 +199,15 @@ def test_plot(summary,summary_client):
     nfmt,nexp = test()
     x_name = "NODE_CNT"
     v_name = "CC_ALG"
+#    tput_setup(summary,summary_client,nfmt,nexp,x_name,v_name)
+    v_name = "THREAD_CNT"
+#    tput_setup(summary,summary_client,nfmt,nexp,x_name,v_name)
+    v_name = "REM_THREAD_CNT"
+#    tput_setup(summary,summary_client,nfmt,nexp,x_name,v_name)
+    v_name = "SEND_THREAD_CNT"
+#    tput_setup(summary,summary_client,nfmt,nexp,x_name,v_name)
+    x_name = "THREAD_CNT"
+    v_name = "NODE_CNT"
     tput_setup(summary,summary_client,nfmt,nexp,x_name,v_name)
 def test2_plot(summary,summary_client):
     nfmt,nexp = test2()
