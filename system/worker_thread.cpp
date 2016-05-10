@@ -154,7 +154,9 @@ void WorkerThread::commit() {
   DEBUG("COMMIT %ld %f -- %f\n",txn_man->get_txn_id(),simulation->seconds_from_start(get_sys_clock()),(double)timespan/ BILLION);
 
   // Send result back to client
+#if !SERVER_GENERATE_QUERIES
   msg_queue.enqueue(get_thd_id(),Message::create_message(txn_man,CL_RSP),txn_man->client_id);
+#endif
   // remove txn from pool
   release_txn_man();
   // Do not use txn_man after this

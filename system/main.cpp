@@ -36,6 +36,7 @@
 #include "abort_queue.h"
 #include "work_queue.h"
 #include "maat.h"
+#include "client_query.h"
 
 void * f(void *);
 void * g(void *);
@@ -169,6 +170,14 @@ int main(int argc, char* argv[])
   printf("Initializing logger... ");
   logger.init("logfile.log");
   printf("Done\n");
+#endif
+
+#if SERVER_GENERATE_QUERIES
+  printf("Initializing client query queue... ");
+  fflush(stdout);
+  client_query_queue.init(m_wl);
+  printf("Done\n");
+  fflush(stdout);
 #endif
 
 	// 2. spawn multiple threads

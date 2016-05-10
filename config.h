@@ -46,6 +46,8 @@
 #define FIN_BY_TIME true
 #define MAX_TXN_IN_FLIGHT 100000
 
+#define SERVER_GENERATE_QUERIES true
+
 /***********************************************/
 // Memory System
 /***********************************************/

@@ -97,9 +97,6 @@ void Thread::progress_stats() {
         } else {
           stats.print(true);
         }
-        double from_start = simulation->seconds_from_start(prog_time);
-        uint64_t txn_cnt = simulation->txn_cnt;
-        printf("Txn_cnt: %ld / %f -> %f; %ld\n",txn_cnt,from_start,txn_cnt / from_start,simulation->inflight_cnt);
       }
 		}
 

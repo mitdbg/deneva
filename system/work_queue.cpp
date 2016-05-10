@@ -18,6 +18,7 @@
 #include "mem_alloc.h"
 #include "query.h"
 #include "message.h"
+#include "client_query.h"
 #include <boost/lockfree/queue.hpp>
 
 void QWorkQueue::init() {
@@ -127,7 +128,13 @@ Message * QWorkQueue::dequeue(uint64_t thd_id) {
   uint64_t mtx_wait_starttime = get_sys_clock();
   bool valid = work_queue.pop(entry);
   if(!valid) {
+#if SERVER_GENERATE_QUERIES
+    BaseQuery * m_query = client_query_queue.get_next_query(thd_id,thd_id);
+    assert(m_query);
+    msg = Message::create_message((BaseQuery*)m_query,CL_QRY);
+#else
     valid = new_txn_queue.pop(entry);
+#endif
   }
   INC_STATS(thd_id,mtx[14],get_sys_clock() - mtx_wait_starttime);
   
@@ -152,8 +159,6 @@ Message * QWorkQueue::dequeue(uint64_t thd_id) {
   DEBUG_M("QWorkQueue::dequeue work_queue_entry free\n");
     mem_allocator.free(entry,sizeof(work_queue_entry));
     INC_STATS(thd_id,work_queue_dequeue_time,get_sys_clock() - starttime);
-  } else {
-    assert(msg == NULL);
   }
   return msg;
 }

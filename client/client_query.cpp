@@ -29,7 +29,14 @@ void
 Client_query_queue::init(Workload * h_wl) {
 	_wl = h_wl;
 
+
+#if SERVER_GENERATE_QUERIES
+  if(ISCLIENT)
+    return;
+  for ( UInt32 thread_id = 0; thread_id < g_thread_cnt; thread_id ++) {
+#else
   for ( UInt32 server_id = 0; server_id < g_servers_per_client; server_id ++) {
+#endif
     std::vector<BaseQuery*> new_queries(g_max_txn_per_part+4,NULL);
     queries.push_back(new_queries);
     query_cnt.push_back(0);
@@ -74,11 +81,19 @@ Client_query_queue::initQueriesParallel() {
 #elif WORKLOAD == TPCC
     TPCCQueryGenerator * gen = new TPCCQueryGenerator;
 #endif
+#if SERVER_GENERATE_QUERIES
+  for ( UInt32 thread_id = 0; thread_id < g_thread_cnt; thread_id ++) {
+    for (UInt32 query_id = request_cnt / g_init_parallelism * tid; query_id < final_request; query_id ++) {
+      queries[thread_id][query_id] = gen->create_query(_wl,g_node_id);
+    }
+  }
+#else
   for ( UInt32 server_id = 0; server_id < g_servers_per_client; server_id ++) {
     for (UInt32 query_id = request_cnt / g_init_parallelism * tid; query_id < final_request; query_id ++) {
       queries[server_id][query_id] = gen->create_query(_wl,server_id+g_server_start_node);
     }
   }
+#endif
 
 }
 

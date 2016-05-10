@@ -155,6 +155,7 @@ def test():
     wl = 'YCSB'
     nnodes = [1,2,4]
     nnodes = [1,2]
+    nnodes = [1]
     ntif = [100,500,1000,5000,10000]
     ntif = [10000,50000,100000]
     ntif = [60000]
@@ -163,11 +164,12 @@ def test():
     nalgos=['NO_WAIT','WAIT_DIE','MAAT','OCC']
 #    nalgos=['NO_WAIT','MAAT','OCC']
     nalgos=['NO_WAIT']
-    noutthr=[1,2,4]
-    ninthr=[1,2,4]
     noutthr=[1,3]
     ninthr=[1,3]
+    noutthr=[1]
+    ninthr=[1]
     nworkthr=[1,2,3,4,5,6]
+    nworkthr=[1]
 #    nworkthr=[6]
 #    nalgos=['MVCC','TIMESTAMP','CALVIN']
 #    nnodes = [2]
@@ -1023,6 +1025,7 @@ configs = {
     "SET_AFFINITY":"true",
     "LOGGING":"false",
     "SIM_FULL_ROW":"false",
+    "SERVER_GENERATE_QUERIES":"true",
     "LOAD_METHOD": "LOAD_MAX" #"LOAD_RATE","LOAD_MAX"
 }
 
