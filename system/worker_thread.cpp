@@ -123,6 +123,7 @@ void WorkerThread::check_if_done(RC rc) {
 
 void WorkerThread::release_txn_man() {
   txn_table.release_transaction_manager(get_thd_id(),txn_man->get_txn_id(),txn_man->get_batch_id());
+  txn_man = NULL;
 }
 
 void WorkerThread::calvin_wrapup() {
@@ -220,7 +221,8 @@ RC WorkerThread::run() {
     process(msg);
 
     ready_starttime = get_sys_clock();
-    assert(txn_man->set_ready());
+    if(txn_man)
+      assert(txn_man->set_ready());
     INC_STATS(get_thd_id(),worker_deactivate_txn_time,get_sys_clock() - ready_starttime);
 
     // delete message

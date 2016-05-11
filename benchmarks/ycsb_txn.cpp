@@ -38,7 +38,6 @@ void YCSBTxnManager::init(Workload * h_wl) {
 	TxnManager::init(h_wl);
 	_wl = (YCSBWorkload *) h_wl;
   reset();
-	TxnManager::reset();
 }
 
 void YCSBTxnManager::reset() {

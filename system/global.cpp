@@ -44,6 +44,7 @@ OptCC occ_man;
 Maat maat_man;
 SpecEx spec_man;
 Transport tport_man;
+TxnManPool txn_man_pool;
 TxnPool txn_pool;
 AccessPool access_pool;
 TxnTablePool txn_table_pool;

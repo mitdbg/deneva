@@ -192,7 +192,7 @@ void * YCSBWorkload::init_table_slice() {
 RC YCSBWorkload::get_txn_man(TxnManager *& txn_manager){
   DEBUG_M("YCSBWorkload::get_txn_man YCSBTxnManager alloc\n");
 	txn_manager = (YCSBTxnManager *)
-		mem_allocator.alloc( sizeof(YCSBTxnManager));
+		mem_allocator.align_alloc( sizeof(YCSBTxnManager));
 	new(txn_manager) YCSBTxnManager();
 	txn_manager->init(this); 
 	return RCOK;

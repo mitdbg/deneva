@@ -180,6 +180,7 @@ void Stats_thd::clear() {
   txn_table_cflt_size=0;
   txn_table_get_time=0;
   txn_table_release_time=0;
+  txn_table_min_ts_time=0;
 
   for(uint64_t i = 0; i < 30; i ++) {
     mtx[i]=0;
@@ -714,6 +715,7 @@ void Stats_thd::print(FILE * outf) {
     ",txn_table_cflt_size=%ld"
     ",txn_table_get_time=%f"
     ",txn_table_release_time=%f"
+    ",txn_table_min_ts_time=%f"
     ",txn_table_get_avg_time=%f"
     ",txn_table_release_avg_time=%f"
     // Transaction Table
@@ -724,6 +726,7 @@ void Stats_thd::print(FILE * outf) {
     ,txn_table_cflt_size
     ,txn_table_get_time / BILLION
     ,txn_table_release_time / BILLION
+    ,txn_table_min_ts_time / BILLION
     ,txn_table_get_avg_time / BILLION
     ,txn_table_release_avg_time / BILLION
   );
@@ -874,6 +877,7 @@ void Stats_thd::combine(Stats_thd * stats) {
   txn_table_cflt_size+=stats->txn_table_cflt_size;
   txn_table_get_time+=stats->txn_table_get_time;
   txn_table_release_time+=stats->txn_table_release_time;
+  txn_table_min_ts_time+=stats->txn_table_min_ts_time;
 
   for(uint64_t i = 0; i < 30; i ++) {
     mtx[i]+=stats->mtx[i];

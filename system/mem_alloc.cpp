@@ -19,10 +19,12 @@
 #include "global.h"
 #include "jemalloc/jemalloc.h"
 
+//#define N_MALLOC
+
 void mem_alloc::free(void * ptr, uint64_t size) {
 	if (NO_FREE) {} 
   DEBUG_M("free %ld 0x%lx\n",size,(uint64_t)ptr);
-#if TPORT_TYPE_IPC
+#ifdef N_MALLOC 
   std::free(ptr);
 #else
   je_free(ptr);
@@ -32,7 +34,7 @@ void mem_alloc::free(void * ptr, uint64_t size) {
 void * mem_alloc::alloc(uint64_t size) {
 	void * ptr;
 
-#if TPORT_TYPE_IPC
+#ifdef N_MALLOC
   ptr = malloc(size);
 #else
   ptr = je_malloc(size);
@@ -49,7 +51,7 @@ void * mem_alloc::align_alloc(uint64_t size) {
 
 
 void * mem_alloc::realloc(void * ptr, uint64_t size) {
-#if TPORT_TYPE_IPC
+#ifdef N_MALLOC
   void * _ptr = std::realloc(ptr,size);
 #else
   void * _ptr = je_realloc(ptr,size);

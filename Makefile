@@ -43,15 +43,15 @@ deps:$(CPPS_DB)
 unit_test :  $(OBJS_UNIT)
 	$(CC) -static -o $@ $^ $(LDFLAGS) $(LIBS)
 #	$(CC) -o $@ $^ $(LDFLAGS) $(LIBS)
+./obj/%.o: transport/%.cpp
+	$(CC) -static -c $(CFLAGS) $(INCLUDE) $(LIBS) -o $@ $<
+#	$(CC) -c $(CFLAGS) $(INCLUDE) $(LIBS) -o $@ $<
 ./obj/%.o: unit_tests/%.cpp
 	$(CC) -c $(CFLAGS) $(INCLUDE) -o $@ $<
 ./obj/%.o: benchmarks/%.cpp
 	$(CC) -c $(CFLAGS) $(INCLUDE) -o $@ $<
 ./obj/%.o: storage/%.cpp
 	$(CC) -c $(CFLAGS) $(INCLUDE) -o $@ $<
-./obj/%.o: transport/%.cpp
-	$(CC) -static -c $(CFLAGS) $(INCLUDE) $(LIBS) -o $@ $<
-#	$(CC) -c $(CFLAGS) $(INCLUDE) $(LIBS) -o $@ $<
 ./obj/%.o: system/%.cpp
 	$(CC) -c -DSTATS_ENABLE=false $(CFLAGS) $(INCLUDE) -o $@ $<
 ./obj/%.o: concurrency_control/%.cpp
@@ -65,15 +65,15 @@ unit_test :  $(OBJS_UNIT)
 rundb : $(OBJS_DB)
 	$(CC) -static -o $@ $^ $(LDFLAGS) $(LIBS)
 #	$(CC) -o $@ $^ $(LDFLAGS) $(LIBS)
+./obj/%.o: transport/%.cpp
+	$(CC) -static -c $(CFLAGS) $(INCLUDE) $(LIBS) -o $@ $<
+#	$(CC) -c $(CFLAGS) $(INCLUDE) $(LIBS) -o $@ $<
 #./deps/%.d: %.cpp
 #	$(CC) -MM -MT $*.o -MF $@ $(CFLAGS) $<
 ./obj/%.o: benchmarks/%.cpp
 	$(CC) -c $(CFLAGS) $(INCLUDE) -o $@ $<
 ./obj/%.o: storage/%.cpp
 	$(CC) -c $(CFLAGS) $(INCLUDE) -o $@ $<
-./obj/%.o: transport/%.cpp
-	$(CC) -static -c $(CFLAGS) $(INCLUDE) $(LIBS) -o $@ $<
-#	$(CC) -c $(CFLAGS) $(INCLUDE) $(LIBS) -o $@ $<
 ./obj/%.o: system/%.cpp
 	$(CC) -c $(CFLAGS) $(INCLUDE) -o $@ $<
 ./obj/%.o: statistics/%.cpp
@@ -89,15 +89,15 @@ rundb : $(OBJS_DB)
 runcl : $(OBJS_CL)
 	$(CC) -static -o $@ $^ $(LDFLAGS) $(LIBS)
 #	$(CC) -o $@ $^ $(LDFLAGS) $(LIBS)
+./obj/%.o: transport/%.cpp
+	$(CC) -static -c $(CFLAGS) $(INCLUDE) $(LIBS) -o $@ $<
+#	$(CC) -c $(CFLAGS) $(INCLUDE) $(LIBS) -o $@ $<
 #./deps/%.d: %.cpp
 #	$(CC) -MM -MT $*.o -MF $@ $(CFLAGS) $<
 ./obj/%.o: benchmarks/%.cpp
 	$(CC) -c $(CFLAGS) $(INCLUDE) -o $@ $<
 ./obj/%.o: storage/%.cpp
 	$(CC) -c $(CFLAGS) $(INCLUDE) -o $@ $<
-./obj/%.o: transport/%.cpp
-	$(CC) -static -c $(CFLAGS) $(INCLUDE) $(LIBS) -o $@ $<
-#	$(CC) -c $(CFLAGS) $(INCLUDE) $(LIBS) -o $@ $<
 ./obj/%.o: system/%.cpp
 	$(CC) -c $(CFLAGS) $(INCLUDE) -o $@ $<
 ./obj/%.o: statistics/%.cpp

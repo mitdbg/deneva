@@ -78,6 +78,8 @@ public:
 	void init(uint64_t thd_id, Workload * h_wl) {};
   void init();
   void release();
+  void release_requests();
+  void reset();
   static std::set<uint64_t> participants(Message * msg, Workload * wl); 
   uint64_t participants(bool *& pps,Workload * wl); 
   bool readonly();

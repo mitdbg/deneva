@@ -20,7 +20,7 @@
 
 #include "global.h"
 #include "helper.h"
-#include "concurrentqueue.h"
+#include <boost/lockfree/queue.hpp>
 
 class TxnManager;
 class BaseQuery;
@@ -28,9 +28,10 @@ class Workload;
 struct msg_entry;
 struct txn_node;
 class Access;
+class Transaction;
 
 
-class TxnPool {
+class TxnManPool {
 public:
   void init(Workload * wl, uint64_t size);
   void get(TxnManager *& item);
@@ -38,7 +39,21 @@ public:
   void free_all();
 
 private:
-  moodycamel::ConcurrentQueue<TxnManager*,moodycamel::ConcurrentQueueDefaultTraits> pool;
+  boost::lockfree::queue<TxnManager*, boost::lockfree::capacity<65526> > pool;
+  Workload * _wl;
+
+};
+
+
+class TxnPool {
+public:
+  void init(Workload * wl, uint64_t size);
+  void get(Transaction *& item);
+  void put(Transaction * items);
+  void free_all();
+
+private:
+  boost::lockfree::queue<Transaction*, boost::lockfree::capacity<65526> > pool;
   Workload * _wl;
 
 };
@@ -51,7 +66,7 @@ public:
   void free_all();
 
 private:
-  moodycamel::ConcurrentQueue<Access*,moodycamel::ConcurrentQueueDefaultTraits> pool;
+  boost::lockfree::queue<Access*, boost::lockfree::capacity<65526> > pool;
   Workload * _wl;
 
 };
@@ -65,7 +80,7 @@ public:
   void free_all();
 
 private:
-  moodycamel::ConcurrentQueue<txn_node*,moodycamel::ConcurrentQueueDefaultTraits> pool;
+  boost::lockfree::queue<txn_node*, boost::lockfree::capacity<65526> > pool;
   Workload * _wl;
 
 };
@@ -77,7 +92,7 @@ public:
   void free_all();
 
 private:
-  moodycamel::ConcurrentQueue<BaseQuery*,moodycamel::ConcurrentQueueDefaultTraits> pool;
+  boost::lockfree::queue<BaseQuery*, boost::lockfree::capacity<65526> > pool;
   Workload * _wl;
 
 };
@@ -90,7 +105,7 @@ public:
   void free_all();
 
 private:
-  moodycamel::ConcurrentQueue<msg_entry*,moodycamel::ConcurrentQueueDefaultTraits> pool;
+  boost::lockfree::queue<msg_entry*, boost::lockfree::capacity<65526> > pool;
   Workload * _wl;
 
 };

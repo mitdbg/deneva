@@ -126,47 +126,64 @@ int main(int argc, char* argv[])
   printf("Done\n");
   fflush(stdout);
   printf("Initializing work queue... ");
+  fflush(stdout);
   work_queue.init();
   printf("Done\n");
   printf("Initializing abort queue... ");
+  fflush(stdout);
   abort_queue.init();
   printf("Done\n");
   printf("Initializing message queue... ");
+  fflush(stdout);
   msg_queue.init();
   printf("Done\n");
+  printf("Initializing transaction manager pool... ");
+  fflush(stdout);
+  txn_man_pool.init(m_wl,0);
+  printf("Done\n");
   printf("Initializing transaction pool... ");
-  txn_pool.init(m_wl,g_inflight_max);
+  fflush(stdout);
+  txn_pool.init(m_wl,0);
   printf("Done\n");
   printf("Initializing access pool... ");
-  access_pool.init(m_wl,g_inflight_max * g_req_per_query);
+  fflush(stdout);
+  access_pool.init(m_wl,0);
   printf("Done\n");
   printf("Initializing txn node table pool... ");
-  txn_table_pool.init(m_wl,g_inflight_max);
+  fflush(stdout);
+  txn_table_pool.init(m_wl,0);
   printf("Done\n");
   printf("Initializing query pool... ");
-  qry_pool.init(m_wl,g_inflight_max);
+  fflush(stdout);
+  qry_pool.init(m_wl,0);
   printf("Done\n");
   printf("Initializing msg pool... ");
-  msg_pool.init(m_wl,g_inflight_max);
+  fflush(stdout);
+  msg_pool.init(m_wl,0);
   printf("Done\n");
   printf("Initializing transaction table... ");
+  fflush(stdout);
   txn_table.init();
   printf("Done\n");
 #if CC_ALG == CALVIN
   printf("Initializing sequencer... ");
+  fflush(stdout);
   seq_man.init(m_wl);
   printf("Done\n");
 #endif
 #if CC_ALG == MAAT
   printf("Initializing Time Table... ");
+  fflush(stdout);
   time_table.init();
   printf("Done\n");
   printf("Initializing MaaT manager... ");
+  fflush(stdout);
 	maat_man.init();
   printf("Done\n");
 #endif
 #if LOGGING
   printf("Initializing logger... ");
+  fflush(stdout);
   logger.init("logfile.log");
   printf("Done\n");
 #endif

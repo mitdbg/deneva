@@ -28,75 +28,25 @@
 #include "work_queue.h"
 #include "message.h"
 
-#define MODIFY_START(thd_id,i) {\
-    uint64_t mtx_time_start5 = get_sys_clock(); \
-    pthread_mutex_lock(&pool[i].mtx);\
-    INC_STATS(thd_id,mtx[5],get_sys_clock() - mtx_time_start5); \
-    while(pool[i].modify || pool[i].access > 0)\
-      pthread_cond_wait(&pool[i].cond_m,&pool[i].mtx);\
-    pool[i].modify = true; \
-    pthread_mutex_unlock(&pool[i].mtx); }
-
-#define MODIFY_END(thd_id,i) {\
-  uint64_t mtx_time_start6 = get_sys_clock(); \
-  pthread_mutex_lock(&pool[i].mtx);\
-  INC_STATS(thd_id,mtx[6],get_sys_clock() - mtx_time_start6); \
-  pool[i].modify = false;\
-  pthread_cond_signal(&pool[i].cond_m); \
-  pthread_cond_broadcast(&pool[i].cond_a); \
-  pthread_mutex_unlock(&pool[i].mtx); }
-
-#define ACCESS_START(thd_id,i) {\
-  uint64_t mtx_time_start7 = get_sys_clock(); \
-  pthread_mutex_lock(&pool[i].mtx);\
-  INC_STATS(thd_id,mtx[7],get_sys_clock() - mtx_time_start7); \
-  while(pool[i].modify)\
-      pthread_cond_wait(&pool[i].cond_a,&pool[i].mtx);\
-  pool[i].access++;\
-  pthread_mutex_unlock(&pool[i].mtx); }
-
-#define ACCESS_END(thd_id,i) {\
-  uint64_t mtx_time_start8 = get_sys_clock(); \
-  pthread_mutex_lock(&pool[i].mtx);\
-  INC_STATS(thd_id,mtx[8],get_sys_clock() - mtx_time_start8); \
-  pool[i].access--;\
-  pthread_cond_signal(&pool[i].cond_m);\
-  pthread_mutex_unlock(&pool[i].mtx); }
-
 void TxnTable::init() {
-  pthread_mutex_init(&mtx,NULL);
-  pthread_cond_init(&cond_m,NULL);
-  pthread_cond_init(&cond_a,NULL);
-  modify = false;
-  access = 0;
-  cnt = 0;
-  table_min_ts = UINT64_MAX;
   pool_size = g_inflight_max * g_node_cnt * 2 + 1;
   DEBUG_M("TxnTable::init pool_node alloc\n");
-  pool = (pool_node_t) mem_allocator.alloc(sizeof(pool_node) * pool_size);
+  pool = (pool_node **) mem_allocator.align_alloc(sizeof(pool_node*) * pool_size);
   for(uint32_t i = 0; i < pool_size;i++) {
-    pool[i].head = NULL;
-    pool[i].tail = NULL;
-    pool[i].cnt = 0;
-    pthread_mutex_init(&pool[i].mtx,NULL);
-    pthread_cond_init(&pool[i].cond_m,NULL);
-    pthread_cond_init(&pool[i].cond_a,NULL);
-    pool[i].modify = false;
-    pool[i].access = 0;
-    pool[i].min_ts = UINT64_MAX;
+    pool[i] = (pool_node *) mem_allocator.align_alloc(sizeof(struct pool_node));
+    pool[i]->head = NULL;
+    pool[i]->tail = NULL;
+    pool[i]->cnt = 0;
+    pool[i]->modify = false;
+    pool[i]->min_ts = UINT64_MAX;
   }
-}
-
-bool TxnTable::empty(uint64_t node_id) {
-  return ts_pool.empty();
 }
 
 void TxnTable::dump() {
   for(uint64_t i = 0; i < pool_size;i++) {
-    if(pool[i].cnt  == 0)
+    if(pool[i]->cnt  == 0)
       continue;
-    ACCESS_START(0,i);
-      txn_node_t t_node = pool[i].head;
+      txn_node_t t_node = pool[i]->head;
 
       while (t_node != NULL) {
         printf("TT (%ld,%ld)\n",t_node->txn_man->get_txn_id(),t_node->txn_man->get_batch_id()
@@ -104,51 +54,64 @@ void TxnTable::dump() {
         t_node = t_node->next;
       }
       
-    ACCESS_END(0,i);
   }
 }
+
+bool TxnTable::is_matching_txn_node(txn_node_t t_node, uint64_t txn_id, uint64_t batch_id){
+  assert(t_node);
+#if CC_ALG == CALVIN
+    return (t_node->txn_man->get_txn_id() == txn_id && t_node->txn_man->get_batch_id() == batch_id); 
+#else
+    return (t_node->txn_man->get_txn_id() == txn_id); 
+#endif
+}
+
 
 TxnManager * TxnTable::get_transaction_manager(uint64_t thd_id, uint64_t txn_id,uint64_t batch_id){
   DEBUG("TxnTable::get_txn_manager %ld / %ld\n",txn_id,pool_size);
   uint64_t starttime = get_sys_clock();
+  uint64_t pool_id = txn_id % pool_size;
 
-  ACCESS_START(thd_id,txn_id % pool_size);
+  uint64_t mtx_starttime = starttime;
+  // set modify bit for this pool: txn_id % pool_size
+  while(!ATOM_CAS(pool[pool_id]->modify,false,true)) { };
+  INC_STATS(thd_id,mtx[7],get_sys_clock()-mtx_starttime);
 
-  txn_node_t t_node = pool[txn_id % pool_size].head;
+  txn_node_t t_node = pool[pool_id]->head;
   TxnManager * txn_man = NULL;
 
+  uint64_t prof_starttime = get_sys_clock();
   while (t_node != NULL) {
-#if CC_ALG == CALVIN
-    if (t_node->txn_man->get_txn_id() == txn_id && t_node->txn_man->get_batch_id() == batch_id) {
-#else
-    if (t_node->txn_man->get_txn_id() == txn_id) {
-#endif
+    if(is_matching_txn_node(t_node,txn_id,batch_id)) {
       txn_man = t_node->txn_man;
       break;
     }
     t_node = t_node->next;
   }
+  INC_STATS(thd_id,mtx[10],get_sys_clock()-prof_starttime);
 
 
-  ACCESS_END(thd_id,txn_id % pool_size);
   if(!txn_man) {
-  MODIFY_START(thd_id,txn_id % pool_size);
-    DEBUG_M("TxnTable::get_transaction_manager txn_node alloc\n");
-    t_node = (txn_node *) mem_allocator.alloc(sizeof(struct txn_node));
-    txn_pool.get(txn_man);
+    prof_starttime = get_sys_clock();
+    txn_table_pool.get(t_node);
+    txn_man_pool.get(txn_man);
     txn_man->set_txn_id(txn_id);
     t_node->txn_man = txn_man;
-    LIST_PUT_TAIL(pool[txn_id % pool_size].head,pool[txn_id % pool_size].tail,t_node);
-    pool[txn_id % pool_size].cnt++;
-    if(pool[txn_id % pool_size].cnt > 1) {
+    LIST_PUT_TAIL(pool[pool_id]->head,pool[pool_id]->tail,t_node);
+    /*
+    ++pool[pool_id]->cnt;
+    if(pool[pool_id]->cnt > 1) {
       INC_STATS(thd_id,txn_table_cflt_cnt,1);
-      INC_STATS(thd_id,txn_table_cflt_size,pool[txn_id % pool_size].cnt-1);
+      INC_STATS(thd_id,txn_table_cflt_size,pool[pool_id]->cnt-1);
     }
-    ATOM_ADD(cnt,1);
     INC_STATS(thd_id,txn_table_new_cnt,1);
+    */
+  INC_STATS(thd_id,mtx[11],get_sys_clock()-prof_starttime);
 
-  MODIFY_END(thd_id,txn_id % pool_size);
   }
+  // unset modify bit for this pool: txn_id % pool_size
+  ATOM_CAS(pool[pool_id]->modify,true,false);
+
   INC_STATS(thd_id,txn_table_get_time,get_sys_clock() - starttime);
   INC_STATS(thd_id,txn_table_get_cnt,1);
   return txn_man;
@@ -156,17 +119,15 @@ TxnManager * TxnTable::get_transaction_manager(uint64_t thd_id, uint64_t txn_id,
 }
 
 void TxnTable::restart_txn(uint64_t thd_id, uint64_t txn_id,uint64_t batch_id){
-  MODIFY_START(thd_id,txn_id % pool_size);
+  uint64_t pool_id = txn_id % pool_size;
+  // set modify bit for this pool: txn_id % pool_size
+  while(!ATOM_CAS(pool[pool_id]->modify,false,true)) { };
 
-  txn_node_t t_node = pool[txn_id % pool_size].head;
+  txn_node_t t_node = pool[pool_id]->head;
 
   while (t_node != NULL) {
-#if CC_ALG == CALVIN
-    if (t_node->txn_man->get_txn_id() == txn_id && t_node->txn_man->get_batch_id() == batch_id) {
-#else
-    if (t_node->txn_man->get_txn_id() == txn_id) {
-#endif
-      if(txn_id % g_node_cnt == g_node_id)
+    if(is_matching_txn_node(t_node,txn_id,batch_id)) {
+      if(IS_LOCAL(txn_id))
         work_queue.enqueue(thd_id,Message::create_message(t_node->txn_man,RTXN_CONT),false);
       else
         work_queue.enqueue(thd_id,Message::create_message(t_node->txn_man,RQRY_CONT),false);
@@ -175,57 +136,44 @@ void TxnTable::restart_txn(uint64_t thd_id, uint64_t txn_id,uint64_t batch_id){
     t_node = t_node->next;
   }
 
-  MODIFY_END(thd_id,txn_id % pool_size);
+  // unset modify bit for this pool: txn_id % pool_size
+  ATOM_CAS(pool[pool_id]->modify,true,false);
 
 }
 
 void TxnTable::release_transaction_manager(uint64_t thd_id, uint64_t txn_id, uint64_t batch_id){
   uint64_t starttime = get_sys_clock();
 
-  MODIFY_START(thd_id,txn_id % pool_size);
+  uint64_t pool_id = txn_id % pool_size;
+  uint64_t mtx_starttime = starttime;
+  // set modify bit for this pool: txn_id % pool_size
+  while(!ATOM_CAS(pool[pool_id]->modify,false,true)) { };
+  INC_STATS(thd_id,mtx[9],get_sys_clock()-mtx_starttime);
 
-  txn_node_t t_node = pool[txn_id % pool_size].head;
+  txn_node_t t_node = pool[pool_id]->head;
 
+  uint64_t prof_starttime = get_sys_clock();
   while (t_node != NULL) {
-#if CC_ALG == CALVIN
-    if (t_node->txn_man->get_txn_id() == txn_id && t_node->txn_man->get_batch_id() == batch_id) {
-#else
-    if (t_node->txn_man->get_txn_id() == txn_id) {
-#endif
-      LIST_REMOVE_HT(t_node,pool[txn_id % pool_size].head,pool[txn_id % pool_size].tail);
-      --pool[txn_id % pool_size].cnt;
-      ATOM_SUB(cnt,1);
+    if(is_matching_txn_node(t_node,txn_id,batch_id)) {
+      LIST_REMOVE_HT(t_node,pool[txn_id % pool_size]->head,pool[txn_id % pool_size]->tail);
+      //--pool[pool_id]->cnt;
       break;
     }
     t_node = t_node->next;
   }
-  uint64_t mtx_time_start = get_sys_clock();
-  pthread_mutex_lock(&mtx);
-  INC_STATS(thd_id,mtx[9],get_sys_clock() - mtx_time_start);
-  TsMap::iterator it2 = ts_pool.find(t_node->txn_man->get_timestamp());
-  if(it2 != ts_pool.end())
-    ts_pool.erase(it2);
-  pthread_mutex_unlock(&mtx);
+  INC_STATS(thd_id,mtx[12],get_sys_clock()-prof_starttime);
 
-  MODIFY_END(thd_id,txn_id % pool_size)
+  // unset modify bit for this pool: txn_id % pool_size
+  ATOM_CAS(pool[pool_id]->modify,true,false);
 
+  prof_starttime = get_sys_clock();
   assert(t_node);
   assert(t_node->txn_man);
 
-  DEBUG_R("TxnTable::release (%ld,%ld)\n",txn_id,batch_id);
-
-  t_node->txn_man->release();
-  DEBUG_M("TxnTable::release_transaction_manager TxnManager free\n");
-#if WORKLOAD == YCSB
-  mem_allocator.free(t_node->txn_man,sizeof(YCSBTxnManager));
-#elif WORKLOAD == TPCC
-  mem_allocator.free(t_node->txn_man,sizeof(TPCCTxnManager));
-#endif
-  //txn_pool.put(t_node->txn_man);
+  txn_man_pool.put(t_node->txn_man);
     
-  //txn_table_pool.put(t_node);
-  DEBUG_M("TxnTable::release_transaction_manager txn_node free\n");
-  mem_allocator.free(t_node,sizeof(txn_node));
+  txn_table_pool.put(t_node);
+  INC_STATS(thd_id,mtx[13],get_sys_clock()-prof_starttime);
 
   INC_STATS(thd_id,txn_table_release_time,get_sys_clock() - starttime);
   INC_STATS(thd_id,txn_table_release_cnt,1);
@@ -234,18 +182,16 @@ void TxnTable::release_transaction_manager(uint64_t thd_id, uint64_t txn_id, uin
 
 uint64_t TxnTable::get_min_ts(uint64_t thd_id) {
 
-  uint64_t min = UINT64_MAX;
-  uint64_t mtx_time_start = get_sys_clock();
-  pthread_mutex_lock(&mtx);
-  INC_STATS(thd_id,mtx[11],get_sys_clock() - mtx_time_start);
-  TsMap::iterator it = ts_pool.lower_bound(0);
-  if(it != ts_pool.end())
-    min = it->first;
-  pthread_mutex_unlock(&mtx);
-  return min;
+  uint64_t starttime = get_sys_clock();
+  uint64_t min_ts = UINT64_MAX;
+  for(uint64_t i = 0 ; i < pool_size; i++) {
+    uint64_t pool_min_ts = pool[i]->min_ts;
+    if(pool_min_ts < min_ts)
+      min_ts = pool_min_ts;
+  }
 
-}
+  INC_STATS(thd_id,txn_table_min_ts_time,get_sys_clock() - starttime);
+  return min_ts;
 
-void TxnTable::snapshot() {
 }
 

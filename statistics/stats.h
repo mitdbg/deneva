@@ -194,6 +194,7 @@ public:
   uint64_t txn_table_cflt_size;
   double txn_table_get_time;
   double txn_table_release_time;
+  double txn_table_min_ts_time;
 
   double * mtx;
 

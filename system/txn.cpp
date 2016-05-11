@@ -107,8 +107,7 @@ void Transaction::reset() {
 
 void Transaction::release_accesses() {
   for(uint64_t i = 0; i < accesses.size(); i++) {
-    DEBUG_M("Transaction::release access free\n")
-    mem_allocator.free(accesses[i],sizeof(Access));
+    access_pool.put(accesses[i]);
   }
 }
 
@@ -132,20 +131,15 @@ void Transaction::release() {
 void TxnManager::init(Workload * h_wl) {
   if(!txn)  {
     DEBUG_M("Transaction alloc\n");
-    txn = (Transaction*) mem_allocator.alloc(sizeof(Transaction));
+    txn_pool.get(txn);
+
   }
-  txn->init();
+  //txn->init();
   if(!query) {
     DEBUG_M("TxnManager::init Query alloc\n");
-#if WORKLOAD == YCSB
-    query = (BaseQuery*) mem_allocator.alloc(sizeof(YCSBQuery));
-    new(query) YCSBQuery();
-#elif WORKLOAD == TPCC
-    query = (BaseQuery*) mem_allocator.alloc(sizeof(TPCCQuery));
-    new(query) TPCCQuery();
-#endif
+    qry_pool.get(query);
   }
-  query->init();
+  //query->init();
   //reset();
   sem_init(&rsp_mutex, 0, 1);
   return_id = UINT64_MAX;
@@ -161,6 +155,7 @@ void TxnManager::init(Workload * h_wl) {
   txn_stats.init();
 }
 
+// reset after abort
 void TxnManager::reset() {
 	lock_ready = false;
   lock_ready_cnt = 0;
@@ -180,6 +175,8 @@ void TxnManager::reset() {
   uncommitted_writes_y->clear();
   uncommitted_reads->clear();
 
+  assert(txn);
+  assert(query);
   txn->reset();
 
   // Stats
@@ -187,13 +184,19 @@ void TxnManager::reset() {
 
 }
 
+void
+TxnManager::release() {
+  qry_pool.put(query);
+  query = NULL;
+  txn_pool.put(txn);
+  txn = NULL;
+}
+
 void TxnManager::reset_query() {
 #if WORKLOAD == YCSB
-  ((YCSBQuery*)query)->release();
-  ((YCSBQuery*)query)->init();
+  ((YCSBQuery*)query)->reset();
 #elif WORKLOAD == TPCC
-  ((TPCCQuery*)query)->release();
-  ((TPCCQuery*)query)->init();
+  ((TPCCQuery*)query)->reset();
 #endif
 }
 
@@ -489,7 +492,8 @@ RC TxnManager::get_row(row_t * row, access_t type, row_t *& row_rtn) {
   uint64_t timespan;
 	RC rc = RCOK;
   DEBUG_M("TxnManager::get_row access alloc\n");
-  Access * access = (Access*) mem_allocator.alloc(sizeof(Access));
+  Access * access;
+  access_pool.get(access);
   //uint64_t row_cnt = txn->row_cnt;
   //assert(txn->accesses.get_count() - 1 == row_cnt);
 
@@ -501,7 +505,7 @@ RC TxnManager::get_row(row_t * row, access_t type, row_t *& row_rtn) {
 	if (rc == Abort || rc == WAIT) {
     row_rtn = NULL;
     DEBUG_M("TxnManager::get_row(abort) access free\n");
-    mem_allocator.free(access,sizeof(Access));
+    access_pool.put(access);
 	  timespan = get_sys_clock() - starttime;
 	  INC_STATS(get_thd_id(), txn_manager_time, timespan);
     INC_STATS(get_thd_id(), txn_conflict_cnt, 1);
@@ -561,7 +565,8 @@ RC TxnManager::get_row_post_wait(row_t *& row_rtn) {
   access_t type = this->last_type;
   assert(row != NULL);
   DEBUG_M("TxnManager::get_row_post_wait access alloc\n")
-  Access * access = (Access*) mem_allocator.alloc(sizeof(Access));
+  Access * access;
+  access_pool.get(access);
 
   row->get_row_post_wait(type,this,access->data);
 
@@ -719,23 +724,6 @@ RC TxnManager::finish(bool fin) {
     return RCOK; //finish(query->rc);
 
 }
-
-void
-TxnManager::release() {
-#if WORKLOAD == YCSB
-  ((YCSBQuery*)query)->release();
-  DEBUG_M("TxnManager::release YCSBQuery free\n")
-  mem_allocator.free(query,sizeof(YCSBQuery));
-#elif WORKLOAD == TPCC
-  ((TPCCQuery*)query)->release();
-  DEBUG_M("TxnManager::release TPCCQuery free\n")
-  mem_allocator.free(query,sizeof(TPCCQuery));
-#endif
-  txn->release();
-  DEBUG_M("TxnManager::release Transaction free\n")
-  mem_allocator.free(txn,sizeof(Transaction));
-}
-
 RC
 TxnManager::send_remote_reads(BaseQuery * qry) {
   assert(CC_ALG == CALVIN);

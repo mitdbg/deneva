@@ -60,15 +60,27 @@ void YCSBQuery::init() {
   requests.init(g_req_per_query);
   BaseQuery::init();
 }
-void YCSBQuery::release() {
-  BaseQuery::release();
-  DEBUG_M("YCSBQuery::release() free\n");
+
+void YCSBQuery::release_requests() {
 #if !SERVER_GENERATE_QUERIES
   for(uint64_t i = 0; i < requests.size(); i++) {
     DEBUG_M("YCSBQuery::release() ycsb_request free\n");
     mem_allocator.free(requests[i],sizeof(ycsb_request));
   }
 #endif
+
+}
+
+void YCSBQuery::reset() {
+  BaseQuery::clear();
+  release_requests();
+  requests.clear();
+}
+
+void YCSBQuery::release() {
+  BaseQuery::release();
+  DEBUG_M("YCSBQuery::release() free\n");
+  release_requests();
   requests.release();
 }
 
