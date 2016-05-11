@@ -136,15 +136,6 @@ TxnManager * TxnTable::get_transaction_manager(uint64_t thd_id, uint64_t txn_id,
     DEBUG_M("TxnTable::get_transaction_manager txn_node alloc\n");
     t_node = (txn_node *) mem_allocator.alloc(sizeof(struct txn_node));
     txn_pool.get(txn_man);
-    //txn_man = (TxnManager*) mem_allocator.alloc(sizeof(YCSBTxnManager));
-    //txn_man->init(NULL);
-  // create new entry and add to table
-  /*
-  pthread_mutex_lock(&mtx);
-    ts_pool.insert(TsMapPair(txn_man->get_timestamp(),NULL));
-  pthread_mutex_unlock(&mtx);
-  */
-    //txn_table_pool.get(t_node);
     txn_man->set_txn_id(txn_id);
     t_node->txn_man = txn_man;
     LIST_PUT_TAIL(pool[txn_id % pool_size].head,pool[txn_id % pool_size].tail,t_node);

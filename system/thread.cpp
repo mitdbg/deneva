@@ -79,6 +79,7 @@ void Thread::tsetup() {
   prog_time = run_starttime;
   heartbeat_time = run_starttime;
 
+
 }
 
 void Thread::progress_stats() {

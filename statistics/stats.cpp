@@ -27,15 +27,15 @@
 
 void Stats_thd::init(uint64_t thd_id) {
   DEBUG_M("Stats_thd::init part_cnt alloc\n");
-  part_cnt = (uint64_t*) mem_allocator.alloc(sizeof(uint64_t)*g_part_cnt);
+  part_cnt = (uint64_t*) mem_allocator.align_alloc(sizeof(uint64_t)*g_part_cnt);
   DEBUG_M("Stats_thd::init part_acc alloc\n");
-  part_acc = (uint64_t*) mem_allocator.alloc(sizeof(uint64_t)*g_part_cnt);
+  part_acc = (uint64_t*) mem_allocator.align_alloc(sizeof(uint64_t)*g_part_cnt);
   DEBUG_M("Stats_thd::init worker_process_cnt_by_type alloc\n");
-  worker_process_cnt_by_type= (uint64_t *) mem_allocator.alloc(sizeof(uint64_t) * NO_MSG);
+  worker_process_cnt_by_type= (uint64_t *) mem_allocator.align_alloc(sizeof(uint64_t) * NO_MSG);
   DEBUG_M("Stats_thd::init worker_process_time_by_type alloc\n");
-  worker_process_time_by_type= (double *) mem_allocator.alloc(sizeof(double) * NO_MSG);
+  worker_process_time_by_type= (double *) mem_allocator.align_alloc(sizeof(double) * NO_MSG);
   DEBUG_M("Stats_thd::init mtx alloc\n");
-  mtx= (double *) mem_allocator.alloc(sizeof(double) * 30);
+  mtx= (double *) mem_allocator.align_alloc(sizeof(double) * 30);
 	clear();
 	//all_lat.init(g_max_txn_per_part,ArrIncr);
 
@@ -891,7 +891,7 @@ void Stats::init(uint64_t thread_cnt) {
 
   for(uint64_t i = 0; i < thread_cnt; i++) {
     _stats[i] = (Stats_thd *) 
-      mem_allocator.alloc(sizeof(Stats_thd));
+      mem_allocator.align_alloc(sizeof(Stats_thd));
     _stats[i]->init(i);
     _stats[i]->clear();
   }

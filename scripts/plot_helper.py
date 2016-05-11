@@ -378,7 +378,8 @@ def tput(xval,vval,summary,summary_cl,
                 continue 
             tmp = 0
             try:
-                s = summary_cl
+#                s = summary_cl
+                s = summary
                 print s[cfgs]
                 print s[cfgs]['total_runtime']
                 tot_run_time = sum(s[cfgs]['total_runtime'])

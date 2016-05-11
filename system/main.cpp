@@ -70,7 +70,6 @@ void parser(int argc, char * argv[]);
 int main(int argc, char* argv[])
 {
 	// 0. initialize global data structure
-  mem_allocator.total_size = 0;
 	parser(argc, argv);
 #if SEED != 0
   uint64_t seed = SEED + g_node_id;
@@ -198,7 +197,6 @@ int main(int argc, char* argv[])
 		(pthread_t *) malloc(sizeof(pthread_t) * (all_thd_cnt));
 	pthread_attr_t attr;
 	pthread_attr_init(&attr);
-	cpu_set_t cpus;
 
   worker_thds = new WorkerThread[wthd_cnt];
   input_thds = new InputThread[rthd_cnt];
@@ -238,22 +236,21 @@ int main(int argc, char* argv[])
 	warmup_done = true;
 	pthread_barrier_init( &warmup_bar, NULL, all_thd_cnt);
 
+#if SET_AFFINITY
 	uint64_t cpu_cnt = 0;
+  cpu_set_t cpus;
+#endif
 	// spawn and run txns again.
 	starttime = get_server_clock();
 
   uint64_t id = 0;
 	for (uint64_t i = 0; i < wthd_cnt; i++) {
+#if SET_AFFINITY
 		CPU_ZERO(&cpus);
-#if TPORT_TYPE_IPC
-    CPU_SET((g_node_id * (g_thread_cnt) + cpu_cnt) % g_core_cnt, &cpus);
-#elif !SET_AFFINITY
-    CPU_SET(g_node_id * (g_thread_cnt) + cpu_cnt, &cpus);
-#else
     CPU_SET(cpu_cnt, &cpus);
-#endif
     pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
 		cpu_cnt++;
+#endif
     assert(id >= 0 && id < wthd_cnt);
 #if CC_ALG == CALVIN
 		//pthread_create(&p_thds[i], &attr, calvin_worker, (void *)vid);

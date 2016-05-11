@@ -166,10 +166,10 @@ def test():
     nalgos=['NO_WAIT']
     noutthr=[1,3]
     ninthr=[1,3]
-    noutthr=[1]
+    noutthr=[3]
     ninthr=[1]
     nworkthr=[1,2,3,4,5,6]
-    nworkthr=[1]
+#    nworkthr=[1]
 #    nworkthr=[6]
 #    nalgos=['MVCC','TIMESTAMP','CALVIN']
 #    nnodes = [2]
@@ -976,9 +976,9 @@ configs = {
     "REM_THREAD_CNT": 5,
     "SEND_THREAD_CNT": 5,
     "CLIENT_NODE_CNT" : "NODE_CNT",
-    "CLIENT_THREAD_CNT" : 2,
+    "CLIENT_THREAD_CNT" : 1,
     "CLIENT_REM_THREAD_CNT" : 1,
-    "CLIENT_SEND_THREAD_CNT" : 3,
+    "CLIENT_SEND_THREAD_CNT" : 1,
     "MAX_TXN_PER_PART" : 1000000,
     "WORKLOAD" : "YCSB",
     "CC_ALG" : "WAIT_DIE",

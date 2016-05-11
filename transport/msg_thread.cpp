@@ -72,7 +72,7 @@ void MessageThread::send_batch(uint64_t dest_node_id) {
 
 void MessageThread::run() {
   
-  Message * msg;
+  Message * msg = NULL;
   uint64_t dest_node_id;
   mbuf * sbuf;
 

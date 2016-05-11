@@ -585,6 +585,10 @@ def compile_binary(fmt,e):
             del ecfgs[c]
     cfgs.update(ecfgs)
 #    if env.remote and not env.same_node:
+    if env.cluster == "istc":
+        cfgs["CORE_CNT"]=64
+    else:
+        cfgs["CORE_CNT"]=8
     if env.remote:
         cfgs["TPORT_TYPE"]="TCP"
     if env.shmem:
@@ -638,6 +642,10 @@ def check_binaries(exps):
     for e in experiments:
         cfgs = get_cfgs(fmt,e)
 #        if env.remote and not env.same_node:
+        if env.cluster == "istc":
+            cfgs["CORE_CNT"]=64
+        else:
+            cfgs["CORE_CNT"]=8
         if env.remote:
             cfgs["TPORT_TYPE"]="TCP"
         if env.shmem:

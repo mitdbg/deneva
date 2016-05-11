@@ -27,7 +27,6 @@ void mem_alloc::free(void * ptr, uint64_t size) {
 #else
   je_free(ptr);
 #endif
-  total_size -= size;
 }
 
 void * mem_alloc::alloc(uint64_t size) {
@@ -39,10 +38,15 @@ void * mem_alloc::alloc(uint64_t size) {
   ptr = je_malloc(size);
 #endif
   DEBUG_M("alloc %ld 0x%lx\n",size,(uint64_t)ptr);
-  M_ASSERT_V(ptr != NULL,"mem_alloc::alloc NULL ptr %ld / %ld\n",size,total_size);
-  total_size += size;
+  assert(ptr != NULL);
 	return ptr;
 }
+
+void * mem_alloc::align_alloc(uint64_t size) {
+  uint64_t aligned_size = size + CL_SIZE - (size % CL_SIZE);
+  return alloc(aligned_size);
+}
+
 
 void * mem_alloc::realloc(void * ptr, uint64_t size) {
 #if TPORT_TYPE_IPC

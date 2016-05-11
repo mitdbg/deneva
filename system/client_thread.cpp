@@ -56,10 +56,10 @@ RC ClientThread::run() {
 	uint64_t prog_time = run_starttime;
 
   while(!simulation->is_done()) {
+    heartbeat();
 #if SERVER_GENERATE_QUERIES
     break;
 #endif
-    heartbeat();
 		//uint32_t next_node = iters++ % g_node_cnt;
     progress_stats();
     int32_t inf_cnt;
