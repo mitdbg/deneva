@@ -91,18 +91,21 @@ void Transaction::init() {
   DEBUG_M("Transaction::reset array accesses\n");
   accesses.init(MAX_ROW_PER_TXN);  
 
-  reset();
+  reset(0);
 }
 
-void Transaction::reset() {
+void Transaction::reset(uint64_t thd_id) {
+  uint64_t prof_starttime = get_sys_clock();
   release_accesses();
   accesses.clear();
+  INC_STATS(thd_id,mtx[6],get_sys_clock()-prof_starttime);
   release_inserts();
   insert_rows.clear();  
   write_cnt = 0;
   row_cnt = 0;
   twopc_state = START;
   rc = RCOK;
+  INC_STATS(thd_id,mtx[5],get_sys_clock()-prof_starttime);
 }
 
 void Transaction::release_accesses() {
@@ -114,11 +117,12 @@ void Transaction::release_accesses() {
 void Transaction::release_inserts() {
   for(uint64_t i = 0; i < insert_rows.size(); i++) {
     DEBUG_M("Transaction::release insert_rows free\n")
-    mem_allocator.free(insert_rows[i],sizeof(row_t));
+    row_pool.put(insert_rows[i]);
   }
 }
 
-void Transaction::release() {
+void Transaction::release(uint64_t thd_id) {
+  //uint64_t prof_starttime = get_sys_clock();
   DEBUG("Transaction release\n");
   release_accesses();
   DEBUG_M("Transaction::release array accesses free\n")
@@ -126,6 +130,7 @@ void Transaction::release() {
   release_inserts();
   DEBUG_M("Transaction::release array insert_rows free\n")
   insert_rows.release();
+  //INC_STATS(thd_id,mtx[6],get_sys_clock()-prof_starttime);
 }
 
 void TxnManager::init(Workload * h_wl) {
@@ -177,7 +182,7 @@ void TxnManager::reset() {
 
   assert(txn);
   assert(query);
-  txn->reset();
+  txn->reset(get_thd_id());
 
   // Stats
   txn_stats.reset();
@@ -186,9 +191,13 @@ void TxnManager::reset() {
 
 void
 TxnManager::release() {
+  uint64_t prof_starttime = get_sys_clock();
   qry_pool.put(query);
+  INC_STATS(get_thd_id(),mtx[0],get_sys_clock()-prof_starttime);
   query = NULL;
-  txn_pool.put(txn);
+  prof_starttime = get_sys_clock();
+  txn_pool.put(get_thd_id(),txn);
+  INC_STATS(get_thd_id(),mtx[1],get_sys_clock()-prof_starttime);
   txn = NULL;
 }
 
@@ -457,7 +466,7 @@ void TxnManager::cleanup(RC rc) {
       //printf("free 10 %ld\n",get_txn_id());
 			txn->accesses[rid]->orig_data->free_row();
       DEBUG_M("TxnManager::cleanup row_t free\n");
-			mem_allocator.free(txn->accesses[rid]->orig_data, sizeof(row_t));
+      row_pool.put(txn->accesses[rid]->orig_data);
 		}
 #endif
 		txn->accesses[rid]->data = NULL;
@@ -473,7 +482,7 @@ void TxnManager::cleanup(RC rc) {
 #endif
 			row->free_row();
       DEBUG_M("TxnManager::cleanup row free\n");
-			mem_allocator.free(row, sizeof(row));
+      row_pool.put(row);
 		}
 		INC_STATS(get_thd_id(), abort_time, get_sys_clock() - starttime);
 	} 
@@ -522,8 +531,7 @@ RC TxnManager::get_row(row_t * row, access_t type, row_t *& row_rtn) {
     //printf("alloc 10 %ld\n",get_txn_id());
     uint64_t part_id = row->get_part_id();
     DEBUG_M("TxnManager::get_row row_t alloc\n")
-		access->orig_data = (row_t *) 
-    mem_allocator.alloc(sizeof(row_t));
+    row_pool.get(access->orig_data);
 		access->orig_data->init(row->get_table(), part_id, 0);
 		access->orig_data->copy(row);
 
@@ -577,8 +585,7 @@ RC TxnManager::get_row_post_wait(row_t *& row_rtn) {
 	  uint64_t part_id = row->get_part_id();
     //printf("alloc 10 %ld\n",get_txn_id());
     DEBUG_M("TxnManager::get_row_post_wait row_t alloc\n")
-		access->orig_data = (row_t *) 
-    mem_allocator.alloc(sizeof(row_t));
+    row_pool.get(access->orig_data);
 		access->orig_data->init(row->get_table(), part_id, 0);
 		access->orig_data->copy(row);
 	}

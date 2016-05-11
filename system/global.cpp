@@ -49,6 +49,7 @@ TxnPool txn_pool;
 AccessPool access_pool;
 TxnTablePool txn_table_pool;
 MsgPool msg_pool;
+RowPool row_pool;
 QryPool qry_pool;
 TxnTable txn_table;
 QWorkQueue work_queue;

@@ -25,6 +25,9 @@
 #include "tpcc_query.h"
 #include "query.h"
 #include "msg_queue.h"
+#include "row.h"
+
+#define TRY_LIMIT 10
 
 void TxnManPool::init(Workload * wl, uint64_t size) {
   _wl = wl;
@@ -47,7 +50,9 @@ void TxnManPool::get(TxnManager *& item) {
 
 void TxnManPool::put(TxnManager * item) {
   item->release();
-  if(!pool.push(item)) {
+  int tries = 0;
+  while(!pool.push(item) && tries++ < TRY_LIMIT) { }
+  if(tries >= TRY_LIMIT) {
     mem_allocator.free(item,sizeof(TxnManager));
   }
 }
@@ -66,7 +71,7 @@ void TxnPool::init(Workload * wl, uint64_t size) {
     //put(items[i]);
     txn = (Transaction*) mem_allocator.alloc(sizeof(Transaction));
     txn->init();
-    put(txn);
+    put(0,txn);
   }
 }
 
@@ -74,13 +79,17 @@ void TxnPool::get(Transaction *& item) {
   bool r = pool.pop(item);
   if(!r) {
     item = (Transaction*) mem_allocator.alloc(sizeof(Transaction));
+    item->init();
   }
-  item->init();
 }
 
-void TxnPool::put(Transaction * item) {
-  item->release();
-  if(!pool.push(item)) {
+void TxnPool::put(uint64_t thd_id,Transaction * item) {
+  //item->release();
+  item->reset(thd_id);
+  int tries = 0;
+  while(!pool.push(item) && tries++ < TRY_LIMIT) { }
+  if(tries >= TRY_LIMIT) {
+    item->release(thd_id);
     mem_allocator.free(item,sizeof(Transaction));
   }
 }
@@ -104,7 +113,8 @@ void AccessPool::init(Workload * wl, uint64_t size) {
 }
 
 void AccessPool::get(Access *& item) {
-  bool r = pool.pop(item);
+  //bool r = pool.pop(item);
+  bool r = pool.try_dequeue(item);
   if(!r) {
     DEBUG_M("access_pool alloc\n");
     item = (Access*)mem_allocator.alloc(sizeof(Access));
@@ -112,15 +122,21 @@ void AccessPool::get(Access *& item) {
 }
 
 void AccessPool::put(Access * item) {
-  if(!pool.push(item)) {
+  pool.enqueue(item);
+  /*
+  int tries = 0;
+  while(!pool.push(item) && tries++ < TRY_LIMIT) { }
+  if(tries >= TRY_LIMIT) {
     mem_allocator.free(item,sizeof(Access));
   }
+  */
 }
 
 void AccessPool::free_all() {
   Access * item;
   DEBUG_M("access_pool free\n");
-  while(pool.pop(item)) {
+  //while(pool.pop(item)) {
+  while(pool.try_dequeue(item)) {
     mem_allocator.free(item,sizeof(item));
   }
 }
@@ -144,7 +160,9 @@ void TxnTablePool::get(txn_node *& item) {
 }
 
 void TxnTablePool::put(txn_node * item) {
-  if(!pool.push(item)) {
+  int tries = 0;
+  while(!pool.push(item) && tries++ < TRY_LIMIT) { }
+  if(tries >= TRY_LIMIT) {
     mem_allocator.free(item,sizeof(txn_node));
   }
 }
@@ -188,27 +206,30 @@ void QryPool::get(BaseQuery *& item) {
     qry = (YCSBQuery *) mem_allocator.alloc(sizeof(YCSBQuery));
     qry = new YCSBQuery();
 #endif
+    qry->init();
     item = (BaseQuery*)qry;
   }
-#if WORKLOAD == YCSB
-  ((YCSBQuery*)item)->init();
-#elif WORKLOAD == TPCC
-  ((TPCCQuery*)item)->init();
-#endif
   DEBUG_R("get 0x%lx\n",(uint64_t)item);
 }
 
 void QryPool::put(BaseQuery * item) {
   assert(item);
 #if WORKLOAD == YCSB
-  ((YCSBQuery*)item)->release();
+  ((YCSBQuery*)item)->reset();
 #elif WORKLOAD == TPCC
-  ((TPCCQuery*)item)->release();
+  ((TPCCQuery*)item)->reset();
 #endif
   //DEBUG_M("put 0x%lx\n",(uint64_t)item);
   DEBUG_R("put 0x%lx\n",(uint64_t)item);
   //mem_allocator.free(item,sizeof(item));
-  if(!pool.push(item)) {
+  int tries = 0;
+  while(!pool.push(item) && tries++ < TRY_LIMIT) { }
+  if(tries >= TRY_LIMIT) {
+#if WORKLOAD == YCSB
+  ((YCSBQuery*)item)->release();
+#elif WORKLOAD == TPCC
+  ((TPCCQuery*)item)->release();
+#endif
     mem_allocator.free(item,sizeof(BaseQuery));
   }
 }
@@ -240,7 +261,9 @@ void MsgPool::get(msg_entry* & item) {
 }
 
 void MsgPool::put(msg_entry* item) {
-  if(!pool.push(item)) {
+  int tries = 0;
+  while(!pool.push(item) && tries++ < TRY_LIMIT) { }
+  if(tries >= TRY_LIMIT) {
     mem_allocator.free(item,sizeof(msg_entry));
   }
 }
@@ -250,6 +273,40 @@ void MsgPool::free_all() {
   DEBUG_M("msg_pool free\n");
   while(pool.pop(item)) {
     mem_allocator.free(item,sizeof(item));
+  }
+}
+
+void RowPool::init(Workload * wl, uint64_t size) {
+  _wl = wl;
+  row_t* entry;
+  DEBUG_M("RowPool alloc init\n");
+  for(uint64_t i = 0; i < size; i++) {
+    entry = (row_t*) mem_allocator.alloc(sizeof(struct row_t));
+    put(entry);
+  }
+}
+
+void RowPool::get(row_t* & item) {
+  bool r = pool.pop(item);
+  if(!r) {
+    DEBUG_M("msg_pool alloc\n");
+    item = (row_t*) mem_allocator.alloc(sizeof(struct row_t));
+  }
+}
+
+void RowPool::put(row_t* item) {
+  int tries = 0;
+  while(!pool.push(item) && tries++ < TRY_LIMIT) { }
+  if(tries >= TRY_LIMIT) {
+    mem_allocator.free(item,sizeof(row_t));
+  }
+}
+
+void RowPool::free_all() {
+  row_t * item;
+  while(pool.pop(item)) {
+    DEBUG_M("row_pool free\n");
+    mem_allocator.free(item,sizeof(row_t));
   }
 }
 

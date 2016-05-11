@@ -48,10 +48,10 @@ public:
 class Transaction {
 public:
   void init();
-  void reset();
+  void reset(uint64_t thd_id);
 	void release_accesses();
 	void release_inserts();
-	void release();
+	void release(uint64_t thd_id);
   //vector<Access*> accesses;
   Array<Access*> accesses;
   uint64_t timestamp;

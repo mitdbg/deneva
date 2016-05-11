@@ -21,6 +21,7 @@
 #include "global.h"
 #include "helper.h"
 #include <boost/lockfree/queue.hpp>
+#include "concurrentqueue.h"
 
 class TxnManager;
 class BaseQuery;
@@ -29,6 +30,7 @@ struct msg_entry;
 struct txn_node;
 class Access;
 class Transaction;
+class row_t;
 
 
 class TxnManPool {
@@ -49,7 +51,7 @@ class TxnPool {
 public:
   void init(Workload * wl, uint64_t size);
   void get(Transaction *& item);
-  void put(Transaction * items);
+  void put(uint64_t thd_id,Transaction * items);
   void free_all();
 
 private:
@@ -66,7 +68,8 @@ public:
   void free_all();
 
 private:
-  boost::lockfree::queue<Access*, boost::lockfree::capacity<65526> > pool;
+  //boost::lockfree::queue<Access*, boost::lockfree::capacity<65526> > pool;
+  moodycamel::ConcurrentQueue<Access*,moodycamel::ConcurrentQueueDefaultTraits> pool;
   Workload * _wl;
 
 };
@@ -109,5 +112,19 @@ private:
   Workload * _wl;
 
 };
+
+class RowPool {
+public:
+  void init(Workload * wl, uint64_t size);
+  void get(row_t *& item);
+  void put(row_t * items);
+  void free_all();
+
+private:
+  boost::lockfree::queue<row_t*, boost::lockfree::capacity<65526> > pool;
+  Workload * _wl;
+
+};
+
 
 #endif
