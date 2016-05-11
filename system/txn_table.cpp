@@ -93,19 +93,17 @@ TxnManager * TxnTable::get_transaction_manager(uint64_t thd_id, uint64_t txn_id,
 
   if(!txn_man) {
     prof_starttime = get_sys_clock();
-    txn_table_pool.get(t_node);
-    txn_man_pool.get(txn_man);
+    txn_table_pool.get(thd_id,t_node);
+    txn_man_pool.get(thd_id,txn_man);
     txn_man->set_txn_id(txn_id);
     t_node->txn_man = txn_man;
     LIST_PUT_TAIL(pool[pool_id]->head,pool[pool_id]->tail,t_node);
-    /*
     ++pool[pool_id]->cnt;
     if(pool[pool_id]->cnt > 1) {
       INC_STATS(thd_id,txn_table_cflt_cnt,1);
       INC_STATS(thd_id,txn_table_cflt_size,pool[pool_id]->cnt-1);
     }
     INC_STATS(thd_id,txn_table_new_cnt,1);
-    */
   INC_STATS(thd_id,mtx[11],get_sys_clock()-prof_starttime);
 
   }
@@ -156,7 +154,7 @@ void TxnTable::release_transaction_manager(uint64_t thd_id, uint64_t txn_id, uin
   while (t_node != NULL) {
     if(is_matching_txn_node(t_node,txn_id,batch_id)) {
       LIST_REMOVE_HT(t_node,pool[txn_id % pool_size]->head,pool[txn_id % pool_size]->tail);
-      //--pool[pool_id]->cnt;
+      --pool[pool_id]->cnt;
       break;
     }
     t_node = t_node->next;
@@ -170,9 +168,9 @@ void TxnTable::release_transaction_manager(uint64_t thd_id, uint64_t txn_id, uin
   assert(t_node);
   assert(t_node->txn_man);
 
-  txn_man_pool.put(t_node->txn_man);
+  txn_man_pool.put(thd_id,t_node->txn_man);
     
-  txn_table_pool.put(t_node);
+  txn_table_pool.put(thd_id,t_node);
   INC_STATS(thd_id,mtx[13],get_sys_clock()-prof_starttime);
 
   INC_STATS(thd_id,txn_table_release_time,get_sys_clock() - starttime);

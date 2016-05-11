@@ -145,6 +145,10 @@ int main(int argc, char* argv[])
   fflush(stdout);
   txn_pool.init(m_wl,0);
   printf("Done\n");
+  printf("Initializing row pool... ");
+  fflush(stdout);
+  row_pool.init(m_wl,0);
+  printf("Done\n");
   printf("Initializing access pool... ");
   fflush(stdout);
   access_pool.init(m_wl,0);

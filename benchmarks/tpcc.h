@@ -120,7 +120,7 @@ private:
 class TPCCTxnManager : public TxnManager
 {
 public:
-	void init( Workload * h_wl);
+	void init(uint64_t thd_id, Workload * h_wl);
   void reset();
   RC acquire_locks(); 
 	RC run_txn();

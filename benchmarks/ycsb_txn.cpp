@@ -34,8 +34,8 @@
 #include "msg_queue.h"
 #include "message.h"
 
-void YCSBTxnManager::init(Workload * h_wl) {
-	TxnManager::init(h_wl);
+void YCSBTxnManager::init(uint64_t thd_id, Workload * h_wl) {
+	TxnManager::init(thd_id, h_wl);
 	_wl = (YCSBWorkload *) h_wl;
   reset();
 }

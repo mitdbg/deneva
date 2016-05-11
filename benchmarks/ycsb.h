@@ -57,7 +57,7 @@ private:
 class YCSBTxnManager : public TxnManager
 {
 public:
-	void init(Workload * h_wl);
+	void init(uint64_t thd_id, Workload * h_wl);
 	void reset();
 	void partial_reset();
   RC acquire_locks(); 

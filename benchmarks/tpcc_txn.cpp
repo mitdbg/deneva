@@ -29,8 +29,8 @@
 #include "msg_queue.h"
 #include "message.h"
 
-void TPCCTxnManager::init(Workload * h_wl) {
-	TxnManager::init(h_wl);
+void TPCCTxnManager::init(uint64_t thd_id, Workload * h_wl) {
+	TxnManager::init(thd_id, h_wl);
 	_wl = (TPCCWorkload *) h_wl;
   reset();
 	TxnManager::reset();

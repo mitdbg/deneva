@@ -49,8 +49,8 @@ class Transaction {
 public:
   void init();
   void reset(uint64_t thd_id);
-	void release_accesses();
-	void release_inserts();
+	void release_accesses(uint64_t thd_id);
+	void release_inserts(uint64_t thd_id);
 	void release(uint64_t thd_id);
   //vector<Access*> accesses;
   Array<Access*> accesses;
@@ -94,7 +94,7 @@ class TxnStats {
 class TxnManager
 {
 public:
-  virtual void init(Workload * h_wl);
+  virtual void init(uint64_t thd_id,Workload * h_wl);
   virtual void reset();
   void clear();
   //void reset();
@@ -135,7 +135,6 @@ public:
 
   void release_locks(RC rc);
 
-	pthread_mutex_t txn_lock;
 	row_t * volatile cur_row;
 	// [DL_DETECT, NO_WAIT, WAIT_DIE]
 	bool volatile 	lock_ready;

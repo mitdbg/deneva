@@ -100,15 +100,15 @@ int main(int argc, char* argv[])
 	tport_man.init(m_wl);
   printf("Done\n");
   printf("Initializing client manager... ");
+  fflush(stdout);
   client_man.init();
   printf("Done\n");
   printf("Initializing work queue... ");
+  fflush(stdout);
   work_queue.init();
   printf("Done\n");
-  printf("Initializing query pool... ");
-  qry_pool.init(m_wl,g_inflight_max);
-  printf("Done\n");
   printf("Initializing msg pool... ");
+  fflush(stdout);
   msg_pool.init(m_wl,g_inflight_max);
   printf("Done\n");
   fflush(stdout);

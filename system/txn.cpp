@@ -96,10 +96,10 @@ void Transaction::init() {
 
 void Transaction::reset(uint64_t thd_id) {
   uint64_t prof_starttime = get_sys_clock();
-  release_accesses();
+  release_accesses(thd_id);
   accesses.clear();
   INC_STATS(thd_id,mtx[6],get_sys_clock()-prof_starttime);
-  release_inserts();
+  release_inserts(thd_id);
   insert_rows.clear();  
   write_cnt = 0;
   row_cnt = 0;
@@ -108,52 +108,57 @@ void Transaction::reset(uint64_t thd_id) {
   INC_STATS(thd_id,mtx[5],get_sys_clock()-prof_starttime);
 }
 
-void Transaction::release_accesses() {
+void Transaction::release_accesses(uint64_t thd_id) {
   for(uint64_t i = 0; i < accesses.size(); i++) {
-    access_pool.put(accesses[i]);
+    access_pool.put(thd_id,accesses[i]);
   }
 }
 
-void Transaction::release_inserts() {
+void Transaction::release_inserts(uint64_t thd_id) {
   for(uint64_t i = 0; i < insert_rows.size(); i++) {
     DEBUG_M("Transaction::release insert_rows free\n")
-    row_pool.put(insert_rows[i]);
+    row_pool.put(thd_id,insert_rows[i]);
   }
 }
 
 void Transaction::release(uint64_t thd_id) {
   //uint64_t prof_starttime = get_sys_clock();
   DEBUG("Transaction release\n");
-  release_accesses();
+  release_accesses(thd_id);
   DEBUG_M("Transaction::release array accesses free\n")
   accesses.release();
-  release_inserts();
+  release_inserts(thd_id);
   DEBUG_M("Transaction::release array insert_rows free\n")
   insert_rows.release();
   //INC_STATS(thd_id,mtx[6],get_sys_clock()-prof_starttime);
 }
 
-void TxnManager::init(Workload * h_wl) {
+void TxnManager::init(uint64_t thd_id, Workload * h_wl) {
+  uint64_t prof_starttime = get_sys_clock();
   if(!txn)  {
     DEBUG_M("Transaction alloc\n");
-    txn_pool.get(txn);
+    txn_pool.get(thd_id,txn);
 
   }
+  INC_STATS(get_thd_id(),mtx[15],get_sys_clock()-prof_starttime);
+  prof_starttime = get_sys_clock();
   //txn->init();
   if(!query) {
     DEBUG_M("TxnManager::init Query alloc\n");
-    qry_pool.get(query);
+    qry_pool.get(thd_id,query);
   }
+  INC_STATS(get_thd_id(),mtx[16],get_sys_clock()-prof_starttime);
   //query->init();
   //reset();
   sem_init(&rsp_mutex, 0, 1);
   return_id = UINT64_MAX;
 
 	this->h_wl = h_wl;
-	pthread_mutex_init(&txn_lock, NULL);
+#if CC_ALG == MAAT
   uncommitted_writes = new std::set<uint64_t>();
   uncommitted_writes_y = new std::set<uint64_t>();
   uncommitted_reads = new std::set<uint64_t>();
+#endif
   
   ready = true;
 
@@ -176,9 +181,11 @@ void TxnManager::reset() {
   greatest_write_timestamp = 0;
   greatest_read_timestamp = 0;
   commit_timestamp = 0;
+#if CC_ALG == MAAT
   uncommitted_writes->clear();
   uncommitted_writes_y->clear();
   uncommitted_reads->clear();
+#endif
 
   assert(txn);
   assert(query);
@@ -192,13 +199,19 @@ void TxnManager::reset() {
 void
 TxnManager::release() {
   uint64_t prof_starttime = get_sys_clock();
-  qry_pool.put(query);
+  qry_pool.put(get_thd_id(),query);
   INC_STATS(get_thd_id(),mtx[0],get_sys_clock()-prof_starttime);
   query = NULL;
   prof_starttime = get_sys_clock();
   txn_pool.put(get_thd_id(),txn);
   INC_STATS(get_thd_id(),mtx[1],get_sys_clock()-prof_starttime);
   txn = NULL;
+
+#if CC_ALG == MAAT
+  delete uncommitted_writes;
+  delete uncommitted_writes_y;
+  delete uncommitted_reads;
+#endif
 }
 
 void TxnManager::reset_query() {
@@ -466,7 +479,7 @@ void TxnManager::cleanup(RC rc) {
       //printf("free 10 %ld\n",get_txn_id());
 			txn->accesses[rid]->orig_data->free_row();
       DEBUG_M("TxnManager::cleanup row_t free\n");
-      row_pool.put(txn->accesses[rid]->orig_data);
+      row_pool.put(get_thd_id(),txn->accesses[rid]->orig_data);
 		}
 #endif
 		txn->accesses[rid]->data = NULL;
@@ -482,7 +495,7 @@ void TxnManager::cleanup(RC rc) {
 #endif
 			row->free_row();
       DEBUG_M("TxnManager::cleanup row free\n");
-      row_pool.put(row);
+      row_pool.put(get_thd_id(),row);
 		}
 		INC_STATS(get_thd_id(), abort_time, get_sys_clock() - starttime);
 	} 
@@ -502,7 +515,7 @@ RC TxnManager::get_row(row_t * row, access_t type, row_t *& row_rtn) {
 	RC rc = RCOK;
   DEBUG_M("TxnManager::get_row access alloc\n");
   Access * access;
-  access_pool.get(access);
+  access_pool.get(get_thd_id(),access);
   //uint64_t row_cnt = txn->row_cnt;
   //assert(txn->accesses.get_count() - 1 == row_cnt);
 
@@ -514,7 +527,7 @@ RC TxnManager::get_row(row_t * row, access_t type, row_t *& row_rtn) {
 	if (rc == Abort || rc == WAIT) {
     row_rtn = NULL;
     DEBUG_M("TxnManager::get_row(abort) access free\n");
-    access_pool.put(access);
+    access_pool.put(get_thd_id(),access);
 	  timespan = get_sys_clock() - starttime;
 	  INC_STATS(get_thd_id(), txn_manager_time, timespan);
     INC_STATS(get_thd_id(), txn_conflict_cnt, 1);
@@ -531,7 +544,7 @@ RC TxnManager::get_row(row_t * row, access_t type, row_t *& row_rtn) {
     //printf("alloc 10 %ld\n",get_txn_id());
     uint64_t part_id = row->get_part_id();
     DEBUG_M("TxnManager::get_row row_t alloc\n")
-    row_pool.get(access->orig_data);
+    row_pool.get(get_thd_id(),access->orig_data);
 		access->orig_data->init(row->get_table(), part_id, 0);
 		access->orig_data->copy(row);
 
@@ -574,7 +587,7 @@ RC TxnManager::get_row_post_wait(row_t *& row_rtn) {
   assert(row != NULL);
   DEBUG_M("TxnManager::get_row_post_wait access alloc\n")
   Access * access;
-  access_pool.get(access);
+  access_pool.get(get_thd_id(),access);
 
   row->get_row_post_wait(type,this,access->data);
 
@@ -585,7 +598,7 @@ RC TxnManager::get_row_post_wait(row_t *& row_rtn) {
 	  uint64_t part_id = row->get_part_id();
     //printf("alloc 10 %ld\n",get_txn_id());
     DEBUG_M("TxnManager::get_row_post_wait row_t alloc\n")
-    row_pool.get(access->orig_data);
+    row_pool.get(get_thd_id(),access->orig_data);
 		access->orig_data->init(row->get_table(), part_id, 0);
 		access->orig_data->copy(row);
 	}

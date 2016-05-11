@@ -36,12 +36,12 @@ class row_t;
 class TxnManPool {
 public:
   void init(Workload * wl, uint64_t size);
-  void get(TxnManager *& item);
-  void put(TxnManager * items);
+  void get(uint64_t thd_id, TxnManager *& item);
+  void put(uint64_t thd_id, TxnManager * items);
   void free_all();
 
 private:
-  boost::lockfree::queue<TxnManager*, boost::lockfree::capacity<65526> > pool;
+  boost::lockfree::queue<TxnManager*, boost::lockfree::capacity<65526> > * pool;
   Workload * _wl;
 
 };
@@ -50,26 +50,40 @@ private:
 class TxnPool {
 public:
   void init(Workload * wl, uint64_t size);
-  void get(Transaction *& item);
+  void get(uint64_t thd_id, Transaction *& item);
   void put(uint64_t thd_id,Transaction * items);
   void free_all();
 
 private:
-  boost::lockfree::queue<Transaction*, boost::lockfree::capacity<65526> > pool;
+  boost::lockfree::queue<Transaction*, boost::lockfree::capacity<65526> > * pool;
   Workload * _wl;
 
 };
 
+class QryPool {
+public:
+  void init(Workload * wl, uint64_t size);
+  void get(uint64_t thd_id, BaseQuery *& item);
+  void put(uint64_t thd_id, BaseQuery * items);
+  void free_all();
+
+private:
+  boost::lockfree::queue<BaseQuery*, boost::lockfree::capacity<65526> > * pool;
+  Workload * _wl;
+
+};
+
+
 class AccessPool {
 public:
   void init(Workload * wl, uint64_t size);
-  void get(Access *& item);
-  void put(Access * items);
+  void get(uint64_t thd_id, Access *& item);
+  void put(uint64_t thd_id, Access * items);
   void free_all();
 
 private:
   //boost::lockfree::queue<Access*, boost::lockfree::capacity<65526> > pool;
-  moodycamel::ConcurrentQueue<Access*,moodycamel::ConcurrentQueueDefaultTraits> pool;
+  moodycamel::ConcurrentQueue<Access*,moodycamel::ConcurrentQueueDefaultTraits> * pool;
   Workload * _wl;
 
 };
@@ -78,28 +92,15 @@ private:
 class TxnTablePool {
 public:
   void init(Workload * wl, uint64_t size);
-  void get(txn_node *& item);
-  void put(txn_node * items);
+  void get(uint64_t thd_id, txn_node *& item);
+  void put(uint64_t thd_id, txn_node * items);
   void free_all();
 
 private:
-  boost::lockfree::queue<txn_node*, boost::lockfree::capacity<65526> > pool;
+  boost::lockfree::queue<txn_node*, boost::lockfree::capacity<65526> > * pool;
   Workload * _wl;
 
 };
-class QryPool {
-public:
-  void init(Workload * wl, uint64_t size);
-  void get(BaseQuery *& item);
-  void put(BaseQuery * items);
-  void free_all();
-
-private:
-  boost::lockfree::queue<BaseQuery*, boost::lockfree::capacity<65526> > pool;
-  Workload * _wl;
-
-};
-
 class MsgPool {
 public:
   void init(Workload * wl, uint64_t size);
@@ -116,12 +117,12 @@ private:
 class RowPool {
 public:
   void init(Workload * wl, uint64_t size);
-  void get(row_t *& item);
-  void put(row_t * items);
+  void get(uint64_t thd_id, row_t *& item);
+  void put(uint64_t thd_id, row_t * items);
   void free_all();
 
 private:
-  boost::lockfree::queue<row_t*, boost::lockfree::capacity<65526> > pool;
+  boost::lockfree::queue<row_t*, boost::lockfree::capacity<65526> > * pool;
   Workload * _wl;
 
 };

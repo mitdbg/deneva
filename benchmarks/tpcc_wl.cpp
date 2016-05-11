@@ -212,7 +212,7 @@ RC TPCCWorkload::get_txn_man(TxnManager *& txn_manager) {
 	txn_manager = (TPCCTxnManager *)
 		mem_allocator.align_alloc( sizeof(TPCCTxnManager));
 	new(txn_manager) TPCCTxnManager();
-	txn_manager->init( this);
+	//txn_manager->init( this);
 	return RCOK;
 }
 

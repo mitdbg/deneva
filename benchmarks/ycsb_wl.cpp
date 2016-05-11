@@ -194,7 +194,7 @@ RC YCSBWorkload::get_txn_man(TxnManager *& txn_manager){
 	txn_manager = (YCSBTxnManager *)
 		mem_allocator.align_alloc( sizeof(YCSBTxnManager));
 	new(txn_manager) YCSBTxnManager();
-	txn_manager->init(this); 
+	//txn_manager->init(this); 
 	return RCOK;
 }
 
