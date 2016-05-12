@@ -40,8 +40,9 @@ public:
 	
 private:
 	Workload * _wl;
+  uint64_t size;
   std::vector<std::vector<BaseQuery*>> queries;
-  std::vector<uint64_t> query_cnt;
+  uint64_t ** query_cnt;
   volatile uint64_t next_tid;
 };
 

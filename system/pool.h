@@ -41,7 +41,7 @@ public:
   void free_all();
 
 private:
-  boost::lockfree::queue<TxnManager*, boost::lockfree::capacity<65526> > * pool;
+  boost::lockfree::queue<TxnManager*> ** pool;
   Workload * _wl;
 
 };
@@ -55,7 +55,7 @@ public:
   void free_all();
 
 private:
-  boost::lockfree::queue<Transaction*, boost::lockfree::capacity<65526> > * pool;
+  boost::lockfree::queue<Transaction*> ** pool;
   Workload * _wl;
 
 };
@@ -68,7 +68,7 @@ public:
   void free_all();
 
 private:
-  boost::lockfree::queue<BaseQuery*, boost::lockfree::capacity<65526> > * pool;
+  boost::lockfree::queue<BaseQuery* > ** pool;
   Workload * _wl;
 
 };
@@ -82,8 +82,7 @@ public:
   void free_all();
 
 private:
-  //boost::lockfree::queue<Access*, boost::lockfree::capacity<65526> > pool;
-  moodycamel::ConcurrentQueue<Access*,moodycamel::ConcurrentQueueDefaultTraits> * pool;
+  boost::lockfree::queue<Access* > ** pool;
   Workload * _wl;
 
 };
@@ -97,7 +96,7 @@ public:
   void free_all();
 
 private:
-  boost::lockfree::queue<txn_node*, boost::lockfree::capacity<65526> > * pool;
+  boost::lockfree::queue<txn_node*> ** pool;
   Workload * _wl;
 
 };
@@ -109,7 +108,7 @@ public:
   void free_all();
 
 private:
-  boost::lockfree::queue<msg_entry*, boost::lockfree::capacity<65526> > pool;
+  boost::lockfree::queue<msg_entry* > * pool;
   Workload * _wl;
 
 };
@@ -122,7 +121,7 @@ public:
   void free_all();
 
 private:
-  boost::lockfree::queue<row_t*, boost::lockfree::capacity<65526> > * pool;
+  boost::lockfree::queue<row_t* > ** pool;
   Workload * _wl;
 
 };

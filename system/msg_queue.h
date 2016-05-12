@@ -30,8 +30,6 @@ struct msg_entry {
   Message * msg;
   uint64_t dest;
   uint64_t starttime;
-  struct msg_entry * next;
-  struct msg_entry * prev;
 };
 
 typedef msg_entry * msg_entry_t;

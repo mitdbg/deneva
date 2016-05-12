@@ -33,13 +33,15 @@ Client_query_queue::init(Workload * h_wl) {
 #if SERVER_GENERATE_QUERIES
   if(ISCLIENT)
     return;
-  for ( UInt32 thread_id = 0; thread_id < g_thread_cnt; thread_id ++) {
+  size = g_thread_cnt;
 #else
-  for ( UInt32 server_id = 0; server_id < g_servers_per_client; server_id ++) {
+  size = g_servers_per_client;
 #endif
+  query_cnt = new uint64_t * [size];
+  for ( UInt32 id = 0; id < size; id ++) {
     std::vector<BaseQuery*> new_queries(g_max_txn_per_part+4,NULL);
     queries.push_back(new_queries);
-    query_cnt.push_back(0);
+    query_cnt[id] = (uint64_t*)mem_allocator.align_alloc(sizeof(uint64_t));
   }
   next_tid = 0;
 
@@ -104,10 +106,11 @@ Client_query_queue::done() {
 
 BaseQuery * 
 Client_query_queue::get_next_query(uint64_t server_id,uint64_t thread_id) { 	
-  uint64_t query_id = ATOM_FETCH_ADD(query_cnt[server_id],1);
+  assert(server_id < size);
+  uint64_t query_id = __sync_fetch_and_add(query_cnt[server_id], 1);
   if(query_id > g_max_txn_per_part) {
-    ATOM_CAS(query_cnt[server_id],query_id+1,0);
-    query_id = ATOM_FETCH_ADD(query_cnt[server_id],1);
+    __sync_bool_compare_and_swap(query_cnt[server_id],query_id+1,0);
+    query_id = __sync_fetch_and_add(query_cnt[server_id], 1);
   }
 	BaseQuery * query = queries[server_id][query_id];
 	return query;

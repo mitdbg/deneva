@@ -306,6 +306,7 @@ void TxnManager::send_prepare_messages() {
 
 void TxnManager::send_finish_messages() {
   rsp_cnt = query->partitions_touched.size() - 1;
+  assert(IS_LOCAL(get_txn_id()));
   DEBUG("%ld Send FINISH messages to %d\n",get_txn_id(),rsp_cnt);
   for(uint64_t i = 0; i < query->partitions_touched.size(); i++) {
     if(GET_NODE_ID(query->partitions_touched[i]) == g_node_id) {
