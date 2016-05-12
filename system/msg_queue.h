@@ -44,10 +44,8 @@ public:
 private:
  //LockfreeQueue m_queue;
 // This is close to max capacity for boost
-  boost::lockfree::queue<msg_entry*, boost::lockfree::capacity<65526> > m_queue;
-  pthread_mutex_t mtx;
-  msg_entry_t head;
-  msg_entry_t tail;
+  boost::lockfree::queue<msg_entry*> * m_queue;
+  uint64_t ** ctr;
   uint64_t last_add_time;
   uint64_t cnt;
 

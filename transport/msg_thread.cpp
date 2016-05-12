@@ -83,7 +83,7 @@ void MessageThread::run() {
     return;
   }
   assert(msg);
-  assert(dest_node_id < g_node_cnt + g_client_node_cnt + g_repl_cnt*g_node_cnt);
+  M_ASSERT_V(dest_node_id < g_total_node_cnt, "Assert failure: %ld / %d\n",dest_node_id,g_total_node_cnt);
   assert(dest_node_id != g_node_id);
 
   sbuf = buffer[dest_node_id];

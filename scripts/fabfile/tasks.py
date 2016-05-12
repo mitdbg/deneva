@@ -312,10 +312,10 @@ def sync_clocks(max_offset=0.01,max_attempts=1,delay=15):
 def compile():
     compiled = False
     with quiet():
-        compiled = local("make clean; make -j",capture=True).succeeded
+        compiled = local("make clean; make -j8",capture=True).succeeded
     if not compiled:
         with settings(warn_only=True):
-            compiled = local("make -j") # Print compilation errors
+            compiled = local("make -j8") # Print compilation errors
             if not compiled:
                 with color("error"):
                     puts("ERROR: cannot compile code!",show_prefix=True)

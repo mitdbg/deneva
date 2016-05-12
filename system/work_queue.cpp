@@ -29,6 +29,9 @@ void QWorkQueue::init() {
   new_epoch = false;
   last_sched_dq = NULL;
   sched_ptr = 0;
+  work_queue = new boost::lockfree::queue<work_queue_entry* > (0);
+  new_txn_queue = new boost::lockfree::queue<work_queue_entry* >(0);
+  //work_queue = new boost::lockfree::queue<work_queue_entry* > [g_this_thread_cnt] (0);
 
 }
 
@@ -110,9 +113,9 @@ void QWorkQueue::enqueue(uint64_t thd_id, Message * msg,bool busy) {
   // FIXME: May need alternative queue for some calvin threads
   uint64_t mtx_wait_starttime = get_sys_clock();
   if(msg->rtype == CL_QRY) {
-    while(!new_txn_queue.push(entry) && !simulation->is_done()) {}
+    while(!new_txn_queue->push(entry) && !simulation->is_done()) {}
   } else {
-    while(!work_queue.push(entry) && !simulation->is_done()) {}
+    while(!work_queue->push(entry) && !simulation->is_done()) {}
   }
   INC_STATS(thd_id,mtx[13],get_sys_clock() - mtx_wait_starttime);
 
@@ -126,21 +129,20 @@ Message * QWorkQueue::dequeue(uint64_t thd_id) {
   Message * msg = NULL;
   work_queue_entry * entry = NULL;
   uint64_t mtx_wait_starttime = get_sys_clock();
-  bool valid = work_queue.pop(entry);
+  bool valid = work_queue->pop(entry);
   if(!valid) {
 #if SERVER_GENERATE_QUERIES
-    BaseQuery * m_query = client_query_queue.get_next_query(thd_id,thd_id);
-    assert(m_query);
-    msg = Message::create_message((BaseQuery*)m_query,CL_QRY);
+    if(ISSERVER) {
+      BaseQuery * m_query = client_query_queue.get_next_query(thd_id,thd_id);
+      assert(m_query);
+      msg = Message::create_message((BaseQuery*)m_query,CL_QRY);
+    }
 #else
-    valid = new_txn_queue.pop(entry);
+    valid = new_txn_queue->pop(entry);
 #endif
   }
   INC_STATS(thd_id,mtx[14],get_sys_clock() - mtx_wait_starttime);
   
-
-
-
   if(valid) {
     msg = entry->msg;
     assert(msg);
@@ -160,6 +162,13 @@ Message * QWorkQueue::dequeue(uint64_t thd_id) {
     mem_allocator.free(entry,sizeof(work_queue_entry));
     INC_STATS(thd_id,work_queue_dequeue_time,get_sys_clock() - starttime);
   }
+
+#if SERVER_GENERATE_QUERIES
+  if(msg->rtype == CL_QRY) {
+    INC_STATS(thd_id,work_queue_new_wait_time,get_sys_clock() - starttime);
+    INC_STATS(thd_id,work_queue_new_cnt,1);
+  }
+#endif
   return msg;
 }
 

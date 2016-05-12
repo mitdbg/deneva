@@ -121,6 +121,10 @@ RC InputThread::server_recv_loop() {
 		msgs = tport_man.recv_msg(get_thd_id());
     while(!msgs.empty()) {
       Message * msg = msgs.front();
+      if(msg->rtype == INIT_DONE) {
+        msgs.erase(msgs.begin());
+        continue;
+      }
       work_queue.enqueue(get_thd_id(),msg,false);
       msgs.erase(msgs.begin());
     }

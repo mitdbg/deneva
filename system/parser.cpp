@@ -202,6 +202,17 @@ void parser(int argc, char * argv[]) {
   g_total_thread_cnt = g_thread_cnt + g_rem_thread_cnt + g_send_thread_cnt + g_abort_thread_cnt;
   g_total_client_thread_cnt = g_client_thread_cnt + g_client_rem_thread_cnt + g_client_send_thread_cnt;
   g_total_node_cnt = g_node_cnt + g_client_node_cnt + g_repl_cnt*g_node_cnt;
+  if(ISCLIENT) {
+    g_this_thread_cnt = g_client_thread_cnt;
+    g_this_rem_thread_cnt = g_client_rem_thread_cnt;
+    g_this_send_thread_cnt = g_client_send_thread_cnt;
+    g_this_total_thread_cnt = g_total_client_thread_cnt;
+  } else {
+    g_this_thread_cnt = g_thread_cnt;
+    g_this_rem_thread_cnt = g_rem_thread_cnt;
+    g_this_send_thread_cnt = g_send_thread_cnt;
+    g_this_total_thread_cnt = g_total_thread_cnt;
+  }
 
     //g_inflight_max = g_inflight_max / g_node_cnt;
       printf("CC Alg %d\n",CC_ALG);

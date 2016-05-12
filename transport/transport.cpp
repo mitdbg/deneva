@@ -205,7 +205,7 @@ void Transport::send_msg(uint64_t send_thread_id, uint64_t dest_node_id, void * 
     rc= socket->sock.send(&buf,NN_MSG,NN_DONTWAIT);
   }
   //nn_freemsg(sbuf);
-  DEBUG("Batch of %d bytes sent to node %ld\n",size,dest_node_id);
+  DEBUG("%ld Batch of %d bytes sent to node %ld\n",send_thread_id,size,dest_node_id);
 
   INC_STATS(send_thread_id,msg_send_time,get_sys_clock() - starttime);
   INC_STATS(send_thread_id,msg_send_cnt,1);

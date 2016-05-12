@@ -28,7 +28,8 @@ void SimManager::init() {
   epoch_txn_cnt = 0;
   worker_epoch = 0;
   seq_epoch = 1;
-  rsp_cnt = g_node_cnt + g_client_node_cnt + g_node_cnt*g_repl_cnt - 1;
+  rsp_cnt = g_total_node_cnt - 1;
+
 #if TIME_ENABLE
   run_starttime = get_sys_clock();
 #else

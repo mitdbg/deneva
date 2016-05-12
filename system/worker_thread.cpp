@@ -237,7 +237,7 @@ RC WorkerThread::run() {
 RC WorkerThread::process_rfin(Message * msg) {
   DEBUG("RFIN %ld\n",msg->get_txn_id());
 
-  assert(!IS_LOCAL(msg->get_txn_id()));
+  M_ASSERT_V(!IS_LOCAL(msg->get_txn_id()),"RFIN local: %ld %ld/%d\n",msg->get_txn_id(),msg->get_txn_id()%g_node_cnt,g_node_id);
 #if CC_ALG == MAAT
   txn_man->set_commit_timestamp(((FinishMessage*)msg)->commit_timestamp);
 #endif
@@ -349,6 +349,7 @@ RC WorkerThread::process_rqry_rsp(Message * msg) {
 
 RC WorkerThread::process_rqry(Message * msg) {
   DEBUG("RQRY %ld\n",msg->get_txn_id());
+  M_ASSERT_V(!IS_LOCAL(msg->get_txn_id()),"RQRY local: %ld %ld/%d\n",msg->get_txn_id(),msg->get_txn_id()%g_node_cnt,g_node_id);
   assert(!IS_LOCAL(msg->get_txn_id()));
   RC rc = RCOK;
 
