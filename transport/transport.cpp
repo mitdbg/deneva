@@ -71,7 +71,9 @@ string Transport::get_path() {
 }
 
 Socket * Transport::get_socket() {
-  Socket * socket = new Socket;
+  //Socket * socket = new Socket;
+  Socket * socket = (Socket*) mem_allocator.align_alloc(sizeof(Socket));
+  new(socket) Socket();
 	int timeo = 1000; // timeout in ms
 	int stimeo = 1000; // timeout in ms
   int opt = 0;
