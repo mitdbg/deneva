@@ -42,8 +42,24 @@ SHORTNAMES = {
 fmt_title=["NODE_CNT","CC_ALG","ACCESS_PERC","TXN_WRITE_PERC","PERC_PAYMENT","MPR","MODE","MAX_TXN_IN_FLIGHT","SEND_THREAD_CNT","REM_THREAD_CNT","THREAD_CNT"]
 
 ##############################
-# SIGMOD PAPER PLOTS
+# VLDB PAPER PLOTS
 ##############################
+
+def ycsb_dbsize_scaling():
+    wl = 'YCSB'
+    nnodes = [1,2,4,8]#,16,32,48]
+    algos=['NO_WAIT']
+    base_table_size=2097152*8
+    txn_write_perc = [0.0]
+    tup_write_perc = [0.0]
+    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","SYNTH_TABLE_SIZE","TUP_WRITE_PERC","TXN_WRITE_PERC"]
+    exp = [[wl,n,algo,base_table_size*n,tup_wr_perc,txn_wr_perc] for txn_wr_perc,tup_wr_perc,n,algo in itertools.product(txn_write_perc,tup_write_perc,nnodes,algos)]
+    return fmt,exp
+
+##############################
+# END VLDB PAPER PLOTS
+##############################
+
 def tpcc_scaling_whset():
     wl = 'TPCC'
     nnodes = [1,2,4,8]#,16,32,64]
@@ -115,7 +131,6 @@ def ycsb_parts():
 
 
 ##############################
-# /END/ SIGMOD PAPER PLOTS
 ##############################
 
 def replica_test():
@@ -212,11 +227,31 @@ def test_plot(summary,summary_client):
     tput_setup(summary,summary_client,nfmt,nexp,x_name,v_name)
     v_name = "REM_THREAD_CNT"
     tput_setup(summary,summary_client,nfmt,nexp,x_name,v_name)
+
 def test2_plot(summary,summary_client):
     nfmt,nexp = test2()
     x_name = "NODE_CNT"
     v_name = "CC_ALG"
     tput_setup(summary,summary_client,nfmt,nexp,x_name,v_name,title="TPCC")
+
+def test_writes():
+    wl = 'YCSB'
+    nnodes = [1,2,4]
+    nwr = [1.0] # TXN_WRITE_PERC
+    nwr2 = [1.0] # TUP_WRITE_PERC
+    ntif = [60000]
+    nalgos=['NO_WAIT']
+    ninthr=[2]
+    noutthr=[2]
+    nworkthr=[4]
+    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","TXN_WRITE_PERC","TUP_WRITE_PERC","MAX_TXN_IN_FLIGHT","SEND_THREAD_CNT","REM_THREAD_CNT","THREAD_CNT"]
+    exp = [[wl,n,cc,wr,wr2,tif,outthr,inthr,workthr] for n,cc,wr,wr2,tif,outthr,inthr,workthr in itertools.product(nnodes,nalgos,nwr,nwr2,ntif,noutthr,ninthr,nworkthr)]
+
+def test_writes_plot(summary,summary_client):
+    nfmt,nexp = test_writes()
+    x_name = "NODE_CNT"
+    v_name = "CC_ALG"
+    tput_setup(summary,summary_client,nfmt,nexp,x_name,v_name)
 
 def tpcc_priorities():
     wl = 'TPCC'
@@ -263,15 +298,6 @@ def ycsb_scaling():
     nalgos=['NO_WAIT','OCC','MAAT']
     fmt = ["WORKLOAD","NODE_CNT","CC_ALG"]
     exp = [[wl,n,cc] for n,cc in itertools.product(nnodes,nalgos)]
-    return fmt,exp
-
-def ycsb_dbsize_scaling():
-    wl = 'YCSB'
-    nnodes = [1,2,4,8]#,16,32,48]
-    nalgos=['NO_WAIT']
-    tsize=2097152*8
-    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","SYNTH_TABLE_SIZE"]
-    exp = [[wl,n,cc,tsize*n] for n,cc in itertools.product(nnodes,nalgos)]
     return fmt,exp
 
 
@@ -928,8 +954,10 @@ experiment_map = {
     'ft_mode': ft_mode,
     'ft_mode_plot': ft_mode_plot,
     'test': test,
+    'test_writes': test_writes,
     'test2': test2,
     'test_plot': test_plot,
+    'test_writes_plot': test_writes_plot,
     'test2_plot': test2_plot,
     'network_sweep': network_sweep,
     'network_sweep_plot': network_sweep_plot,
@@ -971,11 +999,11 @@ experiment_map = {
 # Default values for variable configurations
 configs = {
     "NODE_CNT" : 16,
-    "THREAD_CNT": 6,
+    "THREAD_CNT": 4,
     "REPLICA_CNT": 0,
     "REPLICA_TYPE": "AP",
-    "REM_THREAD_CNT": 5,
-    "SEND_THREAD_CNT": 5,
+    "REM_THREAD_CNT": 2,
+    "SEND_THREAD_CNT": 2,
     "CLIENT_NODE_CNT" : "NODE_CNT",
     "CLIENT_THREAD_CNT" : 1,
     "CLIENT_REM_THREAD_CNT" : 1,
@@ -1027,6 +1055,7 @@ configs = {
     "LOGGING":"false",
     "SIM_FULL_ROW":"false",
     "SERVER_GENERATE_QUERIES":"true",
-    "LOAD_METHOD": "LOAD_MAX" #"LOAD_RATE","LOAD_MAX"
+    "LOAD_METHOD": "LOAD_MAX", #"LOAD_RATE","LOAD_MAX"
+    "ISOLATION_LEVEL":"SERIALIZABLE"
 }
 
