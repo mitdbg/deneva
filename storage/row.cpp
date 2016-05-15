@@ -202,6 +202,11 @@ RC row_t::get_row(access_t type, TxnManager * txn, row_t *& row) {
   row = this;
   return rc;
 #endif
+#if ISOLATION_LEVEL == READ_UNCOMMITTED
+  txn->rc = rc;
+  row = this;
+  return rc;
+#endif
 #if CC_ALG == MAAT
 
   DEBUG_M("row_t::get_row MAAT alloc \n");
@@ -337,6 +342,9 @@ RC row_t::get_row_post_wait(access_t type, TxnManager * txn, row_t *& row) {
 // (c.f. row_ts.cpp)
 void row_t::return_row(RC rc, access_t type, TxnManager * txn, row_t * row) {	
 #if MODE==NOCC_MODE || MODE==QRY_ONLY_MODE
+  return;
+#endif
+#if ISOLATION_LEVEL == READ_UNCOMMITTED
   return;
 #endif
 #if CC_ALG == WAIT_DIE || CC_ALG == NO_WAIT || CC_ALG == CALVIN

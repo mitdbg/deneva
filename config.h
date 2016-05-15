@@ -6,9 +6,9 @@
 // Simulation + Hardware
 /***********************************************/
 #define NODE_CNT 16
-#define THREAD_CNT 6
-#define REM_THREAD_CNT 5
-#define SEND_THREAD_CNT 5
+#define THREAD_CNT 4
+#define REM_THREAD_CNT 2
+#define SEND_THREAD_CNT 2
 #define CORE_CNT 64
 // PART_CNT should be at least NODE_CNT
 #define PART_CNT NODE_CNT
@@ -95,6 +95,7 @@
 /***********************************************/
 // WAIT_DIE, NO_WAIT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, OCC, VLL, CALVIN, MAAT
 #define CC_ALG NO_WAIT
+#define ISOLATION_LEVEL SERIALIZABLE
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER         false
@@ -331,6 +332,10 @@ extern TestCases          g_test_case;
 // Transport
 #define TCP 1
 #define IPC 2
+// Isolation levels
+#define SERIALIZABLE 1
+#define READ_COMMITTED 2 
+#define READ_UNCOMMITTED 3 
 
 // Stats and timeout
 #define BILLION 1000000000UL // in ns => 1 second

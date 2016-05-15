@@ -148,6 +148,8 @@ public:
   RC        validate();
 	RC 				finish(RC rc, uint64_t * parts, uint64_t part_cnt);
 	void 			cleanup(RC rc);
+	void 			cleanup_row(RC rc,uint64_t rid);
+  void release_last_row_lock(); 
   RC send_remote_reads(BaseQuery * qry); 
   void set_end_timestamp(uint64_t timestamp) {txn->end_timestamp = timestamp;}
   uint64_t get_end_timestamp() {return txn->end_timestamp;}

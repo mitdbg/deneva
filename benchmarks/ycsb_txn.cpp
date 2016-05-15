@@ -222,6 +222,11 @@ RC YCSBTxnManager::run_ycsb_1(access_t acctype, row_t * row_local) {
 		char * data = row_local->get_data();
 		uint64_t fval __attribute__ ((unused));
     fval = *(uint64_t *)(&data[fid * 100]);
+#if ISOLATION_LEVEL == READ_COMMITTED
+    // Release lock after read
+    release_last_row_lock(); 
+
+#endif
 
   } else {
     assert(acctype == WR);

@@ -146,6 +146,7 @@ void * YCSBWorkload::init_table_slice() {
 	RC rc;
 	assert(g_synth_table_size % g_init_parallelism == 0);
 	assert(tid < g_init_parallelism);
+  uint64_t key_cnt = 0;
 	while ((UInt32)ATOM_FETCH_ADD(next_tid, 0) < g_init_parallelism) {}
 	assert((UInt32)ATOM_FETCH_ADD(next_tid, 0) == g_init_parallelism);
 	uint64_t slice_size = g_synth_table_size / g_init_parallelism;
@@ -153,7 +154,10 @@ void * YCSBWorkload::init_table_slice() {
 			key < slice_size * (tid + 1); 
 			key ++
 	) {
+    if(!IS_LOCAL(key))
+      continue;
 
+    ++key_cnt;
 //		printf("tid=%d. key=%ld\n", tid, key);
 		row_t * new_row = NULL;
 		uint64_t row_id;
@@ -186,6 +190,7 @@ void * YCSBWorkload::init_table_slice() {
 		rc = the_index->index_insert(idx_key, m_item, part_id);
 		assert(rc == RCOK);
 	}
+  printf("Thd %d inserted %ld keys\n",tid,key_cnt);
 	return NULL;
 }
 

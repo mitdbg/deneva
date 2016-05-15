@@ -257,6 +257,7 @@ void parser(int argc, char * argv[]) {
       printf("g_network_delay %d\n",g_network_delay);
       printf("g_total_thread_cnt %d\n",g_total_thread_cnt);
       printf("g_total_client_thread_cnt %d\n",g_total_client_thread_cnt);
+      printf("g_total_node_cnt %d\n",g_total_node_cnt);
 
     // Initialize client-specific globals
     if (g_node_id >= g_node_cnt)

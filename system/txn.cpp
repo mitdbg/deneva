@@ -440,17 +440,13 @@ uint64_t TxnManager::decr_rsp(int i) {
   return result;
 }
 
-void TxnManager::cleanup(RC rc) {
-#if CC_ALG == OCC && MODE == NORMAL_MODE
-  occ_man.finish(rc,this);
-#endif
+void TxnManager::release_last_row_lock() {
+  assert(txn->row_cnt > 0);
+  row_t * orig_r = txn->accesses[txn->row_cnt-1]->orig_row;
+  orig_r->return_row(RCOK, RD, this, NULL);
+}
 
-	ts_t starttime = get_sys_clock();
-  uint64_t row_cnt = txn->accesses.get_count();
-  assert(txn->accesses.get_count() == txn->row_cnt);
-  assert((WORKLOAD == YCSB && row_cnt <= g_req_per_query) || (WORKLOAD == TPCC && row_cnt <= g_max_items_per_txn*2 + 3));
-  DEBUG("Cleanup %ld %ld\n",get_txn_id(),row_cnt);
-	for (int rid = row_cnt - 1; rid >= 0; rid --) {
+void TxnManager::cleanup_row(RC rc, uint64_t rid) {
 		row_t * orig_r = txn->accesses[rid]->orig_row;
 		access_t type = txn->accesses[rid]->type;
 		if (type == WR && rc == Abort && CC_ALG != MAAT)
@@ -466,7 +462,13 @@ void TxnManager::cleanup(RC rc) {
 		{
 			orig_r->return_row(rc,type, this, txn->accesses[rid]->orig_data);
 		} else {
+#if ISOLATION_LEVEL == READ_COMMITTED
+      if(type == WR) {
+        orig_r->return_row(rc,type, this, txn->accesses[rid]->data);
+      }
+#else
 			orig_r->return_row(rc,type, this, txn->accesses[rid]->data);
+#endif
 		}
 
 #if ROLL_BACK && (CC_ALG == DL_DETECT || CC_ALG == NO_WAIT || CC_ALG == WAIT_DIE || CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC)
@@ -478,6 +480,21 @@ void TxnManager::cleanup(RC rc) {
 		}
 #endif
 		txn->accesses[rid]->data = NULL;
+
+}
+
+void TxnManager::cleanup(RC rc) {
+#if CC_ALG == OCC && MODE == NORMAL_MODE
+  occ_man.finish(rc,this);
+#endif
+
+	ts_t starttime = get_sys_clock();
+  uint64_t row_cnt = txn->accesses.get_count();
+  assert(txn->accesses.get_count() == txn->row_cnt);
+  assert((WORKLOAD == YCSB && row_cnt <= g_req_per_query) || (WORKLOAD == TPCC && row_cnt <= g_max_items_per_txn*2 + 3));
+  DEBUG("Cleanup %ld %ld\n",get_txn_id(),row_cnt);
+	for (int rid = row_cnt - 1; rid >= 0; rid --) {
+    cleanup_row(rc,rid);
 	}
 
 	if (rc == Abort) {
