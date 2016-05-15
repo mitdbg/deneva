@@ -28,6 +28,7 @@ struct Item_no;
 
 class Message {
 public:
+  virtual ~Message(){}
   static Message * create_message(char * buf); 
   static Message * create_message(BaseQuery * query, RemReqType rtype); 
   static Message * create_message(TxnManager * txn, RemReqType rtype); 
@@ -35,6 +36,7 @@ public:
   static Message * create_message(LogRecord * record, RemReqType rtype); 
   static Message * create_message(RemReqType rtype); 
   static std::vector<Message*> create_messages(char * buf); 
+  static void release_message(Message * msg); 
   RemReqType rtype;
   uint64_t txn_id;
   uint64_t batch_id;

@@ -38,8 +38,9 @@ void MessageQueue::enqueue(uint64_t thd_id, Message * msg,uint64_t dest) {
   DEBUG("MQ Enqueue %ld\n",dest)
   assert(dest < g_total_node_cnt);
   assert(dest != g_node_id);
-  msg_entry_t entry;
-  msg_pool.get(entry);
+  DEBUG_M("MessageQueue::enqueue msg_entry alloc\n");
+  msg_entry * entry = (msg_entry*) mem_allocator.alloc(sizeof(struct msg_entry));
+  //msg_pool.get(entry);
   entry->msg = msg;
   entry->dest = dest;
   entry->starttime = get_sys_clock();
@@ -80,7 +81,9 @@ uint64_t MessageQueue::dequeue(uint64_t thd_id, Message *& msg) {
     DEBUG("MQ Dequeue %ld\n",dest)
     INC_STATS(thd_id,msg_queue_delay_time,curr_time - entry->starttime);
     INC_STATS(thd_id,msg_queue_cnt,1);
-    msg_pool.put(entry);
+    //msg_pool.put(entry);
+    DEBUG_M("MessageQueue::enqueue msg_entry free\n");
+    mem_allocator.free(entry,sizeof(struct msg_entry));
   } else {
     msg = NULL;
     dest = UINT64_MAX;

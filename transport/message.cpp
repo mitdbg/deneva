@@ -185,6 +185,101 @@ void Message::mcopy_to_buf(char * buf) {
   COPY_BUF(buf,txn_id,ptr);
 }
 
+void Message::release_message(Message * msg) {
+  switch(msg->rtype) {
+    case INIT_DONE: {
+      InitDoneMessage * m_msg = (InitDoneMessage*)msg;
+      m_msg->release();
+      delete m_msg;
+      break;
+                    }
+    case RQRY:
+    case RQRY_CONT: {
+#if WORKLOAD == YCSB
+      YCSBQueryMessage * m_msg = (YCSBQueryMessage*)msg;
+#elif WORKLOAD == TPCC 
+      TPCCQueryMessage * m_msg = (TPCCQueryMessage*)msg;
+#endif
+      m_msg->release();
+      delete m_msg;
+      break;
+                    }
+    case RFIN: {
+      FinishMessage * m_msg = (FinishMessage*)msg;
+      m_msg->release();
+      delete m_msg;
+      break;
+               }
+    case RQRY_RSP: {
+      QueryResponseMessage * m_msg = (QueryResponseMessage*)msg;
+      m_msg->release();
+      delete m_msg;
+      break;
+                   }
+    case LOG_MSG: {
+      LogMessage * m_msg = (LogMessage*)msg;
+      m_msg->release();
+      delete m_msg;
+      break;
+                  }
+    case LOG_MSG_RSP: {
+      LogRspMessage * m_msg = (LogRspMessage*)msg;
+      m_msg->release();
+      delete m_msg;
+      break;
+                      }
+    case LOG_FLUSHED: {
+      LogFlushedMessage * m_msg = (LogFlushedMessage*)msg;
+      m_msg->release();
+      delete m_msg;
+      break;
+                      }
+    case RACK_PREP:
+    case RACK_FIN: {
+      AckMessage * m_msg = (AckMessage*)msg;
+      m_msg->release();
+      delete m_msg;
+      break;
+                   }
+    case CL_QRY:
+    case RTXN:
+    case RTXN_CONT: {
+#if WORKLOAD == YCSB
+      YCSBClientQueryMessage * m_msg = (YCSBClientQueryMessage*)msg;
+#elif WORKLOAD == TPCC 
+      TPCCClientQueryMessage * m_msg = (TPCCClientQueryMessage*)msg;
+#endif
+      m_msg->release();
+      delete m_msg;
+      break;
+                    }
+    case RPREPARE: {
+      PrepareMessage * m_msg = (PrepareMessage*)msg;
+      m_msg->release();
+      delete m_msg;
+      break;
+                   }
+    case RFWD: {
+      ForwardMessage * m_msg = (ForwardMessage*)msg;
+      m_msg->release();
+      delete m_msg;
+      break;
+               }
+    case RDONE: {
+      DoneMessage * m_msg = (DoneMessage*)msg;
+      m_msg->release();
+      delete m_msg;
+      break;
+                }
+    case CL_RSP: {
+      ClientResponseMessage * m_msg = (ClientResponseMessage*)msg;
+      m_msg->release();
+      delete m_msg;
+      break;
+                 }
+    default: { assert(false); }
+  }
+}
 /************************/
 
 uint64_t QueryMessage::get_size() {
@@ -254,13 +349,13 @@ void YCSBClientQueryMessage::init() {
 
 void YCSBClientQueryMessage::release() {
   ClientQueryMessage::release();
-  // Freeing requests is the responsibility of txn
-  /*
+  // Freeing requests is the responsibility of txn at commit time
+/*
   for(uint64_t i = 0; i < requests.size(); i++) {
     DEBUG_M("YCSBClientQueryMessage::release ycsb_request free\n");
     mem_allocator.free(requests[i],sizeof(ycsb_request));
   }
-  */
+*/
   requests.release();
 }
 
@@ -274,20 +369,37 @@ uint64_t YCSBClientQueryMessage::get_size() {
 
 void YCSBClientQueryMessage::copy_from_query(BaseQuery * query) {
   ClientQueryMessage::copy_from_query(query);
+/*
+  requests.init(g_req_per_query);
+  for(uint64_t i = 0; i < ((YCSBQuery*)(query))->requests.size(); i++) {
+      YCSBQuery::copy_request_to_msg(((YCSBQuery*)(query)),this,i);
+  }
+*/
   requests.copy(((YCSBQuery*)(query))->requests);
 }
 
 
 void YCSBClientQueryMessage::copy_from_txn(TxnManager * txn) {
   ClientQueryMessage::mcopy_from_txn(txn);
+/*
+  requests.init(g_req_per_query);
+  for(uint64_t i = 0; i < ((YCSBQuery*)(txn->query))->requests.size(); i++) {
+      YCSBQuery::copy_request_to_msg(((YCSBQuery*)(txn->query)),this,i);
+  }
+*/
   requests.copy(((YCSBQuery*)(txn->query))->requests);
 }
 
 void YCSBClientQueryMessage::copy_to_txn(TxnManager * txn) {
-  // TODO this only copies over the pointers, so if msg is freed, we'll lose the request data
+  // this only copies over the pointers, so if requests are freed, we'll lose the request data
   ClientQueryMessage::copy_to_txn(txn);
   // Copies pointers to txn
   ((YCSBQuery*)(txn->query))->requests.append(requests);
+/*
+  for(uint64_t i = 0; i < requests.size(); i++) {
+      YCSBQuery::copy_request_to_qry(((YCSBQuery*)(txn->query)),this,i);
+  }
+*/
 }
 
 void YCSBClientQueryMessage::copy_from_buf(char * buf) {
@@ -961,12 +1073,12 @@ void YCSBQueryMessage::init() {
 void YCSBQueryMessage::release() {
   QueryMessage::release();
   // Freeing requests is the responsibility of txn
-  /*
+/*
   for(uint64_t i = 0; i < requests.size(); i++) {
     DEBUG_M("YCSBQueryMessage::release ycsb_request free\n");
     mem_allocator.free(requests[i],sizeof(ycsb_request));
   }
-  */
+*/
   requests.release();
 }
 
@@ -979,6 +1091,7 @@ uint64_t YCSBQueryMessage::get_size() {
 
 void YCSBQueryMessage::copy_from_txn(TxnManager * txn) {
   QueryMessage::copy_from_txn(txn);
+  requests.init(g_req_per_query);
   ((YCSBTxnManager*)txn)->copy_remote_requests(this);
   //requests.copy(((YCSBQuery*)(txn->query))->requests);
 }

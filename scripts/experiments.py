@@ -267,8 +267,8 @@ def ycsb_scaling():
 
 def ycsb_dbsize_scaling():
     wl = 'YCSB'
-    nnodes = [1,2,4]#,8,16,32,48]
-    nalgos=['NO_WAIT','OCC','MAAT']
+    nnodes = [1,2,4,8]#,16,32,48]
+    nalgos=['NO_WAIT']
     tsize=2097152*8
     fmt = ["WORKLOAD","NODE_CNT","CC_ALG","SYNTH_TABLE_SIZE"]
     exp = [[wl,n,cc,tsize*n] for n,cc in itertools.product(nnodes,nalgos)]

@@ -164,9 +164,7 @@ void YCSBTxnManager::copy_remote_requests(YCSBQueryMessage * msg) {
   msg->requests.init(ycsb_query->requests.size());
   uint64_t dest_node_id = GET_NODE_ID(ycsb_query->requests[next_record_id]->key);
   while(next_record_id < ycsb_query->requests.size() && !is_local_request(next_record_id) && GET_NODE_ID(ycsb_query->requests[next_record_id]->key) == dest_node_id) {
-    ycsb_request * req = (ycsb_request*) mem_allocator.alloc(sizeof(ycsb_request));
-    req->copy(ycsb_query->requests[next_record_id++]);
-    msg->requests.add(req);
+    YCSBQuery::copy_request_to_msg(ycsb_query,msg,next_record_id++);
   }
 }
 
