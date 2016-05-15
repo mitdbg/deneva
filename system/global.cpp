@@ -22,7 +22,6 @@
 #include "query.h"
 #include "client_query.h"
 #include "occ.h"
-#include "specex.h"
 #include "transport.h"
 #include "work_queue.h"
 #include "abort_queue.h"
@@ -42,7 +41,6 @@ Query_queue query_queue;
 Client_query_queue client_query_queue;
 OptCC occ_man;
 Maat maat_man;
-SpecEx spec_man;
 Transport tport_man;
 TxnManPool txn_man_pool;
 TxnPool txn_pool;

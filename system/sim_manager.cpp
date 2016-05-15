@@ -22,7 +22,6 @@ void SimManager::init() {
 	sim_done = false;
 	start_set = false;
 	sim_init_done = false;
-	sim_timeout = false;
   txn_cnt = 0;
   inflight_cnt = 0;
   epoch_txn_cnt = 0;

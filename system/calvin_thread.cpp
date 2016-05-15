@@ -26,7 +26,6 @@
 #include "mem_alloc.h"
 #include "transport.h"
 #include "math.h"
-#include "specex.h"
 #include "helper.h"
 #include "msg_thread.h"
 #include "msg_queue.h"

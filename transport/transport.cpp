@@ -77,6 +77,7 @@ Socket * Transport::get_socket() {
 	int timeo = 1000; // timeout in ms
 	int stimeo = 1000; // timeout in ms
   int opt = 0;
+  // TODO: try pipeline nanomsg types: NN_PUSH, NN_PULL; or some other kind of scalability protocol
   socket->sock.setsockopt(NN_SOL_SOCKET,NN_RCVTIMEO,&timeo,sizeof(timeo));
   socket->sock.setsockopt(NN_SOL_SOCKET,NN_SNDTIMEO,&stimeo,sizeof(stimeo));
   // NN_TCP_NODELAY doesn't cause TCP_NODELAY to be set -- nanomsg issue #118

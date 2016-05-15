@@ -51,6 +51,7 @@ public:
   uint64_t txn_cnt;
   uint64_t remote_txn_cnt;
   uint64_t local_txn_cnt;
+  uint64_t local_txn_start_cnt;
   uint64_t total_txn_commit_cnt;
   uint64_t local_txn_commit_cnt;
   uint64_t remote_txn_commit_cnt;

@@ -217,7 +217,7 @@ for exp in exps:
 #                pp.pprint(s2)
 
             if plot:
-                print("Pre-Merge:")
+#                print("Pre-Merge:")
 #                pp.pprint(s)
 #                pp.pprint(s2)
                 s = merge_results(s,exp_cnt,drop,nnodes)
@@ -228,7 +228,7 @@ for exp in exps:
 #                pp.pprint(summary[output_f]['thd2'])
 #                pp.pprint(summary[output_f]['thd3'])
                 summary_client[output_f] = s2
-                print("Post-Merge:")
+#                print("Post-Merge:")
 #                pp.pprint(s)
 #                pp.pprint(s2)
 #                print(output_f)

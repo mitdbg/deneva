@@ -22,9 +22,7 @@
 #include <boost/lockfree/queue.hpp>
 
 void QWorkQueue::init() {
-  pthread_mutex_init(&mtx,NULL);
   pthread_mutex_init(&sched_mtx,NULL);
-  pthread_mutex_init(&active_txn_mtx,NULL);
 
   new_epoch = false;
   last_sched_dq = NULL;
@@ -102,7 +100,7 @@ void QWorkQueue::enqueue(uint64_t thd_id, Message * msg,bool busy) {
   uint64_t starttime = get_sys_clock();
   assert(msg);
   DEBUG_M("QWorkQueue::enqueue work_queue_entry alloc\n");
-  work_queue_entry * entry = (work_queue_entry*)mem_allocator.alloc(sizeof(work_queue_entry));
+  work_queue_entry * entry = (work_queue_entry*)mem_allocator.align_alloc(sizeof(work_queue_entry));
   entry->msg = msg;
   entry->rtype = msg->rtype;
   entry->txn_id = msg->txn_id;
@@ -134,8 +132,10 @@ Message * QWorkQueue::dequeue(uint64_t thd_id) {
 #if SERVER_GENERATE_QUERIES
     if(ISSERVER) {
       BaseQuery * m_query = client_query_queue.get_next_query(thd_id,thd_id);
-      assert(m_query);
-      msg = Message::create_message((BaseQuery*)m_query,CL_QRY);
+      if(m_query) {
+        assert(m_query);
+        msg = Message::create_message((BaseQuery*)m_query,CL_QRY);
+      }
     }
 #else
     valid = new_txn_queue->pop(entry);
@@ -164,7 +164,7 @@ Message * QWorkQueue::dequeue(uint64_t thd_id) {
   }
 
 #if SERVER_GENERATE_QUERIES
-  if(msg->rtype == CL_QRY) {
+  if(msg && msg->rtype == CL_QRY) {
     INC_STATS(thd_id,work_queue_new_wait_time,get_sys_clock() - starttime);
     INC_STATS(thd_id,work_queue_new_cnt,1);
   }

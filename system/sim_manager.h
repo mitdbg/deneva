@@ -22,10 +22,9 @@
 class SimManager
 {
 public:
-	bool sim_init_done;
+	volatile bool sim_init_done;
 	bool start_set;
 	volatile bool sim_done;
-	bool sim_timeout;
   uint64_t run_starttime;
   uint64_t rsp_cnt;
   uint64_t seq_epoch;

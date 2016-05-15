@@ -92,9 +92,6 @@ RC ClientThread::run() {
 #endif
     assert(m_query);
 
-    // FIXME: Atomic ops could cause bottleneck
-    simulation->inc_inflight_cnt();
-
 		DEBUG("Client: thread %lu sending query to node: %u, %d, %f\n",
 				_thd_id, next_node_id,inf_cnt,simulation->seconds_from_start(get_sys_clock()));
 

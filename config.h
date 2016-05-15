@@ -179,10 +179,10 @@
 #define SCAN_LEN          20
 #define PART_PER_TXN PART_CNT
 #define PERC_MULTI_PART     MPR 
-#define REQ_PER_QUERY 10
+#define REQ_PER_QUERY 2
 #define FIELD_PER_TUPLE       10
 #define CREATE_TXN_FILE false
-#define STRICT_PPT 0
+#define STRICT_PPT 1
 // ==== [TPCC] ====
 // For large warehouse count, the tables do not fit in memory
 // small tpcc schemas shrink the table size.

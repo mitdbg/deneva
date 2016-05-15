@@ -56,10 +56,8 @@ class Stats;
 class SimManager;
 class Manager;
 class Query_queue;
-class Plock;
 class OptCC;
 class Maat;
-class SpecEx;
 class Transport;
 class Remote_query;
 class TxnManPool;
@@ -95,12 +93,9 @@ extern SimManager * simulation;
 extern Manager glob_manager;
 extern Query_queue query_queue;
 extern Client_query_queue client_query_queue;
-extern Plock part_lock_man;
 extern OptCC occ_man;
 extern Maat maat_man;
-extern SpecEx spec_man;
 extern Transport tport_man;
-extern Remote_query rem_qry_man;
 extern TxnManPool txn_man_pool;
 extern TxnPool txn_pool;
 extern AccessPool access_pool;
@@ -121,7 +116,6 @@ extern bool volatile warmup_done;
 extern bool volatile warmup_finish;
 extern bool volatile enable_thread_mem_pool;
 extern pthread_barrier_t warmup_bar;
-extern pthread_barrier_t warmup_bar2;
 
 /******************************************/
 // Client Global Params 

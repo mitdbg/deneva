@@ -139,7 +139,6 @@ int main(int argc, char* argv[])
   printf("Done\n");
   fflush(stdout);
 
-	pthread_barrier_init( &warmup_bar, NULL, thd_cnt );
 #if CREATE_TXN_FILE
   return(0);
 #endif

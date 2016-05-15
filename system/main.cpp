@@ -234,7 +234,6 @@ int main(int argc, char* argv[])
 	//if (WORKLOAD != TEST) {
 	//	query_queue.init(m_wl);
 	//}
-	//pthread_barrier_init( &warmup_bar, NULL, g_thread_cnt );
 #if CC_ALG == OCC
   printf("Initializing occ lock manager... ");
 	occ_man.init();

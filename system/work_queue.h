@@ -28,17 +28,6 @@ class BaseQuery;
 class Workload;
 class Message;
 
-//class LockfreeQueue;
-
-struct wq_entry {
-  BaseQuery * qry;
-  uint64_t starttime;
-  struct wq_entry * next;
-  struct wq_entry * prev;
-};
-
-typedef wq_entry * wq_entry_t;
-
 struct work_queue_entry {
   Message * msg;
   uint64_t batch_id;
@@ -106,16 +95,11 @@ private:
   boost::lockfree::queue<work_queue_entry* > * new_txn_queue;
   // TODO: move to many separate lock free queues to avoid bottleneck
   std::priority_queue<work_queue_entry*,std::vector<work_queue_entry*>,CompareSchedEntry> scheduler_queue;
-  std::set<uint64_t> active_txn_ids;
-  pthread_mutex_t mtx;
   pthread_mutex_t sched_mtx;
-  pthread_mutex_t active_txn_mtx;
   uint64_t sched_ptr;
   BaseQuery * last_sched_dq;
   uint64_t curr_epoch;
   bool new_epoch;
-  wq_entry_t * sched_head;
-  wq_entry_t * sched_tail;
 
 };
 

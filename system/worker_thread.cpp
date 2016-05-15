@@ -24,7 +24,6 @@
 #include "ycsb_query.h"
 #include "tpcc_query.h"
 #include "math.h"
-#include "specex.h"
 #include "helper.h"
 #include "msg_thread.h"
 #include "msg_queue.h"
@@ -446,6 +445,7 @@ RC WorkerThread::process_rtxn(Message * msg) {
           txn_man->txn_stats.starttime = get_sys_clock();
           msg->copy_to_txn(txn_man);
           DEBUG("START %ld %f %lu\n",txn_man->get_txn_id(),simulation->seconds_from_start(get_sys_clock()),txn_man->txn_stats.starttime);
+          INC_STATS(get_thd_id(),local_txn_start_cnt,1);
 
 				} else {
           DEBUG("RESTART %ld %f %lu\n",txn_man->get_txn_id(),simulation->seconds_from_start(get_sys_clock()),txn_man->txn_stats.starttime);

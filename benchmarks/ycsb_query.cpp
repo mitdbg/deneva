@@ -195,14 +195,13 @@ BaseQuery * YCSBQueryGenerator::gen_requests_hot(uint64_t home_partition_id, Wor
         }
         partition_id = row_id % g_part_cnt;
 
+        if(g_strict_ppt && partitions_accessed.size() < part_limit && (partitions_accessed.size() + (g_req_per_query - rid) >= part_limit) && partitions_accessed.count(partition_id) > 0)
+          continue;
         if(partitions_accessed.count(partition_id) > 0)
           break;
-        else {
-          //if(g_strict_ppt && partitions_accessed.size() < part_limit && (partitions_accessed.size() + (g_req_per_query - rid) >= part_limit))
-          if(partitions_accessed.size() == part_limit)
-            continue;
-          break;
-        }
+        if(partitions_accessed.size() == part_limit)
+          continue;
+        break;
       }
     }
     partitions_accessed.insert(partition_id);

@@ -49,6 +49,7 @@ void Stats_thd::clear() {
   txn_cnt=0;
   remote_txn_cnt=0;
   local_txn_cnt=0;
+  local_txn_start_cnt=0;
   total_txn_commit_cnt=0;
   local_txn_commit_cnt=0;
   remote_txn_commit_cnt=0;
@@ -305,6 +306,7 @@ void Stats_thd::print(FILE * outf) {
   ",txn_cnt=%ld"
   ",remote_txn_cnt=%ld"
   ",local_txn_cnt=%ld"
+  ",local_txn_start_cnt=%ld"
   ",total_txn_commit_cnt=%ld"
   ",local_txn_commit_cnt=%ld"
   ",remote_txn_commit_cnt=%ld"
@@ -323,6 +325,7 @@ void Stats_thd::print(FILE * outf) {
   ,txn_cnt
   ,remote_txn_cnt
   ,local_txn_cnt
+  ,local_txn_start_cnt
   ,total_txn_commit_cnt
   ,local_txn_commit_cnt
   ,remote_txn_commit_cnt
@@ -747,6 +750,7 @@ void Stats_thd::combine(Stats_thd * stats) {
   txn_cnt+=stats->txn_cnt;
   remote_txn_cnt+=stats->remote_txn_cnt;
   local_txn_cnt+=stats->local_txn_cnt;
+  local_txn_start_cnt+=stats->local_txn_start_cnt;
   total_txn_commit_cnt+=stats->total_txn_commit_cnt;
   local_txn_commit_cnt+=stats->local_txn_commit_cnt;
   remote_txn_commit_cnt+=stats->remote_txn_commit_cnt;

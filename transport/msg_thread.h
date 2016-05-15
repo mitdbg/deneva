@@ -33,7 +33,7 @@ struct mbuf {
   }
   void reset(uint64_t dest_id) {
     //buffer = (char*)nn_allocmsg(g_msg_size,0);
-    memset(buffer,0,g_msg_size);
+    //memset(buffer,0,g_msg_size);
     starttime = 0;
     cnt = 0;
     wait = false;
@@ -53,7 +53,6 @@ struct mbuf {
     return (ptr + s) <= g_msg_size;
   }
   bool ready() {
-    //if(starttime == 0)
     if(cnt == 0)
       return false;
     if( (get_sys_clock() - starttime) >= g_msg_time_limit )
@@ -88,10 +87,6 @@ private:
   mbuf ** buffer;
   uint64_t buffer_cnt;
   uint64_t _thd_id;
-  BaseQuery * head_qry;
-  RemReqType head_type;
-  uint64_t head_dest;
-  uint64_t head_start;
 
 };
 

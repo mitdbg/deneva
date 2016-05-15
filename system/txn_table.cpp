@@ -88,23 +88,36 @@ TxnManager * TxnTable::get_transaction_manager(uint64_t thd_id, uint64_t txn_id,
     }
     t_node = t_node->next;
   }
-  INC_STATS(thd_id,mtx[10],get_sys_clock()-prof_starttime);
+  INC_STATS(thd_id,mtx[20],get_sys_clock()-prof_starttime);
 
 
   if(!txn_man) {
     prof_starttime = get_sys_clock();
+
     txn_table_pool.get(thd_id,t_node);
+
+    INC_STATS(thd_id,mtx[21],get_sys_clock()-prof_starttime);
+    prof_starttime = get_sys_clock();
+
     txn_man_pool.get(thd_id,txn_man);
+
+    INC_STATS(thd_id,mtx[22],get_sys_clock()-prof_starttime);
+    prof_starttime = get_sys_clock();
+
     txn_man->set_txn_id(txn_id);
     t_node->txn_man = txn_man;
     LIST_PUT_TAIL(pool[pool_id]->head,pool[pool_id]->tail,t_node);
+
+    INC_STATS(thd_id,mtx[23],get_sys_clock()-prof_starttime);
+    prof_starttime = get_sys_clock();
+
     ++pool[pool_id]->cnt;
     if(pool[pool_id]->cnt > 1) {
       INC_STATS(thd_id,txn_table_cflt_cnt,1);
       INC_STATS(thd_id,txn_table_cflt_size,pool[pool_id]->cnt-1);
     }
     INC_STATS(thd_id,txn_table_new_cnt,1);
-  INC_STATS(thd_id,mtx[11],get_sys_clock()-prof_starttime);
+  INC_STATS(thd_id,mtx[24],get_sys_clock()-prof_starttime);
 
   }
   // unset modify bit for this pool: txn_id % pool_size
@@ -146,7 +159,7 @@ void TxnTable::release_transaction_manager(uint64_t thd_id, uint64_t txn_id, uin
   uint64_t mtx_starttime = starttime;
   // set modify bit for this pool: txn_id % pool_size
   while(!ATOM_CAS(pool[pool_id]->modify,false,true)) { };
-  INC_STATS(thd_id,mtx[9],get_sys_clock()-mtx_starttime);
+  INC_STATS(thd_id,mtx[8],get_sys_clock()-mtx_starttime);
 
   txn_node_t t_node = pool[pool_id]->head;
 
@@ -159,7 +172,8 @@ void TxnTable::release_transaction_manager(uint64_t thd_id, uint64_t txn_id, uin
     }
     t_node = t_node->next;
   }
-  INC_STATS(thd_id,mtx[12],get_sys_clock()-prof_starttime);
+  INC_STATS(thd_id,mtx[25],get_sys_clock()-prof_starttime);
+  prof_starttime = get_sys_clock();
 
   // unset modify bit for this pool: txn_id % pool_size
   ATOM_CAS(pool[pool_id]->modify,true,false);
@@ -170,8 +184,12 @@ void TxnTable::release_transaction_manager(uint64_t thd_id, uint64_t txn_id, uin
 
   txn_man_pool.put(thd_id,t_node->txn_man);
     
+  INC_STATS(thd_id,mtx[26],get_sys_clock()-prof_starttime);
+  prof_starttime = get_sys_clock();
+
   txn_table_pool.put(thd_id,t_node);
-  INC_STATS(thd_id,mtx[13],get_sys_clock()-prof_starttime);
+  INC_STATS(thd_id,mtx[27],get_sys_clock()-prof_starttime);
+
 
   INC_STATS(thd_id,txn_table_release_time,get_sys_clock() - starttime);
   INC_STATS(thd_id,txn_table_release_cnt,1);

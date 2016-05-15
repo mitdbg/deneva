@@ -22,7 +22,6 @@
 #include "thread.h"
 #include "mem_alloc.h"
 #include "occ.h"
-#include "specex.h"
 #include "row_occ.h"
 #include "row_specex.h"
 #include "table.h"
@@ -95,17 +94,14 @@ void Transaction::init() {
 }
 
 void Transaction::reset(uint64_t thd_id) {
-  uint64_t prof_starttime = get_sys_clock();
   release_accesses(thd_id);
   accesses.clear();
-  INC_STATS(thd_id,mtx[6],get_sys_clock()-prof_starttime);
   release_inserts(thd_id);
   insert_rows.clear();  
   write_cnt = 0;
   row_cnt = 0;
   twopc_state = START;
   rc = RCOK;
-  INC_STATS(thd_id,mtx[5],get_sys_clock()-prof_starttime);
 }
 
 void Transaction::release_accesses(uint64_t thd_id) {
@@ -122,7 +118,6 @@ void Transaction::release_inserts(uint64_t thd_id) {
 }
 
 void Transaction::release(uint64_t thd_id) {
-  //uint64_t prof_starttime = get_sys_clock();
   DEBUG("Transaction release\n");
   release_accesses(thd_id);
   DEBUG_M("Transaction::release array accesses free\n")
@@ -130,7 +125,6 @@ void Transaction::release(uint64_t thd_id) {
   release_inserts(thd_id);
   DEBUG_M("Transaction::release array insert_rows free\n")
   insert_rows.release();
-  //INC_STATS(thd_id,mtx[6],get_sys_clock()-prof_starttime);
 }
 
 void TxnManager::init(uint64_t thd_id, Workload * h_wl) {

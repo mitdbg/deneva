@@ -164,8 +164,9 @@ def test():
     nalgos=['NO_WAIT']
     noutthr=[1,3]
     ninthr=[1,3]
-    noutthr=[6]
-    ninthr=[6]
+    ninthr=[1,2,3,4,5,6]
+    noutthr=[1,2,3,4,5,6]
+#    noutthr=[1,2,3]
     nworkthr=[1,2,3,4,5,6]
 #    nworkthr=[3]
 #    nalgos=['MVCC','TIMESTAMP','CALVIN']
@@ -207,6 +208,9 @@ def test_plot(summary,summary_client):
 #    tput_setup(summary,summary_client,nfmt,nexp,x_name,v_name)
     x_name = "THREAD_CNT"
     v_name = "NODE_CNT"
+    v_name = "SEND_THREAD_CNT"
+    tput_setup(summary,summary_client,nfmt,nexp,x_name,v_name)
+    v_name = "REM_THREAD_CNT"
     tput_setup(summary,summary_client,nfmt,nexp,x_name,v_name)
 def test2_plot(summary,summary_client):
     nfmt,nexp = test2()
@@ -1005,7 +1009,7 @@ configs = {
     "ZIPF_THETA":0.6,
     "ACCESS_PERC":0.03,
     "DATA_PERC": 100,
-    "REQ_PER_QUERY": 10, #16
+    "REQ_PER_QUERY": 2, #16
     "SYNTH_TABLE_SIZE":"65536",
 #    "SYNTH_TABLE_SIZE":"2097152*8",
 #TPCC
@@ -1018,7 +1022,7 @@ configs = {
     "DEBUG_RACE":"false",
     "MODE":"NORMAL_MODE",
     "SHMEM_ENV":"false",
-    "STRICT_PPT":0,
+    "STRICT_PPT":1,
     "SET_AFFINITY":"true",
     "LOGGING":"false",
     "SIM_FULL_ROW":"false",

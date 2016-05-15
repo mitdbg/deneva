@@ -279,6 +279,16 @@ stat_map = OrderedDict([
   ('mtx17', []),
   ('mtx18', []),
   ('mtx19', []),
+  ('mtx20', []),
+  ('mtx21', []),
+  ('mtx22', []),
+  ('mtx23', []),
+  ('mtx24', []),
+  ('mtx25', []),
+  ('mtx26', []),
+  ('mtx27', []),
+  ('mtx28', []),
+  ('mtx29', []),
 #Msg types
   ('proc_cnt_type0', []),
   ('proc_cnt_type1', []),
@@ -619,8 +629,15 @@ def get_summary(sfile,summary={}):
                 process_results(summary,results)
 #    pp = pprint.PrettyPrinter()
 #    pp.pprint(summary['txn_cnt'])
+    if "work_queue_enq_cnt" in summary:
+        wq_diff = summary["work_queue_enq_cnt"][-1] - summary["work_queue_cnt"][-1]
+        mq_diff = summary["msg_queue_enq_cnt"][-1] - summary["msg_queue_cnt"][-1]
+        if  wq_diff > 5000:
+            print("Work Queue: {}".format(wq_diff))
+        if  mq_diff > 5000:
+            print("Msg Queue: {}".format(mq_diff))
     summary["progress"] = prog
-    print("Added progress: " + str(len(prog)))
+#    print("Added progress: " + str(len(prog)))
     return summary
 
 def get_network_stats(n_file):
