@@ -60,6 +60,7 @@ void TxnStats::reset() {
   remote_wait_time = 0;
   total_twopc_time += twopc_time;
   twopc_time = 0;
+  write_cnt = 0;
 }
 
 void TxnStats::commit_stats(uint64_t thd_id) {
@@ -76,6 +77,10 @@ void TxnStats::commit_stats(uint64_t thd_id) {
   INC_STATS(thd_id,txn_remote_wait_time,remote_wait_time);
   INC_STATS(thd_id,txn_total_twopc_time,total_twopc_time);
   INC_STATS(thd_id,txn_twopc_time,twopc_time);
+  if(write_cnt > 0) {
+    INC_STATS(thd_id,txn_write_cnt,1);
+    INC_STATS(thd_id,record_write_cnt,write_cnt);
+  }
 }
 
 
@@ -477,6 +482,7 @@ void TxnManager::cleanup_row(RC rc, uint64_t rid) {
 			txn->accesses[rid]->orig_data->free_row();
       DEBUG_M("TxnManager::cleanup row_t free\n");
       row_pool.put(get_thd_id(),txn->accesses[rid]->orig_data);
+      ++txn_stats.write_cnt;
 		}
 #endif
 		txn->accesses[rid]->data = NULL;

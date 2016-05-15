@@ -255,7 +255,6 @@ int main(int argc, char* argv[])
   endtime = get_server_clock();
   printf("Initialization Time = %ld\n", endtime - starttime);
   fflush(stdout);
-	warmup_finish = true;
 	warmup_done = true;
 	pthread_barrier_init( &warmup_bar, NULL, all_thd_cnt);
 

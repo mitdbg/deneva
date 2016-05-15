@@ -59,7 +59,6 @@ Logger logger;
 TimeTable time_table;
 
 bool volatile warmup_done = false;
-bool volatile warmup_finish = false;
 bool volatile enable_thread_mem_pool = false;
 pthread_barrier_t warmup_bar;
 
@@ -134,6 +133,7 @@ UInt32 g_network_delay = NETWORK_DELAY;
 UInt64 g_done_timer = DONE_TIMER;
 UInt64 g_batch_time_limit = BATCH_TIMER;
 UInt64 g_prog_timer = PROG_TIMER;
+UInt64 g_warmup_timer = WARMUP_TIMER;
 UInt64 g_msg_time_limit = MSG_TIME_LIMIT;
 
 UInt64 g_log_buf_max = LOG_BUF_MAX;

@@ -44,9 +44,9 @@
 #define TIME_ENABLE         true //STATS_ENABLE
 
 #define FIN_BY_TIME true
-#define MAX_TXN_IN_FLIGHT 100000
+#define MAX_TXN_IN_FLIGHT 100
 
-#define SERVER_GENERATE_QUERIES true
+#define SERVER_GENERATE_QUERIES false
 
 /***********************************************/
 // Memory System
@@ -160,7 +160,7 @@
 // max number of rows touched per transaction
 #define MAX_ROW_PER_TXN       64
 #define QUERY_INTVL         1UL
-#define MAX_TXN_PER_PART 1000000
+#define MAX_TXN_PER_PART 100000
 #define FIRST_PART_LOCAL      true
 #define MAX_TUPLE_SIZE        1024 // in bytes
 #define GEN_BY_MPR false
@@ -340,8 +340,9 @@ extern TestCases          g_test_case;
 // Stats and timeout
 #define BILLION 1000000000UL // in ns => 1 second
 #define STAT_ARR_SIZE 1024
-#define PROG_TIMER 1 * BILLION // in s
+#define PROG_TIMER 10 * BILLION // in s
 #define BATCH_TIMER 0
+#define WARMUP_TIMER 10 * BILLION // in s
 #define DONE_TIMER 1 * 60 * BILLION // ~1 minutes
 
 #define SEED 0

@@ -20,6 +20,8 @@
 
 void SimManager::init() {
 	sim_done = false;
+  warmup = false;
+  warmup_end_time = 0;
 	start_set = false;
 	sim_init_done = false;
   txn_cnt = 0;
@@ -46,9 +48,9 @@ void SimManager::set_starttime(uint64_t starttime) {
 
 bool SimManager::timeout() {
 #if TIME_ENABLE
-  return (get_sys_clock() - run_starttime) >= g_done_timer;
+  return (get_sys_clock() - run_starttime) >= g_done_timer + g_warmup_timer;
 #else
-  return (get_wall_clock() - run_starttime) >= g_done_timer;
+  return (get_wall_clock() - run_starttime) >= g_done_timer + g_warmup_timer;
 #endif
 }
 
@@ -60,6 +62,16 @@ bool SimManager::is_done() {
   return done;
 }
 
+bool SimManager::is_warmup_done() {
+  if(warmup)
+    return true;
+  bool done = ((get_sys_clock() - run_starttime) >= g_warmup_timer);
+  if(done) {
+    ATOM_CAS(warmup_end_time,0,get_sys_clock());
+    ATOM_CAS(warmup,false,true);
+  }
+  return done;
+}
 bool SimManager::is_setup_done() {
   return sim_init_done;
 }
@@ -70,7 +82,9 @@ void SimManager::set_setup_done() {
 
 void SimManager::set_done() {
     if(ATOM_CAS(sim_done, false, true)) {
-				SET_STATS(0, total_runtime, get_sys_clock() - run_starttime); 
+      if(warmup_end_time == 0)
+        warmup_end_time = run_starttime;
+      SET_STATS(0, total_runtime, get_sys_clock() - warmup_end_time); 
     }
 }
 

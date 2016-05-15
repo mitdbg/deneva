@@ -81,6 +81,8 @@ SHORTNAMES = {
     "STRICT_PPT":"SPPT",
     "NETWORK_DELAY":"NDLY",
     "REPLICA_CNT":"RN",
+#    "SYNTH_TABLE_SIZE":"TBL",
+    "SERIALIZATION_LEVELS":"LVL",
 }
 
 stat_map = OrderedDict([

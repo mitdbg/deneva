@@ -63,6 +63,8 @@ public:
   double multi_part_txn_run_time;
   uint64_t single_part_txn_cnt;
   double single_part_txn_run_time;
+  uint64_t txn_write_cnt;
+  uint64_t record_write_cnt;
 
   // Transaction stats
   double txn_total_process_time;

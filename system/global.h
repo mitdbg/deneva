@@ -113,7 +113,6 @@ extern Logger logger;
 extern TimeTable time_table;
 
 extern bool volatile warmup_done;
-extern bool volatile warmup_finish;
 extern bool volatile enable_thread_mem_pool;
 extern pthread_barrier_t warmup_bar;
 
@@ -173,6 +172,7 @@ extern UInt32 g_network_delay;
 extern UInt64 g_done_timer;
 extern UInt64 g_batch_time_limit;
 extern UInt64 g_prog_timer;
+extern UInt64 g_warmup_timer;
 extern UInt64 g_msg_time_limit;
 
 // MVCC

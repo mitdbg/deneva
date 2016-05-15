@@ -61,6 +61,8 @@ void Stats_thd::clear() {
   multi_part_txn_run_time=0;
   single_part_txn_cnt=0;
   single_part_txn_run_time=0;
+  txn_write_cnt=0;
+  record_write_cnt=0;
 
   // Transaction stats
   txn_total_process_time=0;
@@ -321,6 +323,8 @@ void Stats_thd::print(FILE * outf) {
   ",single_part_txn_cnt=%ld"
   ",single_part_txn_run_time=%f"
   ",single_part_txn_avg_time=%f"
+  ",txn_write_cnt=%ld"
+  ",record_write_cnt=%ld"
   ,tput
   ,txn_cnt
   ,remote_txn_cnt
@@ -340,6 +344,8 @@ void Stats_thd::print(FILE * outf) {
   ,single_part_txn_cnt
   ,single_part_txn_run_time / BILLION
   ,single_part_txn_avg_time / BILLION
+  ,txn_write_cnt
+  ,record_write_cnt
   );
 
   // Transaction stats
@@ -762,6 +768,8 @@ void Stats_thd::combine(Stats_thd * stats) {
   multi_part_txn_run_time+=stats->multi_part_txn_run_time;
   single_part_txn_cnt+=stats->single_part_txn_cnt;
   single_part_txn_run_time+=stats->single_part_txn_run_time;
+  txn_write_cnt+=stats->txn_write_cnt;
+  record_write_cnt+=stats->record_write_cnt;
 
   // Transaction stats
   txn_total_process_time+=stats->txn_total_process_time;
