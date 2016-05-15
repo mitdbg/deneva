@@ -1009,7 +1009,7 @@ configs = {
     "ZIPF_THETA":0.6,
     "ACCESS_PERC":0.03,
     "DATA_PERC": 100,
-    "REQ_PER_QUERY": 2, #16
+    "REQ_PER_QUERY": 10, #16
     "SYNTH_TABLE_SIZE":"65536",
 #    "SYNTH_TABLE_SIZE":"2097152*8",
 #TPCC
@@ -1022,7 +1022,7 @@ configs = {
     "DEBUG_RACE":"false",
     "MODE":"NORMAL_MODE",
     "SHMEM_ENV":"false",
-    "STRICT_PPT":1,
+    "STRICT_PPT":0,
     "SET_AFFINITY":"true",
     "LOGGING":"false",
     "SIM_FULL_ROW":"false",

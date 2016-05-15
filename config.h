@@ -5,14 +5,14 @@
 /***********************************************/
 // Simulation + Hardware
 /***********************************************/
-#define NODE_CNT 2
-#define THREAD_CNT 1
-#define REM_THREAD_CNT 1
-#define SEND_THREAD_CNT 1
-#define CORE_CNT 8
+#define NODE_CNT 16
+#define THREAD_CNT 6
+#define REM_THREAD_CNT 5
+#define SEND_THREAD_CNT 5
+#define CORE_CNT 64
 // PART_CNT should be at least NODE_CNT
 #define PART_CNT NODE_CNT
-#define CLIENT_NODE_CNT 1
+#define CLIENT_NODE_CNT NODE_CNT
 #define CLIENT_THREAD_CNT 1
 #define CLIENT_REM_THREAD_CNT 1
 #define CLIENT_SEND_THREAD_CNT 1
@@ -44,7 +44,7 @@
 #define TIME_ENABLE         true //STATS_ENABLE
 
 #define FIN_BY_TIME true
-#define MAX_TXN_IN_FLIGHT 1
+#define MAX_TXN_IN_FLIGHT 100000
 
 #define SERVER_GENERATE_QUERIES true
 
@@ -73,7 +73,7 @@
 // Message Passing
 /***********************************************/
 #define TPORT_TYPE TCP
-#define TPORT_PORT 17000
+#define TPORT_PORT 63200
 #define SET_AFFINITY true
 
 #define MAX_TPORT_NAME 128
@@ -88,13 +88,13 @@
 #define PRIORITY_WORK_QUEUE false
 #define PRIORITY PRIORITY_ACTIVE
 #define MSG_SIZE_MAX 4096
-#define MSG_TIME_LIMIT 0 //10 * 1000000UL
+#define MSG_TIME_LIMIT 0
 
 /***********************************************/
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, OCC, VLL, CALVIN, MAAT
-#define CC_ALG NO_WAIT 
+#define CC_ALG NO_WAIT
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER         false
@@ -159,7 +159,7 @@
 // max number of rows touched per transaction
 #define MAX_ROW_PER_TXN       64
 #define QUERY_INTVL         1UL
-#define MAX_TXN_PER_PART 100000
+#define MAX_TXN_PER_PART 1000000
 #define FIRST_PART_LOCAL      true
 #define MAX_TUPLE_SIZE        1024 // in bytes
 #define GEN_BY_MPR false
@@ -171,13 +171,13 @@
 #define DATA_PERC 100
 #define ACCESS_PERC 0.03
 #define INIT_PARALLELISM 8
-#define SYNTH_TABLE_SIZE 1097152
+#define SYNTH_TABLE_SIZE 65536
 #define ZIPF_THETA 0.6
 #define TXN_WRITE_PERC 0.0
 #define TUP_WRITE_PERC 0.0
 #define SCAN_PERC           0
 #define SCAN_LEN          20
-#define PART_PER_TXN NODE_CNT
+#define PART_PER_TXN PART_CNT
 #define PERC_MULTI_PART     MPR 
 #define REQ_PER_QUERY 10
 #define FIELD_PER_TUPLE       10
@@ -264,8 +264,8 @@ extern TestCases          g_test_case;
 #define DEBUG_TIMESTAMP       false
 #define DEBUG_SYNTH         false
 #define DEBUG_ASSERT        false
-#define DEBUG_DISTR true 
-#define DEBUG_ALLOC true
+#define DEBUG_DISTR false
+#define DEBUG_ALLOC false
 #define DEBUG_RACE false
 #define DEBUG_TIMELINE        false
 #define DEBUG_BREAKDOWN       false
@@ -335,12 +335,12 @@ extern TestCases          g_test_case;
 // Stats and timeout
 #define BILLION 1000000000UL // in ns => 1 second
 #define STAT_ARR_SIZE 1024
-#define PROG_TIMER 100 * BILLION // in s
+#define PROG_TIMER 1 * BILLION // in s
 #define BATCH_TIMER 0
 #define DONE_TIMER 1 * 60 * BILLION // ~1 minutes
 
 #define SEED 0
-#define SHMEM_ENV false
+#define SHMEM_ENV true
 
 #endif
 
