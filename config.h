@@ -5,17 +5,17 @@
 /***********************************************/
 // Simulation + Hardware
 /***********************************************/
-#define NODE_CNT 2 
-#define THREAD_CNT 2
-#define REM_THREAD_CNT 1
-#define SEND_THREAD_CNT 1
+#define NODE_CNT 4
+#define THREAD_CNT 4
+#define REM_THREAD_CNT 2
+#define SEND_THREAD_CNT 2
 #define CORE_CNT 8
 // PART_CNT should be at least NODE_CNT
 #define PART_CNT NODE_CNT
 #define CLIENT_NODE_CNT 1
-#define CLIENT_THREAD_CNT 1
-#define CLIENT_REM_THREAD_CNT 1
-#define CLIENT_SEND_THREAD_CNT 1
+#define CLIENT_THREAD_CNT 4
+#define CLIENT_REM_THREAD_CNT 2
+#define CLIENT_SEND_THREAD_CNT 2
 #define CLIENT_RUNTIME false
 
 #define LOAD_METHOD LOAD_MAX
@@ -95,7 +95,7 @@
 /***********************************************/
 // WAIT_DIE, NO_WAIT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, OCC, VLL, CALVIN, MAAT
 #define CC_ALG NO_WAIT
-#define ISOLATION_LEVEL SERIALIZABLE
+#define ISOLATION_LEVEL READ_COMMITTED
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER         false
@@ -171,11 +171,11 @@
 #define SKEW_METHOD ZIPF
 #define DATA_PERC 100
 #define ACCESS_PERC 0.03
-#define INIT_PARALLELISM 8
+#define INIT_PARALLELISM 1
 #define SYNTH_TABLE_SIZE 65536
-#define ZIPF_THETA 0.3
-#define TXN_WRITE_PERC 0.1
-#define TUP_WRITE_PERC 1.0
+#define ZIPF_THETA 0.9
+#define TXN_WRITE_PERC 0.0
+#define TUP_WRITE_PERC 0.0
 #define SCAN_PERC           0
 #define SCAN_LEN          20
 #define PART_PER_TXN PART_CNT
@@ -265,7 +265,7 @@ extern TestCases          g_test_case;
 #define DEBUG_TIMESTAMP       false
 #define DEBUG_SYNTH         false
 #define DEBUG_ASSERT        false
-#define DEBUG_DISTR true
+#define DEBUG_DISTR false
 #define DEBUG_ALLOC false
 #define DEBUG_RACE false
 #define DEBUG_TIMELINE        false
@@ -346,8 +346,8 @@ extern TestCases          g_test_case;
 #define WARMUP_TIMER 1 * 60 * BILLION // ~1 minutes
 
 #define SEED 0
-#define SHMEM_ENV true
-#define ENVIRONMENT_EC2 false 
+#define SHMEM_ENV false
+#define ENVIRONMENT_EC2 false
 
 #endif
 

@@ -40,7 +40,7 @@ SHORTNAMES = {
 }
 
 #config_names=["CLIENT_NODE_CNT","NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","CLIENT_THREAD_CNT","CLIENT_REM_THREAD_CNT","CLIENT_SEND_THREAD_CNT","THREAD_CNT","REM_THREAD_CNT","SEND_THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","TXN_WRITE_PERC","TUP_WRITE_PERC","PART_PER_TXN","PART_CNT","MSG_TIME_LIMIT","MSG_SIZE_MAX","MODE","DATA_PERC","ACCESS_PERC","REQ_PER_QUERY"]
-fmt_title=["NODE_CNT","CC_ALG","ACCESS_PERC","TXN_WRITE_PERC","PERC_PAYMENT","MPR","MODE","MAX_TXN_IN_FLIGHT","SEND_THREAD_CNT","REM_THREAD_CNT","THREAD_CNT"]
+fmt_title=["NODE_CNT","CC_ALG","ACCESS_PERC","TXN_WRITE_PERC","PERC_PAYMENT","MPR","MODE","MAX_TXN_IN_FLIGHT","SEND_THREAD_CNT","REM_THREAD_CNT","THREAD_CNT","TXN_WRITE_PERC","TUP_WRITE_PERC","ZIPF_THETA"]
 
 ##############################
 # VLDB PAPER PLOTS
@@ -66,9 +66,9 @@ def isolation_levels():
     levels=["READ_UNCOMMITTED","READ_COMMITTED","SERIALIZABLE"]
     base_table_size=2097152*8
     load = [1000]
-    txn_write_perc = [0.0,0.01,0.1,1.0]
+    txn_write_perc = [0.01,0.1,1.0]
     tup_write_perc = [1.0]
-    skew = [0.0,0.3,0.6]
+    skew = [0.3,0.6]
     fmt = ["WORKLOAD","NODE_CNT","CC_ALG","SYNTH_TABLE_SIZE","TUP_WRITE_PERC","TXN_WRITE_PERC","ISOLATION_LEVEL","MAX_TXN_IN_FLIGHT","ZIPF_THETA"]
     exp = [[wl,n,algo,base_table_size*n,tup_wr_perc,txn_wr_perc,level,ld,sk] for txn_wr_perc,tup_wr_perc,algo,sk,ld,n,level in itertools.product(txn_write_perc,tup_write_perc,algos,skew,load,nnodes,levels)]
     return fmt,exp
@@ -116,8 +116,11 @@ def ycsb_load_plot(summary,summary_client):
     skew = [0.0,0.3,0.6]
     for wr,sk in itertools.product(txn_write_perc,skew):
         const={"TXN_WRITE_PERC":wr,"ZIPF_THETA":sk}
+        title = ""
+        for c in const.keys():
+            title += "{} {},".format(SHORTNAMES[c],const[c])
         x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants=const)
-        tput(x_vals,v_vals,summary,summary_client,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,xlab="Server Count",new_cfgs=lst,ylimit=0.14,logscalex=False)
+        tput(x_vals,v_vals,summary,summary_client,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,xlab="Server Count",new_cfgs=lst,ylimit=0.14,logscalex=False,title=title)
 
 
 def isolation_levels_plot(summary,summary_client):
@@ -1028,9 +1031,9 @@ configs = {
     "REM_THREAD_CNT": 2,
     "SEND_THREAD_CNT": 2,
     "CLIENT_NODE_CNT" : "NODE_CNT",
-    "CLIENT_THREAD_CNT" : 1,
-    "CLIENT_REM_THREAD_CNT" : 1,
-    "CLIENT_SEND_THREAD_CNT" : 1,
+    "CLIENT_THREAD_CNT" : 4,
+    "CLIENT_REM_THREAD_CNT" : 2,
+    "CLIENT_SEND_THREAD_CNT" : 2,
     "MAX_TXN_PER_PART" : 100000,
 #    "MAX_TXN_PER_PART" : 1,
     "WORKLOAD" : "YCSB",

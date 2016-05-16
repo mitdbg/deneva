@@ -108,7 +108,7 @@ void parser(int argc, char * argv[]) {
     else if (argv[i][1] == 'a' && argv[i][2] == 'b' && argv[i][3] == 'r' && argv[i][4] == 't')
 			g_abort_penalty = atoi( &argv[i][5] );
     else if (argv[i][1] == 'z' && argv[i][2] == 'i' && argv[i][3] == 'p' && argv[i][4] == 'f')
-			g_zipf_theta = atoi( &argv[i][5] );
+			g_zipf_theta = atof( &argv[i][5] );
     else if (argv[i][1] == 'n' && argv[i][2] == 'i' && argv[i][3] == 'd')
 			g_node_id = atoi( &argv[i][4] );
     else if (argv[i][1] == 'c' && argv[i][2] == 't' && argv[i][3] == 'r')
