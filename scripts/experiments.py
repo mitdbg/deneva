@@ -36,7 +36,7 @@ SHORTNAMES = {
     "NETWORK_DELAY":"NDLY",
     "REPLICA_CNT":"RN",
     "SYNTH_TABLE_SIZE":"TBL",
-    "SERIALIZATION_LEVELS":"LVL",
+    "ISOLATION_LEVEL":"LVL",
 }
 
 #config_names=["CLIENT_NODE_CNT","NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","CLIENT_THREAD_CNT","CLIENT_REM_THREAD_CNT","CLIENT_SEND_THREAD_CNT","THREAD_CNT","REM_THREAD_CNT","SEND_THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","TXN_WRITE_PERC","TUP_WRITE_PERC","PART_PER_TXN","PART_CNT","MSG_TIME_LIMIT","MSG_SIZE_MAX","MODE","DATA_PERC","ACCESS_PERC","REQ_PER_QUERY"]
@@ -52,8 +52,9 @@ def ycsb_scaling():
     algos=['NO_WAIT']
     base_table_size=2097152*8
     txn_write_perc = [0.0]
-    tup_write_perc = [0.0]
+    tup_write_perc = [1.0]
     load = [500,1000,5000,10000]
+    load = [500]
     fmt = ["WORKLOAD","NODE_CNT","CC_ALG","SYNTH_TABLE_SIZE","TUP_WRITE_PERC","TXN_WRITE_PERC","MAX_TXN_IN_FLIGHT"]
     exp = [[wl,n,algo,base_table_size*n,tup_wr_perc,txn_wr_perc,ld] for txn_wr_perc,tup_wr_perc,n,algo,ld in itertools.product(txn_write_perc,tup_write_perc,nnodes,algos,load)]
     return fmt,exp
@@ -64,11 +65,30 @@ def isolation_levels():
     algos=['NO_WAIT']
     levels=["READ_UNCOMMITTED","READ_COMMITTED","SERIALIZABLE"]
     base_table_size=2097152*8
-    txn_write_perc = [0.0]
-    tup_write_perc = [0.0]
-    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","SYNTH_TABLE_SIZE","TUP_WRITE_PERC","TXN_WRITE_PERC","SERIALIZATION_LEVELS","MAX_TXN_IN_FLIGHT"]
-    exp = [[wl,n,algo,base_table_size*n,tup_wr_perc,txn_wr_perc,level,ld] for txn_wr_perc,tup_wr_perc,n,algo,level,ld in itertools.product(txn_write_perc,tup_write_perc,nnodes,algos,levels,load)]
+    load = [1000]
+    txn_write_perc = [0.0,0.01,0.1,1.0]
+    tup_write_perc = [1.0]
+    skew = [0.0,0.3,0.6]
+    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","SYNTH_TABLE_SIZE","TUP_WRITE_PERC","TXN_WRITE_PERC","ISOLATION_LEVEL","MAX_TXN_IN_FLIGHT","ZIPF_THETA"]
+    exp = [[wl,n,algo,base_table_size*n,tup_wr_perc,txn_wr_perc,level,ld,sk] for txn_wr_perc,tup_wr_perc,algo,sk,ld,n,level in itertools.product(txn_write_perc,tup_write_perc,algos,skew,load,nnodes,levels)]
     return fmt,exp
+
+def ycsb_load():
+    wl = 'YCSB'
+    algos=['NO_WAIT']
+    load = [1,50,100,250,500,750,1000,2500,5000,10000]
+    base_table_size=2097152*8
+    txn_write_perc = [0.0,1.0]
+    tup_write_perc = [0.0,1.0]
+    txn_write_perc = [0.0,0.01,0.1,1.0]
+    tup_write_perc = [1.0]
+    nnodes = [1,2,4]
+    skew = [0.0,0.3,0.6]
+    rpq =  10
+    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","SYNTH_TABLE_SIZE","TUP_WRITE_PERC","TXN_WRITE_PERC","MAX_TXN_IN_FLIGHT","ZIPF_THETA"]
+    exp = [[wl,n,algo,base_table_size*n,tup_wr_perc,txn_wr_perc,ld,sk] for txn_wr_perc,tup_wr_perc,algo,sk,ld,n in itertools.product(txn_write_perc,tup_write_perc,algos,skew,load,nnodes)]
+    return fmt,exp
+
 
 
 ##############################
@@ -84,6 +104,36 @@ def ycsb_scaling_plot(summary,summary_client):
 #    tput_setup(summary,summary_client,nfmt,nexp,x_name,v_name)
     x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name)
     tput(x_vals,v_vals,summary,summary_client,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,xlab="Server Count",new_cfgs=lst,ylimit=0.14,logscalex=False)
+
+def ycsb_load_plot(summary,summary_client):
+    from helper import plot_prep
+    from plot_helper import tput
+    nfmt,nexp = ycsb_load()
+    v_name="NODE_CNT"
+    x_name="MAX_TXN_IN_FLIGHT"
+#    tput_setup(summary,summary_client,nfmt,nexp,x_name,v_name)
+    txn_write_perc = [0.0,0.01,0.1,1.0]
+    skew = [0.0,0.3,0.6]
+    for wr,sk in itertools.product(txn_write_perc,skew):
+        const={"TXN_WRITE_PERC":wr,"ZIPF_THETA":sk}
+        x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants=const)
+        tput(x_vals,v_vals,summary,summary_client,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,xlab="Server Count",new_cfgs=lst,ylimit=0.14,logscalex=False)
+
+
+def isolation_levels_plot(summary,summary_client):
+    from helper import plot_prep
+    from plot_helper import tput
+    nfmt,nexp = isolation_levels()
+    x_name="NODE_CNT"
+    v_name="ISOLATION_LEVEL"
+#    tput_setup(summary,summary_client,nfmt,nexp,x_name,v_name)
+    txn_write_perc = [0.0,0.01,0.1,1.0]
+    skew = [0.0,0.3,0.6]
+    for wr,sk in itertools.product(txn_write_perc,skew):
+        const={"TXN_WRITE_PERC":wr,"ZIPF_THETA":sk,"TUP_WRITE_PERC":1.0}
+        x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants=const)
+        tput(x_vals,v_vals,summary,summary_client,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,xlab="Server Count",new_cfgs=lst,ylimit=0.14,logscalex=False,title='',name='')
+
 
 
 def tpcc_scaling_whset():
@@ -383,22 +433,6 @@ def ycsb_scaling_2_low_access():
     nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP','CALVIN']
     fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PART_PER_TXN","ACCESS_PERC"]
     exp = [[wl,n,cc,2,0.00] for n,cc in itertools.product(nnodes,nalgos)]
-    return fmt,exp
-
-# 2x5x9x2 = 180
-
-def ycsb_load():
-    wl = 'YCSB'
-    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP','CALVIN']
-    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP']
-#    ntif = [5000,10000,20000,30000,40000,50000]
-    ntif = [5000,10000,20000,30000,40000,50000,60000,70000,80000,90000,100000,110000,120000,130000,140000,150000,160000,170000,180000,190000,200000,250000,300000,350000,400000]
-    ntif = [5000,10000,25000,50000,100000,150000,200000,250000,300000,350000]
-#    ntif = [250000,300000,350000,400000]
-    nnodes = [16]
-    rpq =  10
-    fmt = ["WORKLOAD","REQ_PER_QUERY","PART_PER_TXN","CC_ALG","MAX_TXN_IN_FLIGHT","NODE_CNT"]
-    exp = [[wl,rpq,2,cc,tif,n] for n,tif,cc in itertools.product(nnodes,ntif,nalgos)]
     return fmt,exp
 
 def ycsb_load_ro():
@@ -908,6 +942,7 @@ experiment_map = {
     'inflight_study': inflight_study,
     'ycsb_scaling': ycsb_scaling,
     'isolation_levels': isolation_levels,
+    'isolation_levels_plot': isolation_levels_plot,
     'ycsb_gold': ycsb_gold,
     'ycsb_scaling_2': ycsb_scaling_2,
     'ycsb_scaling_2_tif': ycsb_scaling_2_tif,
@@ -972,6 +1007,7 @@ experiment_map = {
     'ppr_ycsb_medwrite_plot': ppr_ycsb_medwrite_plot,
     'ppr_ycsb_load': ycsb_load_small,
     'ppr_ycsb_load_plot': ppr_ycsb_load_plot,
+    'ycsb_load_plot': ycsb_load_plot,
     'ppr_network': network_sweep,
     'ppr_network_plot': ppr_network_plot,
     'ycsb_calvin': ycsb_calvin,
@@ -996,17 +1032,19 @@ configs = {
     "CLIENT_REM_THREAD_CNT" : 1,
     "CLIENT_SEND_THREAD_CNT" : 1,
     "MAX_TXN_PER_PART" : 100000,
+#    "MAX_TXN_PER_PART" : 1,
     "WORKLOAD" : "YCSB",
     "CC_ALG" : "WAIT_DIE",
     "MPR" : 1.0,
     "TPORT_TYPE":"IPC",
-    "TPORT_PORT":"63200",
+    "TPORT_PORT":"17000",#"63200",
     "PART_CNT": "NODE_CNT", #2,
     "PART_PER_TXN": "PART_CNT",
     "MAX_TXN_IN_FLIGHT": 100,
     "NETWORK_DELAY": '0UL',
     "DONE_TIMER": "1 * 60 * BILLION // ~1 minutes",
 #    "DONE_TIMER": "1 * 10 * BILLION // ~1 minutes",
+    "WARMUP_TIMER": "1 * 60 * BILLION // ~1 minutes",
     "BATCH_TIMER" : "0",#"10000000",
     "PROG_TIMER" : "10 * BILLION // in s",
     "NETWORK_TEST" : "false",
@@ -1021,7 +1059,7 @@ configs = {
 #YCSB
     "INIT_PARALLELISM" : 8, 
     "TUP_WRITE_PERC":0.0,
-    "ZIPF_THETA":0.6,
+    "ZIPF_THETA":0.3,
     "ACCESS_PERC":0.03,
     "DATA_PERC": 100,
     "REQ_PER_QUERY": 10, #16
@@ -1042,6 +1080,8 @@ configs = {
     "LOGGING":"false",
     "SIM_FULL_ROW":"false",
     "SERVER_GENERATE_QUERIES":"false",
+    "SKEW_METHOD":"ZIPF",
+    "ENVIRONMENT_EC2":"false",
     "LOAD_METHOD": "LOAD_MAX", #"LOAD_RATE","LOAD_MAX"
     "ISOLATION_LEVEL":"SERIALIZABLE"
 }

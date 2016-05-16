@@ -220,8 +220,10 @@ RC WorkerThread::run() {
     process(msg);
 
     ready_starttime = get_sys_clock();
-    if(txn_man)
-      assert(txn_man->set_ready());
+    if(txn_man) {
+      bool ready = txn_man->set_ready();
+      assert(ready);
+    }
     INC_STATS(get_thd_id(),worker_deactivate_txn_time,get_sys_clock() - ready_starttime);
 
     // delete message
@@ -339,6 +341,11 @@ RC WorkerThread::process_rqry_rsp(Message * msg) {
   assert(IS_LOCAL(msg->get_txn_id()));
 
   txn_man->txn_stats.remote_wait_time += get_sys_clock() - txn_man->txn_stats.wait_starttime;
+
+  if(((QueryResponseMessage*)msg)->rc == Abort) {
+    txn_man->start_abort();
+    return Abort;
+  }
 
   RC rc = txn_man->run_txn();
   check_if_done(rc);

@@ -5,14 +5,14 @@
 /***********************************************/
 // Simulation + Hardware
 /***********************************************/
-#define NODE_CNT 16
-#define THREAD_CNT 4
-#define REM_THREAD_CNT 2
-#define SEND_THREAD_CNT 2
-#define CORE_CNT 64
+#define NODE_CNT 2 
+#define THREAD_CNT 2
+#define REM_THREAD_CNT 1
+#define SEND_THREAD_CNT 1
+#define CORE_CNT 8
 // PART_CNT should be at least NODE_CNT
 #define PART_CNT NODE_CNT
-#define CLIENT_NODE_CNT NODE_CNT
+#define CLIENT_NODE_CNT 1
 #define CLIENT_THREAD_CNT 1
 #define CLIENT_REM_THREAD_CNT 1
 #define CLIENT_SEND_THREAD_CNT 1
@@ -73,7 +73,7 @@
 // Message Passing
 /***********************************************/
 #define TPORT_TYPE TCP
-#define TPORT_PORT 63200
+#define TPORT_PORT 17000
 #define SET_AFFINITY true
 
 #define MAX_TPORT_NAME 128
@@ -168,14 +168,14 @@
 // SKEW_METHOD: 
 //    ZIPF: use ZIPF_THETA distribution
 //    HOT: use ACCESS_PERC of the accesses go to DATA_PERC of the data
-#define SKEW_METHOD HOT
+#define SKEW_METHOD ZIPF
 #define DATA_PERC 100
 #define ACCESS_PERC 0.03
 #define INIT_PARALLELISM 8
 #define SYNTH_TABLE_SIZE 65536
-#define ZIPF_THETA 0.6
-#define TXN_WRITE_PERC 0.0
-#define TUP_WRITE_PERC 0.0
+#define ZIPF_THETA 0.3
+#define TXN_WRITE_PERC 0.1
+#define TUP_WRITE_PERC 1.0
 #define SCAN_PERC           0
 #define SCAN_LEN          20
 #define PART_PER_TXN PART_CNT
@@ -265,7 +265,7 @@ extern TestCases          g_test_case;
 #define DEBUG_TIMESTAMP       false
 #define DEBUG_SYNTH         false
 #define DEBUG_ASSERT        false
-#define DEBUG_DISTR false
+#define DEBUG_DISTR true
 #define DEBUG_ALLOC false
 #define DEBUG_RACE false
 #define DEBUG_TIMELINE        false
@@ -342,11 +342,12 @@ extern TestCases          g_test_case;
 #define STAT_ARR_SIZE 1024
 #define PROG_TIMER 10 * BILLION // in s
 #define BATCH_TIMER 0
-#define WARMUP_TIMER 10 * BILLION // in s
 #define DONE_TIMER 1 * 60 * BILLION // ~1 minutes
+#define WARMUP_TIMER 1 * 60 * BILLION // ~1 minutes
 
 #define SEED 0
 #define SHMEM_ENV true
+#define ENVIRONMENT_EC2 false 
 
 #endif
 

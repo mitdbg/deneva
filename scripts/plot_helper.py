@@ -417,8 +417,8 @@ def tput(xval,vval,summary,summary_cl,
     if xname == 'NETWORK_DELAY':
         _xval = [float(x)/1000000 for x in _xval]
         base = 10
-    if xname == 'MAX_TXN_IN_FLIGHT':
-        _xval = [float(x)*nnodes/100000 for x in _xval]
+#    if xname == 'MAX_TXN_IN_FLIGHT':
+#        _xval = [float(x)*nnodes/100000 for x in _xval]
     if xname == 'LOAD_PER_SERVER':
         _xval = [float(x)*nnodes/1000 for x in _xval]
 #bbox = [0.7,0.9]

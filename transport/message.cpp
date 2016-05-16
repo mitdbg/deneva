@@ -899,7 +899,7 @@ uint64_t QueryResponseMessage::get_size() {
 
 void QueryResponseMessage::copy_from_txn(TxnManager * txn) {
   Message::mcopy_from_txn(txn);
-  //rc = query->rc;
+  rc = txn->get_rc();
 }
 
 void QueryResponseMessage::copy_to_txn(TxnManager * txn) {

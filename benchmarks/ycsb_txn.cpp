@@ -110,6 +110,8 @@ RC YCSBTxnManager::run_txn() {
       rc = start_commit();
     else if(rc == Abort)
       rc = start_abort();
+  } else if(rc == Abort){
+    rc = abort();
   }
 
   return rc;

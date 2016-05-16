@@ -14,6 +14,7 @@ CONFIG_PARAMS = [
     "WORKLOAD",
     "PRIORITY",
     "TWOPL_LITE",
+    "ISOLATION_LEVEL",
     "LOGGING"
 #    "SHMEM_ENV"
     ]
@@ -82,7 +83,7 @@ SHORTNAMES = {
     "NETWORK_DELAY":"NDLY",
     "REPLICA_CNT":"RN",
 #    "SYNTH_TABLE_SIZE":"TBL",
-    "SERIALIZATION_LEVELS":"LVL",
+    "ISOLATION_LEVEL":"LVL",
 }
 
 stat_map = OrderedDict([
@@ -105,6 +106,8 @@ stat_map = OrderedDict([
   ('single_part_txn_cnt', []),
   ('single_part_txn_run_time', []),
   ('single_part_txn_avg_time', []),
+  ('txn_write_cnt', []),
+  ('record_write_cnt', []),
 
   # Client
   ('txn_sent_cnt', []),

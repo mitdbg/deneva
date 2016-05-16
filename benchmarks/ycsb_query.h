@@ -51,6 +51,7 @@ public:
 
 class YCSBQueryGenerator : public QueryGenerator {
 public:
+  void init();
   BaseQuery * create_query(Workload * h_wl, uint64_t home_partition_id);
 
 private:

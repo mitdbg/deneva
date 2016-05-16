@@ -48,6 +48,7 @@ void TxnStats::init() {
   remote_wait_time=0;
   total_twopc_time=0;
   twopc_time=0;
+  write_cnt = 0;
 }
 
 void TxnStats::reset() {
@@ -79,7 +80,6 @@ void TxnStats::commit_stats(uint64_t thd_id) {
   INC_STATS(thd_id,txn_twopc_time,twopc_time);
   if(write_cnt > 0) {
     INC_STATS(thd_id,txn_write_cnt,1);
-    INC_STATS(thd_id,record_write_cnt,write_cnt);
   }
 }
 
@@ -174,7 +174,7 @@ void TxnManager::reset() {
   aborted = false;
   return_id = UINT64_MAX;
 
-  ready = true;
+  //ready = true;
 
   // MaaT
   greatest_write_timestamp = 0;
@@ -211,6 +211,7 @@ TxnManager::release() {
   delete uncommitted_writes_y;
   delete uncommitted_reads;
 #endif
+  ready = true;
 }
 
 void TxnManager::reset_query() {
@@ -247,6 +248,8 @@ RC TxnManager::abort() {
   INC_STATS(get_thd_id(),total_txn_abort_cnt,1);
   if(IS_LOCAL(get_txn_id())) {
     INC_STATS(get_thd_id(), local_txn_abort_cnt, 1);
+  } else {
+    INC_STATS(get_thd_id(), remote_txn_abort_cnt, 1);
   }
   aborted = true;
   release_locks(Abort);
@@ -482,7 +485,9 @@ void TxnManager::cleanup_row(RC rc, uint64_t rid) {
 			txn->accesses[rid]->orig_data->free_row();
       DEBUG_M("TxnManager::cleanup row_t free\n");
       row_pool.put(get_thd_id(),txn->accesses[rid]->orig_data);
-      ++txn_stats.write_cnt;
+      if(rc == RCOK) {
+        INC_STATS(get_thd_id(),record_write_cnt,1);
+      }
 		}
 #endif
 		txn->accesses[rid]->data = NULL;

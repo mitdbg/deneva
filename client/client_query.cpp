@@ -80,6 +80,7 @@ Client_query_queue::initQueriesParallel() {
 
 #if WORKLOAD == YCSB	
     YCSBQueryGenerator * gen = new YCSBQueryGenerator;
+    gen->init();
 #elif WORKLOAD == TPCC
     TPCCQueryGenerator * gen = new TPCCQueryGenerator;
 #endif

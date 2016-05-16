@@ -43,7 +43,7 @@ STRNOW=NOW.strftime("%Y%m%d-%H%M%S")
 os.chdir('../..')
 
 #MAX_TIME_PER_EXP = 60 * 2   # in seconds
-MAX_TIME_PER_EXP = 60 * 8   # in seconds
+MAX_TIME_PER_EXP = 60 * 5   # in seconds
 
 EXECUTE_EXPS = True
 SKIP = False
@@ -585,6 +585,10 @@ def compile_binary(fmt,e):
             del ecfgs[c]
     cfgs.update(ecfgs)
 #    if env.remote and not env.same_node:
+    if env.cluster == "ec2":
+        cfgs["ENVIRONMENT_EC2"]="true"
+    else:
+        cfgs["ENVIRONMENT_EC2"]="false"
     if env.cluster == "istc":
         cfgs["CORE_CNT"]=64
     else:
@@ -642,6 +646,10 @@ def check_binaries(exps):
     for e in experiments:
         cfgs = get_cfgs(fmt,e)
 #        if env.remote and not env.same_node:
+        if env.cluster == "ec2":
+            cfgs["ENVIRONMENT_EC2"]="true"
+        else:
+            cfgs["ENVIRONMENT_EC2"]="false"
         if env.cluster == "istc":
             cfgs["CORE_CNT"]=64
         else:

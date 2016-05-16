@@ -79,6 +79,7 @@ int32_t g_load_per_server = LOAD_PER_SERVER;
 
 bool g_hw_migrate = HW_MIGRATE;
 
+volatile UInt64 g_row_id = 0;
 bool g_part_alloc = PART_ALLOC;
 bool g_mem_pad = MEM_PAD;
 UInt32 g_cc_alg = CC_ALG;

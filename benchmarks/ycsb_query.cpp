@@ -26,14 +26,23 @@
 uint64_t YCSBQueryGenerator::the_n = 0;
 double YCSBQueryGenerator::denom = 0;
 
-BaseQuery * YCSBQueryGenerator::create_query(Workload * h_wl, uint64_t home_partition_id) {
+void YCSBQueryGenerator::init() {
 	mrand = (myrand *) mem_allocator.alloc(sizeof(myrand));
 	mrand->init(get_sys_clock());
-	zeta_2_theta = zeta(2, g_zipf_theta);
+  if (SKEW_METHOD == ZIPF) {
+    zeta_2_theta = zeta(2, g_zipf_theta);
+    uint64_t table_size = g_synth_table_size / g_part_cnt;
+    the_n = table_size - 1;
+    denom = zeta(the_n, g_zipf_theta);
+  }
+}
+
+BaseQuery * YCSBQueryGenerator::create_query(Workload * h_wl, uint64_t home_partition_id) {
   BaseQuery * query;
   if (SKEW_METHOD == HOT) {
     query = gen_requests_hot(home_partition_id, h_wl);
   } else if (SKEW_METHOD == ZIPF){
+    assert(the_n != 0);
     query = gen_requests_zipf(home_partition_id, h_wl);
   }
 
@@ -172,7 +181,6 @@ BaseQuery * YCSBQueryGenerator::gen_requests_hot(uint64_t home_partition_id, Wor
     part_limit = g_part_per_txn;
   else
     part_limit = 1;
-  //uint64_t hot_key_max = g_synth_table_size * g_data_perc;
   uint64_t hot_key_max = (uint64_t)g_data_perc;
   double r_twr = (double)(mrand->next() % 10000) / 10000;		
 
@@ -265,14 +273,7 @@ BaseQuery * YCSBQueryGenerator::gen_requests_zipf(uint64_t home_partition_id, Wo
 	uint64_t access_cnt = 0;
 	set<uint64_t> all_keys;
 	set<uint64_t> partitions_accessed;
-  /*
-  double r_mpt = (double)(mrand->next() % 10000) / 10000;		
-  uint64_t part_limit;
-  if(r_mpt < g_mpr)
-    part_limit = g_part_per_txn;
-  else
-    part_limit = 1;
-    */
+  uint64_t table_size = g_synth_table_size / g_part_cnt;
 
   double r_twr = (double)(mrand->next() % 10000) / 10000;		
 
@@ -280,17 +281,21 @@ BaseQuery * YCSBQueryGenerator::gen_requests_zipf(uint64_t home_partition_id, Wo
 	for (UInt32 i = 0; i < g_req_per_query; i ++) {		
 		double r = (double)(mrand->next() % 10000) / 10000;		
     uint64_t partition_id;
+    if ( FIRST_PART_LOCAL && rid == 0) {
+      partition_id = home_partition_id;;
+    } else {
+      partition_id = mrand->next() % g_part_cnt;
+    }
 		ycsb_request * req = (ycsb_request*) mem_allocator.alloc(sizeof(ycsb_request));
 		if (r_twr < g_txn_read_perc || r < g_tup_read_perc) 
 			req->acctype = RD;
 		else
 			req->acctype = WR;
-    uint64_t row_id = 0; 
+    uint64_t row_id = zipf(table_size - 1, g_zipf_theta);; 
+		assert(row_id < table_size);
+		uint64_t primary_key = row_id * g_part_cnt + partition_id;
+    assert(primary_key < g_synth_table_size);
 
-    partitions_accessed.insert(partition_id);
-		assert(row_id < g_synth_table_size);
-		uint64_t primary_key = row_id;
-		//uint64_t part_id = row_id % g_part_cnt;
 		req->key = primary_key;
 		req->value = mrand->next() % (1<<8);
 		// Make sure a single row is not accessed twice
@@ -302,9 +307,9 @@ BaseQuery * YCSBQueryGenerator::gen_requests_zipf(uint64_t home_partition_id, Wo
       i--;
       continue;
     }
+    partitions_accessed.insert(partition_id);
 		rid ++;
 
-    //query->requests.push_back(*req);
     query->requests.add(req);
 	}
   assert(query->requests.size() == g_req_per_query);

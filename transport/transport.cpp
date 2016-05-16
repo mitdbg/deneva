@@ -112,7 +112,11 @@ Socket * Transport::bind(uint64_t port_id) {
 #if TPORT_TYPE == IPC
   sprintf(socket_name,"ipc://node_%d.ipc",port_id);
 #else
+#if ENVIRONMENT_EC2
+  sprintf(socket_name,"tcp://eth0:%ld",port_id);
+#else
   sprintf(socket_name,"tcp://%s:%ld",ifaddr[g_node_id],port_id);
+#endif
 #endif
   printf("Sock Binding to %s %d\n",socket_name,g_node_id);
   int rc = socket->sock.bind(socket_name);
@@ -129,7 +133,11 @@ Socket * Transport::connect(uint64_t dest_id,uint64_t port_id) {
 #if TPORT_TYPE == IPC
   sprintf(socket_name,"ipc://node_%d.ipc",port_id);
 #else
+#if ENVIRONMENT_EC2
+  sprintf(socket_name,"tcp://eth0;%s:%ld",ifaddr[dest_id],port_id);
+#else
   sprintf(socket_name,"tcp://%s;%s:%ld",ifaddr[g_node_id],ifaddr[dest_id],port_id);
+#endif
 #endif
   printf("Sock Connecting to %s %d -> %ld\n",socket_name,g_node_id,dest_id);
   int rc = socket->sock.connect(socket_name);

@@ -198,12 +198,10 @@ RC row_t::get_lock(access_t type, TxnManager * txn) {
 RC row_t::get_row(access_t type, TxnManager * txn, row_t *& row) {
 	RC rc = RCOK;
 #if MODE==NOCC_MODE || MODE==QRY_ONLY_MODE 
-  txn->rc = rc;
   row = this;
   return rc;
 #endif
 #if ISOLATION_LEVEL == READ_UNCOMMITTED
-  txn->rc = rc;
   row = this;
   return rc;
 #endif
