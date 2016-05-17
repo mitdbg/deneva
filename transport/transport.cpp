@@ -232,12 +232,13 @@ std::vector<Message*> * Transport::recv_msg(uint64_t thd_id) {
   uint64_t rand = (starttime % recv_sockets.size()) / g_this_rem_thread_cnt;
   //uint64_t ctr = ((thd_id % g_this_rem_thread_cnt) % recv_sockets.size()) + rand * g_this_rem_thread_cnt;
   uint64_t ctr = thd_id % g_this_rem_thread_cnt;
-  if(ctr > recv_sockets.size())
+  if(ctr >= recv_sockets.size())
     return msgs;
-  if(g_this_thread_cnt < g_node_cnt) {
+  if(g_this_rem_thread_cnt < g_total_node_cnt) {
     ctr += rand * g_this_rem_thread_cnt;
-    if(ctr > recv_sockets.size())
+    while(ctr >= recv_sockets.size()) {
       ctr -= g_this_rem_thread_cnt;
+    }
   }
   assert(ctr < recv_sockets.size());
   uint64_t start_ctr = ctr;
@@ -248,7 +249,7 @@ std::vector<Message*> * Transport::recv_msg(uint64_t thd_id) {
 		bytes = socket->sock.recv(&buf, NN_MSG, NN_DONTWAIT);
 
     //++ctr;
-    ctr = (ctr + g_this_rem_thread_cnt) % recv_sockets.size();
+    ctr = (ctr + g_this_rem_thread_cnt);
 
     // FIXME: Not simple enough?
     if(ctr >= recv_sockets.size())

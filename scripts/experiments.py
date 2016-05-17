@@ -76,21 +76,21 @@ def isolation_levels():
 def ycsb_load():
     wl = 'YCSB'
     algos=['NO_WAIT']
-    load = [1,50,100,250,500,750,1000,2500,5000,10000]
-    load = [2500,5000,10000]
+    load = [1,500,1000,2500,5000,10000,25000]
     base_table_size=2097152*8
-    txn_write_perc = [0.0,1.0]
-    tup_write_perc = [0.0,1.0]
-    txn_write_perc = [0.0]
+    txn_write_perc = [0.0,0.1,1.0]
+    txn_write_perc = [0.01,0.1]
     tup_write_perc = [1.0]
-    nnodes = [1,2,4]
-    skew = [0.0]
+    nnodes = [1,2,4,8]
+    tcnt = [1,2,4,8]
+    skew = [0.0,0.3,0.4]
+    skew = [0.3]
 #    recv = [2,4]
     rpq =  10
 #    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","SYNTH_TABLE_SIZE","TUP_WRITE_PERC","TXN_WRITE_PERC","MAX_TXN_IN_FLIGHT","ZIPF_THETA","REM_THREAD_CNT"]
 #    exp = [[wl,n,algo,base_table_size*n,tup_wr_perc,txn_wr_perc,ld,sk,rcv] for rcv,txn_wr_perc,tup_wr_perc,algo,sk,ld,n in itertools.product(recv,txn_write_perc,tup_write_perc,algos,skew,load,nnodes)]
-    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","SYNTH_TABLE_SIZE","TUP_WRITE_PERC","TXN_WRITE_PERC","MAX_TXN_IN_FLIGHT","ZIPF_THETA"]
-    exp = [[wl,n,algo,base_table_size*n,tup_wr_perc,txn_wr_perc,ld,sk] for txn_wr_perc,tup_wr_perc,algo,sk,ld,n in itertools.product(txn_write_perc,tup_write_perc,algos,skew,load,nnodes)]
+    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","SYNTH_TABLE_SIZE","TUP_WRITE_PERC","TXN_WRITE_PERC","MAX_TXN_IN_FLIGHT","ZIPF_THETA","THREAD_CNT"]
+    exp = [[wl,n,algo,base_table_size*n,tup_wr_perc,txn_wr_perc,ld,sk,thr] for thr,txn_wr_perc,tup_wr_perc,algo,sk,ld,n in itertools.product(tcnt,txn_write_perc,tup_write_perc,algos,skew,load,nnodes)]
     return fmt,exp
 
 
@@ -120,8 +120,9 @@ def ycsb_load_plot(summary,summary_client):
     txn_write_perc = [0.0]
     skew = [0.0,0.3,0.6]
     skew = [0.0]
-    for wr,sk in itertools.product(txn_write_perc,skew):
-        const={"TXN_WRITE_PERC":wr,"ZIPF_THETA":sk}
+    tcnt = [1,2,4,8]
+    for wr,sk,thr in itertools.product(txn_write_perc,skew,tcnt):
+        const={"TXN_WRITE_PERC":wr,"ZIPF_THETA":sk,"THREAD_CNT":thr}
         title = ""
         for c in const.keys():
             title += "{} {},".format(SHORTNAMES[c],const[c])
@@ -1035,10 +1036,10 @@ configs = {
     "REPLICA_CNT": 0,
     "REPLICA_TYPE": "AP",
     "REM_THREAD_CNT": "NODE_CNT",
-    "SEND_THREAD_CNT": 2,
+    "SEND_THREAD_CNT": "THREAD_CNT",
     "CLIENT_NODE_CNT" : "NODE_CNT",
     "CLIENT_THREAD_CNT" : 4,
-    "CLIENT_REM_THREAD_CNT" : "NODE_CNT",
+    "CLIENT_REM_THREAD_CNT" : 2,
     "CLIENT_SEND_THREAD_CNT" : 2,
     "MAX_TXN_PER_PART" : 100000,
 #    "MAX_TXN_PER_PART" : 1,
