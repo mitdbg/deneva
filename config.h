@@ -7,14 +7,14 @@
 /***********************************************/
 #define NODE_CNT 16
 #define THREAD_CNT 4
-#define REM_THREAD_CNT 2
+#define REM_THREAD_CNT NODE_CNT
 #define SEND_THREAD_CNT 2
 #define CORE_CNT 64
 // PART_CNT should be at least NODE_CNT
 #define PART_CNT NODE_CNT
 #define CLIENT_NODE_CNT NODE_CNT
 #define CLIENT_THREAD_CNT 4
-#define CLIENT_REM_THREAD_CNT 2
+#define CLIENT_REM_THREAD_CNT NODE_CNT
 #define CLIENT_SEND_THREAD_CNT 2
 #define CLIENT_RUNTIME false
 

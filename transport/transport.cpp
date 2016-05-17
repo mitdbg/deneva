@@ -228,17 +228,31 @@ std::vector<Message*> * Transport::recv_msg(uint64_t thd_id) {
 	void * buf;
   uint64_t starttime = get_sys_clock();
   std::vector<Message*> * msgs = NULL;
-  uint64_t ctr = starttime % recv_sockets.size();
+  //uint64_t ctr = starttime % recv_sockets.size();
+  uint64_t rand = (starttime % recv_sockets.size()) / g_this_rem_thread_cnt;
+  //uint64_t ctr = ((thd_id % g_this_rem_thread_cnt) % recv_sockets.size()) + rand * g_this_rem_thread_cnt;
+  uint64_t ctr = thd_id % g_this_rem_thread_cnt;
+  if(ctr > recv_sockets.size())
+    return msgs;
+  if(g_this_thread_cnt < g_node_cnt) {
+    ctr += rand * g_this_rem_thread_cnt;
+    if(ctr > recv_sockets.size())
+      ctr -= g_this_rem_thread_cnt;
+  }
+  assert(ctr < recv_sockets.size());
   uint64_t start_ctr = ctr;
   
 	
   while(bytes <= 0 && (!simulation->is_setup_done() || (simulation->is_setup_done() && !simulation->is_done()))) {
-    Socket * socket = recv_sockets[ctr++];
+    Socket * socket = recv_sockets[ctr];
 		bytes = socket->sock.recv(&buf, NN_MSG, NN_DONTWAIT);
 
+    //++ctr;
+    ctr = (ctr + g_this_rem_thread_cnt) % recv_sockets.size();
+
     // FIXME: Not simple enough?
-    if(ctr == recv_sockets.size())
-      ctr = 0;
+    if(ctr >= recv_sockets.size())
+      ctr = (thd_id % g_this_rem_thread_cnt) % recv_sockets.size();
     if(ctr == start_ctr)
       break;
 
