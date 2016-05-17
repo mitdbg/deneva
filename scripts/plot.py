@@ -220,6 +220,7 @@ for exp in exps:
 #                print("Pre-Merge:")
 #                pp.pprint(s)
 #                pp.pprint(s2)
+                write_breakdown_file(output_f,s,s2)
                 s = merge_results(s,exp_cnt,drop,nnodes)
                 s2 = merge_results(s2,exp_cnt,drop,nclients)
                 summary[output_f] = s

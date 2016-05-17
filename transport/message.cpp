@@ -24,8 +24,8 @@
 #include "message.h"
 #include "maat.h"
 
-std::vector<Message*> Message::create_messages(char * buf) {
-  std::vector<Message*> all_msgs;
+std::vector<Message*> * Message::create_messages(char * buf) {
+  std::vector<Message*> * all_msgs = new std::vector<Message*>;
   char * data = buf;
 	uint64_t ptr = 0;
   uint32_t dest_id;
@@ -41,7 +41,7 @@ std::vector<Message*> Message::create_messages(char * buf) {
     Message * msg = create_message(&data[ptr]);
     msg->return_node_id = return_id;
     ptr += msg->get_size();
-    all_msgs.push_back(msg);
+    all_msgs->push_back(msg);
     --txn_cnt;
   }
   return all_msgs;

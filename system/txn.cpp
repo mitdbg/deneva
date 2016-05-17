@@ -487,6 +487,7 @@ void TxnManager::cleanup_row(RC rc, uint64_t rid) {
       row_pool.put(get_thd_id(),txn->accesses[rid]->orig_data);
       if(rc == RCOK) {
         INC_STATS(get_thd_id(),record_write_cnt,1);
+        ++txn_stats.write_cnt;
       }
 		}
 #endif

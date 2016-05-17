@@ -33,11 +33,13 @@
 
 void InputThread::setup() {
 
-  std::vector<Message*> msgs;
+  std::vector<Message*> * msgs;
   while(!simulation->is_setup_done()) {
     msgs = tport_man.recv_msg(get_thd_id());
-    while(!msgs.empty()) {
-      Message * msg = msgs.front();
+    if(msgs == NULL)
+      continue;
+    while(!msgs->empty()) {
+      Message * msg = msgs->front();
       if(msg->rtype == INIT_DONE) {
         printf("Received INIT_DONE from node %ld\n",msg->return_node_id);
         fflush(stdout);
@@ -47,8 +49,9 @@ void InputThread::setup() {
         printf("Received Msg %d from node %ld\n",msg->rtype,msg->return_node_id);
         work_queue.enqueue(get_thd_id(),msg,false);
       }
-      msgs.erase(msgs.begin());
+      msgs->erase(msgs->begin());
     }
+    delete msgs;
   }
 }
 
@@ -74,15 +77,20 @@ RC InputThread::client_recv_loop() {
   uint64_t return_node_offset;
   uint64_t inf;
 
-  std::vector<Message*> msgs;
+  std::vector<Message*> * msgs;
 
 	while (!simulation->is_done()) {
     heartbeat();
+    uint64_t starttime = get_sys_clock();
 		msgs = tport_man.recv_msg(get_thd_id());
+    INC_STATS(_thd_id,mtx[28], get_sys_clock() - starttime);
+    starttime = get_sys_clock();
     //while((m_query = work_queue.get_next_query(get_thd_id())) != NULL) {
     //Message * msg = work_queue.dequeue();
-    while(!msgs.empty()) {
-      Message * msg = msgs.front();
+    if(msgs == NULL)
+      continue;
+    while(!msgs->empty()) {
+      Message * msg = msgs->front();
 			assert(msg->rtype == CL_RSP);
       return_node_offset = msg->return_node_id - g_server_start_node;
       assert(return_node_offset < g_servers_per_client);
@@ -95,8 +103,10 @@ RC InputThread::client_recv_loop() {
       DEBUG("Recv %ld from %ld, %ld -- %f\n",((ClientResponseMessage*)msg)->txn_id,msg->return_node_id,inf,float(timespan)/BILLION);
       assert(inf >=0);
       // TODO: delete message
-      msgs.erase(msgs.begin());
+      msgs->erase(msgs->begin());
     }
+    delete msgs;
+    INC_STATS(_thd_id,mtx[29], get_sys_clock() - starttime);
 
 	}
 
@@ -111,20 +121,31 @@ RC InputThread::server_recv_loop() {
 	rdm.init(get_thd_id());
 	RC rc = RCOK;
 	assert (rc == RCOK);
+  uint64_t starttime;
 
-  std::vector<Message*> msgs;
+  std::vector<Message*> * msgs;
 	while (!simulation->is_done()) {
     heartbeat();
+    starttime = get_sys_clock();
+
 		msgs = tport_man.recv_msg(get_thd_id());
-    while(!msgs.empty()) {
-      Message * msg = msgs.front();
+
+    INC_STATS(_thd_id,mtx[28], get_sys_clock() - starttime);
+    starttime = get_sys_clock();
+
+    if(msgs == NULL)
+      continue;
+    while(!msgs->empty()) {
+      Message * msg = msgs->front();
       if(msg->rtype == INIT_DONE) {
-        msgs.erase(msgs.begin());
+        msgs->erase(msgs->begin());
         continue;
       }
       work_queue.enqueue(get_thd_id(),msg,false);
-      msgs.erase(msgs.begin());
+      msgs->erase(msgs->begin());
     }
+    delete msgs;
+    INC_STATS(_thd_id,mtx[29], get_sys_clock() - starttime);
 
 	}
   printf("FINISH %ld:%ld\n",_node_id,_thd_id);

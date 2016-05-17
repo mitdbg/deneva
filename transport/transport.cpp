@@ -223,11 +223,11 @@ void Transport::send_msg(uint64_t send_thread_id, uint64_t dest_node_id, void * 
 }
 
 // Listens to sockets for messages from other nodes
-std::vector<Message*> Transport::recv_msg(uint64_t thd_id) {
+std::vector<Message*> * Transport::recv_msg(uint64_t thd_id) {
 	int bytes = 0;
 	void * buf;
   uint64_t starttime = get_sys_clock();
-  std::vector<Message*> msgs;
+  std::vector<Message*> * msgs = NULL;
   uint64_t ctr = starttime % recv_sockets.size();
   uint64_t start_ctr = ctr;
   
@@ -252,6 +252,7 @@ std::vector<Message*> Transport::recv_msg(uint64_t thd_id) {
 	}
 
 	if(bytes <= 0 ) {
+    INC_STATS(thd_id,msg_recv_idle_time, get_sys_clock() - starttime);
     return msgs;
 	}
 
@@ -261,7 +262,7 @@ std::vector<Message*> Transport::recv_msg(uint64_t thd_id) {
 	starttime = get_sys_clock();
 
   msgs = Message::create_messages((char*)buf);
-  DEBUG("Batch of %d bytes recv from node %ld; Time: %f\n",bytes,msgs[0]->return_node_id,simulation->seconds_from_start(get_sys_clock()));
+  DEBUG("Batch of %d bytes recv from node %ld; Time: %f\n",bytes,msgs->front()->return_node_id,simulation->seconds_from_start(get_sys_clock()));
 
 	nn::freemsg(buf);	
 

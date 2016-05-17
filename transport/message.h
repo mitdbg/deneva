@@ -35,7 +35,7 @@ public:
   static Message * create_message(uint64_t txn_id, RemReqType rtype); 
   static Message * create_message(LogRecord * record, RemReqType rtype); 
   static Message * create_message(RemReqType rtype); 
-  static std::vector<Message*> create_messages(char * buf); 
+  static std::vector<Message*> * create_messages(char * buf); 
   static void release_message(Message * msg); 
   RemReqType rtype;
   uint64_t txn_id;

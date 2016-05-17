@@ -57,7 +57,7 @@ class Transport {
     Socket * bind(uint64_t port_id); 
     Socket * connect(uint64_t dest_id,uint64_t port_id); 
     void send_msg(uint64_t send_thread_id, uint64_t dest_node_id, void * sbuf,int size); 
-    std::vector<Message*> recv_msg(uint64_t thd_id);
+    std::vector<Message*> * recv_msg(uint64_t thd_id);
 		void simple_send_msg(int size); 
 		uint64_t simple_recv_msg();
 

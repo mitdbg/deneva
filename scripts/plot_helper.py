@@ -396,6 +396,7 @@ def tput(xval,vval,summary,summary_cl,
                 pntpt[_v][xi] = 0
                 continue
             stats = get_summary_stats(stats,summary[cfgs],summary_cl[cfgs],x,v,cc)
+#            write_breakdown_file(str(x) + '--' + str(v),summary[cfgs])
             # System Throughput: total txn count / average of all node's run time
             # Per Node Throughput: avg txn count / average of all node's run time
             # Per txn latency: total of all node's run time / total txn count

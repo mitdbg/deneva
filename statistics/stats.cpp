@@ -116,6 +116,7 @@ void Stats_thd::clear() {
   msg_queue_enq_cnt=0;
   msg_send_time=0;
   msg_recv_time=0;
+  msg_recv_idle_time=0;
   msg_batch_cnt=0;
   msg_batch_size_msgs=0;
   msg_batch_size_bytes=0;
@@ -244,6 +245,7 @@ void Stats_thd::print_client(FILE * outf) {
   ",msg_send_time_avg=%f"
   ",msg_recv_time=%f"
   ",msg_recv_time_avg=%f"
+  ",msg_recv_idle_time=%f"
   ",msg_batch_cnt=%ld"
   ",msg_batch_size_msgs=%ld"
   ",msg_batch_size_msgs_avg=%f"
@@ -266,6 +268,7 @@ void Stats_thd::print_client(FILE * outf) {
   ,msg_send_time_avg / BILLION
   ,msg_recv_time / BILLION
   ,msg_recv_time_avg / BILLION
+  ,msg_recv_idle_time / BILLION
   ,msg_batch_cnt
   ,msg_batch_size_msgs
   ,msg_batch_size_msgs_avg
@@ -537,6 +540,7 @@ void Stats_thd::print(FILE * outf) {
   ",msg_send_time_avg=%f"
   ",msg_recv_time=%f"
   ",msg_recv_time_avg=%f"
+  ",msg_recv_idle_time=%f"
   ",msg_batch_cnt=%ld"
   ",msg_batch_size_msgs=%ld"
   ",msg_batch_size_msgs_avg=%f"
@@ -559,6 +563,7 @@ void Stats_thd::print(FILE * outf) {
   ,msg_send_time_avg / BILLION
   ,msg_recv_time / BILLION
   ,msg_recv_time_avg / BILLION
+  ,msg_recv_idle_time / BILLION
   ,msg_batch_cnt
   ,msg_batch_size_msgs
   ,msg_batch_size_msgs_avg
@@ -823,6 +828,7 @@ void Stats_thd::combine(Stats_thd * stats) {
   msg_queue_enq_cnt+=stats->msg_queue_enq_cnt;
   msg_send_time+=stats->msg_send_time;
   msg_recv_time+=stats->msg_recv_time;
+  msg_recv_idle_time+=stats->msg_recv_idle_time;
   msg_batch_cnt+=stats->msg_batch_cnt;
   msg_batch_size_msgs+=stats->msg_batch_size_msgs;
   msg_batch_size_bytes+=stats->msg_batch_size_bytes;

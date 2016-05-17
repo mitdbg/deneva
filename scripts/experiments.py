@@ -77,16 +77,18 @@ def ycsb_load():
     wl = 'YCSB'
     algos=['NO_WAIT']
     load = [1,50,100,250,500,750,1000,2500,5000,10000]
+    load = [5000,10000]
     base_table_size=2097152*8
     txn_write_perc = [0.0,1.0]
     tup_write_perc = [0.0,1.0]
-    txn_write_perc = [0.0,0.01,0.1,1.0]
+    txn_write_perc = [0.0,1.0]
     tup_write_perc = [1.0]
-    nnodes = [1,2,4]
-    skew = [0.0,0.3,0.6]
+    nnodes = [2]
+    skew = [0.0]
+    recv = [2,4]
     rpq =  10
-    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","SYNTH_TABLE_SIZE","TUP_WRITE_PERC","TXN_WRITE_PERC","MAX_TXN_IN_FLIGHT","ZIPF_THETA"]
-    exp = [[wl,n,algo,base_table_size*n,tup_wr_perc,txn_wr_perc,ld,sk] for txn_wr_perc,tup_wr_perc,algo,sk,ld,n in itertools.product(txn_write_perc,tup_write_perc,algos,skew,load,nnodes)]
+    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","SYNTH_TABLE_SIZE","TUP_WRITE_PERC","TXN_WRITE_PERC","MAX_TXN_IN_FLIGHT","ZIPF_THETA","REM_THREAD_CNT"]
+    exp = [[wl,n,algo,base_table_size*n,tup_wr_perc,txn_wr_perc,ld,sk,rcv] for rcv,txn_wr_perc,tup_wr_perc,algo,sk,ld,n in itertools.product(recv,txn_write_perc,tup_write_perc,algos,skew,load,nnodes)]
     return fmt,exp
 
 
@@ -113,7 +115,9 @@ def ycsb_load_plot(summary,summary_client):
     x_name="MAX_TXN_IN_FLIGHT"
 #    tput_setup(summary,summary_client,nfmt,nexp,x_name,v_name)
     txn_write_perc = [0.0,0.01,0.1,1.0]
+    txn_write_perc = [0.0,1.0]
     skew = [0.0,0.3,0.6]
+    skew = [0.0]
     for wr,sk in itertools.product(txn_write_perc,skew):
         const={"TXN_WRITE_PERC":wr,"ZIPF_THETA":sk}
         title = ""

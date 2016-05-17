@@ -124,6 +124,7 @@ public:
   uint64_t msg_queue_enq_cnt;
   double msg_send_time;
   double msg_recv_time;
+  double msg_recv_idle_time;
   uint64_t msg_batch_cnt;
   uint64_t msg_batch_size_msgs;
   uint64_t msg_batch_size_bytes;

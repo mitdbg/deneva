@@ -92,10 +92,10 @@ stat_map = OrderedDict([
   # Execution
   ('tput', []),
   ('txn_cnt', []),
-  ('txn_commit_cnt', []),
+  ('total_txn_commit_cnt', []),
   ('local_txn_commit_cnt', []),
   ('remote_txn_commit_cnt', []),
-  ('txn_abort_cnt', []),
+  ('total_txn_abort_cnt', []),
   ('local_txn_abort_cnt', []),
   ('remote_txn_abort_cnt', []),
   ('txn_run_time', []),
@@ -185,6 +185,7 @@ stat_map = OrderedDict([
   ('msg_send_time_avg', []),
   ('msg_recv_time', []),
   ('msg_recv_time_avg', []),
+  ('msg_recv_idle_time', []),
   ('msg_batch_cnt', []),
   ('msg_batch_size_msgs', []),
   ('msg_batch_size_msgs_avg', []),
@@ -1027,4 +1028,29 @@ def write_summary_file(fname,stats,x_vals,v_vals):
                         s += '--, '
                 f.write(s+'\n')
             f.write('\n')
+
+def write_breakdown_file(fname,summary,summary_client):
+    with open('../figs/' + fname+'_breakdown.csv','w') as f:
+        thd_cnt = 1
+        try:
+            thd_cnt = len(summary['txn_cnt'])
+        except TypeError:
+            thd_cnt = 1
+        except KeyError:
+            thd_cnt = 1
+        f.write(', ' + ', '.join([str(x) for x in range(thd_cnt)]) +'\n')
+        for p in stat_map.keys():
+            s = p 
+            try:
+                s += ', ' + ', '.join(['{0:0.6f}'.format(x) for x in summary[p]]) 
+                if p in summary_client:
+                    s += ', ' + ', '.join(['{0:0.6f}'.format(x) for x in summary_client[p]]) 
+            except KeyError:
+                s = p
+            except TypeError:
+                s = p  + ', ' + '{0:0.6f}'.format(summary[p])
+                if p in summary_client:
+                    s += ', ' + '{0:0.6f}'.format(summary_client[p]) 
+            f.write(s + '\n')
+        f.write('\n')
  
