@@ -15,6 +15,7 @@ CONFIG_PARAMS = [
     "PRIORITY",
     "TWOPL_LITE",
     "ISOLATION_LEVEL",
+    "YCSB_ABORT_MODE",
     "LOGGING"
 #    "SHMEM_ENV"
     ]

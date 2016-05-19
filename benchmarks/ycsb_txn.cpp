@@ -232,6 +232,11 @@ RC YCSBTxnManager::run_ycsb_1(access_t acctype, row_t * row_local) {
 		int fid = 0;
 	  char * data = row_local->get_data();
 	  *(uint64_t *)(&data[fid * 100]) = 0;
+#if YCSB_ABORT_MODE
+    //TODO: add conditional logic here
+    if(data[0] == 'a')
+      return RCOK;
+#endif
   } 
   return RCOK;
 }
@@ -245,7 +250,9 @@ RC YCSBTxnManager::run_calvin_txn() {
 
         // Phase 1: Read/write set analysis
         ycsb_query->get_participants(_wl);
+#if YCSB_ABORT_MODE
         calvin_expected_rsp_cnt = ycsb_query->participant_nodes.size() - 1;
+#endif
 
         this->phase = CALVIN_LOC_RD;
         break;
@@ -260,7 +267,16 @@ RC YCSBTxnManager::run_calvin_txn() {
         // Phase 3: Serve remote reads
         // If there is any abort logic, relevant reads need to be sent to all active nodes...
         // TODO: make separate YCSB mode where we actually send remote reads...
-        rc = send_remote_reads();
+        is_active = false;
+        for(uint64_t i = 0; i < ycsb_query->participant_nodes.size(); i++) {
+          if(ycsb_query->participant_nodes[i] == g_node_id) {
+            is_active = true;
+            break;
+          }
+        }
+        if(is_active) {
+          rc = send_remote_reads();
+        }
         is_active = false;
         for(uint64_t i = 0; i < ycsb_query->active_nodes.size(); i++) {
           if(ycsb_query->active_nodes[i] == g_node_id) {

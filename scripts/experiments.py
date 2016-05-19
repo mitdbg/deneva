@@ -269,16 +269,19 @@ def malviya_plot(summary,summary_client):
 
 def test():
     wl = 'YCSB'
-    nnodes = [1]
+    nnodes = [1,2,4,8]
     ntif = [1]
-    nwr = [0.0] # TXN_WRITE_PERC
-    nwr2 = [0.0] # TUP_WRITE_PERC 
-    nalgos=['CALVIN']
-    noutthr=[1,3]
-    ninthr=[1]
-    noutthr=[1]
+    nwr = [0.0,0.25,0.5,0.75,1.0] # TXN_WRITE_PERC
+    nwr = [0.5] # TXN_WRITE_PERC
+    nwr2 = [0.5] # TUP_WRITE_PERC 
+    nalgos=['CALVIN','NO_WAIT']
+    nmodes=['true','false']
+    noutthr=[4]
+    ninthr=[4]
 #    noutthr=[1,2,3]
-    nworkthr=[1]
+    nskew = [0.0,0.3,0.6,0.7,0.75,0.8,0.85,0.9]
+    nskew = [0.6]
+    nworkthr=[4]
     base_table_size=2097152*8
 #    table_sizes=[16777216,33554432]
     table_sizes=[base_table_size,base_table_size*2]
@@ -286,8 +289,8 @@ def test():
 #    nalgos=['MVCC','TIMESTAMP','CALVIN']
 #    nnodes = [2]
 #    nalgos=['OCC']
-    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","TXN_WRITE_PERC","TUP_WRITE_PERC","MAX_TXN_IN_FLIGHT","SEND_THREAD_CNT","REM_THREAD_CNT","THREAD_CNT","SYNTH_TABLE_SIZE"]
-    exp = [[wl,n,cc,wr,wr2,tif,outthr,inthr,workthr,tbl_size] for n,cc,wr,wr2,tif,outthr,inthr,workthr,tbl_size in itertools.product(nnodes,nalgos,nwr,nwr2,ntif,noutthr,ninthr,nworkthr,table_sizes)]
+    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","TXN_WRITE_PERC","TUP_WRITE_PERC","MAX_TXN_IN_FLIGHT","SEND_THREAD_CNT","REM_THREAD_CNT","THREAD_CNT","SYNTH_TABLE_SIZE","YCSB_ABORT_MODE","ZIPF_THETA"]
+    exp = [[wl,n,cc,wr,wr2,tif,outthr,inthr,workthr,tbl_size,mode,skew] for mode,cc,wr,wr2,tif,outthr,inthr,workthr,tbl_size,skew,n in itertools.product(nmodes,nalgos,nwr,nwr2,ntif,noutthr,ninthr,nworkthr,table_sizes,nskew,nnodes)]
 #    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","TXN_WRITE_PERC","TUP_WRITE_PERC","MAX_TXN_IN_FLIGHT","THREAD_CNT","PART_PER_TXN"]
 #    exp = [[wl,n,cc,wr,wr2,tif,workthr,1] for n,cc,wr,wr2,tif,workthr in itertools.product(nnodes,nalgos,nwr,nwr2,ntif,nworkthr)]
 #    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","TXN_WRITE_PERC","TUP_WRITE_PERC","MAX_TXN_IN_FLIGHT"]

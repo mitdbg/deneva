@@ -688,6 +688,9 @@ RC TxnManager::validate() {
 RC
 TxnManager::send_remote_reads() {
   assert(CC_ALG == CALVIN);
+#if !YCSB_ABORT_MODE && WORKLOAD == YCSB
+  return RCOK;
+#endif
   // TODO: only send relevant reads
   for(uint64_t i = 0; i < query->active_nodes.size(); i++) {
     if(query->active_nodes[i] == g_node_id)
