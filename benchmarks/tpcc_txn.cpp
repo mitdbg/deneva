@@ -1012,7 +1012,6 @@ RC TPCCTxnManager::run_calvin_txn() {
       case 5:
         // Phase 5: Execute transaction / perform local writes
         rc = run_tpcc_phase5();
-        rc = calvin_finish(tpcc_query);
         ATOM_ADD(this->phase,1); //6
         break;
       default:

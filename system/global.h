@@ -148,6 +148,7 @@ extern UInt32 g_this_send_thread_cnt;
 extern UInt32 g_this_total_thread_cnt;
 extern UInt32 g_thread_cnt;
 extern UInt32 g_abort_thread_cnt;
+extern UInt32 g_logger_thread_cnt;
 extern UInt32 g_send_thread_cnt;
 extern UInt32 g_rem_thread_cnt;
 extern ts_t g_abort_penalty; 
@@ -172,6 +173,7 @@ extern bool g_hw_migrate;
 extern UInt32 g_network_delay;
 extern UInt64 g_done_timer;
 extern UInt64 g_batch_time_limit;
+extern UInt64 g_seq_batch_time_limit;
 extern UInt64 g_prog_timer;
 extern UInt64 g_warmup_timer;
 extern UInt64 g_msg_time_limit;
@@ -221,7 +223,7 @@ extern UInt32 g_repl_type;
 extern UInt32 g_repl_cnt;
 
 enum RC { RCOK=0, Commit, Abort, WAIT, WAIT_REM, ERROR, FINISH, NONE };
-enum RemReqType {INIT_DONE=0,RLK, RULK, CL_QRY, RQRY, RQRY_CONT, RFIN, RLK_RSP, RULK_RSP, RQRY_RSP, RACK,RACK_PREP,RACK_FIN, RTXN, RTXN_CONT, RINIT, RPREPARE,RPASS,RFWD,RDONE,CL_RSP,LOG_MSG,LOG_MSG_RSP,LOG_FLUSHED,NO_MSG};
+enum RemReqType {INIT_DONE=0,RLK, RULK, CL_QRY, RQRY, RQRY_CONT, RFIN, RLK_RSP, RULK_RSP, RQRY_RSP, RACK,RACK_PREP,RACK_FIN, RTXN, RTXN_CONT, RINIT, RPREPARE,RPASS,RFWD,RDONE,CL_RSP,LOG_MSG,LOG_MSG_RSP,LOG_FLUSHED,CALVIN_ACK,NO_MSG};
 
 // Calvin
 enum CALVIN_PHASE {CALVIN_RW_ANALYSIS=0,CALVIN_LOC_RD,CALVIN_SERVE_RD,CALVIN_COLLECT_RD,CALVIN_EXEC_WR,CALVIN_DONE};
@@ -257,7 +259,6 @@ enum TsType {R_REQ, W_REQ, P_REQ, XP_REQ};
 #define GET_PART_ID(t,n)	(n) 
 #define GET_PART_ID_FROM_IDX(idx)	(g_node_id + idx * g_node_cnt) 
 #define GET_PART_ID_IDX(p)	(p / g_node_cnt) 
-#define ISSEQUENCER (CC_ALG == CALVIN && g_node_id == g_node_cnt + g_client_node_cnt ) //FIXME: Is this the right formula?
 #define ISSERVER (g_node_id < g_node_cnt)
 #define ISSERVERN(id) (id < g_node_cnt)
 #define ISCLIENT (g_node_id >= g_node_cnt && g_node_id < g_node_cnt + g_client_node_cnt)

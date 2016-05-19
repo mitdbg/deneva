@@ -31,9 +31,9 @@
 
 void TxnManPool::init(Workload * wl, uint64_t size) {
   _wl = wl;
-  pool = new boost::lockfree::queue<TxnManager* > * [g_thread_cnt];
+  pool = new boost::lockfree::queue<TxnManager* > * [g_total_thread_cnt];
   TxnManager * txn;
-  for(uint64_t thd_id = 0; thd_id < g_thread_cnt; thd_id++) {
+  for(uint64_t thd_id = 0; thd_id < g_total_thread_cnt; thd_id++) {
     pool[thd_id] = new boost::lockfree::queue<TxnManager* > (size);
     for(uint64_t i = 0; i < size; i++) {
     //put(items[i]);
@@ -63,7 +63,7 @@ void TxnManPool::put(uint64_t thd_id, TxnManager * item) {
 
 void TxnManPool::free_all() {
   TxnManager * item;
-  for(uint64_t thd_id = 0; thd_id < g_thread_cnt; thd_id++) {
+  for(uint64_t thd_id = 0; thd_id < g_total_thread_cnt; thd_id++) {
   while(pool[thd_id]->pop(item)) {
     mem_allocator.free(item,sizeof(TxnManager));
   }
@@ -72,9 +72,9 @@ void TxnManPool::free_all() {
 
 void TxnPool::init(Workload * wl, uint64_t size) {
   _wl = wl;
-  pool = new boost::lockfree::queue<Transaction* > * [g_thread_cnt];
+  pool = new boost::lockfree::queue<Transaction* > * [g_total_thread_cnt];
   Transaction * txn;
-  for(uint64_t thd_id = 0; thd_id < g_thread_cnt; thd_id++) {
+  for(uint64_t thd_id = 0; thd_id < g_total_thread_cnt; thd_id++) {
     pool[thd_id] = new boost::lockfree::queue<Transaction*  > (size);
     for(uint64_t i = 0; i < size; i++) {
     //put(items[i]);
@@ -106,7 +106,7 @@ void TxnPool::put(uint64_t thd_id,Transaction * item) {
 
 void TxnPool::free_all() {
   TxnManager * item;
-    for(uint64_t thd_id = 0; thd_id < g_thread_cnt; thd_id++) {
+    for(uint64_t thd_id = 0; thd_id < g_total_thread_cnt; thd_id++) {
   while(pool[thd_id]->pop(item)) {
     mem_allocator.free(item,sizeof(item));
 
@@ -116,10 +116,10 @@ void TxnPool::free_all() {
 
 void QryPool::init(Workload * wl, uint64_t size) {
   _wl = wl;
-  pool = new boost::lockfree::queue<BaseQuery*> * [g_thread_cnt];
+  pool = new boost::lockfree::queue<BaseQuery*> * [g_total_thread_cnt];
   BaseQuery * qry=NULL;
   DEBUG_M("QryPool alloc init\n");
-  for(uint64_t thd_id = 0; thd_id < g_thread_cnt; thd_id++) {
+  for(uint64_t thd_id = 0; thd_id < g_total_thread_cnt; thd_id++) {
     pool[thd_id] = new boost::lockfree::queue<BaseQuery* > (size);
     for(uint64_t i = 0; i < size; i++) {
     //put(items[i]);
@@ -180,7 +180,7 @@ void QryPool::put(uint64_t thd_id, BaseQuery * item) {
 void QryPool::free_all() {
   BaseQuery * item;
   DEBUG_M("query_pool free\n");
-    for(uint64_t thd_id = 0; thd_id < g_thread_cnt; thd_id++) {
+    for(uint64_t thd_id = 0; thd_id < g_total_thread_cnt; thd_id++) {
   while(pool[thd_id]->pop(item)) {
     mem_allocator.free(item,sizeof(item));
   }
@@ -190,9 +190,9 @@ void QryPool::free_all() {
 
 void AccessPool::init(Workload * wl, uint64_t size) {
   _wl = wl;
-  pool = new boost::lockfree::queue<Access* > * [g_thread_cnt];
+  pool = new boost::lockfree::queue<Access* > * [g_total_thread_cnt];
   DEBUG_M("AccessPool alloc init\n");
-  for(uint64_t thd_id = 0; thd_id < g_thread_cnt; thd_id++) {
+  for(uint64_t thd_id = 0; thd_id < g_total_thread_cnt; thd_id++) {
     pool[thd_id] = new boost::lockfree::queue<Access* > (size);
     for(uint64_t i = 0; i < size; i++) {
     Access * item = (Access*)mem_allocator.alloc(sizeof(Access));
@@ -225,7 +225,7 @@ void AccessPool::free_all() {
   Access * item;
   DEBUG_M("access_pool free\n");
   //while(pool->pop(item)) {
-    for(uint64_t thd_id = 0; thd_id < g_thread_cnt; thd_id++) {
+    for(uint64_t thd_id = 0; thd_id < g_total_thread_cnt; thd_id++) {
   while(pool[thd_id]->pop(item)) {
     mem_allocator.free(item,sizeof(item));
   }
@@ -234,9 +234,9 @@ void AccessPool::free_all() {
 
 void TxnTablePool::init(Workload * wl, uint64_t size) {
   _wl = wl;
-  pool = new boost::lockfree::queue<txn_node* > * [g_thread_cnt];
+  pool = new boost::lockfree::queue<txn_node* > * [g_total_thread_cnt];
   DEBUG_M("TxnTablePool alloc init\n");
-  for(uint64_t thd_id = 0; thd_id < g_thread_cnt; thd_id++) {
+  for(uint64_t thd_id = 0; thd_id < g_total_thread_cnt; thd_id++) {
     pool[thd_id] = new boost::lockfree::queue<txn_node* > (size);
     for(uint64_t i = 0; i < size; i++) {
       txn_node * t_node = (txn_node *) mem_allocator.align_alloc(sizeof(struct txn_node));
@@ -265,7 +265,7 @@ void TxnTablePool::put(uint64_t thd_id, txn_node * item) {
 void TxnTablePool::free_all() {
   txn_node * item;
   DEBUG_M("txn_table_pool free\n");
-  for(uint64_t thd_id = 0; thd_id < g_thread_cnt; thd_id++) {
+  for(uint64_t thd_id = 0; thd_id < g_total_thread_cnt; thd_id++) {
     while(pool[thd_id]->pop(item)) {
       mem_allocator.free(item,sizeof(item));
     }
@@ -311,10 +311,10 @@ void MsgPool::free_all() {
 
 void RowPool::init(Workload * wl, uint64_t size) {
   _wl = wl;
-  pool = new boost::lockfree::queue<row_t*> * [g_thread_cnt];
+  pool = new boost::lockfree::queue<row_t*> * [g_total_thread_cnt];
   row_t* entry;
   DEBUG_M("RowPool alloc init\n");
-  for(uint64_t thd_id = 0; thd_id < g_thread_cnt; thd_id++) {
+  for(uint64_t thd_id = 0; thd_id < g_total_thread_cnt; thd_id++) {
     pool[thd_id] = new boost::lockfree::queue<row_t* > (size);
     for(uint64_t i = 0; i < size; i++) {
     entry = (row_t*) mem_allocator.alloc(sizeof(struct row_t));
@@ -341,7 +341,7 @@ void RowPool::put(uint64_t thd_id, row_t* item) {
 
 void RowPool::free_all() {
   row_t * item;
-  for(uint64_t thd_id = 0; thd_id < g_thread_cnt; thd_id++) {
+  for(uint64_t thd_id = 0; thd_id < g_total_thread_cnt; thd_id++) {
   while(pool[thd_id]->pop(item)) {
     DEBUG_M("row_pool free\n");
     mem_allocator.free(item,sizeof(row_t));

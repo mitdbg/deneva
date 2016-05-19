@@ -39,6 +39,7 @@ void print_usage() {
 	printf("\t-mpiINT       ; MPIR\n");
 	printf("\t-doneINT       ; DONE_TIMER\n");
 	printf("\t-btmrINT       ; BATCH_TIMER\n");
+	printf("\t-stmrINT       ; SEQ_BATCH_TIMER\n");
 	printf("\t-progINT       ; PROG_TIMER\n");
 	printf("\t-abrtINT       ; ABORT_PENALTY (ms)\n");
 
@@ -101,6 +102,8 @@ void parser(int argc, char * argv[]) {
       g_done_timer = atoi( &argv[i][5] );
     else if (argv[i][1] == 'b' && argv[i][2] == 't' && argv[i][3] == 'm' && argv[i][4] == 'r')
       g_batch_time_limit = atoi( &argv[i][5] );
+    else if (argv[i][1] == 's' && argv[i][2] == 't' && argv[i][3] == 'm' && argv[i][4] == 'r')
+      g_seq_batch_time_limit = atoi( &argv[i][5] );
     else if (argv[i][1] == 's' && argv[i][2] == 'p' && argv[i][3] == 'p' && argv[i][4] == 't')
       g_strict_ppt = atoi( &argv[i][5] ) == 1;
     else if (argv[i][1] == 'p' && argv[i][2] == 'r' && argv[i][3] == 'o' && argv[i][4] == 'g')
@@ -200,6 +203,12 @@ void parser(int argc, char * argv[]) {
     }
 	}
   g_total_thread_cnt = g_thread_cnt + g_rem_thread_cnt + g_send_thread_cnt + g_abort_thread_cnt;
+#if LOGGING
+  g_total_thread_cnt += g_logger_thread_cnt; // logger thread
+#endif
+#if CC_ALG == CALVIN
+  g_total_thread_cnt += 2; // sequencer + scheduler thread
+#endif
   g_total_client_thread_cnt = g_client_thread_cnt + g_client_rem_thread_cnt + g_client_send_thread_cnt;
   g_total_node_cnt = g_node_cnt + g_client_node_cnt + g_repl_cnt*g_node_cnt;
   if(ISCLIENT) {

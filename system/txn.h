@@ -147,11 +147,10 @@ public:
   bool aborted;
   uint64_t return_id;
   RC        validate();
-	RC 				finish(RC rc, uint64_t * parts, uint64_t part_cnt);
 	void 			cleanup(RC rc);
 	void 			cleanup_row(RC rc,uint64_t rid);
   void release_last_row_lock(); 
-  RC send_remote_reads(BaseQuery * qry); 
+  RC send_remote_reads(); 
   void set_end_timestamp(uint64_t timestamp) {txn->end_timestamp = timestamp;}
   uint64_t get_end_timestamp() {return txn->end_timestamp;}
   uint64_t get_access_cnt() {return txn->row_cnt;}
@@ -163,6 +162,7 @@ public:
     txn->accesses.swap(a,b);
   }
   uint64_t get_batch_id() {return txn->batch_id;}
+  void set_batch_id(uint64_t batch_id) {txn->batch_id = batch_id;}
 
   // For Maat
   uint64_t commit_timestamp;
@@ -202,13 +202,12 @@ public:
   volatile bool ready;
   // Calvin
   uint32_t lock_ready_cnt;
+  uint32_t calvin_expected_rsp_cnt;
   bool locking_done;
   CALVIN_PHASE phase;
   bool phase_rsp;
   bool calvin_exec_phase_done();
   bool calvin_collect_phase_done();
-  RC calvin_finish(); 
-
 
 protected:	
 

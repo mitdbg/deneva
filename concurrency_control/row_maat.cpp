@@ -49,7 +49,7 @@ RC Row_maat::read(TxnManager * txn) {
 
   uint64_t mtx_wait_starttime = get_sys_clock();
   pthread_mutex_lock( &latch );
-  INC_STATS(txn->get_thd_id(),mtx[26],get_sys_clock() - mtx_wait_starttime);
+  INC_STATS(txn->get_thd_id(),mtx[30],get_sys_clock() - mtx_wait_starttime);
   DEBUG("READ %ld -- %ld: lw %ld\n",txn->get_txn_id(),_row->get_primary_key(),timestamp_last_write);
 
   // Copy uncommitted writes
@@ -77,7 +77,7 @@ RC Row_maat::prewrite(TxnManager * txn) {
 
   uint64_t mtx_wait_starttime = get_sys_clock();
   pthread_mutex_lock( &latch );
-  INC_STATS(txn->get_thd_id(),mtx[27],get_sys_clock() - mtx_wait_starttime);
+  INC_STATS(txn->get_thd_id(),mtx[31],get_sys_clock() - mtx_wait_starttime);
   DEBUG("PREWRITE %ld -- %ld: lw %ld, lr %ld\n",txn->get_txn_id(),_row->get_primary_key(),timestamp_last_write,timestamp_last_read);
 
   // Copy uncommitted reads 
@@ -114,7 +114,7 @@ RC Row_maat::prewrite(TxnManager * txn) {
 RC Row_maat::abort(access_t type, TxnManager * txn) {	
   uint64_t mtx_wait_starttime = get_sys_clock();
   pthread_mutex_lock( &latch );
-  INC_STATS(txn->get_thd_id(),mtx[28],get_sys_clock() - mtx_wait_starttime);
+  INC_STATS(txn->get_thd_id(),mtx[32],get_sys_clock() - mtx_wait_starttime);
   DEBUG("Maat Abort %ld: %d -- %ld\n",txn->get_txn_id(),type,_row->get_primary_key());
   if(type == RD) {
     uncommitted_reads->erase(txn->get_txn_id());
@@ -131,7 +131,7 @@ RC Row_maat::abort(access_t type, TxnManager * txn) {
 RC Row_maat::commit(access_t type, TxnManager * txn, row_t * data) {	
   uint64_t mtx_wait_starttime = get_sys_clock();
   pthread_mutex_lock( &latch );
-  INC_STATS(txn->get_thd_id(),mtx[29],get_sys_clock() - mtx_wait_starttime);
+  INC_STATS(txn->get_thd_id(),mtx[33],get_sys_clock() - mtx_wait_starttime);
   DEBUG("Maat Commit %ld: %d,%lu -- %ld\n",txn->get_txn_id(),type,txn->get_commit_timestamp(),_row->get_primary_key());
 
   if(type == RD) {

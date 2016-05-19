@@ -24,7 +24,6 @@
 #include "row_mvcc.h"
 #include "row_occ.h"
 #include "row_maat.h"
-#include "row_specex.h"
 #include "mem_alloc.h"
 #include "manager.h"
 
@@ -63,10 +62,6 @@ void row_t::init_manager(row_t * row) {
     manager = (Row_mvcc *) mem_allocator.alloc(sizeof(Row_mvcc));
 #elif CC_ALG == OCC
     manager = (Row_occ *) mem_allocator.alloc(sizeof(Row_occ));
-    /*
-#elif CC_ALG == HSTORE_SPEC
-    manager = (Row_specex *) mem_allocator.alloc(sizeof(Row_specex));
-    */
 #elif CC_ALG == MAAT 
     manager = (Row_maat *) mem_allocator.alloc(sizeof(Row_maat));
 #endif

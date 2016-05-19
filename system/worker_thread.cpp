@@ -126,20 +126,13 @@ void WorkerThread::release_txn_man() {
 }
 
 void WorkerThread::calvin_wrapup() {
-  /*
-      m_txn->finish(rc,NULL,0);
-      assert(m_query->batch_id == simulation->get_worker_epoch() || m_query->batch_id == simulation->get_worker_epoch() - 1);
-      if(m_query->return_id == g_node_id) {
-        DEBUG_R("RACK (%ld,%ld)  0x%lx\n",m_query->txn_id,m_query->batch_id,(uint64_t)m_query);
-        //printf("%ld RACK (%ld,%ld)  0x%lx\n",_thd_id,m_query->txn_id,m_query->batch_id,(uint64_t)m_query);
-        m_query->rtype = RACK;
-        // FIXME
-        work_queue.sched_enqueue(_thd_id,m_query);
-      } else {
-        msg_queue.enqueue(Message::create_message(m_query,RACK),m_query->return_id);
-      }
-      release_txn_man();
-      */
+  txn_man->release_locks(RCOK);
+  if(txn_man->return_id == g_node_id) {
+    work_queue.sequencer_enqueue(_thd_id,Message::create_message(txn_man,CALVIN_ACK));
+  } else {
+    msg_queue.enqueue(get_thd_id(),Message::create_message(txn_man,CALVIN_ACK),txn_man->return_id);
+  }
+  release_txn_man();
 }
 
 // Can't use txn_man after this function
@@ -176,7 +169,11 @@ void WorkerThread::abort() {
 }
 
 TxnManager * WorkerThread::get_transaction_manager(Message * msg) {
+#if CC_ALG == CALVIN
+  TxnManager * local_txn_man = txn_table.get_transaction_manager(get_thd_id(),msg->get_txn_id(),msg->get_batch_id());
+#else
   TxnManager * local_txn_man = txn_table.get_transaction_manager(get_thd_id(),msg->get_txn_id(),0);
+#endif
   return local_txn_man;
 }
 
@@ -188,6 +185,7 @@ RC WorkerThread::run() {
   uint64_t idle_starttime = 0;
 
 	while(!simulation->is_done()) {
+    txn_man = NULL;
     heartbeat();
 
     progress_stats();
@@ -204,7 +202,7 @@ RC WorkerThread::run() {
       idle_starttime = 0;
     }
 
-    if(msg->rtype != CL_QRY) {
+    if(msg->rtype != CL_QRY || CC_ALG == CALVIN) {
       txn_man = get_transaction_manager(msg);
       ready_starttime = get_sys_clock();
       bool ready = txn_man->unset_ready();
@@ -237,22 +235,11 @@ RC WorkerThread::run() {
 
 RC WorkerThread::process_rfin(Message * msg) {
   DEBUG("RFIN %ld\n",msg->get_txn_id());
+  assert(CC_ALG != CALVIN);
 
   M_ASSERT_V(!IS_LOCAL(msg->get_txn_id()),"RFIN local: %ld %ld/%d\n",msg->get_txn_id(),msg->get_txn_id()%g_node_cnt,g_node_id);
 #if CC_ALG == MAAT
   txn_man->set_commit_timestamp(((FinishMessage*)msg)->commit_timestamp);
-#endif
-#if CC_ALG == CALVIN
-				rsp_cnt = m_txn->incr_rsp2(1);
-        assert(rsp_cnt >=0);
-        if(m_txn->phase==6 && rsp_cnt == m_txn->active_cnt-1) {
-          rc = msg->rc;
-          calvin_wrapup();
-        } else {
-          rc = WAIT;
-        }
-
-
 #endif
 
   if(((FinishMessage*)msg)->rc == Abort) {
@@ -522,10 +509,12 @@ RC WorkerThread::process_log_flushed(Message * msg) {
 
 RC WorkerThread::process_rfwd(Message * msg) {
   DEBUG("RFWD %ld,%ld\n",msg->get_txn_id(),msg->get_batch_id());
-  txn_man->incr_rsp(1);
+  assert(CC_ALG == CALVIN);
+  int responses_left = txn_man->received_response(((ForwardMessage*)msg)->rc);
+  assert(responses_left >=0);
   if(txn_man->calvin_collect_phase_done()) {
-    txn_man->run_calvin_txn();
-    if(txn_man->calvin_exec_phase_done()) {
+    RC rc = txn_man->run_calvin_txn();
+    if(rc == RCOK && txn_man->calvin_exec_phase_done()) {
       calvin_wrapup();
       return RCOK;
     }   
@@ -538,9 +527,9 @@ RC WorkerThread::process_calvin_rtxn(Message * msg) {
 
   DEBUG("START %ld %f %lu\n",txn_man->get_txn_id(),simulation->seconds_from_start(get_sys_clock()),txn_man->txn_stats.starttime);
   // Execute
-  txn_man->run_calvin_txn();
+  RC rc = txn_man->run_calvin_txn();
   //if((txn_man->phase==6 && rc == RCOK) || txn_man->active_cnt == 0 || txn_man->participant_cnt == 1) {
-  if(txn_man->calvin_exec_phase_done()) {
+  if(rc == RCOK && txn_man->calvin_exec_phase_done()) {
     calvin_wrapup();
   }
   return RCOK;

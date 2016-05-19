@@ -55,6 +55,7 @@ RC YCSBTxnManager::acquire_locks() {
 	for (uint32_t rid = 0; rid < ycsb_query->requests.size(); rid ++) {
 		ycsb_request * req = ycsb_query->requests[rid];
 		uint64_t part_id = _wl->key_to_part( req->key );
+    DEBUG("LK Acquire (%ld,%ld) %ld -> %ld\n",get_txn_id(),get_batch_id(),req->key,GET_NODE_ID(part_id));
     if(GET_NODE_ID(part_id) != g_node_id)
       continue;
 		INDEX * index = _wl->the_index;
@@ -84,11 +85,8 @@ RC YCSBTxnManager::acquire_locks() {
 
 RC YCSBTxnManager::run_txn() {
   RC rc = RCOK;
+  assert(CC_ALG != CALVIN);
 
-#if CC_ALG == CALVIN
-  rc = run_ycsb(query);
-  return rc;
-#endif
   if(IS_LOCAL(txn->txn_id) && state == YCSB_0 && next_record_id == 0) {
     DEBUG("Running txn %ld\n",txn->txn_id);
     //query->print();
@@ -101,7 +99,6 @@ RC YCSBTxnManager::run_txn() {
     rc = run_txn_state();
   }
 
-  // FIXME: Can't access txn_stats or anything in txn_man after run_txn_state returns if rc is WAIT or WAIT_REM
   txn_stats.process_time += get_sys_clock() - starttime;
   txn_stats.wait_starttime = get_sys_clock();
 
@@ -241,33 +238,15 @@ RC YCSBTxnManager::run_ycsb_1(access_t acctype, row_t * row_local) {
 RC YCSBTxnManager::run_calvin_txn() {
   RC rc = RCOK;
   YCSBQuery* ycsb_query = (YCSBQuery*) query;
-  uint64_t participant_cnt;
-  uint64_t active_cnt;
-  uint64_t participant_nodes[10];
-  uint64_t active_nodes[10];
+  bool is_active = false;
   while(!calvin_exec_phase_done() && rc == RCOK) {
     switch(this->phase) {
       case CALVIN_RW_ANALYSIS:
 
         // Phase 1: Read/write set analysis
-        participant_cnt = 0;
-        active_cnt = 0;
-        for(uint64_t i = 0; i < g_node_cnt; i++) {
-          participant_nodes[i] = false;
-          active_nodes[i] = false;
-        }
+        ycsb_query->get_participants(_wl);
+        calvin_expected_rsp_cnt = ycsb_query->participant_nodes.size() - 1;
 
-        for(uint64_t i = 0; i < ycsb_query->requests.size(); i++) {
-          uint64_t req_nid = GET_NODE_ID(_wl->key_to_part(ycsb_query->requests[i]->key));
-          if(!participant_nodes[req_nid]) {
-            participant_cnt++;
-            participant_nodes[req_nid] = true;
-          }
-          if(ycsb_query->requests[i]->acctype == WR && !active_nodes[req_nid]) {
-            active_cnt++;
-            active_nodes[req_nid] = true;
-          }
-        }
         this->phase = CALVIN_LOC_RD;
         break;
       case CALVIN_LOC_RD:
@@ -279,10 +258,19 @@ RC YCSBTxnManager::run_calvin_txn() {
         break;
       case CALVIN_SERVE_RD:
         // Phase 3: Serve remote reads
-        rc = send_remote_reads(ycsb_query);
-        if(active_nodes[g_node_id]) {
+        // If there is any abort logic, relevant reads need to be sent to all active nodes...
+        // TODO: make separate YCSB mode where we actually send remote reads...
+        rc = send_remote_reads();
+        is_active = false;
+        for(uint64_t i = 0; i < ycsb_query->active_nodes.size(); i++) {
+          if(ycsb_query->active_nodes[i] == g_node_id) {
+            is_active = true;
+            break;
+          }
+        }
+        if(is_active) {
           this->phase = CALVIN_COLLECT_RD;
-          if(get_rsp_cnt() == participant_cnt-1) {
+          if(calvin_collect_phase_done()) {
             rc = RCOK;
           } else {
             DEBUG("Phase4 (%ld,%ld)\n",txn->txn_id,txn->batch_id);
@@ -301,7 +289,6 @@ RC YCSBTxnManager::run_calvin_txn() {
       case CALVIN_EXEC_WR:
         // Phase 5: Execute transaction / perform local writes
         rc = run_ycsb();
-        rc = calvin_finish(); // Sends msg to all active nodes
         this->phase = CALVIN_DONE;
         break;
       default:
@@ -318,9 +305,9 @@ RC YCSBTxnManager::run_ycsb() {
   
   for (uint64_t i = 0; i < ycsb_query->requests.size(); i++) {
 	  ycsb_request * req = ycsb_query->requests[i];
-    if(this->phase == 2 && req->acctype == WR)
+    if(this->phase == CALVIN_LOC_RD && req->acctype == WR)
       continue;
-    if(this->phase == 5 && req->acctype == RD)
+    if(this->phase == CALVIN_EXEC_WR && req->acctype == RD)
       continue;
 
 		uint64_t part_id = _wl->key_to_part( req->key );
@@ -331,8 +318,7 @@ RC YCSBTxnManager::run_ycsb() {
 
     rc = run_ycsb_0(req,row);
     assert(rc == RCOK);
-    if(rc != RCOK)
-      break;
+
     rc = run_ycsb_1(req->acctype,row);
     assert(rc == RCOK);
   }

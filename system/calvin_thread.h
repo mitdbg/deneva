@@ -21,6 +21,7 @@
 
 class Workload;
 
+/*
 class CalvinThread : public Thread {
 public:
 	RC 			run();
@@ -29,6 +30,7 @@ public:
 private:
 	TxnManager * m_txn;
 };
+*/
 
 class CalvinLockThread : public Thread {
 public:

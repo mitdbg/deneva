@@ -112,6 +112,22 @@ void YCSBQuery::release() {
   requests.release();
 }
 
+void YCSBQuery::get_participants(Workload * wl) {
+  set<uint64_t> participants;
+  set<uint64_t> actives;
+
+  for(uint64_t i = 0; i < requests.size(); i++) {
+    uint64_t req_nid = GET_NODE_ID(((YCSBWorkload*)wl)->key_to_part(requests[i]->key));
+    participants.insert(req_nid);
+    if(requests[i]->acctype == WR)
+      actives.insert(req_nid);
+  }
+  for(auto it = actives.begin(); it != actives.end(); ++it)
+    active_nodes.add(*it);
+  for(auto it = participants.begin(); it != participants.end(); ++it)
+    participant_nodes.add(*it);
+}
+
 uint64_t YCSBQuery::participants(bool *& pps,Workload * wl) {
   int n = 0;
   for(uint64_t i = 0; i < g_node_cnt; i++)

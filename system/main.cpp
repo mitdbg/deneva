@@ -59,7 +59,6 @@ OutputThread * output_thds;
 AbortThread * abort_thds;
 LogThread * log_thds;
 #if CC_ALG == CALVIN
-CalvinThread * calvin_thds;
 CalvinLockThread * calvin_lock_thds;
 CalvinSequencerThread * calvin_seq_thds;
 #endif
@@ -213,9 +212,15 @@ int main(int argc, char* argv[])
   all_thd_cnt += 1; // logger thread
 #endif
 #if CC_ALG == CALVIN
+  all_thd_cnt += 2; // sequencer + scheduler thread
+#endif
+  assert(all_thd_cnt == g_total_thread_cnt);
+  /*
+#if CC_ALG == CALVIN
   assert(thd_cnt >= 3);
   wthd_cnt -= 2;
 #endif
+*/
 	
 	pthread_t * p_thds = 
 		(pthread_t *) malloc(sizeof(pthread_t) * (all_thd_cnt));
@@ -228,7 +233,6 @@ int main(int argc, char* argv[])
   abort_thds = new AbortThread[1];
   log_thds = new LogThread[1];
 #if CC_ALG == CALVIN
-  calvin_thds = new CalvinThread[wthd_cnt];
   calvin_lock_thds = new CalvinLockThread[1];
   calvin_seq_thds = new CalvinSequencerThread[1];
 #endif
@@ -274,15 +278,28 @@ int main(int argc, char* argv[])
 		cpu_cnt++;
 #endif
     assert(id >= 0 && id < wthd_cnt);
-#if CC_ALG == CALVIN
-		//pthread_create(&p_thds[i], &attr, calvin_worker, (void *)vid);
-    calvin_thds[i].init(id,g_node_id,m_wl);
-		pthread_create(&p_thds[id++], &attr, run_thread, (void *)&calvin_thds[i]);
-#else
     worker_thds[i].init(id,g_node_id,m_wl);
 		pthread_create(&p_thds[id++], &attr, run_thread, (void *)&worker_thds[i]);
-#endif
   }
+	for (uint64_t j = 0; j < rthd_cnt ; j++) {
+    assert(id >= wthd_cnt && id < wthd_cnt + rthd_cnt);
+    input_thds[j].init(id,g_node_id,m_wl);
+		pthread_create(&p_thds[id++], NULL, run_thread, (void *)&input_thds[j]);
+  }
+
+
+	for (uint64_t j = 0; j < sthd_cnt; j++) {
+    assert(id >= wthd_cnt + rthd_cnt && id < wthd_cnt + rthd_cnt + sthd_cnt);
+    output_thds[j].init(id,g_node_id,m_wl);
+		pthread_create(&p_thds[id++], NULL, run_thread, (void *)&output_thds[j]);
+  }
+#if LOGGING
+    log_thds[0].init(id,g_node_id,m_wl);
+		pthread_create(&p_thds[id++], NULL, run_thread, (void *)&log_thds[0]);
+#endif
+
+  abort_thds[0].init(id,g_node_id,m_wl);
+  pthread_create(&p_thds[id++], NULL, run_thread, (void *)&abort_thds[0]);
 
 #if CC_ALG == CALVIN
   calvin_lock_thds[0].init(id,g_node_id,m_wl);
@@ -291,31 +308,6 @@ int main(int argc, char* argv[])
   pthread_create(&p_thds[id++], &attr, run_thread, (void *)&calvin_seq_thds[0]);
 #endif
 
-	for (uint64_t j = 0; j < rthd_cnt ; j++) {
-		//uint64_t vid = i;
-		//pthread_create(&p_thds[i], NULL, nn_worker, (void *)vid);
-    assert(id >= wthd_cnt && id < wthd_cnt + rthd_cnt);
-    input_thds[j].init(id,g_node_id,m_wl);
-		pthread_create(&p_thds[id++], NULL, run_thread, (void *)&input_thds[j]);
-  }
-
-
-	for (uint64_t j = 0; j < sthd_cnt; j++) {
-		//uint64_t vid = i;
-    assert(id >= wthd_cnt + rthd_cnt && id < wthd_cnt + rthd_cnt + sthd_cnt);
-    output_thds[j].init(id,g_node_id,m_wl);
-		pthread_create(&p_thds[id++], NULL, run_thread, (void *)&output_thds[j]);
-		//pthread_create(&p_thds[i], &attr, send_worker, (void *)vid);
-  }
-#if LOGGING
-		//pthread_create(&p_thds[i], NULL, log_worker, (void *)i);
-    log_thds[0].init(id,g_node_id,m_wl);
-		pthread_create(&p_thds[id++], NULL, run_thread, (void *)&log_thds[0]);
-#endif
-
-  abort_thds[0].init(id,g_node_id,m_wl);
-  pthread_create(&p_thds[id++], NULL, run_thread, (void *)&abort_thds[0]);
-  //abort_worker((void *)(i));
 
 	for (uint64_t i = 0; i < all_thd_cnt ; i++) 
 		pthread_join(p_thds[i], NULL);

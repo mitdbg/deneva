@@ -410,12 +410,15 @@ def draw_line(fname, data, xticks,
 #        exec("lines[n], = plot(intlab, data[key])")
         n += 1
     if ylimit != 0:
-        ylim(ylimit)
+        plt.gca().set_ylim([0,ylimit])
+#        ylim(ylimit)
+    else:
+        plt.gca().set_ylim(bottom=0)
     if xlimit != None:
         if not logscalex:
             xlim(xlimit)
     ax.set_xlim([xticks[0],xticks[len(xticks)-1]])
-    plt.gca().set_ylim(bottom=0)
+#    plt.gca().set_ylim(bottom=0)
     ylabel(ylab,fontsize=18)
     xlabel(xlab,fontsize=18)
     if not logscale:
@@ -509,7 +512,7 @@ def draw_stack(data, xlabels, slabels, figname='stack', title=None, figsize=(8, 
     #xlabels = [str(x) for x in xlabels]
 
     xticks( ind,  xlabels, rotation=30, ha='center')
-    clr = itertools.cycle(['#4d4d4d','#F15854','#DECF3F','#5DA5DA','#FAA43A','#60BD68'])
+    clr = itertools.cycle(['#4d4d4d','#F15854','#DECF3F','#5DA5DA','#FAA43A','#B276B2','#60BD68'])
     htch = itertools.cycle(['','//','\\','-','\\\\','/'])
 
     for s in range(len(slabels)):
@@ -517,11 +520,12 @@ def draw_stack(data, xlabels, slabels, figname='stack', title=None, figsize=(8, 
         plots = plots + (p,)
         bottom = [a + b for a,b in zip(bottom, data[s])]
 
+    subplots_adjust(bottom=0.25, right=0.7, top=None)
     if title:
         plt.title("\n".join(wrap(title)))
     if legend:
-        legend(reversed(plots), tuple(slabels), bbox_to_anchor = (0.38, -0.2, 1, 1), prop={'size':11})
-    subplots_adjust(bottom=0.25, right=0.7, top=None)
+        fig.legend(reversed(plots), tuple(slabels), bbox_to_anchor = (1, 1), loc='left',prop={'size':11})
+#        fig.legend(reversed(plots), tuple(slabels), bbox_to_anchor = (0.38, -0.2, 1, 1), prop={'size':11})
     savefig('../figs/' + figname + '.pdf', bbox_inches='tight')
     plt.close()
 #    fig = figure(figsize=((7.2, 0.4)))
@@ -582,7 +586,7 @@ def draw_stack(data, xlabels, slabels, figname='stack', title=None, figsize=(8, 
     #xlabels = [str(x) for x in xlabels]
 
     xticks( ind,  xlabels, rotation=30, ha='center')
-    clr = itertools.cycle(['#4d4d4d','#F15854','#DECF3F','#5DA5DA','#FAA43A','#60BD68'])
+    clr = itertools.cycle(['#4d4d4d','#F15854','#DECF3F','#5DA5DA','#FAA43A','#B276B2','#60BD68'])
     htch = itertools.cycle(['','//','\\','-','\\\\','/'])
 
     for s in range(len(slabels)):
@@ -593,7 +597,9 @@ def draw_stack(data, xlabels, slabels, figname='stack', title=None, figsize=(8, 
     if title:
         plt.title("\n".join(wrap(title)))
     if legend:
-        legend(reversed(plots), tuple(slabels), bbox_to_anchor = (0.38, -0.2, 1, 1), prop={'size':11})
+#        fig.legend(reversed(plots), tuple(slabels), bbox_to_anchor = (0.38, -0.2, 1, 1), prop={'size':11})
+#        fig.legend(reversed(plots), tuple(slabels), bbox_to_anchor = (1,0.5), loc='right',prop={'size':11})
+        fig.legend(reversed(plots), tuple(slabels),loc='right',prop={'size':11})
     subplots_adjust(bottom=0.25, right=0.7, top=None)
     savefig('../figs/' + figname + '.pdf', bbox_inches='tight')
     plt.close()

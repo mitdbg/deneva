@@ -41,27 +41,30 @@ RC CalvinLockThread::run() {
   tsetup();
 
 	RC rc = RCOK;
+  TxnManager * txn_man;
 
 	while(!simulation->is_done()) {
-    m_txn = NULL;
+    txn_man = NULL;
 
-    Message * msg = work_queue.lock_dequeue(_thd_id);
+    Message * msg = work_queue.sched_dequeue(_thd_id);
 
 		if(!msg)
 			continue;
 
-    assert(msg->get_rtype() == RTXN);
+    assert(msg->get_rtype() == CL_QRY);
     assert(msg->get_txn_id() != UINT64_MAX);
 
-    m_txn = txn_table.get_transaction_manager(get_thd_id(),msg->get_txn_id(),msg->get_batch_id());
-    msg->copy_to_txn(m_txn);
-    m_txn->register_thread(this);
+    txn_man = txn_table.get_transaction_manager(get_thd_id(),msg->get_txn_id(),msg->get_batch_id());
+    while(!txn_man->unset_ready()) { }
+    msg->copy_to_txn(txn_man);
+    txn_man->register_thread(this);
     // Acquire locks
-    rc = m_txn->acquire_locks();
+    rc = txn_man->acquire_locks();
 
     if(rc == RCOK) {
       work_queue.enqueue(_thd_id,msg,false);
     }
+    txn_man->set_ready();
 
   }
   printf("FINISH %ld:%ld\n",_node_id,_thd_id);
@@ -73,7 +76,7 @@ void CalvinSequencerThread::setup() {
 }
 
 bool CalvinSequencerThread::is_batch_ready() {
-  bool ready = get_sys_clock() - last_batchtime >= g_batch_time_limit;
+  bool ready = get_sys_clock() - last_batchtime >= g_seq_batch_time_limit;
   return ready;
 }
 
@@ -91,19 +94,21 @@ RC CalvinSequencerThread::run() {
       last_batchtime = get_sys_clock();
     }
 
-    msg = work_queue.sched_dequeue(_thd_id);
+    msg = work_queue.sequencer_dequeue(_thd_id);
 
 		if(!msg)
 			continue;
 
     switch (msg->get_rtype()) {
-      case RTXN:
+      case CL_QRY:
         // Query from client
+        DEBUG("SEQ process_txn\n");
         seq_man.process_txn(msg);
         // TODO: Don't free message yet
         break;
-      case RACK:
+      case CALVIN_ACK:
         // Ack from server
+        DEBUG("SEQ process_ack (%ld,%ld) from %ld\n",msg->get_txn_id(),msg->get_batch_id(),msg->get_return_id());
         seq_man.process_ack(msg,get_thd_id());
         // TODO: Free message
         msg->release();

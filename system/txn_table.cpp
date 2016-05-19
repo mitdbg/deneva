@@ -105,6 +105,7 @@ TxnManager * TxnTable::get_transaction_manager(uint64_t thd_id, uint64_t txn_id,
     prof_starttime = get_sys_clock();
 
     txn_man->set_txn_id(txn_id);
+    txn_man->set_batch_id(batch_id);
     t_node->txn_man = txn_man;
     LIST_PUT_TAIL(pool[pool_id]->head,pool[pool_id]->tail,t_node);
 
@@ -138,10 +139,14 @@ void TxnTable::restart_txn(uint64_t thd_id, uint64_t txn_id,uint64_t batch_id){
 
   while (t_node != NULL) {
     if(is_matching_txn_node(t_node,txn_id,batch_id)) {
+#if CC_ALG == CALVIN
+      work_queue.enqueue(thd_id,Message::create_message(t_node->txn_man,RTXN),false);
+#else
       if(IS_LOCAL(txn_id))
         work_queue.enqueue(thd_id,Message::create_message(t_node->txn_man,RTXN_CONT),false);
       else
         work_queue.enqueue(thd_id,Message::create_message(t_node->txn_man,RQRY_CONT),false);
+#endif
       break;
     }
     t_node = t_node->next;

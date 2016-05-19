@@ -105,7 +105,7 @@ void MessageThread::run() {
   sbuf->cnt += 1;
   sbuf->ptr += msg->get_size();
   // Free message here, no longer needed unless CALVIN sequencer
-  if(!ISSEQUENCER) {
+  if(CC_ALG != CALVIN) {
     Message::release_message(msg);
   }
   if(sbuf->starttime == 0)

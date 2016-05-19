@@ -158,6 +158,12 @@ public:
   double seq_batch_time;
   double seq_prep_time;
 
+  double seq_queue_wait_time;
+  uint64_t seq_queue_cnt;
+  uint64_t seq_queue_enq_cnt;
+  double seq_queue_enqueue_time;
+  double seq_queue_dequeue_time;
+
   // OCC
   double occ_validate_time;
   double occ_cs_wait_time;

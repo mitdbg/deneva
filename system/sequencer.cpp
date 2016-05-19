@@ -62,7 +62,7 @@ void Sequencer::process_ack(Message * msg, uint64_t thd_id) {
 		ATOM_FETCH_ADD(total_txns_finished,1);
 		INC_STATS(thd_id,seq_txn_cnt,1);
 
-    ClientQueryMessage * rsp_msg = (ClientQueryMessage*)Message::create_message(msg->get_txn_id(),CL_RSP);
+    ClientResponseMessage * rsp_msg = (ClientResponseMessage*)Message::create_message(msg->get_txn_id(),CL_RSP);
     rsp_msg->client_startts = wait_list[id].client_startts;
     msg_queue.enqueue(thd_id,rsp_msg,wait_list[id].client_id);
 
@@ -82,10 +82,12 @@ void Sequencer::process_ack(Message * msg, uint64_t thd_id) {
 // FIXME: Assumes 1 thread does sequencer work
 void Sequencer::process_txn(Message * msg) {
 
+  DEBUG("SEQ Processing msg\n");
   qlite_ll * en = wl_tail;
 
   // FIXME: LL is potentially a bottleneck here
   if(!en || en->epoch != simulation->get_seq_epoch()+1) {
+    DEBUG("SEQ new wait list for epoch %ld\n",simulation->get_seq_epoch()+1);
     // First txn of new wait list
     en = (qlite_ll *) mem_allocator.alloc(sizeof(qlite_ll));
     en->epoch = simulation->get_seq_epoch()+1;
@@ -123,6 +125,7 @@ void Sequencer::process_txn(Message * msg) {
 
     // Add new txn to fill queue
     for(auto participant = participants.begin(); participant != participants.end(); participant++) {
+      DEBUG("SEQ adding (%ld,%ld) to fill queue\n",msg->get_txn_id(),msg->get_batch_id());
       while(!fill_queue[*participant].push(msg) && !simulation->is_done()) {}
     }
 
@@ -143,7 +146,7 @@ void Sequencer::send_next_batch(uint64_t thd_id) {
   for(uint64_t j = 0; j < g_node_cnt; j++) {
     while(fill_queue[j].pop(msg)) {
       if(j == g_node_id) {
-        work_queue.enqueue(thd_id,msg,false);
+        work_queue.sched_enqueue(thd_id,msg);
       } else {
         msg_queue.enqueue(thd_id,msg,j);
       }
@@ -152,7 +155,7 @@ void Sequencer::send_next_batch(uint64_t thd_id) {
     msg = Message::create_message(RDONE);
     msg->batch_id = simulation->get_seq_epoch(); 
     if(j == g_node_id) {
-      work_queue.enqueue(thd_id,msg,false);
+      work_queue.sched_enqueue(thd_id,msg);
     } else {
       msg_queue.enqueue(thd_id,msg,j);
     }

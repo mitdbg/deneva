@@ -41,7 +41,7 @@ struct work_queue_entry {
 struct CompareSchedEntry {
   bool operator()(const work_queue_entry* lhs, const work_queue_entry* rhs) {
     if(lhs->batch_id == rhs->batch_id)
-      return lhs->starttime < rhs->starttime;
+      return lhs->starttime > rhs->starttime;
     return lhs->batch_id < rhs->batch_id;
   }
 };
@@ -77,29 +77,28 @@ public:
   Message * dequeue(uint64_t thd_id);
   void sched_enqueue(uint64_t thd_id, Message * msg); 
   Message * sched_dequeue(uint64_t thd_id); 
-  void lock_enqueue(uint64_t thd_id, Message * msg); 
-  Message * lock_dequeue(uint64_t thd_id); 
+  void sequencer_enqueue(uint64_t thd_id, Message * msg); 
+  Message * sequencer_dequeue(uint64_t thd_id); 
 
   uint64_t get_cnt() {return get_wq_cnt() + get_rem_wq_cnt() + get_new_wq_cnt();}
   uint64_t get_wq_cnt() {return 0;}
   //uint64_t get_wq_cnt() {return work_queue.size();}
-  uint64_t get_sched_wq_cnt() {return scheduler_queue.size();}
+  uint64_t get_sched_wq_cnt() {return 0;}
   uint64_t get_rem_wq_cnt() {return 0;} 
   uint64_t get_new_wq_cnt() {return 0;}
   //uint64_t get_rem_wq_cnt() {return remote_op_queue.size();}
   //uint64_t get_new_wq_cnt() {return new_query_queue.size();}
 
 private:
-// This is close to max capacity for boost
   boost::lockfree::queue<work_queue_entry* > * work_queue;
   boost::lockfree::queue<work_queue_entry* > * new_txn_queue;
+  boost::lockfree::queue<work_queue_entry* > * seq_queue;
+  boost::lockfree::queue<work_queue_entry* > ** sched_queue;
   // TODO: move to many separate lock free queues to avoid bottleneck
-  std::priority_queue<work_queue_entry*,std::vector<work_queue_entry*>,CompareSchedEntry> scheduler_queue;
-  pthread_mutex_t sched_mtx;
+  //std::priority_queue<work_queue_entry*,std::vector<work_queue_entry*>,CompareSchedEntry> scheduler_queue;
   uint64_t sched_ptr;
   BaseQuery * last_sched_dq;
   uint64_t curr_epoch;
-  bool new_epoch;
 
 };
 

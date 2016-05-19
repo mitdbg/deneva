@@ -396,7 +396,6 @@ def tput(xval,vval,summary,summary_cl,
                 pntpt[_v][xi] = 0
                 continue
             stats = get_summary_stats(stats,summary[cfgs],summary_cl[cfgs],x,v,cc)
-#            write_breakdown_file(str(x) + '--' + str(v),summary[cfgs])
             # System Throughput: total txn count / average of all node's run time
             # Per Node Throughput: avg txn count / average of all node's run time
             # Per txn latency: total of all node's run time / total txn count
@@ -973,7 +972,7 @@ def stacks_general(xval,summary,
 # normalized: if true, normalize the results
 def time_breakdown(xval,summary,
         normalized=True,
-        xname="MPR",
+        xname="NODE_CNT",
         cfg_fmt=[],
         cfg=[],
         title='',
@@ -988,9 +987,11 @@ def time_breakdown(xval,summary,
     'Index',
     '2PC',
     'CC Manager',
+    'Txn Manager',
     'Useful Work'
     ]
     global plot_cnt
+    pp = pprint.PrettyPrinter()
     if name == "":
         name = 'breakdown_{}'.format(plot_cnt)
     plot_cnt += 1
@@ -1000,6 +1001,7 @@ def time_breakdown(xval,summary,
 #    else:
 #        _title = title
     _title = title
+    pp.pprint(cfg)
 
     if xname == "ABORT_PENALTY":
         _xval = [(float(x.replace("UL","")))/1000000000 for x in xval]
@@ -1017,44 +1019,49 @@ def time_breakdown(xval,summary,
     time_twopc = [0] * len(xval)
     time_ccman = [0] * len(xval)
     time_work = [0] * len(xval)
+    time_overhead = [0] * len(xval)
     total = [1] * len(xval)
 
     for x,i in zip(xval,range(len(xval))):
-        my_cfg_fmt = cfg_fmt + [xname]
-        my_cfg = cfg + [x]
-        my_cfg,my_cfg_fmt = apply_extras(my_cfg_fmt,my_cfg,extras,xname,'')
+        if new_cfgs != {}:
+            my_cfg_fmt = cfg_fmt + [xname]
+            my_cfg = new_cfgs[(x,0)] + [x]
+            my_cfg,my_cfg_fmt = apply_extras(my_cfg_fmt,my_cfg,extras,xname,'')
+        else:
+            my_cfg_fmt = cfg_fmt + [xname]
+            my_cfg = cfg + [x]
+            my_cfg,my_cfg_fmt = apply_extras(my_cfg_fmt,my_cfg,extras,xname,'')
 
         cfgs = get_cfgs(my_cfg_fmt, my_cfg)
         cfgs = get_outfile_name(cfgs,my_cfg_fmt)
-        if cfgs not in summary.keys(): break
-        tmp=0
+        print(cfgs)
+        if cfgs not in summary.keys(): 
+            print("Not in summary")
+            continue
         try:
-            nthd = 6
-            thd1 = avg(summary[cfgs]['thd1'])
-            row1 = avg(summary[cfgs]['row1'])
-            row2 = avg(summary[cfgs]['row2'])
-            row3 = avg(summary[cfgs]['row3'])
-            txn_time_begintxn = avg(summary[cfgs]['txn_time_begintxn']) / nthd
-            time_validate = avg(summary[cfgs]['time_validate']) / nthd
-            t_twopc = avg(summary[cfgs]['prof_time_twopc']) / nthd
-            time_msg_sent = avg(summary[cfgs]['time_msg_sent']) / nthd
-            t_index = avg(summary[cfgs]['time_index']) / nthd
-            prof_cc_rel_abort = avg(summary[cfgs]['prof_cc_rel_abort']) / nthd
-            prof_cc_rel_commit = avg(summary[cfgs]['prof_cc_rel_commit']) / nthd
-            t_abort = avg(summary[cfgs]['time_abort']) / nthd
-
-            time_idle[i] = thd1
-            time_index[i] = t_index
-            time_abort[i] = t_abort
-            time_ccman[i] = row1 + row2 + prof_cc_rel_commit + txn_time_begintxn + time_validate
-            time_twopc[i] = t_twopc + time_msg_sent
-            time_work[i] = avg(summary[cfgs]['clock_time']) - (time_idle[i] + time_abort[i] + time_ccman[i] + time_twopc[i] + time_work[i])
-            total[i] = sum(time_index[i] + time_abort[i] + time_ccman[i] + time_twopc[i] + time_work[i] + time_idle[i])
+            time_idle[i] = avg(summary[cfgs]['worker_idle_time'])
+            time_index[i] = avg(summary[cfgs]['txn_index_time'])
+            time_abort[i] = avg(summary[cfgs]['abort_time'])
+            time_ccman[i] = avg(summary[cfgs]['txn_manager_time']) + avg(summary[cfgs]['txn_validate_time'])
+            time_twopc[i] =  avg(summary[cfgs]['proc_time_type6']) + avg(summary[cfgs]['proc_time_type11']) + avg(summary[cfgs]['proc_time_type12']) + avg(summary[cfgs]['proc_time_type16'])
+            if time_twopc[i] > avg(summary[cfgs]['txn_cleanup_time']):
+                time_twopc[i] -= avg(summary[cfgs]['txn_cleanup_time'])
+            time_overhead[i] = avg(summary[cfgs]['txn_cleanup_time']) + avg(summary[cfgs]['txn_table_release_time']) + avg(summary[cfgs]['txn_table_get_time'])
+            time_work[i] = avg(summary[cfgs]['txn_process_time'])
+            total[i] = sum(time_index[i] + time_abort[i] + time_ccman[i] + time_twopc[i] + time_work[i] + time_idle[i] + time_overhead[i])
 
         except KeyError:
-            print("KeyError: {} err:{}".format(cfgs,tmp))
+            print("KeyError: {}".format(cfgs))
 
 
+    pp.pprint(time_idle)
+    pp.pprint(time_index)
+    pp.pprint(time_abort)
+    pp.pprint(time_twopc)
+    pp.pprint(time_ccman)
+    pp.pprint(time_overhead)
+    pp.pprint(time_work)
+    pp.pprint(total)
     if normalized:
         time_idle = [i / j for i,j in zip(time_idle,total)]
         time_index = [i / j for i,j in zip(time_index,total)]
@@ -1062,6 +1069,7 @@ def time_breakdown(xval,summary,
         time_twopc =  [i / j for i,j in zip(time_twopc,total)]
         time_ccman =  [i / j for i,j in zip(time_ccman,total)]
         time_work =  [i / j for i,j in zip(time_work,total)]
+        time_overhead =  [i / j for i,j in zip(time_overhead,total)]
         _ymax = 1
     else:
         _ymax = max(total)
@@ -1071,8 +1079,8 @@ def time_breakdown(xval,summary,
         time_index,
         time_twopc,
         time_ccman, 
+        time_overhead, 
         time_work]
-    pp = pprint.PrettyPrinter()
     pp.pprint(data)
     draw_stack(data,_xval,stack_names,figname=name,title=_title,ymax=_ymax,legend=legend)
     print("Created plot {}".format(name))

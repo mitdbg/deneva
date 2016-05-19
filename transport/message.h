@@ -33,6 +33,7 @@ public:
   static Message * create_message(BaseQuery * query, RemReqType rtype); 
   static Message * create_message(TxnManager * txn, RemReqType rtype); 
   static Message * create_message(uint64_t txn_id, RemReqType rtype); 
+  static Message * create_message(uint64_t txn_id,uint64_t batch_id, RemReqType rtype); 
   static Message * create_message(LogRecord * record, RemReqType rtype); 
   static Message * create_message(RemReqType rtype); 
   static std::vector<Message*> * create_messages(char * buf); 
@@ -189,8 +190,7 @@ public:
   void init() {}
   void release() {}
 
-  uint64_t txn_id;
-  uint64_t batch_id;
+  RC rc;
 #if WORKLOAD == TPCC
 	uint64_t o_id;
 #endif
@@ -221,7 +221,6 @@ public:
 
   RC rc;
   uint64_t client_startts;
-  uint64_t txn_id; // TODO: Remove
 };
 
 class ClientQueryMessage : public Message {

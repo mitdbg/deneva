@@ -35,7 +35,7 @@ void Stats_thd::init(uint64_t thd_id) {
   DEBUG_M("Stats_thd::init worker_process_time_by_type alloc\n");
   worker_process_time_by_type= (double *) mem_allocator.align_alloc(sizeof(double) * NO_MSG);
   DEBUG_M("Stats_thd::init mtx alloc\n");
-  mtx= (double *) mem_allocator.align_alloc(sizeof(double) * 30);
+  mtx= (double *) mem_allocator.align_alloc(sizeof(double) * 40);
 	clear();
 	//all_lat.init(g_max_txn_per_part,ArrIncr);
 
@@ -63,6 +63,14 @@ void Stats_thd::clear() {
   single_part_txn_run_time=0;
   txn_write_cnt=0;
   record_write_cnt=0;
+
+  // Breakdown
+  ts_alloc_time=0;
+  abort_time=0;
+  txn_manager_time=0;
+  txn_index_time=0;
+  txn_validate_time=0;
+  txn_cleanup_time=0;
 
   // Transaction stats
   txn_total_process_time=0;
@@ -186,7 +194,7 @@ void Stats_thd::clear() {
   txn_table_release_time=0;
   txn_table_min_ts_time=0;
 
-  for(uint64_t i = 0; i < 30; i ++) {
+  for(uint64_t i = 0; i < 40; i ++) {
     mtx[i]=0;
   }
 }
@@ -349,6 +357,22 @@ void Stats_thd::print(FILE * outf) {
   ,single_part_txn_avg_time / BILLION
   ,txn_write_cnt
   ,record_write_cnt
+  );
+
+  // Breakdown
+  fprintf(outf,
+  ",ts_alloc_time=%f"
+  ",abort_time=%f"
+  ",txn_manager_time=%f"
+  ",txn_index_time=%f"
+  ",txn_validate_time=%f"
+  ",txn_cleanup_time=%f"
+  ,ts_alloc_time / BILLION
+  ,abort_time / BILLION
+  ,txn_manager_time / BILLION
+  ,txn_index_time / BILLION
+  ,txn_validate_time / BILLION
+  ,txn_cleanup_time / BILLION
   );
 
   // Transaction stats
@@ -745,7 +769,7 @@ void Stats_thd::print(FILE * outf) {
     ,txn_table_release_avg_time / BILLION
   );
 
-  for(uint64_t i = 0; i < 30; i ++) {
+  for(uint64_t i = 0; i < 40; i ++) {
     fprintf(outf,
       ",mtx%ld=%f"
       ,i
@@ -775,6 +799,14 @@ void Stats_thd::combine(Stats_thd * stats) {
   single_part_txn_run_time+=stats->single_part_txn_run_time;
   txn_write_cnt+=stats->txn_write_cnt;
   record_write_cnt+=stats->record_write_cnt;
+
+  // Breakdown
+  ts_alloc_time+=stats->ts_alloc_time;
+  abort_time+=stats->abort_time;
+  txn_manager_time+=stats->txn_manager_time;
+  txn_index_time+=stats->txn_index_time;
+  txn_validate_time+=stats->txn_validate_time;
+  txn_cleanup_time+=stats->txn_cleanup_time;
 
   // Transaction stats
   txn_total_process_time+=stats->txn_total_process_time;
@@ -897,7 +929,7 @@ void Stats_thd::combine(Stats_thd * stats) {
   txn_table_release_time+=stats->txn_table_release_time;
   txn_table_min_ts_time+=stats->txn_table_min_ts_time;
 
-  for(uint64_t i = 0; i < 30; i ++) {
+  for(uint64_t i = 0; i < 40; i ++) {
     mtx[i]+=stats->mtx[i];
   }
 }

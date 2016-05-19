@@ -23,7 +23,6 @@
 #include "mem_alloc.h"
 #include "occ.h"
 #include "row_occ.h"
-#include "row_specex.h"
 #include "table.h"
 #include "catalog.h"
 #include "index_btree.h"
@@ -322,7 +321,11 @@ int TxnManager::received_response(RC rc) {
   assert(txn->rc == RCOK || txn->rc == Abort);
   if(txn->rc == RCOK)
     txn->rc = rc;
+#if CC_ALG == CALVIN
+  ++rsp_cnt;
+#else
   --rsp_cnt;
+#endif
   return rsp_cnt;
 }
 
@@ -683,10 +686,13 @@ RC TxnManager::validate() {
 }
 
 RC
-TxnManager::send_remote_reads(BaseQuery * qry) {
+TxnManager::send_remote_reads() {
   assert(CC_ALG == CALVIN);
+  // TODO: only send relevant reads
   for(uint64_t i = 0; i < query->active_nodes.size(); i++) {
-      msg_queue.enqueue(get_thd_id(),Message::create_message(query,RFWD),i);
+    if(query->active_nodes[i] == g_node_id)
+      continue;
+    msg_queue.enqueue(get_thd_id(),Message::create_message(this,RFWD),query->active_nodes[i]);
   }
   return RCOK;
 
@@ -698,17 +704,8 @@ bool TxnManager::calvin_exec_phase_done() {
 }
 
 bool TxnManager::calvin_collect_phase_done() {
-  bool ready =  (phase == CALVIN_COLLECT_RD) && (get_rsp_cnt() == query->participant_nodes.size()-1);
+  bool ready =  (phase == CALVIN_COLLECT_RD) && (get_rsp_cnt() == calvin_expected_rsp_cnt);
   return ready;
-}
-
-RC
-TxnManager::calvin_finish() {
-  assert(CC_ALG == CALVIN);
-  for(uint64_t i = 0; i < query->active_nodes.size(); i++) {
-    msg_queue.enqueue(get_thd_id(),Message::create_message(query,RFIN),i);
-  }
-  return RCOK;
 }
 
 void TxnManager::release_locks(RC rc) {

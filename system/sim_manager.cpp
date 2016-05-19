@@ -27,8 +27,8 @@ void SimManager::init() {
   txn_cnt = 0;
   inflight_cnt = 0;
   epoch_txn_cnt = 0;
-  worker_epoch = 0;
-  seq_epoch = 1;
+  worker_epoch = 1;
+  seq_epoch = 0;
   rsp_cnt = g_total_node_cnt - 1;
 
 #if TIME_ENABLE
