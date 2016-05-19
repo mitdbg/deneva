@@ -773,7 +773,8 @@ void ForwardMessage::copy_from_txn(TxnManager * txn) {
 }
 
 void ForwardMessage::copy_to_txn(TxnManager * txn) {
-  Message::mcopy_to_txn(txn);
+  // Don't copy return ID
+  //Message::mcopy_to_txn(txn);
 #if WORKLOAD == TPCC
   ((TPCCQuery*)txn->query)->o_id = o_id;
 #endif

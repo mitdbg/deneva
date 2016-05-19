@@ -509,6 +509,7 @@ RC WorkerThread::process_log_flushed(Message * msg) {
 
 RC WorkerThread::process_rfwd(Message * msg) {
   DEBUG("RFWD %ld,%ld\n",msg->get_txn_id(),msg->get_batch_id());
+  assert(ISSERVERN(txn_man->return_id));
   assert(CC_ALG == CALVIN);
   int responses_left = txn_man->received_response(((ForwardMessage*)msg)->rc);
   assert(responses_left >=0);
@@ -526,6 +527,7 @@ RC WorkerThread::process_rfwd(Message * msg) {
 RC WorkerThread::process_calvin_rtxn(Message * msg) {
 
   DEBUG("START %ld %f %lu\n",txn_man->get_txn_id(),simulation->seconds_from_start(get_sys_clock()),txn_man->txn_stats.starttime);
+  assert(ISSERVERN(txn_man->return_id));
   // Execute
   RC rc = txn_man->run_calvin_txn();
   //if((txn_man->phase==6 && rc == RCOK) || txn_man->active_cnt == 0 || txn_man->participant_cnt == 1) {

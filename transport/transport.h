@@ -47,7 +47,7 @@ class Socket {
 class Transport {
 	public:
 		void read_ifconfig(const char * ifaddr_file);
-		void init(Workload* workload);
+		void init();
     void shutdown(); 
     uint64_t get_socket_count(); 
     string get_path(); 
@@ -71,7 +71,6 @@ class Transport {
     uint64_t _s_cnt;
 		char ** ifaddr;
     int * endpoint_id;
-    Workload * _wl;
 
 };
 

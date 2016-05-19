@@ -93,6 +93,11 @@ int main(int argc, char* argv[])
   fflush(stdout);
 	glob_manager.init();
   printf("Done\n");
+  printf("Initializing transport manager... ");
+  fflush(stdout);
+	tport_man.init();
+  printf("Done\n");
+  fflush(stdout);
 	Workload * m_wl;
 	switch (WORKLOAD) {
 		case YCSB :
@@ -122,11 +127,6 @@ int main(int argc, char* argv[])
 #endif
 
 
-  printf("Initializing transport manager... ");
-  fflush(stdout);
-	tport_man.init(m_wl);
-  printf("Done\n");
-  fflush(stdout);
   printf("Initializing work queue... ");
   fflush(stdout);
   work_queue.init();

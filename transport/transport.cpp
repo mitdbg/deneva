@@ -20,7 +20,6 @@
 #include "nn.hpp"
 #include "tpcc_query.h"
 #include "query.h"
-#include "wl.h"
 #include "message.h"
 
 
@@ -148,8 +147,7 @@ Socket * Transport::connect(uint64_t dest_id,uint64_t port_id) {
   return socket;
 }
 
-void Transport::init(Workload * workload) {
-	_wl = workload;
+void Transport::init() {
   _sock_cnt = get_socket_count();
 
   rr = 0;

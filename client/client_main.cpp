@@ -66,6 +66,11 @@ int main(int argc, char* argv[])
   fflush(stdout);
 	stats.init(g_total_client_thread_cnt);
   printf("Done\n");
+  printf("Initializing transport manager... ");
+  fflush(stdout);
+	tport_man.init();
+  printf("Done\n");
+  printf("Initializing client manager... ");
 	Workload * m_wl;
 	switch (WORKLOAD) {
 		case YCSB :
@@ -95,11 +100,6 @@ int main(int argc, char* argv[])
 #endif
 
 
-  printf("Initializing transport manager... ");
-  fflush(stdout);
-	tport_man.init(m_wl);
-  printf("Done\n");
-  printf("Initializing client manager... ");
   fflush(stdout);
   client_man.init();
   printf("Done\n");
