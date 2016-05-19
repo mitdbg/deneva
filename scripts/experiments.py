@@ -48,19 +48,42 @@ fmt_title=["NODE_CNT","CC_ALG","ACCESS_PERC","TXN_WRITE_PERC","PERC_PAYMENT","MP
 
 def ycsb_scaling():
     wl = 'YCSB'
-    nnodes = [1,2,4,8,16]#,32,48]
+    nnodes = [1,2,4,8,16]#,48]
     algos=['NO_WAIT','WAIT_DIE','MVCC','MAAT']
+#    algos=['NO_WAIT','WAIT_DIE','MAAT']
     base_table_size=2097152*8
-    txn_write_perc = [0.0,0.2,0.5]
-    tup_write_perc = [1.0]
+    txn_write_perc = [0.5,1.0]
+    tup_write_perc = [0.5]
     load = [10000]
     tcnt = [4]
-    skew = [0.0,0.3,0.6,0.9]
+    skew = [0.6,0.625,0.65,0.675,0.7]
 #    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","SYNTH_TABLE_SIZE","TUP_WRITE_PERC","TXN_WRITE_PERC","MAX_TXN_IN_FLIGHT"]
 #    exp = [[wl,n,algo,base_table_size*n,tup_wr_perc,txn_wr_perc,ld] for txn_wr_perc,tup_wr_perc,n,algo,ld in itertools.product(txn_write_perc,tup_write_perc,nnodes,algos,load)]
-    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","SYNTH_TABLE_SIZE","TUP_WRITE_PERC","TXN_WRITE_PERC","MAX_TXN_IN_FLIGHT","ZIPF_THETA","THREAD_CNT"]
-    exp = [[wl,n,algo,base_table_size*n,tup_wr_perc,txn_wr_perc,ld,sk,thr] for thr,txn_wr_perc,tup_wr_perc,algo,sk,ld,n in itertools.product(tcnt,txn_write_perc,tup_write_perc,algos,skew,load,nnodes)]
+    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","SYNTH_TABLE_SIZE","TUP_WRITE_PERC","TXN_WRITE_PERC","MAX_TXN_IN_FLIGHT","ZIPF_THETA","THREAD_CNT","YCSB_ABORT_MODE"]
+    exp = [[wl,n,algo,base_table_size*n,tup_wr_perc,txn_wr_perc,ld,sk,thr,'true'] for thr,txn_wr_perc,tup_wr_perc,sk,ld,n,algo in itertools.product(tcnt,txn_write_perc,tup_write_perc,skew,load,nnodes,algos)]
+#    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","SYNTH_TABLE_SIZE","TUP_WRITE_PERC","TXN_WRITE_PERC","MAX_TXN_IN_FLIGHT","ZIPF_THETA","THREAD_CNT","YCSB_ABORT_MODE"]
+#    exp = exp + [[wl,n,algo,base_table_size*n,tup_wr_perc,txn_wr_perc,ld,sk,thr,'false'] for thr,txn_wr_perc,tup_wr_perc,algo,sk,ld,n in itertools.product(tcnt,txn_write_perc,tup_write_perc,['CALVIN','NO_WAIT'],skew,load,nnodes)]
     return fmt,exp
+
+def ycsb_skew():
+    wl = 'YCSB'
+    nnodes = [1,2,4,8,16,32]#,48]
+    nnodes = [8]#,48]
+    algos=['NO_WAIT','WAIT_DIE','MVCC','MAAT']
+    base_table_size=2097152*8
+    txn_write_perc = [0.5,0.75,1.0]
+    tup_write_perc = [0.5]
+    load = [10000]
+    tcnt = [4]
+    skew = [0.0,0.25,0.5,0.6,0.7,0.75,0.8,0.85,0.9]
+#    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","SYNTH_TABLE_SIZE","TUP_WRITE_PERC","TXN_WRITE_PERC","MAX_TXN_IN_FLIGHT"]
+#    exp = [[wl,n,algo,base_table_size*n,tup_wr_perc,txn_wr_perc,ld] for txn_wr_perc,tup_wr_perc,n,algo,ld in itertools.product(txn_write_perc,tup_write_perc,nnodes,algos,load)]
+    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","SYNTH_TABLE_SIZE","TUP_WRITE_PERC","TXN_WRITE_PERC","MAX_TXN_IN_FLIGHT","ZIPF_THETA","THREAD_CNT","YCSB_ABORT_MODE"]
+    exp = [[wl,n,algo,base_table_size*n,tup_wr_perc,txn_wr_perc,ld,sk,thr,'false'] for thr,txn_wr_perc,tup_wr_perc,ld,n,sk,algo in itertools.product(tcnt,txn_write_perc,tup_write_perc,load,nnodes,skew,algos)]
+#    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","SYNTH_TABLE_SIZE","TUP_WRITE_PERC","TXN_WRITE_PERC","MAX_TXN_IN_FLIGHT","ZIPF_THETA","THREAD_CNT","YCSB_ABORT_MODE"]
+#    exp = exp + [[wl,n,algo,base_table_size*n,tup_wr_perc,txn_wr_perc,ld,sk,thr,'false'] for thr,txn_wr_perc,tup_wr_perc,algo,sk,ld,n in itertools.product(tcnt,txn_write_perc,tup_write_perc,['CALVIN','NO_WAIT'],skew,load,nnodes)]
+    return fmt,exp
+
 
 def isolation_levels():
     wl = 'YCSB'
@@ -79,19 +102,43 @@ def isolation_levels():
 def ycsb_load():
     wl = 'YCSB'
     algos=['NO_WAIT']
-    load = [1,500,1000,2500,5000,10000,25000]
+    algos=['NO_WAIT','WAIT_DIE','MVCC','MAAT']
+    algos=['NO_WAIT','WAIT_DIE','MAAT']
+    nparts = [1,2,4,6,8]
+    load = [10000]
     base_table_size=2097152*8
-    txn_write_perc = [0.01,0.1,0.2,0.5,1.0]
-    tup_write_perc = [1.0]
-    nnodes = [1,2,4,8,16]
+    txn_write_perc = [0.5]
+    tup_write_perc = [0.5]
+    nnodes = [8]
     tcnt = [4]
-    skew = [0.0,0.3,0.6,0.9]
+    skew = [0.3,0.6,0.7]
+#    recv = [2,4]
+    rpq =  8 
+#    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","SYNTH_TABLE_SIZE","TUP_WRITE_PERC","TXN_WRITE_PERC","MAX_TXN_IN_FLIGHT","ZIPF_THETA","REM_THREAD_CNT"]
+#    exp = [[wl,n,algo,base_table_size*n,tup_wr_perc,txn_wr_perc,ld,sk,rcv] for rcv,txn_wr_perc,tup_wr_perc,algo,sk,ld,n in itertools.product(recv,txn_write_perc,tup_write_perc,algos,skew,load,nnodes)]
+    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","SYNTH_TABLE_SIZE","TUP_WRITE_PERC","TXN_WRITE_PERC","MAX_TXN_IN_FLIGHT","ZIPF_THETA","THREAD_CNT","YCSB_ABORT_MODE"]
+    exp = [[wl,n,algo,base_table_size*n,tup_wr_perc,txn_wr_perc,ld,sk,thr,'false'] for thr,txn_wr_perc,tup_wr_perc,algo,sk,ld,n in itertools.product(tcnt,txn_write_perc,tup_write_perc,algos,skew,load,nnodes)]
+    return fmt,exp
+
+
+def ycsb_partitions():
+    wl = 'YCSB'
+    algos=['NO_WAIT']
+    algos=['NO_WAIT','WAIT_DIE','MVCC','MAAT']
+    algos=['NO_WAIT','WAIT_DIE','MAAT']
+    load = [10000]
+    base_table_size=2097152*8
+    txn_write_perc = [0.0,0.5]
+    tup_write_perc = [1.0]
+    nnodes = [8]
+    tcnt = [4]
+    skew = [0.6]
 #    recv = [2,4]
     rpq =  10
 #    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","SYNTH_TABLE_SIZE","TUP_WRITE_PERC","TXN_WRITE_PERC","MAX_TXN_IN_FLIGHT","ZIPF_THETA","REM_THREAD_CNT"]
 #    exp = [[wl,n,algo,base_table_size*n,tup_wr_perc,txn_wr_perc,ld,sk,rcv] for rcv,txn_wr_perc,tup_wr_perc,algo,sk,ld,n in itertools.product(recv,txn_write_perc,tup_write_perc,algos,skew,load,nnodes)]
-    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","SYNTH_TABLE_SIZE","TUP_WRITE_PERC","TXN_WRITE_PERC","MAX_TXN_IN_FLIGHT","ZIPF_THETA","THREAD_CNT"]
-    exp = [[wl,n,algo,base_table_size*n,tup_wr_perc,txn_wr_perc,ld,sk,thr] for thr,txn_wr_perc,tup_wr_perc,algo,sk,ld,n in itertools.product(tcnt,txn_write_perc,tup_write_perc,algos,skew,load,nnodes)]
+    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","SYNTH_TABLE_SIZE","TUP_WRITE_PERC","TXN_WRITE_PERC","MAX_TXN_IN_FLIGHT","ZIPF_THETA","THREAD_CNT","YCSB_ABORT_MODE","STRICT_PPT"]
+    exp = [[wl,n,algo,base_table_size*n,tup_wr_perc,txn_wr_perc,ld,sk,thr,'false',1] for thr,txn_wr_perc,tup_wr_perc,algo,sk,ld,n in itertools.product(tcnt,txn_write_perc,tup_write_perc,algos,skew,load,nnodes)]
     return fmt,exp
 
 
@@ -107,8 +154,10 @@ def ycsb_scaling_plot(summary,summary_client):
     x_name="NODE_CNT"
     v_name="CC_ALG"
 #    tput_setup(summary,summary_client,nfmt,nexp,x_name,v_name)
-    skew = [0.0,0.3,0.6,0.9]
-    txn_write_perc = [0.0,0.2,0.5]
+    skew = [0.6,0.7,0.75,0.8,0.85,0.9]
+    skew = [0.6,0.7]
+    txn_write_perc = [0.5,0.75,1.0]
+    txn_write_perc = [0.5,1.0]
     for sk,wr in itertools.product(skew,txn_write_perc):
         const={"ZIPF_THETA":sk,"TXN_WRITE_PERC":wr}
         title = ""
@@ -116,12 +165,28 @@ def ycsb_scaling_plot(summary,summary_client):
             title += "{} {},".format(SHORTNAMES[c],const[c])
         x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants=const)
         tput(x_vals,v_vals,summary,summary_client,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,xlab="Server Count",new_cfgs=lst,ylimit=140,logscalex=False,title=title)
-        for x in x_vals:
-            const[x_name] = x
-            title2 = title + "{} {},".format(SHORTNAMES[x_name],const[x_name])
-            v_vals,tmp,fmt,exp,lst = plot_prep(nexp,nfmt,v_name,'',constants=const)
-            time_breakdown(v_vals,summary,cfg_fmt=fmt,cfg=list(exp),xname=v_name,new_cfgs=lst,title=title2)
+#        for x in x_vals:
+#            const[x_name] = x
+#            title2 = title + "{} {},".format(SHORTNAMES[x_name],const[x_name])
+#            v_vals,tmp,fmt,exp,lst = plot_prep(nexp,nfmt,v_name,'',constants=const)
+#            time_breakdown(v_vals,summary,cfg_fmt=fmt,cfg=list(exp),xname=v_name,new_cfgs=lst,title=title2)
 #    breakdown_setup(summary,nfmt,nexp,x_name)
+
+def ycsb_skew_plot(summary,summary_client):
+    from helper import plot_prep
+    from plot_helper import tput,time_breakdown
+    nfmt,nexp = ycsb_skew()
+    x_name="ZIPF_THETA"
+    v_name="CC_ALG"
+#    tput_setup(summary,summary_client,nfmt,nexp,x_name,v_name)
+    txn_write_perc = [0.5,0.75,1.0]
+    for wr in txn_write_perc:#itertools.product(skew,txn_write_perc):
+        const={"TXN_WRITE_PERC":wr}
+        title = ""
+        for c in const.keys():
+            title += "{} {},".format(SHORTNAMES[c],const[c])
+        x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants=const)
+        tput(x_vals,v_vals,summary,summary_client,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,xlab="Server Count",new_cfgs=lst,ylimit=140,logscalex=False,title=title)
 
 def ycsb_load_plot(summary,summary_client):
     from helper import plot_prep
@@ -131,7 +196,9 @@ def ycsb_load_plot(summary,summary_client):
     x_name="MAX_TXN_IN_FLIGHT"
 #    tput_setup(summary,summary_client,nfmt,nexp,x_name,v_name)
     txn_write_perc = [0.01,0.1,0.2,0.5,1.0]
+    txn_write_perc = [0.0,0.5]
     skew = [0.0,0.3,0.6,0.9]
+    skew = [0.6]
     tcnt = [4]
     for wr,sk,thr in itertools.product(txn_write_perc,skew,tcnt):
         const={"TXN_WRITE_PERC":wr,"ZIPF_THETA":sk,"THREAD_CNT":thr}
@@ -269,12 +336,12 @@ def malviya_plot(summary,summary_client):
 
 def test():
     wl = 'YCSB'
-    nnodes = [1,2,4,8]
+    nnodes = [1,2,4]
     ntif = [1]
     nwr = [0.0,0.25,0.5,0.75,1.0] # TXN_WRITE_PERC
     nwr = [0.5] # TXN_WRITE_PERC
     nwr2 = [0.5] # TUP_WRITE_PERC 
-    nalgos=['CALVIN','NO_WAIT']
+    nalgos=['CALVIN']
     nmodes=['true','false']
     noutthr=[4]
     ninthr=[4]
@@ -962,6 +1029,8 @@ experiment_map = {
     'network_test':network_test,
     'inflight_study': inflight_study,
     'ycsb_scaling': ycsb_scaling,
+    'ycsb_skew': ycsb_skew,
+    'ycsb_skew_plot': ycsb_skew_plot,
     'isolation_levels': isolation_levels,
     'isolation_levels_plot': isolation_levels_plot,
     'ycsb_gold': ycsb_gold,

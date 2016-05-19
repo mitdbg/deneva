@@ -9,7 +9,7 @@
 #define THREAD_CNT 4
 #define REM_THREAD_CNT THREAD_CNT
 #define SEND_THREAD_CNT THREAD_CNT
-#define CORE_CNT 64
+#define CORE_CNT 8
 // PART_CNT should be at least NODE_CNT
 #define PART_CNT NODE_CNT
 #define CLIENT_NODE_CNT NODE_CNT
@@ -94,9 +94,9 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, OCC, VLL, CALVIN, MAAT
-#define CC_ALG NO_WAIT
+#define CC_ALG MAAT
 #define ISOLATION_LEVEL SERIALIZABLE
-#define YCSB_ABORT_MODE false
+#define YCSB_ABORT_MODE true
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER         false
@@ -348,8 +348,8 @@ extern TestCases          g_test_case;
 #define WARMUP_TIMER 1 * 60 * BILLION // ~1 minutes
 
 #define SEED 0
-#define SHMEM_ENV true
-#define ENVIRONMENT_EC2 false
+#define SHMEM_ENV false
+#define ENVIRONMENT_EC2 true
 
 #endif
 

@@ -804,7 +804,7 @@ void ForwardMessage::copy_to_buf(char * buf) {
 
 uint64_t PrepareMessage::get_size() {
   uint64_t size = Message::mget_size();
-  size += sizeof(uint64_t);
+  //size += sizeof(uint64_t);
   return size;
 }
 
