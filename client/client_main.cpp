@@ -119,6 +119,7 @@ int main(int argc, char* argv[])
 	uint64_t rthd_cnt = g_client_rem_thread_cnt;
 	uint64_t sthd_cnt = g_client_send_thread_cnt;
   uint64_t all_thd_cnt = thd_cnt + rthd_cnt + sthd_cnt;
+  assert(all_thd_cnt == g_this_total_thread_cnt);
 
 	pthread_t * p_thds = 
 		(pthread_t *) malloc(sizeof(pthread_t) * (all_thd_cnt));

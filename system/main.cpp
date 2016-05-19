@@ -214,7 +214,7 @@ int main(int argc, char* argv[])
 #if CC_ALG == CALVIN
   all_thd_cnt += 2; // sequencer + scheduler thread
 #endif
-  assert(all_thd_cnt == g_total_thread_cnt);
+  assert(all_thd_cnt == g_this_total_thread_cnt);
   /*
 #if CC_ALG == CALVIN
   assert(thd_cnt >= 3);

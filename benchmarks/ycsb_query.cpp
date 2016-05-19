@@ -118,7 +118,8 @@ void YCSBQuery::get_participants(Workload * wl) {
 
   for(uint64_t i = 0; i < requests.size(); i++) {
     uint64_t req_nid = GET_NODE_ID(((YCSBWorkload*)wl)->key_to_part(requests[i]->key));
-    participants.insert(req_nid);
+    if(requests[i]->acctype == RD)
+      participants.insert(req_nid);
     if(requests[i]->acctype == WR)
       actives.insert(req_nid);
   }
