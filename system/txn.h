@@ -205,7 +205,6 @@ public:
   uint32_t calvin_expected_rsp_cnt;
   bool locking_done;
   CALVIN_PHASE phase;
-  bool phase_rsp;
   bool calvin_exec_phase_done();
   bool calvin_collect_phase_done();
 

@@ -101,7 +101,7 @@ void MessageThread::run() {
   uint64_t copy_starttime = get_sys_clock();
   msg->copy_to_buf(&(sbuf->buffer[sbuf->ptr]));
   INC_STATS(_thd_id,msg_copy_output_time,get_sys_clock() - copy_starttime);
-  DEBUG("%ld Buffered Msg %d, id %ld to %ld\n",_thd_id,msg->rtype,msg->txn_id,dest_node_id);
+  DEBUG("%ld Buffered Msg %d, (%ld,%ld) to %ld\n",_thd_id,msg->rtype,msg->txn_id,msg->batch_id,dest_node_id);
   sbuf->cnt += 1;
   sbuf->ptr += msg->get_size();
   // Free message here, no longer needed unless CALVIN sequencer

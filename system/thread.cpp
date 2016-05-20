@@ -78,6 +78,7 @@ void Thread::tsetup() {
   simulation->set_starttime(run_starttime);
   prog_time = run_starttime;
   heartbeat_time = run_starttime;
+	pthread_barrier_wait( &warmup_bar );
 
 
 }

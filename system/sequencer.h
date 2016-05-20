@@ -30,6 +30,7 @@ typedef struct qlite_entry {
 	uint32_t client_id;
 	uint64_t client_startts;
 	uint32_t server_ack_cnt;
+  Message * msg;
 } qlite;
 
 typedef struct qlite_ll_entry {

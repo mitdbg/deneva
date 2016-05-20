@@ -42,8 +42,9 @@ void SimManager::init() {
 void SimManager::set_starttime(uint64_t starttime) {
     if(ATOM_CAS(start_set, false, true)) {
       run_starttime = starttime;
-      DEBUG("Starttime set\n");
-    }
+      sim_done = false;
+      printf("Starttime set to %ld\n",run_starttime);
+    } 
 }
 
 bool SimManager::timeout() {

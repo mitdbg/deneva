@@ -46,7 +46,12 @@ void MessageQueue::enqueue(uint64_t thd_id, Message * msg,uint64_t dest) {
   entry->starttime = get_sys_clock();
   assert(entry->dest < g_total_node_cnt);
   uint64_t mtx_time_start = get_sys_clock();
+#if CC_ALG == CALVIN
+  // Need to have strict message ordering for sequencer thread
+  uint64_t rand = thd_id % g_this_send_thread_cnt;
+#else
   uint64_t rand = mtx_time_start % g_this_send_thread_cnt;
+#endif
   while(!m_queue[rand]->push(entry) && !simulation->is_done()) {}
   INC_STATS(thd_id,mtx[3],get_sys_clock() - mtx_time_start);
   INC_STATS(thd_id,msg_queue_enq_cnt,1);

@@ -56,8 +56,10 @@ RC CalvinLockThread::run() {
 
     txn_man = txn_table.get_transaction_manager(get_thd_id(),msg->get_txn_id(),msg->get_batch_id());
     while(!txn_man->unset_ready()) { }
+    assert(ISSERVERN(msg->get_return_id()));
     msg->copy_to_txn(txn_man);
     txn_man->register_thread(this);
+    assert(ISSERVERN(txn_man->return_id));
     // Acquire locks
     rc = txn_man->acquire_locks();
 

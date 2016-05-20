@@ -157,6 +157,10 @@ void TxnManager::init(uint64_t thd_id, Workload * h_wl) {
   uncommitted_writes_y = new std::set<uint64_t>();
   uncommitted_reads = new std::set<uint64_t>();
 #endif
+#if CC_ALG == CALVIN
+  phase = CALVIN_RW_ANALYSIS;
+  locking_done = false;
+#endif
   
   ready = true;
 
@@ -183,6 +187,11 @@ void TxnManager::reset() {
   uncommitted_writes->clear();
   uncommitted_writes_y->clear();
   uncommitted_reads->clear();
+#endif
+
+#if CC_ALG == CALVIN
+  phase = CALVIN_RW_ANALYSIS;
+  locking_done = false;
 #endif
 
   assert(txn);
@@ -339,7 +348,7 @@ bool TxnManager::is_multi_part() {
 
 void TxnManager::commit_stats() {
   INC_STATS(get_thd_id(),total_txn_commit_cnt,1);
-  if(!IS_LOCAL(get_txn_id())) {
+  if(!IS_LOCAL(get_txn_id()) && CC_ALG != CALVIN) {
     INC_STATS(get_thd_id(),remote_txn_commit_cnt,1);
     return;
   }
@@ -358,13 +367,16 @@ void TxnManager::commit_stats() {
   /*if(cflt) {
     INC_STATS(get_thd_id(),cflt_cnt_txn,1);
   }*/
+  txn_stats.commit_stats(get_thd_id());
+#if CC_ALG == CALVIN
+  return;
+#endif
 
   assert(query->partitions_touched.size() > 0);
   INC_STATS(get_thd_id(),part_cnt[query->partitions_touched.size()-1],1);
   for(uint64_t i = 0 ; i < query->partitions.size(); i++) {
     INC_STATS(get_thd_id(),part_acc[query->partitions[i]],1);
   }
-  txn_stats.commit_stats(get_thd_id());
 }
 
 void TxnManager::register_thread(Thread * h_thd) {
@@ -695,6 +707,7 @@ TxnManager::send_remote_reads() {
   for(uint64_t i = 0; i < query->active_nodes.size(); i++) {
     if(query->active_nodes[i] == g_node_id)
       continue;
+    DEBUG("(%ld,%ld) send_remote_read to %ld\n",get_txn_id(),get_batch_id(),query->active_nodes[i]);
     msg_queue.enqueue(get_thd_id(),Message::create_message(this,RFWD),query->active_nodes[i]);
   }
   return RCOK;
@@ -703,11 +716,17 @@ TxnManager::send_remote_reads() {
 
 bool TxnManager::calvin_exec_phase_done() {
   bool ready =  (phase == CALVIN_DONE) && (get_rc() == RCOK);
+  if(ready) {
+    DEBUG("(%ld,%ld) calvin exec phase done!\n",txn->txn_id,txn->batch_id);
+  }
   return ready;
 }
 
 bool TxnManager::calvin_collect_phase_done() {
   bool ready =  (phase == CALVIN_COLLECT_RD) && (get_rsp_cnt() == calvin_expected_rsp_cnt);
+  if(ready) {
+    DEBUG("(%ld,%ld) calvin collect phase done!\n",txn->txn_id,txn->batch_id);
+  }
   return ready;
 }
 

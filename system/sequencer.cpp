@@ -61,6 +61,15 @@ void Sequencer::process_ack(Message * msg, uint64_t thd_id) {
     en->txns_left--;
 		ATOM_FETCH_ADD(total_txns_finished,1);
 		INC_STATS(thd_id,seq_txn_cnt,1);
+    // free msg, queries
+#if WORKLOAD == YCSB
+  YCSBClientQueryMessage* cl_msg = (YCSBClientQueryMessage*)wait_list[id].msg;
+  for(uint64_t i = 0; i < cl_msg->requests.size(); i++) {
+    DEBUG_M("Sequencer::process_ack() ycsb_request free\n");
+    mem_allocator.free(cl_msg->requests[i],sizeof(ycsb_request));
+  }
+#endif
+    cl_msg->release();
 
     ClientResponseMessage * rsp_msg = (ClientResponseMessage*)Message::create_message(msg->get_txn_id(),CL_RSP);
     rsp_msg->client_startts = wait_list[id].client_startts;
@@ -116,6 +125,7 @@ void Sequencer::process_txn(Message * msg) {
 		en->list[id].client_id = msg->get_return_id();
 		en->list[id].client_startts = ((ClientQueryMessage*)msg)->client_startts;
 		en->list[id].server_ack_cnt = server_ack_cnt;
+		en->list[id].msg = msg;
     en->size++;
     en->txns_left++;
     // Note: Modifying msg!
@@ -138,8 +148,10 @@ void Sequencer::process_txn(Message * msg) {
 void Sequencer::send_next_batch(uint64_t thd_id) {
   uint64_t prof_stat = get_sys_clock();
   qlite_ll * en = wl_tail;
+  bool empty = true;
   if(en && en->epoch == simulation->get_seq_epoch()) {
     DEBUG("SEND NEXT BATCH %ld [%ld,%ld] %ld\n",thd_id,simulation->get_seq_epoch(),en->epoch,en->size);
+    empty = false;
   }
 
   Message * msg;
@@ -151,7 +163,9 @@ void Sequencer::send_next_batch(uint64_t thd_id) {
         msg_queue.enqueue(thd_id,msg,j);
       }
     }
-    DEBUG("Seq RDONE %ld\n",simulation->get_seq_epoch())
+    if(!empty) {
+      DEBUG("Seq RDONE %ld\n",simulation->get_seq_epoch())
+    }
     msg = Message::create_message(RDONE);
     msg->batch_id = simulation->get_seq_epoch(); 
     if(j == g_node_id) {

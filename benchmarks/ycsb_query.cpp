@@ -101,14 +101,18 @@ void YCSBQuery::release_requests() {
 
 void YCSBQuery::reset() {
   BaseQuery::clear();
+#if CC_ALG != CALVIN
   release_requests();
+#endif
   requests.clear();
 }
 
 void YCSBQuery::release() {
   BaseQuery::release();
   DEBUG_M("YCSBQuery::release() free\n");
+#if CC_ALG != CALVIN
   release_requests();
+#endif
   requests.release();
 }
 

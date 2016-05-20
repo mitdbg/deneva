@@ -127,6 +127,8 @@ void WorkerThread::release_txn_man() {
 
 void WorkerThread::calvin_wrapup() {
   txn_man->release_locks(RCOK);
+  txn_man->commit_stats();
+  DEBUG("(%ld,%ld) calvin ack to %ld\n",txn_man->get_txn_id(),txn_man->get_batch_id(),txn_man->return_id);
   if(txn_man->return_id == g_node_id) {
     work_queue.sequencer_enqueue(_thd_id,Message::create_message(txn_man,CALVIN_ACK));
   } else {
@@ -225,7 +227,9 @@ RC WorkerThread::run() {
     INC_STATS(get_thd_id(),worker_deactivate_txn_time,get_sys_clock() - ready_starttime);
 
     // delete message
+#if CC_ALG != CALVIN
     msg->release();
+#endif
 
 	}
   printf("FINISH %ld:%ld\n",_node_id,_thd_id);
@@ -508,12 +512,12 @@ RC WorkerThread::process_log_flushed(Message * msg) {
 }
 
 RC WorkerThread::process_rfwd(Message * msg) {
-  DEBUG("RFWD %ld,%ld\n",msg->get_txn_id(),msg->get_batch_id());
-  assert(ISSERVERN(txn_man->return_id));
+  DEBUG("RFWD (%ld,%ld)\n",msg->get_txn_id(),msg->get_batch_id());
   assert(CC_ALG == CALVIN);
   int responses_left = txn_man->received_response(((ForwardMessage*)msg)->rc);
   assert(responses_left >=0);
   if(txn_man->calvin_collect_phase_done()) {
+    assert(ISSERVERN(txn_man->return_id));
     RC rc = txn_man->run_calvin_txn();
     if(rc == RCOK && txn_man->calvin_exec_phase_done()) {
       calvin_wrapup();
