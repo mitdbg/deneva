@@ -154,7 +154,7 @@ void * YCSBWorkload::init_table_slice() {
 			key < slice_size * (tid + 1); 
 			key ++
 	) {
-    if(!IS_LOCAL(key))
+    if(GET_NODE_ID(key_to_part(key)) != g_node_id)
       continue;
 
     ++key_cnt;

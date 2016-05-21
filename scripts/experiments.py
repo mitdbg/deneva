@@ -37,6 +37,7 @@ SHORTNAMES = {
     "REPLICA_CNT":"RN",
     "SYNTH_TABLE_SIZE":"TBL",
     "ISOLATION_LEVEL":"LVL",
+    "YCSB_ABORT_MODE":"ABRTMODE",
 }
 
 #config_names=["CLIENT_NODE_CNT","NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","CLIENT_THREAD_CNT","CLIENT_REM_THREAD_CNT","CLIENT_SEND_THREAD_CNT","THREAD_CNT","REM_THREAD_CNT","SEND_THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","TXN_WRITE_PERC","TUP_WRITE_PERC","PART_PER_TXN","PART_CNT","MSG_TIME_LIMIT","MSG_SIZE_MAX","MODE","DATA_PERC","ACCESS_PERC","REQ_PER_QUERY"]
@@ -337,19 +338,22 @@ def malviya_plot(summary,summary_client):
 def test():
     wl = 'YCSB'
     nnodes = [1]
-    nnodes = [1,2,4]
     nnodes = [2]
+    nnodes = [1,2,4]
+    nnodes = [1]
     ntif = [10000]
     nwr = [0.5] # TXN_WRITE_PERC
     nwr = [0.0,0.25,0.5,0.75,1.0] # TXN_WRITE_PERC
+    nwr = [0.0,0.5] # TXN_WRITE_PERC
     nwr2 = [0.5] # TUP_WRITE_PERC 
-    nalgos=['CALVIN']
+    nalgos=['CALVIN','NO_WAIT']
     nmodes=['true','false']
     nmodes=['true']
     noutthr=[4]
     ninthr=[4]
 #    noutthr=[1,2,3]
     nskew = [0.0,0.3,0.6,0.7,0.75,0.8,0.85,0.9]
+    nskew = [0.6,0.7]
     nskew = [0.6]
     nworkthr=[4]
     base_table_size=2097152*8
@@ -385,21 +389,28 @@ def test_plot(summary,summary_client):
     from plot_helper import tput,time_breakdown
     nfmt,nexp = test()
     x_name = "NODE_CNT"
+    x_name = "TXN_WRITE_PERC"
     v_name = "TXN_WRITE_PERC"
+    v_name = "CC_ALG"
 #    tput_setup(summary,summary_client,nfmt,nexp,x_name,v_name)
 #    skew = [0.6,0.7]
 #    txn_write_perc = [0.5,1.0]
+    txn_write_perc = [0.0,0.25,0.5,0.75,1.0] # TXN_WRITE_PERC
+    skew = [0.6,0.7]
+    skew = [0.6]
+    nmodes=['true','false']
+    nmodes=['true']
     title = ""
     const={}
-    x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants=const)
-    tput(x_vals,v_vals,summary,summary_client,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,xlab="Server Count",new_cfgs=lst,ylimit=140,logscalex=False,title=title)
-#    for sk,wr in itertools.product(skew,txn_write_perc):
-#        const={"ZIPF_THETA":sk,"TXN_WRITE_PERC":wr}
-#        title = ""
-#        for c in const.keys():
-#            title += "{} {},".format(SHORTNAMES[c],const[c])
-#        x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants=const)
-#        tput(x_vals,v_vals,summary,summary_client,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,xlab="Server Count",new_cfgs=lst,ylimit=140,logscalex=False,title=title)
+#    x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants=const)
+#    tput(x_vals,v_vals,summary,summary_client,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,xlab="Server Count",new_cfgs=lst,ylimit=140,logscalex=False,title=title)
+    for sk,mode in itertools.product(skew,nmodes):
+        const={"ZIPF_THETA":sk,"YCSB_ABORT_MODE":mode}
+        title = ""
+        for c in const.keys():
+            title += "{} {},".format(SHORTNAMES[c],const[c])
+        x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants=const)
+        tput(x_vals,v_vals,summary,summary_client,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,xlab="Server Count",new_cfgs=lst,ylimit=140,logscalex=False,title=title)
 
 def test2_plot(summary,summary_client):
     nfmt,nexp = test2()

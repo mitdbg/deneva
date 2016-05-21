@@ -267,6 +267,7 @@ enum TsType {R_REQ, W_REQ, P_REQ, XP_REQ};
 #define ISCLIENTN(id) (id >= g_node_cnt && id < g_node_cnt + g_client_node_cnt)
 #define IS_LOCAL(tid) (tid % g_node_cnt == g_node_id || CC_ALG == CALVIN)
 #define IS_REMOTE(tid) (tid % g_node_cnt != g_node_id || CC_ALG == CALVIN)
+#define IS_LOCAL_KEY(key) (key % g_node_cnt == g_node_id)
 
 /*
 #define GET_THREAD_ID(id)	(id % g_thread_cnt)

@@ -41,7 +41,11 @@ public:
   void free_all();
 
 private:
+#if CC_ALG == CALVIN
+  boost::lockfree::queue<TxnManager*> * pool;
+#else
   boost::lockfree::queue<TxnManager*> ** pool;
+#endif
   Workload * _wl;
 
 };
@@ -55,7 +59,11 @@ public:
   void free_all();
 
 private:
+#if CC_ALG == CALVIN
+  boost::lockfree::queue<Transaction*> * pool;
+#else
   boost::lockfree::queue<Transaction*> ** pool;
+#endif
   Workload * _wl;
 
 };
@@ -68,7 +76,11 @@ public:
   void free_all();
 
 private:
+#if CC_ALG == CALVIN
+  boost::lockfree::queue<BaseQuery* > * pool;
+#else
   boost::lockfree::queue<BaseQuery* > ** pool;
+#endif
   Workload * _wl;
 
 };
