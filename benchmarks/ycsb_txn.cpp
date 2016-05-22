@@ -47,6 +47,7 @@ void YCSBTxnManager::reset() {
 }
 
 RC YCSBTxnManager::acquire_locks() {
+  uint64_t starttime = get_sys_clock();
   assert(CC_ALG == CALVIN);
   YCSBQuery* ycsb_query = (YCSBQuery*) query;
   locking_done = false;
@@ -73,6 +74,7 @@ RC YCSBTxnManager::acquire_locks() {
     if(ATOM_CAS(lock_ready,false,true))
       rc = RCOK;
   }
+  txn_stats.wait_starttime = get_sys_clock();
   /*
   if(rc == WAIT && lock_ready_cnt == 0) {
     if(ATOM_CAS(lock_ready,false,true))
@@ -80,6 +82,7 @@ RC YCSBTxnManager::acquire_locks() {
       rc = RCOK;
   }
   */
+  INC_STATS(get_thd_id(),calvin_sched_time,get_sys_clock() - starttime);
   locking_done = true;
   return rc;
 }
@@ -244,6 +247,7 @@ RC YCSBTxnManager::run_ycsb_1(access_t acctype, row_t * row_local) {
 }
 RC YCSBTxnManager::run_calvin_txn() {
   RC rc = RCOK;
+  uint64_t starttime = get_sys_clock();
   YCSBQuery* ycsb_query = (YCSBQuery*) query;
   bool is_active = false;
   DEBUG("(%ld,%ld) Run calvin txn\n",txn->txn_id,txn->batch_id);
@@ -328,6 +332,8 @@ RC YCSBTxnManager::run_calvin_txn() {
         assert(false);
     }
   }
+  txn_stats.process_time += get_sys_clock() - starttime;
+  txn_stats.wait_starttime = get_sys_clock();
   return rc;
 }
 

@@ -83,6 +83,7 @@ void QWorkQueue::sched_enqueue(uint64_t thd_id, Message * msg) {
   assert(CC_ALG == CALVIN);
   assert(msg);
   assert(ISSERVERN(msg->return_node_id));
+  uint64_t starttime = get_sys_clock();
 
   DEBUG_M("QWorkQueue::sched_enqueue work_queue_entry alloc\n");
   work_queue_entry * entry = (work_queue_entry*)mem_allocator.alloc(sizeof(work_queue_entry));
@@ -96,9 +97,13 @@ void QWorkQueue::sched_enqueue(uint64_t thd_id, Message * msg) {
   uint64_t mtx_time_start = get_sys_clock();
   while(!sched_queue[msg->get_return_id()]->push(entry) && !simulation->is_done()) {}
   INC_STATS(thd_id,mtx[37],get_sys_clock() - mtx_time_start);
+
+  INC_STATS(thd_id,sched_queue_enqueue_time,get_sys_clock() - starttime);
+  INC_STATS(thd_id,sched_queue_enq_cnt,1);
 }
 
 Message * QWorkQueue::sched_dequeue(uint64_t thd_id) {
+  uint64_t starttime = get_sys_clock();
 
   assert(CC_ALG == CALVIN);
   Message * msg = NULL;
@@ -110,6 +115,10 @@ Message * QWorkQueue::sched_dequeue(uint64_t thd_id) {
 
     msg = entry->msg;
     DEBUG("Sched Dequeue (%ld,%ld)\n",entry->txn_id,entry->batch_id);
+
+    uint64_t queue_time = get_sys_clock() - entry->starttime;
+    INC_STATS(thd_id,sched_queue_wait_time,queue_time);
+    INC_STATS(thd_id,sched_queue_cnt,1);
 
     DEBUG_M("QWorkQueue::sched_enqueue work_queue_entry free\n");
     mem_allocator.free(entry,sizeof(work_queue_entry));
@@ -131,6 +140,7 @@ Message * QWorkQueue::sched_dequeue(uint64_t thd_id) {
       assert(msg->batch_id == simulation->get_worker_epoch());
     }
 
+    INC_STATS(thd_id,sched_queue_dequeue_time,get_sys_clock() - starttime);
   }
 
 

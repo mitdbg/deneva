@@ -174,6 +174,8 @@ public:
   std::set<uint64_t> * uncommitted_writes;
   std::set<uint64_t> * uncommitted_writes_y;
 
+  uint64_t twopl_wait_start;
+
 	////////////////////////////////
 	// LOGGING
 	////////////////////////////////

@@ -217,6 +217,28 @@ stat_map = OrderedDict([
   ('twopl_sh_owned_avg_time', []),
   ('twopl_ex_owned_avg_time', []),
   ('twopl_diff_time', []),
+  ('twopl_wait_time', []),
+
+  # Calvin
+  ('seq_txn_cnt', []),
+  ('seq_batch_cnt', []),
+  ('seq_ack_time', []),
+  ('seq_batch_time', []),
+  ('seq_process_cnt', []),
+  ('seq_process_time', []),
+  ('seq_prep_time', []),
+  ('seq_queue_wait_time', []),
+  ('seq_queue_cnt', []),
+  ('seq_queue_enq_cnt', []),
+  ('seq_queue_enqueue_time', []),
+  ('seq_queue_dequeue_time', []),
+  ('sched_queue_wait_time', []),
+  ('sched_queue_cnt', []),
+  ('sched_queue_enq_cnt', []),
+  ('sched_queue_enqueue_time', []),
+  ('sched_queue_dequeue_time', []),
+  ('calvin_sched_time', []),
+  ('sched_txn_table_time', []),
 
   # OCC
   ('occ_validate_time', []),

@@ -337,18 +337,17 @@ def malviya_plot(summary,summary_client):
 
 def test():
     wl = 'YCSB'
-    nnodes = [1]
     nnodes = [2]
     nnodes = [1,2,4]
     nnodes = [1]
-    ntif = [10000]
-    nwr = [0.5] # TXN_WRITE_PERC
+    ntif = [10000,20000]
     nwr = [0.0,0.25,0.5,0.75,1.0] # TXN_WRITE_PERC
-    nwr = [0.0,0.5] # TXN_WRITE_PERC
+    nwr = [0.0,0.5,1.0] # TXN_WRITE_PERC
+    nwr = [0.5] # TXN_WRITE_PERC
     nwr2 = [0.5] # TUP_WRITE_PERC 
     nalgos=['CALVIN','NO_WAIT']
-    nmodes=['true','false']
     nmodes=['true']
+    nmodes=['true','false']
     noutthr=[4]
     ninthr=[4]
 #    noutthr=[1,2,3]
@@ -388,14 +387,16 @@ def test_plot(summary,summary_client):
     from helper import plot_prep
     from plot_helper import tput,time_breakdown
     nfmt,nexp = test()
+    x_name = "CC_ALG"
     x_name = "NODE_CNT"
-    x_name = "TXN_WRITE_PERC"
     v_name = "TXN_WRITE_PERC"
     v_name = "CC_ALG"
 #    tput_setup(summary,summary_client,nfmt,nexp,x_name,v_name)
 #    skew = [0.6,0.7]
 #    txn_write_perc = [0.5,1.0]
     txn_write_perc = [0.0,0.25,0.5,0.75,1.0] # TXN_WRITE_PERC
+    txn_write_perc = [0.0,0.5,1.0] # TXN_WRITE_PERC
+    txn_write_perc = [0.5] # TXN_WRITE_PERC
     skew = [0.6,0.7]
     skew = [0.6]
     nmodes=['true','false']
@@ -404,8 +405,9 @@ def test_plot(summary,summary_client):
     const={}
 #    x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants=const)
 #    tput(x_vals,v_vals,summary,summary_client,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,xlab="Server Count",new_cfgs=lst,ylimit=140,logscalex=False,title=title)
-    for sk,mode in itertools.product(skew,nmodes):
-        const={"ZIPF_THETA":sk,"YCSB_ABORT_MODE":mode}
+#    for sk,mode in itertools.product(skew,nmodes):
+    for sk,mode,wr in itertools.product(skew,nmodes,txn_write_perc):
+        const={"ZIPF_THETA":sk,"YCSB_ABORT_MODE":mode,"TXN_WRITE_PERC":wr}
         title = ""
         for c in const.keys():
             title += "{} {},".format(SHORTNAMES[c],const[c])
@@ -1163,6 +1165,7 @@ configs = {
     "DONE_TIMER": "1 * 60 * BILLION // ~1 minutes",
 #    "DONE_TIMER": "1 * 10 * BILLION // ~1 minutes",
     "WARMUP_TIMER": "1 * 60 * BILLION // ~1 minutes",
+    "SEQ_BATCH_TIMER": "5 * 1 * MILLION // ~5ms -- same as CALVIN paper",
     "BATCH_TIMER" : "0",#"10000000",
     "PROG_TIMER" : "10 * BILLION // in s",
     "NETWORK_TEST" : "false",

@@ -150,19 +150,32 @@ public:
   double twopl_sh_owned_time;
   double twopl_ex_owned_time;
   double twopl_diff_time;
+  double twopl_wait_time;
+  uint64_t twopl_getlock_cnt;
+  uint64_t twopl_release_cnt;
+  double twopl_getlock_time;
+  double twopl_release_time;
 
   // Calvin
   uint64_t seq_txn_cnt;
   uint64_t seq_batch_cnt;
   double seq_ack_time;
   double seq_batch_time;
+  uint64_t seq_process_cnt;
+  double seq_process_time;
   double seq_prep_time;
-
   double seq_queue_wait_time;
   uint64_t seq_queue_cnt;
   uint64_t seq_queue_enq_cnt;
   double seq_queue_enqueue_time;
   double seq_queue_dequeue_time;
+  double sched_queue_wait_time;
+  uint64_t sched_queue_cnt;
+  uint64_t sched_queue_enq_cnt;
+  double sched_queue_enqueue_time;
+  double sched_queue_dequeue_time;
+  double calvin_sched_time;
+  double sched_txn_table_time;
 
   // OCC
   double occ_validate_time;

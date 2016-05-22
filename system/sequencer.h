@@ -48,7 +48,7 @@ class Sequencer {
  public:
 	void init(Workload * wl);	
 	void process_ack(Message * msg, uint64_t thd_id);
-	void process_txn(Message * msg);
+	void process_txn(Message * msg,uint64_t thd_id);
 	void send_next_batch(uint64_t thd_id);
 
  private:

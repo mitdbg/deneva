@@ -89,8 +89,9 @@ void Sequencer::process_ack(Message * msg, uint64_t thd_id) {
 }
 
 // FIXME: Assumes 1 thread does sequencer work
-void Sequencer::process_txn(Message * msg) {
+void Sequencer::process_txn( Message * msg,uint64_t thd_id) {
 
+  uint64_t starttime = get_sys_clock();
   DEBUG("SEQ Processing msg\n");
   qlite_ll * en = wl_tail;
 
@@ -139,6 +140,8 @@ void Sequencer::process_txn(Message * msg) {
       while(!fill_queue[*participant].push(msg) && !simulation->is_done()) {}
     }
 
+	INC_STATS(thd_id,seq_process_cnt,1);
+	INC_STATS(thd_id,seq_process_time,get_sys_clock() - starttime);
 	ATOM_ADD(total_txns_received,1);
 
 }

@@ -110,6 +110,7 @@ bool TPCCTxnManager::is_done() {
 }
 
 RC TPCCTxnManager::acquire_locks() {
+  uint64_t starttime = get_sys_clock();
   assert(CC_ALG == CALVIN);
   locking_done = false;
   RC rc = RCOK;
@@ -231,7 +232,9 @@ RC TPCCTxnManager::acquire_locks() {
     if(ATOM_CAS(lock_ready,false,true))
       rc = RCOK;
   }
+  txn_stats.wait_starttime = get_sys_clock();
   locking_done = true;
+  INC_STATS(get_thd_id(),calvin_sched_time,get_sys_clock() - starttime);
   return rc;
 }
 
@@ -929,15 +932,19 @@ inline RC TPCCTxnManager::new_order_9(uint64_t w_id,uint64_t  d_id,bool remote, 
 RC TPCCTxnManager::run_calvin_txn() {
   RC rc = RCOK;
   /*
+  uint64_t starttime = get_sys_clock();
+  bool is_active = false;
   TPCCQuery* tpcc_query = (TPCCQuery*) query;
   uint64_t participant_cnt;
   uint64_t active_cnt;
   uint64_t participant_nodes[g_node_cnt];
   uint64_t active_nodes[g_node_cnt];
   uint64_t home_wh_node;
-  while(rc == RCOK && this->phase < 6) {
+  DEBUG("(%ld,%ld) Run calvin txn\n",txn->txn_id,txn->batch_id);
+  while(!calvin_exec_phase_done() && rc == RCOK) {
+    DEBUG("(%ld,%ld) phase %d\n",txn->txn_id,txn->batch_id,this->phase);
     switch(this->phase) {
-      case 1:
+      case CALVIN_RW_ANALYSIS:
         // Phase 1: Read/write set analysis
         participant_cnt = 0;
         active_cnt = 0;

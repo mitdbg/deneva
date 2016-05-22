@@ -52,6 +52,8 @@ RC Row_lock::lock_get(lock_t type, TxnManager * txn) {
 RC Row_lock::lock_get(lock_t type, TxnManager * txn, uint64_t* &txnids, int &txncnt) {
 	assert (CC_ALG == NO_WAIT || CC_ALG == WAIT_DIE || CC_ALG == CALVIN);
 	RC rc;
+  uint64_t starttime = get_sys_clock();
+
 	if (g_central_man)
 		glob_manager.lock_row(_row);
 	else { 
@@ -164,6 +166,7 @@ RC Row_lock::lock_get(lock_t type, TxnManager * txn, uint64_t* &txnids, int &txn
 
 			  waiter_cnt ++;
         DEBUG("wait %ld,%ld %ld %lx\n",txn->get_txn_id(),txn->get_batch_id(),_row->get_primary_key(),(uint64_t)_row);
+        txn->twopl_wait_start = get_sys_clock();
         rc = WAIT;
         //txn->wait_starttime = get_sys_clock();
       } else {
@@ -212,12 +215,15 @@ final:
 	else
 		pthread_mutex_unlock( latch );
 
+  INC_STATS(txn->get_thd_id(),twopl_getlock_time,get_sys_clock() - starttime);
+  INC_STATS(txn->get_thd_id(),twopl_getlock_cnt,1);
 	return rc;
 }
 
 
 RC Row_lock::lock_release(TxnManager * txn) {	
 
+  uint64_t starttime = get_sys_clock();
 	if (g_central_man)
 		glob_manager.lock_row(_row);
 	else { 
@@ -314,6 +320,7 @@ RC Row_lock::lock_release(TxnManager * txn) {
     printf("LOCK %ld %ld\n",entry->txn->get_txn_id(),get_sys_clock());
 #endif
     DEBUG("2lock %ld,%ld: %d, %d %ld %lx\n",entry->txn->get_txn_id(),entry->txn->get_batch_id(),owner_cnt,entry->type,_row->get_primary_key(),(uint64_t)_row);
+    INC_STATS(txn->get_thd_id(),twopl_wait_time,get_sys_clock() - entry->txn->twopl_wait_start);
     //printf("2lock %ld %ld %lx\n",entry->txn->get_txn_id(),_row->get_primary_key(),(uint64_t)_row);
     // Stats
     //t = get_sys_clock() - entry->start_ts;
@@ -344,6 +351,8 @@ RC Row_lock::lock_release(TxnManager * txn) {
 	else
 		pthread_mutex_unlock( latch );
 
+  INC_STATS(txn->get_thd_id(),twopl_release_time,get_sys_clock() - starttime);
+  INC_STATS(txn->get_thd_id(),twopl_release_cnt,1);
 	return RCOK;
 }
 

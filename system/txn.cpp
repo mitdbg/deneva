@@ -38,7 +38,7 @@
 
 void TxnStats::init() {
   starttime=0;
-  wait_starttime=0;
+  wait_starttime=get_sys_clock();
   total_process_time=0;
   process_time=0;
   total_local_wait_time=0;
@@ -51,7 +51,7 @@ void TxnStats::init() {
 }
 
 void TxnStats::reset() {
-  wait_starttime=0;
+  wait_starttime=get_sys_clock();
   total_process_time += process_time;
   process_time = 0;
   total_local_wait_time += local_wait_time;

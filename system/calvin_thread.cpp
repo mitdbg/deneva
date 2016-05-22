@@ -42,6 +42,7 @@ RC CalvinLockThread::run() {
 
 	RC rc = RCOK;
   TxnManager * txn_man;
+  uint64_t prof_starttime = get_sys_clock();
 
 	while(!simulation->is_done()) {
     txn_man = NULL;
@@ -51,15 +52,18 @@ RC CalvinLockThread::run() {
 		if(!msg)
 			continue;
 
+    prof_starttime = get_sys_clock();
     assert(msg->get_rtype() == CL_QRY);
     assert(msg->get_txn_id() != UINT64_MAX);
 
     txn_man = txn_table.get_transaction_manager(get_thd_id(),msg->get_txn_id(),msg->get_batch_id());
     while(!txn_man->unset_ready()) { }
     assert(ISSERVERN(msg->get_return_id()));
+    txn_man->txn_stats.starttime = get_sys_clock();
     msg->copy_to_txn(txn_man);
     txn_man->register_thread(this);
     assert(ISSERVERN(txn_man->return_id));
+    INC_STATS(get_thd_id(),sched_txn_table_time,get_sys_clock() - prof_starttime);
     // Acquire locks
     rc = txn_man->acquire_locks();
 
@@ -105,7 +109,7 @@ RC CalvinSequencerThread::run() {
       case CL_QRY:
         // Query from client
         DEBUG("SEQ process_txn\n");
-        seq_man.process_txn(msg);
+        seq_man.process_txn(msg,get_thd_id());
         // TODO: Don't free message yet
         break;
       case CALVIN_ACK:

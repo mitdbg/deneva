@@ -150,6 +150,33 @@ void Stats_thd::clear() {
   twopl_sh_owned_time=0;
   twopl_ex_owned_time=0;
   twopl_diff_time=0;
+  twopl_wait_time=0;
+  twopl_getlock_cnt=0;
+  twopl_getlock_time=0;
+  twopl_release_cnt=0;
+  twopl_release_time=0;
+
+  // Calvin
+  seq_txn_cnt=0;
+  seq_batch_cnt=0;
+  seq_ack_time=0;
+  seq_batch_time=0;
+  seq_process_cnt=0;
+  seq_process_time=0;
+  seq_prep_time=0;
+  seq_queue_wait_time=0;
+  seq_queue_cnt=0;
+  seq_queue_enq_cnt=0;
+  seq_queue_enqueue_time=0;
+  seq_queue_dequeue_time=0;
+  sched_queue_wait_time=0;
+  sched_queue_cnt=0;
+  sched_queue_enq_cnt=0;
+  sched_queue_enqueue_time=0;
+  sched_queue_dequeue_time=0;
+  calvin_sched_time=0;
+  sched_txn_table_time=0;
+
 
   //OCC
   occ_validate_time=0;
@@ -632,6 +659,11 @@ void Stats_thd::print(FILE * outf) {
     ",twopl_sh_owned_avg_time=%f"
     ",twopl_ex_owned_avg_time=%f"
     ",twopl_diff_time=%f"
+    ",twopl_wait_time=%f"
+    ",twopl_getlock_cnt=%ld"
+    ",twopl_getlock_time=%ld"
+    ",twopl_release_cnt=%f"
+    ",twopl_release_time=%f"
     ,twopl_already_owned_cnt
     ,twopl_owned_cnt
     ,twopl_sh_owned_cnt
@@ -642,8 +674,54 @@ void Stats_thd::print(FILE * outf) {
     ,twopl_sh_owned_avg_time / BILLION
     ,twopl_ex_owned_avg_time / BILLION
     ,twopl_diff_time / BILLION
+    ,twopl_wait_time / BILLION
+    ,twopl_getlock_cnt / BILLION
+    ,twopl_release_cnt / BILLION
+    ,twopl_getlock_time / BILLION
+    ,twopl_release_time / BILLION
   );
 
+  // Calvin
+  fprintf(outf,
+  ",seq_txn_cnt=%ld"
+  ",seq_batch_cnt=%ld"
+  ",seq_ack_time=%f"
+  ",seq_batch_time=%f"
+  ",seq_process_cnt=%ld"
+  ",seq_process_time=%f"
+  ",seq_prep_time=%f"
+  ",seq_queue_wait_time=%f"
+  ",seq_queue_cnt=%ld"
+  ",seq_queue_enq_cnt=%ld"
+  ",seq_queue_enqueue_time=%f"
+  ",seq_queue_dequeue_time=%f"
+  ",sched_queue_wait_time=%f"
+  ",sched_queue_cnt=%ld"
+  ",sched_queue_enq_cnt=%ld"
+  ",sched_queue_enqueue_time=%f"
+  ",sched_queue_dequeue_time=%f"
+  ",calvin_sched_time=%f"
+  ",sched_txn_table_time=%f"
+  ,seq_txn_cnt
+  ,seq_batch_cnt
+  ,seq_ack_time /BILLION
+  ,seq_batch_time /BILLION
+  ,seq_process_cnt 
+  ,seq_process_time /BILLION
+  ,seq_prep_time /BILLION
+  ,seq_queue_wait_time /BILLION
+  ,seq_queue_cnt
+  ,seq_queue_enq_cnt
+  ,seq_queue_enqueue_time /BILLION
+  ,seq_queue_dequeue_time /BILLION
+  ,sched_queue_wait_time /BILLION
+  ,sched_queue_cnt
+  ,sched_queue_enq_cnt
+  ,sched_queue_enqueue_time /BILLION
+  ,sched_queue_dequeue_time /BILLION
+  ,calvin_sched_time /BILLION
+  ,sched_txn_table_time /BILLION
+  );
   //OCC
   fprintf(outf,
   ",occ_validate_time=%f"
@@ -886,7 +964,32 @@ void Stats_thd::combine(Stats_thd * stats) {
   twopl_sh_owned_time+=stats->twopl_sh_owned_time;
   twopl_ex_owned_time+=stats->twopl_ex_owned_time;
   twopl_diff_time+=stats->twopl_diff_time;
+  twopl_wait_time+=stats->twopl_wait_time;
+  twopl_getlock_cnt+=stats->twopl_getlock_cnt;
+  twopl_release_cnt+=stats->twopl_release_cnt;
+  twopl_release_time+=stats->twopl_release_time;
+  twopl_getlock_time+=stats->twopl_getlock_time;
 
+  // Calvin
+  seq_txn_cnt+=stats->seq_txn_cnt;
+  seq_batch_cnt+=stats->seq_batch_cnt;
+  seq_ack_time+=stats->seq_ack_time;
+  seq_batch_time+=stats->seq_batch_time;
+  seq_process_cnt+=stats->seq_process_cnt;
+  seq_process_time+=stats->seq_process_time;
+  seq_prep_time+=stats->seq_prep_time;
+  seq_queue_wait_time+=stats->seq_queue_wait_time;
+  seq_queue_cnt+=stats->seq_queue_cnt;
+  seq_queue_enq_cnt+=stats->seq_queue_enq_cnt;
+  seq_queue_enqueue_time+=stats->seq_queue_enqueue_time;
+  seq_queue_dequeue_time+=stats->seq_queue_dequeue_time;
+  sched_queue_wait_time+=stats->sched_queue_wait_time;
+  sched_queue_cnt+=stats->sched_queue_cnt;
+  sched_queue_enq_cnt+=stats->sched_queue_enq_cnt;
+  sched_queue_enqueue_time+=stats->sched_queue_enqueue_time;
+  sched_queue_dequeue_time+=stats->sched_queue_dequeue_time;
+  calvin_sched_time+=stats->calvin_sched_time;
+  sched_txn_table_time+=stats->sched_txn_table_time;
   //OCC
   occ_validate_time+=stats->occ_validate_time;
   occ_cs_wait_time+=stats->occ_cs_wait_time;

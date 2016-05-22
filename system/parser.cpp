@@ -267,6 +267,7 @@ void parser(int argc, char * argv[]) {
       printf("g_total_thread_cnt %d\n",g_total_thread_cnt);
       printf("g_total_client_thread_cnt %d\n",g_total_client_thread_cnt);
       printf("g_total_node_cnt %d\n",g_total_node_cnt);
+      printf("g_seq_batch_time_limit %ld\n",g_seq_batch_time_limit);
 
     // Initialize client-specific globals
     if (g_node_id >= g_node_cnt)
