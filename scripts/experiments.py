@@ -337,13 +337,14 @@ def malviya_plot(summary,summary_client):
 
 def test():
     wl = 'YCSB'
-    nnodes = [2]
     nnodes = [1,2,4]
     nnodes = [1]
-    ntif = [10000,20000]
+    nnodes = [2]
+    ntif = [10000]
     nwr = [0.0,0.25,0.5,0.75,1.0] # TXN_WRITE_PERC
     nwr = [0.0,0.5,1.0] # TXN_WRITE_PERC
     nwr = [0.5] # TXN_WRITE_PERC
+    nwr = [0.5,1.0] # TXN_WRITE_PERC
     nwr2 = [0.5] # TUP_WRITE_PERC 
     nalgos=['CALVIN','NO_WAIT']
     nmodes=['true']
@@ -352,8 +353,8 @@ def test():
     ninthr=[4]
 #    noutthr=[1,2,3]
     nskew = [0.0,0.3,0.6,0.7,0.75,0.8,0.85,0.9]
-    nskew = [0.6,0.7]
     nskew = [0.6]
+    nskew = [0.6,0.7]
     nworkthr=[4]
     base_table_size=2097152*8
 #    nworkthr=[3]
@@ -399,8 +400,8 @@ def test_plot(summary,summary_client):
     txn_write_perc = [0.5] # TXN_WRITE_PERC
     skew = [0.6,0.7]
     skew = [0.6]
-    nmodes=['true','false']
     nmodes=['true']
+    nmodes=['true','false']
     title = ""
     const={}
 #    x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants=const)
@@ -1165,6 +1166,7 @@ configs = {
     "DONE_TIMER": "1 * 60 * BILLION // ~1 minutes",
 #    "DONE_TIMER": "1 * 10 * BILLION // ~1 minutes",
     "WARMUP_TIMER": "1 * 60 * BILLION // ~1 minutes",
+#    "WARMUP_TIMER": "0 * 60 * BILLION // ~1 minutes",
     "SEQ_BATCH_TIMER": "5 * 1 * MILLION // ~5ms -- same as CALVIN paper",
     "BATCH_TIMER" : "0",#"10000000",
     "PROG_TIMER" : "10 * BILLION // in s",
@@ -1203,6 +1205,7 @@ configs = {
     "SERVER_GENERATE_QUERIES":"false",
     "SKEW_METHOD":"ZIPF",
     "ENVIRONMENT_EC2":"false",
+    "YCSB_ABORT_MODE":"false",
     "LOAD_METHOD": "LOAD_MAX", #"LOAD_RATE","LOAD_MAX"
     "ISOLATION_LEVEL":"SERIALIZABLE"
 }

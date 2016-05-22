@@ -55,6 +55,7 @@ public:
   void release();
   void print();
   uint64_t participants(bool *& pps,Workload * wl); 
+  uint64_t get_participants(Workload * wl); 
   bool readonly();
 
 	TPCCTxnType txn_type;

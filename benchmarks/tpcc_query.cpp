@@ -243,3 +243,44 @@ BaseQuery * TPCCQueryGenerator::gen_new_order(uint64_t home_partition) {
 
 }
 
+uint64_t TPCCQuery::get_participants(Workload * wl) {
+   uint64_t participant_cnt = 0;
+   uint64_t active_cnt = 0;
+  assert(participant_nodes.size()==0);
+  assert(active_nodes.size()==0);
+  for(uint64_t i = 0; i < g_node_cnt; i++) {
+      participant_nodes.add(0);
+      active_nodes.add(0);
+  }
+  assert(participant_nodes.size()==g_node_cnt);
+  assert(active_nodes.size()==g_node_cnt);
+
+  uint64_t home_wh_node;
+  home_wh_node = GET_NODE_ID(wh_to_part(w_id));
+  participant_nodes.set(home_wh_node,1);
+  active_nodes.set(home_wh_node,1);
+  participant_cnt++;
+  active_cnt++;
+  if(txn_type == TPCC_PAYMENT) {
+      uint64_t req_nid = GET_NODE_ID(wh_to_part(c_w_id));
+      if(participant_nodes[req_nid] == 0) {
+        participant_cnt++;
+        participant_nodes.set(req_nid,1);
+        active_cnt++;
+        active_nodes.set(req_nid,1);
+      }
+
+  } else if (txn_type == TPCC_NEW_ORDER) {
+    for(uint64_t i = 0; i < ol_cnt; i++) {
+      uint64_t req_nid = GET_NODE_ID(wh_to_part(items[i]->ol_supply_w_id));
+      if(participant_nodes[req_nid] == 0) {
+        participant_cnt++;
+        participant_nodes.set(req_nid,1);
+        active_cnt++;
+        active_nodes.set(req_nid,1);
+      }
+    }
+  }
+  return participant_cnt;
+
+}

@@ -1,6 +1,6 @@
 CC=g++
 CFLAGS=-Wall -g -gdwarf-3 -std=c++0x 
-#CFLAGS += -fsanitize=address -fno-omit-frame-pointer 
+CFLAGS += -fsanitize=address -fno-omit-frame-pointer 
 JEMALLOC=./jemalloc-4.0.3
 NNMSG=./nanomsg-0.5-beta
 
@@ -63,11 +63,11 @@ unit_test :  $(OBJS_UNIT)
 
 
 rundb : $(OBJS_DB)
-	$(CC) -static -o $@ $^ $(LDFLAGS) $(LIBS)
-#	$(CC) -o $@ $^ $(LDFLAGS) $(LIBS)
+#	$(CC) -static -o $@ $^ $(LDFLAGS) $(LIBS)
+	$(CC) -o $@ $^ $(LDFLAGS) $(LIBS)
 ./obj/%.o: transport/%.cpp
-	$(CC) -static -c $(CFLAGS) $(INCLUDE) $(LIBS) -o $@ $<
-#	$(CC) -c $(CFLAGS) $(INCLUDE) $(LIBS) -o $@ $<
+#	$(CC) -static -c $(CFLAGS) $(INCLUDE) $(LIBS) -o $@ $<
+	$(CC) -c $(CFLAGS) $(INCLUDE) $(LIBS) -o $@ $<
 #./deps/%.d: %.cpp
 #	$(CC) -MM -MT $*.o -MF $@ $(CFLAGS) $<
 ./obj/%.o: benchmarks/%.cpp
@@ -87,11 +87,11 @@ rundb : $(OBJS_DB)
 
 
 runcl : $(OBJS_CL)
-	$(CC) -static -o $@ $^ $(LDFLAGS) $(LIBS)
-#	$(CC) -o $@ $^ $(LDFLAGS) $(LIBS)
+#	$(CC) -static -o $@ $^ $(LDFLAGS) $(LIBS)
+	$(CC) -o $@ $^ $(LDFLAGS) $(LIBS)
 ./obj/%.o: transport/%.cpp
-	$(CC) -static -c $(CFLAGS) $(INCLUDE) $(LIBS) -o $@ $<
-#	$(CC) -c $(CFLAGS) $(INCLUDE) $(LIBS) -o $@ $<
+#	$(CC) -static -c $(CFLAGS) $(INCLUDE) $(LIBS) -o $@ $<
+	$(CC) -c $(CFLAGS) $(INCLUDE) $(LIBS) -o $@ $<
 #./deps/%.d: %.cpp
 #	$(CC) -MM -MT $*.o -MF $@ $(CFLAGS) $<
 ./obj/%.o: benchmarks/%.cpp

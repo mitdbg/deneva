@@ -95,6 +95,11 @@ public:
     return items[idx];
   }
 
+  void set(uint64_t idx, T item) {
+    assert(idx < count);
+    items[idx] = item;
+  }
+
   void swap(uint64_t i, uint64_t j) {
     T tmp = items[i];
     items[i] = items[j];

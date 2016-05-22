@@ -931,101 +931,62 @@ inline RC TPCCTxnManager::new_order_9(uint64_t w_id,uint64_t  d_id,bool remote, 
 
 RC TPCCTxnManager::run_calvin_txn() {
   RC rc = RCOK;
-  /*
   uint64_t starttime = get_sys_clock();
-  bool is_active = false;
   TPCCQuery* tpcc_query = (TPCCQuery*) query;
-  uint64_t participant_cnt;
-  uint64_t active_cnt;
-  uint64_t participant_nodes[g_node_cnt];
-  uint64_t active_nodes[g_node_cnt];
-  uint64_t home_wh_node;
   DEBUG("(%ld,%ld) Run calvin txn\n",txn->txn_id,txn->batch_id);
   while(!calvin_exec_phase_done() && rc == RCOK) {
     DEBUG("(%ld,%ld) phase %d\n",txn->txn_id,txn->batch_id,this->phase);
     switch(this->phase) {
       case CALVIN_RW_ANALYSIS:
         // Phase 1: Read/write set analysis
-        participant_cnt = 0;
-        active_cnt = 0;
-        for(uint64_t i = 0; i < g_node_cnt; i++) {
-          participant_nodes[i] = false;
-          active_nodes[i] = false;
-        }
-        home_wh_node = GET_NODE_ID(wh_to_part(tpcc_query->w_id));
-        participant_nodes[home_wh_node] = true;
-        active_nodes[home_wh_node] = true;
-        participant_cnt++;
-        active_cnt++;
-        if(tpcc_query->txn_type == TPCC_PAYMENT) {
-            uint64_t req_nid = GET_NODE_ID(wh_to_part(tpcc_query->c_w_id));
-            if(!participant_nodes[req_nid]) {
-              participant_cnt++;
-              participant_nodes[req_nid] = true;
-              active_cnt++;
-              active_nodes[req_nid] = true;
-            }
+        tpcc_query->get_participants(_wl);
 
-        } else if (tpcc_query->txn_type == TPCC_NEW_ORDER) {
-          for(uint64_t i = 0; i < tpcc_query->ol_cnt; i++) {
-            uint64_t req_nid = GET_NODE_ID(wh_to_part(tpcc_query->items[i]->ol_supply_w_id));
-            if(!participant_nodes[req_nid]) {
-              participant_cnt++;
-              participant_nodes[req_nid] = true;
-              active_cnt++;
-              active_nodes[req_nid] = true;
-            }
-          }
-        }
-#if DEBUG_DISTR
-        printf("REQ (%ld): %ld %ld; %ld %ld\n"
-            ,get_txn_id()//,tpcc_query->batch_id
-            ,participant_nodes[0]
-            ,active_nodes[0]
-            ,participant_nodes[1]
-            ,active_nodes[1]
-            );
-#endif
+        DEBUG("(%ld,%ld) expects %d responses; %ld participants, %ld active\n",txn->txn_id,txn->batch_id,calvin_expected_rsp_cnt,query->participant_nodes.size(),query->active_nodes.size());
 
-        ATOM_ADD(this->phase,1); //2
+        this->phase = CALVIN_LOC_RD;
         break;
-      case 2:
+      case CALVIN_LOC_RD:
         // Phase 2: Perform local reads
+        DEBUG("(%ld,%ld) local reads\n",txn->txn_id,txn->batch_id);
         rc = run_tpcc_phase2();
         //release_read_locks(tpcc_query);
 
-        ATOM_ADD(this->phase,1); //3
+        this->phase = CALVIN_SERVE_RD;
         break;
-      case 3:
+      case CALVIN_SERVE_RD:
         // Phase 3: Serve remote reads
-        rc = send_remote_reads(tpcc_query);
-        if(active_nodes[g_node_id]) {
-          ATOM_ADD(this->phase,1); //4
-          if(get_rsp_cnt() == participant_cnt-1) {
+        if(query->participant_nodes[g_node_id] == 1) {
+          rc = send_remote_reads();
+        }
+        if(query->active_nodes[g_node_id] == 1) {
+          this->phase = CALVIN_COLLECT_RD;
+          if(calvin_collect_phase_done()) {
             rc = RCOK;
           } else {
-            //DEBUG("Phase4 (%ld,%ld)\n",tpcc_query->txn_id,tpcc_query->batch_id);
+            DEBUG("(%ld,%ld) wait in collect phase; %d / %d rfwds received\n",txn->txn_id,txn->batch_id,rsp_cnt,calvin_expected_rsp_cnt);
             rc = WAIT;
           }
         } else { // Done
           rc = RCOK;
-          ATOM_ADD(this->phase,3); //6
+          this->phase = CALVIN_DONE;
         }
         break;
-      case 4:
+      case CALVIN_COLLECT_RD:
         // Phase 4: Collect remote reads
-        ATOM_ADD(this->phase,1); //5
+        this->phase = CALVIN_EXEC_WR;
         break;
-      case 5:
+      case CALVIN_EXEC_WR:
         // Phase 5: Execute transaction / perform local writes
+        DEBUG("(%ld,%ld) execute writes\n",txn->txn_id,txn->batch_id);
         rc = run_tpcc_phase5();
-        ATOM_ADD(this->phase,1); //6
+        this->phase = CALVIN_DONE;
         break;
       default:
         assert(false);
     }
   }
-*/
+  txn_stats.process_time += get_sys_clock() - starttime;
+  txn_stats.wait_starttime = get_sys_clock();
   return rc;
   
 }

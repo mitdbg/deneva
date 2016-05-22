@@ -352,6 +352,9 @@ RC WorkerThread::process_rqry(Message * msg) {
 
   msg->copy_to_txn(txn_man);
 
+#if CC_ALG == MVCC
+  txn_table.update_min_ts(get_thd_id(),txn_man->get_txn_id(),0,txn_man->get_timestamp());
+#endif
 #if CC_ALG == MAAT
           time_table.init(get_thd_id(),txn_man->get_txn_id());
           assert(time_table.get_lower(get_thd_id(),txn_man->get_txn_id()) == 0);
@@ -454,6 +457,9 @@ RC WorkerThread::process_rtxn(Message * msg) {
           if(is_cc_new_timestamp()) {
             txn_man->set_timestamp(get_next_ts());
 					}
+#if CC_ALG == MVCC
+          txn_table.update_min_ts(get_thd_id(),txn_id,0,txn_man->get_timestamp());
+#endif
 
 #if CC_ALG == OCC
           txn_man->set_start_timestamp(get_next_ts());

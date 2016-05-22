@@ -704,11 +704,14 @@ TxnManager::send_remote_reads() {
   return RCOK;
 #endif
   // TODO: only send relevant reads
+  assert(query->active_nodes.size() == g_node_cnt);
   for(uint64_t i = 0; i < query->active_nodes.size(); i++) {
-    if(query->active_nodes[i] == g_node_id)
+    if(i == g_node_id)
       continue;
-    DEBUG("(%ld,%ld) send_remote_read to %ld\n",get_txn_id(),get_batch_id(),query->active_nodes[i]);
-    msg_queue.enqueue(get_thd_id(),Message::create_message(this,RFWD),query->active_nodes[i]);
+    if(query->active_nodes[i] == 1) {
+      DEBUG("(%ld,%ld) send_remote_read to %ld\n",get_txn_id(),get_batch_id(),i);
+      msg_queue.enqueue(get_thd_id(),Message::create_message(this,RFWD),i);
+    }
   }
   return RCOK;
 

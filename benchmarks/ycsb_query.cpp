@@ -116,21 +116,28 @@ void YCSBQuery::release() {
   requests.release();
 }
 
-void YCSBQuery::get_participants(Workload * wl) {
-  set<uint64_t> participants;
-  set<uint64_t> actives;
+uint64_t YCSBQuery::get_participants(Workload * wl) {
 
+  uint64_t participant_cnt = 0;
+  assert(participant_nodes.size()==0);
+  assert(active_nodes.size()==0);
+  for(uint64_t i = 0; i < g_node_cnt; i++) {
+      participant_nodes.add(0);
+      active_nodes.add(0);
+  }
+  assert(participant_nodes.size()==g_node_cnt);
+  assert(active_nodes.size()==g_node_cnt);
   for(uint64_t i = 0; i < requests.size(); i++) {
     uint64_t req_nid = GET_NODE_ID(((YCSBWorkload*)wl)->key_to_part(requests[i]->key));
-    if(requests[i]->acctype == RD)
-      participants.insert(req_nid);
+    if(requests[i]->acctype == RD) {
+      if(participant_nodes[req_nid] == 0)
+        ++participant_cnt;
+      participant_nodes.set(req_nid,1);
+    }
     if(requests[i]->acctype == WR)
-      actives.insert(req_nid);
+      active_nodes.set(req_nid,1);
   }
-  for(auto it = actives.begin(); it != actives.end(); ++it)
-    active_nodes.add(*it);
-  for(auto it = participants.begin(); it != participants.end(); ++it)
-    participant_nodes.add(*it);
+  return participant_cnt;
 }
 
 uint64_t YCSBQuery::participants(bool *& pps,Workload * wl) {

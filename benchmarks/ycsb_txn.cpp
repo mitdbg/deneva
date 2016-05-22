@@ -249,7 +249,6 @@ RC YCSBTxnManager::run_calvin_txn() {
   RC rc = RCOK;
   uint64_t starttime = get_sys_clock();
   YCSBQuery* ycsb_query = (YCSBQuery*) query;
-  bool is_active = false;
   DEBUG("(%ld,%ld) Run calvin txn\n",txn->txn_id,txn->batch_id);
   while(!calvin_exec_phase_done() && rc == RCOK) {
     DEBUG("(%ld,%ld) phase %d\n",txn->txn_id,txn->batch_id,this->phase);
@@ -257,21 +256,15 @@ RC YCSBTxnManager::run_calvin_txn() {
       case CALVIN_RW_ANALYSIS:
 
         // Phase 1: Read/write set analysis
-        ycsb_query->get_participants(_wl);
+        calvin_expected_rsp_cnt = ycsb_query->get_participants(_wl);
 #if YCSB_ABORT_MODE
-        calvin_expected_rsp_cnt = ycsb_query->participant_nodes.size();
-        is_active = false;
-        for(uint64_t i = 0; i < ycsb_query->participant_nodes.size(); i++) {
-          if(ycsb_query->participant_nodes[i] == g_node_id) {
-            is_active = true;
-            break;
-          }
-        }
-        if(is_active) {
+        if(query->participant_nodes[g_node_id] == 1) {
           calvin_expected_rsp_cnt--;
         }
+#else
+        calvin_expected_rsp_cnt = 0;
 #endif
-        DEBUG("(%ld,%ld) expects %d responses; %ld participants, %ld active\n",txn->txn_id,txn->batch_id,calvin_expected_rsp_cnt,ycsb_query->participant_nodes.size(),ycsb_query->active_nodes.size());
+        DEBUG("(%ld,%ld) expects %d responses;\n",txn->txn_id,txn->batch_id,calvin_expected_rsp_cnt);
 
         this->phase = CALVIN_LOC_RD;
         break;
@@ -286,25 +279,10 @@ RC YCSBTxnManager::run_calvin_txn() {
       case CALVIN_SERVE_RD:
         // Phase 3: Serve remote reads
         // If there is any abort logic, relevant reads need to be sent to all active nodes...
-        // TODO: make separate YCSB mode where we actually send remote reads...
-        is_active = false;
-        for(uint64_t i = 0; i < ycsb_query->participant_nodes.size(); i++) {
-          if(ycsb_query->participant_nodes[i] == g_node_id) {
-            is_active = true;
-            break;
-          }
-        }
-        if(is_active) {
+        if(query->participant_nodes[g_node_id] == 1) {
           rc = send_remote_reads();
         }
-        is_active = false;
-        for(uint64_t i = 0; i < ycsb_query->active_nodes.size(); i++) {
-          if(ycsb_query->active_nodes[i] == g_node_id) {
-            is_active = true;
-            break;
-          }
-        }
-        if(is_active) {
+        if(query->active_nodes[g_node_id] == 1) {
           this->phase = CALVIN_COLLECT_RD;
           if(calvin_collect_phase_done()) {
             rc = RCOK;

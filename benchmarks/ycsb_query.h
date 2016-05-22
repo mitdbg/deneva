@@ -83,7 +83,7 @@ public:
   void release();
   void release_requests();
   void reset();
-  void get_participants(Workload * wl); 
+  uint64_t get_participants(Workload * wl); 
   static std::set<uint64_t> participants(Message * msg, Workload * wl); 
   static void copy_request_to_msg(YCSBQuery * ycsb_query, YCSBQueryMessage * msg, uint64_t id); 
   uint64_t participants(bool *& pps,Workload * wl); 
