@@ -1138,8 +1138,28 @@ void TPCCQueryMessage::release() {
 
 uint64_t TPCCQueryMessage::get_size() {
   uint64_t size = QueryMessage::get_size();
-  size += sizeof(size_t);
-  size += sizeof(Item_no) * items.size();
+
+  size += sizeof(uint64_t); //txn_type
+  size += sizeof(uint64_t); //state
+  size += sizeof(uint64_t) * 3; // w_id, d_id, c_id
+
+  // Payment
+  if(txn_type == TPCC_PAYMENT) {
+  
+    size += sizeof(uint64_t) * 4; // d_w_id, c_w_id, c_d_id;, h_amount
+    size += sizeof(char) * LASTNAME_LEN; // c_last[LASTNAME_LEN]
+    size += sizeof(bool); // by_last_name
+
+  }
+
+  // New Order
+  if(txn_type == TPCC_NEW_ORDER) {
+    size += sizeof(uint64_t) * 2; // ol_cnt, o_entry_d,
+    size += sizeof(bool) * 2; // rbk, remote
+    size += sizeof(Item_no) * items.size();
+    size += sizeof(uint64_t); // items size
+  }
+
   return size;
 }
 
@@ -1155,20 +1175,24 @@ void TPCCQueryMessage::copy_from_txn(TxnManager * txn) {
   c_id = tpcc_query->c_id;
 
   // payment
-  d_w_id = tpcc_query->d_w_id;
-  c_w_id = tpcc_query->c_w_id;
-  c_d_id = tpcc_query->c_d_id;
-  strcpy(c_last,tpcc_query->c_last);
-  h_amount = tpcc_query->h_amount;
-  by_last_name = tpcc_query->by_last_name;
+  if(txn_type == TPCC_PAYMENT) {
+    d_w_id = tpcc_query->d_w_id;
+    c_w_id = tpcc_query->c_w_id;
+    c_d_id = tpcc_query->c_d_id;
+    strcpy(c_last,tpcc_query->c_last);
+    h_amount = tpcc_query->h_amount;
+    by_last_name = tpcc_query->by_last_name;
+  }
 
   // new order
   //items.copy(tpcc_query->items);
-  ((TPCCTxnManager*)txn)->copy_remote_items(this);
-	rbk = tpcc_query->rbk;
-  remote = tpcc_query->remote;
-  ol_cnt = tpcc_query->ol_cnt;
-  o_entry_d = tpcc_query->o_entry_d;
+  if(txn_type == TPCC_NEW_ORDER) {
+    ((TPCCTxnManager*)txn)->copy_remote_items(this);
+    rbk = tpcc_query->rbk;
+    remote = tpcc_query->remote;
+    ol_cnt = tpcc_query->ol_cnt;
+    o_entry_d = tpcc_query->o_entry_d;
+  }
 
 }
 
@@ -1185,19 +1209,23 @@ void TPCCQueryMessage::copy_to_txn(TxnManager * txn) {
   tpcc_query->c_id = c_id;
 
   // payment
-  tpcc_query->d_w_id = d_w_id;
-  tpcc_query->c_w_id = c_w_id;
-  tpcc_query->c_d_id = c_d_id;
-  strcpy(tpcc_query->c_last,c_last);
-  tpcc_query->h_amount = h_amount;
-  tpcc_query->by_last_name = by_last_name;
+  if(txn_type == TPCC_PAYMENT) {
+    tpcc_query->d_w_id = d_w_id;
+    tpcc_query->c_w_id = c_w_id;
+    tpcc_query->c_d_id = c_d_id;
+    strcpy(tpcc_query->c_last,c_last);
+    tpcc_query->h_amount = h_amount;
+    tpcc_query->by_last_name = by_last_name;
+  }
 
   // new order
-  tpcc_query->items.append(items);
-	tpcc_query->rbk = rbk;
-  tpcc_query->remote = remote;
-  tpcc_query->ol_cnt = ol_cnt;
-  tpcc_query->o_entry_d = o_entry_d;
+  if(txn_type == TPCC_NEW_ORDER) {
+    tpcc_query->items.append(items);
+    tpcc_query->rbk = rbk;
+    tpcc_query->remote = remote;
+    tpcc_query->ol_cnt = ol_cnt;
+    tpcc_query->o_entry_d = o_entry_d;
+  }
 
 
 }
@@ -1216,28 +1244,32 @@ void TPCCQueryMessage::copy_from_buf(char * buf) {
   COPY_VAL(c_id,buf,ptr);
 
   // payment
-  COPY_VAL(d_w_id,buf,ptr);
-  COPY_VAL(c_w_id,buf,ptr);
-  COPY_VAL(c_d_id,buf,ptr);
-	COPY_VAL(c_last,buf,ptr);
-  COPY_VAL(h_amount,buf,ptr);
-  COPY_VAL(by_last_name,buf,ptr);
-
-  // new order
-  size_t size;
-  COPY_VAL(size,buf,ptr);
-  items.init(size);
-  for(uint64_t i = 0 ; i < size;i++) {
-    DEBUG_M("TPCCQueryMessage::copy item alloc\n");
-    Item_no * item = (Item_no*)mem_allocator.alloc(sizeof(Item_no));
-    COPY_VAL(*item,buf,ptr);
-    items.add(item);
+  if(txn_type == TPCC_PAYMENT) {
+    COPY_VAL(d_w_id,buf,ptr);
+    COPY_VAL(c_w_id,buf,ptr);
+    COPY_VAL(c_d_id,buf,ptr);
+    COPY_VAL(c_last,buf,ptr);
+    COPY_VAL(h_amount,buf,ptr);
+    COPY_VAL(by_last_name,buf,ptr);
   }
 
-	COPY_VAL(rbk,buf,ptr);
-  COPY_VAL(remote,buf,ptr);
-  COPY_VAL(ol_cnt,buf,ptr);
-  COPY_VAL(o_entry_d,buf,ptr);
+  // new order
+  if(txn_type == TPCC_NEW_ORDER) {
+    size_t size;
+    COPY_VAL(size,buf,ptr);
+    items.init(size);
+    for(uint64_t i = 0 ; i < size;i++) {
+      DEBUG_M("TPCCQueryMessage::copy item alloc\n");
+      Item_no * item = (Item_no*)mem_allocator.alloc(sizeof(Item_no));
+      COPY_VAL(*item,buf,ptr);
+      items.add(item);
+    }
+
+    COPY_VAL(rbk,buf,ptr);
+    COPY_VAL(remote,buf,ptr);
+    COPY_VAL(ol_cnt,buf,ptr);
+    COPY_VAL(o_entry_d,buf,ptr);
+  }
 
  assert(ptr == get_size());
 
@@ -1255,24 +1287,28 @@ void TPCCQueryMessage::copy_to_buf(char * buf) {
   COPY_BUF(buf,c_id,ptr);
 
   // payment
-  COPY_BUF(buf,d_w_id,ptr);
-  COPY_BUF(buf,c_w_id,ptr);
-  COPY_BUF(buf,c_d_id,ptr);
-	COPY_BUF(buf,c_last,ptr);
-  COPY_BUF(buf,h_amount,ptr);
-  COPY_BUF(buf,by_last_name,ptr);
-
-  size_t size = items.size();
-  COPY_BUF(buf,size,ptr);
-  for(uint64_t i = 0; i < items.size(); i++) {
-    Item_no * item = items[i];
-    COPY_BUF(buf,*item,ptr);
+  if(txn_type == TPCC_PAYMENT) {
+    COPY_BUF(buf,d_w_id,ptr);
+    COPY_BUF(buf,c_w_id,ptr);
+    COPY_BUF(buf,c_d_id,ptr);
+    COPY_BUF(buf,c_last,ptr);
+    COPY_BUF(buf,h_amount,ptr);
+    COPY_BUF(buf,by_last_name,ptr);
   }
 
-	COPY_BUF(buf,rbk,ptr);
-  COPY_BUF(buf,remote,ptr);
-  COPY_BUF(buf,ol_cnt,ptr);
-  COPY_BUF(buf,o_entry_d,ptr);
+  if(txn_type == TPCC_NEW_ORDER) {
+    size_t size = items.size();
+    COPY_BUF(buf,size,ptr);
+    for(uint64_t i = 0; i < items.size(); i++) {
+      Item_no * item = items[i];
+      COPY_BUF(buf,*item,ptr);
+    }
+
+    COPY_BUF(buf,rbk,ptr);
+    COPY_BUF(buf,remote,ptr);
+    COPY_BUF(buf,ol_cnt,ptr);
+    COPY_BUF(buf,o_entry_d,ptr);
+  }
  assert(ptr == get_size());
 
 }

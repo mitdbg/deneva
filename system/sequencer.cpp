@@ -68,6 +68,8 @@ void Sequencer::process_ack(Message * msg, uint64_t thd_id) {
     DEBUG_M("Sequencer::process_ack() ycsb_request free\n");
     mem_allocator.free(cl_msg->requests[i],sizeof(ycsb_request));
   }
+#elif WORKLOAD == TPCC
+  TPCCClientQueryMessage* cl_msg = (TPCCClientQueryMessage*)wait_list[id].msg;
 #endif
     cl_msg->release();
 

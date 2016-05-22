@@ -53,6 +53,7 @@ public:
   void init();
   void reset();
   void release();
+  void release_items();
   void print();
   uint64_t participants(bool *& pps,Workload * wl); 
   uint64_t get_participants(Workload * wl); 

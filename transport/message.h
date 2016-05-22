@@ -343,6 +343,7 @@ public:
 
   uint64_t txn_type;
   uint64_t state; 
+
 	// common txn input for both payment & new-order
   uint64_t w_id;
   uint64_t d_id;

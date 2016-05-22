@@ -40,14 +40,6 @@ void TPCCQuery::init() {
   items.init(g_max_items_per_txn);
   BaseQuery::init();
 }
-void TPCCQuery::release() {
-  BaseQuery::release();
-  DEBUG_M("TPCCQuery::release() free");
-  for(uint64_t i = 0; i < items.size(); i++) {
-    mem_allocator.free(items[i],sizeof(Item_no));
-  }
-  items.release();
-}
 
 void TPCCQuery::print() {
   
@@ -282,5 +274,32 @@ uint64_t TPCCQuery::get_participants(Workload * wl) {
     }
   }
   return participant_cnt;
+}
+
+void TPCCQuery::reset() {
+  BaseQuery::clear();
+#if CC_ALG != CALVIN
+  release_items();
+#endif
+  items.clear();
+}
+
+void TPCCQuery::release() {
+  BaseQuery::release();
+  DEBUG_M("TPCCQuery::release() free\n");
+#if CC_ALG != CALVIN
+  release_items();
+#endif
+  items.release();
+}
+
+void TPCCQuery::release_items() {
+  // A bit of a hack to ensure that original requests in client query queue aren't freed
+  if(SERVER_GENERATE_QUERIES)
+    return;
+  for(uint64_t i = 0; i < items.size(); i++) {
+    DEBUG_M("TPCCQuery::release() Item_no free\n");
+    mem_allocator.free(items[i],sizeof(Item_no));
+  }
 
 }
