@@ -82,13 +82,13 @@ def ycsb_skew():
 def isolation_levels():
     wl = 'YCSB'
     nnodes = [1,2,4,8,16]#,32,48]
-    algos=['NO_WAIT']
+    algos=['NO_WAIT','WAIT_DIE','MVCC','MAAT','CALVIN','TIMESTAMP']
     levels=["READ_UNCOMMITTED","READ_COMMITTED","SERIALIZABLE"]
     base_table_size=2097152*8
-    load = [1000]
-    txn_write_perc = [0.1,0.2,0.5,1.0]
-    tup_write_perc = [1.0]
-    skew = [0.0,0.3,0.6]
+    load = [10000]
+    txn_write_perc = [0.5,1.0]
+    tup_write_perc = [0.5]
+    skew = [0.6,0.7]
     fmt = ["WORKLOAD","NODE_CNT","CC_ALG","SYNTH_TABLE_SIZE","TUP_WRITE_PERC","TXN_WRITE_PERC","ISOLATION_LEVEL","MAX_TXN_IN_FLIGHT","ZIPF_THETA"]
     exp = [[wl,n,algo,base_table_size*n,tup_wr_perc,txn_wr_perc,level,ld,sk] for txn_wr_perc,tup_wr_perc,algo,sk,ld,n,level in itertools.product(txn_write_perc,tup_write_perc,algos,skew,load,nnodes,levels)]
     return fmt,exp
@@ -113,6 +113,20 @@ def ycsb_partitions():
     exp = exp + [[wl,rpq,p,n,algo,base_table_size*n,tup_wr_perc,txn_wr_perc,ld,sk,thr,1] for thr,txn_wr_perc,tup_wr_perc,algo,sk,ld,n,p in itertools.product(tcnt,txn_write_perc,tup_write_perc,algos,skew,load,nnodes,nparts)]
     return fmt,exp
 
+def tpcc_scaling():
+    wl = 'TPCC'
+    nnodes = [1,2,4,8,16]#,16,32,64]
+    nalgos=['NO_WAIT','WAIT_DIE','MAAT','MVCC','TIMESTAMP','CALVIN']
+    npercpay=[0.0,0.5,1.0]
+    wh=128
+    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PERC_PAYMENT","NUM_WH"]
+    exp = [[wl,n,cc,pp,wh] for pp,n,cc in itertools.product(npercpay,nnodes,nalgos)]
+    exp = exp + [[wl,n,cc,pp,wh*n] for pp,n,cc in itertools.product(npercpay,nnodes,nalgos)]
+    wh=256
+    exp = exp + [[wl,n,cc,pp,wh] for pp,n,cc in itertools.product(npercpay,nnodes,nalgos)]
+    wh=4
+    exp = exp + [[wl,n,cc,pp,wh*n] for pp,n,cc in itertools.product(npercpay,nnodes,nalgos)]
+    return fmt,exp
 
 
 ##############################
@@ -691,75 +705,6 @@ def network_experiment_plot(all_exps,all_nodes,timestamps):
         lat_node_tbls(exp[:-1],all_nodes[i],exp[0].keys(),timestamps[i])
         lat_tbl(exp[-1],exp[-1].keys(),timestamps[i])
 
-def ft_mode():
-    fmt,exp = test()
-    fmt = fmt+["MODE_FT"]
-    exp = [f+["true"] for f in exp]
-    return fmt,exp
-
-def tpcc_scaling_whset_plot(summary,summary_client):
-    nfmt,nexp = tpcc_scaling_whset()
-    tput_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128,'PERC_PAYMENT':1.0},title="TPCC System Throughput, 128 warehouses, Payment only")
-    tput_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128,'PERC_PAYMENT':0.0},title="TPCC System Throughput, 128 warehouses, New order only")
-#    stacks_setup(summary,nfmt,nexp,x_name="CC_ALG",keys=['txn_table_add','txn_table_get','txn_table0a','txn_table1a','txn_table0b','txn_table1b','txn_table2a','txn_table2'],norm=False,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128,'PERC_PAYMENT':1.0})
-#    stacks_setup(summary,nfmt,nexp,x_name="CC_ALG",keys=['txn_table_add','txn_table_get','txn_table0a','txn_table1a','txn_table0b','txn_table1b','txn_table2a','txn_table2'],norm=False,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128,'PERC_PAYMENT':0.0})
-#    breakdown_setup(summary,nfmt,nexp,x_name="CC_ALG",norm=True,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128,'PERC_PAYMENT':0.0})
-
-def tpcc_scaling_plot(summary,summary_client):
-    nfmt,nexp = tpcc_scaling()
-    tput_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':'NODE_CNT','PERC_PAYMENT':1.0},title="TPCC System Throughput, N warehouses, Payment only")
-    tput_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':'NODE_CNT','PERC_PAYMENT':0.0},title="TPCC System Throughput, N warehouses, New order only")
-#    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT",keys=['thd1','thd2','thd3'],norm=False,key_names=['Getting work','Execution','Wrap-up'],extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','NUM_WH':128,'PART_PER_TXN':'NODE_CNT','PERC_PAYMENT':0.0})
-#    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT",keys=['txn_table_add','txn_table_get','txn_table0a','txn_table1a','txn_table0b','txn_table1b','txn_table2a','txn_table2'],norm=False,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128})
-#    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT"            ,keys=['type1','type2','type3','type4','type5','type6','type7','type8','type9','type10','type11','type12','type13','type14']            ,norm=False,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128})
-#    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT"            ,keys=['part_cnt1','part_cnt2','part_cnt3','part_cnt4','part_cnt5','part_cnt6','part_cnt7','part_cnt8','part_cnt9','part_cnt10']            ,norm=False,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128})
-#    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT",keys=['thd1a','thd1b','thd1c','thd1d'],norm=False,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128})
-#    stacks_setup(summary,nfmt,nexp,x_name="NODE_CNT",keys=['rtxn1a','rtxn1b','rtxn2','rtxn3','rtxn4'],norm=False,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128})
-#    line_rate_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",key='thd1',extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128})
-#    line_rate_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",key='abort_cnt',extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128})
-#    line_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",key='tot_avg_abort_row_cnt',extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128})
-#    line_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",key='txn_cnt',extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128})
-    
-def ycsb_scaling_2_lite_plot(summary,summary_client):
-    nfmt,nexp = ycsb_scaling_2_lite()
-    tput_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",title='YCSB System Throughput, default configs, 2 parts/txn')
-
-
-def ycsb_scaling_2_low_access_plot(summary,summary_client):
-    nfmt,nexp = ycsb_scaling_2_low_access()
-    tput_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",title='YCSB System Throughput, default configs, 2 parts/txn')
-
-def ycsb_scaling_low_mpr_plot(summary,summary_client):
-    nfmt,nexp = ycsb_scaling_low_mpr()
-    tput_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",title='YCSB System Throughput, default configs, 2 parts/txn')
-
-def ycsb_scaling_2_plot(summary,summary_client):
-    nfmt,nexp = ycsb_scaling_2()
-    tput_setup(summary,summary_client,nfmt,nexp,x_name="NODE_CNT",v_name="CC_ALG",title='YCSB System Throughput, default configs, 2 parts/txn')
-#    breakdown_setup(summary,nfmt,nexp,x_name="CC_ALG",norm=True,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT'})
-
-def ycsb_contention_N_plot(summary,summary_client):
-    nfmt,nexp = ycsb_contention_N()
-    tput_setup(summary,summary_client,nfmt,nexp,x_name="ACCESS_PERC",v_name="CC_ALG",extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT'},title='YCSB Contention 16 Nodes N parts/txn') 
-def ycsb_contention_2_plot(summary,summary_client):
-    nfmt,nexp = ycsb_contention_2()
-    tput_setup(summary,summary_client,nfmt,nexp,x_name="ACCESS_PERC",v_name="CC_ALG",extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT'},title='YCSB Contention 16 Nodes 2 parts/txn') 
-
-def ycsb_parts_plot(summary,summary_client):
-    nfmt,nexp = ycsb_parts()
-
-    tput_setup(summary,summary_client,nfmt,nexp,x_name="PART_PER_TXN",v_name="CC_ALG",title='YCSB Partition Sweep',extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT'})
-    nfmt,nexp = ycsb_parts_calvin()
-    tput_setup(summary,summary_client,nfmt,nexp,x_name="PART_PER_TXN",v_name="CC_ALG",title='YCSB Partition Sweep',extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT'})
-#    stacks_setup(summary,nfmt,nexp,x_name="PART_PER_TXN",keys=['thd1','thd2','thd3'],norm=False,key_names=['Getting work','Execution','Wrap-up'],extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT'})
-#    stacks_setup(summary,nfmt,nexp,x_name="PART_PER_TXN",keys=['txn_table_add','txn_table_get','txn_table0a','txn_table1a','txn_table0b','txn_table1b','txn_table2a','txn_table2'],norm=False,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT'})
-#    stacks_setup(summary,nfmt,nexp,x_name="PART_PER_TXN"            ,keys=['type1','type2','type3','type4','type5','type6','type7','type8','type9','type10','type11','type12','type13','type14']            ,norm=False,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT'})
-#    stacks_setup(summary,nfmt,nexp,x_name="PART_PER_TXN",keys=['thd1a','thd1b','thd1c','thd1d'],norm=False,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT'})
-#    stacks_setup(summary,nfmt,nexp,x_name="PART_PER_TXN",keys=['rtxn1a','rtxn1b','rtxn2','rtxn3','rtxn4'],norm=False,extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT'})
-#    line_rate_setup(summary,summary_client,nfmt,nexp,x_name="PART_PER_TXN",v_name="CC_ALG",key='abort_cnt',extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT'})
-#    line_setup(summary,summary_client,nfmt,nexp,x_name="PART_PER_TXN",v_name="CC_ALG",key='tot_avg_abort_row_cnt',extras={'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT'})
-
-
 
 def network_test():
     wl = 'YCSB'
@@ -768,38 +713,6 @@ def network_test():
     fmt = ["WORKLOAD","NODE_CNT","CC_ALG","NETWORK_TEST","SET_AFFINITY"]
     exp = [[wl,n,cc,'true','false'] for n,cc in itertools.product(nnodes,nalgos)]
     return fmt,exp
-
-def tpcc_test():
-    wl = 'TPCC'
-    nnodes = [1,2,4,8,16,32,64]
-    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP','CALVIN']
-    npercpay=[0.0,0.5,1.0]
-    wh=256
-    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PERC_PAYMENT","NUM_WH"]
-    exp = [[wl,n,cc,pp,wh] for pp,n,cc in itertools.product(npercpay,nnodes,nalgos)]
-    return fmt,exp
-
-def tpcc_test_plot(summary,summary_client):
-    from helper import plot_prep
-    from plot_helper import tput
-    nfmt,nexp = tpcc_test()
-    x_name = "NODE_CNT"
-    v_name = "CC_ALG"
-    extras = {'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','PERC_PAYMENT':0.0}
-    x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,extras=extras)
-    tput(x_vals,v_vals,summary,summary_client,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_tpcc_neworder",xlab="Server Count",extras=extras,logscalex=True)
-    nfmt,nexp = tpcc_test()
-    x_name = "NODE_CNT"
-    v_name = "CC_ALG"
-    extras = {'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','PERC_PAYMENT':0.5}
-    x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,extras=extras)
-    tput(x_vals,v_vals,summary,summary_client,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_tpcc_mix",xlab="Server Count",extras=extras,logscalex=True)
-    nfmt,nexp = tpcc_test()
-    x_name = "NODE_CNT"
-    v_name = "CC_ALG"
-    extras = {'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','PERC_PAYMENT':1.0}
-    x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,extras=extras)
-    tput(x_vals,v_vals,summary,summary_client,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_tpcc_pay",xlab="Server Count",extras=extras,logscalex=True)
 
 
 experiment_map = {
@@ -811,44 +724,17 @@ experiment_map = {
     'isolation_levels': isolation_levels,
     'isolation_levels_plot': isolation_levels_plot,
     'ycsb_partitions': ycsb_partitions,
+#    'ycsb_partitions_plot': ycsb_partitions_plot,
     'ycsb_load': ycsb_load,
-    'ycsb_scaling_2_plot': ycsb_scaling_2_plot,
-    'tpcc_scaling_plot': tpcc_scaling_plot,
-    'tpcc_scaling_whset_plot': tpcc_scaling_whset_plot,
+    'tpcc_scaling': tpcc_scaling,
+#    'tpcc_scaling_plot': tpcc_scaling_plot,
+#    'tpcc_scaling_whset_plot': tpcc_scaling_whset_plot,
     'test': test,
     'test_plot': test_plot,
     'test2': test2,
     'test2_plot': test2_plot,
     'network_sweep': network_sweep,
     'network_sweep_plot': network_sweep_plot,
-    'ppr_ycsb_scaling': ycsb_writes,
-    'ppr_ycsb_scaling_optimal_load': ycsb_writes_optimal_load,
-    'ppr_ycsb_scaling_optimal_load_plot': ppr_ycsb_scaling_optimal_load_plot,
-    'ppr_ycsb_scaling_plot': ppr_ycsb_scaling_plot,
-    'ppr_tpcc': tpcc_scaling_whset,
-    'ppr_tpcc_plot': ppr_tpcc_plot,
-    'ppr_tpcc_pay': tpcc_scaling_whset,
-    'ppr_tpcc_pay_plot': ppr_tpcc_pay_plot,
-    'ppr_tpcc_neworder': tpcc_scaling_whset,
-    'ppr_tpcc_neworder_plot': ppr_tpcc_neworder_plot,
-    'ppr_ycsb_parts': ycsb_parts,
-    'ppr_ycsb_parts_plot': ppr_ycsb_parts_plot,
-    'ppr_ycsb_contention': ycsb_contention_2_nodesweep,
-    'ppr_ycsb_contention_plot': ppr_ycsb_contention_plot,
-    'ppr_ycsb_gold': ycsb_gold,
-    'ppr_ycsb_gold_plot': ppr_ycsb_gold_plot,
-    'ppr_ycsb_readonly': ycsb_readonly,
-    'ppr_ycsb_readonly_plot': ppr_ycsb_readonly_plot,
-    'ppr_ycsb_medwrite': ycsb_medwrite,
-    'ppr_ycsb_medwrite_plot': ppr_ycsb_medwrite_plot,
-    'ppr_ycsb_load': ycsb_load_small,
-    'ppr_ycsb_load_plot': ppr_ycsb_load_plot,
-    'ycsb_load_plot': ycsb_load_plot,
-    'ppr_network': network_sweep,
-    'ppr_network_plot': ppr_network_plot,
-    'replica_test': replica_test,
-    'malviya': malviya,
-    'malviya_plot': malviya_plot,
 }
 
 

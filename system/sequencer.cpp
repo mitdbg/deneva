@@ -70,6 +70,12 @@ void Sequencer::process_ack(Message * msg, uint64_t thd_id) {
   }
 #elif WORKLOAD == TPCC
   TPCCClientQueryMessage* cl_msg = (TPCCClientQueryMessage*)wait_list[id].msg;
+  if(cl_msg->txn_type == TPCC_NEW_ORDER) {
+    for(uint64_t i = 0; i < cl_msg->items.size(); i++) {
+      DEBUG_M("Sequencer::process_ack() items free\n");
+      mem_allocator.free(cl_msg->items[i],sizeof(Item_no));
+    }
+  }
 #endif
     cl_msg->release();
 
@@ -121,7 +127,11 @@ void Sequencer::process_txn( Message * msg,uint64_t thd_id) {
     msg->txn_id = txn_id;
     assert(txn_id != UINT64_MAX);
 
+#if WORKLOAD == YCSB
     std::set<uint64_t> participants = YCSBQuery::participants(msg,_wl);
+#elif WORKLOAD == TPCC
+    std::set<uint64_t> participants = TPCCQuery::participants(msg,_wl);
+#endif
 		uint32_t server_ack_cnt = participants.size();
 		assert(server_ack_cnt > 0);
 		assert(ISCLIENTN(msg->get_return_id()));

@@ -21,6 +21,7 @@
 #include "mem_alloc.h"
 #include "wl.h"
 #include "table.h"
+#include "message.h"
 
 BaseQuery * TPCCQueryGenerator::create_query(Workload * h_wl,uint64_t home_partition_id) {
   double x = (double)(rand() % 100) / 100.0;
@@ -62,6 +63,32 @@ void TPCCQuery::print() {
       printf("\n");
     }
 }
+
+std::set<uint64_t> TPCCQuery::participants(Message * msg, Workload * wl) {
+  std::set<uint64_t> participant_set;
+  TPCCClientQueryMessage* tpcc_msg = ((TPCCClientQueryMessage*)msg);
+  uint64_t id;
+
+  id = GET_NODE_ID(wh_to_part(tpcc_msg->w_id));
+  participant_set.insert(id);
+
+  switch(tpcc_msg->txn_type) {
+    case TPCC_PAYMENT:
+      id = GET_NODE_ID(wh_to_part(tpcc_msg->c_w_id));
+      participant_set.insert(id);
+      break;
+    case TPCC_NEW_ORDER: 
+      for(uint64_t i = 0; i < tpcc_msg->ol_cnt; i++) {
+        uint64_t req_nid = GET_NODE_ID(wh_to_part(tpcc_msg->items[i]->ol_supply_w_id));
+        participant_set.insert(req_nid);
+      }
+      break;
+    default: assert(false);
+  }
+
+  return participant_set;
+}
+
 
 
 uint64_t TPCCQuery::participants(bool *& pps,Workload * wl) {

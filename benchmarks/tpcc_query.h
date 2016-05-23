@@ -22,6 +22,9 @@
 #include "query.h"
 
 class Workload;
+class Message;
+class TPCCQueryMessage;
+class TPCCClientQueryMessage;
 
 // items of new order transaction
 struct Item_no {
@@ -55,6 +58,7 @@ public:
   void release();
   void release_items();
   void print();
+  static std::set<uint64_t> participants(Message * msg, Workload * wl); 
   uint64_t participants(bool *& pps,Workload * wl); 
   uint64_t get_participants(Workload * wl); 
   bool readonly();
