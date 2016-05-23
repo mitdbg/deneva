@@ -140,10 +140,8 @@ def ycsb_scaling_plot(summary,summary_client):
     x_name="NODE_CNT"
     v_name="CC_ALG"
 #    tput_setup(summary,summary_client,nfmt,nexp,x_name,v_name)
-    skew = [0.6,0.7,0.75,0.8,0.85,0.9]
-    skew = [0.6,0.7]
-    txn_write_perc = [0.5,0.75,1.0]
-    txn_write_perc = [0.5,1.0]
+    skew = [0.0,0.6,0.7]
+    txn_write_perc = [0.0,0.5,1.0]
     for sk,wr in itertools.product(skew,txn_write_perc):
         const={"ZIPF_THETA":sk,"TXN_WRITE_PERC":wr}
         title = ""
@@ -165,7 +163,7 @@ def ycsb_skew_plot(summary,summary_client):
     x_name="ZIPF_THETA"
     v_name="CC_ALG"
 #    tput_setup(summary,summary_client,nfmt,nexp,x_name,v_name)
-    txn_write_perc = [0.5,0.75,1.0]
+    txn_write_perc = [0.5,1.0]
     for wr in txn_write_perc:#itertools.product(skew,txn_write_perc):
         const={"TXN_WRITE_PERC":wr}
         title = ""
@@ -173,6 +171,27 @@ def ycsb_skew_plot(summary,summary_client):
             title += "{} {},".format(SHORTNAMES[c],const[c])
         x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants=const)
         tput(x_vals,v_vals,summary,summary_client,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,xlab="Server Count",new_cfgs=lst,ylimit=140,logscalex=False,title=title)
+
+def ycsb_partitions_plot(summary,summary_client):
+    from helper import plot_prep
+    from plot_helper import tput,time_breakdown
+    nfmt,nexp = ycsb_partitions()
+    x_name="PART_PER_TXN"
+    v_name="CC_ALG"
+#    tput_setup(summary,summary_client,nfmt,nexp,x_name,v_name)
+    txn_write_perc = [0.0,0.5,1.0]
+    skew = [0.0,0.6,0.7]
+    for sk,wr in itertools.product(skew,txn_write_perc):
+        try:
+            const={"TXN_WRITE_PERC":wr,"ZIPF_THETA":sk}
+            title = ""
+            for c in const.keys():
+                title += "{} {},".format(SHORTNAMES[c],const[c])
+            x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants=const)
+            tput(x_vals,v_vals,summary,summary_client,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,xlab="Server Count",new_cfgs=lst,ylimit=140,logscalex=False,title=title)
+        except IndexError:
+            continue
+
 
 def ycsb_load():
     wl = 'YCSB'
@@ -724,7 +743,7 @@ experiment_map = {
     'isolation_levels': isolation_levels,
     'isolation_levels_plot': isolation_levels_plot,
     'ycsb_partitions': ycsb_partitions,
-#    'ycsb_partitions_plot': ycsb_partitions_plot,
+    'ycsb_partitions_plot': ycsb_partitions_plot,
     'ycsb_load': ycsb_load,
     'tpcc_scaling': tpcc_scaling,
 #    'tpcc_scaling_plot': tpcc_scaling_plot,
