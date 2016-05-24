@@ -94,29 +94,29 @@ RC Workload::init_schema(const char * schema_file) {
       uint64_t table_size = g_synth_table_size;
 #if WORKLOAD == TPCC
       if ( !tname.compare(1, 9, "WAREHOUSE") ) {
-        table_size = g_num_wh;
+        table_size = g_num_wh / g_part_cnt;
         printf("WAREHOUSE size %ld\n",table_size);
       } else if ( !tname.compare(1, 8, "DISTRICT") ) {
-        table_size = g_num_wh * g_dist_per_wh;
+        table_size = g_num_wh / g_part_cnt * g_dist_per_wh;
         printf("DISTRICT size %ld\n",table_size);
       } else if ( !tname.compare(1, 8, "CUSTOMER") ) {
-        table_size = g_num_wh * g_dist_per_wh * g_cust_per_dist;
+        table_size = g_num_wh / g_part_cnt * g_dist_per_wh * g_cust_per_dist;
         printf("CUSTOMER size %ld\n",table_size);
       } else if ( !tname.compare(1, 7, "HISTORY") ) {
-        table_size = g_num_wh * g_dist_per_wh * g_cust_per_dist;
+        table_size = g_num_wh / g_part_cnt * g_dist_per_wh * g_cust_per_dist;
         printf("HISTORY size %ld\n",table_size);
       } else if ( !tname.compare(1, 5, "ORDER") ) {
-        table_size = g_num_wh * g_dist_per_wh * g_cust_per_dist;
+        table_size = g_num_wh / g_part_cnt * g_dist_per_wh * g_cust_per_dist;
         printf("ORDER size %ld\n",table_size);
       } else if ( !tname.compare(1, 4, "ITEM") ) {
         table_size = g_max_items;
         printf("ITEM size %ld\n",table_size);
       } else if ( !tname.compare(1, 5, "STOCK") ) {
-        table_size = g_num_wh * g_max_items;
+        table_size = g_num_wh / g_part_cnt * g_max_items;
         printf("STOCK size %ld\n",table_size);
       }
 #else
-      table_size = g_synth_table_size;
+      table_size = g_synth_table_size / g_part_cnt;
 #endif
 
 #if INDEX_STRUCT == IDX_HASH
