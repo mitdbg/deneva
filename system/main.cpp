@@ -78,10 +78,6 @@ int main(int argc, char* argv[])
 	srand(seed);
 	printf("Random seed: %ld\n",seed);
 
-#if ISOLATION_LEVEL == READ_COMMITTED
-  assert(CC_ALG == NO_WAIT);
-#endif
-
 	int64_t starttime;
 	int64_t endtime;
   starttime = get_server_clock();
