@@ -38,10 +38,11 @@ SHORTNAMES = {
     "SYNTH_TABLE_SIZE":"TBL",
     "ISOLATION_LEVEL":"LVL",
     "YCSB_ABORT_MODE":"ABRTMODE",
+    "NUM_WH":"WH",
 }
 
 #config_names=["CLIENT_NODE_CNT","NODE_CNT","MAX_TXN_PER_PART","WORKLOAD","CC_ALG","MPR","CLIENT_THREAD_CNT","CLIENT_REM_THREAD_CNT","CLIENT_SEND_THREAD_CNT","THREAD_CNT","REM_THREAD_CNT","SEND_THREAD_CNT","MAX_TXN_IN_FLIGHT","ZIPF_THETA","TXN_WRITE_PERC","TUP_WRITE_PERC","PART_PER_TXN","PART_CNT","MSG_TIME_LIMIT","MSG_SIZE_MAX","MODE","DATA_PERC","ACCESS_PERC","REQ_PER_QUERY"]
-fmt_title=["NODE_CNT","CC_ALG","ACCESS_PERC","TXN_WRITE_PERC","PERC_PAYMENT","MPR","MODE","MAX_TXN_IN_FLIGHT","SEND_THREAD_CNT","REM_THREAD_CNT","THREAD_CNT","TXN_WRITE_PERC","TUP_WRITE_PERC","ZIPF_THETA"]
+fmt_title=["NODE_CNT","CC_ALG","ACCESS_PERC","TXN_WRITE_PERC","PERC_PAYMENT","MPR","MODE","MAX_TXN_IN_FLIGHT","SEND_THREAD_CNT","REM_THREAD_CNT","THREAD_CNT","TXN_WRITE_PERC","TUP_WRITE_PERC","ZIPF_THETA","NUM_WH"]
 
 ##############################
 # VLDB PAPER PLOTS
@@ -49,14 +50,17 @@ fmt_title=["NODE_CNT","CC_ALG","ACCESS_PERC","TXN_WRITE_PERC","PERC_PAYMENT","MP
 
 def ycsb_scaling():
     wl = 'YCSB'
-    nnodes = [1,2,4,8,16]#,32,48,64]
+#    nnodes = [48]
+    nnodes = [1,2,4,8,16,32,64]
     algos=['NO_WAIT','WAIT_DIE','MVCC','MAAT','CALVIN','TIMESTAMP']
     base_table_size=2097152*8
-    txn_write_perc = [0.5,1.0]
+#    txn_write_perc = [0.5,1.0]
+    txn_write_perc = [0.5]
     tup_write_perc = [0.5]
     load = [10000]
     tcnt = [4]
-    skew = [0.0,0.6,0.7]
+#    skew = [0.0,0.6,0.7]
+    skew = [0.6,0.7]
     fmt = ["WORKLOAD","NODE_CNT","CC_ALG","SYNTH_TABLE_SIZE","TUP_WRITE_PERC","TXN_WRITE_PERC","MAX_TXN_IN_FLIGHT","ZIPF_THETA","THREAD_CNT"]
     exp = [[wl,n,algo,base_table_size*n,tup_wr_perc,txn_wr_perc,ld,sk,thr] for thr,txn_wr_perc,tup_wr_perc,sk,ld,n,algo in itertools.product(tcnt,txn_write_perc,tup_write_perc,skew,load,nnodes,algos)]
     txn_write_perc = [0.0]
@@ -65,11 +69,14 @@ def ycsb_scaling():
     return fmt,exp
 
 def ycsb_skew():
+#Try with different node counts?
     wl = 'YCSB'
     nnodes = [16]
+    nnodes = [2,4,8,16]
     algos=['NO_WAIT','WAIT_DIE','MVCC','MAAT','CALVIN','TIMESTAMP']
     base_table_size=2097152*8
-    txn_write_perc = [0.5,1.0]
+#    txn_write_perc = [0.5,1.0]
+    txn_write_perc = [0.5]
     tup_write_perc = [0.5]
     load = [10000]
     tcnt = [4]
@@ -78,11 +85,26 @@ def ycsb_skew():
     exp = [[wl,n,algo,base_table_size*n,tup_wr_perc,txn_wr_perc,ld,sk,thr] for thr,txn_wr_perc,tup_wr_perc,ld,n,sk,algo in itertools.product(tcnt,txn_write_perc,tup_write_perc,load,nnodes,skew,algos)]
     return fmt,exp
 
+def ycsb_writes():
+    wl = 'YCSB'
+    nnodes = [16]
+    algos=['NO_WAIT','WAIT_DIE','MVCC','MAAT','CALVIN','TIMESTAMP']
+    base_table_size=2097152*8
+    txn_write_perc = [0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]
+    tup_write_perc = [0.5]
+    load = [10000]
+    tcnt = [4]
+    skew = [0.6,0.7]
+    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","SYNTH_TABLE_SIZE","TUP_WRITE_PERC","TXN_WRITE_PERC","MAX_TXN_IN_FLIGHT","ZIPF_THETA","THREAD_CNT"]
+    exp = [[wl,n,algo,base_table_size*n,tup_wr_perc,txn_wr_perc,ld,sk,thr] for thr,txn_wr_perc,tup_wr_perc,ld,n,sk,algo in itertools.product(tcnt,txn_write_perc,tup_write_perc,load,nnodes,skew,algos)]
+    return fmt,exp
+
+
 
 def isolation_levels():
     wl = 'YCSB'
-    nnodes = [1,2,4,8,16]#,32,48]
-    algos=['NO_WAIT','WAIT_DIE','MVCC','MAAT','CALVIN','TIMESTAMP']
+    nnodes = [1,2,4,8,16,32,64]
+    algos=['NO_WAIT']
     levels=["READ_UNCOMMITTED","READ_COMMITTED","SERIALIZABLE"]
     base_table_size=2097152*8
     load = [10000]
@@ -115,17 +137,34 @@ def ycsb_partitions():
 
 def tpcc_scaling():
     wl = 'TPCC'
-    nnodes = [1,2,4,8,16]#,16,32,64]
+    nnodes = [1,2,4,8,16,32,64]
+    nalgos=['NO_WAIT','WAIT_DIE','MAAT','MVCC','TIMESTAMP','CALVIN']
+    npercpay=[0.0,0.5,1.0]
+    wh=128
+    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PERC_PAYMENT","NUM_WH"]
+    exp = [[wl,n,cc,pp,wh*n] for pp,n,cc in itertools.product(npercpay,nnodes,nalgos)]
+    return fmt,exp
+
+def tpcc_scaling2():
+    wl = 'TPCC'
+    nnodes = [1,2,4,8,16,32,64]
+    nalgos=['NO_WAIT','WAIT_DIE','MAAT','MVCC','TIMESTAMP','CALVIN']
+    npercpay=[0.0,0.5,1.0]
+    wh=4
+    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PERC_PAYMENT","NUM_WH"]
+    exp = [[wl,n,cc,pp,wh*n] for pp,n,cc in itertools.product(npercpay,nnodes,nalgos)]
+    return fmt,exp
+
+def tpcc_scaling_whset():
+    wl = 'TPCC'
+    nnodes = [1,2,4,8,16,32,64]
     nalgos=['NO_WAIT','WAIT_DIE','MAAT','MVCC','TIMESTAMP','CALVIN']
     npercpay=[0.0,0.5,1.0]
     wh=128
     fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PERC_PAYMENT","NUM_WH"]
     exp = [[wl,n,cc,pp,wh] for pp,n,cc in itertools.product(npercpay,nnodes,nalgos)]
-    exp = exp + [[wl,n,cc,pp,wh*n] for pp,n,cc in itertools.product(npercpay,nnodes,nalgos)]
     wh=256
     exp = exp + [[wl,n,cc,pp,wh] for pp,n,cc in itertools.product(npercpay,nnodes,nalgos)]
-    wh=4
-    exp = exp + [[wl,n,cc,pp,wh*n] for pp,n,cc in itertools.product(npercpay,nnodes,nalgos)]
     return fmt,exp
 
 
@@ -141,7 +180,16 @@ def ycsb_scaling_plot(summary,summary_client):
     v_name="CC_ALG"
 #    tput_setup(summary,summary_client,nfmt,nexp,x_name,v_name)
     skew = [0.0,0.6,0.7]
-    txn_write_perc = [0.0,0.5,1.0]
+    txn_write_perc = [0.5,1.0]
+    for sk,wr in itertools.product(skew,txn_write_perc):
+        const={"ZIPF_THETA":sk,"TXN_WRITE_PERC":wr}
+        title = ""
+        for c in const.keys():
+            title += "{} {},".format(SHORTNAMES[c],const[c])
+        x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants=const)
+        tput(x_vals,v_vals,summary,summary_client,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,xlab="Server Count",new_cfgs=lst,ylimit=140,logscalex=False,title=title)
+    txn_write_perc = [0.0]
+    skew = [0.0]
     for sk,wr in itertools.product(skew,txn_write_perc):
         const={"ZIPF_THETA":sk,"TXN_WRITE_PERC":wr}
         title = ""
@@ -172,6 +220,23 @@ def ycsb_skew_plot(summary,summary_client):
         x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants=const)
         tput(x_vals,v_vals,summary,summary_client,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,xlab="Server Count",new_cfgs=lst,ylimit=140,logscalex=False,title=title)
 
+def ycsb_writes_plot(summary,summary_client):
+    from helper import plot_prep
+    from plot_helper import tput,time_breakdown
+    nfmt,nexp = ycsb_writes()
+    x_name="TXN_WRITE_PERC"
+    v_name="CC_ALG"
+#    tput_setup(summary,summary_client,nfmt,nexp,x_name,v_name)
+    skew = [0.6,0.7]
+    for sk in skew:
+        const={"ZIPF_THETA":sk}
+        title = ""
+        for c in const.keys():
+            title += "{} {},".format(SHORTNAMES[c],const[c])
+        x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants=const)
+        tput(x_vals,v_vals,summary,summary_client,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,xlab="Server Count",new_cfgs=lst,ylimit=140,logscalex=False,title=title)
+
+
 def ycsb_partitions_plot(summary,summary_client):
     from helper import plot_prep
     from plot_helper import tput,time_breakdown
@@ -191,6 +256,67 @@ def ycsb_partitions_plot(summary,summary_client):
             tput(x_vals,v_vals,summary,summary_client,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,xlab="Server Count",new_cfgs=lst,ylimit=140,logscalex=False,title=title)
         except IndexError:
             continue
+
+def tpcc_scaling_plot(summary,summary_client):
+    from helper import plot_prep
+    from plot_helper import tput,time_breakdown
+    nfmt,nexp = tpcc_scaling()
+    x_name="NODE_CNT"
+    v_name="CC_ALG"
+#    tput_setup(summary,summary_client,nfmt,nexp,x_name,v_name)
+    warehouses = [128]
+    npercpay=[0.0,0.5,1.0]
+    for pp in npercpay:
+        const={"PERC_PAYMENT":pp}
+        title = ""
+        for c in const.keys():
+            title += "{} {},".format(SHORTNAMES[c],const[c])
+        x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants=const)
+        tput(x_vals,v_vals,summary,summary_client,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,xlab="Server Count",new_cfgs=lst,ylimit=140,logscalex=False,title=title)
+
+def tpcc_scaling2_plot(summary,summary_client):
+    from helper import plot_prep
+    from plot_helper import tput,time_breakdown
+    nfmt,nexp = tpcc_scaling2()
+    x_name="NODE_CNT"
+    v_name="CC_ALG"
+#    tput_setup(summary,summary_client,nfmt,nexp,x_name,v_name)
+    warehouses = [128]
+    npercpay=[0.0,0.5,1.0]
+    for pp in npercpay:
+        const={"PERC_PAYMENT":pp}
+        title = ""
+        for c in const.keys():
+            title += "{} {},".format(SHORTNAMES[c],const[c])
+        x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants=const)
+        tput(x_vals,v_vals,summary,summary_client,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,xlab="Server Count",new_cfgs=lst,ylimit=140,logscalex=False,title=title)
+
+
+def tpcc_scaling_whset_plot(summary,summary_client):
+    from helper import plot_prep
+    from plot_helper import tput,time_breakdown
+    nfmt,nexp = tpcc_scaling_whset()
+    x_name="NODE_CNT"
+    v_name="CC_ALG"
+#    tput_setup(summary,summary_client,nfmt,nexp,x_name,v_name)
+    warehouses = [128,256]
+    npercpay=[0.0,0.5,1.0]
+    for wh,pp in itertools.product(warehouses,npercpay):
+        const={"NUM_WH":wh,"PERC_PAYMENT":pp}
+        title = ""
+        for c in const.keys():
+            title += "{} {},".format(SHORTNAMES[c],const[c])
+        x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants=const)
+        tput(x_vals,v_vals,summary,summary_client,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,xlab="Server Count",new_cfgs=lst,ylimit=140,logscalex=False,title=title)
+
+
+#        for x in x_vals:
+#            const[x_name] = x
+#            title2 = title + "{} {},".format(SHORTNAMES[x_name],const[x_name])
+#            v_vals,tmp,fmt,exp,lst = plot_prep(nexp,nfmt,v_name,'',constants=const)
+#            time_breakdown(v_vals,summary,cfg_fmt=fmt,cfg=list(exp),xname=v_name,new_cfgs=lst,title=title2)
+#    breakdown_setup(summary,nfmt,nexp,x_name)
+
 
 
 def ycsb_load():
@@ -243,28 +369,18 @@ def isolation_levels_plot(summary,summary_client):
     v_name="ISOLATION_LEVEL"
 #    tput_setup(summary,summary_client,nfmt,nexp,x_name,v_name)
     txn_write_perc = [0.1,0.2,0.5,1.0]
+    txn_write_perc = [0.5,1.0]
     skew = [0.0,0.3,0.6]
+    skew = [0.6,0.7]
     for wr,sk in itertools.product(txn_write_perc,skew):
-        const={"TXN_WRITE_PERC":wr,"ZIPF_THETA":sk,"TUP_WRITE_PERC":1.0}
+        const={"TXN_WRITE_PERC":wr,"ZIPF_THETA":sk}
         title = ""
         for c in const.keys():
             title += "{} {},".format(SHORTNAMES[c],const[c])
         x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants=const)
-        tput(x_vals,v_vals,summary,summary_client,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,xlab="Server Count",new_cfgs=lst,ylimit=0.14,logscalex=False,title=title,name='')
+        tput(x_vals,v_vals,summary,summary_client,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,xlab="Server Count",new_cfgs=lst,logscalex=False,title=title,name='')
 
 
-
-def tpcc_scaling_whset():
-    wl = 'TPCC'
-    nnodes = [1,2,4,8]#,16,32,64]
-    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP','CALVIN']
-    nalgos=['NO_WAIT','WAIT_DIE','OCC','MAAT']
-    npercpay=[0.0,1.0]
-    wh=128
-    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PERC_PAYMENT","NUM_WH"]
-    exp = [[wl,n,cc,pp,wh] for pp,n,cc in itertools.product(npercpay,nnodes,nalgos)]
-    exp = exp + [[wl,n,cc,pp,wh*n] for pp,n,cc in itertools.product(npercpay,nnodes,nalgos)]
-    return fmt,exp
 ##############################
 ##############################
 
@@ -738,6 +854,8 @@ experiment_map = {
     'network_test':network_test,
     'ycsb_scaling': ycsb_scaling,
     'ycsb_scaling_plot': ycsb_scaling_plot,
+    'ycsb_writes': ycsb_writes,
+    'ycsb_writes_plot': ycsb_writes_plot,
     'ycsb_skew': ycsb_skew,
     'ycsb_skew_plot': ycsb_skew_plot,
     'isolation_levels': isolation_levels,
@@ -746,14 +864,25 @@ experiment_map = {
     'ycsb_partitions_plot': ycsb_partitions_plot,
     'ycsb_load': ycsb_load,
     'tpcc_scaling': tpcc_scaling,
-#    'tpcc_scaling_plot': tpcc_scaling_plot,
-#    'tpcc_scaling_whset_plot': tpcc_scaling_whset_plot,
+    'tpcc_scaling_plot': tpcc_scaling_plot,
+    'tpcc_scaling2': tpcc_scaling2,
+    'tpcc_scaling2_plot': tpcc_scaling2_plot,
+    'tpcc_scaling_whset': tpcc_scaling_whset,
+    'tpcc_scaling_whset_plot': tpcc_scaling_whset_plot,
     'test': test,
     'test_plot': test_plot,
     'test2': test2,
     'test2_plot': test2_plot,
     'network_sweep': network_sweep,
     'network_sweep_plot': network_sweep_plot,
+    'ppr_ycsb_scaling': ycsb_scaling,
+    'ppr_ycsb_scaling_plot': ppr_ycsb_scaling_plot,
+    'ppr_ycsb_skew': ycsb_skew,
+    'ppr_ycsb_skew_plot': ppr_ycsb_skew_plot,
+    'ppr_isolation_levels': isolation_levels,
+    'ppr_isolation_levels_plot': ppr_isolation_levels_plot,
+    'ppr_tpcc_scaling': tpcc_scaling,
+    'ppr_tpcc_scaling_plot': ppr_tpcc_scaling_plot,
 }
 
 

@@ -571,11 +571,15 @@ def plot_prep(nexp,nfmt,x_name,v_name,extras={},constants={}):
     x_vals = []
     v_vals = []
     exp = [list(e) for e in nexp]
+    print(len(exp))
     fmt = list(nfmt)
+    print(fmt)
     for x in constants.keys():
+        print("Removing exps w/o {}: {}".format(x,constants[x]))
         for e in exp[:]:
             if e[fmt.index(x)] != constants[x]:
                 exp.remove(e)
+                print("Removed {} ( {} vs {})".format(e,e[fmt.index(x)],constants[x]))
     for x in extras.keys():
         if x not in fmt: 
             del extras[x]
@@ -611,8 +615,10 @@ def plot_prep(nexp,nfmt,x_name,v_name,extras={},constants={}):
 #        fmt.remove(v_name)
     x_vals = list(set(x_vals))
     x_vals.sort()
+    print(x_vals)
     v_vals = list(set(v_vals))
     v_vals.sort()
+    print(v_vals)
     exp.sort()
     exp = list(k for k,_ in itertools.groupby(exp))
 #    assert(len(exp)==1)
