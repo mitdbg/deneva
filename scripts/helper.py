@@ -17,6 +17,7 @@ CONFIG_PARAMS = [
     "ISOLATION_LEVEL",
     "YCSB_ABORT_MODE",
     "LOGGING"
+    "NETWORK_DELAY"
 #    "SHMEM_ENV"
     ]
 

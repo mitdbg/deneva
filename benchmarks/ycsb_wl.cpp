@@ -152,12 +152,17 @@ void * YCSBWorkload::init_table_slice() {
 	uint64_t slice_size = g_synth_table_size / g_init_parallelism;
 	for (uint64_t key = slice_size * tid; 
 			key < slice_size * (tid + 1); 
-			key ++
+			//key ++
 	) {
-    if(GET_NODE_ID(key_to_part(key)) != g_node_id)
+    if(GET_NODE_ID(key_to_part(key)) != g_node_id) {
+      ++key;
       continue;
+    }
 
     ++key_cnt;
+    if(key_cnt % 500000 == 0) {
+      printf("Thd %d inserted %ld keys %f\n",tid,key_cnt,simulation->seconds_from_start(get_sys_clock()));
+    }
 //		printf("tid=%d. key=%ld\n", tid, key);
 		row_t * new_row = NULL;
 		uint64_t row_id;
@@ -167,9 +172,10 @@ void * YCSBWorkload::init_table_slice() {
 //		uint64_t value = rand();
 		uint64_t primary_key = key;
 		new_row->set_primary_key(primary_key);
+#if SIM_FULL_ROW
 		new_row->set_value(0, &primary_key,sizeof(uint64_t));
-		Catalog * schema = the_table->get_schema();
 		
+		Catalog * schema = the_table->get_schema();
 		for (UInt32 fid = 0; fid < schema->get_field_cnt(); fid ++) {
 //			int field_size = schema->get_field_size(fid);
 //			char value[field_size];
@@ -178,6 +184,7 @@ void * YCSBWorkload::init_table_slice() {
 			char value[6] = "hello";
 			new_row->set_value(fid, value,sizeof(value));
 		}
+#endif
 
 		itemid_t * m_item =
 			(itemid_t *) mem_allocator.alloc( sizeof(itemid_t));
@@ -189,6 +196,7 @@ void * YCSBWorkload::init_table_slice() {
 		
 		rc = the_index->index_insert(idx_key, m_item, part_id);
 		assert(rc == RCOK);
+    key += g_part_cnt;
 	}
   printf("Thd %d inserted %ld keys\n",tid,key_cnt);
 	return NULL;

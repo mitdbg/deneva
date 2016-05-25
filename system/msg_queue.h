@@ -43,6 +43,7 @@ private:
  //LockfreeQueue m_queue;
 // This is close to max capacity for boost
   boost::lockfree::queue<msg_entry*> ** m_queue;
+  std::vector<msg_entry*> sthd_m_cache;
   uint64_t ** ctr;
 
 };

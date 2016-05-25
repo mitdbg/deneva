@@ -81,7 +81,7 @@
 #define HEADER_SIZE sizeof(uint32_t)*2 // in bits 
 #define MSG_TIMEOUT 5000000000UL // in ns
 #define NETWORK_TEST false
-#define NETWORK_DELAY 0UL
+#define NETWORK_DELAY 10UL
 
 #define MAX_QUEUE_LEN NODE_CNT * 2
 
@@ -96,7 +96,7 @@
 // WAIT_DIE, NO_WAIT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, OCC, VLL, CALVIN, MAAT
 #define CC_ALG TIMESTAMP
 #define ISOLATION_LEVEL SERIALIZABLE
-#define YCSB_ABORT_MODE false
+#define YCSB_ABORT_MODE true
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER         false

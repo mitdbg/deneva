@@ -94,6 +94,12 @@ int main(int argc, char* argv[])
 	tport_man.init();
   printf("Done\n");
   fflush(stdout);
+  printf("Initializing simulation... ");
+  fflush(stdout);
+  simulation = new SimManager;
+  simulation->init();
+  printf("Done\n");
+  fflush(stdout);
 	Workload * m_wl;
 	switch (WORKLOAD) {
 		case YCSB :
@@ -106,11 +112,6 @@ int main(int argc, char* argv[])
 	m_wl->init();
 	printf("Workload initialized!\n");
   fflush(stdout);
-  printf("Initializing simulation... ");
-  fflush(stdout);
-  simulation = new SimManager;
-  simulation->init();
-  printf("Done\n");
 #if NETWORK_TEST
 	tport_man.init(g_node_id,m_wl);
 	sleep(3);
@@ -264,6 +265,7 @@ int main(int argc, char* argv[])
 #endif
 	// spawn and run txns again.
 	starttime = get_server_clock();
+  simulation->run_starttime = starttime;
 
   uint64_t id = 0;
 	for (uint64_t i = 0; i < wthd_cnt; i++) {

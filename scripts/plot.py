@@ -56,6 +56,8 @@ for arg in sys.argv[1:]:
     last_arg = arg
 
 result_dir = PATH + "/../results/"
+result_dir = PATH + "/../results/plotting_results_0524/"
+#result_dir = PATH + "/../results/ec2_results_0524/"
 #result_dir = PATH + "/../results/sigmod_results/"
 #result_dir = PATH + "/../results/1108_results/"
 #result_dir = PATH + "/../results/1027_ec2_full_experiments/"
@@ -220,7 +222,8 @@ for exp in exps:
 #                print("Pre-Merge:")
 #                pp.pprint(s)
 #                pp.pprint(s2)
-#                write_breakdown_file(output_f,s,s2)
+                if nnodes == 64:
+                    write_breakdown_file(output_f,s,s2)
                 s = merge_results(s,exp_cnt,drop,nnodes)
                 s2 = merge_results(s2,exp_cnt,drop,nclients)
                 summary[output_f] = s

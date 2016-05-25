@@ -314,8 +314,8 @@ def tput(xval,vval,summary,summary_cl,
         ylimit=0,
         logscale=False,
         logscalex=False,
-#        legend=False,
-        legend=True,
+        legend=False,
+#        legend=True,
         ):
     global plot_cnt
     tpt = {}
@@ -399,6 +399,8 @@ def tput(xval,vval,summary,summary_cl,
             # System Throughput: total txn count / average of all node's run time
             # Per Node Throughput: avg txn count / average of all node's run time
             # Per txn latency: total of all node's run time / total txn count
+#FIXME
+#            avg_run_time = 60
             tpt[_v][xi] = (tot_txn_cnt/avg_run_time/1000)
             pntpt[_v][xi] = (tot_txn_cnt/avg_run_time/nnodes)
             print("{} {} TTC {} Avg {}".format(_v,xi,tot_txn_cnt,avg_run_time))
@@ -412,6 +414,8 @@ def tput(xval,vval,summary,summary_cl,
 #    bbox = [0.8,0.35]
     bbox = [1.0,0.95]
     base = 2
+    if xname == 'TXN_WRITE_PERC':
+        _xval = [int(x*100) for x in _xval]
     if xname == 'ACCESS_PERC':
         _xval = [int(x*100) for x in _xval]
     if xname == 'NETWORK_DELAY':

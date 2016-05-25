@@ -32,6 +32,8 @@ void MessageQueue::init() {
     ctr[i] = (uint64_t*) mem_allocator.align_alloc(sizeof(uint64_t));
     *ctr[i] = i % g_thread_cnt;
   }
+  for(uint64_t i = 0; i < g_this_send_thread_cnt;i++)
+    sthd_m_cache.push_back(NULL);
 }
 
 void MessageQueue::enqueue(uint64_t thd_id, Message * msg,uint64_t dest) {
@@ -64,9 +66,17 @@ uint64_t MessageQueue::dequeue(uint64_t thd_id, Message *& msg) {
   uint64_t dest = UINT64_MAX;
   uint64_t mtx_time_start = get_sys_clock();
   bool valid = false;
+#if NETWORK_DELAY > 0
+  entry = sthd_m_cache[thd_id % g_this_send_thread_cnt];
+  if(entry)
+    valid = true;
+  else
+    valid = m_queue[thd_id%g_this_send_thread_cnt]->pop(entry);
+#else
   //uint64_t ctr_id = thd_id % g_this_send_thread_cnt;
   //uint64_t start_ctr = *ctr[ctr_id];
   valid = m_queue[thd_id%g_this_send_thread_cnt]->pop(entry);
+#endif
   /*
   while(!valid && !simulation->is_done()) {
     ++(*ctr[ctr_id]);
@@ -80,9 +90,19 @@ uint64_t MessageQueue::dequeue(uint64_t thd_id, Message *& msg) {
   INC_STATS(thd_id,mtx[4],get_sys_clock() - mtx_time_start);
   uint64_t curr_time = get_sys_clock();
   if(valid) {
+    assert(entry);
     msg = entry->msg;
     dest = entry->dest;
     assert(dest < g_total_node_cnt);
+#if NETWORK_DELAY > 0
+    if(get_sys_clock() - entry->starttime < NETWORK_DELAY) {
+      sthd_m_cache[thd_id%g_this_send_thread_cnt] = entry;
+      INC_STATS(thd_id,mtx[5],get_sys_clock() - curr_time);
+      return UINT64_MAX;
+    } else {
+      sthd_m_cache[thd_id%g_this_send_thread_cnt] = NULL;
+    }
+#endif
     DEBUG("MQ Dequeue %ld\n",dest)
     INC_STATS(thd_id,msg_queue_delay_time,curr_time - entry->starttime);
     INC_STATS(thd_id,msg_queue_cnt,1);

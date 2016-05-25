@@ -43,7 +43,7 @@ STRNOW=NOW.strftime("%Y%m%d-%H%M%S")
 os.chdir('../..')
 
 #MAX_TIME_PER_EXP = 60 * 2   # in seconds
-MAX_TIME_PER_EXP = 60 * 7   # in seconds
+MAX_TIME_PER_EXP = 60 * 10   # in seconds
 
 EXECUTE_EXPS = True
 SKIP = False

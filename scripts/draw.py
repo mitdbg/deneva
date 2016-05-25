@@ -450,18 +450,19 @@ def draw_line(fname, data, xticks,
 
     savefig('../figs/' + fname +'.pdf', bbox_inches='tight')
     plt.close()
-#    fig = figure(figsize=((7.2, 0.4)))
-#    fig.legend(lines, linenames,bbox_to_anchor = (1,1), prop={'size':10},frameon=True,ncol=len(linenames))
-#    savefig('../figs/' + fname + 'legend.pdf')
-#    plt.close()
-#    fig = figure(figsize=((3.9, 0.6)))
-#    fig.legend(lines, linenames,bbox_to_anchor = (1,1), prop={'size':10},frameon=True,ncol=len(linenames)/2)
-#    savefig('../figs/' + fname + 'legend_half.pdf')
-#    plt.close()
-#    fig = figure(figsize=((4.2, 0.4)))
-#    fig.legend(lines, linenames,bbox_to_anchor = (1,1), prop={'size':10},frameon=True,ncol=len(linenames))
-#    savefig('../figs/' + fname + 'legend.pdf')
-#    plt.close()
+    if not legend:
+        fig = figure(figsize=((7.2, 0.4)))
+        fig.legend(lines, linenames,bbox_to_anchor = (1,1), prop={'size':10},frameon=True,ncol=len(linenames))
+        savefig('../figs/' + 'legend.pdf')
+        plt.close()
+        fig = figure(figsize=((3.9, 0.6)))
+        fig.legend(lines, linenames,bbox_to_anchor = (1,1), prop={'size':10},frameon=True,ncol=len(linenames)/2)
+        savefig('../figs/' + 'legend_half.pdf')
+        plt.close()
+#        fig = figure(figsize=((4.2, 0.4)))
+#        fig.legend(lines, linenames,bbox_to_anchor = (1,1), prop={'size':10},frameon=True,ncol=len(linenames))
+#        savefig('../figs/' + fname + 'legend.pdf')
+#        plt.close()
 
 def draw_bars_single(data, xlabels, 
         figname='stack', 

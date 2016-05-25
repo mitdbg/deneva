@@ -154,6 +154,7 @@ int main(int argc, char* argv[])
 	cpu_set_t cpus;
 	// spawn and run txns again.
 	starttime = get_server_clock();
+  simulation->run_starttime = starttime;
 
   uint64_t id = 0;
 	for (uint64_t i = 0; i < thd_cnt; i++) {

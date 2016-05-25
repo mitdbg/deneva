@@ -467,6 +467,7 @@ void TxnManager::release_last_row_lock() {
   assert(txn->row_cnt > 0);
   row_t * orig_r = txn->accesses[txn->row_cnt-1]->orig_row;
   orig_r->return_row(RCOK, RD, this, NULL);
+  txn->accesses[txn->row_cnt-1]->orig_row = NULL;
 }
 
 void TxnManager::cleanup_row(RC rc, uint64_t rid) {
@@ -488,6 +489,8 @@ void TxnManager::cleanup_row(RC rc, uint64_t rid) {
 #if ISOLATION_LEVEL == READ_COMMITTED
       if(type == WR) {
         orig_r->return_row(rc,type, this, txn->accesses[rid]->data);
+      } else {
+        assert(orig_r == NULL);
       }
 #else
 			orig_r->return_row(rc,type, this, txn->accesses[rid]->data);
