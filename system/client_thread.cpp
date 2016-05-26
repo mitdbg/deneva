@@ -108,8 +108,8 @@ RC ClientThread::run() {
 	for (uint64_t l = 0; l < g_servers_per_client; ++l)
 		printf("Txns sent to node %lu: %d\n", l+g_server_start_node, txns_sent[l]);
 
-  prog_time = get_sys_clock();
-  SET_STATS(get_thd_id(), total_runtime, prog_time - run_starttime); 
+  //prog_time = get_sys_clock();
+  //SET_STATS(get_thd_id(), total_runtime, prog_time - simulation->run_starttime); 
 
   printf("FINISH %ld:%ld\n",_node_id,_thd_id);
   fflush(stdout);
