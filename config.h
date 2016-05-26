@@ -9,7 +9,7 @@
 #define THREAD_CNT 4
 #define REM_THREAD_CNT THREAD_CNT
 #define SEND_THREAD_CNT THREAD_CNT
-#define CORE_CNT 8
+#define CORE_CNT 64
 // PART_CNT should be at least NODE_CNT
 #define PART_CNT NODE_CNT
 #define CLIENT_NODE_CNT NODE_CNT
@@ -74,14 +74,15 @@
 /***********************************************/
 #define TPORT_TYPE TCP
 #define TPORT_PORT 17000
-#define SET_AFFINITY true
+#define SET_AFFINITY false
 
 #define MAX_TPORT_NAME 128
 #define MSG_SIZE 128 // in bytes
 #define HEADER_SIZE sizeof(uint32_t)*2 // in bits 
 #define MSG_TIMEOUT 5000000000UL // in ns
 #define NETWORK_TEST false
-#define NETWORK_DELAY 10UL
+#define NETWORK_DELAY_TEST true
+#define NETWORK_DELAY 0UL
 
 #define MAX_QUEUE_LEN NODE_CNT * 2
 
@@ -94,9 +95,9 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, OCC, VLL, CALVIN, MAAT
-#define CC_ALG TIMESTAMP
+#define CC_ALG MAAT
 #define ISOLATION_LEVEL SERIALIZABLE
-#define YCSB_ABORT_MODE true
+#define YCSB_ABORT_MODE false
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER         false
@@ -349,8 +350,8 @@ extern TestCases          g_test_case;
 #define WARMUP_TIMER 1 * 60 * BILLION // ~1 minutes
 
 #define SEED 0
-#define SHMEM_ENV false
-#define ENVIRONMENT_EC2 true
+#define SHMEM_ENV true
+#define ENVIRONMENT_EC2 false
 
 #endif
 

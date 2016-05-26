@@ -16,8 +16,8 @@ CONFIG_PARAMS = [
     "TWOPL_LITE",
     "ISOLATION_LEVEL",
     "YCSB_ABORT_MODE",
-    "LOGGING"
-    "NETWORK_DELAY"
+    "LOGGING",
+    "NETWORK_DELAY_TEST"
 #    "SHMEM_ENV"
     ]
 
@@ -83,6 +83,7 @@ SHORTNAMES = {
     "PERC_PAYMENT":"PP",
     "ABORT_PENALTY":"PENALTY",
     "STRICT_PPT":"SPPT",
+    "NETWORK_DELAY_TEST":"NDT",
     "NETWORK_DELAY":"NDLY",
     "REPLICA_CNT":"RN",
 #    "SYNTH_TABLE_SIZE":"TBL",
@@ -91,6 +92,7 @@ SHORTNAMES = {
 
 stat_map = OrderedDict([
    ('total_runtime', []),
+   ('post_warmup_txn_cnt', []),
 
   # Execution
   ('tput', []),
@@ -649,6 +651,12 @@ def get_summary(sfile,summary={}):
                 prog_tmp = {}
                 process_results(prog_tmp,results)
                 prog.append(prog_tmp)
+                if int(prog_tmp["total_runtime"][0]) == 60:
+                    if "post_warmup_txn_cnt" not in summary.keys():
+                        summary["post_warmup_txn_cnt"] = [prog_tmp["txn_cnt"][0]]
+                    else:
+                        summary["post_warmup_txn_cnt"].append(prog_tmp["txn_cnt"][0])
+                    print("Warmup start: {}".format(summary["post_warmup_txn_cnt"]))
                 last_line = line
             if re.search("summary",line):
                 found = True

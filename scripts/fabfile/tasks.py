@@ -702,6 +702,7 @@ def run_exp_old(exps,network_test=False,delay=''):
     runfiles = {}
 
     for e in experiments:
+        print(e)
         cfgs = get_cfgs(fmt,e)
         
         output_fbase = get_outfile_name(cfgs,fmt,env.hosts)

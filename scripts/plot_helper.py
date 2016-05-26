@@ -385,8 +385,12 @@ def tput(xval,vval,summary,summary_cl,
                 tot_run_time = sum(s[cfgs]['total_runtime'])
                 tmp = 1
                 tot_txn_cnt = sum(s[cfgs]['txn_cnt'])
+                tot_txn_cnt = sum(s[cfgs]['txn_cnt']) - sum(s[cfgs]['post_warmup_txn_cnt'])
+#                tot_txn_cnt = sum(s[cfgs]['txn_cnt']) - sum(s[cfgs]["progress"][5]['txn_cnt'])
+                print("{} - {} -> {}".format(s[cfgs]['txn_cnt'],s[cfgs]['post_warmup_txn_cnt'],tot_txn_cnt))
                 tmp = 2
                 avg_run_time = avg(s[cfgs]['total_runtime'])
+                avg_run_time = 60
                 tmp = 3
 #FIXME
                 avg_txn_cnt = avg(s[cfgs]['txn_cnt'])
