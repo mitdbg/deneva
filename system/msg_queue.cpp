@@ -66,7 +66,7 @@ uint64_t MessageQueue::dequeue(uint64_t thd_id, Message *& msg) {
   uint64_t dest = UINT64_MAX;
   uint64_t mtx_time_start = get_sys_clock();
   bool valid = false;
-#if NETWORK_DELAY > 0
+#if NETWORK_DELAY_TEST
   entry = sthd_m_cache[thd_id % g_this_send_thread_cnt];
   if(entry)
     valid = true;
@@ -91,18 +91,22 @@ uint64_t MessageQueue::dequeue(uint64_t thd_id, Message *& msg) {
   uint64_t curr_time = get_sys_clock();
   if(valid) {
     assert(entry);
-    msg = entry->msg;
-    dest = entry->dest;
-    assert(dest < g_total_node_cnt);
-#if NETWORK_DELAY > 0
-    if(get_sys_clock() - entry->starttime < NETWORK_DELAY) {
+#if NETWORK_DELAY_TEST
+    if(ISSERVER && !ISCLIENTN(entry->dest) && (get_sys_clock() - entry->starttime) < g_network_delay) {
       sthd_m_cache[thd_id%g_this_send_thread_cnt] = entry;
       INC_STATS(thd_id,mtx[5],get_sys_clock() - curr_time);
       return UINT64_MAX;
     } else {
       sthd_m_cache[thd_id%g_this_send_thread_cnt] = NULL;
     }
+    if(ISSERVER && !ISCLIENTN(entry->dest)) {
+      INC_STATS(thd_id,mtx[38],1);
+      INC_STATS(thd_id,mtx[39],curr_time - entry->starttime);
+    }
 #endif
+    dest = entry->dest;
+    assert(dest < g_total_node_cnt);
+    msg = entry->msg;
     DEBUG("MQ Dequeue %ld\n",dest)
     INC_STATS(thd_id,msg_queue_delay_time,curr_time - entry->starttime);
     INC_STATS(thd_id,msg_queue_cnt,1);
