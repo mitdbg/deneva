@@ -92,7 +92,7 @@ uint64_t Transport::get_port_id(uint64_t src_node_id, uint64_t dest_node_id) {
   return port_id;
 }
 
-#if NETWORK_DELAY_TEST
+#if NETWORK_DELAY_TEST || !ENVIRONMENT_EC2
 uint64_t Transport::get_port_id(uint64_t src_node_id, uint64_t dest_node_id, uint64_t send_thread_id) {
   uint64_t port_id = 0;
   DEBUG("Calc port id %ld %ld %ld\n",src_node_id,dest_node_id,send_thread_id);
