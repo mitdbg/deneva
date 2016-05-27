@@ -29,7 +29,8 @@
 #include "message.h"
 
 void TxnTable::init() {
-  pool_size = g_inflight_max * g_node_cnt * 2 + 1;
+  //pool_size = g_inflight_max * g_node_cnt * 2 + 1;
+  pool_size = g_inflight_max + 1;
   DEBUG_M("TxnTable::init pool_node alloc\n");
   pool = (pool_node **) mem_allocator.align_alloc(sizeof(pool_node*) * pool_size);
   for(uint32_t i = 0; i < pool_size;i++) {

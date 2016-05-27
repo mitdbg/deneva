@@ -430,7 +430,7 @@ def tput(xval,vval,summary,summary_cl,
     if xname == 'LOAD_PER_SERVER':
         _xval = [float(x)*nnodes/1000 for x in _xval]
 #bbox = [0.7,0.9]
-    print("Created plot {}".format(name))
+    print("Created plot {} {}".format(name,_title))
     if logscalex:
         _xlab = _xlab + " (Log Scale)"
     _ylab= 'System Throughput\n(Thousand txn/s)'

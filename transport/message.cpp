@@ -927,6 +927,7 @@ uint64_t FinishMessage::get_size() {
 void FinishMessage::copy_from_txn(TxnManager * txn) {
   Message::mcopy_from_txn(txn);
   rc = txn->get_rc();
+  readonly = txn->query->readonly();
 #if CC_ALG == MAAT
   commit_timestamp = txn->get_commit_timestamp();
 #endif
@@ -944,7 +945,7 @@ void FinishMessage::copy_from_buf(char * buf) {
   uint64_t ptr = Message::mget_size();
   COPY_VAL(pid,buf,ptr);
   COPY_VAL(rc,buf,ptr);
-  COPY_VAL(ro,buf,ptr);
+  COPY_VAL(readonly,buf,ptr);
 #if CC_ALG == MAAT
   COPY_VAL(commit_timestamp,buf,ptr);
 #endif
@@ -956,7 +957,7 @@ void FinishMessage::copy_to_buf(char * buf) {
   uint64_t ptr = Message::mget_size();
   COPY_BUF(buf,pid,ptr);
   COPY_BUF(buf,rc,ptr);
-  COPY_BUF(buf,ro,ptr);
+  COPY_BUF(buf,readonly,ptr);
 #if CC_ALG == MAAT
   COPY_BUF(buf,commit_timestamp,ptr);
 #endif

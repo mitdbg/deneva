@@ -464,21 +464,24 @@ def malviya_plot(summary,summary_client):
 
 def test():
     wl = 'YCSB'
-    nalgos=['NO_WAIT','WAIT_DIE','OCC','MVCC','TIMESTAMP','CALVIN']
-    nalgos=['CALVIN']
-#    nalgos=['NO_WAIT','MVCC','OCC']
-# Network delay in ms
-    ndelay=[0,0.05,0.1,0.25,0.5,0.75,1,1.75,2.5,5,7.5,10,12.5,15,17.5,20,25,30,35,40,45,50]
-    ndelay = [int(n*1000000) for n in ndelay]
-    nnodes = [2]
-    txn_write_perc = [0.5]
+    nnodes = [1,2,4,8]
+#    nnodes = [64]
+    algos=['NO_WAIT']
+    base_table_size=2097152*8
+#    txn_write_perc = [0.5,1.0]
+    txn_write_perc = [0.0,0.5]
+    txn_write_perc = [0.0]
     tup_write_perc = [0.5]
     load = [10000]
     tcnt = [4]
-    skew = [0.6]
-    base_table_size=2097152*8
-    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","SYNTH_TABLE_SIZE","TUP_WRITE_PERC","TXN_WRITE_PERC","MAX_TXN_IN_FLIGHT","ZIPF_THETA","THREAD_CNT","NETWORK_DELAY_TEST","NETWORK_DELAY","SET_AFFINITY"]
-    exp = [[wl,n,algo,base_table_size*n,tup_wr_perc,txn_wr_perc,ld,sk,thr,"true",d,"false"] for thr,txn_wr_perc,tup_wr_perc,sk,ld,n,d,algo in itertools.product(tcnt,txn_write_perc,tup_write_perc,skew,load,nnodes,ndelay,nalgos)]
+#    skew = [0.0,0.6,0.7]
+    skew = [0.0,0.6,0.7]
+    skew = [0.0]
+    strict = [0,1]
+    strict = [1]
+    levels=["READ_UNCOMMITTED","READ_COMMITTED","SERIALIZABLE"]
+    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","SYNTH_TABLE_SIZE","TUP_WRITE_PERC","TXN_WRITE_PERC","MAX_TXN_IN_FLIGHT","ZIPF_THETA","THREAD_CNT","STRICT_PPT","PART_PER_TXN","ISOLATION_LEVEL"]
+    exp = [[wl,n,algo,base_table_size*n,tup_wr_perc,txn_wr_perc,ld,sk,thr,sppt,2,ilvl] for thr,txn_wr_perc,tup_wr_perc,sk,ld,n,algo,ilvl,sppt in itertools.product(tcnt,txn_write_perc,tup_write_perc,skew,load,nnodes,algos,levels,strict)]
     return fmt,exp
 
 def test2():
@@ -499,32 +502,35 @@ def test_plot(summary,summary_client):
     from helper import plot_prep
     from plot_helper import tput,time_breakdown
     nfmt,nexp = test()
-    x_name = "CC_ALG"
     x_name = "NODE_CNT"
-    v_name = "TXN_WRITE_PERC"
-    v_name = "CC_ALG"
-#    tput_setup(summary,summary_client,nfmt,nexp,x_name,v_name)
-#    skew = [0.6,0.7]
-#    txn_write_perc = [0.5,1.0]
-    txn_write_perc = [0.0,0.25,0.5,0.75,1.0] # TXN_WRITE_PERC
-    txn_write_perc = [0.0,0.5,1.0] # TXN_WRITE_PERC
-    txn_write_perc = [0.5] # TXN_WRITE_PERC
-    skew = [0.6]
-    skew = [0.6,0.7]
-    nmodes=['true']
-    nmodes=['true','false']
+    v_name = "ISOLATION_LEVEL"
     title = ""
     const={}
 #    x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants=const)
+#    tput(x_vals,v_vals,summary,summary_client,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,xlab="Server Count",new_cfgs=lst,logscalex=True)
+#    tput_setup(summary,summary_client,nfmt,nexp,x_name,v_name)
+    skew = [0.0,0.6,0.7]
+    txn_write_perc = [0.0,0.5]
+    strict = [0,1]
+#    txn_write_perc = [0.5] # TXN_WRITE_PERC
+#    skew = [0.6]
+#    nmodes=['false']
+#    x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants=const)
 #    tput(x_vals,v_vals,summary,summary_client,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,xlab="Server Count",new_cfgs=lst,ylimit=140,logscalex=False,title=title)
 #    for sk,mode in itertools.product(skew,nmodes):
-    for sk,mode,wr in itertools.product(skew,nmodes,txn_write_perc):
-        const={"ZIPF_THETA":sk,"YCSB_ABORT_MODE":mode,"TXN_WRITE_PERC":wr}
-        title = ""
-        for c in const.keys():
-            title += "{} {},".format(SHORTNAMES[c],const[c])
-        x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants=const)
-        tput(x_vals,v_vals,summary,summary_client,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,xlab="Server Count",new_cfgs=lst,ylimit=140,logscalex=False,title=title)
+    for sk,s,wr in itertools.product(skew,strict,txn_write_perc):
+        try:
+            const={"ZIPF_THETA":sk,"STRICT_PPT":s,"TXN_WRITE_PERC":wr}
+            title = ""
+            for c in const.keys():
+                try:
+                    title += "{} {},".format(SHORTNAMES[c],const[c])
+                except KeyError:
+                    title += "{} {},".format(c,const[c])
+            x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants=const)
+            tput(x_vals,v_vals,summary,summary_client,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,xlab="Server Count",new_cfgs=lst,ylimit=140,logscalex=False,title=title)
+        except IndexError:
+            continue
 
 def test2_plot(summary,summary_client):
     nfmt,nexp = test2()
@@ -740,7 +746,7 @@ def breakdown_setup(summary,nfmt,nexp,x_name,key_names=[],norm=False
 def network_sweep():
     wl = 'YCSB'
     nalgos=['NO_WAIT','WAIT_DIE','MVCC','MAAT','TIMESTAMP','CALVIN']
-    nalgos=['MAAT']
+#    nalgos=['MAAT']
 #    nalgos=['NO_WAIT','MVCC','OCC']
 # Network delay in ms
     ndelay=[0,0.05,0.1,0.25,0.5,0.75,1,1.75,2.5,5,7.5,10,12.5,15,17.5,20,25,30,35,40,45,50]
@@ -873,6 +879,7 @@ configs = {
     "PART_PER_TXN": "PART_CNT",
     "MAX_TXN_IN_FLIGHT": 100,
     "NETWORK_DELAY": '0UL',
+    "NETWORK_DELAY_TEST": 'false',
     "DONE_TIMER": "1 * 60 * BILLION // ~1 minutes",
 #    "DONE_TIMER": "1 * 10 * BILLION // ~1 minutes",
     "WARMUP_TIMER": "1 * 60 * BILLION // ~1 minutes",

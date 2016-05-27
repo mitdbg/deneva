@@ -56,7 +56,7 @@ for arg in sys.argv[1:]:
     last_arg = arg
 
 result_dir = PATH + "/../results/"
-result_dir = PATH + "/../results/plotting_results_0524/"
+#result_dir = PATH + "/../results/plotting_results_0524/"
 #result_dir = PATH + "/../results/ec2_results_0524/"
 #result_dir = PATH + "/../results/sigmod_results/"
 #result_dir = PATH + "/../results/1108_results/"

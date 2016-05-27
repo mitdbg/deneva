@@ -175,7 +175,8 @@ RC Maat::find_bound(TxnManager * txn) {
 }
 
 void TimeTable::init() {
-  table_size = g_inflight_max * g_node_cnt * 2 + 1;
+  //table_size = g_inflight_max * g_node_cnt * 2 + 1;
+  table_size = g_inflight_max + 1;
   DEBUG_M("TimeTable::init table alloc\n");
   table = (TimeTableNode*) mem_allocator.alloc(sizeof(TimeTableNode) * table_size);
   for(uint64_t i = 0; i < table_size;i++) {

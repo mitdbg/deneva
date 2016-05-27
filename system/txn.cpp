@@ -290,8 +290,8 @@ RC TxnManager::start_commit() {
       rc = WAIT_REM;
     } else {
       send_finish_messages();
-      commit();
-      rc = WAIT_REM;
+      rsp_cnt = 0;
+      rc = commit();
     }
   } else { // is not multi-part
     rc = validate();
