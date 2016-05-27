@@ -78,7 +78,13 @@ private:
 	void get_latch(BucketHeader * bucket);
 	void release_latch(BucketHeader * bucket);
 	// TODO implement more complex hash function
-	uint64_t hash(idx_key_t key) {	return key % _bucket_cnt_per_part; }
+	uint64_t hash(idx_key_t key) {	
+#if WORKLOAD == YCSB
+    return (key / g_part_cnt) % _bucket_cnt_per_part; 
+#else
+    return key % _bucket_cnt_per_part; 
+#endif
+  }
 	
 	BucketHeader ** 	_buckets;
 	uint64_t	 		_bucket_cnt;

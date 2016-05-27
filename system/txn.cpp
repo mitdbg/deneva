@@ -522,6 +522,8 @@ void TxnManager::cleanup(RC rc) {
   uint64_t row_cnt = txn->accesses.get_count();
   assert(txn->accesses.get_count() == txn->row_cnt);
   assert((WORKLOAD == YCSB && row_cnt <= g_req_per_query) || (WORKLOAD == TPCC && row_cnt <= g_max_items_per_txn*2 + 3));
+
+
   DEBUG("Cleanup %ld %ld\n",get_txn_id(),row_cnt);
 	for (int rid = row_cnt - 1; rid >= 0; rid --) {
     cleanup_row(rc,rid);

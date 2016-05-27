@@ -111,6 +111,7 @@ void Stats_thd::clear() {
   worker_idle_time=0;
   worker_activate_txn_time=0;
   worker_deactivate_txn_time=0;
+  worker_release_msg_time=0;
   worker_process_time=0;
   worker_process_cnt=0;
   for(uint64_t i = 0; i < NO_MSG; i ++) {
@@ -539,12 +540,14 @@ void Stats_thd::print(FILE * outf) {
     ",worker_idle_time=%f"
     ",worker_activate_txn_time=%f"
     ",worker_deactivate_txn_time=%f"
+    ",worker_release_msg_time=%f"
     ",worker_process_time=%f"
     ",worker_process_cnt=%ld"
     ",worker_process_avg_time=%f"
     ,worker_idle_time / BILLION
     ,worker_activate_txn_time / BILLION
     ,worker_deactivate_txn_time / BILLION
+    ,worker_release_msg_time / BILLION
     ,worker_process_time / BILLION
     ,worker_process_cnt
     ,worker_process_avg_time / BILLION
@@ -925,6 +928,7 @@ void Stats_thd::combine(Stats_thd * stats) {
   worker_idle_time+=stats->worker_idle_time;
   worker_activate_txn_time+=stats->worker_activate_txn_time;
   worker_deactivate_txn_time+=stats->worker_deactivate_txn_time;
+  worker_release_msg_time+=stats->worker_release_msg_time;
   worker_process_time+=stats->worker_process_time;
   worker_process_cnt+=stats->worker_process_cnt;
   for(uint64_t i = 0; i < NO_MSG; i ++) {

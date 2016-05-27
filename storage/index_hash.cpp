@@ -137,6 +137,7 @@ void BucketHeader::insert_item(idx_key_t key,
 		itemid_t * item, 
 		int part_id) 
 {
+
 	BucketNode * cur_node = first_node;
 	BucketNode * prev_node = NULL;
 	while (cur_node != NULL) {
@@ -171,9 +172,10 @@ void BucketHeader::read_item(idx_key_t key, itemid_t * &item)
 			break;
 		cur_node = cur_node->next;
 	}
-	M_ASSERT_V(cur_node != NULL, "Key does not exist! %ld\n",key);
+	//M_ASSERT_V(cur_node != NULL, "Key does not exist! %ld\n",key);
 	//M_ASSERT(cur_node != NULL, "Key does not exist!");
 	//M_ASSERT(cur_node->key == key, "Key does not exist!");
+  assert(cur_node != NULL);
   assert(cur_node->key == key);
 	item = cur_node->items;
 }

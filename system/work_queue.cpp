@@ -170,6 +170,9 @@ void QWorkQueue::enqueue(uint64_t thd_id, Message * msg,bool busy) {
   }
   INC_STATS(thd_id,mtx[13],get_sys_clock() - mtx_wait_starttime);
 
+  if(busy) {
+    INC_STATS(thd_id,work_queue_conflict_cnt,1);
+  }
   INC_STATS(thd_id,work_queue_enqueue_time,get_sys_clock() - starttime);
   INC_STATS(thd_id,work_queue_enq_cnt,1);
 }
