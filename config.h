@@ -96,7 +96,7 @@
 /***********************************************/
 // WAIT_DIE, NO_WAIT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, OCC, VLL, CALVIN, MAAT
 #define CC_ALG NO_WAIT
-#define ISOLATION_LEVEL SERIALIZABLE
+#define ISOLATION_LEVEL READ_UNCOMMITTED
 #define YCSB_ABORT_MODE false
 
 // all transactions acquire tuples according to the primary key order.

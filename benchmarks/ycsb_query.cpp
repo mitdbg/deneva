@@ -320,7 +320,7 @@ BaseQuery * YCSBQueryGenerator::gen_requests_zipf(uint64_t home_partition_id, Wo
       partition_id = home_partition_id;;
     } else {
       partition_id = mrand->next() % g_part_cnt;
-        if(g_strict_ppt) {
+        if(g_strict_ppt && g_part_per_txn <= g_part_cnt) {
           while( (partitions_accessed.size() < g_part_per_txn &&  partitions_accessed.count(partition_id) > 0) || 
               (partitions_accessed.size() == g_part_per_txn &&  partitions_accessed.count(partition_id) == 0)) {
             partition_id = mrand->next() % g_part_cnt;

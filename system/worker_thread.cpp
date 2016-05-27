@@ -363,12 +363,25 @@ RC WorkerThread::process_rqry(Message * msg) {
           assert(time_table.get_state(get_thd_id(),txn_man->get_txn_id()) == MAAT_RUNNING);
 #endif
 
+#if CC_ALG == NO_WAIT
+#if WORKLOAD==YCSB
+  INC_STATS(get_thd_id(),mtx[30],((YCSBQueryMessage*)msg)->requests.size());
+#endif
+  uint64_t prof_starttime = get_sys_clock();
+#endif
   rc = txn_man->run_txn();
+#if CC_ALG == NO_WAIT
+  INC_STATS(get_thd_id(),mtx[31],get_sys_clock() - prof_starttime);
+  prof_starttime = get_sys_clock();
+#endif
 
   // Send response
   if(rc != WAIT) {
     msg_queue.enqueue(get_thd_id(),Message::create_message(txn_man,RQRY_RSP),txn_man->return_id);
   }
+#if CC_ALG == NO_WAIT
+  INC_STATS(get_thd_id(),mtx[32],get_sys_clock() - prof_starttime);
+#endif
   return rc;
 }
 

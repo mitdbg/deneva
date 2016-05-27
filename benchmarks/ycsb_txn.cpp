@@ -211,11 +211,26 @@ RC YCSBTxnManager::run_ycsb_0(ycsb_request * req,row_t *& row_local) {
 		int part_id = _wl->key_to_part( req->key );
 		access_t type = req->acctype;
 	  itemid_t * m_item;
+
+#if CC_ALG == NO_WAIT
+  uint64_t prof_starttime = get_sys_clock();
+#endif
 		m_item = index_read(_wl->the_index, req->key, part_id);
 
+#if CC_ALG == NO_WAIT
+  if(!IS_LOCAL(txn->txn_id))
+    INC_STATS(get_thd_id(),mtx[33],get_sys_clock() - prof_starttime);
+  prof_starttime = get_sys_clock();
+#endif
 		row_t * row = ((row_t *)m_item->location);
 			
 		rc = get_row(row, type,row_local);
+
+#if CC_ALG == NO_WAIT
+  if(!IS_LOCAL(txn->txn_id))
+    INC_STATS(get_thd_id(),mtx[34],get_sys_clock() - prof_starttime);
+  prof_starttime = get_sys_clock();
+#endif
     return rc;
 
 }

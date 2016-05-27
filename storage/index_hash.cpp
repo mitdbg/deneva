@@ -20,14 +20,33 @@
 	
 RC IndexHash::init(uint64_t bucket_cnt) {
 	_bucket_cnt = bucket_cnt;
-	//_bucket_cnt_per_part = bucket_cnt;
-	_bucket_cnt_per_part = bucket_cnt / g_part_cnt;
-	_buckets = new BucketHeader * [g_part_cnt];
+	_bucket_cnt_per_part = bucket_cnt;
+	//_bucket_cnt_per_part = bucket_cnt / g_part_cnt;
+	//_buckets = new BucketHeader * [g_part_cnt];
+	_buckets = new BucketHeader * [1];
+  _buckets[0] = (BucketHeader *) mem_allocator.alloc(sizeof(BucketHeader) * _bucket_cnt_per_part);
+  uint64_t buckets_init_cnt = 0;
+  for (UInt32 n = 0; n < _bucket_cnt_per_part; n ++) {
+			_buckets[0][n].init();
+      ++buckets_init_cnt;
+  }
+  /*
 	for (UInt32 i = 0; i < g_part_cnt; i++) {
 		_buckets[i] = (BucketHeader *) mem_allocator.alloc(sizeof(BucketHeader) * _bucket_cnt_per_part);
-		for (UInt32 n = 0; n < _bucket_cnt_per_part; n ++)
+
+  // TODO: is this ok for tpcc?
+#if WORKLOAD == YCSB
+    if((i % g_node_cnt) != g_node_id)
+      continue;
+#endif
+
+		for (UInt32 n = 0; n < _bucket_cnt_per_part; n ++) {
 			_buckets[i][n].init();
+      ++buckets_init_cnt;
+    }
 	}
+  */
+  printf("Index init with %ld buckets\n",buckets_init_cnt);
 	return RCOK;
 }
 
@@ -58,7 +77,8 @@ RC IndexHash::index_insert(idx_key_t key, itemid_t * item, int part_id) {
 	RC rc = RCOK;
 	uint64_t bkt_idx = hash(key);
 	assert(bkt_idx < _bucket_cnt_per_part);
-	BucketHeader * cur_bkt = &_buckets[part_id][bkt_idx];
+	//BucketHeader * cur_bkt = &_buckets[part_id][bkt_idx];
+	BucketHeader * cur_bkt = &_buckets[0][bkt_idx];
 	// 1. get the ex latch
 	get_latch(cur_bkt);
 	
@@ -73,7 +93,8 @@ RC IndexHash::index_insert(idx_key_t key, itemid_t * item, int part_id) {
 RC IndexHash::index_read(idx_key_t key, itemid_t * &item, int part_id) {
 	uint64_t bkt_idx = hash(key);
 	assert(bkt_idx < _bucket_cnt_per_part);
-	BucketHeader * cur_bkt = &_buckets[part_id][bkt_idx];
+	//BucketHeader * cur_bkt = &_buckets[part_id][bkt_idx];
+	BucketHeader * cur_bkt = &_buckets[0][bkt_idx];
 	RC rc = RCOK;
 	// 1. get the sh latch
 //	get_latch(cur_bkt);
@@ -90,7 +111,8 @@ RC IndexHash::index_read(idx_key_t key, itemid_t * &item,
 						int part_id, int thd_id) {
 	uint64_t bkt_idx = hash(key);
 	assert(bkt_idx < _bucket_cnt_per_part);
-	BucketHeader * cur_bkt = &_buckets[part_id][bkt_idx];
+	//BucketHeader * cur_bkt = &_buckets[part_id][bkt_idx];
+	BucketHeader * cur_bkt = &_buckets[0][bkt_idx];
 	RC rc = RCOK;
 	// 1. get the sh latch
 //	get_latch(cur_bkt);
@@ -151,6 +173,7 @@ void BucketHeader::read_item(idx_key_t key, itemid_t * &item)
 	}
 	M_ASSERT_V(cur_node != NULL, "Key does not exist! %ld\n",key);
 	//M_ASSERT(cur_node != NULL, "Key does not exist!");
-	M_ASSERT(cur_node->key == key, "Key does not exist!");
+	//M_ASSERT(cur_node->key == key, "Key does not exist!");
+  assert(cur_node->key == key);
 	item = cur_node->items;
 }

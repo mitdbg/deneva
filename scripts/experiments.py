@@ -480,6 +480,7 @@ def test():
     strict = [0,1]
     strict = [1]
     levels=["READ_UNCOMMITTED","READ_COMMITTED","SERIALIZABLE"]
+    levels=["READ_UNCOMMITTED"]
     fmt = ["WORKLOAD","NODE_CNT","CC_ALG","SYNTH_TABLE_SIZE","TUP_WRITE_PERC","TXN_WRITE_PERC","MAX_TXN_IN_FLIGHT","ZIPF_THETA","THREAD_CNT","STRICT_PPT","PART_PER_TXN","ISOLATION_LEVEL"]
     exp = [[wl,n,algo,base_table_size*n,tup_wr_perc,txn_wr_perc,ld,sk,thr,sppt,2,ilvl] for thr,txn_wr_perc,tup_wr_perc,sk,ld,n,algo,ilvl,sppt in itertools.product(tcnt,txn_write_perc,tup_write_perc,skew,load,nnodes,algos,levels,strict)]
     return fmt,exp
@@ -528,7 +529,7 @@ def test_plot(summary,summary_client):
                 except KeyError:
                     title += "{} {},".format(c,const[c])
             x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants=const)
-            tput(x_vals,v_vals,summary,summary_client,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,xlab="Server Count",new_cfgs=lst,ylimit=140,logscalex=False,title=title)
+            tput(x_vals,v_vals,summary,summary_client,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,xlab="Server Count",new_cfgs=lst,logscalex=False,title=title)
         except IndexError:
             continue
 

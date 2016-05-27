@@ -762,9 +762,10 @@ def run_exp_old(exps,network_test=False,delay=''):
                         # If full, execute all exps in batch and reset everything
                         full = (batch_size + ntotal) > len(env.hosts)
                         if full:
-                            if env.cluster != 'istc' and not env.dry_run:
+#FIXME: add back in sync clocks
+#                            if env.cluster != 'istc' and not env.dry_run:
                                 # Sync clocks before each experiment
-                                execute(sync_clocks)
+#                                execute(sync_clocks)
                             with color():
                                 puts("Batch is full, deploying batch...{}/{}".format(batch_size,len(good_hosts)),show_prefix=True)
                             with color("debug"):
@@ -827,10 +828,11 @@ def run_exp_old(exps,network_test=False,delay=''):
                         puts("Deploying last batch...{}/{}".format(batch_size,len(good_hosts)),show_prefix=True)
                     else:
                         print("Deploying: {}".format(output_f))
-                    if env.cluster != 'istc':
+#FIXME: add back in sync clocks
+#                    if env.cluster != 'istc':
                         # Sync clocks before each experiment
-                        print("Syncing Clocks...")
-                        execute(sync_clocks)
+#                        print("Syncing Clocks...")
+#                        execute(sync_clocks)
 
 
                     if delay != '':
