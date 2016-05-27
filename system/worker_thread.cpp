@@ -227,9 +227,11 @@ RC WorkerThread::run() {
     INC_STATS(get_thd_id(),worker_deactivate_txn_time,get_sys_clock() - ready_starttime);
 
     // delete message
+    ready_starttime = get_sys_clock();
 #if CC_ALG != CALVIN
     msg->release();
 #endif
+    INC_STATS(get_thd_id(),worker_release_msg_time,get_sys_clock() - ready_starttime);
 
 	}
   printf("FINISH %ld:%ld\n",_node_id,_thd_id);
@@ -255,7 +257,7 @@ RC WorkerThread::process_rfin(Message * msg) {
   } 
   txn_man->commit();
   //if(!txn_man->query->readonly() || CC_ALG == OCC)
-  if(!((FinishMessage*)msg)->readonly)
+  if(!((FinishMessage*)msg)->readonly || CC_ALG == MAAT || CC_ALG == OCC)
     msg_queue.enqueue(get_thd_id(),Message::create_message(txn_man,RACK_FIN),GET_NODE_ID(msg->get_txn_id()));
   release_txn_man();
 
