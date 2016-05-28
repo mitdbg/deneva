@@ -53,11 +53,14 @@ def ycsb_scaling():
     wl = 'YCSB'
     nnodes = [1,2,4,8,16,32,64]
     algos=['NO_WAIT','WAIT_DIE','MVCC','MAAT','CALVIN','TIMESTAMP']
+    algos=['CALVIN']
     base_table_size=2097152*8
 #    txn_write_perc = [0.5,1.0]
     txn_write_perc = [0.5]
     tup_write_perc = [0.5]
     load = [10000]
+#    load = [12000,15000]
+#    load = [10000,12000]
     tcnt = [4]
 #    skew = [0.0,0.6,0.7]
     skew = [0.6,0.7]
@@ -76,6 +79,7 @@ def ycsb_scaling_abort():
 #    txn_write_perc = [0.5,1.0]
     txn_write_perc = [0.5]
     tup_write_perc = [0.5]
+    load = [10000,12000]
     load = [10000]
     tcnt = [4]
 #    skew = [0.0,0.6,0.7]
@@ -89,13 +93,15 @@ def ycsb_skew():
 #Try with different node counts?
     wl = 'YCSB'
     nnodes = [16]
-    nnodes = [2,4,8,16]
     algos=['NO_WAIT','WAIT_DIE','MVCC','MAAT','CALVIN','TIMESTAMP']
+    algos=['CALVIN']
 #    algos=['CALVIN']
     base_table_size=2097152*8
 #    txn_write_perc = [0.5,1.0]
     txn_write_perc = [0.5]
     tup_write_perc = [0.5]
+    load = [12000]
+    load = [10000,12000]
     load = [10000]
     tcnt = [4]
     skew = [0.0,0.25,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.9]
@@ -107,13 +113,16 @@ def ycsb_writes():
     wl = 'YCSB'
     nnodes = [16]
     algos=['NO_WAIT','WAIT_DIE','MVCC','MAAT','CALVIN','TIMESTAMP']
+    algos=['CALVIN']
 #    algos=['CALVIN']
     base_table_size=2097152*8
     txn_write_perc = [0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]
     tup_write_perc = [0.5]
+    load = [12000]
+    load = [10000,12000]
     load = [10000]
     tcnt = [4]
-    skew = [0.6,0.7]
+    skew = [0.6]
 #    skew = [0.6]
     fmt = ["WORKLOAD","NODE_CNT","CC_ALG","SYNTH_TABLE_SIZE","TUP_WRITE_PERC","TXN_WRITE_PERC","MAX_TXN_IN_FLIGHT","ZIPF_THETA","THREAD_CNT"]
     exp = [[wl,n,algo,base_table_size*n,tup_wr_perc,txn_wr_perc,ld,sk,thr] for thr,txn_wr_perc,tup_wr_perc,ld,n,sk,algo in itertools.product(tcnt,txn_write_perc,tup_write_perc,load,nnodes,skew,algos)]
@@ -140,21 +149,21 @@ def ycsb_partitions():
     wl = 'YCSB'
     nnodes = [16]
     algos=['NO_WAIT','WAIT_DIE','MVCC','MAAT','CALVIN','TIMESTAMP']
+    algos=['CALVIN']
 #    algos=['CALVIN']
+    load = [10000,12000]
+#    load = [12000]
     load = [10000]
     nparts = [1,2,4,6,8,10,12,14,16]
     base_table_size=2097152*8
-    txn_write_perc = [0.5,1.0]
+    txn_write_perc = [0.5]
     tup_write_perc = [0.5]
     tcnt = [4]
-    skew = [0.6,0.7]
+    skew = [0.6]
 #    recv = [2,4]
     rpq =  16
     fmt = ["WORKLOAD","REQ_PER_QUERY","PART_PER_TXN","NODE_CNT","CC_ALG","SYNTH_TABLE_SIZE","TUP_WRITE_PERC","TXN_WRITE_PERC","MAX_TXN_IN_FLIGHT","ZIPF_THETA","THREAD_CNT","STRICT_PPT"]
     exp = [[wl,rpq,p,n,algo,base_table_size*n,tup_wr_perc,txn_wr_perc,ld,sk,thr,1] for thr,txn_wr_perc,tup_wr_perc,algo,sk,ld,n,p in itertools.product(tcnt,txn_write_perc,tup_write_perc,algos,skew,load,nnodes,nparts)]
-    txn_write_perc = [0.0]
-    skew = [0.0]
-    exp = exp + [[wl,rpq,p,n,algo,base_table_size*n,tup_wr_perc,txn_wr_perc,ld,sk,thr,1] for thr,txn_wr_perc,tup_wr_perc,algo,sk,ld,n,p in itertools.product(tcnt,txn_write_perc,tup_write_perc,algos,skew,load,nnodes,nparts)]
     return fmt,exp
 
 def tpcc_scaling():
@@ -163,8 +172,9 @@ def tpcc_scaling():
     nalgos=['NO_WAIT','WAIT_DIE','MAAT','MVCC','TIMESTAMP','CALVIN']
     npercpay=[0.0,0.5,1.0]
     wh=128
-    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PERC_PAYMENT","NUM_WH"]
-    exp = [[wl,n,cc,pp,wh*n] for pp,n,cc in itertools.product(npercpay,nnodes,nalgos)]
+    load = [10000,12000]
+    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PERC_PAYMENT","NUM_WH","MAX_TXN_IN_FLIGHT"]
+    exp = [[wl,n,cc,pp,wh*n,tif] for tif,pp,n,cc in itertools.product(load,npercpay,nnodes,nalgos)]
     return fmt,exp
 
 def tpcc_scaling2():
@@ -241,29 +251,18 @@ def ycsb_scaling_plot(summary,summary_client):
     v_name="CC_ALG"
 #    tput_setup(summary,summary_client,nfmt,nexp,x_name,v_name)
     skew = [0.0,0.6,0.7]
-    txn_write_perc = [0.5,1.0]
-    for sk,wr in itertools.product(skew,txn_write_perc):
-        const={"ZIPF_THETA":sk,"TXN_WRITE_PERC":wr}
-        title = ""
-        for c in const.keys():
-            title += "{} {},".format(SHORTNAMES[c],const[c])
-        x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants=const)
-        tput(x_vals,v_vals,summary,summary_client,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,xlab="Server Count",new_cfgs=lst,ylimit=140,logscalex=False,title=title)
-    txn_write_perc = [0.0]
-    skew = [0.0]
-    for sk,wr in itertools.product(skew,txn_write_perc):
-        const={"ZIPF_THETA":sk,"TXN_WRITE_PERC":wr}
-        title = ""
-        for c in const.keys():
-            title += "{} {},".format(SHORTNAMES[c],const[c])
-        x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants=const)
-        tput(x_vals,v_vals,summary,summary_client,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,xlab="Server Count",new_cfgs=lst,ylimit=140,logscalex=False,title=title)
-#        for x in x_vals:
-#            const[x_name] = x
-#            title2 = title + "{} {},".format(SHORTNAMES[x_name],const[x_name])
-#            v_vals,tmp,fmt,exp,lst = plot_prep(nexp,nfmt,v_name,'',constants=const)
-#            time_breakdown(v_vals,summary,cfg_fmt=fmt,cfg=list(exp),xname=v_name,new_cfgs=lst,title=title2)
-#    breakdown_setup(summary,nfmt,nexp,x_name)
+    txn_write_perc = [0.0,0.5]
+    load = [10000,12000,15000]
+    for sk,wr,tif in itertools.product(skew,txn_write_perc,load):
+        try:
+            const={"ZIPF_THETA":sk,"TXN_WRITE_PERC":wr,"MAX_TXN_IN_FLIGHT":tif}
+            title = ""
+            for c in const.keys():
+                title += "{} {},".format(SHORTNAMES[c],const[c])
+            x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants=const)
+            tput(x_vals,v_vals,summary,summary_client,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,xlab="Server Count",new_cfgs=lst,ylimit=140,logscalex=False,title=title)
+        except IndexError:
+            continue
 
 def ycsb_skew_plot(summary,summary_client):
     from helper import plot_prep
@@ -835,6 +834,9 @@ experiment_map = {
     'network_test':network_test,
     'ycsb_scaling': ycsb_scaling,
     'ycsb_scaling_plot': ycsb_scaling_plot,
+    'ycsb_scaling_abort': ycsb_scaling_abort,
+    'ppr_ycsb_scaling_abort': ycsb_scaling_abort,
+    'ppr_ycsb_scaling_abort_plot': ppr_ycsb_scaling_abort_plot,
     'ycsb_writes': ycsb_writes,
     'ycsb_writes_plot': ycsb_writes_plot,
     'ycsb_skew': ycsb_skew,

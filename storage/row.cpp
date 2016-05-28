@@ -200,12 +200,14 @@ RC row_t::get_row(access_t type, TxnManager * txn, row_t *& row) {
   row = this;
   return rc;
 #endif
+  /*
 #if ISOLATION_LEVEL == READ_UNCOMMITTED
   if(type == RD) {
     row = this;
     return rc;
   }
 #endif
+*/
 #if CC_ALG == MAAT
 
   DEBUG_M("row_t::get_row MAAT alloc \n");
@@ -346,11 +348,13 @@ void row_t::return_row(RC rc, access_t type, TxnManager * txn, row_t * row) {
 #if ISOLATION_LEVEL == NOLOCK
   return;
 #endif
+  /*
 #if ISOLATION_LEVEL == READ_UNCOMMITTED
   if(type == RD) {
     return;
   }
 #endif
+*/
 #if CC_ALG == WAIT_DIE || CC_ALG == NO_WAIT || CC_ALG == CALVIN
 	assert (row == NULL || row == this || type == XP);
 	if (ROLL_BACK && type == XP) {// recover from previous writes.

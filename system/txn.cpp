@@ -120,8 +120,14 @@ void Transaction::release_accesses(uint64_t thd_id) {
 
 void Transaction::release_inserts(uint64_t thd_id) {
   for(uint64_t i = 0; i < insert_rows.size(); i++) {
+    row_t * row = insert_rows[i];
+#if CC_ALG != HSTORE && CC_ALG != HSTORE_SPEC && CC_ALG != OCC && MODE == NORMAL_MODE
+      DEBUG_M("TxnManager::cleanup row->manager free\n");
+			mem_allocator.free(row->manager, 0);
+#endif
+    row->free_row();
     DEBUG_M("Transaction::release insert_rows free\n")
-    row_pool.put(thd_id,insert_rows[i]);
+    row_pool.put(thd_id,row);
   }
 }
 
@@ -471,16 +477,18 @@ uint64_t TxnManager::decr_rsp(int i) {
 void TxnManager::release_last_row_lock() {
   assert(txn->row_cnt > 0);
   row_t * orig_r = txn->accesses[txn->row_cnt-1]->orig_row;
-  orig_r->return_row(RCOK, RD, this, NULL);
-  txn->accesses[txn->row_cnt-1]->orig_row = NULL;
+  access_t type = txn->accesses[txn->row_cnt-1]->type;
+  orig_r->return_row(RCOK, type, this, NULL);
+  //txn->accesses[txn->row_cnt-1]->orig_row = NULL;
 }
 
 void TxnManager::cleanup_row(RC rc, uint64_t rid) {
-		row_t * orig_r = txn->accesses[rid]->orig_row;
 		access_t type = txn->accesses[rid]->type;
 		if (type == WR && rc == Abort && CC_ALG != MAAT)
 			type = XP;
 
+#if ISOLATION_LEVEL != READ_UNCOMMITTED
+		row_t * orig_r = txn->accesses[rid]->orig_row;
 		if (ROLL_BACK && type == XP &&
 					(CC_ALG == DL_DETECT || 
 					CC_ALG == NO_WAIT || 
@@ -494,13 +502,12 @@ void TxnManager::cleanup_row(RC rc, uint64_t rid) {
 #if ISOLATION_LEVEL == READ_COMMITTED
       if(type == WR) {
         orig_r->return_row(rc,type, this, txn->accesses[rid]->data);
-      } else {
-        assert(orig_r == NULL);
-      }
+      } 
 #else
 			orig_r->return_row(rc,type, this, txn->accesses[rid]->data);
 #endif
 		}
+#endif
 
 #if ROLL_BACK && (CC_ALG == DL_DETECT || CC_ALG == NO_WAIT || CC_ALG == WAIT_DIE || CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC)
 		if (type == WR) {
@@ -535,17 +542,9 @@ void TxnManager::cleanup(RC rc) {
 	}
 
 	if (rc == Abort) {
-		for (UInt32 i = 0; i < txn->insert_rows.size(); i ++) {
-			row_t * row = txn->insert_rows[i];
-			assert(g_part_alloc == false);
-#if CC_ALG != HSTORE && CC_ALG != HSTORE_SPEC && CC_ALG != OCC && MODE == NORMAL_MODE
-      DEBUG_M("TxnManager::cleanup row->manager free\n");
-			mem_allocator.free(row->manager, 0);
-#endif
-			row->free_row();
-      DEBUG_M("TxnManager::cleanup row free\n");
-      row_pool.put(get_thd_id(),row);
-		}
+    txn->release_inserts(get_thd_id());
+    txn->insert_rows.clear();
+
 		INC_STATS(get_thd_id(), abort_time, get_sys_clock() - starttime);
 	} 
 }
@@ -596,6 +595,7 @@ RC TxnManager::get_row(row_t * row, access_t type, row_t *& row_rtn) {
     row_pool.get(get_thd_id(),access->orig_data);
 		access->orig_data->init(row->get_table(), part_id, 0);
 		access->orig_data->copy(row);
+    assert(access->orig_data->get_schema() == row->get_schema());
 
     // ARIES-style physiological logging
 #if LOGGING
