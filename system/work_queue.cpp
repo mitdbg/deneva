@@ -128,6 +128,8 @@ Message * QWorkQueue::sched_dequeue(uint64_t thd_id) {
       DEBUG("Sched RDONE %ld %ld\n",sched_ptr,simulation->get_worker_epoch());
       assert(msg->get_batch_id() == simulation->get_worker_epoch());
       if(sched_ptr == g_node_cnt - 1) {
+        INC_STATS(thd_id,sched_epoch_cnt,1);
+        INC_STATS(thd_id,sched_epoch_diff,get_sys_clock()-simulation->last_worker_epoch_time);
         simulation->next_worker_epoch();
       }
       sched_ptr = (sched_ptr + 1) % g_node_cnt;

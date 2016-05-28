@@ -77,6 +77,7 @@ class TxnStats {
     uint64_t starttime;
     uint64_t wait_starttime;
     uint64_t write_cnt;
+    uint64_t abort_cnt;
     double total_process_time;
     double process_time;
     double total_local_wait_time;

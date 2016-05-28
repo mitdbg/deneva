@@ -36,12 +36,14 @@ void SimManager::init() {
 #else
   run_starttime = get_wall_clock();
 #endif
+  last_worker_epoch_time = run_starttime;
 }
 
 
 void SimManager::set_starttime(uint64_t starttime) {
     if(ATOM_CAS(start_set, false, true)) {
       run_starttime = starttime;
+      last_worker_epoch_time = starttime;
       sim_done = false;
       printf("Starttime set to %ld\n",run_starttime);
     } 
@@ -129,6 +131,7 @@ uint64_t SimManager::get_worker_epoch() {
 }
 
 void SimManager::next_worker_epoch() {
+  last_worker_epoch_time = get_sys_clock();
   ATOM_ADD(worker_epoch,1);
 }
 

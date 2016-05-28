@@ -95,9 +95,9 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, OCC, VLL, CALVIN, MAAT
-#define CC_ALG NO_WAIT
-#define ISOLATION_LEVEL READ_UNCOMMITTED
-#define YCSB_ABORT_MODE false
+#define CC_ALG CALVIN
+#define ISOLATION_LEVEL SERIALIZABLE
+#define YCSB_ABORT_MODE true
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER         false
@@ -338,6 +338,7 @@ extern TestCases          g_test_case;
 #define SERIALIZABLE 1
 #define READ_COMMITTED 2 
 #define READ_UNCOMMITTED 3 
+#define NOLOCK 4 
 
 // Stats and timeout
 #define BILLION 1000000000UL // in ns => 1 second

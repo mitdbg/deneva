@@ -48,6 +48,7 @@ void TxnStats::init() {
   total_twopc_time=0;
   twopc_time=0;
   write_cnt = 0;
+  abort_cnt = 0;
 }
 
 void TxnStats::reset() {
@@ -79,6 +80,9 @@ void TxnStats::commit_stats(uint64_t thd_id) {
   INC_STATS(thd_id,txn_twopc_time,twopc_time);
   if(write_cnt > 0) {
     INC_STATS(thd_id,txn_write_cnt,1);
+  }
+  if(abort_cnt > 0) {
+    INC_STATS(thd_id,unique_txn_abort_cnt,1);
   }
 }
 
@@ -254,6 +258,7 @@ RC TxnManager::abort() {
   DEBUG("Abort %ld\n",get_txn_id());
   txn->rc = Abort;
   INC_STATS(get_thd_id(),total_txn_abort_cnt,1);
+  txn_stats.abort_cnt++;
   if(IS_LOCAL(get_txn_id())) {
     INC_STATS(get_thd_id(), local_txn_abort_cnt, 1);
   } else {

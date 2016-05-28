@@ -120,7 +120,7 @@ def ppr_isolation_levels_plot(summary,summary_cl):
     x_name = "NODE_CNT"
     v_name = "ISOLATION_LEVEL"
     x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants={'ZIPF_THETA':0.6})
-    tput(x_vals,v_vals,summary,summary_cl,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_ycsb_gold",xlab="Server Count",logscalex=True,new_cfgs=lst)
+    tput(x_vals,v_vals,summary,summary_cl,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_ycsb_gold",xlab="Server Count",logscalex=True,new_cfgs=lst,legend=True)
 
 def ppr_network_plot(summary,summary_cl):
     from experiments import network_sweep

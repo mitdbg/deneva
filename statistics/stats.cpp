@@ -54,6 +54,7 @@ void Stats_thd::clear() {
   local_txn_commit_cnt=0;
   remote_txn_commit_cnt=0;
   total_txn_abort_cnt=0;
+  unique_txn_abort_cnt=0;
   local_txn_abort_cnt=0;
   remote_txn_abort_cnt=0;
   txn_run_time=0;
@@ -147,6 +148,7 @@ void Stats_thd::clear() {
   twopl_owned_cnt=0;
   twopl_sh_owned_cnt=0;
   twopl_ex_owned_cnt=0;
+  twopl_sh_bypass_cnt=0;
   twopl_owned_time=0;
   twopl_sh_owned_time=0;
   twopl_ex_owned_time=0;
@@ -160,9 +162,11 @@ void Stats_thd::clear() {
   // Calvin
   seq_txn_cnt=0;
   seq_batch_cnt=0;
+  seq_full_batch_cnt=0;
   seq_ack_time=0;
   seq_batch_time=0;
   seq_process_cnt=0;
+  seq_complete_cnt=0;
   seq_process_time=0;
   seq_prep_time=0;
   seq_queue_wait_time=0;
@@ -176,7 +180,10 @@ void Stats_thd::clear() {
   sched_queue_enqueue_time=0;
   sched_queue_dequeue_time=0;
   calvin_sched_time=0;
+  sched_idle_time=0;
   sched_txn_table_time=0;
+  sched_epoch_cnt=0;
+  sched_epoch_diff=0;
 
 
   //OCC
@@ -352,6 +359,7 @@ void Stats_thd::print(FILE * outf) {
   ",local_txn_commit_cnt=%ld"
   ",remote_txn_commit_cnt=%ld"
   ",total_txn_abort_cnt=%ld"
+  ",unique_txn_abort_cnt=%ld"
   ",local_txn_abort_cnt=%ld"
   ",remote_txn_abort_cnt=%ld"
   ",txn_run_time=%f"
@@ -373,6 +381,7 @@ void Stats_thd::print(FILE * outf) {
   ,local_txn_commit_cnt
   ,remote_txn_commit_cnt
   ,total_txn_abort_cnt
+  ,unique_txn_abort_cnt
   ,local_txn_abort_cnt
   ,remote_txn_abort_cnt
   ,txn_run_time / BILLION
@@ -656,6 +665,7 @@ void Stats_thd::print(FILE * outf) {
     ",twopl_owned_cnt=%ld"
     ",twopl_sh_owned_cnt=%ld"
     ",twopl_ex_owned_cnt=%ld"
+    ",twopl_sh_bypass_cnt=%ld"
     ",twopl_owned_time=%f"
     ",twopl_sh_owned_time=%f"
     ",twopl_ex_owned_time=%f"
@@ -664,13 +674,14 @@ void Stats_thd::print(FILE * outf) {
     ",twopl_diff_time=%f"
     ",twopl_wait_time=%f"
     ",twopl_getlock_cnt=%ld"
-    ",twopl_getlock_time=%ld"
-    ",twopl_release_cnt=%f"
+    ",twopl_getlock_time=%f"
+    ",twopl_release_cnt=%ld"
     ",twopl_release_time=%f"
     ,twopl_already_owned_cnt
     ,twopl_owned_cnt
     ,twopl_sh_owned_cnt
     ,twopl_ex_owned_cnt
+    ,twopl_sh_bypass_cnt
     ,twopl_owned_time / BILLION
     ,twopl_sh_owned_time / BILLION
     ,twopl_ex_owned_time / BILLION
@@ -678,9 +689,9 @@ void Stats_thd::print(FILE * outf) {
     ,twopl_ex_owned_avg_time / BILLION
     ,twopl_diff_time / BILLION
     ,twopl_wait_time / BILLION
-    ,twopl_getlock_cnt / BILLION
-    ,twopl_release_cnt / BILLION
+    ,twopl_getlock_cnt
     ,twopl_getlock_time / BILLION
+    ,twopl_release_cnt 
     ,twopl_release_time / BILLION
   );
 
@@ -688,9 +699,11 @@ void Stats_thd::print(FILE * outf) {
   fprintf(outf,
   ",seq_txn_cnt=%ld"
   ",seq_batch_cnt=%ld"
+  ",seq_full_batch_cnt=%ld"
   ",seq_ack_time=%f"
   ",seq_batch_time=%f"
   ",seq_process_cnt=%ld"
+  ",seq_complete_cnt=%ld"
   ",seq_process_time=%f"
   ",seq_prep_time=%f"
   ",seq_queue_wait_time=%f"
@@ -704,12 +717,17 @@ void Stats_thd::print(FILE * outf) {
   ",sched_queue_enqueue_time=%f"
   ",sched_queue_dequeue_time=%f"
   ",calvin_sched_time=%f"
+  ",sched_idle_time=%f"
   ",sched_txn_table_time=%f"
+  ",sched_epoch_cnt=%ld"
+  ",sched_epoch_diff=%f"
   ,seq_txn_cnt
   ,seq_batch_cnt
+  ,seq_full_batch_cnt
   ,seq_ack_time /BILLION
   ,seq_batch_time /BILLION
   ,seq_process_cnt 
+  ,seq_complete_cnt 
   ,seq_process_time /BILLION
   ,seq_prep_time /BILLION
   ,seq_queue_wait_time /BILLION
@@ -723,7 +741,10 @@ void Stats_thd::print(FILE * outf) {
   ,sched_queue_enqueue_time /BILLION
   ,sched_queue_dequeue_time /BILLION
   ,calvin_sched_time /BILLION
+  ,sched_idle_time /BILLION
   ,sched_txn_table_time /BILLION
+  ,sched_epoch_cnt
+  ,sched_epoch_diff /BILLION
   );
   //OCC
   fprintf(outf,
@@ -871,6 +892,7 @@ void Stats_thd::combine(Stats_thd * stats) {
   local_txn_commit_cnt+=stats->local_txn_commit_cnt;
   remote_txn_commit_cnt+=stats->remote_txn_commit_cnt;
   total_txn_abort_cnt+=stats->total_txn_abort_cnt;
+  unique_txn_abort_cnt+=stats->unique_txn_abort_cnt;
   local_txn_abort_cnt+=stats->local_txn_abort_cnt;
   remote_txn_abort_cnt+=stats->remote_txn_abort_cnt;
   txn_run_time+=stats->txn_run_time;
@@ -964,6 +986,7 @@ void Stats_thd::combine(Stats_thd * stats) {
   twopl_owned_cnt+=stats->twopl_owned_cnt;
   twopl_sh_owned_cnt+=stats->twopl_sh_owned_cnt;
   twopl_ex_owned_cnt+=stats->twopl_ex_owned_cnt;
+  twopl_sh_bypass_cnt+=stats->twopl_sh_bypass_cnt;
   twopl_owned_time+=stats->twopl_owned_time;
   twopl_sh_owned_time+=stats->twopl_sh_owned_time;
   twopl_ex_owned_time+=stats->twopl_ex_owned_time;
@@ -977,9 +1000,11 @@ void Stats_thd::combine(Stats_thd * stats) {
   // Calvin
   seq_txn_cnt+=stats->seq_txn_cnt;
   seq_batch_cnt+=stats->seq_batch_cnt;
+  seq_full_batch_cnt+=stats->seq_full_batch_cnt;
   seq_ack_time+=stats->seq_ack_time;
   seq_batch_time+=stats->seq_batch_time;
   seq_process_cnt+=stats->seq_process_cnt;
+  seq_complete_cnt+=stats->seq_complete_cnt;
   seq_process_time+=stats->seq_process_time;
   seq_prep_time+=stats->seq_prep_time;
   seq_queue_wait_time+=stats->seq_queue_wait_time;
@@ -993,7 +1018,10 @@ void Stats_thd::combine(Stats_thd * stats) {
   sched_queue_enqueue_time+=stats->sched_queue_enqueue_time;
   sched_queue_dequeue_time+=stats->sched_queue_dequeue_time;
   calvin_sched_time+=stats->calvin_sched_time;
+  sched_idle_time+=stats->sched_idle_time;
   sched_txn_table_time+=stats->sched_txn_table_time;
+  sched_epoch_cnt+=stats->sched_epoch_cnt;
+  sched_epoch_diff+=stats->sched_epoch_diff;
   //OCC
   occ_validate_time+=stats->occ_validate_time;
   occ_cs_wait_time+=stats->occ_cs_wait_time;

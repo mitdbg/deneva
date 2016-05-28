@@ -214,6 +214,7 @@ stat_map = OrderedDict([
   ('twopl_owned_cnt', []),
   ('twopl_sh_owned_cnt', []),
   ('twopl_ex_owned_cnt', []),
+  ('twopl_sh_bypass_cnt', []),
   ('twopl_owned_time', []),
   ('twopl_sh_owned_time', []),
   ('twopl_ex_owned_time', []),
@@ -221,12 +222,18 @@ stat_map = OrderedDict([
   ('twopl_ex_owned_avg_time', []),
   ('twopl_diff_time', []),
   ('twopl_wait_time', []),
+  ('twopl_getlock_cnt', []),
+  ('twopl_release_cnt', []),
+  ('twopl_getlock_time', []),
+  ('twopl_release_time', []),
 
   # Calvin
   ('seq_txn_cnt', []),
   ('seq_batch_cnt', []),
+  ('seq_full_batch_cnt', []),
   ('seq_ack_time', []),
   ('seq_batch_time', []),
+  ('seq_complete_cnt', []),
   ('seq_process_cnt', []),
   ('seq_process_time', []),
   ('seq_prep_time', []),
@@ -241,7 +248,10 @@ stat_map = OrderedDict([
   ('sched_queue_enqueue_time', []),
   ('sched_queue_dequeue_time', []),
   ('calvin_sched_time', []),
+  ('sched_idle_time', []),
   ('sched_txn_table_time', []),
+  ('sched_epoch_cnt', []),
+  ('sched_epoch_diff', []),
 
   # OCC
   ('occ_validate_time', []),

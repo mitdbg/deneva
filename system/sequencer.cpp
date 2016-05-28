@@ -82,6 +82,7 @@ void Sequencer::process_ack(Message * msg, uint64_t thd_id) {
     ClientResponseMessage * rsp_msg = (ClientResponseMessage*)Message::create_message(msg->get_txn_id(),CL_RSP);
     rsp_msg->client_startts = wait_list[id].client_startts;
     msg_queue.enqueue(thd_id,rsp_msg,wait_list[id].client_id);
+    INC_STATS(thd_id,seq_complete_cnt,1);
 
 	}
 
@@ -196,6 +197,9 @@ void Sequencer::send_next_batch(uint64_t thd_id) {
   last_time_batch = get_sys_clock();
 
 	INC_STATS(thd_id,seq_batch_cnt,1);
+  if(!empty) {
+    INC_STATS(thd_id,seq_full_batch_cnt,1);
+  }
   INC_STATS(thd_id,seq_prep_time,get_sys_clock() - prof_stat);
   next_txn_id = 0;
 }

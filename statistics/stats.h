@@ -56,6 +56,7 @@ public:
   uint64_t local_txn_commit_cnt;
   uint64_t remote_txn_commit_cnt;
   uint64_t total_txn_abort_cnt;
+  uint64_t unique_txn_abort_cnt;
   uint64_t local_txn_abort_cnt;
   uint64_t remote_txn_abort_cnt;
   double txn_run_time;
@@ -147,6 +148,8 @@ public:
   uint64_t twopl_owned_cnt;
   uint64_t twopl_sh_owned_cnt;
   uint64_t twopl_ex_owned_cnt;
+  uint64_t twopl_get_cnt;
+  uint64_t twopl_sh_bypass_cnt;
   double twopl_owned_time;
   double twopl_sh_owned_time;
   double twopl_ex_owned_time;
@@ -160,9 +163,11 @@ public:
   // Calvin
   uint64_t seq_txn_cnt;
   uint64_t seq_batch_cnt;
+  uint64_t seq_full_batch_cnt;
   double seq_ack_time;
   double seq_batch_time;
   uint64_t seq_process_cnt;
+  uint64_t seq_complete_cnt;
   double seq_process_time;
   double seq_prep_time;
   double seq_queue_wait_time;
@@ -176,7 +181,10 @@ public:
   double sched_queue_enqueue_time;
   double sched_queue_dequeue_time;
   double calvin_sched_time;
+  double sched_idle_time;
   double sched_txn_table_time;
+  uint64_t sched_epoch_cnt;
+  double sched_epoch_diff;
 
   // OCC
   double occ_validate_time;

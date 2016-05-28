@@ -61,32 +61,6 @@ RC Row_lock::lock_get(lock_t type, TxnManager * txn, uint64_t* &txnids, int &txn
 		pthread_mutex_lock( latch );
     INC_STATS(txn->get_thd_id(),mtx[17],get_sys_clock() - mtx_wait_starttime);
   }
-#if DEBUG_ASSERT
-  /*
-	if (owners[hash(txn->get_txn_id())] != NULL)
-		assert(lock_type == owners[hash(txn->get_txn_id())]->type); 
-	else 
-		assert(lock_type == LOCK_NONE);
-
-	LockEntry * tmp1 = owners[hash(txn->get_txn_id())];
-	UInt32 cnt = 0;
-	while (tmp1) {
-		assert(tmp1->txn->get_txn_id() != txn->get_txn_id());
-		cnt ++;
-		tmp1 = tmp1->next;
-	}
-	assert(cnt == owner_cnt);
-
-	LockEntry * tmp2 = waiters_head;
-	cnt = 0;
-	while (tmp2) {
-		assert(tmp2->txn->get_txn_id() != txn->get_txn_id());
-		cnt ++;
-		tmp2 = tmp2->next;
-	}
-	assert(cnt == waiter_cnt);
-  */
-#endif
 
   if(owner_cnt > 0) {
     INC_STATS(txn->get_thd_id(),twopl_already_owned_cnt,1);
@@ -199,6 +173,10 @@ RC Row_lock::lock_get(lock_t type, TxnManager * txn, uint64_t* &txnids, int &txn
 		entry->txn = txn;
 		STACK_PUSH(owners[hash(txn->get_txn_id())], entry);
 #endif
+    if(owner_cnt > 0) {
+      assert(type == LOCK_SH);
+      INC_STATS(txn->get_thd_id(),twopl_sh_bypass_cnt,1);
+    }
     if(txn->get_timestamp() > max_owner_ts)
       max_owner_ts = txn->get_timestamp();
 		owner_cnt ++;

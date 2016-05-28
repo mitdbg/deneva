@@ -43,14 +43,22 @@ RC CalvinLockThread::run() {
 	RC rc = RCOK;
   TxnManager * txn_man;
   uint64_t prof_starttime = get_sys_clock();
+  uint64_t idle_starttime = 0;
 
 	while(!simulation->is_done()) {
     txn_man = NULL;
 
     Message * msg = work_queue.sched_dequeue(_thd_id);
 
-		if(!msg)
+		if(!msg) {
+      if(idle_starttime ==0)
+        idle_starttime = get_sys_clock();
 			continue;
+    }
+    if(idle_starttime > 0) {
+      INC_STATS(_thd_id,sched_idle_time,get_sys_clock() - idle_starttime);
+      idle_starttime = 0;
+    }
 
     prof_starttime = get_sys_clock();
     assert(msg->get_rtype() == CL_QRY);
