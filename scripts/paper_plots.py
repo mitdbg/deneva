@@ -72,9 +72,9 @@ def ppr_ycsb_partitions_plot(summary,summary_cl):
     x_name = "PART_PER_TXN"
     v_name = "CC_ALG"
     x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants={"MAX_TXN_IN_FLIGHT":10000})
-    tput(x_vals,v_vals,summary,summary_cl,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_ycsb_partitions_10k",xlab="Partitions Accessed",new_cfgs=lst)
-    x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants={"MAX_TXN_IN_FLIGHT":12000})
-    tput(x_vals,v_vals,summary,summary_cl,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_ycsb_partitions_12k",xlab="Partitions Accessed",new_cfgs=lst)
+    tput(x_vals,v_vals,summary,summary_cl,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_ycsb_partitions",xlab="Partitions Accessed",new_cfgs=lst)
+#    x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants={"MAX_TXN_IN_FLIGHT":12000})
+#    tput(x_vals,v_vals,summary,summary_cl,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_ycsb_partitions_12k",xlab="Partitions Accessed",new_cfgs=lst)
 
 def ppr_ycsb_writes_plot(summary,summary_cl):
     from experiments import ycsb_writes   
@@ -85,9 +85,9 @@ def ppr_ycsb_writes_plot(summary,summary_cl):
     v_name = "CC_ALG"
 
     x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants={"NODE_CNT":16,"ZIPF_THETA":0.6,"MAX_TXN_IN_FLIGHT":10000})
-    tput(x_vals,v_vals,summary,summary_cl,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_ycsb_writes_16_10k",xlab="% of Update Transactions",new_cfgs=lst)
-    x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants={"NODE_CNT":16,"ZIPF_THETA":0.6,"MAX_TXN_IN_FLIGHT":12000})
-    tput(x_vals,v_vals,summary,summary_cl,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_ycsb_writes_16_12k",xlab="% of Update Transactions",new_cfgs=lst)
+    tput(x_vals,v_vals,summary,summary_cl,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_ycsb_writes_16",xlab="% of Update Transactions",new_cfgs=lst)
+#    x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants={"NODE_CNT":16,"ZIPF_THETA":0.6,"MAX_TXN_IN_FLIGHT":12000})
+#    tput(x_vals,v_vals,summary,summary_cl,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_ycsb_writes_16_12k",xlab="% of Update Transactions",new_cfgs=lst)
 
 def ppr_ycsb_skew_abort_plot(summary,summary_cl):
     from experiments import ycsb_skew_abort   

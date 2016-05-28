@@ -5,7 +5,7 @@
 /***********************************************/
 // Simulation + Hardware
 /***********************************************/
-#define NODE_CNT 2
+#define NODE_CNT 2 
 #define THREAD_CNT 2
 #define REM_THREAD_CNT THREAD_CNT
 #define SEND_THREAD_CNT THREAD_CNT
@@ -37,7 +37,7 @@
 // # of transactions to run for warmup
 #define WARMUP            0
 // YCSB or TPCC
-#define WORKLOAD TPCC
+#define WORKLOAD TPCC 
 // print the transaction latency distribution
 #define PRT_LAT_DISTR false
 #define STATS_ENABLE        true
@@ -95,7 +95,7 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, OCC, VLL, CALVIN, MAAT
-#define CC_ALG WAIT_DIE 
+#define CC_ALG CALVIN 
 #define ISOLATION_LEVEL SERIALIZABLE
 #define YCSB_ABORT_MODE false
 
@@ -200,7 +200,7 @@
 // are not modeled.
 #define TPCC_ACCESS_ALL       false 
 #define WH_UPDATE         true
-#define NUM_WH PART_CNT
+#define NUM_WH 32
 // % of transactions that access multiple partitions
 #define MPR 1.0
 #define MPIR 0.01
@@ -267,7 +267,7 @@ extern TestCases          g_test_case;
 #define DEBUG_TIMESTAMP       false
 #define DEBUG_SYNTH         false
 #define DEBUG_ASSERT        false
-#define DEBUG_DISTR false
+#define DEBUG_DISTR true
 #define DEBUG_ALLOC false
 #define DEBUG_RACE false
 #define DEBUG_TIMELINE        false
@@ -347,7 +347,7 @@ extern TestCases          g_test_case;
 #define PROG_TIMER 1000 * BILLION // in s
 #define BATCH_TIMER 0
 #define SEQ_BATCH_TIMER 5 * 1 * MILLION // ~5ms -- same as CALVIN paper
-#define DONE_TIMER 10 * 60 * BILLION // ~1 minutes
+#define DONE_TIMER 2 * 60 * BILLION // ~1 minutes
 #define WARMUP_TIMER 0 * 60 * BILLION // ~1 minutes
 
 #define SEED 0

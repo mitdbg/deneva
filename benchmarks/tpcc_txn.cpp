@@ -939,7 +939,10 @@ RC TPCCTxnManager::run_calvin_txn() {
     switch(this->phase) {
       case CALVIN_RW_ANALYSIS:
         // Phase 1: Read/write set analysis
-        tpcc_query->get_participants(_wl);
+        calvin_expected_rsp_cnt = tpcc_query->get_participants(_wl);
+        if(query->participant_nodes[g_node_id] == 1) {
+          calvin_expected_rsp_cnt--;
+        }
 
         DEBUG("(%ld,%ld) expects %d responses; %ld participants, %ld active\n",txn->txn_id,txn->batch_id,calvin_expected_rsp_cnt,query->participant_nodes.size(),query->active_nodes.size());
 
@@ -963,6 +966,7 @@ RC TPCCTxnManager::run_calvin_txn() {
           if(calvin_collect_phase_done()) {
             rc = RCOK;
           } else {
+            assert(calvin_expected_rsp_cnt > 0);
             DEBUG("(%ld,%ld) wait in collect phase; %d / %d rfwds received\n",txn->txn_id,txn->batch_id,rsp_cnt,calvin_expected_rsp_cnt);
             rc = WAIT;
           }

@@ -53,7 +53,7 @@ def ycsb_scaling():
     wl = 'YCSB'
     nnodes = [1,2,4,8,16,32,64]
     algos=['NO_WAIT','WAIT_DIE','MVCC','MAAT','CALVIN','TIMESTAMP']
-    algos=['CALVIN']
+#    algos=['CALVIN']
     base_table_size=2097152*8
 #    txn_write_perc = [0.5,1.0]
     txn_write_perc = [0.5]
@@ -170,9 +170,9 @@ def tpcc_scaling():
     wl = 'TPCC'
     nnodes = [1,2,4,8,16,32,64]
     nalgos=['NO_WAIT','WAIT_DIE','MAAT','MVCC','TIMESTAMP','CALVIN']
-    npercpay=[0.0,0.5,1.0]
+    npercpay=[0.0,1.0]
     wh=128
-    load = [10000,12000]
+    load = [10000]
     fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PERC_PAYMENT","NUM_WH","MAX_TXN_IN_FLIGHT"]
     exp = [[wl,n,cc,pp,wh*n,tif] for tif,pp,n,cc in itertools.product(load,npercpay,nnodes,nalgos)]
     return fmt,exp

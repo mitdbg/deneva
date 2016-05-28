@@ -152,7 +152,7 @@ RC Row_lock::lock_get(lock_t type, TxnManager * txn, uint64_t* &txnids, int &txn
       entry->start_ts = get_sys_clock();
 			entry->txn = txn;
 			entry->type = type;
-      DEBUG("wait %ld,%ld %ld\n",txn->get_txn_id(),txn->get_batch_id(),_row->get_primary_key());
+      DEBUG("lk_wait %ld,%ld: %d, %d %ld %lx\n",txn->get_txn_id(),txn->get_batch_id(),owner_cnt,type,_row->get_primary_key(),(uint64_t)_row);
 			LIST_PUT_TAIL(waiters_head, waiters_tail, entry);
 			waiter_cnt ++;
       //txn->lock_ready = false;
