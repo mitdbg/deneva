@@ -165,7 +165,7 @@ RC Row_maat::abort(access_t type, TxnManager * txn) {
   pthread_mutex_lock( &latch );
   INC_STATS(txn->get_thd_id(),mtx[32],get_sys_clock() - mtx_wait_starttime);
   DEBUG("Maat Abort %ld: %d -- %ld\n",txn->get_txn_id(),type,_row->get_primary_key());
-#if Workload == TPCC
+#if WORKLOAD == TPCC
     uncommitted_reads->erase(txn->get_txn_id());
     uncommitted_writes->erase(txn->get_txn_id());
 #else
@@ -188,7 +188,7 @@ RC Row_maat::commit(access_t type, TxnManager * txn, row_t * data) {
   INC_STATS(txn->get_thd_id(),mtx[33],get_sys_clock() - mtx_wait_starttime);
   DEBUG("Maat Commit %ld: %d,%lu -- %ld\n",txn->get_txn_id(),type,txn->get_commit_timestamp(),_row->get_primary_key());
 
-#if Workload == TPCC
+#if WORKLOAD == TPCC
     if(txn->get_commit_timestamp() >  timestamp_last_read)
       timestamp_last_read = txn->get_commit_timestamp();
     uncommitted_reads->erase(txn->get_txn_id());
@@ -204,7 +204,7 @@ RC Row_maat::commit(access_t type, TxnManager * txn, row_t * data) {
     uncommitted_reads->erase(txn->get_txn_id());
   }
   /*
-#if Workload == TPCC
+#if WORKLOAD == TPCC
     if(txn->get_commit_timestamp() >  timestamp_last_read)
       timestamp_last_read = txn->get_commit_timestamp();
 #endif
