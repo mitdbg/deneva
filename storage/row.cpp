@@ -55,15 +55,15 @@ void row_t::init_manager(row_t * row) {
 #endif
   DEBUG_M("row_t::init_manager alloc \n");
 #if CC_ALG == NO_WAIT || CC_ALG == WAIT_DIE || CC_ALG == CALVIN
-    manager = (Row_lock *) mem_allocator.alloc(sizeof(Row_lock));
+    manager = (Row_lock *) mem_allocator.align_alloc(sizeof(Row_lock));
 #elif CC_ALG == TIMESTAMP
-    manager = (Row_ts *) mem_allocator.alloc(sizeof(Row_ts));
+    manager = (Row_ts *) mem_allocator.align_alloc(sizeof(Row_ts));
 #elif CC_ALG == MVCC
-    manager = (Row_mvcc *) mem_allocator.alloc(sizeof(Row_mvcc));
+    manager = (Row_mvcc *) mem_allocator.align_alloc(sizeof(Row_mvcc));
 #elif CC_ALG == OCC
-    manager = (Row_occ *) mem_allocator.alloc(sizeof(Row_occ));
+    manager = (Row_occ *) mem_allocator.align_alloc(sizeof(Row_occ));
 #elif CC_ALG == MAAT 
-    manager = (Row_maat *) mem_allocator.alloc(sizeof(Row_maat));
+    manager = (Row_maat *) mem_allocator.align_alloc(sizeof(Row_maat));
 #endif
 
 #if CC_ALG != HSTORE && CC_ALG != HSTORE_SPEC 
