@@ -131,18 +131,54 @@ RC Maat::validate(TxnManager * txn) {
     rc = RCOK;
     // TODO: Optimize lower and upper to minimize aborts in before and after
     // Hopefully this would keep upper from being max int...
-    for(auto it = after.begin(); it != after.end();it++) {
-      uint64_t it_lower = time_table.get_lower(txn->get_thd_id(),*it);
-      if(it_lower < upper && it_lower > lower+1) {
-        upper = it_lower - 1;
+
+    for(auto it = before.begin(); it != before.end();it++) {
+      uint64_t it_upper = time_table.get_upper(txn->get_thd_id(),*it);
+      DEBUG("MAAT before %ld: %lu > %ld: %lu \n",txn->get_txn_id(),lower,*it,it_upper);
+      if(it_upper > lower && it_upper < upper-1) {
+        lower = it_upper + 1;
+        DEBUG("MAAT before set %ld: %lu\n",txn->get_txn_id(),lower);
       }
     }
     for(auto it = before.begin(); it != before.end();it++) {
       uint64_t it_upper = time_table.get_upper(txn->get_thd_id(),*it);
-      if(it_upper > lower && it_upper < upper-1) {
-        lower = it_upper + 1;
+      if(it_upper >= lower) {
+        if(lower > 0) {
+          time_table.set_upper(txn->get_thd_id(),*it,lower-1);
+          DEBUG("MAAT before set %ld: %lu\n",*it,lower-1);
+        } else {
+          time_table.set_upper(txn->get_thd_id(),*it,lower);
+          DEBUG("MAAT before set %ld: %lu\n",*it,lower);
+        }
       }
     }
+    for(auto it = after.begin(); it != after.end();it++) {
+      uint64_t it_lower = time_table.get_lower(txn->get_thd_id(),*it);
+      uint64_t it_upper = time_table.get_upper(txn->get_thd_id(),*it);
+      DEBUG("MAAT after %ld: %lu < %ld: %lu \n",txn->get_txn_id(),upper,*it,it_lower);
+      if(it_upper != UINT64_MAX && it_upper > lower + 2 && it_upper < upper ) {
+        upper = it_upper - 2;
+        DEBUG("MAAT after set %ld: %lu\n",txn->get_txn_id(),upper);
+      } 
+      if((it_lower < upper && it_lower > lower+1)) {
+        upper = it_lower - 1;
+        DEBUG("MAAT after set %ld: %lu\n",txn->get_txn_id(),upper);
+      } 
+    }
+    // set all upper and lower bounds to meet inequality
+    for(auto it = after.begin(); it != after.end();it++) {
+      uint64_t it_lower = time_table.get_lower(txn->get_thd_id(),*it);
+      if(it_lower <= upper) {
+        if(upper < UINT64_MAX) {
+          time_table.set_lower(txn->get_thd_id(),*it,upper+1);
+          DEBUG("MAAT after set %ld: %lu\n",*it,upper+1);
+        } else {
+          time_table.set_lower(txn->get_thd_id(),*it,upper);
+          DEBUG("MAAT after set %ld: %lu\n",*it,upper);
+        }
+      }
+    }
+
     assert(lower < upper);
     INC_STATS(txn->get_thd_id(),maat_range,upper-lower);
     INC_STATS(txn->get_thd_id(),maat_commit_cnt,1);

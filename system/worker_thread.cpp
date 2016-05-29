@@ -360,9 +360,6 @@ RC WorkerThread::process_rqry(Message * msg) {
 #endif
 #if CC_ALG == MAAT
           time_table.init(get_thd_id(),txn_man->get_txn_id());
-          assert(time_table.get_lower(get_thd_id(),txn_man->get_txn_id()) == 0);
-          assert(time_table.get_upper(get_thd_id(),txn_man->get_txn_id()) == UINT64_MAX);
-          assert(time_table.get_state(get_thd_id(),txn_man->get_txn_id()) == MAAT_RUNNING);
 #endif
 
   rc = txn_man->run_txn();
