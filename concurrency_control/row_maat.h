@@ -29,7 +29,7 @@ public:
   void write(row_t * data);
 	
 private:
-  pthread_mutex_t latch;
+  volatile bool maat_avail;
 	
 	row_t * _row;
 	
