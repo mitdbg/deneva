@@ -21,6 +21,7 @@ class Row_maat {
 public:
 	void init(row_t * row);
   RC access(access_t type, TxnManager * txn);
+  RC read_and_prewrite(TxnManager * txn);
   RC read(TxnManager * txn);
   RC prewrite(TxnManager * txn);
   RC abort(access_t type, TxnManager * txn);
