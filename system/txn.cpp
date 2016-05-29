@@ -172,7 +172,7 @@ void TxnManager::init(uint64_t thd_id, Workload * h_wl) {
   locking_done = false;
 #endif
   
-  ready = true;
+  txn_ready = true;
 
   txn_stats.init();
 }
@@ -229,7 +229,7 @@ TxnManager::release() {
   delete uncommitted_writes_y;
   delete uncommitted_reads;
 #endif
-  ready = true;
+  txn_ready = true;
 }
 
 void TxnManager::reset_query() {
@@ -509,7 +509,7 @@ void TxnManager::cleanup_row(RC rc, uint64_t rid) {
 		}
 #endif
 
-#if ROLL_BACK && (CC_ALG == DL_DETECT || CC_ALG == NO_WAIT || CC_ALG == WAIT_DIE || CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC)
+#if ROLL_BACK && (CC_ALG == NO_WAIT || CC_ALG == WAIT_DIE || CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC)
 		if (type == WR) {
       //printf("free 10 %ld\n",get_txn_id());
 			txn->accesses[rid]->orig_data->free_row();

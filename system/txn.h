@@ -199,10 +199,10 @@ public:
 
   TxnStats txn_stats;
 
-  bool set_ready() {return ATOM_CAS(ready,false,true);}
-  bool unset_ready() {return ATOM_CAS(ready,true,false);}
-  bool is_ready() {return ready == true;}
-  volatile bool ready;
+  bool set_ready() {return ATOM_CAS(txn_ready,false,true);}
+  bool unset_ready() {return ATOM_CAS(txn_ready,true,false);}
+  bool is_ready() {return txn_ready == true;}
+  volatile bool txn_ready;
   // Calvin
   uint32_t lock_ready_cnt;
   uint32_t calvin_expected_rsp_cnt;
