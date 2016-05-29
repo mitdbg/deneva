@@ -104,7 +104,7 @@ void Transaction::init() {
 void Transaction::reset(uint64_t thd_id) {
   release_accesses(thd_id);
   accesses.clear();
-  release_inserts(thd_id);
+  //release_inserts(thd_id);
   insert_rows.clear();  
   write_cnt = 0;
   row_cnt = 0;
@@ -121,9 +121,9 @@ void Transaction::release_accesses(uint64_t thd_id) {
 void Transaction::release_inserts(uint64_t thd_id) {
   for(uint64_t i = 0; i < insert_rows.size(); i++) {
     row_t * row = insert_rows[i];
-#if CC_ALG != HSTORE && CC_ALG != HSTORE_SPEC && CC_ALG != OCC && MODE == NORMAL_MODE
-      DEBUG_M("TxnManager::cleanup row->manager free\n");
-			mem_allocator.free(row->manager, 0);
+#if CC_ALG != MAAT && CC_ALG != OCC
+    DEBUG_M("TxnManager::cleanup row->manager free\n");
+    mem_allocator.free(row->manager, 0);
 #endif
     row->free_row();
     DEBUG_M("Transaction::release insert_rows free\n")
