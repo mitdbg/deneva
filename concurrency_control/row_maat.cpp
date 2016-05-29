@@ -197,6 +197,49 @@ RC Row_maat::commit(access_t type, TxnManager * txn, row_t * data) {
     uncommitted_writes->erase(txn->get_txn_id());
     // Apply write to DB
     write(data);
+
+  uint64_t txn_commit_ts = txn->get_commit_timestamp();
+  // Forward validation
+  // Check uncommitted writes against this txn's 
+    for(auto it = uncommitted_writes->begin(); it != uncommitted_writes->end();it++) {
+      if(txn->uncommitted_writes->count(*it) == 0) {
+        // apply timestamps
+        // these write txns need to come AFTER this txn
+        uint64_t it_lower = time_table.get_lower(txn->get_thd_id(),*it);
+        if(it_lower <= txn_commit_ts) {
+          time_table.set_lower(txn->get_thd_id(),*it,txn_commit_ts+1);
+          DEBUG("MAAT forward val set lower %ld: %lu\n",*it,txn_commit_ts+1);
+        }
+      }
+    }
+
+    uint64_t lower =  time_table.get_lower(txn->get_thd_id(),txn->get_txn_id());
+    for(auto it = uncommitted_writes->begin(); it != uncommitted_writes->end();it++) {
+      if(txn->uncommitted_writes_y->count(*it) == 0) {
+        // apply timestamps
+        // these write txns need to come BEFORE this txn
+        uint64_t it_upper = time_table.get_upper(txn->get_thd_id(),*it);
+        if(it_upper >= txn_commit_ts) {
+          time_table.set_upper(txn->get_thd_id(),*it,txn_commit_ts-1);
+          DEBUG("MAAT forward val set upper %ld: %lu\n",*it,txn_commit_ts-1);
+        }
+      }
+    }
+
+    for(auto it = uncommitted_reads->begin(); it != uncommitted_reads->end();it++) {
+      if(txn->uncommitted_reads->count(*it) == 0) {
+        // apply timestamps
+        // these write txns need to come BEFORE this txn
+        uint64_t it_upper = time_table.get_upper(txn->get_thd_id(),*it);
+        if(it_upper >= lower) {
+          time_table.set_upper(txn->get_thd_id(),*it,lower-1);
+          DEBUG("MAAT forward val set upper %ld: %lu\n",*it,lower-1);
+        }
+      }
+    }
+
+
+
 #else
   uint64_t txn_commit_ts = txn->get_commit_timestamp();
   if(type == RD) {
