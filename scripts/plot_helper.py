@@ -437,6 +437,14 @@ def tput(xval,vval,summary,summary_cl,
     if logscale:
         _ylab = 'System Throughput\n(Thousand txn/s, Log Scale)'
     print(_xval)
+    
+    # FIXME (Dana): MAAT --> OCC quick fix
+    print tpt.keys()
+    if "MAAT" in tpt.keys():
+        occ_tput = tpt["MAAT"]
+        del tpt["MAAT"]
+        tpt["OCC"] = occ_tput
+        
     draw_line(name,tpt,_xval,ylab=_ylab,xlab=_xlab,title=_title,bbox=bbox,ncol=2,ltitle=vname,ylimit=ylimit,logscale=logscale,logscalex=logscalex,legend=legend,base=base)
 #    draw_line("pn"+name,pntpt,_xval,ylab='Throughput (Txn/sec)',xlab=_xlab,title="Per Node "+_title,bbox=bbox,ncol=2,ltitle=vname) 
 
@@ -987,12 +995,12 @@ def time_breakdown(xval,summary,
         extras = {},
         name='',
         new_cfgs = {},
-        legend=True
+        legend=False
         ):
     stack_names = [
     'Idle',
     'Abort',
-    'Index',
+    #'Index',
     '2PC',
     'CC Manager',
     'Txn Manager',
@@ -1084,7 +1092,7 @@ def time_breakdown(xval,summary,
     data = [
         time_idle,
         time_abort,
-        time_index,
+        #time_index,
         time_twopc,
         time_ccman, 
         time_overhead, 

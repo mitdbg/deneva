@@ -363,7 +363,7 @@ def draw_line(fname, data, xticks,
         logscalex = False,
         ylimit=0, xlimit=None, xlab='Number of Cores',
         legend=False, linenames = None, figsize=(23/3, 10/3), styles=None,ltitle=''
-        ,base=2) :
+        ,base=2, num_yticks=6) :
 
     if len(xticks) <= 6:
         current_palette = sns.color_palette()
@@ -442,6 +442,7 @@ def draw_line(fname, data, xticks,
         which='major',
         color='0.75'
     )
+    axes.yaxis.set_major_locator(matplotlib.ticker.MaxNLocator(num_yticks))
     ax.set_axisbelow(True)
     ax.spines['right'].set_color('black')
     ax.spines['left'].set_color('black')
@@ -452,11 +453,11 @@ def draw_line(fname, data, xticks,
     plt.close()
     if not legend:
         fig = figure(figsize=((7.2, 0.4)))
-        fig.legend(lines, linenames,bbox_to_anchor = (1,1), prop={'size':10},frameon=True,ncol=len(linenames))
+        fig.legend(lines, linenames,bbox_to_anchor = (1,1), prop={'size':10},frameon=False,ncol=len(linenames))
         savefig('../figs/' + 'legend.pdf')
         plt.close()
         fig = figure(figsize=((3.9, 0.6)))
-        fig.legend(lines, linenames,bbox_to_anchor = (1,1), prop={'size':10},frameon=True,ncol=len(linenames)/2)
+        fig.legend(lines, linenames,bbox_to_anchor = (1,1), prop={'size':10},frameon=False,ncol=len(linenames)/2)
         savefig('../figs/' + 'legend_half.pdf')
         plt.close()
 #        fig = figure(figsize=((4.2, 0.4)))
@@ -605,7 +606,7 @@ def draw_stack(data, xlabels, slabels, figname='stack', title=None, figsize=(8, 
     savefig('../figs/' + figname + '.pdf', bbox_inches='tight')
     plt.close()
     fig = figure(figsize=(5.4, 0.3))
-    fig.legend(reversed(plots), tuple(slabels), prop={'size':8},ncol=len(slabels))
+    fig.legend(reversed(plots), tuple(slabels), prop={'size':8},ncol=len(slabels), columnspacing=1)
 #    fig.legend(reversed(plots), tuple(slabels), bbox_to_anchor = (1,1, 1, 1), prop={'size':10})
     savefig('../figs/breakdown_legend.pdf')
     plt.close()
