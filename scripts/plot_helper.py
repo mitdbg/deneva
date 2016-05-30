@@ -1098,6 +1098,10 @@ def time_breakdown(xval,summary,
         time_overhead, 
         time_work]
     pp.pprint(data)
+    
+    # Quick and dirty label fix by Dana
+    if "MAAT" in _xval:
+        _xval[_xval.index("MAAT")] = "OCC"
     draw_stack(data,_xval,stack_names,figname=name,title=_title,ymax=_ymax,legend=legend)
     print("Created plot {}".format(name))
 
