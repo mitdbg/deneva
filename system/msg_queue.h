@@ -42,6 +42,9 @@ public:
 private:
  //LockfreeQueue m_queue;
 // This is close to max capacity for boost
+#if NETWORK_DELAY_TEST
+  boost::lockfree::queue<msg_entry*> ** cl_m_queue;
+#endif
   boost::lockfree::queue<msg_entry*> ** m_queue;
   std::vector<msg_entry*> sthd_m_cache;
   uint64_t ** ctr;

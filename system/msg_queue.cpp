@@ -24,8 +24,14 @@
 void MessageQueue::init() {
   //m_queue = new boost::lockfree::queue<msg_entry* > (0);
   m_queue = new boost::lockfree::queue<msg_entry* > * [g_this_send_thread_cnt];
+#if NETWORK_DELAY_TEST
+  cl_m_queue = new boost::lockfree::queue<msg_entry* > * [g_this_send_thread_cnt];
+#endif
   for(uint64_t i = 0; i < g_this_send_thread_cnt; i++) {
     m_queue[i] = new boost::lockfree::queue<msg_entry* > (0);
+#if NETWORK_DELAY_TEST
+    cl_m_queue[i] = new boost::lockfree::queue<msg_entry* > (0);
+#endif
   }
   ctr = new  uint64_t * [g_this_send_thread_cnt];
   for(uint64_t i = 0; i < g_this_send_thread_cnt; i++) {
@@ -54,6 +60,12 @@ void MessageQueue::enqueue(uint64_t thd_id, Message * msg,uint64_t dest) {
 #else
   uint64_t rand = mtx_time_start % g_this_send_thread_cnt;
 #endif
+#if NETWORK_DELAY_TEST
+  if(ISCLIENTN(dest)) {
+    while(!cl_m_queue[rand]->push(entry) && !simulation->is_done()) {}
+    return;
+  }
+#endif
   while(!m_queue[rand]->push(entry) && !simulation->is_done()) {}
   INC_STATS(thd_id,mtx[3],get_sys_clock() - mtx_time_start);
   INC_STATS(thd_id,msg_queue_enq_cnt,1);
@@ -67,11 +79,14 @@ uint64_t MessageQueue::dequeue(uint64_t thd_id, Message *& msg) {
   uint64_t mtx_time_start = get_sys_clock();
   bool valid = false;
 #if NETWORK_DELAY_TEST
-  entry = sthd_m_cache[thd_id % g_this_send_thread_cnt];
-  if(entry)
-    valid = true;
-  else
-    valid = m_queue[thd_id%g_this_send_thread_cnt]->pop(entry);
+  valid = cl_m_queue[thd_id%g_this_send_thread_cnt]->pop(entry);
+  if(!valid) {
+    entry = sthd_m_cache[thd_id % g_this_send_thread_cnt];
+    if(entry)
+      valid = true;
+    else
+      valid = m_queue[thd_id%g_this_send_thread_cnt]->pop(entry);
+  }
 #else
   //uint64_t ctr_id = thd_id % g_this_send_thread_cnt;
   //uint64_t start_ctr = *ctr[ctr_id];
@@ -92,17 +107,20 @@ uint64_t MessageQueue::dequeue(uint64_t thd_id, Message *& msg) {
   if(valid) {
     assert(entry);
 #if NETWORK_DELAY_TEST
-    if(ISSERVER && !ISCLIENTN(entry->dest) && (get_sys_clock() - entry->starttime) < g_network_delay) {
-      sthd_m_cache[thd_id%g_this_send_thread_cnt] = entry;
-      INC_STATS(thd_id,mtx[5],get_sys_clock() - curr_time);
-      return UINT64_MAX;
-    } else {
-      sthd_m_cache[thd_id%g_this_send_thread_cnt] = NULL;
+    if(!ISCLIENTN(entry->dest)) {
+      if(ISSERVER && (get_sys_clock() - entry->starttime) < g_network_delay) {
+        sthd_m_cache[thd_id%g_this_send_thread_cnt] = entry;
+        INC_STATS(thd_id,mtx[5],get_sys_clock() - curr_time);
+        return UINT64_MAX;
+      } else {
+        sthd_m_cache[thd_id%g_this_send_thread_cnt] = NULL;
+      }
+      if(ISSERVER) {
+        INC_STATS(thd_id,mtx[38],1);
+        INC_STATS(thd_id,mtx[39],curr_time - entry->starttime);
+      }
     }
-    if(ISSERVER && !ISCLIENTN(entry->dest)) {
-      INC_STATS(thd_id,mtx[38],1);
-      INC_STATS(thd_id,mtx[39],curr_time - entry->starttime);
-    }
+
 #endif
     dest = entry->dest;
     assert(dest < g_total_node_cnt);
