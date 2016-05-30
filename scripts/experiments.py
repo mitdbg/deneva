@@ -53,7 +53,7 @@ def ycsb_scaling():
     wl = 'YCSB'
     nnodes = [1,2,4,8,16,32,64]
     algos=['NO_WAIT','WAIT_DIE','MVCC','MAAT','CALVIN','TIMESTAMP']
-#    algos=['CALVIN']
+    algos=['CALVIN']
     base_table_size=2097152*8
 #    txn_write_perc = [0.5,1.0]
     txn_write_perc = [0.5]
@@ -94,8 +94,8 @@ def ycsb_skew():
     wl = 'YCSB'
     nnodes = [16]
     algos=['NO_WAIT','WAIT_DIE','MVCC','MAAT','CALVIN','TIMESTAMP']
-    algos=['CALVIN']
 #    algos=['CALVIN']
+#    algos=['MAAT']
     base_table_size=2097152*8
 #    txn_write_perc = [0.5,1.0]
     txn_write_perc = [0.5]
@@ -113,13 +113,11 @@ def ycsb_writes():
     wl = 'YCSB'
     nnodes = [16]
     algos=['NO_WAIT','WAIT_DIE','MVCC','MAAT','CALVIN','TIMESTAMP']
-    algos=['CALVIN']
 #    algos=['CALVIN']
+#    algos=['MAAT']
     base_table_size=2097152*8
     txn_write_perc = [0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]
     tup_write_perc = [0.5]
-    load = [12000]
-    load = [10000,12000]
     load = [10000]
     tcnt = [4]
     skew = [0.6]
@@ -149,8 +147,8 @@ def ycsb_partitions():
     wl = 'YCSB'
     nnodes = [16]
     algos=['NO_WAIT','WAIT_DIE','MVCC','MAAT','CALVIN','TIMESTAMP']
-    algos=['CALVIN']
 #    algos=['CALVIN']
+#    algos=['MAAT']
     load = [10000,12000]
 #    load = [12000]
     load = [10000]
@@ -166,7 +164,42 @@ def ycsb_partitions():
     exp = [[wl,rpq,p,n,algo,base_table_size*n,tup_wr_perc,txn_wr_perc,ld,sk,thr,1] for thr,txn_wr_perc,tup_wr_perc,algo,sk,ld,n,p in itertools.product(tcnt,txn_write_perc,tup_write_perc,algos,skew,load,nnodes,nparts)]
     return fmt,exp
 
+def ycsb_partitions_distr():
+    wl = 'YCSB'
+    nnodes = [16]
+    algos=['NO_WAIT','WAIT_DIE','MVCC','MAAT','CALVIN','TIMESTAMP']
+    load = [10000,12000]
+#    load = [12000]
+    load = [10000]
+    nparts = [2,4,6,8,10,12,14,16]
+    base_table_size=2097152*8
+    txn_write_perc = [0.5]
+    tup_write_perc = [0.5]
+    tcnt = [4]
+    skew = [0.6]
+#    recv = [2,4]
+    rpq =  16
+    fmt = ["WORKLOAD","REQ_PER_QUERY","PART_PER_TXN","NODE_CNT","CC_ALG","SYNTH_TABLE_SIZE","TUP_WRITE_PERC","TXN_WRITE_PERC","MAX_TXN_IN_FLIGHT","ZIPF_THETA","THREAD_CNT","STRICT_PPT"]
+    exp = [[wl,rpq,p,n,algo,base_table_size*n,tup_wr_perc,txn_wr_perc,ld,sk,thr,1] for thr,txn_wr_perc,tup_wr_perc,algo,sk,ld,n,p in itertools.product(tcnt,txn_write_perc,tup_write_perc,algos,skew,load,nnodes,nparts)]
+    return fmt,exp
+
+
 def tpcc_scaling():
+    wl = 'TPCC'
+    nnodes = [1,2,4,8,16,32,64]
+    nalgos=['NO_WAIT','WAIT_DIE','MAAT','MVCC','TIMESTAMP','CALVIN']
+#    nalgos=['CALVIN']
+    npercpay=[0.0,1.0]
+    wh=128
+#    wh=1
+    load = [10000]
+    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PERC_PAYMENT","NUM_WH","MAX_TXN_IN_FLIGHT"]
+    exp = [[wl,n,cc,pp,wh*n,tif] for tif,pp,n,cc in itertools.product(load,npercpay,nnodes,nalgos)]
+    wh=4
+    exp = exp+[[wl,n,cc,pp,wh*n,tif] for tif,pp,n,cc in itertools.product(load,npercpay,nnodes,nalgos)]
+    return fmt,exp
+
+def tpcc_scaling1():
     wl = 'TPCC'
     nnodes = [1,2,4,8,16,32,64]
     nalgos=['NO_WAIT','WAIT_DIE','MAAT','MVCC','TIMESTAMP','CALVIN']
@@ -177,14 +210,16 @@ def tpcc_scaling():
     exp = [[wl,n,cc,pp,wh*n,tif] for tif,pp,n,cc in itertools.product(load,npercpay,nnodes,nalgos)]
     return fmt,exp
 
+
 def tpcc_scaling2():
     wl = 'TPCC'
     nnodes = [1,2,4,8,16,32,64]
     nalgos=['NO_WAIT','WAIT_DIE','MAAT','MVCC','TIMESTAMP','CALVIN']
-    npercpay=[0.0,0.5,1.0]
+    npercpay=[0.0,1.0]
     wh=4
-    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PERC_PAYMENT","NUM_WH"]
-    exp = [[wl,n,cc,pp,wh*n] for pp,n,cc in itertools.product(npercpay,nnodes,nalgos)]
+    load = [10000]
+    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","PERC_PAYMENT","NUM_WH","MAX_TXN_IN_FLIGHT"]
+    exp = [[wl,n,cc,pp,wh*n,tif] for tif,pp,n,cc in itertools.product(load,npercpay,nnodes,nalgos)]
     return fmt,exp
 
 def tpcc_scaling_whset():
@@ -765,10 +800,8 @@ def breakdown_setup(summary,nfmt,nexp,x_name,key_names=[],norm=False
 def network_sweep():
     wl = 'YCSB'
     nalgos=['NO_WAIT','WAIT_DIE','MVCC','MAAT','TIMESTAMP','CALVIN']
-#    nalgos=['MAAT']
-#    nalgos=['NO_WAIT','MVCC','OCC']
 # Network delay in ms
-    ndelay=[0,0.05,0.1,0.25,0.5,0.75,1,1.75,2.5,5,7.5,10,12.5,15,17.5,20,25,30,35,40,45,50]
+    ndelay=[0,0.05,0.1,0.25,0.5,0.75,1,1.75,2.5,5,7.5,10,17.5,25,50,75,100]
     ndelay = [int(n*1000000) for n in ndelay]
     nnodes = [2,8]
     txn_write_perc = [0.5]

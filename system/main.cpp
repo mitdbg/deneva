@@ -204,7 +204,7 @@ int main(int argc, char* argv[])
 	uint64_t wthd_cnt = thd_cnt;
 	uint64_t rthd_cnt = g_rem_thread_cnt;
 	uint64_t sthd_cnt = g_send_thread_cnt;
-  uint64_t all_thd_cnt = thd_cnt + rthd_cnt + sthd_cnt + 1;
+  uint64_t all_thd_cnt = thd_cnt + rthd_cnt + sthd_cnt + g_abort_thread_cnt;
 #if LOGGING
   all_thd_cnt += 1; // logger thread
 #endif
@@ -296,12 +296,28 @@ int main(int argc, char* argv[])
 		pthread_create(&p_thds[id++], NULL, run_thread, (void *)&log_thds[0]);
 #endif
 
+#if CC_ALG != CALVIN
   abort_thds[0].init(id,g_node_id,m_wl);
   pthread_create(&p_thds[id++], NULL, run_thread, (void *)&abort_thds[0]);
+#endif
 
 #if CC_ALG == CALVIN
+#if SET_AFFINITY
+		CPU_ZERO(&cpus);
+    CPU_SET(cpu_cnt, &cpus);
+    pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
+		cpu_cnt++;
+#endif
+
   calvin_lock_thds[0].init(id,g_node_id,m_wl);
   pthread_create(&p_thds[id++], &attr, run_thread, (void *)&calvin_lock_thds[0]);
+#if SET_AFFINITY
+		CPU_ZERO(&cpus);
+    CPU_SET(cpu_cnt, &cpus);
+    pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
+		cpu_cnt++;
+#endif
+
   calvin_seq_thds[0].init(id,g_node_id,m_wl);
   pthread_create(&p_thds[id++], &attr, run_thread, (void *)&calvin_seq_thds[0]);
 #endif

@@ -539,6 +539,7 @@ RC WorkerThread::process_calvin_rtxn(Message * msg) {
 
   DEBUG("START %ld %f %lu\n",txn_man->get_txn_id(),simulation->seconds_from_start(get_sys_clock()),txn_man->txn_stats.starttime);
   assert(ISSERVERN(txn_man->return_id));
+  txn_man->txn_stats.local_wait_time += get_sys_clock() - txn_man->txn_stats.wait_starttime;
   // Execute
   RC rc = txn_man->run_calvin_txn();
   //if((txn_man->phase==6 && rc == RCOK) || txn_man->active_cnt == 0 || txn_man->participant_cnt == 1) {

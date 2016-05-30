@@ -134,7 +134,7 @@ def network_test(num_nodes=16,exps="network_experiment",skip_completed='False',e
 @parallel
 def check_cpu():
     put("test_cpu.out",env.rem_homedir)
-    run("chmod a+x test_cpu.out; ./test_cpu.out")
+    run("chmod a+x test_cpu.out; time ./test_cpu.out")
 
 @task
 @hosts('localhost')

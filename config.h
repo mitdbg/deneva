@@ -5,8 +5,8 @@
 /***********************************************/
 // Simulation + Hardware
 /***********************************************/
-#define NODE_CNT 2 
-#define THREAD_CNT 2
+#define NODE_CNT 2
+#define THREAD_CNT 1
 #define REM_THREAD_CNT THREAD_CNT
 #define SEND_THREAD_CNT THREAD_CNT
 #define CORE_CNT 8
@@ -44,7 +44,7 @@
 #define TIME_ENABLE         true //STATS_ENABLE
 
 #define FIN_BY_TIME true
-#define MAX_TXN_IN_FLIGHT 100
+#define MAX_TXN_IN_FLIGHT 10
 
 #define SERVER_GENERATE_QUERIES false
 
@@ -162,7 +162,7 @@
 // max number of rows touched per transaction
 #define MAX_ROW_PER_TXN       64
 #define QUERY_INTVL         1UL
-#define MAX_TXN_PER_PART 500000
+#define MAX_TXN_PER_PART 5000
 #define FIRST_PART_LOCAL      true
 #define MAX_TUPLE_SIZE        1024 // in bytes
 #define GEN_BY_MPR false
@@ -176,8 +176,8 @@
 #define INIT_PARALLELISM 8
 #define SYNTH_TABLE_SIZE 65536
 #define ZIPF_THETA 0.3
-#define TXN_WRITE_PERC 0.0
-#define TUP_WRITE_PERC 0.0
+#define TXN_WRITE_PERC 0.5
+#define TUP_WRITE_PERC 0.5
 #define SCAN_PERC           0
 #define SCAN_LEN          20
 #define PART_PER_TXN PART_CNT
@@ -200,7 +200,7 @@
 // are not modeled.
 #define TPCC_ACCESS_ALL       false 
 #define WH_UPDATE         true
-#define NUM_WH 32
+#define NUM_WH 2
 // % of transactions that access multiple partitions
 #define MPR 1.0
 #define MPIR 0.01
@@ -223,7 +223,7 @@ enum TPCCTxnType {TPCC_ALL,
 extern TPCCTxnType          g_tpcc_txn_type;
 
 //#define TXN_TYPE          TPCC_ALL
-#define PERC_PAYMENT 0.0
+#define PERC_PAYMENT 1.0
 #define FIRSTNAME_MINLEN      8
 #define FIRSTNAME_LEN         16
 #define LASTNAME_LEN        16
@@ -347,7 +347,7 @@ extern TestCases          g_test_case;
 #define PROG_TIMER 1000 * BILLION // in s
 #define BATCH_TIMER 0
 #define SEQ_BATCH_TIMER 5 * 1 * MILLION // ~5ms -- same as CALVIN paper
-#define DONE_TIMER 2 * 60 * BILLION // ~1 minutes
+#define DONE_TIMER 1 * 20 * BILLION // ~1 minutes
 #define WARMUP_TIMER 0 * 60 * BILLION // ~1 minutes
 
 #define SEED 0

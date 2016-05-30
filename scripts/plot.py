@@ -103,8 +103,6 @@ for exp in exps:
             nclients = cfgs[cfgs["CLIENT_NODE_CNT"]]
             ntotal = nnodes + nclients
         cc = cfgs["CC_ALG"]
-        if  cc == "CALVIN":
-            ntotal += 1
 
         is_network_test = cfgs["NETWORK_TEST"] == "true"
         if is_network_test:
@@ -142,9 +140,10 @@ for exp in exps:
         else:
             opened = False
             timedate = []
+            print("Experiment count: {}".format(exp_cnt))
             if _timedate == []:
 #                ofile = "{}{}_{}*.out".format(result_dir,0,output_f)
-                ofile = "{}*{}*".format(result_dir,output_f)
+                ofile = "{}/0_{}*".format(result_dir,output_f)
                 res_list = sorted(glob.glob(ofile),key=os.path.getmtime,reverse=True)
                 if res_list == 0:
                     continue
@@ -156,14 +155,13 @@ for exp in exps:
                     timedate.append(re.search("(\d{8}-\d{6})",res_list[x]).group(0))
             else:
                 timedate = _timedate
+            print("Experiments from date: {}".format(timedate))
             p_sfiles = ["{}s_{}_{}.p".format(result_dir,output_f,t) for t in timedate]
             p_cfiles = ["{}c_{}_{}.p".format(result_dir,output_f,t) for t in timedate]
             for p_sfile,p_cfile,time in zip(p_sfiles,p_cfiles,timedate):
                 print(p_sfile)
-                p_qfile = "{}q_{}_{}.p".format(result_dir,output_f,time)
                 r = {}
                 r2 = {}
-                r3 = {}
                 if clear or not os.path.isfile(p_sfile) or not os.path.isfile(p_cfile):
                     for n in range(ntotal):
                         ofile = "{}{}_{}*{}.out".format(result_dir,n,output_f,time)
@@ -176,21 +174,14 @@ for exp in exps:
                             elif n >= nnodes and n < nnodes + nclients:
                                 print(cc,n)
                                 r2 = get_summary(res_list[0],r2)
-                            else:
-                                r3 = get_summary(res_list[0],r3)
                     get_lstats(r)
                     get_lstats(r2)
-                    get_lstats(r3)
                     with open(p_sfile,'w') as f:
                         p = pickle.Pickler(f)
                         p.dump(r)
                     with open(p_cfile,'w') as f:
                         p = pickle.Pickler(f)
                         p.dump(r2)
-                    if cc == "CALVIN":
-                        with open(p_qfile,'w') as f:
-                            p = pickle.Pickler(f)
-                            p.dump(r3)
                 else:
                     with open(p_sfile,'r') as f:
                         p = pickle.Unpickler(f)
@@ -200,11 +191,6 @@ for exp in exps:
                         p = pickle.Unpickler(f)
                         r2 = p.load()
                         opened = True
-                    if cc == "CALVIN":
-                        with open(p_qfile,'r') as f:
-                            p = pickle.Unpickler(f)
-                            r3 = p.load()
-                            opened = True
 
 #                merge_results(r,cfgs["NODE_CNT"],0)
 #                merge_results(r2,cfgs["CLIENT_NODE_CNT"],0)

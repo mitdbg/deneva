@@ -93,6 +93,8 @@ SHORTNAMES = {
 stat_map = OrderedDict([
    ('total_runtime', []),
    ('post_warmup_txn_cnt', []),
+   ('client_runtime', []),
+   ('client_txn_cnt', []),
 
   # Execution
   ('tput', []),
@@ -1021,6 +1023,12 @@ def get_summary_stats(stats,summary,summary_cl,x,v,cc):
             sk[k] = avg(summary[k])
         except KeyError:
             sk[k] = 0
+    try:
+        sk["client_runtime"] = avg(summary_cl["total_runtime"])
+        sk["client_txn_cnt"] = avg(summary_cl["txn_cnt"]) - avg(summary_cl["post_warmup_txn_cnt"])
+    except KeyError:
+        sk["client_runtime"] = 0 
+        sk["client_txn_cnt"] = 0 
     if "progress" in summary:
         for p in range(len(summary["progress"])):
             for k in stat_map.keys():
