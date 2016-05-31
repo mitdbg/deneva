@@ -71,7 +71,10 @@ RC CalvinLockThread::run() {
     msg->copy_to_txn(txn_man);
     txn_man->register_thread(this);
     assert(ISSERVERN(txn_man->return_id));
+
     INC_STATS(get_thd_id(),sched_txn_table_time,get_sys_clock() - prof_starttime);
+    prof_starttime = get_sys_clock();
+
     // Acquire locks
     rc = txn_man->acquire_locks();
 
@@ -79,6 +82,9 @@ RC CalvinLockThread::run() {
       work_queue.enqueue(_thd_id,msg,false);
     }
     txn_man->set_ready();
+
+    INC_STATS(_thd_id,mtx[33],get_sys_clock() - prof_starttime);
+    prof_starttime = get_sys_clock();
 
   }
   printf("FINISH %ld:%ld\n",_node_id,_thd_id);
@@ -99,8 +105,12 @@ RC CalvinSequencerThread::run() {
 
   Message * msg;
 	last_batchtime = get_wall_clock();
+  uint64_t idle_starttime = 0;
+  uint64_t prof_starttime = 0;
 
 	while(!simulation->is_done()) {
+
+    prof_starttime = get_sys_clock();
 
     if(is_batch_ready()) {
       simulation->advance_seq_epoch();
@@ -108,10 +118,23 @@ RC CalvinSequencerThread::run() {
       last_batchtime = get_wall_clock();
     }
 
+    INC_STATS(_thd_id,mtx[30],get_sys_clock() - prof_starttime);
+    prof_starttime = get_sys_clock();
+
     msg = work_queue.sequencer_dequeue(_thd_id);
 
-		if(!msg)
+    INC_STATS(_thd_id,mtx[31],get_sys_clock() - prof_starttime);
+    prof_starttime = get_sys_clock();
+
+		if(!msg) {
+      if(idle_starttime ==0)
+        idle_starttime = get_sys_clock();
 			continue;
+    }
+    if(idle_starttime > 0) {
+      INC_STATS(_thd_id,seq_idle_time,get_sys_clock() - idle_starttime);
+      idle_starttime = 0;
+    }
 
     switch (msg->get_rtype()) {
       case CL_QRY:
@@ -130,6 +153,9 @@ RC CalvinSequencerThread::run() {
       default:
         assert(false);
     }
+    
+    INC_STATS(_thd_id,mtx[32],get_sys_clock() - prof_starttime);
+    prof_starttime = get_sys_clock();
   }
   printf("FINISH %ld:%ld\n",_node_id,_thd_id);
   fflush(stdout);

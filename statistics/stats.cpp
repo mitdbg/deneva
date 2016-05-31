@@ -169,6 +169,7 @@ void Stats_thd::clear() {
   seq_complete_cnt=0;
   seq_process_time=0;
   seq_prep_time=0;
+  seq_idle_time=0;
   seq_queue_wait_time=0;
   seq_queue_cnt=0;
   seq_queue_enq_cnt=0;
@@ -696,6 +697,12 @@ void Stats_thd::print(FILE * outf) {
   );
 
   // Calvin
+  double seq_queue_wait_avg_time = 0;
+  if(seq_queue_cnt > 0)
+    seq_queue_wait_avg_time = seq_queue_wait_time / seq_queue_cnt;
+  double sched_queue_wait_avg_time = 0;
+  if(sched_queue_cnt > 0)
+    sched_queue_wait_avg_time = sched_queue_wait_time / sched_queue_cnt;
   fprintf(outf,
   ",seq_txn_cnt=%ld"
   ",seq_batch_cnt=%ld"
@@ -706,14 +713,17 @@ void Stats_thd::print(FILE * outf) {
   ",seq_complete_cnt=%ld"
   ",seq_process_time=%f"
   ",seq_prep_time=%f"
+  ",seq_idle_time=%f"
   ",seq_queue_wait_time=%f"
   ",seq_queue_cnt=%ld"
   ",seq_queue_enq_cnt=%ld"
+  ",seq_queue_wait_avg_time=%f"
   ",seq_queue_enqueue_time=%f"
   ",seq_queue_dequeue_time=%f"
   ",sched_queue_wait_time=%f"
   ",sched_queue_cnt=%ld"
   ",sched_queue_enq_cnt=%ld"
+  ",sched_queue_wait_avg_time=%f"
   ",sched_queue_enqueue_time=%f"
   ",sched_queue_dequeue_time=%f"
   ",calvin_sched_time=%f"
@@ -730,14 +740,17 @@ void Stats_thd::print(FILE * outf) {
   ,seq_complete_cnt 
   ,seq_process_time /BILLION
   ,seq_prep_time /BILLION
+  ,seq_idle_time /BILLION
   ,seq_queue_wait_time /BILLION
   ,seq_queue_cnt
   ,seq_queue_enq_cnt
+  ,seq_queue_wait_avg_time /BILLION
   ,seq_queue_enqueue_time /BILLION
   ,seq_queue_dequeue_time /BILLION
   ,sched_queue_wait_time /BILLION
   ,sched_queue_cnt
   ,sched_queue_enq_cnt
+  ,sched_queue_wait_avg_time /BILLION
   ,sched_queue_enqueue_time /BILLION
   ,sched_queue_dequeue_time /BILLION
   ,calvin_sched_time /BILLION
@@ -1007,6 +1020,7 @@ void Stats_thd::combine(Stats_thd * stats) {
   seq_complete_cnt+=stats->seq_complete_cnt;
   seq_process_time+=stats->seq_process_time;
   seq_prep_time+=stats->seq_prep_time;
+  seq_idle_time+=stats->seq_idle_time;
   seq_queue_wait_time+=stats->seq_queue_wait_time;
   seq_queue_cnt+=stats->seq_queue_cnt;
   seq_queue_enq_cnt+=stats->seq_queue_enq_cnt;

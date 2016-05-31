@@ -170,6 +170,7 @@ public:
   uint64_t seq_complete_cnt;
   double seq_process_time;
   double seq_prep_time;
+  double seq_idle_time;
   double seq_queue_wait_time;
   uint64_t seq_queue_cnt;
   uint64_t seq_queue_enq_cnt;
