@@ -1056,26 +1056,37 @@ def time_breakdown(xval,summary,
             continue
         try:
             time_idle[i] = avg(summary[cfgs]['worker_idle_time'])
+            if 'seq_idle_time' in summary[cfgs] and 'sched_idle_time' in summary[cfgs]:
+                time_idle[i] = time_idle[i] + avg(summary[cfgs]['seq_idle_time']) + avg(summary[cfgs]['sched_idle_time'])
             time_index[i] = avg(summary[cfgs]['txn_index_time'])
             time_abort[i] = avg(summary[cfgs]['abort_time'])
             time_ccman[i] = avg(summary[cfgs]['txn_manager_time']) + avg(summary[cfgs]['txn_validate_time'])
+            if 'seq_process_time' in summary[cfgs] and 'seq_ack_time' in summary[cfgs] and 'seq_prep_time' in summary[cfgs] and 'calvin_sched_time' in summary[cfgs]:
+                time_ccman[i] = time_ccman[i] + avg(summary[cfgs]['seq_process_time']) + avg(summary[cfgs]['seq_ack_time']) + avg(summary[cfgs]['seq_prep_time']) + avg(summary[cfgs]['calvin_sched_time'])
             time_twopc[i] =  avg(summary[cfgs]['proc_time_type6']) + avg(summary[cfgs]['proc_time_type11']) + avg(summary[cfgs]['proc_time_type12']) + avg(summary[cfgs]['proc_time_type16'])
             if time_twopc[i] > avg(summary[cfgs]['txn_cleanup_time']):
                 time_twopc[i] -= avg(summary[cfgs]['txn_cleanup_time'])
             time_overhead[i] = avg(summary[cfgs]['txn_cleanup_time']) + avg(summary[cfgs]['txn_table_release_time']) + avg(summary[cfgs]['txn_table_get_time'])
             time_work[i] = avg(summary[cfgs]['txn_process_time'])
-            total[i] = sum(time_index[i] + time_abort[i] + time_ccman[i] + time_twopc[i] + time_work[i] + time_idle[i] + time_overhead[i])
+#            total[i] = sum(time_index[i] + time_abort[i] + time_ccman[i] + time_twopc[i] + time_work[i] + time_idle[i] + time_overhead[i])
+            total[i] = sum(time_abort[i] + time_ccman[i] + time_twopc[i] + time_work[i] + time_idle[i] + time_overhead[i])
 
         except KeyError:
             print("KeyError: {}".format(cfgs))
 
 
+    print("time_idle")
     pp.pprint(time_idle)
-    pp.pprint(time_index)
+#    pp.pprint(time_index)
+    print("time_abort")
     pp.pprint(time_abort)
+    print("time_twopc")
     pp.pprint(time_twopc)
+    print("time_cc_man")
     pp.pprint(time_ccman)
+    print("time_overhead")
     pp.pprint(time_overhead)
+    print("time_work")
     pp.pprint(time_work)
     pp.pprint(total)
     if normalized:
