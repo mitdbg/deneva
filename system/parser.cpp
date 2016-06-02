@@ -211,6 +211,15 @@ void parser(int argc, char * argv[]) {
     g_thread_cnt = g_thread_cnt -2;
   else
     g_total_thread_cnt += 2; // sequencer + scheduler thread
+  /*
+  if(g_thread_cnt > 1) {
+    g_thread_cnt = g_thread_cnt -1; // scheduler thread
+    g_total_thread_cnt += 1; // sequencer thread
+  }
+  else {
+    g_total_thread_cnt += 2; // sequencer + scheduler thread
+  }
+    */
   // Remove abort thread
   g_abort_thread_cnt = 0;
   g_total_thread_cnt -= 1;

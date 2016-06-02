@@ -96,7 +96,7 @@ void CalvinSequencerThread::setup() {
 }
 
 bool CalvinSequencerThread::is_batch_ready() {
-  bool ready = get_wall_clock() - last_batchtime >= g_seq_batch_time_limit;
+  bool ready = get_wall_clock() - simulation->last_seq_epoch_time >= g_seq_batch_time_limit;
   return ready;
 }
 
@@ -104,7 +104,6 @@ RC CalvinSequencerThread::run() {
   tsetup();
 
   Message * msg;
-	last_batchtime = get_wall_clock();
   uint64_t idle_starttime = 0;
   uint64_t prof_starttime = 0;
 
@@ -114,8 +113,8 @@ RC CalvinSequencerThread::run() {
 
     if(is_batch_ready()) {
       simulation->advance_seq_epoch();
+      //last_batchtime = get_wall_clock();
       seq_man.send_next_batch(_thd_id);
-      last_batchtime = get_wall_clock();
     }
 
     INC_STATS(_thd_id,mtx[30],get_sys_clock() - prof_starttime);

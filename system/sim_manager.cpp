@@ -37,6 +37,7 @@ void SimManager::init() {
   run_starttime = get_wall_clock();
 #endif
   last_worker_epoch_time = run_starttime;
+  last_seq_epoch_time = get_wall_clock();
 }
 
 
@@ -124,6 +125,7 @@ uint64_t SimManager::get_seq_epoch() {
 
 void SimManager::advance_seq_epoch() {
   ATOM_ADD(seq_epoch,1);
+  last_seq_epoch_time += g_seq_batch_time_limit;
 }
 
 uint64_t SimManager::get_worker_epoch() {

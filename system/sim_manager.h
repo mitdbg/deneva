@@ -32,6 +32,7 @@ public:
   uint64_t seq_epoch;
   uint64_t worker_epoch;
   uint64_t last_worker_epoch_time;
+  uint64_t last_seq_epoch_time;
   int64_t epoch_txn_cnt;
   uint64_t txn_cnt;
   uint64_t inflight_cnt;
