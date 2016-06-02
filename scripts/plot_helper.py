@@ -1063,7 +1063,7 @@ def time_breakdown(xval,summary,
             time_ccman[i] = avg(summary[cfgs]['txn_manager_time']) + avg(summary[cfgs]['txn_validate_time'])
             if 'seq_process_time' in summary[cfgs] and 'seq_ack_time' in summary[cfgs] and 'seq_prep_time' in summary[cfgs] and 'calvin_sched_time' in summary[cfgs]:
                 time_ccman[i] = time_ccman[i] + avg(summary[cfgs]['seq_process_time']) + avg(summary[cfgs]['seq_ack_time']) + avg(summary[cfgs]['seq_prep_time']) + avg(summary[cfgs]['calvin_sched_time'])
-            time_twopc[i] =  avg(summary[cfgs]['proc_time_type6']) + avg(summary[cfgs]['proc_time_type11']) + avg(summary[cfgs]['proc_time_type12']) + avg(summary[cfgs]['proc_time_type16'])
+            time_twopc[i] =  avg(summary[cfgs]['proc_time_type6']) + avg(summary[cfgs]['proc_time_type11']) + avg(summary[cfgs]['proc_time_type12']) + avg(summary[cfgs]['proc_time_type16']) - avg(summary[cfgs]['txn_validate_time'])
             if time_twopc[i] > avg(summary[cfgs]['txn_cleanup_time']):
                 time_twopc[i] -= avg(summary[cfgs]['txn_cleanup_time'])
             time_overhead[i] = avg(summary[cfgs]['txn_cleanup_time']) + avg(summary[cfgs]['txn_table_release_time']) + avg(summary[cfgs]['txn_table_get_time'])

@@ -13,6 +13,10 @@ PATH=os.getcwd()
 ###########################################
 # Get experiments from command line
 ###########################################
+
+result_dir = PATH + "/../results/"
+result_dir = PATH + "/../results/vldb_results_0530/"
+
 blah = False
 drop = False
 store_tmp = True
@@ -55,7 +59,6 @@ for arg in sys.argv[1:]:
         exps.append(arg)
     last_arg = arg
 
-result_dir = PATH + "/../results/"
 #result_dir = PATH + "/../results/plotting_results_0524/"
 #result_dir = PATH + "/../results/ec2_results_0524/"
 #result_dir = PATH + "/../results/sigmod_results/"
@@ -194,13 +197,16 @@ for exp in exps:
 
 #                merge_results(r,cfgs["NODE_CNT"],0)
 #                merge_results(r2,cfgs["CLIENT_NODE_CNT"],0)
+                try:
+                    print("Tput: {} / {} = {}".format(avg(r2["txn_cnt"]),avg(r2["total_runtime"]),sum(r2["txn_cnt"])/sum(r2["total_runtime"])))
+                except KeyError:
+                    print("")
                 if s == {}:
                     s = r
                     s2 = r2
                 else:
                     merge(s,r)
                     merge(s2,r2)
-                    print(s['txn_cnt'])
 #                pp.pprint(s)
 #                pp.pprint(s2)
 

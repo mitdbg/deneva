@@ -239,14 +239,17 @@ stat_map = OrderedDict([
   ('seq_process_cnt', []),
   ('seq_process_time', []),
   ('seq_prep_time', []),
+  ('seq_idle_time', []),
   ('seq_queue_wait_time', []),
   ('seq_queue_cnt', []),
   ('seq_queue_enq_cnt', []),
+  ('seq_queue_wait_avg_time', []),
   ('seq_queue_enqueue_time', []),
   ('seq_queue_dequeue_time', []),
   ('sched_queue_wait_time', []),
   ('sched_queue_cnt', []),
   ('sched_queue_enq_cnt', []),
+  ('sched_queue_wait_avg_time', []),
   ('sched_queue_enqueue_time', []),
   ('sched_queue_dequeue_time', []),
   ('calvin_sched_time', []),
@@ -696,13 +699,16 @@ def get_summary(sfile,summary={}):
                 process_results(summary,results)
 #    pp = pprint.PrettyPrinter()
 #    pp.pprint(summary['txn_cnt'])
-    if "work_queue_enq_cnt" in summary:
+    if "work_queue_enq_cnt" in summary and "msg_queue_enq_cnt" in summary:
         wq_diff = summary["work_queue_enq_cnt"][-1] - summary["work_queue_cnt"][-1]
         mq_diff = summary["msg_queue_enq_cnt"][-1] - summary["msg_queue_cnt"][-1]
         if  wq_diff > 5000:
             print("Work Queue: {}".format(wq_diff))
         if  mq_diff > 5000:
             print("Msg Queue: {}".format(mq_diff))
+    if "seq_batch_cnt" in summary and "sched_epoch_cnt" in summary:
+        if summary["sched_epoch_cnt"][-1] > summary["seq_batch_cnt"][-1] :
+            print("Sched epcoh {} > seq epoch {}".format(summary["sched_epoch_cnt"][-1],summary["seq_batch_cnt"][-1]))
     summary["progress"] = prog
 #    print("Added progress: " + str(len(prog)))
     return summary
@@ -808,7 +814,7 @@ def merge_results_helper(summary,cnt,drop,gap):
                         except IndexError:
 #                            print("IndexError {} {}/{}".format(k,c,cnt))
                             continue
-                    if drop:
+                    if drop and len(l) > 2:
                         l.remove(max(l))
                         l.remove(min(l))
                     if len(l) == 0:

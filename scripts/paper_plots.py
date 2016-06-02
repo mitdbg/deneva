@@ -57,12 +57,6 @@ def ppr_tpcc_scaling_plot(summary,summary_cl):
     x_name = "NODE_CNT"
     v_name = "CC_ALG"
 #    extras = {'PART_CNT':'NODE_CNT','CLIENT_NODE_CNT':'NODE_CNT','PART_PER_TXN':'NODE_CNT','NUM_WH':128,'PERC_PAYMENT':0.0}
-    nfmt,nexp = tpcc_scaling1()
-    x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants={"PERC_PAYMENT":0.0})
-    tput(x_vals,v_vals,summary,summary_cl,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_tpcc_neworder",xlab="Server Count",logscalex=True,new_cfgs=lst)
-    nfmt,nexp = tpcc_scaling1()
-    x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants={"PERC_PAYMENT":1.0})
-    tput(x_vals,v_vals,summary,summary_cl,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_tpcc_payment",xlab="Server Count",logscalex=True,new_cfgs=lst)
 
     nfmt,nexp = tpcc_scaling2()
     x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants={"PERC_PAYMENT":0.0})
@@ -71,6 +65,21 @@ def ppr_tpcc_scaling_plot(summary,summary_cl):
     x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants={"PERC_PAYMENT":1.0})
     tput(x_vals,v_vals,summary,summary_cl,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_tpcc_payment_4",xlab="Server Count",logscalex=True,new_cfgs=lst)
 
+    nfmt,nexp = tpcc_scaling()
+    x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants={"PERC_PAYMENT":0.0})
+    tput(x_vals,v_vals,summary,summary_cl,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_tpcc_neworder_10",xlab="Server Count",logscalex=True,new_cfgs=lst)
+    nfmt,nexp = tpcc_scaling()
+    x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants={"PERC_PAYMENT":1.0})
+    tput(x_vals,v_vals,summary,summary_cl,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_tpcc_payment_10",xlab="Server Count",logscalex=True,new_cfgs=lst)
+
+
+
+    nfmt,nexp = tpcc_scaling1()
+    x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants={"PERC_PAYMENT":0.0})
+    tput(x_vals,v_vals,summary,summary_cl,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_tpcc_neworder",xlab="Server Count",logscalex=True,new_cfgs=lst)
+    nfmt,nexp = tpcc_scaling1()
+    x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants={"PERC_PAYMENT":1.0})
+    tput(x_vals,v_vals,summary,summary_cl,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_tpcc_payment",xlab="Server Count",logscalex=True,new_cfgs=lst)
 
 def ppr_ycsb_partitions_plot(summary,summary_cl):
     from experiments import ycsb_partitions,ycsb_partitions_distr
@@ -87,6 +96,20 @@ def ppr_ycsb_partitions_plot(summary,summary_cl):
     nfmt,nexp = ycsb_partitions_distr()
     x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants={"MAX_TXN_IN_FLIGHT":10000})
     tput(x_vals,v_vals,summary,summary_cl,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_ycsb_partitions_distr",xlab="Partitions Accessed",new_cfgs=lst)
+
+def ppr_ycsb_partitions_abort_plot(summary,summary_cl):
+    from experiments import ycsb_partitions_abort
+    from helper import plot_prep
+    from plot_helper import tput
+    nfmt,nexp = ycsb_partitions_abort()
+    x_name = "PART_PER_TXN"
+    v_name = "CC_ALG"
+    x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants={"MAX_TXN_IN_FLIGHT":10000})
+    tput(x_vals,v_vals,summary,summary_cl,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_ycsb_partitions_abort",xlab="Partitions Accessed",new_cfgs=lst)
+#    x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants={"MAX_TXN_IN_FLIGHT":12000})
+#    tput(x_vals,v_vals,summary,summary_cl,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_ycsb_partitions_12k",xlab="Partitions Accessed",new_cfgs=lst)
+
+
 
 def ppr_ycsb_writes_plot(summary,summary_cl):
     from experiments import ycsb_writes   
@@ -112,10 +135,10 @@ def ppr_ycsb_skew_abort_plot(summary,summary_cl):
     x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants={"NODE_CNT":16})
     tput(x_vals,v_vals,summary,summary_cl,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_ycsb_skew_abort_16",xlab="Zipf Theta",new_cfgs=lst)
 
-    x_name = "NODE_CNT"
-    nfmt,nexp = ycsb_skew_abort()
-    x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants={"TXN_WRITE_PERC":0.5,"ZIPF_THETA":0.6})
-    tput(x_vals,v_vals,summary,summary_cl,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_ycsb_scaling_abort",xlab="Server Count",new_cfgs=lst,logscalex=True)
+#    x_name = "NODE_CNT"
+#    nfmt,nexp = ycsb_skew_abort()
+#    x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants={"TXN_WRITE_PERC":0.5,"ZIPF_THETA":0.6})
+#    tput(x_vals,v_vals,summary,summary_cl,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_ycsb_scaling_abort",xlab="Server Count",new_cfgs=lst,logscalex=True)
 
 
 
@@ -159,7 +182,21 @@ def ppr_network_plot(summary,summary_cl):
     x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants={"TXN_WRITE_PERC":0.5,"ZIPF_THETA":0.6,"NODE_CNT":2})
 #    x_vals = [float(v)/1000 for v in x_vals]
     tput(x_vals,v_vals,summary,summary_cl,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_network",xlab="Network Latency (ms)",new_cfgs=lst,logscalex=True)
-    x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants={"TXN_WRITE_PERC":0.5,"ZIPF_THETA":0.6,"NODE_CNT":8})
-    tput(x_vals,v_vals,summary,summary_cl,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_network_8",xlab="Network Latency (ms)",new_cfgs=lst,logscalex=True)
+#    x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants={"TXN_WRITE_PERC":0.5,"ZIPF_THETA":0.6,"NODE_CNT":8})
+#    tput(x_vals,v_vals,summary,summary_cl,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_network_8",xlab="Network Latency (ms)",new_cfgs=lst,logscalex=True)
+
+
+def ppr_network_abort_plot(summary,summary_cl):
+    from experiments import network_sweep_abort
+    from helper import plot_prep
+    from plot_helper import tput
+    nfmt,nexp = network_sweep_abort()
+    v_name = "CC_ALG"
+    x_name = "NETWORK_DELAY"
+    x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants={"TXN_WRITE_PERC":0.5,"ZIPF_THETA":0.6,"NODE_CNT":2})
+#    x_vals = [float(v)/1000 for v in x_vals]
+    tput(x_vals,v_vals,summary,summary_cl,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_network_abort",xlab="Network Latency (ms)",new_cfgs=lst,logscalex=True)
+#    x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants={"TXN_WRITE_PERC":0.5,"ZIPF_THETA":0.6,"NODE_CNT":8})
+#    tput(x_vals,v_vals,summary,summary_cl,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_network_8",xlab="Network Latency (ms)",new_cfgs=lst,logscalex=True)
 
 
