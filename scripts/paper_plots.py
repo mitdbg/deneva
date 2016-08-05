@@ -7,12 +7,14 @@ def plot_all():
 def ppr_ycsb_scaling_plot(summary,summary_cl):
     from experiments import ycsb_scaling
     from helper import plot_prep
-    from plot_helper import tput,time_breakdown
+    from plot_helper import tput,time_breakdown,latency
     nfmt,nexp = ycsb_scaling()
     x_name = "NODE_CNT"
     v_name = "CC_ALG"
     x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants={"TXN_WRITE_PERC":0.0,"ZIPF_THETA":0.0})
     tput(x_vals,v_vals,summary,summary_cl,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_ycsb_scaling_readonly",xlab="Server Count",new_cfgs=lst,logscalex=True)
+    x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants={"TXN_WRITE_PERC":0.0,"ZIPF_THETA":0.0})
+    latency(x_vals,v_vals,summary,summary_cl,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="latency_ycsb_scaling_readonly",xlab="Server Count",new_cfgs=lst,logscalex=True)
     nfmt,nexp = ycsb_scaling()
     x_name = "CC_ALG"
     x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,'',constants={"NODE_CNT":16,"TXN_WRITE_PERC":0.0,"ZIPF_THETA":0.0})
@@ -22,6 +24,8 @@ def ppr_ycsb_scaling_plot(summary,summary_cl):
     v_name = "CC_ALG"
     x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants={"TXN_WRITE_PERC":0.5,"ZIPF_THETA":0.6})
     tput(x_vals,v_vals,summary,summary_cl,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_ycsb_scaling_med",xlab="Server Count",new_cfgs=lst,logscalex=True)
+    x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants={"TXN_WRITE_PERC":0.5,"ZIPF_THETA":0.6})
+    latency(x_vals,v_vals,summary,summary_cl,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="latency_ycsb_scaling_med",xlab="Server Count",new_cfgs=lst,logscalex=True)
     nfmt,nexp = ycsb_scaling()
     x_name = "CC_ALG"
     x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,'',constants={"NODE_CNT":16,"TXN_WRITE_PERC":0.5,"ZIPF_THETA":0.6})
@@ -32,6 +36,8 @@ def ppr_ycsb_scaling_plot(summary,summary_cl):
     v_name = "CC_ALG"
     x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants={"TXN_WRITE_PERC":0.5,"ZIPF_THETA":0.7})
     tput(x_vals,v_vals,summary,summary_cl,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="tput_ycsb_scaling_high",xlab="Server Count",new_cfgs=lst,logscalex=True)
+    x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,v_name,constants={"TXN_WRITE_PERC":0.5,"ZIPF_THETA":0.7})
+    latency(x_vals,v_vals,summary,summary_cl,cfg_fmt=fmt,cfg=list(exp),xname=x_name,vname=v_name,title="",name="latency_ycsb_scaling_high",xlab="Server Count",new_cfgs=lst,logscalex=True)
     nfmt,nexp = ycsb_scaling()
     x_name = "CC_ALG"
     x_vals,v_vals,fmt,exp,lst = plot_prep(nexp,nfmt,x_name,'',constants={"NODE_CNT":16,"TXN_WRITE_PERC":0.5,"ZIPF_THETA":0.7})

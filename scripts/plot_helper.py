@@ -298,6 +298,148 @@ def line_rate(xval,vval,summary,summary_cl,
     print("Created plot {}".format(name))
     draw_line(name,data,_xval,ylab='',xlab=_xlab,title=_title,bbox=bbox,ncol=2,ltitle=vname) 
 
+def latency(xval,vval,summary,summary_cl,
+        cfg_fmt=[],
+        cfg=[],
+        lst={},
+        xname="MPR",
+        vname="CC_ALG",
+        title="",
+        extras={},
+        name="",
+        xlab="",
+        new_cfgs = {},
+        ylimit=0,
+        logscale=False,
+        logscalex=False,
+        legend=False,
+#        legend=True,
+        ):
+    global plot_cnt
+    lat = {}
+    lat2 = {}
+    if name == "":
+        name = 'tput_plot{}'.format(plot_cnt)
+    plot_cnt += 1
+    name2 = name + '_2'
+#    name += '_{}'.format(title.replace(" ","_").lower())
+#    _title = 'System Throughput {}'.format(title)
+    _title = title
+    stats={}
+
+#    print "X-axis: " + str(xval)
+#    print "Var: " + str(vval)
+    if xname == "ABORT_PENALTY":
+        _xval = [(float(x.replace("UL","")))/1000000000 for x in xval]
+        sort_idxs = sorted(range(len(_xval)),key=lambda x:_xval[x])
+        xval = [xval[i] for i in sort_idxs]
+        _xval = sorted(_xval)
+        _xlab = xname + " (Sec)"
+    else:
+        _xval = xval
+        if xlab == "":
+            _xlab = xname
+        else:
+            _xlab = xlab
+    for v in vval:
+        if vname == 'MODE':
+            mode_nice = {"NOCC_MODE":"No CC","NORMAL_MODE":"Serializable Execution","QRY_ONLY_MODE":"No Concurrency Control"}
+            _v = mode_nice[v]
+        else:
+            _v = v
+        lat[_v] = [0] * len(xval)
+        lat2[_v] = [0] * len(xval)
+
+        for x,xi in zip(xval,range(len(xval))):
+            if new_cfgs != {}:
+                my_cfg_fmt = cfg_fmt + [xname] + [vname]
+                my_cfg = new_cfgs[(x,v)] + [x] + [v]
+                my_cfg,my_cfg_fmt = apply_extras(my_cfg_fmt,my_cfg,extras,xname,vname)
+            else:
+                my_cfg_fmt = cfg_fmt + [xname] + [vname]
+                my_cfg = cfg + [x] + [v]
+                my_cfg,my_cfg_fmt = apply_extras(my_cfg_fmt,my_cfg,extras,xname,vname)
+            if lst != {}:
+                my_cfg_fmt = cfg_fmt + [xname] + [vname]
+                my_cfg = lst[(x,v)] + [x] + [v]
+                my_cfg,my_cfg_fmt = apply_extras(my_cfg_fmt,my_cfg,extras,xname,vname)
+                print("fmt ({},{}): {}".format(x,v,my_cfg_fmt))
+                print("lst ({},{}): {}".format(x,v,my_cfg))
+
+            cfgs = get_cfgs(my_cfg_fmt, my_cfg)
+            cc = cfgs["CC_ALG"]
+            nnodes = cfgs["NODE_CNT"]
+            cfgs = get_outfile_name(cfgs,my_cfg_fmt)
+            print(cfgs)
+            tmp = 0
+            if cfgs not in summary.keys(): 
+                print("Not in summary: {}".format(cfgs))
+                continue 
+            tmp = 0
+            try:
+                s = summary
+                tot_run_time = sum(s[cfgs]['total_runtime'])
+                tmp = 1
+                tot_txn_cnt = sum(s[cfgs]['txn_cnt'])
+                tot_txn_cnt = sum(s[cfgs]['txn_cnt']) - sum(s[cfgs]['post_warmup_txn_cnt'])
+#                tot_txn_cnt = sum(s[cfgs]['txn_cnt']) - sum(s[cfgs]["progress"][5]['txn_cnt'])
+                print("{} - {} -> {}".format(s[cfgs]['txn_cnt'],s[cfgs]['post_warmup_txn_cnt'],tot_txn_cnt))
+                tmp = 2
+                avg_run_time = avg(s[cfgs]['total_runtime'])
+                avg_run_time = 60
+                tmp = 3
+                tot_lat = sum(s[cfgs]['txn_run_time'])
+            except KeyError:
+                print("KeyError: {}, {} {} -- {}".format(tmp,v,x,cfgs))
+                lat[_v][xi] = 0
+                lat2[_v][xi] = 0
+                continue
+            stats = get_summary_stats(stats,summary[cfgs],summary_cl[cfgs],x,v,cc)
+            # System Throughput: total txn count / average of all node's run time
+            # Per Node Throughput: avg txn count / average of all node's run time
+            # Per txn latency: total of all node's run time / total txn count
+            lat[_v][xi] = tot_run_time / tot_txn_cnt 
+            lat2[_v][xi] = tot_lat / tot_txn_cnt
+
+    pp = pprint.PrettyPrinter()
+    pp.pprint(lat)
+    pp.pprint(lat2)
+#    bbox = [0.8,0.35]
+    bbox = [1.0,0.95]
+    base = 2
+    if xname == 'TXN_WRITE_PERC':
+        _xval = [int(x*100) for x in _xval]
+    if xname == 'ACCESS_PERC':
+        _xval = [int(x*100) for x in _xval]
+    if xname == 'NETWORK_DELAY':
+        _xval = [float(x)/1000000 for x in _xval]
+        base = 10
+#    if xname == 'MAX_TXN_IN_FLIGHT':
+#        _xval = [float(x)*nnodes/100000 for x in _xval]
+    if xname == 'LOAD_PER_SERVER':
+        _xval = [float(x)*nnodes/1000 for x in _xval]
+#bbox = [0.7,0.9]
+    print("Created plot {} {}".format(name,_title))
+    if logscalex:
+        _xlab = _xlab + " (Log Scale)"
+    _ylab= 'System Throughput\n(Thousand txn/s)'
+    if logscale:
+        _ylab = 'System Throughput\n(Thousand txn/s, Log Scale)'
+    print(_xval)
+    
+    # FIXME (Dana): MAAT --> OCC quick fix
+    print lat.keys()
+    if "MAAT" in lat.keys():
+        occ_tput = lat["MAAT"]
+        del lat["MAAT"]
+        lat["OCC"] = occ_tput
+        occ_tput = lat2["MAAT"]
+        del lat2["MAAT"]
+        lat2["OCC"] = occ_tput
+        
+    draw_line(name,lat,_xval,ylab=_ylab,xlab=_xlab,title=_title,bbox=bbox,ncol=2,ltitle=vname,ylimit=ylimit,logscale=logscale,logscalex=logscalex,legend=legend,base=base)
+    draw_line(name,lat2,_xval,ylab=_ylab,xlab=_xlab,title=_title,bbox=bbox,ncol=2,ltitle=vname,ylimit=ylimit,logscale=logscale,logscalex=logscalex,legend=legend,base=base)
+
 
    
 def tput(xval,vval,summary,summary_cl,
