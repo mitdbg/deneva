@@ -64,7 +64,12 @@ RC PPSTxnManager::run_txn() {
   return rc;
 #endif
 
-  if(IS_LOCAL(txn->txn_id) && (state == PPS_PAYMENT0 || state == PPS_NEWORDER0)) {
+  if(IS_LOCAL(txn->txn_id) && 
+      (state == PPS_GETPART0 || 
+       state == PPS_GETPRODUCT0 ||
+       state == PPS_GETSUPPLIER0 ||
+       state == PPS_GETPARTBYSUPPLIER0 ||
+       state == PPS_GETPARTBYPRODUCT0 )) {
     DEBUG("Running txn %ld\n",txn->txn_id);
 #if DISTR_DEBUG
     query->print();
@@ -90,9 +95,7 @@ RC PPSTxnManager::run_txn() {
 
 bool PPSTxnManager::is_done() {
   bool done = false;
-  PPSQuery* pps_query = (PPSQuery*) query;
   done = state == PPS_FIN;
-  
   return done;
 }
 
@@ -101,16 +104,84 @@ RC PPSTxnManager::acquire_locks() {
   assert(CC_ALG == CALVIN);
   locking_done = false;
   RC rc = RCOK;
-  RC rc2;
+  RC rc2 = RCOK;
   INDEX * index;
   itemid_t * item;
   row_t* row;
   uint64_t key;
   incr_lr();
   PPSQuery* pps_query = (PPSQuery*) query;
+  uint64_t partition_id_part = parts_to_part(pps_query->part_key);
+  uint64_t partition_id_product = product_to_part(pps_query->product_key);
+  uint64_t partition_id_supplier = supplier_to_part(pps_query->supplier_key);
 
   switch(pps_query->txn_type) {
-    case PPS_PARTS:
+    case PPS_GETPART:
+      if(GET_NODE_ID(partition_id_part) == g_node_id) {
+        index = _wl->i_parts;
+        item = index_read(index, part_key, partition_id_part);
+        row_t * row = ((row_t *)item->location);
+        rc2 = get_lock(row,RD);
+        if(rc2 != RCOK)
+          rc = rc2;
+      }
+      break;
+    case PPS_GETPRODUCT:
+      if(GET_NODE_ID(partition_id_product) == g_node_id) {
+        index = _wl->i_products;
+        item = index_read(index, product_key, partition_id_product);
+        row_t * row = ((row_t *)item->location);
+        rc2 = get_lock(row,RD);
+        if(rc2 != RCOK)
+          rc = rc2;
+      }
+      break;
+    case PPS_GETSUPPLIER:
+      if(GET_NODE_ID(partition_id_supplier) == g_node_id) {
+        index = _wl->i_suppliers;
+        item = index_read(index, supplier_key, partition_id_supplier);
+        row_t * row = ((row_t *)item->location);
+        rc2 = get_lock(row,RD);
+        if(rc2 != RCOK)
+          rc = rc2;
+      }
+      break;
+    case PPS_GETPARTBYSUPPLIER:
+      if(GET_NODE_ID(partition_id_supplier) == g_node_id) {
+        index = _wl->i_suppliers;
+        item = index_read(index, supplier_key, partition_id_supplier);
+        row_t * row = ((row_t *)item->location);
+        rc2 = get_lock(row,RD);
+        if(rc2 != RCOK)
+          rc = rc2;
+      }
+      if(GET_NODE_ID(partition_id_part) == g_node_id) {
+        index = _wl->i_parts;
+        item = index_read(index, part_key, partition_id_part);
+        row_t * row = ((row_t *)item->location);
+        rc2 = get_lock(row,RD);
+        if(rc2 != RCOK)
+          rc = rc2;
+      }
+      break;
+    case PPS_GETPARTBYPRODUCT:
+      if(GET_NODE_ID(partition_id_product) == g_node_id) {
+        index = _wl->i_products;
+        item = index_read(index, product_key, partition_id_product);
+        row_t * row = ((row_t *)item->location);
+        rc2 = get_lock(row,RD);
+        if(rc2 != RCOK)
+          rc = rc2;
+      }
+      if(GET_NODE_ID(partition_id_part) == g_node_id) {
+        index = _wl->i_parts;
+        item = index_read(index, part_key, partition_id_part);
+        row_t * row = ((row_t *)item->location);
+        rc2 = get_lock(row,RD);
+        if(rc2 != RCOK)
+          rc = rc2;
+      }
+      break;
     default: assert(false);
   }
   if(decr_lr() == 0) {
@@ -125,73 +196,75 @@ RC PPSTxnManager::acquire_locks() {
 
 
 void PPSTxnManager::next_pps_state() {
-  //PPSQuery* pps_query = (PPSQuery*) query;
-
   switch(state) {
-    case PPS_PAYMENT_S:
-      state = PPS_PAYMENT0;
+    case PPS_GETPART_S:
+      state = PPS_GETPART0;
       break;
-    case PPS_PAYMENT0:
-      state = PPS_PAYMENT1;
+    case PPS_GETPART0:
+      state = PPS_GETPART1;
       break;
-    case PPS_PAYMENT1:
-      state = PPS_PAYMENT2;
-      break;
-    case PPS_PAYMENT2:
-      state = PPS_PAYMENT3;
-      break;
-    case PPS_PAYMENT3:
-      state = PPS_PAYMENT4;
-      break;
-    case PPS_PAYMENT4:
-      state = PPS_PAYMENT5;
-      break;
-    case PPS_PAYMENT5:
+    case PPS_GETPART1:
       state = PPS_FIN;
       break;
-    case PPS_NEWORDER_S:
-      state = PPS_NEWORDER0;
+    case PPS_GETPRODUCT_S:
+      state = PPS_GETPRODUCT0;
       break;
-    case PPS_NEWORDER0:
-      state = PPS_NEWORDER1;
+    case PPS_GETPRODUCT0:
+      state = PPS_GETPRODUCT1;
       break;
-    case PPS_NEWORDER1:
-      state = PPS_NEWORDER2;
+    case PPS_GETPRODUCT1:
+      state = PPS_FIN;
       break;
-    case PPS_NEWORDER2:
-      state = PPS_NEWORDER3;
+    case PPS_GETSUPPLIER_S:
+      state = PPS_GETSUPPLIER0;
       break;
-    case PPS_NEWORDER3:
-      state = PPS_NEWORDER4;
+    case PPS_GETSUPPLIER0:
+      state = PPS_GETSUPPLIER1;
       break;
-    case PPS_NEWORDER4:
-      state = PPS_NEWORDER5;
+    case PPS_GETSUPPLIER1:
+      state = PPS_FIN;
       break;
-    case PPS_NEWORDER5:
-      if(!IS_LOCAL(txn->txn_id) || !is_done()) {
-        state = PPS_NEWORDER6;
-      }
-      else {
-        state = PPS_FIN;
-      }
+    case PPS_GETPARTBYSUPPLIER_S:
+      state = PPS_GETPARTBYSUPPLIER0;
       break;
-    case PPS_NEWORDER6: // loop pt 1
-      state = PPS_NEWORDER7;
+    case PPS_GETPARTBYSUPPLIER0:
+      state = PPS_GETPARTBYSUPPLIER1;
       break;
-    case PPS_NEWORDER7:
-      state = PPS_NEWORDER8;
+    case PPS_GETPARTBYSUPPLIER1:
+      state = PPS_GETPARTBYSUPPLIER2;
       break;
-    case PPS_NEWORDER8: // loop pt 2
-      state = PPS_NEWORDER9;
+    case PPS_GETPARTBYSUPPLIER2:
+      state = PPS_GETPARTBYSUPPLIER3;
       break;
-    case PPS_NEWORDER9:
-      ++next_item_id;
-      if(!IS_LOCAL(txn->txn_id) || !is_done()) {
-        state = PPS_NEWORDER6;
-      }
-      else {
-        state = PPS_FIN;
-      }
+    case PPS_GETPARTBYSUPPLIER3:
+      state = PPS_GETPARTBYSUPPLIER4;
+      break;
+    case PPS_GETPARTBYSUPPLIER4:
+      state = PPS_GETPARTBYSUPPLIER5;
+      break;
+    case PPS_GETPARTBYSUPPLIER5:
+      state = PPS_FIN;
+      break;
+    case PPS_GETPARTBYPRODUCT_S:
+      state = PPS_GETPARTBYPRODUCT0;
+      break;
+    case PPS_GETPARTBYPRODUCT0:
+      state = PPS_GETPARTBYPRODUCT1;
+      break;
+    case PPS_GETPARTBYPRODUCT1:
+      state = PPS_GETPARTBYPRODUCT2;
+      break;
+    case PPS_GETPARTBYPRODUCT2:
+      state = PPS_GETPARTBYPRODUCT3;
+      break;
+    case PPS_GETPARTBYPRODUCT3:
+      state = PPS_GETPARTBYPRODUCT4;
+      break;
+    case PPS_GETPARTBYPRODUCT4:
+      state = PPS_GETPARTBYPRODUCT5;
+      break;
+    case PPS_GETPARTBYPRODUCT5:
+      state = PPS_FIN;
       break;
     case PPS_FIN:
       break;
@@ -201,22 +274,14 @@ void PPSTxnManager::next_pps_state() {
 
 }
 
-bool PPSTxnManager::is_local_item(uint64_t idx) {
-  PPSQuery* pps_query = (PPSQuery*) query;
-	uint64_t ol_supply_w_id = pps_query->items[idx]->ol_supply_w_id;
-  uint64_t part_id_ol_supply_w = wh_to_part(ol_supply_w_id);
-  return GET_NODE_ID(part_id_ol_supply_w) == g_node_id;
-}
-
-
+// remote request should always be on a parts key, given our workload
 RC PPSTxnManager::send_remote_request() {
   assert(IS_LOCAL(get_txn_id()));
   PPSQuery* pps_query = (PPSQuery*) query;
   PPSRemTxnType next_state = PPS_FIN;
-	uint64_t w_id = pps_query->w_id;
-  uint64_t c_w_id = pps_query->c_w_id;
+	uint64_t part_key = pps_query->part_key;
   uint64_t dest_node_id = UINT64_MAX;
-  dest_node_id = GET_NODE_ID(wh_to_part(w_id));
+  dest_node_id = GET_NODE_ID(parts_to_part(part_key));
   PPSQueryMessage * msg = (PPSQueryMessage*)Message::create_message(this,RQRY);
   msg->state = state;
   query->partitions_touched.add_unique(GET_PART_ID(0,dest_node_id));
@@ -224,20 +289,6 @@ RC PPSTxnManager::send_remote_request() {
   state = next_state;
   return WAIT_REM;
 }
-
-void PPSTxnManager::copy_remote_items(PPSQueryMessage * msg) {
-  PPSQuery* pps_query = (PPSQuery*) query;
-  msg->items.init(pps_query->items.size());
-  if(pps_query->txn_type == PPS_PAYMENT)
-    return;
-  uint64_t dest_node_id = GET_NODE_ID(wh_to_part(pps_query->items[next_item_id]->ol_supply_w_id));
-  while(next_item_id < pps_query->items.size() && !is_local_item(next_item_id) && GET_NODE_ID(wh_to_part(pps_query->items[next_item_id]->ol_supply_w_id)) == dest_node_id) {
-    Item_no * req = (Item_no*) mem_allocator.alloc(sizeof(Item_no));
-    req->copy(pps_query->items[next_item_id++]);
-    msg->items.add(req);
-  }
-}
-
 
 RC PPSTxnManager::run_txn_state() {
   PPSQuery* pps_query = (PPSQuery*) query;
@@ -260,39 +311,117 @@ RC PPSTxnManager::run_txn_state() {
 		default:
 			assert(false);
 	}
-
+  switch(state) {
+    case PPS_GETPART0:
+      if (part_loc)
+        rc = run_getpart_0(part_key, row);
+      else
+        rc = send_remote_request();
+      break;
+    case PPS_GETPART1:
+        rc = run_getpart_1(part_key, row);
+      break;
+    case PPS_GETPRODUCT0:
+      if (product_loc)
+        rc = run_getproduct_0(product_key, row);
+      else
+        rc = send_remote_request();
+      break;
+    case PPS_GETPRODUCT1:
+        rc = run_getproduct_1(product_key, row);
+      break;
+    case PPS_GETSUPPLIER0:
+      if (supplier_loc)
+        rc = run_getsupplier_0(supplier_key, row);
+      else
+        rc = send_remote_request();
+      break;
+    case PPS_GETSUPPLIER1:
+        rc = run_getsupplier_1(supplier_key, row);
+      break;
+    case PPS_GETPARTBYSUPPLIER0:
+      if (supplier_loc)
+        rc = run_getsupplier_0(supplier_key, row);
+      else
+        rc = send_remote_request();
+      break;
+    case PPS_GETPARTBYSUPPLIER1:
+        rc = run_getsupplier_1(supplier_key, row);
+      break;
+    case PPS_GETPARTBYSUPPLIER2:
+      if (supplier_loc)
+        rc = run_getsupplier_2(supplier_key, row);
+      else
+        rc = send_remote_request();
+      break;
+    case PPS_GETPARTBYSUPPLIER3:
+        rc = run_getsupplier_3(supplier_key, row);
+      break;
+    case PPS_GETPARTBYSUPPLIER4:
+      if (supplier_loc)
+        rc = run_getsupplier_4(supplier_key, row);
+      else
+        rc = send_remote_request();
+      break;
+    case PPS_GETPARTBYSUPPLIER5:
+        rc = run_getsupplier_5(supplier_key, row);
+      break;
+    case PPS_GETPARTBYPRODUCT0:
+      if (product_loc)
+        rc = run_getproduct_0(product_key, row);
+      else
+        rc = send_remote_request();
+      break;
+    case PPS_GETPARTBYPRODUCT1:
+        rc = run_getproduct_1(product_key, row);
+      break;
+    case PPS_GETPARTBYPRODUCT2:
+      if (product_loc)
+        rc = run_getproduct_2(product_key, row);
+      else
+        rc = send_remote_request();
+      break;
+    case PPS_GETPARTBYPRODUCT3:
+        rc = run_getproduct_3(product_key, row);
+      break;
+    case PPS_GETPARTBYPRODUCT4:
+      if (part_loc)
+        rc = run_getproduct_4(part_key, row);
+      else
+        rc = send_remote_request();
+      break;
+    case PPS_GETPARTBYPRODUCT5:
+        rc = run_getproduct_5(row);
+      break;
+    case PPS_FIN:
+      state = PPS_FIN;
+      break;
+    default:
+      assert(false);
+  }
   if(rc == RCOK)
     next_pps_state();
   return rc;
 }
 
 inline RC PPSTxnManager::run_getpart_0(uint64_t part_key, row_t *& r_local) {
-  RC rc;
   /*
     SELECT * FROM PARTS WHERE PART_KEY = :part_key; 
    */
+    RC rc;
+    itemid_t * item;
 		INDEX * index = _wl->i_parts;
-		item = index_read(index, key, parts_to_part(part_key));
+		item = index_read(index, part_key, parts_to_part(part_key));
 		assert(item != NULL);
 		r_loc = (row_t *) item->location;
     rc = get_row(r_loc, RD, r_local);
 }
-inline RC PPSTxnManager::run_getpart_1(uint64_t part_key, row_t *& r_local) {
+inline RC PPSTxnManager::run_getpart_1(row_t *& r_local) {
   /*
     SELECT * FROM PARTS WHERE PART_KEY = :part_key; 
    */
-  char * fields = new char[100];
-  assert(r_local != NULL);
-  r_local->get_value(FIELD1,fields);
-  r_local->get_value(FIELD2,fields);
-  r_local->get_value(FIELD3,fields);
-  r_local->get_value(FIELD4,fields);
-  r_local->get_value(FIELD5,fields);
-  r_local->get_value(FIELD6,fields);
-  r_local->get_value(FIELD7,fields);
-  r_local->get_value(FIELD8,fields);
-  r_local->get_value(FIELD9,fields);
-  r_local->get_value(FIELD10,fields);
+  assert(r_local);
+  getAllFields(r_local);
   return RCOK;
 }
 
@@ -301,20 +430,32 @@ inline RC PPSTxnManager::run_getproduct_0(uint64_t product_key, row_t *& r_local
   /*
     SELECT * FROM PRODUCTS WHERE PRODUCT_KEY = :product_key; 
    */
-  RC rc;
+    RC rc;
+    itemid_t * item;
 		INDEX * index = _wl->i_products;
-		item = index_read(index, key, product_to_part(product_key));
+		item = index_read(index, product_key, product_to_part(product_key));
 		assert(item != NULL);
 		r_loc = (row_t *) item->location;
     rc = get_row(r_loc, RD, r_local);
 }
-inline RC PPSTxnManager::run_getproduct_1(uint64_t product_key, row_t *& r_local) {
+inline RC PPSTxnManager::run_getproduct_1(row_t *& r_local) {
   /*
     SELECT * FROM PRODUCTS WHERE PRODUCT_KEY = :product_key; 
    */
   assert(r_local);
+  getAllFields(r_local);
+  return RCOK;
+}
+
+inline void PPSTxnManager::getThreeFields(row_t *& r_local) {
   char * fields = new char[100];
-  assert(r_local != NULL);
+  r_local->get_value(FIELD1,fields);
+  r_local->get_value(FIELD2,fields);
+  r_local->get_value(FIELD3,fields);
+}
+
+inline void PPSTxnManager::getAllFields(row_t *& r_local) {
+  char * fields = new char[100];
   r_local->get_value(FIELD1,fields);
   r_local->get_value(FIELD2,fields);
   r_local->get_value(FIELD3,fields);
@@ -325,103 +466,165 @@ inline RC PPSTxnManager::run_getproduct_1(uint64_t product_key, row_t *& r_local
   r_local->get_value(FIELD8,fields);
   r_local->get_value(FIELD9,fields);
   r_local->get_value(FIELD10,fields);
-  return RCOK;
 }
 
 inline RC PPSTxnManager::run_getsupplier_0(uint64_t supplier_key, row_t *& r_local) {
   /*
     SELECT * FROM SUPPLIERS WHERE SUPPLIER_KEY = :supplier_key; 
    */
-  RC rc;
-		INDEX * index = _wl->i_products;
-		item = index_read(index, key, product_to_part(product_key));
+    RC rc;
+    itemid_t * item;
+		INDEX * index = _wl->i_suppliers;
+		item = index_read(index, supplier_key, supplier_to_part(supplier_key));
 		assert(item != NULL);
 		r_loc = (row_t *) item->location;
     rc = get_row(r_loc, RD, r_local);
+    return rc;
 
 }
-inline RC PPSTxnManager::run_getsupplier_1(uint64_t supplier_key, row_t *& r_local) {
+
+inline RC PPSTxnManager::run_getsupplier_1(row_t *& r_local) {
   /*
     SELECT * FROM SUPPLIERS WHERE SUPPLIER_KEY = :supplier_key; 
    */
   assert(r_local);
-  char * fields = new char[100];
-  assert(r_local != NULL);
-  r_local->get_value(FIELD1,fields);
-  r_local->get_value(FIELD2,fields);
-  r_local->get_value(FIELD3,fields);
-  r_local->get_value(FIELD4,fields);
-  r_local->get_value(FIELD5,fields);
-  r_local->get_value(FIELD6,fields);
-  r_local->get_value(FIELD7,fields);
-  r_local->get_value(FIELD8,fields);
-  r_local->get_value(FIELD9,fields);
-  r_local->get_value(FIELD10,fields);
+  getAllFields(r_local);
   return RCOK;
 
 }
+
 inline RC PPSTxnManager::run_getpartsbyproduct_0(uint64_t product_key, row_t *& r_wh_local) {
   /*
     SELECT FIELD1, FIELD2, FIELD3 FROM PRODUCTS WHERE PRODUCT_KEY = ? 
    */
+    RC rc;
+    itemid_t * item;
+		INDEX * index = _wl->i_products;
+		item = index_read(index, product_key, product_to_part(product_key));
+		assert(item != NULL);
+		r_loc = (row_t *) item->location;
+    rc = get_row(r_loc, RD, r_local);
 }
 inline RC PPSTxnManager::run_getpartsbyproduct_1(uint64_t product_key, row_t *& r_wh_local) {
   /*
     SELECT FIELD1, FIELD2, FIELD3 FROM PRODUCTS WHERE PRODUCT_KEY = ? 
    */
+  assert(r_local);
+  getThreeFields(r_local);
+  return RCOK;
 }
 
 inline RC PPSTxnManager::run_getpartsbyproduct_2(uint64_t product_key, row_t *& r_wh_local) {
   /*
     SELECT PART_KEY FROM USES WHERE PRODUCT_KEY = ? 
    */
+    RC rc;
+    itemid_t * item;
+		INDEX * index = _wl->i_uses;
+		item = index_read(index, product_key, product_to_part(product_key));
+		assert(item != NULL);
+		r_loc = (row_t *) item->location;
+    rc = get_row(r_loc, RD, r_local);
+    return rc;
 }
-inline RC PPSTxnManager::run_getpartsbyproduct_3(uint64_t product_key, row_t *& r_wh_local) {
+
+inline RC PPSTxnManager::run_getpartsbyproduct_3(uint64_t &part_key, row_t *& r_wh_local) {
   /*
     SELECT PART_KEY FROM USES WHERE PRODUCT_KEY = ? 
    */
+  char * fields = new char[100];
+  r_local->get_value(FIELD1,fields);
+  part_key = (uint64_t)fields;
+  return RCOK;
 }
+
 inline RC PPSTxnManager::run_getpartsbyproduct_4(uint64_t part_key, row_t *& r_wh_local) {
   /*
    SELECT FIELD1, FIELD2, FIELD3 FROM PARTS WHERE PART_KEY = ? 
    */
+    RC rc;
+    itemid_t * item;
+		INDEX * index = _wl->i_parts;
+		item = index_read(index, part_key, parts_to_part(part_key));
+		assert(item != NULL);
+		r_loc = (row_t *) item->location;
+    rc = get_row(r_loc, RD, r_local);
+    return rc;
 }
-inline RC PPSTxnManager::run_getpartsbyproduct_5(uint64_t part_key, row_t *& r_wh_local) {
+inline RC PPSTxnManager::run_getpartsbyproduct_5(row_t *& r_local) {
   /*
    SELECT FIELD1, FIELD2, FIELD3 FROM PARTS WHERE PART_KEY = ? 
    */
+  assert(r_local);
+  getThreeFields(r_local);
+  return RCOK;
 }
 
 inline RC PPSTxnManager::run_getpartsbysupplier_0(uint64_t supplier_key, row_t *& r_wh_local) {
   /*
-    SELECT FIELD1, FIELD2, FIELD3 FROM supplierS WHERE supplier_KEY = ? 
+    SELECT FIELD1, FIELD2, FIELD3 FROM suppliers WHERE supplier_KEY = ? 
    */
+    RC rc;
+    itemid_t * item;
+		INDEX * index = _wl->i_suppliers;
+		item = index_read(index, supplier_key, suppliers_to_part(supplier_key));
+		assert(item != NULL);
+		r_loc = (row_t *) item->location;
+    rc = get_row(r_loc, RD, r_local);
+    return rc;
 }
-inline RC PPSTxnManager::run_getpartsbysupplier_1(uint64_t supplier_key, row_t *& r_wh_local) {
+inline RC PPSTxnManager::run_getpartsbysupplier_1(row_t *& r_wh_local) {
   /*
-    SELECT FIELD1, FIELD2, FIELD3 FROM supplierS WHERE supplier_KEY = ? 
+    SELECT FIELD1, FIELD2, FIELD3 FROM suppliers WHERE supplier_KEY = ? 
    */
+  assert(r_local);
+  getThreeFields(r_local);
+  return RCOK;
 }
 
 inline RC PPSTxnManager::run_getpartsbysupplier_2(uint64_t supplier_key, row_t *& r_wh_local) {
   /*
     SELECT PART_KEY FROM USES WHERE supplier_KEY = ? 
    */
+    RC rc;
+    itemid_t * item;
+		INDEX * index = _wl->i_uses;
+		item = index_read(index, supplier_key, suppliers_to_part(supplier_key));
+		assert(item != NULL);
+		r_loc = (row_t *) item->location;
+    rc = get_row(r_loc, RD, r_local);
+    return rc;
 }
-inline RC PPSTxnManager::run_getpartsbysupplier_3(uint64_t supplier_key, row_t *& r_wh_local) {
+inline RC PPSTxnManager::run_getpartsbysupplier_3(uint64_t &part_key, row_t *& r_wh_local) {
   /*
     SELECT PART_KEY FROM USES WHERE supplier_KEY = ? 
    */
+  assert(r_local);
+  char * fields = new char[100];
+  r_local->get_value(FIELD1,fields);
+  part_key = (uint64_t)fields;
+  return RCOK;
 }
 inline RC PPSTxnManager::run_getpartsbysupplier_4(uint64_t part_key, row_t *& r_wh_local) {
   /*
    SELECT FIELD1, FIELD2, FIELD3 FROM PARTS WHERE PART_KEY = ? 
    */
+    RC rc;
+    itemid_t * item;
+		INDEX * index = _wl->i_parts;
+		item = index_read(index, part_key, parts_to_part(part_key));
+		assert(item != NULL);
+		r_loc = (row_t *) item->location;
+    rc = get_row(r_loc, RD, r_local);
+    return rc;
 }
-inline RC PPSTxnManager::run_getpartsbysupplier_5(uint64_t part_key, row_t *& r_wh_local) {
+inline RC PPSTxnManager::run_getpartsbysupplier_5(row_t *& r_wh_local) {
   /*
    SELECT FIELD1, FIELD2, FIELD3 FROM PARTS WHERE PART_KEY = ? 
    */
+  assert(r_local);
+  getThreeFields(r_local);
+  return RCOK;
 }
 
 RC PPSTxnManager::run_calvin_txn() {
