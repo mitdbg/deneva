@@ -1,5 +1,5 @@
 /*
-   Copyright 2015 Rachael Harding
+   Copyright 2016 Massachusetts Institute of Technology
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@
 //    http://moodycamel.com/blog/2014/detailed-design-of-a-lock-free-queue
 
 // Simplified BSD license:
-// Copyright (c) 2013-2015, Cameron Desrochers.
+// Copyright (c) 2013-2016, Cameron Desrochers.
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without modification,
@@ -274,7 +274,7 @@ struct ConcurrentQueueDefaultTraits
   // Memory allocation can be customized if needed.
   // malloc should return nullptr on failure, and handle alignment like std::malloc.
 #if defined(malloc) || defined(free)
-  // Gah, this is 2015, stop defining macros that break standard code already!
+  // Gah, this is 2016, stop defining macros that break standard code already!
   // Work around malloc/free being special macros:
   static inline void* WORKAROUND_malloc(size_t size) { return malloc(size); }
   static inline void WORKAROUND_free(void* ptr) { return free(ptr); }
