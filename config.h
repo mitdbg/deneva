@@ -237,6 +237,27 @@ extern TPCCTxnType          g_tpcc_txn_type;
 //#define HIST_TAB_SIZE NUM_WH * DIST_PER_WH * CUST_PER_DIST_SMALL
 //#define ORDE_TAB_SIZE NUM_WH * DIST_PER_WH * CUST_PER_DIST_SMALL
 
+// PPS (Product-Part-Supplier)
+#define MAX_PPS_PART_KEY 100
+#define MAX_PPS_PRODUCT_KEY 100
+#define MAX_PPS_SUPPLIER_KEY 100
+#define MAX_PPS_PART_PER_PRODUCT 10
+#define MAX_PPS_PART_PER_SUPPLIER 10
+
+#define PERC_PPS_GETPART 0.20
+#define PERC_PPS_GETSUPPLIER 0.20 
+#define PERC_PPS_GETPRODUCT 0.20
+#define PERC_PPS_GETPARTBYSUPPLIER 0.20
+#define PERC_PPS_GETPARTBYPRODUCT 0.20
+
+enum PPSTxnType {PPS_ALL, 
+          PPS_GETPART, 
+          PPS_GETSUPPLIER, 
+          PPS_GETPRODUCT, 
+          PPS_GETPARTBYSUPPLIER, 
+          PPS_GETPARTBYPRODUCT 
+          };
+
 /***********************************************/
 // TODO centralized CC management. 
 /***********************************************/

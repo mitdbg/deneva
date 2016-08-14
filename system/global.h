@@ -215,6 +215,16 @@ extern UInt32 g_dist_per_wh;
 extern UInt32 g_cust_per_dist;
 extern UInt32 g_max_items_per_txn;
 
+// PPS (Product-Part-Supplier)
+extern UInt32 g_max_part_key;
+extern UInt32 g_max_product_key;
+extern UInt32 g_max_supplier_key;
+extern double g_perc_getparts;
+extern double g_perc_getproducts;
+extern double g_perc_getsuppliers;
+extern double g_perc_getpartbyproduct;
+extern double g_perc_getpartbysupplier;
+
 // CALVIN
 extern UInt32 g_seq_thread_cnt;
 

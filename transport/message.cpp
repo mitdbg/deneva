@@ -20,6 +20,8 @@
 #include "ycsb.h"
 #include "tpcc_query.h"
 #include "tpcc.h"
+#include "pps_query.h"
+#include "pps.h"
 #include "global.h"
 #include "message.h"
 #include "maat.h"
@@ -78,6 +80,8 @@ Message * Message::create_message(BaseQuery * query, RemReqType rtype) {
  ((YCSBClientQueryMessage*)msg)->copy_from_query(query);
 #elif WORKLOAD == TPCC 
  ((TPCCClientQueryMessage*)msg)->copy_from_query(query);
+#elif WORKLOAD == PPS 
+ ((PPSClientQueryMessage*)msg)->copy_from_query(query);
 #endif
  return msg;
 }
@@ -137,6 +141,8 @@ Message * Message::create_message(RemReqType rtype) {
       msg = new YCSBClientQueryMessage;
 #elif WORKLOAD == TPCC 
       msg = new TPCCClientQueryMessage;
+#elif WORKLOAD == PPS 
+      msg = new PPSClientQueryMessage;
 #endif
       msg->init();
       break;
@@ -217,6 +223,8 @@ void Message::release_message(Message * msg) {
       YCSBQueryMessage * m_msg = (YCSBQueryMessage*)msg;
 #elif WORKLOAD == TPCC 
       TPCCQueryMessage * m_msg = (TPCCQueryMessage*)msg;
+#elif WORKLOAD == PPS 
+      PPSQueryMessage * m_msg = (PPSQueryMessage*)msg;
 #endif
       m_msg->release();
       delete m_msg;
@@ -267,6 +275,8 @@ void Message::release_message(Message * msg) {
       YCSBClientQueryMessage * m_msg = (YCSBClientQueryMessage*)msg;
 #elif WORKLOAD == TPCC 
       TPCCClientQueryMessage * m_msg = (TPCCClientQueryMessage*)msg;
+#elif WORKLOAD == PPS 
+      PPSClientQueryMessage * m_msg = (PPSClientQueryMessage*)msg;
 #endif
       m_msg->release();
       delete m_msg;
@@ -455,7 +465,6 @@ void YCSBClientQueryMessage::copy_to_buf(char * buf) {
   }
  assert(ptr == get_size());
 }
-
 /************************/
 
 void TPCCClientQueryMessage::init() {
@@ -616,6 +625,90 @@ void TPCCClientQueryMessage::copy_to_buf(char * buf) {
   COPY_BUF(buf,remote,ptr);
   COPY_BUF(buf,ol_cnt,ptr);
   COPY_BUF(buf,o_entry_d,ptr);
+ assert(ptr == get_size());
+}
+
+
+/************************/
+
+
+/************************/
+
+void PPSClientQueryMessage::init() {
+}
+
+void PPSClientQueryMessage::release() {
+  ClientQueryMessage::release();
+}
+
+uint64_t PPSClientQueryMessage::get_size() {
+  uint64_t size = ClientQueryMessage::get_size();
+  size += sizeof(uint64_t)*3; 
+  return size;
+}
+
+void PPSClientQueryMessage::copy_from_query(BaseQuery * query) {
+  ClientQueryMessage::copy_from_query(query);
+  PPSQuery* pps_query = (PPSQuery*)(query);
+  
+  txn_type = pps_query->txn_type;
+
+  part_key = pps_query->part_key;
+  product_key = pps_query->product_key;
+  supplier_key = pps_query->supplier_key;
+}
+
+
+void PPSClientQueryMessage::copy_from_txn(TxnManager * txn) {
+  ClientQueryMessage::mcopy_from_txn(txn);
+  copy_from_query(txn->query);
+}
+
+void PPSClientQueryMessage::copy_to_txn(TxnManager * txn) {
+  ClientQueryMessage::copy_to_txn(txn);
+  PPSQuery* pps_query = (PPSQuery*)(txn->query);
+
+  txn->client_id = return_node_id;
+  pps_query->txn_type = (PPSTxnType)txn_type;
+  // FIXME: bad programming style
+  if(pps_query->txn_type == PPS_GETPART)
+    ((PPSTxnManager*)txn)->state = PPS_GETPART0;
+  else if(pps_query->txn_type == PPS_GETPRODUCT)
+    ((PPSTxnManager*)txn)->state = PPS_GETPRODUCT0;
+  else if(pps_query->txn_type == PPS_GETSUPPLIER)
+    ((PPSTxnManager*)txn)->state = PPS_GETSUPPLIER0;
+  else if(pps_query->txn_type == PPS_GETPARTBYPRODUCT)
+    ((PPSTxnManager*)txn)->state = PPS_GETPARTBYPRODUCT0;
+  else if(pps_query->txn_type == PPS_GETPARTBYSUPPLIER)
+    ((PPSTxnManager*)txn)->state = PPS_GETPARTBYSUPPLIER0;
+  pps_query->part_key = part_key;
+  pps_query->product_key = product_key;
+  pps_query->supplier_key = supplier_key;
+
+}
+
+void PPSClientQueryMessage::copy_from_buf(char * buf) {
+  ClientQueryMessage::copy_from_buf(buf);
+  uint64_t ptr = ClientQueryMessage::get_size();
+
+  COPY_VAL(txn_type,buf,ptr); 
+	// common txn input for both payment & new-order
+  COPY_VAL(part_key,buf,ptr);
+  COPY_VAL(product_key,buf,ptr);
+  COPY_VAL(supplier_key,buf,ptr);
+
+ assert(ptr == get_size());
+}
+
+void PPSClientQueryMessage::copy_to_buf(char * buf) {
+  ClientQueryMessage::copy_to_buf(buf);
+  uint64_t ptr = ClientQueryMessage::get_size();
+
+  COPY_BUF(buf,txn_type,ptr); 
+	// common txn input for both payment & new-order
+  COPY_BUF(buf,part_key,ptr);
+  COPY_BUF(buf,product_key,ptr);
+  COPY_BUF(buf,supplier_key,ptr);
  assert(ptr == get_size());
 }
 
@@ -1309,6 +1402,127 @@ void TPCCQueryMessage::copy_to_buf(char * buf) {
     COPY_BUF(buf,remote,ptr);
     COPY_BUF(buf,ol_cnt,ptr);
     COPY_BUF(buf,o_entry_d,ptr);
+  }
+ assert(ptr == get_size());
+
+}
+/************************/
+
+void PPSQueryMessage::init() {
+}
+
+void PPSQueryMessage::release() {
+  QueryMessage::release();
+}
+
+uint64_t PPSQueryMessage::get_size() {
+  uint64_t size = QueryMessage::get_size();
+
+  size += sizeof(uint64_t); // part/product/supply key 
+
+  return size;
+}
+
+void PPSQueryMessage::copy_from_txn(TxnManager * txn) {
+  QueryMessage::copy_from_txn(txn);
+  PPSQuery* pps_query = (PPSQuery*)(txn->query);
+  
+  txn_type = pps_query->txn_type;
+  state = (uint64_t)((PPSTxnManager*)txn)->state;
+
+  if (txn_type == PPS_GETPART) {
+    part_key = pps_query->part_key;
+  }
+  if (txn_type == PPS_GETPRODUCT) {
+    product_key = pps_query->product_key;
+  }
+  if (txn_type == PPS_GETSUPPLIER) {
+    supplier_key = pps_query->supplier_key;
+  }
+  if (txn_type == PPS_GETPARTBYPRODUCT) {
+    product_key = pps_query->product_key;
+  }
+  if (txn_type == PPS_GETPARTBYSUPPLIER) {
+    supplier_key = pps_query->supplier_key;
+  }
+
+}
+
+void PPSQueryMessage::copy_to_txn(TxnManager * txn) {
+  QueryMessage::copy_to_txn(txn);
+
+  PPSQuery* pps_query = (PPSQuery*)(txn->query);
+
+  pps_query->txn_type = (PPSTxnType)txn_type;
+  ((PPSTxnManager*)txn)->state = (PPSRemTxnType)state;
+
+  if (txn_type == PPS_GETPART) {
+    pps_query->part_key = part_key;
+  }
+  if (txn_type == PPS_GETPRODUCT) {
+    pps_query->product_key = product_key;
+  }
+  if (txn_type == PPS_GETSUPPLIER) {
+    pps_query->supplier_key = supplier_key;
+  }
+  if (txn_type == PPS_GETPARTBYPRODUCT) {
+    pps_query->product_key = product_key;
+  }
+  if (txn_type == PPS_GETPARTBYSUPPLIER) {
+    pps_query->supplier_key = supplier_key;
+  }
+
+}
+
+
+void PPSQueryMessage::copy_from_buf(char * buf) {
+  QueryMessage::copy_from_buf(buf);
+  uint64_t ptr = QueryMessage::get_size();
+
+  COPY_VAL(txn_type,buf,ptr); 
+  COPY_VAL(state,buf,ptr); 
+  if (txn_type == PPS_GETPART) {
+    COPY_VAL(part_key,buf,ptr); 
+  }
+  if (txn_type == PPS_GETPRODUCT) {
+    COPY_VAL(product_key,buf,ptr); 
+  }
+  if (txn_type == PPS_GETSUPPLIER) {
+    COPY_VAL(supplier_key,buf,ptr); 
+  }
+  if (txn_type == PPS_GETPARTBYPRODUCT) {
+    COPY_VAL(product_key,buf,ptr); 
+  }
+  if (txn_type == PPS_GETPARTBYSUPPLIER) {
+    COPY_VAL(supplier_key,buf,ptr); 
+  }
+
+
+ assert(ptr == get_size());
+
+}
+
+void PPSQueryMessage::copy_to_buf(char * buf) {
+  QueryMessage::copy_to_buf(buf);
+  uint64_t ptr = QueryMessage::get_size();
+
+  COPY_BUF(buf,txn_type,ptr); 
+  COPY_BUF(buf,state,ptr); 
+
+  if (txn_type == PPS_GETPART) {
+    COPY_BUF(buf,part_key,ptr); 
+  }
+  if (txn_type == PPS_GETPRODUCT) {
+    COPY_BUF(buf,product_key,ptr); 
+  }
+  if (txn_type == PPS_GETSUPPLIER) {
+    COPY_BUF(buf,supplier_key,ptr); 
+  }
+  if (txn_type == PPS_GETPARTBYPRODUCT) {
+    COPY_BUF(buf,product_key,ptr); 
+  }
+  if (txn_type == PPS_GETPARTBYSUPPLIER) {
+    COPY_BUF(buf,supplier_key,ptr); 
   }
  assert(ptr == get_size());
 

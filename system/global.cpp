@@ -162,6 +162,17 @@ UInt32 g_seq_thread_cnt = SEQ_THREAD_CNT;
 double g_mpr = MPR;
 double g_mpitem = MPIR;
 
+// PPS (Product-Part-Supplier)
+UInt32 g_max_part_key = MAX_PPS_PART_KEY;
+UInt32 g_max_product_key = MAX_PPS_PRODUCT_KEY;
+UInt32 g_max_supplier_key = MAX_PPS_SUPPLIER_KEY;
+double g_perc_getparts = PERC_PPS_GETPART;
+double g_perc_getproducts = PERC_PPS_GETPRODUCT;
+double g_perc_getsuppliers = PERC_PPS_GETSUPPLIER;
+double g_perc_getpartbyproduct = PERC_PPS_GETPARTBYPRODUCT;
+double g_perc_getpartbysupplier = PERC_PPS_GETPARTBYSUPPLIER;
+
+// TPCC
 UInt32 g_num_wh = NUM_WH;
 double g_perc_payment = PERC_PAYMENT;
 bool g_wh_update = WH_UPDATE;

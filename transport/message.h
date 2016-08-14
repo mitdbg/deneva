@@ -293,6 +293,28 @@ public:
 
 };
 
+class PPSClientQueryMessage : public ClientQueryMessage {
+public:
+  void copy_from_buf(char * buf);
+  void copy_to_buf(char * buf);
+  void copy_from_query(BaseQuery * query);
+  void copy_from_txn(TxnManager * txn);
+  void copy_to_txn(TxnManager * txn);
+  uint64_t get_size();
+  void init(); 
+  void release(); 
+
+  uint64_t txn_type;
+
+  // getparts 
+  uint64_t part_key;
+  // getproducts / getpartbyproduct
+  uint64_t product_key;
+  // getsuppliers / getpartbysupplier
+  uint64_t supplier_key;
+
+};
+
 class QueryMessage : public Message {
 public:
   void copy_from_buf(char * buf);
@@ -365,5 +387,27 @@ public:
   uint64_t o_entry_d;
 
 };
+
+class PPSQueryMessage : public QueryMessage {
+public:
+  void copy_from_buf(char * buf);
+  void copy_to_buf(char * buf);
+  void copy_from_txn(TxnManager * txn);
+  void copy_to_txn(TxnManager * txn);
+  uint64_t get_size();
+  void init();
+  void release(); 
+
+  uint64_t txn_type;
+  uint64_t state; 
+
+  // getparts 
+  uint64_t part_key;
+  // getproducts / getpartbyproduct
+  uint64_t product_key;
+  // getsuppliers / getpartbysupplier
+  uint64_t supplier_key;
+};
+
 
 #endif

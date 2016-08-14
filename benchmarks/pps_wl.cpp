@@ -27,7 +27,6 @@
 #include "query.h"
 #include "txn.h"
 #include "mem_alloc.h"
-#include "pps_const.h"
 
 RC PPSWorkload::init() {
 	Workload::init();
@@ -68,7 +67,6 @@ RC PPSWorkload::init_schema(const char * schema_file) {
 }
 
 RC PPSWorkload::init_table() {
-	num_wh = g_num_wh;
 
 /******** fill in data ************/
 // data filling process:
@@ -79,25 +77,20 @@ RC PPSWorkload::init_table() {
 // --products 
 /**********************************/
 
-	pthread_t * p_thds = new pthread_t[g_init_parallelism - 1];
   thr_args * tt = new thr_args[g_init_parallelism];
 	for (UInt32 i = 0; i < g_init_parallelism ; i++) {
     tt[i].wl = this;
     tt[i].id = i;
   }
-  // Stock table
-	for (UInt32 i = 0; i < g_init_parallelism - 1; i++) {
-    pthread_create(&p_thds[i], NULL, threadInitStock, &tt[i]);
-	}
-  threadInitStock(&tt[g_init_parallelism-1]);
-	for (UInt32 i = 0; i < g_init_parallelism - 1; i++) {
-		int rc = pthread_join(p_thds[i], NULL);
-		if (rc) {
-			printf("ERROR; return code from pthread_join() is %d\n", rc);
-			exit(-1);
-		}
-  }
-  printf("STOCK Done\n");
+
+  threadInitParts(&tt[0]);
+  printf("PARTS Done\n");
+  threadInitProducts(&tt[0]);
+  printf("PRODUCTS Done\n");
+  threadInitSuppliers(&tt[0]);
+  printf("SUPPLIERS Done\n");
+  threadInitUses(&tt[0]);
+  printf("USES Done\n");
   fflush(stdout);
 	printf("\nData Initialization Complete!\n\n");
 	return RCOK;
@@ -112,8 +105,109 @@ RC PPSWorkload::get_txn_man(TxnManager *& txn_manager) {
 	return RCOK;
 }
 
-void PPSWorkload::init_tab_suppliers() {
+void PPSWorkload::init_tab_parts() {
+  char * padding = new char[100];
+  for (int i = 0; i < 100; i++) {
+    padding[i] = 'z';
+  }
+  for (UInt32 id = 1; id <= g_max_part_key; id++) {
+    if (GET_NODE_ID(parts_to_partition(id)) != g_node_id) 
+      continue;
+		row_t * row;
+		uint64_t row_id;
+    t_parts->get_new_row(row, 0, row_id);
+    row->set_primary_key(id);
+    row->set_value(FIELD1,padding);
+    row->set_value(FIELD2,padding);
+    row->set_value(FIELD3,padding);
+    row->set_value(FIELD4,padding);
+    row->set_value(FIELD5,padding);
+    row->set_value(FIELD6,padding);
+    row->set_value(FIELD7,padding);
+    row->set_value(FIELD8,padding);
+    row->set_value(FIELD9,padding);
+    row->set_value(FIELD10,padding);
+    
+		index_insert(i_parts, id, row, parts_to_partition(id));
+
+  }
 }
+
+void PPSWorkload::init_tab_suppliers() {
+  char * padding = new char[100];
+  for (int i = 0; i < 100; i++) {
+    padding[i] = 'z';
+  }
+  for (UInt32 id = 1; id <= g_max_supplier_key; id++) {
+    if (GET_NODE_ID(suppliers_to_partition(id)) != g_node_id) 
+      continue;
+		row_t * row;
+		uint64_t row_id;
+    t_suppliers->get_new_row(row, 0, row_id);
+    row->set_primary_key(id);
+    row->set_value(FIELD1,padding);
+    row->set_value(FIELD2,padding);
+    row->set_value(FIELD3,padding);
+    row->set_value(FIELD4,padding);
+    row->set_value(FIELD5,padding);
+    row->set_value(FIELD6,padding);
+    row->set_value(FIELD7,padding);
+    row->set_value(FIELD8,padding);
+    row->set_value(FIELD9,padding);
+    row->set_value(FIELD10,padding);
+    
+		index_insert(i_suppliers, id, row, suppliers_to_partition(id));
+
+  }
+}
+
+void PPSWorkload::init_tab_products() {
+  char * padding = new char[100];
+  for (int i = 0; i < 100; i++) {
+    padding[i] = 'z';
+  }
+  for (UInt32 id = 1; id <= g_max_product_key; id++) {
+    if (GET_NODE_ID(products_to_partition(id)) != g_node_id) 
+      continue;
+		row_t * row;
+		uint64_t row_id;
+    t_products->get_new_row(row, 0, row_id);
+    row->set_primary_key(id);
+    row->set_value(FIELD1,padding);
+    row->set_value(FIELD2,padding);
+    row->set_value(FIELD3,padding);
+    row->set_value(FIELD4,padding);
+    row->set_value(FIELD5,padding);
+    row->set_value(FIELD6,padding);
+    row->set_value(FIELD7,padding);
+    row->set_value(FIELD8,padding);
+    row->set_value(FIELD9,padding);
+    row->set_value(FIELD10,padding);
+    
+		index_insert(i_products, id, row, products_to_partition(id));
+
+  }
+}
+
+void PPSWorkload::init_tab_uses() {
+  for (UInt32 id = 1; id <= g_max_product_key; id++) {
+    std::set<uint64_t> parts_set;
+    //for (UInt32 i = 0; i < g_max_parts_per_product; i++) {
+    for (UInt32 i = 0; i < 10; i++) {
+      parts_set.insert(URand(1,g_max_part_key));
+    }
+    for(auto it = parts_set.begin(); it != parts_set.end();it++) {
+      row_t * row;
+      uint64_t row_id;
+      uint64_t part_id = *it;
+      t_uses->get_new_row(row, 0, row_id);
+      row->set_primary_key(id);
+      row->set_value("PRODUCT_KEY",&part_id);
+    }
+  }
+
+}
+
 
 // TODO: init other tables
 
@@ -124,9 +218,29 @@ void PPSWorkload::init_tab_suppliers() {
 
 void * PPSWorkload::threadInitSuppliers(void * This) {
   PPSWorkload * wl = ((thr_args*) This)->wl;
-  int id = ((thr_args*) This)->id;
-	wl->init_tab_suppliers(id);
-	printf("SUPPLIERS Done\n");
+  //int id = ((thr_args*) This)->id;
+	wl->init_tab_suppliers();
+	return NULL;
+}
+
+void * PPSWorkload::threadInitProducts(void * This) {
+  PPSWorkload * wl = ((thr_args*) This)->wl;
+  //int id = ((thr_args*) This)->id;
+	wl->init_tab_products();
+	return NULL;
+}
+
+void * PPSWorkload::threadInitParts(void * This) {
+  PPSWorkload * wl = ((thr_args*) This)->wl;
+  //int id = ((thr_args*) This)->id;
+	wl->init_tab_parts();
+	return NULL;
+}
+
+void * PPSWorkload::threadInitUses(void * This) {
+  PPSWorkload * wl = ((thr_args*) This)->wl;
+  //int id = ((thr_args*) This)->id;
+	wl->init_tab_uses();
 	return NULL;
 }
 

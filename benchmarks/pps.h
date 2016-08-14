@@ -30,10 +30,29 @@ class table_t;
 class INDEX;
 class PPSQuery;
 enum PPSRemTxnType {
-  PPS_PAYMENT_S=0,
-  PPS_PAYMENT0,
-  PPS_NEWORDER_S,
-  PPS_NEWORDER0,
+  PPS_GETPART_S=0,
+  PPS_GETPART0,
+  PPS_GETPART1,
+  PPS_GETPRODUCT_S,
+  PPS_GETPRODUCT0,
+  PPS_GETPRODUCT1,
+  PPS_GETSUPPLIER_S,
+  PPS_GETSUPPLIER0,
+  PPS_GETSUPPLIER1,
+  PPS_GETPARTBYPRODUCT_S,
+  PPS_GETPARTBYPRODUCT0,
+  PPS_GETPARTBYPRODUCT1,
+  PPS_GETPARTBYPRODUCT2,
+  PPS_GETPARTBYPRODUCT3,
+  PPS_GETPARTBYPRODUCT4,
+  PPS_GETPARTBYPRODUCT5,
+  PPS_GETPARTBYSUPPLIER_S,
+  PPS_GETPARTBYSUPPLIER0,
+  PPS_GETPARTBYSUPPLIER1,
+  PPS_GETPARTBYSUPPLIER2,
+  PPS_GETPARTBYSUPPLIER3,
+  PPS_GETPARTBYSUPPLIER4,
+  PPS_GETPARTBYSUPPLIER5,
   PPS_FIN,
   PPS_RDONE};
 
@@ -50,6 +69,9 @@ public:
 	table_t * 		t_supplies;
 	table_t * 		t_uses;
 
+	INDEX * 	i_parts;
+	INDEX * 	i_products;
+	INDEX * 	i_suppliers;
 	INDEX * 	i_supplies;
 	INDEX * 	i_uses;
 	
@@ -66,12 +88,6 @@ private:
 	static void * threadInitSupplies(void * This);
 	static void * threadInitUses(void * This);
 };
-
-  struct thr_args{
-    PPSWorkload * wl;
-    UInt32 id;
-    UInt32 tot;
-  };
 
 class PPSTxnManager : public TxnManager
 {
@@ -99,6 +115,26 @@ private:
   bool is_local_item(uint64_t idx);
   RC send_remote_request(); 
 
+inline void getThreeFields(row_t *& r_local); 
+inline void getAllFields(row_t *& r_local); 
+inline RC run_getpart_0(uint64_t part_key, row_t *& r_local);
+inline RC run_getpart_1(row_t *& r_local);
+inline RC run_getproduct_0(uint64_t product_key, row_t *& r_local);
+inline RC run_getproduct_1(row_t *& r_local);
+inline RC run_getsupplier_0(uint64_t supplier_key, row_t *& r_local);
+inline RC run_getsupplier_1(row_t *& r_local);
+inline RC run_getpartsbyproduct_0(uint64_t product_key, row_t *& r_local);
+inline RC run_getpartsbyproduct_1(row_t *& r_local);
+inline RC run_getpartsbyproduct_2(uint64_t product_key, row_t *& r_local);
+inline RC run_getpartsbyproduct_3(uint64_t &part_key, row_t *& r_local);
+inline RC run_getpartsbyproduct_4(uint64_t part_key, row_t *& r_local);
+inline RC run_getpartsbyproduct_5(row_t *& r_local);
+inline RC run_getpartsbysupplier_0(uint64_t supplier_key, row_t *& r_local);
+inline RC run_getpartsbysupplier_1(row_t *& r_local);
+inline RC run_getpartsbysupplier_2(uint64_t supplier_key, row_t *& r_local);
+inline RC run_getpartsbysupplier_3(uint64_t &part_key, row_t *& r_local);
+inline RC run_getpartsbysupplier_4(uint64_t part_key, row_t *& r_local);
+  inline RC run_getpartsbysupplier_5(row_t *& r_local);
 };
 
 #endif

@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef _PPSQuery_H_
-#define _PPSQuery_H_
+#ifndef _PPSQUERY_H_
+#define _PPSQUERY_H_
 
 #include "global.h"
 #include "helper.h"
@@ -31,8 +31,11 @@ public:
   BaseQuery * create_query(Workload * h_wl, uint64_t home_partition_id);
 
 private:
-	BaseQuery * gen_requests(uint64_t home_partition_id, Workload * h_wl);
-  BaseQuery * gen_parts(uint64_t home_partition); 
+	BaseQuery * gen_requests_parts(uint64_t home_partition_id);
+	BaseQuery * gen_requests_suppliers(uint64_t home_partition_id);
+	BaseQuery * gen_requests_products(uint64_t home_partition_id);
+	BaseQuery * gen_requests_partsbysupplier(uint64_t home_partition_id);
+	BaseQuery * gen_requests_partsbyproduct(uint64_t home_partition_id);
 	myrand * mrand;
 };
 
@@ -42,7 +45,6 @@ public:
   void init();
   void reset();
   void release();
-  void release_items();
   void print();
   static std::set<uint64_t> participants(Message * msg, Workload * wl); 
   uint64_t participants(bool *& pps,Workload * wl); 
@@ -53,6 +55,9 @@ public:
 	// txn input 
 
   uint64_t rqry_req_cnt;
+  uint64_t part_key;
+  uint64_t supplier_key;
+  uint64_t product_key;
 
 };
 
