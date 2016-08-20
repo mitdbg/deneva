@@ -61,7 +61,9 @@ RC PPSWorkload::init_schema(const char * schema_file) {
 	t_supplies = tables["SUPPLIES"];
 	t_uses = tables["USES"];
 
+	i_parts = indexes["PARTS_IDX"];
 	i_suppliers = indexes["SUPPLIERS_IDX"];
+	i_products = indexes["PRODUCTS_IDX"];
 	i_uses = indexes["USES_IDX"];
 	return RCOK;
 }
@@ -77,7 +79,7 @@ RC PPSWorkload::init_table() {
 // --products 
 /**********************************/
 
-  thr_args * tt = new thr_args[g_init_parallelism];
+  pps_thr_args * tt = new pps_thr_args[g_init_parallelism];
 	for (UInt32 i = 0; i < g_init_parallelism ; i++) {
     tt[i].wl = this;
     tt[i].id = i;
@@ -217,29 +219,29 @@ void PPSWorkload::init_tab_uses() {
 +==================================================================*/
 
 void * PPSWorkload::threadInitSuppliers(void * This) {
-  PPSWorkload * wl = ((thr_args*) This)->wl;
-  //int id = ((thr_args*) This)->id;
+  PPSWorkload * wl = ((pps_thr_args*) This)->wl;
+  //int id = ((pps_thr_args*) This)->id;
 	wl->init_tab_suppliers();
 	return NULL;
 }
 
 void * PPSWorkload::threadInitProducts(void * This) {
-  PPSWorkload * wl = ((thr_args*) This)->wl;
-  //int id = ((thr_args*) This)->id;
+  PPSWorkload * wl = ((pps_thr_args*) This)->wl;
+  //int id = ((pps_thr_args*) This)->id;
 	wl->init_tab_products();
 	return NULL;
 }
 
 void * PPSWorkload::threadInitParts(void * This) {
-  PPSWorkload * wl = ((thr_args*) This)->wl;
-  //int id = ((thr_args*) This)->id;
+  PPSWorkload * wl = ((pps_thr_args*) This)->wl;
+  //int id = ((pps_thr_args*) This)->id;
 	wl->init_tab_parts();
 	return NULL;
 }
 
 void * PPSWorkload::threadInitUses(void * This) {
-  PPSWorkload * wl = ((thr_args*) This)->wl;
-  //int id = ((thr_args*) This)->id;
+  PPSWorkload * wl = ((pps_thr_args*) This)->wl;
+  //int id = ((pps_thr_args*) This)->id;
 	wl->init_tab_uses();
 	return NULL;
 }

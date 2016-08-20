@@ -111,6 +111,8 @@ Message * Message::create_message(RemReqType rtype) {
       msg = new YCSBQueryMessage;
 #elif WORKLOAD == TPCC 
       msg = new TPCCQueryMessage;
+#elif WORKLOAD == PPS 
+      msg = new PPSQueryMessage;
 #endif
       msg->init();
       break;
@@ -643,6 +645,7 @@ void PPSClientQueryMessage::release() {
 
 uint64_t PPSClientQueryMessage::get_size() {
   uint64_t size = ClientQueryMessage::get_size();
+  size += sizeof(uint64_t);
   size += sizeof(uint64_t)*3; 
   return size;
 }

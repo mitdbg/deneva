@@ -20,6 +20,7 @@
 #include "table.h"
 #include "ycsb_query.h"
 #include "tpcc_query.h"
+#include "pps_query.h"
 
 /*************************************************/
 //     class Query_queue
@@ -83,6 +84,8 @@ Client_query_queue::initQueriesParallel() {
     gen->init();
 #elif WORKLOAD == TPCC
     TPCCQueryGenerator * gen = new TPCCQueryGenerator;
+#elif WORKLOAD == PPS
+    PPSQueryGenerator * gen = new PPSQueryGenerator;
 #endif
 #if SERVER_GENERATE_QUERIES
   for ( UInt32 thread_id = 0; thread_id < g_thread_cnt; thread_id ++) {

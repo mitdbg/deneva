@@ -5,17 +5,17 @@
 /***********************************************/
 // Simulation + Hardware
 /***********************************************/
-#define NODE_CNT 16
-#define THREAD_CNT 4
+#define NODE_CNT 1
+#define THREAD_CNT 1
 #define REM_THREAD_CNT THREAD_CNT
 #define SEND_THREAD_CNT THREAD_CNT
 #define CORE_CNT 8
 // PART_CNT should be at least NODE_CNT
 #define PART_CNT NODE_CNT
 #define CLIENT_NODE_CNT NODE_CNT
-#define CLIENT_THREAD_CNT 4
-#define CLIENT_REM_THREAD_CNT 2
-#define CLIENT_SEND_THREAD_CNT 2
+#define CLIENT_THREAD_CNT 1
+#define CLIENT_REM_THREAD_CNT 1
+#define CLIENT_SEND_THREAD_CNT 1
 #define CLIENT_RUNTIME false
 
 #define LOAD_METHOD LOAD_MAX
@@ -36,8 +36,8 @@
 
 // # of transactions to run for warmup
 #define WARMUP            0
-// YCSB or TPCC
-#define WORKLOAD YCSB
+// YCSB or TPCC or PPS
+#define WORKLOAD PPS 
 // print the transaction latency distribution
 #define PRT_LAT_DISTR false
 #define STATS_ENABLE        true
@@ -75,6 +75,9 @@
 #define TPORT_TYPE TCP
 #define TPORT_PORT 17000
 #define SET_AFFINITY true
+//#define TPORT_TYPE IPC 
+//#define TPORT_PORT 17000 
+//#define SET_AFFINITY true
 
 #define MAX_TPORT_NAME 128
 #define MSG_SIZE 128 // in bytes
@@ -243,6 +246,8 @@ extern TPCCTxnType          g_tpcc_txn_type;
 #define MAX_PPS_SUPPLIER_KEY 100
 #define MAX_PPS_PART_PER_PRODUCT 10
 #define MAX_PPS_PART_PER_SUPPLIER 10
+#define MAX_PPS_PART_PER_PRODUCT_KEY 100
+#define MAX_PPS_PART_PER_SUPPLIER_KEY 100
 
 #define PERC_PPS_GETPART 0.20
 #define PERC_PPS_GETSUPPLIER 0.20 
@@ -314,7 +319,8 @@ extern TestCases          g_test_case;
 // WORKLOAD
 #define YCSB            1
 #define TPCC            2
-#define TEST            3
+#define PPS             3
+#define TEST            4
 // Concurrency Control Algorithm
 #define NO_WAIT           1
 #define WAIT_DIE          2
@@ -373,7 +379,7 @@ extern TestCases          g_test_case;
 
 #define SEED 0
 #define SHMEM_ENV false
-#define ENVIRONMENT_EC2 true
+#define ENVIRONMENT_EC2 false
 
 #endif
 

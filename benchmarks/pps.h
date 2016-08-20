@@ -56,7 +56,6 @@ enum PPSRemTxnType {
   PPS_FIN,
   PPS_RDONE};
 
-
 class PPSWorkload : public Workload {
 public:
 	RC init();
@@ -87,6 +86,12 @@ private:
 	static void * threadInitParts(void * This);
 	static void * threadInitSupplies(void * This);
 	static void * threadInitUses(void * This);
+};
+
+struct pps_thr_args{
+    PPSWorkload * wl;
+    UInt32 id;
+    UInt32 tot;
 };
 
 class PPSTxnManager : public TxnManager

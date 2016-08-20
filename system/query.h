@@ -24,6 +24,7 @@
 class Workload;
 class YCSBQuery;
 class TPCCQuery;
+class PPSQuery;
 
 class BaseQuery {
 public:
@@ -54,8 +55,10 @@ public:
 	int q_idx;
 #if WORKLOAD == YCSB
 	YCSBQuery * queries;
-#else 
+#elif WORKLOAD == TPCC
 	TPCCQuery * queries;
+#elif WORKLOAD == PPS
+	PPSQuery * queries;
 #endif
 	char pad[CL_SIZE - sizeof(void *) - sizeof(int)];
 };

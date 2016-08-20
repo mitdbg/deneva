@@ -19,6 +19,7 @@
 //#include "query.h"
 #include "ycsb_query.h"
 #include "tpcc_query.h"
+#include "pps_query.h"
 #include "mem_alloc.h"
 #include "transport.h"
 #include "wl.h"
@@ -76,6 +77,8 @@ void Sequencer::process_ack(Message * msg, uint64_t thd_id) {
       mem_allocator.free(cl_msg->items[i],sizeof(Item_no));
     }
   }
+#elif WORKLOAD == PPS
+  PPSClientQueryMessage* cl_msg = (PPSClientQueryMessage*)wait_list[id].msg;
 #endif
     cl_msg->release();
 
@@ -132,6 +135,8 @@ void Sequencer::process_txn( Message * msg,uint64_t thd_id) {
     std::set<uint64_t> participants = YCSBQuery::participants(msg,_wl);
 #elif WORKLOAD == TPCC
     std::set<uint64_t> participants = TPCCQuery::participants(msg,_wl);
+#elif WORKLOAD == PPS
+    std::set<uint64_t> participants = PPSQuery::participants(msg,_wl);
 #endif
 		uint32_t server_ack_cnt = participants.size();
 		assert(server_ack_cnt > 0);

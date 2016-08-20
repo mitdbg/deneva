@@ -115,6 +115,14 @@ RC Workload::init_schema(const char * schema_file) {
         table_size = g_num_wh / g_part_cnt * g_max_items;
         printf("STOCK size %ld\n",table_size);
       }
+#elif WORKLOAD == PPS
+      if ( !tname.compare(1, 9, "WAREHOUSE") ) {
+      table_size = MAX_PPS_PART_KEY;
+      }
+      table_size = MAX_PPS_PRODUCT_KEY;
+      table_size = MAX_PPS_SUPPLIER_KEY;
+      table_size = MAX_PPS_PART_PER_SUPPLIER_KEY;
+      table_size = MAX_PPS_PART_PER_PRODUCT_KEY;
 #else
       table_size = g_synth_table_size / g_part_cnt;
 #endif
@@ -151,7 +159,8 @@ void Workload::index_insert(INDEX * index, uint64_t key, row_t * row, int64_t pa
 	m_item->location = row;
 	m_item->valid = true;
 
-    assert( index->index_insert(key, m_item, pid) == RCOK );
+  assert(index);
+  assert( index->index_insert(key, m_item, pid) == RCOK );
 }
 
 

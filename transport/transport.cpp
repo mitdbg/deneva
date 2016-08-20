@@ -131,7 +131,7 @@ Socket * Transport::bind(uint64_t port_id) {
   Socket * socket = get_socket();
   char socket_name[MAX_TPORT_NAME];
 #if TPORT_TYPE == IPC
-  sprintf(socket_name,"ipc://node_%d.ipc",port_id);
+  sprintf(socket_name,"ipc://node_%ld.ipc",port_id);
 #else
 #if ENVIRONMENT_EC2
   sprintf(socket_name,"tcp://eth0:%ld",port_id);
@@ -152,7 +152,7 @@ Socket * Transport::connect(uint64_t dest_id,uint64_t port_id) {
   Socket * socket = get_socket();
   char socket_name[MAX_TPORT_NAME];
 #if TPORT_TYPE == IPC
-  sprintf(socket_name,"ipc://node_%d.ipc",port_id);
+  sprintf(socket_name,"ipc://node_%ld.ipc",port_id);
 #else
 #if ENVIRONMENT_EC2
   sprintf(socket_name,"tcp://eth0;%s:%ld",ifaddr[dest_id],port_id);

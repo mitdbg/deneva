@@ -17,6 +17,7 @@
 #include "global.h"
 #include "ycsb.h"
 #include "tpcc.h"
+#include "pps.h"
 #include "thread.h"
 #include "io_thread.h"
 #include "client_thread.h"
@@ -77,6 +78,8 @@ int main(int argc, char* argv[])
 			m_wl = new YCSBWorkload; break;
 		case TPCC :
 			m_wl = new TPCCWorkload; break;
+		case PPS :
+			m_wl = new PPSWorkload; break;
 		default:
 			assert(false);
 	}

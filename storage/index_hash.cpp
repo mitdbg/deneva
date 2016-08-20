@@ -30,22 +30,6 @@ RC IndexHash::init(uint64_t bucket_cnt) {
 			_buckets[0][n].init();
       ++buckets_init_cnt;
   }
-  /*
-	for (UInt32 i = 0; i < g_part_cnt; i++) {
-		_buckets[i] = (BucketHeader *) mem_allocator.alloc(sizeof(BucketHeader) * _bucket_cnt_per_part);
-
-  // TODO: is this ok for tpcc?
-#if WORKLOAD == YCSB
-    if((i % g_node_cnt) != g_node_id)
-      continue;
-#endif
-
-		for (UInt32 n = 0; n < _bucket_cnt_per_part; n ++) {
-			_buckets[i][n].init();
-      ++buckets_init_cnt;
-    }
-	}
-  */
   printf("Index init with %ld buckets\n",buckets_init_cnt);
 	return RCOK;
 }

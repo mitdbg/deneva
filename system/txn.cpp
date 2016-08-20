@@ -32,6 +32,7 @@
 #include "message.h"
 #include "ycsb_query.h"
 #include "tpcc_query.h"
+#include "pps_query.h"
 #include "array.h"
 #include "maat.h"
 
@@ -237,6 +238,8 @@ void TxnManager::reset_query() {
   ((YCSBQuery*)query)->reset();
 #elif WORKLOAD == TPCC
   ((TPCCQuery*)query)->reset();
+#elif WORKLOAD == PPS
+  ((PPSQuery*)query)->reset();
 #endif
 }
 
@@ -533,7 +536,7 @@ void TxnManager::cleanup(RC rc) {
 	ts_t starttime = get_sys_clock();
   uint64_t row_cnt = txn->accesses.get_count();
   assert(txn->accesses.get_count() == txn->row_cnt);
-  assert((WORKLOAD == YCSB && row_cnt <= g_req_per_query) || (WORKLOAD == TPCC && row_cnt <= g_max_items_per_txn*2 + 3));
+  //assert((WORKLOAD == YCSB && row_cnt <= g_req_per_query) || (WORKLOAD == TPCC && row_cnt <= g_max_items_per_txn*2 + 3));
 
 
   DEBUG("Cleanup %ld %ld\n",get_txn_id(),row_cnt);

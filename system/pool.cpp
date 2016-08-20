@@ -23,6 +23,7 @@
 #include "ycsb_query.h"
 #include "ycsb.h"
 #include "tpcc_query.h"
+#include "pps_query.h"
 #include "query.h"
 #include "msg_queue.h"
 #include "row.h"
@@ -168,6 +169,9 @@ void QryPool::init(Workload * wl, uint64_t size) {
 #if WORKLOAD==TPCC
     TPCCQuery * m_qry = (TPCCQuery *) mem_allocator.alloc(sizeof(TPCCQuery));
     m_qry = new TPCCQuery();
+#elif WORKLOAD==PPS
+    PPSQuery * m_qry = (PPSQuery *) mem_allocator.alloc(sizeof(PPSQuery));
+    m_qry = new PPSQuery();
 #elif WORKLOAD==YCSB
     YCSBQuery * m_qry = (YCSBQuery *) mem_allocator.alloc(sizeof(YCSBQuery));
     m_qry = new YCSBQuery();
@@ -190,6 +194,9 @@ void QryPool::get(uint64_t thd_id, BaseQuery *& item) {
 #if WORKLOAD==TPCC
     TPCCQuery * qry = (TPCCQuery *) mem_allocator.alloc(sizeof(TPCCQuery));
     qry = new TPCCQuery();
+#elif WORKLOAD==PPS
+    PPSQuery * qry = (PPSQuery *) mem_allocator.alloc(sizeof(PPSQuery));
+    qry = new PPSQuery();
 #elif WORKLOAD==YCSB
     YCSBQuery * qry = NULL;
     qry = (YCSBQuery *) mem_allocator.alloc(sizeof(YCSBQuery));
@@ -207,6 +214,8 @@ void QryPool::put(uint64_t thd_id, BaseQuery * item) {
   ((YCSBQuery*)item)->reset();
 #elif WORKLOAD == TPCC
   ((TPCCQuery*)item)->reset();
+#elif WORKLOAD == PPS
+  ((PPSQuery*)item)->reset();
 #endif
   //DEBUG_M("put 0x%lx\n",(uint64_t)item);
   DEBUG_R("put 0x%lx\n",(uint64_t)item);
@@ -222,6 +231,8 @@ void QryPool::put(uint64_t thd_id, BaseQuery * item) {
   ((YCSBQuery*)item)->release();
 #elif WORKLOAD == TPCC
   ((TPCCQuery*)item)->release();
+#elif WORKLOAD == PPS
+  ((PPSQuery*)item)->release();
 #endif
     mem_allocator.free(item,sizeof(BaseQuery));
   }

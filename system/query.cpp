@@ -20,6 +20,7 @@
 #include "table.h"
 #include "ycsb_query.h"
 #include "tpcc_query.h"
+#include "pps_query.h"
 
 /*************************************************/
 //     class Query_queue
@@ -56,12 +57,17 @@ Query_thd::init(Workload * h_wl, int thread_id) {
 #elif WORKLOAD == TPCC
 	queries = (TPCCQuery *) 
 		mem_allocator.alloc(sizeof(TPCCQuery) * request_cnt);
+#elif WORKLOAD == PPS
+	queries = (PPSQuery *) 
+		mem_allocator.alloc(sizeof(PPSQuery) * request_cnt);
 #endif
 	for (UInt32 qid = 0; qid < request_cnt; qid ++) {
 #if WORKLOAD == YCSB	
 		new(&queries[qid]) YCSBQuery();
 #elif WORKLOAD == TPCC
 		new(&queries[qid]) TPCCQuery();
+#elif WORKLOAD == PPS
+		new(&queries[qid]) PPSQuery();
 #endif
 		queries[qid].init(thread_id, h_wl);
 	}
