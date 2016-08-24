@@ -73,6 +73,22 @@ RC IndexHash::index_insert(idx_key_t key, itemid_t * item, int part_id) {
 	release_latch(cur_bkt);
 	return rc;
 }
+RC IndexHash::index_insert_nonunique(idx_key_t key, itemid_t * item, int part_id) {
+	RC rc = RCOK;
+	uint64_t bkt_idx = hash(key);
+	assert(bkt_idx < _bucket_cnt_per_part);
+	//BucketHeader * cur_bkt = &_buckets[part_id][bkt_idx];
+	BucketHeader * cur_bkt = &_buckets[0][bkt_idx];
+	// 1. get the ex latch
+	get_latch(cur_bkt);
+	
+	// 2. update the latch list
+	cur_bkt->insert_item_nonunique(key, item, part_id);
+	
+	// 3. release the latch
+	release_latch(cur_bkt);
+	return rc;
+}
 
 RC IndexHash::index_read(idx_key_t key, itemid_t * &item, int part_id) {
 	uint64_t bkt_idx = hash(key);
@@ -90,6 +106,24 @@ RC IndexHash::index_read(idx_key_t key, itemid_t * &item, int part_id) {
 	return rc;
 
 }
+
+RC IndexHash::index_read(idx_key_t key, int count, itemid_t * &item, int part_id) {
+	uint64_t bkt_idx = hash(key);
+	assert(bkt_idx < _bucket_cnt_per_part);
+	//BucketHeader * cur_bkt = &_buckets[part_id][bkt_idx];
+	BucketHeader * cur_bkt = &_buckets[0][bkt_idx];
+	RC rc = RCOK;
+	// 1. get the sh latch
+//	get_latch(cur_bkt);
+
+	cur_bkt->read_item(key, count, item);
+	
+	// 3. release the latch
+//	release_latch(cur_bkt);
+	return rc;
+
+}
+
 
 RC IndexHash::index_read(idx_key_t key, itemid_t * &item, 
 						int part_id, int thd_id) {
@@ -148,6 +182,20 @@ void BucketHeader::insert_item(idx_key_t key,
 	}
 }
 
+
+void BucketHeader::insert_item_nonunique(idx_key_t key, 
+		itemid_t * item, 
+		int part_id) 
+{
+
+  BucketNode * new_node = (BucketNode *) 
+    mem_allocator.alloc(sizeof(BucketNode));		
+  new_node->init(key);
+  new_node->items = item;
+  new_node->next = first_node;
+  first_node = new_node;
+}
+
 void BucketHeader::read_item(idx_key_t key, itemid_t * &item) 
 {
 	BucketNode * cur_node = first_node;
@@ -156,10 +204,32 @@ void BucketHeader::read_item(idx_key_t key, itemid_t * &item)
 			break;
 		cur_node = cur_node->next;
 	}
-	//M_ASSERT_V(cur_node != NULL, "Key does not exist! %ld\n",key);
+	M_ASSERT_V(cur_node != NULL, "Key does not exist! %ld\n",key);
 	//M_ASSERT(cur_node != NULL, "Key does not exist!");
 	//M_ASSERT(cur_node->key == key, "Key does not exist!");
-  assert(cur_node != NULL);
+  //assert(cur_node != NULL);
+  assert(cur_node->key == key);
+	item = cur_node->items;
+}
+
+void BucketHeader::read_item(idx_key_t key, uint32_t count, itemid_t * &item) 
+{
+	BucketNode * cur_node = first_node;
+  uint32_t ctr = 0;
+	while (cur_node != NULL) {
+		if (cur_node->key == key) {
+      if (ctr == count) {
+        break;
+      }
+      ++ctr;
+    }
+		cur_node = cur_node->next;
+	}
+  if (cur_node == NULL) {
+    item = NULL;
+    return;
+  }
+	M_ASSERT_V(cur_node != NULL, "Key does not exist! %ld\n",key);
   assert(cur_node->key == key);
 	item = cur_node->items;
 }

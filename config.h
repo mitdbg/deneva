@@ -19,7 +19,7 @@
 #define CLIENT_RUNTIME false
 
 #define LOAD_METHOD LOAD_MAX
-#define LOAD_PER_SERVER 10
+#define LOAD_PER_SERVER 100
 
 // Replication
 #define REPLICA_CNT 0
@@ -44,7 +44,7 @@
 #define TIME_ENABLE         true //STATS_ENABLE
 
 #define FIN_BY_TIME true
-#define MAX_TXN_IN_FLIGHT 100
+#define MAX_TXN_IN_FLIGHT 1
 
 #define SERVER_GENERATE_QUERIES false
 
@@ -98,7 +98,7 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, OCC, VLL, CALVIN, MAAT
-#define CC_ALG TIMESTAMP
+#define CC_ALG NO_WAIT 
 #define ISOLATION_LEVEL SERIALIZABLE
 #define YCSB_ABORT_MODE true
 
@@ -242,25 +242,27 @@ extern TPCCTxnType          g_tpcc_txn_type;
 
 // PPS (Product-Part-Supplier)
 #define MAX_PPS_PART_KEY 100
-#define MAX_PPS_PRODUCT_KEY 100
-#define MAX_PPS_SUPPLIER_KEY 100
+#define MAX_PPS_PRODUCT_KEY 100 
+#define MAX_PPS_SUPPLIER_KEY 100 
 #define MAX_PPS_PART_PER_PRODUCT 10
 #define MAX_PPS_PART_PER_SUPPLIER 10
 #define MAX_PPS_PART_PER_PRODUCT_KEY 100
 #define MAX_PPS_PART_PER_SUPPLIER_KEY 100
 
-#define PERC_PPS_GETPART 0.20
-#define PERC_PPS_GETSUPPLIER 0.20 
-#define PERC_PPS_GETPRODUCT 0.20
-#define PERC_PPS_GETPARTBYSUPPLIER 0.20
-#define PERC_PPS_GETPARTBYPRODUCT 0.20
+#define PERC_PPS_GETPART 0.00
+#define PERC_PPS_GETSUPPLIER 0.00 
+#define PERC_PPS_GETPRODUCT 0.00
+#define PERC_PPS_GETPARTBYSUPPLIER 0.00
+#define PERC_PPS_GETPARTBYPRODUCT 0.00
+#define PERC_PPS_ORDERPRODUCT 1.00
 
 enum PPSTxnType {PPS_ALL, 
           PPS_GETPART, 
           PPS_GETSUPPLIER, 
           PPS_GETPRODUCT, 
           PPS_GETPARTBYSUPPLIER, 
-          PPS_GETPARTBYPRODUCT 
+          PPS_GETPARTBYPRODUCT,
+          PPS_ORDERPRODUCT 
           };
 
 /***********************************************/
@@ -293,7 +295,7 @@ extern TestCases          g_test_case;
 #define DEBUG_TIMESTAMP       false
 #define DEBUG_SYNTH         false
 #define DEBUG_ASSERT        false
-#define DEBUG_DISTR false
+#define DEBUG_DISTR true
 #define DEBUG_ALLOC false
 #define DEBUG_RACE false
 #define DEBUG_TIMELINE        false
@@ -374,8 +376,10 @@ extern TestCases          g_test_case;
 #define PROG_TIMER 10 * BILLION // in s
 #define BATCH_TIMER 0
 #define SEQ_BATCH_TIMER 5 * 1 * MILLION // ~5ms -- same as CALVIN paper
-#define DONE_TIMER 1 * 60 * BILLION // ~1 minutes
-#define WARMUP_TIMER 1 * 60 * BILLION // ~1 minutes
+//#define DONE_TIMER 1 * 60 * BILLION // ~1 minutes
+#define DONE_TIMER 1 * 5 * BILLION // ~1 minutes
+#define WARMUP_TIMER 0 * BILLION // ~1 minutes
+//#define WARMUP_TIMER 1 * 60 * BILLION // ~1 minutes
 
 #define SEED 0
 #define SHMEM_ENV false

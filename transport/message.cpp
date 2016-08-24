@@ -673,7 +673,6 @@ void PPSClientQueryMessage::copy_to_txn(TxnManager * txn) {
 
   txn->client_id = return_node_id;
   pps_query->txn_type = (PPSTxnType)txn_type;
-  // FIXME: bad programming style
   if(pps_query->txn_type == PPS_GETPART)
     ((PPSTxnManager*)txn)->state = PPS_GETPART0;
   else if(pps_query->txn_type == PPS_GETPRODUCT)
@@ -684,9 +683,18 @@ void PPSClientQueryMessage::copy_to_txn(TxnManager * txn) {
     ((PPSTxnManager*)txn)->state = PPS_GETPARTBYPRODUCT0;
   else if(pps_query->txn_type == PPS_GETPARTBYSUPPLIER)
     ((PPSTxnManager*)txn)->state = PPS_GETPARTBYSUPPLIER0;
+  else if(pps_query->txn_type == PPS_ORDERPRODUCT)
+    ((PPSTxnManager*)txn)->state = PPS_ORDERPRODUCT0;
   pps_query->part_key = part_key;
   pps_query->product_key = product_key;
   pps_query->supplier_key = supplier_key;
+
+  std::cout << "PPSClient::copy_to_txn "
+    << "type " << (PPSTxnType)txn_type
+    << " part_key " << part_key
+    << " product_key " << product_key
+    << " supplier_key " << supplier_key
+    << std::endl;
 
 }
 
@@ -701,6 +709,13 @@ void PPSClientQueryMessage::copy_from_buf(char * buf) {
   COPY_VAL(supplier_key,buf,ptr);
 
  assert(ptr == get_size());
+
+  std::cout << "PPSClient::copy_from_buf "
+    << "type " << (PPSTxnType)txn_type
+    << " part_key " << part_key
+    << " product_key " << product_key
+    << " supplier_key " << supplier_key
+    << std::endl;
 }
 
 void PPSClientQueryMessage::copy_to_buf(char * buf) {
@@ -713,6 +728,13 @@ void PPSClientQueryMessage::copy_to_buf(char * buf) {
   COPY_BUF(buf,product_key,ptr);
   COPY_BUF(buf,supplier_key,ptr);
  assert(ptr == get_size());
+
+  std::cout << "PPSClient::copy_to_buf "
+    << "type " << (PPSTxnType)txn_type
+    << " part_key " << part_key
+    << " product_key " << product_key
+    << " supplier_key " << supplier_key
+    << std::endl;
 }
 
 
@@ -1421,6 +1443,8 @@ void PPSQueryMessage::release() {
 uint64_t PPSQueryMessage::get_size() {
   uint64_t size = QueryMessage::get_size();
 
+  size += sizeof(uint64_t); // txn_type
+  size += sizeof(uint64_t); // state
   size += sizeof(uint64_t); // part/product/supply key 
 
   return size;
@@ -1443,10 +1467,15 @@ void PPSQueryMessage::copy_from_txn(TxnManager * txn) {
     supplier_key = pps_query->supplier_key;
   }
   if (txn_type == PPS_GETPARTBYPRODUCT) {
-    product_key = pps_query->product_key;
+    //product_key = pps_query->product_key;
+    part_key = pps_query->part_key;
   }
   if (txn_type == PPS_GETPARTBYSUPPLIER) {
-    supplier_key = pps_query->supplier_key;
+    //supplier_key = pps_query->supplier_key;
+    part_key = pps_query->part_key;
+  }
+  if (txn_type == PPS_ORDERPRODUCT) {
+    product_key = pps_query->part_key;
   }
 
 }
@@ -1469,10 +1498,16 @@ void PPSQueryMessage::copy_to_txn(TxnManager * txn) {
     pps_query->supplier_key = supplier_key;
   }
   if (txn_type == PPS_GETPARTBYPRODUCT) {
-    pps_query->product_key = product_key;
+    //pps_query->product_key = product_key;
+    pps_query->part_key = part_key;
   }
   if (txn_type == PPS_GETPARTBYSUPPLIER) {
-    pps_query->supplier_key = supplier_key;
+    //pps_query->supplier_key = supplier_key;
+    pps_query->part_key = part_key;
+  }
+  if (txn_type == PPS_ORDERPRODUCT) {
+    //pps_query->product_key = product_key;
+    pps_query->part_key = part_key;
   }
 
 }
@@ -1494,10 +1529,16 @@ void PPSQueryMessage::copy_from_buf(char * buf) {
     COPY_VAL(supplier_key,buf,ptr); 
   }
   if (txn_type == PPS_GETPARTBYPRODUCT) {
-    COPY_VAL(product_key,buf,ptr); 
+    //COPY_VAL(product_key,buf,ptr); 
+    COPY_VAL(part_key,buf,ptr); 
   }
   if (txn_type == PPS_GETPARTBYSUPPLIER) {
-    COPY_VAL(supplier_key,buf,ptr); 
+    //COPY_VAL(supplier_key,buf,ptr); 
+    COPY_VAL(part_key,buf,ptr); 
+  }
+  if (txn_type == PPS_ORDERPRODUCT) {
+    //COPY_VAL(product_key,buf,ptr); 
+    COPY_VAL(part_key,buf,ptr); 
   }
 
 
@@ -1522,10 +1563,16 @@ void PPSQueryMessage::copy_to_buf(char * buf) {
     COPY_BUF(buf,supplier_key,ptr); 
   }
   if (txn_type == PPS_GETPARTBYPRODUCT) {
-    COPY_BUF(buf,product_key,ptr); 
+    //COPY_BUF(buf,product_key,ptr); 
+    COPY_BUF(buf,part_key,ptr); 
   }
   if (txn_type == PPS_GETPARTBYSUPPLIER) {
-    COPY_BUF(buf,supplier_key,ptr); 
+    //COPY_BUF(buf,supplier_key,ptr); 
+    COPY_BUF(buf,part_key,ptr); 
+  }
+  if (txn_type == PPS_ORDERPRODUCT) {
+    //COPY_BUF(buf,product_key,ptr); 
+    COPY_BUF(buf,part_key,ptr); 
   }
  assert(ptr == get_size());
 

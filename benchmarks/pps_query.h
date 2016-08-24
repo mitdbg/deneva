@@ -36,6 +36,7 @@ private:
 	BaseQuery * gen_requests_products(uint64_t home_partition_id);
 	BaseQuery * gen_requests_partsbysupplier(uint64_t home_partition_id);
 	BaseQuery * gen_requests_partsbyproduct(uint64_t home_partition_id);
+	BaseQuery * gen_requests_orderproduct(uint64_t home_partition_id);
 	myrand * mrand;
 };
 
@@ -58,6 +59,9 @@ public:
   uint64_t part_key;
   uint64_t supplier_key;
   uint64_t product_key;
+
+  // track number of parts we've read
+  // in a getpartsbyX query
 
 };
 

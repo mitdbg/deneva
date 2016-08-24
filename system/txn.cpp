@@ -691,6 +691,21 @@ TxnManager::index_read(INDEX * index, idx_key_t key, int part_id) {
 	return item;
 }
 
+itemid_t *
+TxnManager::index_read(INDEX * index, idx_key_t key, int part_id, int count) {
+	uint64_t starttime = get_sys_clock();
+
+	itemid_t * item;
+	index->index_read(key, count, item, part_id);
+
+  uint64_t t = get_sys_clock() - starttime;
+  INC_STATS(get_thd_id(), txn_index_time, t);
+  //txn_time_idx += t;
+
+	return item;
+}
+
+
 RC TxnManager::validate() {
 #if MODE != NORMAL_MODE
   return RCOK;

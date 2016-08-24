@@ -116,13 +116,21 @@ RC Workload::init_schema(const char * schema_file) {
         printf("STOCK size %ld\n",table_size);
       }
 #elif WORKLOAD == PPS
-      if ( !tname.compare(1, 9, "WAREHOUSE") ) {
-      table_size = MAX_PPS_PART_KEY;
+      if ( !tname.compare(1, 5, "PARTS") ) {
+        table_size = MAX_PPS_PART_KEY;
       }
-      table_size = MAX_PPS_PRODUCT_KEY;
-      table_size = MAX_PPS_SUPPLIER_KEY;
-      table_size = MAX_PPS_PART_PER_SUPPLIER_KEY;
-      table_size = MAX_PPS_PART_PER_PRODUCT_KEY;
+      else if ( !tname.compare(1, 8, "PRODUCTS") ) {
+        table_size = MAX_PPS_PRODUCT_KEY;
+      }
+      else if ( !tname.compare(1, 9, "SUPPLIERS") ) {
+        table_size = MAX_PPS_SUPPLIER_KEY;
+      }
+      else if ( !tname.compare(1, 8, "SUPPLIES") ) {
+        table_size = MAX_PPS_PRODUCT_KEY;
+      }
+      else if ( !tname.compare(1, 4, "USES") ) {
+        table_size = MAX_PPS_SUPPLIER_KEY;
+      }
 #else
       table_size = g_synth_table_size / g_part_cnt;
 #endif
@@ -162,5 +170,21 @@ void Workload::index_insert(INDEX * index, uint64_t key, row_t * row, int64_t pa
   assert(index);
   assert( index->index_insert(key, m_item, pid) == RCOK );
 }
+
+void Workload::index_insert_nonunique(INDEX * index, uint64_t key, row_t * row, int64_t part_id) {
+	uint64_t pid = part_id;
+	if (part_id == -1)
+		pid = get_part_id(row);
+	itemid_t * m_item =
+		(itemid_t *) mem_allocator.alloc( sizeof(itemid_t));
+	m_item->init();
+	m_item->type = DT_row;
+	m_item->location = row;
+	m_item->valid = true;
+
+  assert(index);
+  assert( index->index_insert_nonunique(key, m_item, pid) == RCOK );
+}
+
 
 

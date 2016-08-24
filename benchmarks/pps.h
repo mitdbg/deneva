@@ -53,6 +53,13 @@ enum PPSRemTxnType {
   PPS_GETPARTBYSUPPLIER3,
   PPS_GETPARTBYSUPPLIER4,
   PPS_GETPARTBYSUPPLIER5,
+  PPS_ORDERPRODUCT_S,
+  PPS_ORDERPRODUCT0,
+  PPS_ORDERPRODUCT1,
+  PPS_ORDERPRODUCT2,
+  PPS_ORDERPRODUCT3,
+  PPS_ORDERPRODUCT4,
+  PPS_ORDERPRODUCT5,
   PPS_FIN,
   PPS_RDONE};
 
@@ -112,7 +119,7 @@ private:
 	volatile RC _rc;
   row_t * row;
 
-  uint64_t next_item_id;
+  uint64_t parts_processed_count;
 
   void next_pps_state();
   RC run_txn_state();
@@ -139,7 +146,13 @@ inline RC run_getpartsbysupplier_1(row_t *& r_local);
 inline RC run_getpartsbysupplier_2(uint64_t supplier_key, row_t *& r_local);
 inline RC run_getpartsbysupplier_3(uint64_t &part_key, row_t *& r_local);
 inline RC run_getpartsbysupplier_4(uint64_t part_key, row_t *& r_local);
-  inline RC run_getpartsbysupplier_5(row_t *& r_local);
+inline RC run_getpartsbysupplier_5(row_t *& r_local);
+inline RC run_orderproduct_0(uint64_t product_key, row_t *& r_local);
+inline RC run_orderproduct_1(row_t *& r_local);
+inline RC run_orderproduct_2(uint64_t product_key, row_t *& r_local);
+inline RC run_orderproduct_3(uint64_t &part_key, row_t *& r_local);
+inline RC run_orderproduct_4(uint64_t part_key, row_t *& r_local);
+inline RC run_orderproduct_5(row_t *& r_local);
 };
 
 #endif

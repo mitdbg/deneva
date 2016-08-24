@@ -224,6 +224,7 @@ extern double g_perc_getproducts;
 extern double g_perc_getsuppliers;
 extern double g_perc_getpartbyproduct;
 extern double g_perc_getpartbysupplier;
+extern double g_perc_orderproduct;
 
 // CALVIN
 extern UInt32 g_seq_thread_cnt;

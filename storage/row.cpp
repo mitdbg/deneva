@@ -27,6 +27,8 @@
 #include "mem_alloc.h"
 #include "manager.h"
 
+#define SIM_FULL_ROW true
+
 RC 
 row_t::init(table_t * host_table, uint64_t part_id, uint64_t row_id) {
 	part_info = true;
@@ -93,6 +95,7 @@ uint64_t row_t::get_field_cnt() {
 void row_t::set_value(int id, void * ptr) {
 	int datasize = get_schema()->get_field_size(id);
 	int pos = get_schema()->get_field_index(id);
+  DEBUG("set_value pos %d datasize %d -- %lx\n",pos,datasize,(uint64_t)this);
 #if SIM_FULL_ROW
 	memcpy( &data[pos], ptr, datasize);
 #else
@@ -131,6 +134,7 @@ GET_VALUE(SInt32);
 char * row_t::get_value(int id) {
   int pos __attribute__ ((unused));
 	pos = get_schema()->get_field_index(id);
+  DEBUG("get_value pos %d -- %lx\n",pos,(uint64_t)this);
 #if SIM_FULL_ROW
 	return &data[pos];
 #else

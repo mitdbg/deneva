@@ -171,6 +171,7 @@ double g_perc_getproducts = PERC_PPS_GETPRODUCT;
 double g_perc_getsuppliers = PERC_PPS_GETSUPPLIER;
 double g_perc_getpartbyproduct = PERC_PPS_GETPARTBYPRODUCT;
 double g_perc_getpartbysupplier = PERC_PPS_GETPARTBYSUPPLIER;
+double g_perc_orderproduct = PERC_PPS_ORDERPRODUCT;
 
 // TPCC
 UInt32 g_num_wh = NUM_WH;

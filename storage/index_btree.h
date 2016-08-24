@@ -46,6 +46,7 @@ public:
 	RC			init(uint64_t part_cnt, table_t * table);
 	bool 		index_exist(idx_key_t key); // check if the key exist. 
 	RC 			index_insert(idx_key_t key, itemid_t * item, int part_id = -1);
+	RC 			index_insert_nonunique(idx_key_t key, itemid_t * item, int part_id = -1) { return RCOK;}
 	RC	 		index_read(idx_key_t key, itemid_t * &item, 
 					uint64_t thd_id, int64_t part_id = -1);
 	RC	 		index_read(idx_key_t key, itemid_t * &item, int part_id = -1);
