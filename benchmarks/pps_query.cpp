@@ -43,6 +43,12 @@ BaseQuery * PPSQueryGenerator::create_query(Workload * h_wl,uint64_t home_partit
 	if (x < g_perc_getparts + g_perc_getsuppliers + g_perc_getproducts + g_perc_getpartbysupplier + g_perc_getpartbyproduct + g_perc_orderproduct) {
 		return gen_requests_orderproduct(home_partition_id);
   }
+	if (x < g_perc_getparts + g_perc_getsuppliers + g_perc_getproducts + g_perc_getpartbysupplier + g_perc_getpartbyproduct + g_perc_orderproduct + g_perc_updateproductpart) {
+		return gen_requests_updateproductpart(home_partition_id);
+  }
+	if (x < g_perc_getparts + g_perc_getsuppliers + g_perc_getproducts + g_perc_getpartbysupplier + g_perc_getpartbyproduct + g_perc_orderproduct + g_perc_updateproductpart + g_perc_updatepart) {
+		return gen_requests_updatepart(home_partition_id);
+  }
   assert(false);
 
 }
@@ -178,7 +184,9 @@ uint64_t PPSQuery::participants(bool *& pps,Workload * wl) {
 }
 
 bool PPSQuery::readonly() {
-  if (txn_type == PPS_ORDERPRODUCT) {
+  if (txn_type == PPS_ORDERPRODUCT ||
+      txn_type == PPS_UPDATEPRODUCTPART ||
+      txn_type == PPS_UPDATEPART) {
     return false;
   }
   return true;
@@ -315,6 +323,54 @@ BaseQuery * PPSQueryGenerator::gen_requests_orderproduct(uint64_t home_partition
 
   query->product_key = product_key;
   partitions_accessed.insert(products_to_partition(product_key));
+
+  query->partitions.init(partitions_accessed.size());
+  for(auto it = partitions_accessed.begin(); it != partitions_accessed.end(); ++it) {
+    query->partitions.add(*it);
+  }
+  return query;
+}
+
+BaseQuery * PPSQueryGenerator::gen_requests_updateproductpart(uint64_t home_partition) {
+  PPSQuery * query = new PPSQuery;
+	set<uint64_t> partitions_accessed;
+
+	query->txn_type = PPS_ORDERPRODUCT;
+  uint64_t product_key;
+    // select a part
+	if (FIRST_PART_LOCAL) {
+    while(products_to_partition(product_key = URand(1, g_max_product_key)) != home_partition) {}
+  }
+	else
+		product_key = URand(1, g_max_product_key);
+
+  query->product_key = product_key;
+  partitions_accessed.insert(products_to_partition(product_key));
+  query->part_key = URand(1, g_max_part_key);
+
+  query->partitions.init(partitions_accessed.size());
+  for(auto it = partitions_accessed.begin(); it != partitions_accessed.end(); ++it) {
+    query->partitions.add(*it);
+  }
+  return query;
+}
+
+
+BaseQuery * PPSQueryGenerator::gen_requests_updatepart(uint64_t home_partition) {
+  PPSQuery * query = new PPSQuery;
+	set<uint64_t> partitions_accessed;
+
+	query->txn_type = PPS_GETPART;
+  uint64_t part_key;
+    // select a part
+	if (FIRST_PART_LOCAL) {
+    while(parts_to_partition(part_key = URand(1, g_max_part_key)) != home_partition) {}
+  }
+	else
+		part_key = URand(1, g_max_part_key);
+
+  query->part_key = part_key;
+  partitions_accessed.insert(parts_to_partition(part_key));
 
   query->partitions.init(partitions_accessed.size());
   for(auto it = partitions_accessed.begin(); it != partitions_accessed.end(); ++it) {

@@ -37,7 +37,7 @@
 // # of transactions to run for warmup
 #define WARMUP            0
 // YCSB or TPCC or PPS
-#define WORKLOAD PPS 
+#define WORKLOAD YCSB 
 // print the transaction latency distribution
 #define PRT_LAT_DISTR false
 #define STATS_ENABLE        true
@@ -252,9 +252,11 @@ extern TPCCTxnType          g_tpcc_txn_type;
 #define PERC_PPS_GETPART 0.00
 #define PERC_PPS_GETSUPPLIER 0.00 
 #define PERC_PPS_GETPRODUCT 0.00
-#define PERC_PPS_GETPARTBYSUPPLIER 0.00
-#define PERC_PPS_GETPARTBYPRODUCT 0.00
-#define PERC_PPS_ORDERPRODUCT 1.00
+#define PERC_PPS_GETPARTBYSUPPLIER 0.05
+#define PERC_PPS_GETPARTBYPRODUCT 0.05
+#define PERC_PPS_ORDERPRODUCT 0.50
+#define PERC_PPS_UPDATEPRODUCTPART 0.20
+#define PERC_PPS_UPDATEPART 0.20
 
 enum PPSTxnType {PPS_ALL, 
           PPS_GETPART, 
@@ -262,7 +264,9 @@ enum PPSTxnType {PPS_ALL,
           PPS_GETPRODUCT, 
           PPS_GETPARTBYSUPPLIER, 
           PPS_GETPARTBYPRODUCT,
-          PPS_ORDERPRODUCT 
+          PPS_ORDERPRODUCT,
+          PPS_UPDATEPRODUCTPART, 
+          PPS_UPDATEPART 
           };
 
 /***********************************************/
@@ -295,7 +299,7 @@ extern TestCases          g_test_case;
 #define DEBUG_TIMESTAMP       false
 #define DEBUG_SYNTH         false
 #define DEBUG_ASSERT        false
-#define DEBUG_DISTR true
+#define DEBUG_DISTR false
 #define DEBUG_ALLOC false
 #define DEBUG_RACE false
 #define DEBUG_TIMELINE        false
@@ -377,7 +381,7 @@ extern TestCases          g_test_case;
 #define BATCH_TIMER 0
 #define SEQ_BATCH_TIMER 5 * 1 * MILLION // ~5ms -- same as CALVIN paper
 //#define DONE_TIMER 1 * 60 * BILLION // ~1 minutes
-#define DONE_TIMER 1 * 5 * BILLION // ~1 minutes
+#define DONE_TIMER 1 * 60 * BILLION // ~1 minutes
 #define WARMUP_TIMER 0 * BILLION // ~1 minutes
 //#define WARMUP_TIMER 1 * 60 * BILLION // ~1 minutes
 

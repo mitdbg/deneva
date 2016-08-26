@@ -37,6 +37,8 @@ private:
 	BaseQuery * gen_requests_partsbysupplier(uint64_t home_partition_id);
 	BaseQuery * gen_requests_partsbyproduct(uint64_t home_partition_id);
 	BaseQuery * gen_requests_orderproduct(uint64_t home_partition_id);
+	BaseQuery * gen_requests_updateproductpart(uint64_t home_partition_id);
+	BaseQuery * gen_requests_updatepart(uint64_t home_partition_id);
 	myrand * mrand;
 };
 

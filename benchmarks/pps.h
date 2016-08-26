@@ -60,6 +60,12 @@ enum PPSRemTxnType {
   PPS_ORDERPRODUCT3,
   PPS_ORDERPRODUCT4,
   PPS_ORDERPRODUCT5,
+  PPS_UPDATEPRODUCTPART_S,
+  PPS_UPDATEPRODUCTPART0,
+  PPS_UPDATEPRODUCTPART1,
+  PPS_UPDATEPART_S,
+  PPS_UPDATEPART0,
+  PPS_UPDATEPART1,
   PPS_FIN,
   PPS_RDONE};
 
@@ -153,6 +159,10 @@ inline RC run_orderproduct_2(uint64_t product_key, row_t *& r_local);
 inline RC run_orderproduct_3(uint64_t &part_key, row_t *& r_local);
 inline RC run_orderproduct_4(uint64_t part_key, row_t *& r_local);
 inline RC run_orderproduct_5(row_t *& r_local);
+inline RC run_updateproductpart_0(uint64_t product_key, row_t *& r_local);
+inline RC run_updateproductpart_1(uint64_t part_key, row_t *& r_local);
+inline RC run_updatepart_0(uint64_t part_key, row_t *& r_local);
+inline RC run_updatepart_1(row_t *& r_local);
 };
 
 #endif

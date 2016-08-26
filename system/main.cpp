@@ -339,6 +339,7 @@ int main(int argc, char* argv[])
   fflush(stdout);
   // Free things
 	//tport_man.shutdown();
+  m_wl->index_delete_all();
 
   /*
   txn_table.delete_all();

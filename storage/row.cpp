@@ -178,7 +178,7 @@ void row_t::copy(row_t * src) {
 
 void row_t::free_row() {
   DEBUG_M("row_t::free_row free\n");
-#if SIM_FULL_ROW
+#if SIM_FULL
 	mem_allocator.free(data, sizeof(char) * get_tuple_size());
 #else
 	mem_allocator.free(data, sizeof(uint64_t) * 1);

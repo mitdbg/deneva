@@ -17,6 +17,7 @@
 #include "global.h"	
 #include "index_hash.h"
 #include "mem_alloc.h"
+#include "row.h"
 	
 RC IndexHash::init(uint64_t bucket_cnt) {
 	_bucket_cnt = bucket_cnt;
@@ -39,6 +40,14 @@ IndexHash::init(int part_cnt, table_t * table, uint64_t bucket_cnt) {
 	init(bucket_cnt);
 	this->table = table;
 	return RCOK;
+}
+
+void IndexHash::index_delete() {
+  for (UInt32 n = 0; n < _bucket_cnt_per_part; n ++) {
+			_buckets[0][n].delete_bucket();
+  }
+  mem_allocator.free(_buckets[0],sizeof(BucketHeader) * _bucket_cnt_per_part);
+  delete _buckets;
 }
 
 bool IndexHash::index_exist(idx_key_t key) {
@@ -150,6 +159,15 @@ void BucketHeader::init() {
 	first_node = NULL;
 	locked = false;
 }
+
+void BucketHeader::delete_bucket() {
+	BucketNode * cur_node = first_node;
+	while (cur_node != NULL) {
+    ((row_t *)cur_node->items->location)->free_row();
+		cur_node = cur_node->next;
+	}
+}
+
 
 void BucketHeader::insert_item(idx_key_t key, 
 		itemid_t * item, 

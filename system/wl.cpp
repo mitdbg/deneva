@@ -149,6 +149,14 @@ RC Workload::init_schema(const char * schema_file) {
 }
 
 
+void Workload::index_delete_all() {
+  /*
+  for (auto string index_name = indexes.keys(); index_name = index_name.next()) {
+    INDEX * index = (INDEX *) indexes[index_name];
+    index->index_delete();
+  }
+  */
+}
 
 void Workload::index_insert(string index_name, uint64_t key, row_t * row) {
 	assert(false);

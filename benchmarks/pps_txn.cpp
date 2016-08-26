@@ -59,6 +59,12 @@ void PPSTxnManager::reset() {
   if (txn_type == PPS_ORDERPRODUCT) {
     state = PPS_ORDERPRODUCT0;
   }
+  if (txn_type == PPS_UPDATEPRODUCTPART) {
+    state = PPS_UPDATEPRODUCTPART0;
+  }
+  if (txn_type == PPS_UPDATEPART) {
+    state = PPS_UPDATEPART0;
+  }
 
   parts_processed_count = 0;
 	TxnManager::reset();
@@ -88,7 +94,10 @@ RC PPSTxnManager::run_txn() {
        state == PPS_GETSUPPLIER0 ||
        state == PPS_GETPARTBYSUPPLIER0 ||
        state == PPS_GETPARTBYPRODUCT0 ||
-       state == PPS_ORDERPRODUCT0)) {
+       state == PPS_ORDERPRODUCT0 ||
+       state == PPS_UPDATEPRODUCTPART0 ||
+       state == PPS_UPDATEPART0 
+       )) {
     DEBUG("Running txn %ld\n",txn->txn_id);
 #if DISTR_DEBUG
     query->print();
@@ -220,6 +229,27 @@ RC PPSTxnManager::acquire_locks() {
           rc = rc2;
       }
       break;
+    case PPS_UPDATEPRODUCTPART:
+      if(GET_NODE_ID(partition_id_product) == g_node_id) {
+        index = _wl->i_products;
+        item = index_read(index, product_key, partition_id_product);
+        row_t * row = ((row_t *)item->location);
+        rc2 = get_lock(row,RD);
+        if(rc2 != RCOK)
+          rc = rc2;
+      }
+      break;
+    case PPS_UPDATEPART:
+      if(GET_NODE_ID(partition_id_part) == g_node_id) {
+        index = _wl->i_parts;
+        item = index_read(index, part_key, partition_id_part);
+        row_t * row = ((row_t *)item->location);
+        rc2 = get_lock(row,RD);
+        if(rc2 != RCOK)
+          rc = rc2;
+      }
+      break;
+
     default: assert(false);
   }
   if(decr_lr() == 0) {
@@ -345,7 +375,24 @@ void PPSTxnManager::next_pps_state() {
       state = PPS_ORDERPRODUCT2;
       //state = PPS_FIN;
       break;
-
+    case PPS_UPDATEPRODUCTPART_S:
+      state = PPS_UPDATEPRODUCTPART0;
+      break;
+    case PPS_UPDATEPRODUCTPART0:
+      state = PPS_UPDATEPRODUCTPART1;
+      break;
+    case PPS_UPDATEPRODUCTPART1:
+      state = PPS_FIN;
+      break;
+    case PPS_UPDATEPART_S:
+      state = PPS_UPDATEPART0;
+      break;
+    case PPS_UPDATEPART0:
+      state = PPS_UPDATEPART1;
+      break;
+    case PPS_UPDATEPART1:
+      state = PPS_FIN;
+      break;
     case PPS_FIN:
       break;
     default:
@@ -488,7 +535,24 @@ RC PPSTxnManager::run_txn_state() {
     case PPS_ORDERPRODUCT5:
         rc = run_orderproduct_5(row);
       break;
-
+    case PPS_UPDATEPRODUCTPART0:
+      if (product_loc)
+        rc = run_updateproductpart_0(product_key, row);
+      else
+        rc = send_remote_request();
+      break;
+    case PPS_UPDATEPRODUCTPART1:
+        rc = run_updateproductpart_1(part_key, row);
+      break;
+    case PPS_UPDATEPART0:
+      if (part_loc)
+        rc = run_updatepart_0(part_key, row);
+      else
+        rc = send_remote_request();
+      break;
+    case PPS_UPDATEPART1:
+        rc = run_updatepart_1(row);
+      break;
     case PPS_FIN:
       state = PPS_FIN;
       break;
@@ -830,6 +894,54 @@ inline RC PPSTxnManager::run_getpartsbysupplier_5(row_t *& r_local) {
   getThreeFields(r_local);
   return RCOK;
 }
+
+inline RC PPSTxnManager::run_updateproductpart_0(uint64_t product_key, row_t *& r_local) {
+  /*
+    SELECT FIELD1, FIELD2, FIELD3 FROM PRODUCTS WHERE PRODUCT_KEY = ? 
+   */
+    RC rc;
+    itemid_t * item;
+		INDEX * index = _wl->i_products;
+		item = index_read(index, product_key, products_to_partition(product_key));
+		assert(item != NULL);
+		row_t* r_loc = (row_t *) item->location;
+    rc = get_row(r_loc, RD, r_local);
+    return rc;
+}
+inline RC PPSTxnManager::run_updateproductpart_1(uint64_t part_key, row_t *& r_local) {
+  /*
+    UPDATE PART_KEY FROM PRODUCTS WHERE PRODUCT_KEY = ? 
+   */
+  assert(r_local);
+  r_local->set_value(1,part_key);
+  return RCOK;
+}
+
+inline RC PPSTxnManager::run_updatepart_0(uint64_t part_key, row_t *& r_local) {
+  /*
+    SELECT * FROM PARTS WHERE PART_KEY = :part_key; 
+   */
+    RC rc;
+    itemid_t * item;
+		INDEX * index = _wl->i_parts;
+		item = index_read(index, part_key, parts_to_partition(part_key));
+		assert(item != NULL);
+		row_t* r_loc = (row_t *) item->location;
+    rc = get_row(r_loc, RD, r_local);
+    return rc;
+}
+inline RC PPSTxnManager::run_updatepart_1(row_t *& r_local) {
+  /*
+    SELECT * FROM PARTS WHERE PART_KEY = :part_key; 
+   */
+  assert(r_local);
+  uint64_t amount;
+  r_local->get_value(1,amount);
+  r_local->set_value(1,amount+100);
+  return RCOK;
+}
+
+
 
 RC PPSTxnManager::run_calvin_txn() {
   RC rc = RCOK;

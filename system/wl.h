@@ -39,6 +39,7 @@ public:
   map<string, table_t *> tables;
   map<string, INDEX *> indexes;
 
+  void index_delete_all(); 
 	
 	// FOR TPCC
 /*	*/
