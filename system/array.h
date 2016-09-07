@@ -23,7 +23,7 @@
 
 template <class T> class Array {
 public:
-  Array() : items(NULL) {
+  Array() : items(NULL), capacity(0), count(0) {
   }
   void init(uint64_t size) {
     /*
@@ -100,6 +100,24 @@ public:
     items[idx] = item;
   }
 
+  bool contains(T item) {
+      for (uint64_t i = 0; i < count; i++) {
+          if (items[i] == item) {
+              return true;
+          }
+      }
+      return false;
+  }
+
+  uint64_t getPosition(T item) {
+      for (uint64_t i = 0; i < count; i++) {
+          if (items[i] == item) {
+              return i;
+          }
+      }
+      return count;
+  }
+
   void swap(uint64_t i, uint64_t j) {
     T tmp = items[i];
     items[i] = items[j];
@@ -111,9 +129,10 @@ public:
   bool is_full() { return count == capacity;}
   bool is_empty() { return count == 0;}
 private:
-  uint64_t count;
-  uint64_t capacity;
   T * items;
+  uint64_t capacity;
+  uint64_t count;
+
 };
 
 

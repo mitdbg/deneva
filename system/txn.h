@@ -47,30 +47,30 @@ public:
 
 class Transaction {
 public:
-  void init();
-  void reset(uint64_t thd_id);
-	void release_accesses(uint64_t thd_id);
-	void release_inserts(uint64_t thd_id);
-	void release(uint64_t thd_id);
-  //vector<Access*> accesses;
-  Array<Access*> accesses;
-  uint64_t timestamp;
-	// For OCC
-  uint64_t start_timestamp;
-  uint64_t end_timestamp;
+    void init();
+    void reset(uint64_t thd_id);
+    void release_accesses(uint64_t thd_id);
+    void release_inserts(uint64_t thd_id);
+    void release(uint64_t thd_id);
+    //vector<Access*> accesses;
+    Array<Access*> accesses;
+    uint64_t timestamp;
+      // For OCC
+    uint64_t start_timestamp;
+    uint64_t end_timestamp;
 
-  uint64_t write_cnt;
-  uint64_t row_cnt;
-  // Internal state
-  TxnState twopc_state;
-  Array<row_t*> insert_rows;
-	txnid_t 		txn_id;
-  uint64_t batch_id;
-  RC rc;
+    uint64_t write_cnt;
+    uint64_t row_cnt;
+    // Internal state
+    TxnState twopc_state;
+    Array<row_t*> insert_rows;
+    txnid_t         txn_id;
+    uint64_t batch_id;
+    RC rc;
 };
 
 class TxnStats {
-  public:
+public:
     void init();
     void reset();
     void commit_stats(uint64_t txn_id);
@@ -96,138 +96,141 @@ class TxnStats {
 class TxnManager
 {
 public:
-  virtual void init(uint64_t thd_id,Workload * h_wl);
-  virtual void reset();
-  void clear();
-  //void reset();
-  void reset_query();
-	void release();
-	Thread * h_thd;
-	Workload * h_wl;
+    virtual ~TxnManager() {}
+    virtual void init(uint64_t thd_id,Workload * h_wl);
+    virtual void reset();
+    void clear();
+    void reset_query();
+    void release();
+    Thread * h_thd;
+    Workload * h_wl;
 
-	virtual RC 		run_txn() = 0;
-	virtual RC 		run_txn_post_wait() = 0;
-  virtual RC run_calvin_txn() = 0; 
-  virtual RC acquire_locks() = 0; 
-  void register_thread(Thread * h_thd);
-	uint64_t 		get_thd_id();
-	Workload * 		get_wl();
-	void 			set_txn_id(txnid_t txn_id);
-	txnid_t 		get_txn_id();
-  void set_query(BaseQuery * qry);
-  BaseQuery * get_query();
-  bool is_done();
-  void commit_stats(); 
-  bool is_multi_part();
+    virtual RC      run_txn() = 0;
+    virtual RC      run_txn_post_wait() = 0;
+    virtual RC      run_calvin_txn() = 0;
+    virtual RC      acquire_locks() = 0;
+    void            register_thread(Thread * h_thd);
+    uint64_t        get_thd_id();
+    Workload *      get_wl();
+    void            set_txn_id(txnid_t txn_id);
+    txnid_t         get_txn_id();
+    void            set_query(BaseQuery * qry);
+    BaseQuery *     get_query();
+    bool            is_done();
+    void            commit_stats();
+    bool            is_multi_part();
 
-	void 			set_timestamp(ts_t timestamp);
-	ts_t 			get_timestamp();
-	void 			set_start_timestamp(uint64_t start_timestamp);
-	ts_t 			get_start_timestamp();
-  uint64_t get_rsp_cnt() {return rsp_cnt;} 
-  uint64_t incr_rsp(int i); 
-  uint64_t decr_rsp(int i);
-  uint64_t incr_lr(); 
-  uint64_t decr_lr();
+    void            set_timestamp(ts_t timestamp);
+    ts_t            get_timestamp();
+    void            set_start_timestamp(uint64_t start_timestamp);
+    ts_t            get_start_timestamp();
+    uint64_t        get_rsp_cnt() {return rsp_cnt;}
+    uint64_t        incr_rsp(int i);
+    uint64_t        decr_rsp(int i);
+    uint64_t        incr_lr();
+    uint64_t        decr_lr();
 
-  RC commit();
-  RC start_commit();
-  RC start_abort();
-  RC abort();
+    RC commit();
+    RC start_commit();
+    RC start_abort();
+    RC abort();
 
-  void release_locks(RC rc);
+    void release_locks(RC rc);
+    bool isRecon() { assert(CC_ALG == CALVIN || !recon); return recon;};
+    bool recon;
 
-	row_t * volatile cur_row;
-	// [DL_DETECT, NO_WAIT, WAIT_DIE]
-	bool volatile 	lock_ready;
-	// [TIMESTAMP, MVCC]
-	bool volatile 	ts_ready; 
-	// [HSTORE, HSTORE_SPEC]
-	int volatile 	ready_part;
-	int volatile 	ready_ulk;
-  bool aborted;
-  uint64_t return_id;
-  RC        validate();
-	void 			cleanup(RC rc);
-	void 			cleanup_row(RC rc,uint64_t rid);
-  void release_last_row_lock(); 
-  RC send_remote_reads(); 
-  void set_end_timestamp(uint64_t timestamp) {txn->end_timestamp = timestamp;}
-  uint64_t get_end_timestamp() {return txn->end_timestamp;}
-  uint64_t get_access_cnt() {return txn->row_cnt;}
-  uint64_t get_write_set_size() {return txn->write_cnt;}
-  uint64_t get_read_set_size() {return txn->row_cnt - txn->write_cnt;}
-  access_t get_access_type(uint64_t access_id) {return txn->accesses[access_id]->type;}
-  row_t * get_access_original_row(uint64_t access_id) {return txn->accesses[access_id]->orig_row;}
-  void swap_accesses(uint64_t a, uint64_t b) {
-    txn->accesses.swap(a,b);
-  }
-  uint64_t get_batch_id() {return txn->batch_id;}
-  void set_batch_id(uint64_t batch_id) {txn->batch_id = batch_id;}
+    row_t * volatile cur_row;
+    // [DL_DETECT, NO_WAIT, WAIT_DIE]
+    int volatile   lock_ready;
+    // [TIMESTAMP, MVCC]
+    bool volatile   ts_ready;
+    // [HSTORE, HSTORE_SPEC]
+    int volatile    ready_part;
+    int volatile    ready_ulk;
+    bool aborted;
+    uint64_t return_id;
+    RC        validate();
+    void            cleanup(RC rc);
+    void            cleanup_row(RC rc,uint64_t rid);
+    void release_last_row_lock();
+    RC send_remote_reads();
+    void set_end_timestamp(uint64_t timestamp) {txn->end_timestamp = timestamp;}
+    uint64_t get_end_timestamp() {return txn->end_timestamp;}
+    uint64_t get_access_cnt() {return txn->row_cnt;}
+    uint64_t get_write_set_size() {return txn->write_cnt;}
+    uint64_t get_read_set_size() {return txn->row_cnt - txn->write_cnt;}
+    access_t get_access_type(uint64_t access_id) {return txn->accesses[access_id]->type;}
+    row_t * get_access_original_row(uint64_t access_id) {return txn->accesses[access_id]->orig_row;}
+    void swap_accesses(uint64_t a, uint64_t b) {
+      txn->accesses.swap(a,b);
+    }
+    uint64_t get_batch_id() {return txn->batch_id;}
+    void set_batch_id(uint64_t batch_id) {txn->batch_id = batch_id;}
 
-  // For Maat
-  uint64_t commit_timestamp;
-  uint64_t get_commit_timestamp() {return commit_timestamp;}
-  void set_commit_timestamp(uint64_t timestamp) {commit_timestamp = timestamp;}
-  uint64_t greatest_write_timestamp;
-  uint64_t greatest_read_timestamp;
-  std::set<uint64_t> * uncommitted_reads;
-  std::set<uint64_t> * uncommitted_writes;
-  std::set<uint64_t> * uncommitted_writes_y;
+    // For MaaT
+    uint64_t commit_timestamp;
+    uint64_t get_commit_timestamp() {return commit_timestamp;}
+    void set_commit_timestamp(uint64_t timestamp) {commit_timestamp = timestamp;}
+    uint64_t greatest_write_timestamp;
+    uint64_t greatest_read_timestamp;
+    std::set<uint64_t> * uncommitted_reads;
+    std::set<uint64_t> * uncommitted_writes;
+    std::set<uint64_t> * uncommitted_writes_y;
 
-  uint64_t twopl_wait_start;
+    uint64_t twopl_wait_start;
 
 	////////////////////////////////
 	// LOGGING
 	////////////////////////////////
 //	void 			gen_log_entry(int &length, void * log);
-  bool log_flushed;
-  bool repl_finished;
-  Transaction * txn;
-  BaseQuery * query;
-  uint64_t client_startts;
-  uint64_t client_id;
-  uint64_t get_abort_cnt() {return abort_cnt;}
-  uint64_t abort_cnt;
-  int received_response(RC rc);
-  bool waiting_for_response();
-  RC get_rc() {return txn->rc;}
-  void set_rc(RC rc) {txn->rc = rc;}
-  //void send_rfin_messages(RC rc) {assert(false);}
-  void send_finish_messages();
-  void send_prepare_messages();
+    bool log_flushed;
+    bool repl_finished;
+    Transaction * txn;
+    BaseQuery * query;
+    uint64_t client_startts;
+    uint64_t client_id;
+    uint64_t get_abort_cnt() {return abort_cnt;}
+    uint64_t abort_cnt;
+    int received_response(RC rc);
+    bool waiting_for_response();
+    RC get_rc() {return txn->rc;}
+    void set_rc(RC rc) {txn->rc = rc;}
+    //void send_rfin_messages(RC rc) {assert(false);}
+    void send_finish_messages();
+    void send_prepare_messages();
 
-  TxnStats txn_stats;
+    TxnStats txn_stats;
 
-  bool set_ready() {return ATOM_CAS(txn_ready,false,true);}
-  bool unset_ready() {return ATOM_CAS(txn_ready,true,false);}
-  bool is_ready() {return txn_ready == true;}
-  volatile bool txn_ready;
-  // Calvin
-  uint32_t lock_ready_cnt;
-  uint32_t calvin_expected_rsp_cnt;
-  bool locking_done;
-  CALVIN_PHASE phase;
-  bool calvin_exec_phase_done();
-  bool calvin_collect_phase_done();
+    bool set_ready() {return ATOM_CAS(txn_ready,0,1);}
+    bool unset_ready() {return ATOM_CAS(txn_ready,1,0);}
+    bool is_ready() {return txn_ready == true;}
+    volatile int txn_ready;
+    // Calvin
+    uint32_t lock_ready_cnt;
+    uint32_t calvin_expected_rsp_cnt;
+    bool locking_done;
+    CALVIN_PHASE phase;
+    Array<row_t*> calvin_locked_rows;
+    bool calvin_exec_phase_done();
+    bool calvin_collect_phase_done();
 
 protected:	
 
-  int rsp_cnt;
-	void 			insert_row(row_t * row, table_t * table);
+    int rsp_cnt;
+    void            insert_row(row_t * row, table_t * table);
 
-	itemid_t *		index_read(INDEX * index, idx_key_t key, int part_id);
-	itemid_t *		index_read(INDEX * index, idx_key_t key, int part_id, int count);
-  RC get_lock(row_t * row, access_t type);
-	RC get_row(row_t * row, access_t type, row_t *& row_rtn);
-  RC get_row_post_wait(row_t *& row_rtn);
+    itemid_t *      index_read(INDEX * index, idx_key_t key, int part_id);
+    itemid_t *      index_read(INDEX * index, idx_key_t key, int part_id, int count);
+    RC get_lock(row_t * row, access_t type);
+    RC get_row(row_t * row, access_t type, row_t *& row_rtn);
+    RC get_row_post_wait(row_t *& row_rtn);
 
-  // For Waiting
-  row_t * last_row;
-  row_t * last_row_rtn;
-  access_t last_type;
+    // For Waiting
+    row_t * last_row;
+    row_t * last_row_rtn;
+    access_t last_type;
 
-  sem_t rsp_mutex;
+    sem_t rsp_mutex;
 };
 
 #endif

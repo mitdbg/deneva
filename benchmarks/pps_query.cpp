@@ -25,7 +25,7 @@
 
 BaseQuery * PPSQueryGenerator::create_query(Workload * h_wl,uint64_t home_partition_id) {
   double x = (double)(rand() % 100) / 100.0;
-	if (x < g_perc_getparts) {
+  if (x < g_perc_getparts) {
 		return gen_requests_parts(home_partition_id);
   }
 	if (x < g_perc_getparts + g_perc_getsuppliers) {
@@ -50,15 +50,18 @@ BaseQuery * PPSQueryGenerator::create_query(Workload * h_wl,uint64_t home_partit
 		return gen_requests_updatepart(home_partition_id);
   }
   assert(false);
+  return NULL;
 
 }
 
 void PPSQuery::init(uint64_t thd_id, Workload * h_wl) {
   BaseQuery::init();
+  part_keys.init(MAX_PPS_PART_PER_PRODUCT);
 }
 
 void PPSQuery::init() {
   BaseQuery::init();
+  part_keys.init(MAX_PPS_PART_PER_PRODUCT);
 }
 
 void PPSQuery::print() {
@@ -90,18 +93,35 @@ std::set<uint64_t> PPSQuery::participants(Message * msg, Workload * wl) {
     case PPS_GETPARTBYSUPPLIER:
       id = GET_NODE_ID(suppliers_to_partition(pps_msg->supplier_key));
       participant_set.insert(id);
-      id = GET_NODE_ID(parts_to_partition(pps_msg->part_key));
-      participant_set.insert(id);
+      for (uint64_t key = 0; key < pps_msg->part_keys.size(); key++) {
+          uint64_t tmp = pps_msg->part_keys[key];
+          id = GET_NODE_ID(parts_to_partition(tmp));
+          participant_set.insert(id);
+      }
       break;
     case PPS_GETPARTBYPRODUCT:
       id = GET_NODE_ID(products_to_partition(pps_msg->product_key));
       participant_set.insert(id);
-      id = GET_NODE_ID(parts_to_partition(pps_msg->part_key));
-      participant_set.insert(id);
+      for (uint64_t key = 0; key < pps_msg->part_keys.size(); key++) {
+          uint64_t tmp = pps_msg->part_keys[key];
+          id = GET_NODE_ID(parts_to_partition(tmp));
+          participant_set.insert(id);
+      }
       break;
     case PPS_ORDERPRODUCT:
       id = GET_NODE_ID(products_to_partition(pps_msg->product_key));
       participant_set.insert(id);
+      for (uint64_t key = 0; key < pps_msg->part_keys.size(); key++) {
+          uint64_t tmp = pps_msg->part_keys[key];
+          id = GET_NODE_ID(parts_to_partition(tmp));
+          participant_set.insert(id);
+      }
+      break;
+    case PPS_UPDATEPRODUCTPART:
+      id = GET_NODE_ID(products_to_partition(pps_msg->product_key));
+      participant_set.insert(id);
+      break;
+    case PPS_UPDATEPART:
       id = GET_NODE_ID(parts_to_partition(pps_msg->part_key));
       participant_set.insert(id);
       break;
@@ -111,6 +131,7 @@ std::set<uint64_t> PPSQuery::participants(Message * msg, Workload * wl) {
   return participant_set;
 }
 
+// Depreciated
 uint64_t PPSQuery::participants(bool *& pps,Workload * wl) {
   int n = 0;
   for(uint64_t i = 0; i < g_node_cnt; i++)
@@ -335,7 +356,7 @@ BaseQuery * PPSQueryGenerator::gen_requests_updateproductpart(uint64_t home_part
   PPSQuery * query = new PPSQuery;
 	set<uint64_t> partitions_accessed;
 
-	query->txn_type = PPS_ORDERPRODUCT;
+	query->txn_type = PPS_UPDATEPRODUCTPART;
   uint64_t product_key;
     // select a part
 	if (FIRST_PART_LOCAL) {
@@ -360,7 +381,7 @@ BaseQuery * PPSQueryGenerator::gen_requests_updatepart(uint64_t home_partition) 
   PPSQuery * query = new PPSQuery;
 	set<uint64_t> partitions_accessed;
 
-	query->txn_type = PPS_GETPART;
+	query->txn_type = PPS_UPDATEPART;
   uint64_t part_key;
     // select a part
 	if (FIRST_PART_LOCAL) {
@@ -382,7 +403,7 @@ BaseQuery * PPSQueryGenerator::gen_requests_updatepart(uint64_t home_partition) 
 
 uint64_t PPSQuery::get_participants(Workload * wl) {
    uint64_t participant_cnt = 0;
-   //uint64_t active_cnt = 0;
+   uint64_t active_cnt = 0;
   assert(participant_nodes.size()==0);
   assert(active_nodes.size()==0);
   for(uint64_t i = 0; i < g_node_cnt; i++) {
@@ -408,16 +429,72 @@ uint64_t PPSQuery::get_participants(Workload * wl) {
       participant_nodes.set(id,1);
       participant_cnt++;
   }
+  if (txn_type == PPS_GETPARTBYPRODUCT) {
+      id = GET_NODE_ID(products_to_partition(product_key));
+      participant_nodes.set(id,1);
+      participant_cnt++;
+      for (uint64_t key = 0; key < part_keys.size(); key++) {
+          id = GET_NODE_ID(parts_to_partition(part_keys[key]));
+          if (participant_nodes[id] == 0) {
+              participant_nodes.set(id,1);
+              participant_cnt++;
+          }
+      }
+  }
+  if (txn_type == PPS_GETPARTBYSUPPLIER) {
+      id = GET_NODE_ID(suppliers_to_partition(supplier_key));
+      participant_nodes.set(id,1);
+      participant_cnt++;
+      for (uint64_t key = 0; key < part_keys.size(); key++) {
+          id = GET_NODE_ID(parts_to_partition(part_keys[key]));
+          if (participant_nodes[id] == 0) {
+              participant_nodes.set(id,1);
+              participant_cnt++;
+          }
+      }
+  }
+  if (txn_type == PPS_ORDERPRODUCT) {
+      id = GET_NODE_ID(products_to_partition(product_key));
+      participant_nodes.set(id,1);
+      participant_cnt++;
+      for (uint64_t key = 0; key < part_keys.size(); key++) {
+          id = GET_NODE_ID(parts_to_partition(part_keys[key]));
+          if (participant_nodes[id] == 0) {
+              participant_nodes.set(id,1);
+              participant_cnt++;
+          }
+          if (active_nodes[id] == 0) {
+              active_nodes.set(id,1);
+              active_cnt++;
+          }
+      }
+  }
+  if (txn_type == PPS_UPDATEPRODUCTPART) {
+      id = GET_NODE_ID(products_to_partition(product_key));
+      participant_nodes.set(id,1);
+      participant_cnt++;
+      active_nodes.set(id,1);
+      active_cnt++;
+  }
+  if (txn_type == PPS_UPDATEPART) {
+      id = GET_NODE_ID(parts_to_partition(part_key));
+      participant_nodes.set(id,1);
+      participant_cnt++;
+      active_nodes.set(id,1);
+      active_cnt++;
+  }
 
   return participant_cnt;
 }
 
 void PPSQuery::reset() {
   BaseQuery::clear();
+  part_keys.clear();
 }
 
 void PPSQuery::release() {
   BaseQuery::release();
+  part_keys.release();
   DEBUG_M("PPSQuery::release() free\n");
 }
 

@@ -29,45 +29,46 @@
 #include "message.h"
 
 void PPSTxnManager::init(uint64_t thd_id, Workload * h_wl) {
-	TxnManager::init(thd_id, h_wl);
-	_wl = (PPSWorkload *) h_wl;
-  reset();
+    TxnManager::init(thd_id, h_wl);
+    _wl = (PPSWorkload *) h_wl;
+    reset();
 	TxnManager::reset();
 }
 
 void PPSTxnManager::reset() {
-  PPSQuery* pps_query = (PPSQuery*) query;
-  state = PPS_GETPART0;
-
-  int txn_type = pps_query->txn_type;
-  
-  if (txn_type == PPS_GETPART) {
+    PPSQuery* pps_query = (PPSQuery*) query;
     state = PPS_GETPART0;
-  }
-  if (txn_type == PPS_GETPRODUCT) {
-    state = PPS_GETPRODUCT0;
-  }
-  if (txn_type == PPS_GETSUPPLIER) {
-    state = PPS_GETSUPPLIER0;
-  }
-  if (txn_type == PPS_GETPARTBYPRODUCT) {
-    state = PPS_GETPARTBYPRODUCT0;
-  }
-  if (txn_type == PPS_GETPARTBYSUPPLIER) {
-    state = PPS_GETPARTBYSUPPLIER0;
-  }
-  if (txn_type == PPS_ORDERPRODUCT) {
-    state = PPS_ORDERPRODUCT0;
-  }
-  if (txn_type == PPS_UPDATEPRODUCTPART) {
-    state = PPS_UPDATEPRODUCTPART0;
-  }
-  if (txn_type == PPS_UPDATEPART) {
-    state = PPS_UPDATEPART0;
-  }
 
-  parts_processed_count = 0;
-	TxnManager::reset();
+    int txn_type = pps_query->txn_type;
+
+    if (txn_type == PPS_GETPART) {
+      state = PPS_GETPART0;
+    }
+    if (txn_type == PPS_GETPRODUCT) {
+      state = PPS_GETPRODUCT0;
+    }
+    if (txn_type == PPS_GETSUPPLIER) {
+      state = PPS_GETSUPPLIER0;
+    }
+    if (txn_type == PPS_GETPARTBYPRODUCT) {
+      state = PPS_GETPARTBYPRODUCT0;
+    }
+    if (txn_type == PPS_GETPARTBYSUPPLIER) {
+      state = PPS_GETPARTBYSUPPLIER0;
+    }
+    if (txn_type == PPS_ORDERPRODUCT) {
+      state = PPS_ORDERPRODUCT0;
+    }
+    if (txn_type == PPS_UPDATEPRODUCTPART) {
+      state = PPS_UPDATEPRODUCTPART0;
+    }
+    if (txn_type == PPS_UPDATEPART) {
+      state = PPS_UPDATEPART0;
+    }
+
+    parts_processed_count = 0;
+    pps_query->part_keys.clear();
+    TxnManager::reset();
 }
 
 RC PPSTxnManager::run_txn_post_wait() {
@@ -183,33 +184,67 @@ RC PPSTxnManager::acquire_locks() {
         rc2 = get_lock(row,RD);
         if(rc2 != RCOK)
           rc = rc2;
+
+        index = _wl->i_supplies;
+        int count = 0;
+        item = index_read(index, supplier_key, partition_id_product,count);
+        while (item != NULL) {
+            count++;
+            row_t * row = ((row_t *)item->location);
+            rc2 = get_lock(row,RD);
+            if(rc2 != RCOK)
+              rc = rc2;
+            item = index_read(index, supplier_key, partition_id_product,count);
+        }
       }
-      if(GET_NODE_ID(partition_id_part) == g_node_id) {
-        index = _wl->i_parts;
-        item = index_read(index, part_key, partition_id_part);
-        row_t * row = ((row_t *)item->location);
-        rc2 = get_lock(row,RD);
-        if(rc2 != RCOK)
-          rc = rc2;
+      for (uint64_t i = 0; i < pps_query->part_keys.size(); i++) {
+          uint64_t key = pps_query->part_keys[i];
+          uint64_t pid = parts_to_partition(key);
+          if(GET_NODE_ID(pid) == g_node_id) {
+            index = _wl->i_parts;
+            item = index_read(index, key, pid);
+            row_t * row = ((row_t *)item->location);
+            rc2 = get_lock(row,RD);
+            if(rc2 != RCOK)
+              rc = rc2;
+          }
       }
+
       break;
     case PPS_GETPARTBYPRODUCT:
-      if(GET_NODE_ID(partition_id_product) == g_node_id) {
-        index = _wl->i_products;
-        item = index_read(index, product_key, partition_id_product);
-        row_t * row = ((row_t *)item->location);
-        rc2 = get_lock(row,RD);
-        if(rc2 != RCOK)
-          rc = rc2;
-      }
-      if(GET_NODE_ID(partition_id_part) == g_node_id) {
-        index = _wl->i_parts;
-        item = index_read(index, part_key, partition_id_part);
-        row_t * row = ((row_t *)item->location);
-        rc2 = get_lock(row,RD);
-        if(rc2 != RCOK)
-          rc = rc2;
-      }
+        if(GET_NODE_ID(partition_id_product) == g_node_id) {
+          index = _wl->i_products;
+          item = index_read(index, product_key, partition_id_product);
+          row_t * row = ((row_t *)item->location);
+          rc2 = get_lock(row,RD);
+          if(rc2 != RCOK)
+            rc = rc2;
+
+          index = _wl->i_uses;
+          int count = 0;
+          item = index_read(index, product_key, partition_id_product,count);
+          while (item != NULL) {
+              count++;
+              row_t * row = ((row_t *)item->location);
+              rc2 = get_lock(row,RD);
+              if(rc2 != RCOK)
+                rc = rc2;
+              item = index_read(index, product_key, partition_id_product,count);
+          }
+        }
+        for (uint64_t i = 0; i < pps_query->part_keys.size(); i++) {
+            uint64_t key = pps_query->part_keys[i];
+            uint64_t pid = parts_to_partition(key);
+            if(GET_NODE_ID(pid) == g_node_id) {
+              index = _wl->i_parts;
+              item = index_read(index, key, pid);
+              row_t * row = ((row_t *)item->location);
+              rc2 = get_lock(row,RD);
+              if(rc2 != RCOK)
+                rc = rc2;
+            }
+        }
+
       break;
     case PPS_ORDERPRODUCT:
       if(GET_NODE_ID(partition_id_product) == g_node_id) {
@@ -219,22 +254,39 @@ RC PPSTxnManager::acquire_locks() {
         rc2 = get_lock(row,RD);
         if(rc2 != RCOK)
           rc = rc2;
+
+        index = _wl->i_uses;
+        int count = 0;
+        item = index_read(index, product_key, partition_id_product,count);
+        while (item != NULL) {
+            count++;
+            row_t * row = ((row_t *)item->location);
+            rc2 = get_lock(row,RD);
+            if(rc2 != RCOK)
+              rc = rc2;
+            item = index_read(index, product_key, partition_id_product,count);
+        }
       }
-      if(GET_NODE_ID(partition_id_part) == g_node_id) {
-        index = _wl->i_parts;
-        item = index_read(index, part_key, partition_id_part);
-        row_t * row = ((row_t *)item->location);
-        rc2 = get_lock(row,RD);
-        if(rc2 != RCOK)
-          rc = rc2;
+      for (uint64_t i = 0; i < pps_query->part_keys.size(); i++) {
+          uint64_t key = pps_query->part_keys[i];
+          uint64_t pid = parts_to_partition(key);
+          if(GET_NODE_ID(pid) == g_node_id) {
+            index = _wl->i_parts;
+            item = index_read(index, key, pid);
+            row_t * row = ((row_t *)item->location);
+            rc2 = get_lock(row,WR);
+            if(rc2 != RCOK)
+              rc = rc2;
+          }
       }
+
       break;
     case PPS_UPDATEPRODUCTPART:
       if(GET_NODE_ID(partition_id_product) == g_node_id) {
         index = _wl->i_products;
         item = index_read(index, product_key, partition_id_product);
         row_t * row = ((row_t *)item->location);
-        rc2 = get_lock(row,RD);
+        rc2 = get_lock(row,WR);
         if(rc2 != RCOK)
           rc = rc2;
       }
@@ -244,7 +296,7 @@ RC PPSTxnManager::acquire_locks() {
         index = _wl->i_parts;
         item = index_read(index, part_key, partition_id_part);
         row_t * row = ((row_t *)item->location);
-        rc2 = get_lock(row,RD);
+        rc2 = get_lock(row,WR);
         if(rc2 != RCOK)
           rc = rc2;
       }
@@ -253,7 +305,7 @@ RC PPSTxnManager::acquire_locks() {
     default: assert(false);
   }
   if(decr_lr() == 0) {
-    if(ATOM_CAS(lock_ready,false,true))
+    if(ATOM_CAS(lock_ready,0,1))
       rc = RCOK;
   }
   txn_stats.wait_starttime = get_sys_clock();
@@ -418,14 +470,14 @@ RC PPSTxnManager::send_remote_request() {
 }
 
 RC PPSTxnManager::run_txn_state() {
-  PPSQuery* pps_query = (PPSQuery*) query;
+    PPSQuery* pps_query = (PPSQuery*) query;
 	RC rc = RCOK;
-  uint64_t part_key = pps_query->part_key;
-  uint64_t product_key = pps_query->product_key;
-  uint64_t supplier_key = pps_query->supplier_key;
-  bool part_loc = GET_NODE_ID(parts_to_partition(part_key)) == g_node_id;
-  bool product_loc = GET_NODE_ID(products_to_partition(product_key)) == g_node_id;
-  bool supplier_loc = GET_NODE_ID(suppliers_to_partition(supplier_key)) == g_node_id;
+    uint64_t part_key = pps_query->part_key;
+    uint64_t product_key = pps_query->product_key;
+    uint64_t supplier_key = pps_query->supplier_key;
+    bool part_loc = GET_NODE_ID(parts_to_partition(part_key)) == g_node_id;
+    bool product_loc = GET_NODE_ID(products_to_partition(product_key)) == g_node_id;
+    bool supplier_loc = GET_NODE_ID(suppliers_to_partition(supplier_key)) == g_node_id;
   switch(state) {
     case PPS_GETPART0:
       if (part_loc)
@@ -473,8 +525,8 @@ RC PPSTxnManager::run_txn_state() {
         rc = run_getpartsbysupplier_3(part_key, row);
       break;
     case PPS_GETPARTBYSUPPLIER4:
-      if (supplier_loc)
-        rc = run_getpartsbysupplier_4(supplier_key, row);
+      if (part_loc)
+        rc = run_getpartsbysupplier_4(part_key, row);
       else
         rc = send_remote_request();
       break;
@@ -763,22 +815,22 @@ inline RC PPSTxnManager::run_orderproduct_1(row_t *& r_local) {
 }
 
 inline RC PPSTxnManager::run_orderproduct_2(uint64_t product_key, row_t *& r_local) {
-  /*
-    SELECT PART_KEY FROM USES WHERE PRODUCT_KEY = ? 
-   */
-  DEBUG("Getting product_key %ld count %ld\n",product_key,parts_processed_count);
+    /*
+      SELECT PART_KEY FROM USES WHERE PRODUCT_KEY = ?
+     */
+    DEBUG("Getting product_key %ld count %ld\n",product_key,parts_processed_count);
     RC rc;
     itemid_t * item;
-		INDEX * index = _wl->i_uses;
-		item = index_read(index, product_key, products_to_partition(product_key),parts_processed_count);
+    INDEX * index = _wl->i_uses;
+    item = index_read(index, product_key, products_to_partition(product_key),parts_processed_count);
     if (item == NULL) {
-      r_local = NULL;
-      return RCOK;
+        r_local = NULL;
+        return RCOK;
     }
-		assert(item != NULL);
-		row_t* r_loc = (row_t *) item->location;
+    assert(item != NULL);
+    row_t* r_loc = (row_t *) item->location;
     rc = get_row(r_loc, RD, r_local);
-  DEBUG("From product_key %ld -- %lx\n",product_key,(uint64_t)r_local);
+    DEBUG("From product_key %ld -- %lx\n",product_key,(uint64_t)r_local);
     return rc;
 }
 
@@ -796,16 +848,16 @@ inline RC PPSTxnManager::run_orderproduct_3(uint64_t &part_key, row_t *& r_local
 }
 
 inline RC PPSTxnManager::run_orderproduct_4(uint64_t part_key, row_t *& r_local) {
-  /*
-   SELECT FIELD1, FIELD2, FIELD3 FROM PARTS WHERE PART_KEY = ? 
-   */
-  DEBUG("Access part_key %ld\n",part_key);
+    /*
+     SELECT FIELD1, FIELD2, FIELD3 FROM PARTS WHERE PART_KEY = ?
+     */
+    DEBUG("Access part_key %ld\n",part_key);
     RC rc;
     itemid_t * item;
-		INDEX * index = _wl->i_parts;
-		item = index_read(index, part_key, parts_to_partition(part_key));
-		assert(item != NULL);
-		row_t* r_loc = (row_t *) item->location;
+    INDEX * index = _wl->i_parts;
+    item = index_read(index, part_key, parts_to_partition(part_key));
+    assert(item != NULL);
+    row_t* r_loc = (row_t *) item->location;
     rc = get_row(r_loc, RD, r_local);
     return rc;
 }
@@ -852,14 +904,14 @@ inline RC PPSTxnManager::run_getpartsbysupplier_2(uint64_t supplier_key, row_t *
    */
     RC rc;
     itemid_t * item;
-		INDEX * index = _wl->i_supplies;
-		item = index_read(index, supplier_key, suppliers_to_partition(supplier_key),parts_processed_count);
+    INDEX * index = _wl->i_supplies;
+    item = index_read(index, supplier_key, suppliers_to_partition(supplier_key),parts_processed_count);
     if (item == NULL) {
-      r_local = NULL;
-      return RCOK;
+        r_local = NULL;
+        return RCOK;
     }
-		assert(item != NULL);
-		row_t* r_loc = (row_t *) item->location;
+    assert(item != NULL);
+    row_t* r_loc = (row_t *) item->location;
     rc = get_row(r_loc, RD, r_local);
     return rc;
 }
@@ -867,11 +919,9 @@ inline RC PPSTxnManager::run_getpartsbysupplier_3(uint64_t &part_key, row_t *& r
   /*
     SELECT PART_KEY FROM USES WHERE supplier_KEY = ? 
    */
-  assert(r_local);
-  //r_local->get_value(PART_KEY,part_key);
-  char * data __attribute__((unused));
-  data = r_local->get_data();
-  return RCOK;
+    r_local->get_value(1,part_key);
+    DEBUG("Read part_key %ld\n",part_key);
+    return RCOK;
 }
 inline RC PPSTxnManager::run_getpartsbysupplier_4(uint64_t part_key, row_t *& r_local) {
   /*
@@ -879,10 +929,10 @@ inline RC PPSTxnManager::run_getpartsbysupplier_4(uint64_t part_key, row_t *& r_
    */
     RC rc;
     itemid_t * item;
-		INDEX * index = _wl->i_parts;
-		item = index_read(index, part_key, parts_to_partition(part_key));
-		assert(item != NULL);
-		row_t* r_loc = (row_t *) item->location;
+    INDEX * index = _wl->i_parts;
+    item = index_read(index, part_key, parts_to_partition(part_key));
+    assert(item != NULL);
+    row_t* r_loc = (row_t *) item->location;
     rc = get_row(r_loc, RD, r_local);
     return rc;
 }
@@ -901,10 +951,11 @@ inline RC PPSTxnManager::run_updateproductpart_0(uint64_t product_key, row_t *& 
    */
     RC rc;
     itemid_t * item;
-		INDEX * index = _wl->i_products;
-		item = index_read(index, product_key, products_to_partition(product_key));
-		assert(item != NULL);
-		row_t* r_loc = (row_t *) item->location;
+    INDEX * index = _wl->i_uses;
+    // XXX this will always return the first part for this product
+    item = index_read(index, product_key, products_to_partition(product_key));
+    assert(item != NULL);
+    row_t* r_loc = (row_t *) item->location;
     rc = get_row(r_loc, RD, r_local);
     return rc;
 }
@@ -947,7 +998,7 @@ RC PPSTxnManager::run_calvin_txn() {
   RC rc = RCOK;
   uint64_t starttime = get_sys_clock();
   PPSQuery* pps_query = (PPSQuery*) query;
-  DEBUG("(%ld,%ld) Run calvin txn\n",txn->txn_id,txn->batch_id);
+  DEBUG("(%ld,%ld) Run calvin txn %d (recon: %d)\n",txn->txn_id,txn->batch_id,pps_query->txn_type,isRecon());
   while(!calvin_exec_phase_done() && rc == RCOK) {
     DEBUG("(%ld,%ld) phase %d\n",txn->txn_id,txn->batch_id,this->phase);
     switch(this->phase) {
@@ -967,8 +1018,13 @@ RC PPSTxnManager::run_calvin_txn() {
         DEBUG("(%ld,%ld) local reads\n",txn->txn_id,txn->batch_id);
         rc = run_pps_phase2();
         //release_read_locks(pps_query);
+        if (isRecon()) {
+            this->phase = CALVIN_DONE;
+        }
+        else {
+            this->phase = CALVIN_SERVE_RD;
+        }
 
-        this->phase = CALVIN_SERVE_RD;
         break;
       case CALVIN_SERVE_RD:
         // Phase 3: Serve remote reads
@@ -996,7 +1052,9 @@ RC PPSTxnManager::run_calvin_txn() {
       case CALVIN_EXEC_WR:
         // Phase 5: Execute transaction / perform local writes
         DEBUG("(%ld,%ld) execute writes\n",txn->txn_id,txn->batch_id);
-        rc = run_pps_phase5();
+        if (txn->rc == RCOK) {
+            rc = run_pps_phase5();
+        }
         this->phase = CALVIN_DONE;
         break;
       default:
@@ -1011,23 +1069,187 @@ RC PPSTxnManager::run_calvin_txn() {
 
 
 RC PPSTxnManager::run_pps_phase2() {
-  PPSQuery* pps_query = (PPSQuery*) query;
-  RC rc = RCOK;
-  assert(CC_ALG == CALVIN);
+    PPSQuery* pps_query = (PPSQuery*) query;
+    RC rc = RCOK;
+    uint64_t part_key = pps_query->part_key;
+    uint64_t product_key = pps_query->product_key;
+    uint64_t supplier_key = pps_query->supplier_key;
+    bool part_loc = GET_NODE_ID(parts_to_partition(part_key)) == g_node_id;
+    bool product_loc = GET_NODE_ID(products_to_partition(product_key)) == g_node_id;
+    bool supplier_loc = GET_NODE_ID(suppliers_to_partition(supplier_key)) == g_node_id;
+    assert(CC_ALG == CALVIN);
 
 	switch (pps_query->txn_type) {
+    case PPS_GETPART:
+        if (part_loc) {
+            rc = run_getpart_0(part_key, row);
+            rc = run_getpart_1(row);
+        }
+        break;
+    case PPS_GETSUPPLIER:
+        if (supplier_loc) {
+            rc = run_getsupplier_0(supplier_key, row);
+            rc = run_getsupplier_1(row);
+        }
+        break;
+    case PPS_GETPRODUCT:
+        if (product_loc) {
+            rc = run_getproduct_0(product_key, row);
+            rc = run_getproduct_1(row);
+        }
+        break;
+    case PPS_GETPARTBYSUPPLIER:
+        if (supplier_loc) {
+            rc = run_getpartsbysupplier_0(supplier_key, row);
+            rc = run_getpartsbysupplier_1(row);
+            rc = run_getpartsbysupplier_2(supplier_key, row);
+            while (row != NULL) {
+                ++parts_processed_count;
+                rc = run_getpartsbysupplier_3(part_key, row);
+                if (isRecon()) {
+                    pps_query->part_keys.add(part_key);
+                }
+                else {
+                    break;
+                    // check if the parts have changed since we did recon
+                    if (!pps_query->part_keys.contains(part_key)) {
+                        txn->rc = Abort;
+                        break;
+                    }
+                }
+                rc = run_getpartsbysupplier_2(supplier_key, row);
+            }
+
+        }
+        if (txn->rc == Abort) {
+            break;
+        }
+        if (!isRecon()) {
+            for (uint64_t key = 0; key < pps_query->part_keys.size();key++) {
+                part_key = pps_query->part_keys[key];
+                part_loc = GET_NODE_ID(parts_to_partition(part_key)) == g_node_id;
+                if (part_loc) {
+                    rc = run_getpartsbysupplier_4(part_key, row);
+                    rc = run_getpartsbysupplier_5(row);
+                }
+            }
+        }
+        break;
+    case PPS_GETPARTBYPRODUCT:
+        if (product_loc) {
+            rc = run_getpartsbyproduct_0(product_key, row);
+            rc = run_getpartsbyproduct_1(row);
+            rc = run_getpartsbyproduct_2(product_key, row);
+            while (row != NULL) {
+                ++parts_processed_count;
+                rc = run_getpartsbyproduct_3(part_key, row);
+                if (isRecon()) {
+                    pps_query->part_keys.add(part_key);
+                }
+                else {
+                    // check if the parts have changed since we did recon
+                    if (!pps_query->part_keys.contains(part_key)) {
+                        txn->rc = Abort;
+                        break;
+                    }
+                }
+                rc = run_getpartsbyproduct_2(product_key, row);
+            }
+
+        }
+        if (txn->rc == Abort) {
+            break;
+        }
+        if (!isRecon()) {
+            for (uint64_t key = 0; key < pps_query->part_keys.size();key++) {
+                part_key = pps_query->part_keys[key];
+                part_loc = GET_NODE_ID(parts_to_partition(part_key)) == g_node_id;
+                if (part_loc) {
+                    rc = run_getpartsbyproduct_4(part_key, row);
+                    rc = run_getpartsbyproduct_5(row);
+                }
+            }
+        }
+        break;
+    case PPS_ORDERPRODUCT:
+        if (product_loc) {
+            rc = run_orderproduct_0(product_key, row);
+            rc = run_orderproduct_1(row);
+            rc = run_orderproduct_2(product_key, row);
+            while (row != NULL) {
+                ++parts_processed_count;
+                rc = run_orderproduct_3(part_key, row);
+                if (isRecon()) {
+                    pps_query->part_keys.add(part_key);
+                }
+                else {
+                    // check if the parts have changed since we did recon
+                    if (!pps_query->part_keys.contains(part_key)) {
+                        txn->rc = Abort;
+                        break;
+                    }
+                }
+                rc = run_orderproduct_2(product_key, row);
+            }
+
+        }
+        break;
+    case PPS_UPDATEPRODUCTPART:
+        break;
+    case PPS_UPDATEPART:
+        break;
     default: assert(false);
-  }
-  return rc;
+    }
+    return rc;
 }
 
 RC PPSTxnManager::run_pps_phase5() {
-  PPSQuery* pps_query = (PPSQuery*) query;
-  RC rc = RCOK;
-  assert(CC_ALG == CALVIN);
+    PPSQuery* pps_query = (PPSQuery*) query;
+    RC rc = RCOK;
+    uint64_t part_key = pps_query->part_key;
+    uint64_t product_key = pps_query->product_key;
+    //uint64_t supplier_key = pps_query->supplier_key;
+    bool part_loc = GET_NODE_ID(parts_to_partition(part_key)) == g_node_id;
+    bool product_loc = GET_NODE_ID(products_to_partition(product_key)) == g_node_id;
+    //bool supplier_loc = GET_NODE_ID(suppliers_to_partition(supplier_key)) == g_node_id;
+    assert(CC_ALG == CALVIN);
 
-	switch (pps_query->txn_type) {
-    default: assert(false);
+  switch (pps_query->txn_type) {
+  case PPS_GETPART:
+      break;
+  case PPS_GETSUPPLIER:
+      break;
+  case PPS_GETPRODUCT:
+      break;
+  case PPS_GETPARTBYSUPPLIER:
+      break;
+  case PPS_GETPARTBYPRODUCT:
+      break;
+  case PPS_ORDERPRODUCT:
+      for (uint64_t key = 0; key < pps_query->part_keys.size();key++) {
+          part_key = pps_query->part_keys[key];
+          part_loc = GET_NODE_ID(parts_to_partition(part_key)) == g_node_id;
+          if (part_loc) {
+              rc = run_orderproduct_4(part_key, row);
+              rc = run_orderproduct_5(row);
+          }
+      }
+      break;
+  case PPS_UPDATEPRODUCTPART:
+      if (product_loc) {
+
+          DEBUG("UPDATE Product %ld Part %ld\n",product_key,part_key);
+          rc = run_updateproductpart_0(product_key, row);
+          rc = run_updateproductpart_1(part_key, row);
+      }
+      break;
+  case PPS_UPDATEPART:
+      if (part_loc) {
+          rc = run_updatepart_0(part_key, row);
+          rc = run_updatepart_1(row);
+      }
+      break;
+  default: assert(false);
   }
   return rc;
 

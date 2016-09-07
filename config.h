@@ -5,8 +5,8 @@
 /***********************************************/
 // Simulation + Hardware
 /***********************************************/
-#define NODE_CNT 1
-#define THREAD_CNT 1
+#define NODE_CNT 2
+#define THREAD_CNT 2
 #define REM_THREAD_CNT THREAD_CNT
 #define SEND_THREAD_CNT THREAD_CNT
 #define CORE_CNT 8
@@ -37,14 +37,14 @@
 // # of transactions to run for warmup
 #define WARMUP            0
 // YCSB or TPCC or PPS
-#define WORKLOAD YCSB 
+#define WORKLOAD PPS
 // print the transaction latency distribution
 #define PRT_LAT_DISTR false
 #define STATS_ENABLE        true
 #define TIME_ENABLE         true //STATS_ENABLE
 
 #define FIN_BY_TIME true
-#define MAX_TXN_IN_FLIGHT 1
+#define MAX_TXN_IN_FLIGHT 1000
 
 #define SERVER_GENERATE_QUERIES false
 
@@ -98,7 +98,7 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, OCC, VLL, CALVIN, MAAT
-#define CC_ALG NO_WAIT 
+#define CC_ALG CALVIN
 #define ISOLATION_LEVEL SERIALIZABLE
 #define YCSB_ABORT_MODE true
 
@@ -241,22 +241,22 @@ extern TPCCTxnType          g_tpcc_txn_type;
 //#define ORDE_TAB_SIZE NUM_WH * DIST_PER_WH * CUST_PER_DIST_SMALL
 
 // PPS (Product-Part-Supplier)
-#define MAX_PPS_PART_KEY 100
-#define MAX_PPS_PRODUCT_KEY 100 
-#define MAX_PPS_SUPPLIER_KEY 100 
+#define MAX_PPS_PART_KEY 1000
+#define MAX_PPS_PRODUCT_KEY 100
+#define MAX_PPS_SUPPLIER_KEY 100
 #define MAX_PPS_PART_PER_PRODUCT 10
-#define MAX_PPS_PART_PER_SUPPLIER 10
-#define MAX_PPS_PART_PER_PRODUCT_KEY 100
-#define MAX_PPS_PART_PER_SUPPLIER_KEY 100
+#define MAX_PPS_PART_PER_SUPPLIER 10 // keep same as MAX_PPS_PART_PER_PRODUCT for now
+#define MAX_PPS_PART_PER_PRODUCT_KEY 10 // keep same as MAX_PPS_PART_PER_PRODUCT for now
+#define MAX_PPS_PART_PER_SUPPLIER_KEY 10 // keep same as MAX_PPS_PART_PER_PRODUCT for now
 
 #define PERC_PPS_GETPART 0.00
 #define PERC_PPS_GETSUPPLIER 0.00 
-#define PERC_PPS_GETPRODUCT 0.00
-#define PERC_PPS_GETPARTBYSUPPLIER 0.05
-#define PERC_PPS_GETPARTBYPRODUCT 0.05
-#define PERC_PPS_ORDERPRODUCT 0.50
-#define PERC_PPS_UPDATEPRODUCTPART 0.20
-#define PERC_PPS_UPDATEPART 0.20
+#define PERC_PPS_GETPRODUCT 0.0
+#define PERC_PPS_GETPARTBYSUPPLIER 0.0
+#define PERC_PPS_GETPARTBYPRODUCT 0.0
+#define PERC_PPS_ORDERPRODUCT 0.2
+#define PERC_PPS_UPDATEPRODUCTPART 0.8
+#define PERC_PPS_UPDATEPART 0.0
 
 enum PPSTxnType {PPS_ALL, 
           PPS_GETPART, 
@@ -299,7 +299,7 @@ extern TestCases          g_test_case;
 #define DEBUG_TIMESTAMP       false
 #define DEBUG_SYNTH         false
 #define DEBUG_ASSERT        false
-#define DEBUG_DISTR false
+#define DEBUG_DISTR true
 #define DEBUG_ALLOC false
 #define DEBUG_RACE false
 #define DEBUG_TIMELINE        false
@@ -379,7 +379,7 @@ extern TestCases          g_test_case;
 #define STAT_ARR_SIZE 1024
 #define PROG_TIMER 10 * BILLION // in s
 #define BATCH_TIMER 0
-#define SEQ_BATCH_TIMER 5 * 1 * MILLION // ~5ms -- same as CALVIN paper
+#define SEQ_BATCH_TIMER 1 * BILLION//5 * 1 * MILLION // ~5ms -- same as CALVIN paper
 //#define DONE_TIMER 1 * 60 * BILLION // ~1 minutes
 #define DONE_TIMER 1 * 60 * BILLION // ~1 minutes
 #define WARMUP_TIMER 0 * BILLION // ~1 minutes

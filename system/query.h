@@ -28,23 +28,27 @@ class PPSQuery;
 
 class BaseQuery {
 public:
-  virtual bool readonly() = 0;
-  virtual void print() = 0;
-  virtual void init();
-	uint64_t waiting_time;
-  void clear();
-  void release();
+    virtual ~BaseQuery() {}
+    virtual bool readonly() = 0;
+    virtual void print() = 0;
+    virtual void init();
+    uint64_t waiting_time;
+    void clear();
+    void release();
+    virtual bool isReconQuery() {return false;}
 
-  // Prevent unnecessary remote messages
-  Array<uint64_t> partitions;
-  Array<uint64_t> partitions_touched;
-  Array<uint64_t> active_nodes;
-  Array<uint64_t> participant_nodes;
+    // Prevent unnecessary remote messages
+    Array<uint64_t> partitions;
+    Array<uint64_t> partitions_touched;
+    Array<uint64_t> active_nodes;
+    Array<uint64_t> participant_nodes;
 
 };
 
 class QueryGenerator {
-  virtual BaseQuery * create_query(Workload * h_wl, uint64_t home_partition_id) = 0;
+public:
+    virtual ~QueryGenerator() {}
+    virtual BaseQuery * create_query(Workload * h_wl, uint64_t home_partition_id) = 0;
 };
 
 // All the queries for a particular thread.

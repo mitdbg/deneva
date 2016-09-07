@@ -146,6 +146,7 @@ public:
 
   RC rc;
   uint64_t pid;
+
 };
 
 class AckMessage : public Message {
@@ -163,6 +164,9 @@ public:
   uint64_t lower;
   uint64_t upper;
 #endif
+
+  // For Calvin PPS: part keys from secondary lookup for sequencer response
+  Array<uint64_t> part_keys;
 };
 
 class PrepareMessage : public Message {
@@ -286,7 +290,7 @@ public:
 
   // new order
   Array<Item_no*> items;
-	bool rbk;
+  bool rbk;
   bool remote;
   uint64_t ol_cnt;
   uint64_t o_entry_d;
@@ -312,6 +316,11 @@ public:
   uint64_t product_key;
   // getsuppliers / getpartbysupplier
   uint64_t supplier_key;
+
+  // part keys from secondary lookup
+  Array<uint64_t> part_keys;
+
+  bool recon;
 
 };
 
@@ -407,6 +416,9 @@ public:
   uint64_t product_key;
   // getsuppliers / getpartbysupplier
   uint64_t supplier_key;
+
+  // part keys from secondary lookup
+  Array<uint64_t> part_keys;
 };
 
 

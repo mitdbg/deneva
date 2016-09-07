@@ -514,7 +514,7 @@ void TPCCClientQueryMessage::copy_from_query(BaseQuery * query) {
 
   // new order
   items.copy(tpcc_query->items);
-	rbk = tpcc_query->rbk;
+  rbk = tpcc_query->rbk;
   remote = tpcc_query->remote;
   ol_cnt = tpcc_query->ol_cnt;
   o_entry_d = tpcc_query->o_entry_d;
@@ -554,7 +554,7 @@ void TPCCClientQueryMessage::copy_to_txn(TxnManager * txn) {
 
   // new order
   tpcc_query->items.append(items);
-	tpcc_query->rbk = rbk;
+  tpcc_query->rbk = rbk;
   tpcc_query->remote = remote;
   tpcc_query->ol_cnt = ol_cnt;
   tpcc_query->o_entry_d = o_entry_d;
@@ -590,7 +590,7 @@ void TPCCClientQueryMessage::copy_from_buf(char * buf) {
     items.add(item);
   }
 
-	COPY_VAL(rbk,buf,ptr);
+  COPY_VAL(rbk,buf,ptr);
   COPY_VAL(remote,buf,ptr);
   COPY_VAL(ol_cnt,buf,ptr);
   COPY_VAL(o_entry_d,buf,ptr);
@@ -623,7 +623,7 @@ void TPCCClientQueryMessage::copy_to_buf(char * buf) {
     COPY_BUF(buf,*item,ptr);
   }
 
-	COPY_BUF(buf,rbk,ptr);
+  COPY_BUF(buf,rbk,ptr);
   COPY_BUF(buf,remote,ptr);
   COPY_BUF(buf,ol_cnt,ptr);
   COPY_BUF(buf,o_entry_d,ptr);
@@ -647,6 +647,11 @@ uint64_t PPSClientQueryMessage::get_size() {
   uint64_t size = ClientQueryMessage::get_size();
   size += sizeof(uint64_t);
   size += sizeof(uint64_t)*3; 
+  size += sizeof(size_t);
+  size += sizeof(uint64_t) * part_keys.size();
+#if CC_ALG == CALVIN
+  size += sizeof(bool);
+#endif
   return size;
 }
 
@@ -659,12 +664,18 @@ void PPSClientQueryMessage::copy_from_query(BaseQuery * query) {
   part_key = pps_query->part_key;
   product_key = pps_query->product_key;
   supplier_key = pps_query->supplier_key;
+
+  part_keys.copy(pps_query->part_keys);
+
 }
 
 
 void PPSClientQueryMessage::copy_from_txn(TxnManager * txn) {
   ClientQueryMessage::mcopy_from_txn(txn);
   copy_from_query(txn->query);
+#if CC_ALG == CALVIN
+  recon = txn->isRecon();
+#endif
 }
 
 void PPSClientQueryMessage::copy_to_txn(TxnManager * txn) {
@@ -688,6 +699,11 @@ void PPSClientQueryMessage::copy_to_txn(TxnManager * txn) {
   pps_query->part_key = part_key;
   pps_query->product_key = product_key;
   pps_query->supplier_key = supplier_key;
+  pps_query->part_keys.append(part_keys);
+
+#if CC_ALG == CALVIN
+  txn->recon = recon;
+#endif
 
   std::cout << "PPSClient::copy_to_txn "
     << "type " << (PPSTxnType)txn_type
@@ -708,6 +724,19 @@ void PPSClientQueryMessage::copy_from_buf(char * buf) {
   COPY_VAL(product_key,buf,ptr);
   COPY_VAL(supplier_key,buf,ptr);
 
+  size_t size;
+  COPY_VAL(size,buf,ptr);
+  part_keys.init(size);
+  for(uint64_t i = 0 ; i < size;i++) {
+    uint64_t item;
+    COPY_VAL(item,buf,ptr);
+    part_keys.add(item);
+  }
+
+#if CC_ALG == CALVIN
+  COPY_VAL(recon,buf,ptr);
+#endif
+
  assert(ptr == get_size());
 
   std::cout << "PPSClient::copy_from_buf "
@@ -727,6 +756,18 @@ void PPSClientQueryMessage::copy_to_buf(char * buf) {
   COPY_BUF(buf,part_key,ptr);
   COPY_BUF(buf,product_key,ptr);
   COPY_BUF(buf,supplier_key,ptr);
+
+  size_t size = part_keys.size();
+  COPY_BUF(buf,size,ptr);
+  for(uint64_t i = 0; i < part_keys.size(); i++) {
+    uint64_t item = part_keys[i];
+    COPY_BUF(buf,item,ptr);
+  }
+
+#if CC_ALG == CALVIN
+  COPY_BUF(buf,recon,ptr);
+#endif
+
  assert(ptr == get_size());
 
   std::cout << "PPSClient::copy_to_buf "
@@ -954,6 +995,10 @@ uint64_t AckMessage::get_size() {
 #if CC_ALG == MAAT
   size += sizeof(uint64_t) * 2;
 #endif
+#if WORKLOAD == PPS && CC_ALG == CALVIN
+  size += sizeof(size_t);
+  size += sizeof(uint64_t) * part_keys.size();
+#endif
   return size;
 }
 
@@ -965,11 +1010,20 @@ void AckMessage::copy_from_txn(TxnManager * txn) {
   lower = time_table.get_lower(txn->get_thd_id(),txn->get_txn_id());
   upper = time_table.get_upper(txn->get_thd_id(),txn->get_txn_id());
 #endif
+#if WORKLOAD == PPS && CC_ALG == CALVIN
+  PPSQuery* pps_query = (PPSQuery*)(txn->query);
+  part_keys.copy(pps_query->part_keys);
+#endif
 }
 
 void AckMessage::copy_to_txn(TxnManager * txn) {
   Message::mcopy_to_txn(txn);
   //query->rc = rc;
+#if WORKLOAD == PPS && CC_ALG == CALVIN
+
+  PPSQuery* pps_query = (PPSQuery*)(txn->query);
+  pps_query->part_keys.append(part_keys);
+#endif
 }
 
 void AckMessage::copy_from_buf(char * buf) {
@@ -979,6 +1033,17 @@ void AckMessage::copy_from_buf(char * buf) {
 #if CC_ALG == MAAT
   COPY_VAL(lower,buf,ptr);
   COPY_VAL(upper,buf,ptr);
+#endif
+#if WORKLOAD == PPS && CC_ALG == CALVIN
+
+  size_t size;
+  COPY_VAL(size,buf,ptr);
+  part_keys.init(size);
+  for(uint64_t i = 0 ; i < size;i++) {
+    uint64_t item;
+    COPY_VAL(item,buf,ptr);
+    part_keys.add(item);
+  }
 #endif
  assert(ptr == get_size());
 }
@@ -990,6 +1055,15 @@ void AckMessage::copy_to_buf(char * buf) {
 #if CC_ALG == MAAT
   COPY_BUF(buf,lower,ptr);
   COPY_BUF(buf,upper,ptr);
+#endif
+#if WORKLOAD == PPS && CC_ALG == CALVIN
+
+  size_t size = part_keys.size();
+  COPY_BUF(buf,size,ptr);
+  for(uint64_t i = 0; i < part_keys.size(); i++) {
+    uint64_t item = part_keys[i];
+    COPY_BUF(buf,item,ptr);
+  }
 #endif
  assert(ptr == get_size());
 }
@@ -1006,17 +1080,20 @@ uint64_t QueryResponseMessage::get_size() {
 void QueryResponseMessage::copy_from_txn(TxnManager * txn) {
   Message::mcopy_from_txn(txn);
   rc = txn->get_rc();
+
 }
 
 void QueryResponseMessage::copy_to_txn(TxnManager * txn) {
   Message::mcopy_to_txn(txn);
   //query->rc = rc;
+
 }
 
 void QueryResponseMessage::copy_from_buf(char * buf) {
   Message::mcopy_from_buf(buf);
   uint64_t ptr = Message::mget_size();
   COPY_VAL(rc,buf,ptr);
+
  assert(ptr == get_size());
 }
 
@@ -1446,7 +1523,8 @@ uint64_t PPSQueryMessage::get_size() {
   size += sizeof(uint64_t); // txn_type
   size += sizeof(uint64_t); // state
   size += sizeof(uint64_t); // part/product/supply key 
-
+  size += sizeof(size_t);
+  size += sizeof(uint64_t) * part_keys.size();
   return size;
 }
 
@@ -1477,6 +1555,8 @@ void PPSQueryMessage::copy_from_txn(TxnManager * txn) {
   if (txn_type == PPS_ORDERPRODUCT) {
     product_key = pps_query->part_key;
   }
+
+  part_keys.copy(pps_query->part_keys);
 
 }
 
@@ -1509,6 +1589,7 @@ void PPSQueryMessage::copy_to_txn(TxnManager * txn) {
     //pps_query->product_key = product_key;
     pps_query->part_key = part_key;
   }
+  pps_query->part_keys.append(part_keys);
 
 }
 
@@ -1541,6 +1622,14 @@ void PPSQueryMessage::copy_from_buf(char * buf) {
     COPY_VAL(part_key,buf,ptr); 
   }
 
+  size_t size;
+  COPY_VAL(size,buf,ptr);
+  part_keys.init(size);
+  for(uint64_t i = 0 ; i < size;i++) {
+    uint64_t item;
+    COPY_VAL(item,buf,ptr);
+    part_keys.add(item);
+  }
 
  assert(ptr == get_size());
 
@@ -1574,6 +1663,14 @@ void PPSQueryMessage::copy_to_buf(char * buf) {
     //COPY_BUF(buf,product_key,ptr); 
     COPY_BUF(buf,part_key,ptr); 
   }
+
+  size_t size = part_keys.size();
+  COPY_BUF(buf,size,ptr);
+  for(uint64_t i = 0; i < part_keys.size(); i++) {
+    uint64_t item = part_keys[i];
+    COPY_BUF(buf,item,ptr);
+  }
+
  assert(ptr == get_size());
 
 }

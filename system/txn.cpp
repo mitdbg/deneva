@@ -171,6 +171,7 @@ void TxnManager::init(uint64_t thd_id, Workload * h_wl) {
 #if CC_ALG == CALVIN
   phase = CALVIN_RW_ANALYSIS;
   locking_done = false;
+  calvin_locked_rows.init(MAX_ROW_PER_TXN);
 #endif
   
   txn_ready = true;
@@ -203,6 +204,7 @@ void TxnManager::reset() {
 #if CC_ALG == CALVIN
   phase = CALVIN_RW_ANALYSIS;
   locking_done = false;
+  calvin_locked_rows.clear();
 #endif
 
   assert(txn);
@@ -229,6 +231,9 @@ TxnManager::release() {
   delete uncommitted_writes;
   delete uncommitted_writes_y;
   delete uncommitted_reads;
+#endif
+#if CC_ALG == CALVIN
+  calvin_locked_rows.release();
 #endif
   txn_ready = true;
 }
@@ -486,78 +491,93 @@ void TxnManager::release_last_row_lock() {
 }
 
 void TxnManager::cleanup_row(RC rc, uint64_t rid) {
-		access_t type = txn->accesses[rid]->type;
-		if (type == WR && rc == Abort && CC_ALG != MAAT)
-			type = XP;
+    access_t type = txn->accesses[rid]->type;
+    if (type == WR && rc == Abort && CC_ALG != MAAT) {
+        type = XP;
+    }
 
+    // Handle calvin elsewhere
+#if CC_ALG != CALVIN
 #if ISOLATION_LEVEL != READ_UNCOMMITTED
-		row_t * orig_r = txn->accesses[rid]->orig_row;
-		if (ROLL_BACK && type == XP &&
-					(CC_ALG == DL_DETECT || 
-					CC_ALG == NO_WAIT || 
-					CC_ALG == WAIT_DIE ||
-          CC_ALG == HSTORE ||
-          CC_ALG == HSTORE_SPEC 
-          )) 
-		{
-			orig_r->return_row(rc,type, this, txn->accesses[rid]->orig_data);
-		} else {
+    row_t * orig_r = txn->accesses[rid]->orig_row;
+    if (ROLL_BACK && type == XP &&
+                (CC_ALG == DL_DETECT ||
+                CC_ALG == NO_WAIT ||
+                CC_ALG == WAIT_DIE ||
+      CC_ALG == HSTORE ||
+      CC_ALG == HSTORE_SPEC
+      ))
+    {
+        orig_r->return_row(rc,type, this, txn->accesses[rid]->orig_data);
+    } else {
 #if ISOLATION_LEVEL == READ_COMMITTED
-      if(type == WR) {
-        orig_r->return_row(rc,type, this, txn->accesses[rid]->data);
-      } 
+        if(type == WR) {
+          orig_r->return_row(rc,type, this, txn->accesses[rid]->data);
+        }
 #else
-			orig_r->return_row(rc,type, this, txn->accesses[rid]->data);
+        orig_r->return_row(rc,type, this, txn->accesses[rid]->data);
 #endif
-		}
+    }
 #endif
 
 #if ROLL_BACK && (CC_ALG == NO_WAIT || CC_ALG == WAIT_DIE || CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC)
-		if (type == WR) {
-      //printf("free 10 %ld\n",get_txn_id());
-			txn->accesses[rid]->orig_data->free_row();
-      DEBUG_M("TxnManager::cleanup row_t free\n");
-      row_pool.put(get_thd_id(),txn->accesses[rid]->orig_data);
-      if(rc == RCOK) {
-        INC_STATS(get_thd_id(),record_write_cnt,1);
-        ++txn_stats.write_cnt;
-      }
-		}
+    if (type == WR) {
+        //printf("free 10 %ld\n",get_txn_id());
+              txn->accesses[rid]->orig_data->free_row();
+        DEBUG_M("TxnManager::cleanup row_t free\n");
+        row_pool.put(get_thd_id(),txn->accesses[rid]->orig_data);
+        if(rc == RCOK) {
+            INC_STATS(get_thd_id(),record_write_cnt,1);
+            ++txn_stats.write_cnt;
+        }
+    }
 #endif
-		txn->accesses[rid]->data = NULL;
+#endif
+    txn->accesses[rid]->data = NULL;
 
 }
 
 void TxnManager::cleanup(RC rc) {
 #if CC_ALG == OCC && MODE == NORMAL_MODE
-  occ_man.finish(rc,this);
+    occ_man.finish(rc,this);
 #endif
 
-	ts_t starttime = get_sys_clock();
-  uint64_t row_cnt = txn->accesses.get_count();
-  assert(txn->accesses.get_count() == txn->row_cnt);
-  //assert((WORKLOAD == YCSB && row_cnt <= g_req_per_query) || (WORKLOAD == TPCC && row_cnt <= g_max_items_per_txn*2 + 3));
+    ts_t starttime = get_sys_clock();
+    uint64_t row_cnt = txn->accesses.get_count();
+    assert(txn->accesses.get_count() == txn->row_cnt);
+    //assert((WORKLOAD == YCSB && row_cnt <= g_req_per_query) || (WORKLOAD == TPCC && row_cnt <= g_max_items_per_txn*2 + 3));
 
 
-  DEBUG("Cleanup %ld %ld\n",get_txn_id(),row_cnt);
+    DEBUG("Cleanup %ld %ld\n",get_txn_id(),row_cnt);
 	for (int rid = row_cnt - 1; rid >= 0; rid --) {
-    cleanup_row(rc,rid);
+	    cleanup_row(rc,rid);
 	}
+#if CC_ALG == CALVIN
+	// cleanup locked rows
+    for (uint64_t i = 0; i < calvin_locked_rows.size(); i++) {
+        row_t * row = calvin_locked_rows[i];
+        row->return_row(rc,RD,this,row);
+    }
+#endif
 
 	if (rc == Abort) {
-    txn->release_inserts(get_thd_id());
-    txn->insert_rows.clear();
+	    txn->release_inserts(get_thd_id());
+	    txn->insert_rows.clear();
 
-		INC_STATS(get_thd_id(), abort_time, get_sys_clock() - starttime);
+        INC_STATS(get_thd_id(), abort_time, get_sys_clock() - starttime);
 	} 
 }
 
 RC TxnManager::get_lock(row_t * row, access_t type) {
-  RC rc = row->get_lock(type, this);
-  if(rc == WAIT) {
-    INC_STATS(get_thd_id(), txn_wait_cnt, 1);
-  }
-  return rc;
+    if (calvin_locked_rows.contains(row)) {
+        return RCOK;
+    }
+    calvin_locked_rows.add(row);
+    RC rc = row->get_lock(type, this);
+    if(rc == WAIT) {
+      INC_STATS(get_thd_id(), txn_wait_cnt, 1);
+    }
+    return rc;
 }
 
 RC TxnManager::get_row(row_t * row, access_t type, row_t *& row_rtn) {
@@ -746,7 +766,7 @@ TxnManager::send_remote_reads() {
 }
 
 bool TxnManager::calvin_exec_phase_done() {
-  bool ready =  (phase == CALVIN_DONE) && (get_rc() == RCOK);
+  bool ready =  (phase == CALVIN_DONE) && (get_rc() != WAIT);
   if(ready) {
     DEBUG("(%ld,%ld) calvin exec phase done!\n",txn->txn_id,txn->batch_id);
   }

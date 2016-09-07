@@ -232,22 +232,22 @@ void BucketHeader::read_item(idx_key_t key, itemid_t * &item)
 
 void BucketHeader::read_item(idx_key_t key, uint32_t count, itemid_t * &item) 
 {
-	BucketNode * cur_node = first_node;
-  uint32_t ctr = 0;
-	while (cur_node != NULL) {
-		if (cur_node->key == key) {
-      if (ctr == count) {
-        break;
-      }
-      ++ctr;
-    }
+    BucketNode * cur_node = first_node;
+    uint32_t ctr = 0;
+    while (cur_node != NULL) {
+        if (cur_node->key == key) {
+            if (ctr == count) {
+                break;
+            }
+            ++ctr;
+        }
 		cur_node = cur_node->next;
-	}
-  if (cur_node == NULL) {
-    item = NULL;
-    return;
-  }
-	M_ASSERT_V(cur_node != NULL, "Key does not exist! %ld\n",key);
-  assert(cur_node->key == key);
+    }
+    if (cur_node == NULL) {
+        item = NULL;
+        return;
+    }
+    M_ASSERT_V(cur_node != NULL, "Key does not exist! %ld\n",key);
+    assert(cur_node->key == key);
 	item = cur_node->items;
 }

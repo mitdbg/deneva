@@ -34,18 +34,18 @@ private:
 
 class CalvinLockThread : public Thread {
 public:
-	RC 			run();
-  void setup();
+    RC run();
+    void setup();
 private:
-	TxnManager * m_txn;
+    TxnManager * m_txn;
 };
 
 class CalvinSequencerThread : public Thread {
 public:
-	RC 			run();
-  void setup();
+    RC run();
+    void setup();
 private:
-  bool is_batch_ready();
+    bool is_batch_ready();
 	uint64_t last_batchtime;
 };
 
