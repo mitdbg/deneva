@@ -377,89 +377,89 @@ void TPCCTxnManager::copy_remote_items(TPCCQueryMessage * msg) {
 
 
 RC TPCCTxnManager::run_txn_state() {
-  TPCCQuery* tpcc_query = (TPCCQuery*) query;
-	uint64_t w_id = tpcc_query->w_id;
-  uint64_t d_id = tpcc_query->d_id;
-  uint64_t c_id = tpcc_query->c_id;
-  uint64_t d_w_id = tpcc_query->d_w_id;
-  uint64_t c_w_id = tpcc_query->c_w_id;
-  uint64_t c_d_id = tpcc_query->c_d_id;
-	char * c_last = tpcc_query->c_last;
-  double h_amount = tpcc_query->h_amount;
-	bool by_last_name = tpcc_query->by_last_name;
-	bool remote = tpcc_query->remote;
-	uint64_t ol_cnt = tpcc_query->ol_cnt;
-	uint64_t o_entry_d = tpcc_query->o_entry_d;
-	uint64_t ol_i_id = 0;
-	uint64_t ol_supply_w_id = 0;
-	uint64_t ol_quantity = 0;
-  if(tpcc_query->txn_type == TPCC_NEW_ORDER) {
-    ol_i_id = tpcc_query->items[next_item_id]->ol_i_id;
-    ol_supply_w_id = tpcc_query->items[next_item_id]->ol_supply_w_id;
-    ol_quantity = tpcc_query->items[next_item_id]->ol_quantity;
-  }
-	uint64_t ol_number = next_item_id;
-	uint64_t ol_amount = tpcc_query->ol_amount;
-  uint64_t o_id = tpcc_query->o_id;
+    TPCCQuery* tpcc_query = (TPCCQuery*) query;
+    uint64_t w_id = tpcc_query->w_id;
+    uint64_t d_id = tpcc_query->d_id;
+    uint64_t c_id = tpcc_query->c_id;
+    uint64_t d_w_id = tpcc_query->d_w_id;
+    uint64_t c_w_id = tpcc_query->c_w_id;
+    uint64_t c_d_id = tpcc_query->c_d_id;
+    char * c_last = tpcc_query->c_last;
+    double h_amount = tpcc_query->h_amount;
+    bool by_last_name = tpcc_query->by_last_name;
+    bool remote = tpcc_query->remote;
+    uint64_t ol_cnt = tpcc_query->ol_cnt;
+    uint64_t o_entry_d = tpcc_query->o_entry_d;
+    uint64_t ol_i_id = 0;
+    uint64_t ol_supply_w_id = 0;
+    uint64_t ol_quantity = 0;
+    if(tpcc_query->txn_type == TPCC_NEW_ORDER) {
+        ol_i_id = tpcc_query->items[next_item_id]->ol_i_id;
+        ol_supply_w_id = tpcc_query->items[next_item_id]->ol_supply_w_id;
+        ol_quantity = tpcc_query->items[next_item_id]->ol_quantity;
+    }
+    uint64_t ol_number = next_item_id;
+    uint64_t ol_amount = tpcc_query->ol_amount;
+    uint64_t o_id = tpcc_query->o_id;
 
-	uint64_t part_id_w = wh_to_part(w_id);
-	uint64_t part_id_c_w = wh_to_part(c_w_id);
-  uint64_t part_id_ol_supply_w = wh_to_part(ol_supply_w_id);
-  bool w_loc = GET_NODE_ID(part_id_w) == g_node_id;
-  bool c_w_loc = GET_NODE_ID(part_id_c_w) == g_node_id;
-  bool ol_supply_w_loc = GET_NODE_ID(part_id_ol_supply_w) == g_node_id;
+    uint64_t part_id_w = wh_to_part(w_id);
+    uint64_t part_id_c_w = wh_to_part(c_w_id);
+    uint64_t part_id_ol_supply_w = wh_to_part(ol_supply_w_id);
+    bool w_loc = GET_NODE_ID(part_id_w) == g_node_id;
+    bool c_w_loc = GET_NODE_ID(part_id_c_w) == g_node_id;
+    bool ol_supply_w_loc = GET_NODE_ID(part_id_ol_supply_w) == g_node_id;
 
 	RC rc = RCOK;
 
 	switch (state) {
 		case TPCC_PAYMENT0 :
-      if(w_loc)
-			  rc = run_payment_0(w_id, d_id, d_w_id, h_amount, row);
-      else {
-        rc = send_remote_request();
-      }
-			break;
+            if(w_loc)
+                    rc = run_payment_0(w_id, d_id, d_w_id, h_amount, row);
+            else {
+              rc = send_remote_request();
+            }
+            break;
 		case TPCC_PAYMENT1 :
-			rc = run_payment_1(w_id, d_id, d_w_id, h_amount, row);
-      break;
+            rc = run_payment_1(w_id, d_id, d_w_id, h_amount, row);
+            break;
 		case TPCC_PAYMENT2 :
-			rc = run_payment_2(w_id, d_id, d_w_id, h_amount, row);
-      break;
+            rc = run_payment_2(w_id, d_id, d_w_id, h_amount, row);
+            break;
 		case TPCC_PAYMENT3 :
-			rc = run_payment_3(w_id, d_id, d_w_id, h_amount, row);
-      break;
+            rc = run_payment_3(w_id, d_id, d_w_id, h_amount, row);
+            break;
 		case TPCC_PAYMENT4 :
-      if(c_w_loc)
-			  rc = run_payment_4( w_id,  d_id, c_id, c_w_id,  c_d_id, c_last, h_amount, by_last_name, row); 
-      else {
-        rc = send_remote_request();
-      }
-			break;
+            if(c_w_loc)
+                rc = run_payment_4( w_id,  d_id, c_id, c_w_id,  c_d_id, c_last, h_amount, by_last_name, row);
+            else {
+                rc = send_remote_request();
+            }
+            break;
 		case TPCC_PAYMENT5 :
-			rc = run_payment_5( w_id,  d_id, c_id, c_w_id,  c_d_id, c_last, h_amount, by_last_name, row); 
-      break;
+            rc = run_payment_5( w_id,  d_id, c_id, c_w_id,  c_d_id, c_last, h_amount, by_last_name, row);
+            break;
 		case TPCC_NEWORDER0 :
-      if(w_loc)
-			  rc = new_order_0( w_id, d_id, c_id, remote, ol_cnt, o_entry_d, &tpcc_query->o_id, row); 
-      else {
-        rc = send_remote_request();
-      }
+            if(w_loc)
+                rc = new_order_0( w_id, d_id, c_id, remote, ol_cnt, o_entry_d, &tpcc_query->o_id, row);
+            else {
+                rc = send_remote_request();
+            }
 			break;
 		case TPCC_NEWORDER1 :
-			rc = new_order_1( w_id, d_id, c_id, remote, ol_cnt, o_entry_d, &tpcc_query->o_id, row); 
-      break;
+            rc = new_order_1( w_id, d_id, c_id, remote, ol_cnt, o_entry_d, &tpcc_query->o_id, row);
+            break;
 		case TPCC_NEWORDER2 :
-			rc = new_order_2( w_id, d_id, c_id, remote, ol_cnt, o_entry_d, &tpcc_query->o_id, row); 
-      break;
+            rc = new_order_2( w_id, d_id, c_id, remote, ol_cnt, o_entry_d, &tpcc_query->o_id, row);
+            break;
 		case TPCC_NEWORDER3 :
-			rc = new_order_3( w_id, d_id, c_id, remote, ol_cnt, o_entry_d, &tpcc_query->o_id, row); 
-      break;
+            rc = new_order_3( w_id, d_id, c_id, remote, ol_cnt, o_entry_d, &tpcc_query->o_id, row);
+            break;
 		case TPCC_NEWORDER4 :
-			rc = new_order_4( w_id, d_id, c_id, remote, ol_cnt, o_entry_d, &tpcc_query->o_id, row); 
-      break;
+            rc = new_order_4( w_id, d_id, c_id, remote, ol_cnt, o_entry_d, &tpcc_query->o_id, row);
+            break;
 		case TPCC_NEWORDER5 :
-			rc = new_order_5( w_id, d_id, c_id, remote, ol_cnt, o_entry_d, &tpcc_query->o_id, row); 
-      break;
+            rc = new_order_5( w_id, d_id, c_id, remote, ol_cnt, o_entry_d, &tpcc_query->o_id, row);
+            break;
 		case TPCC_NEWORDER6 :
 			rc = new_order_6(ol_i_id, row);
 			break;
@@ -467,24 +467,24 @@ RC TPCCTxnManager::run_txn_state() {
 			rc = new_order_7(ol_i_id, row);
 			break;
 		case TPCC_NEWORDER8 :
-      if(ol_supply_w_loc) {
-			  rc = new_order_8( w_id, d_id, remote, ol_i_id, ol_supply_w_id, ol_quantity,  ol_number, o_id, row); 
-      }
-      else {
-        rc = send_remote_request();
-      }
-			break;
+		      if(ol_supply_w_loc) {
+                  rc = new_order_8( w_id, d_id, remote, ol_i_id, ol_supply_w_id, ol_quantity,  ol_number, o_id, row);
+		      }
+		      else {
+                  rc = send_remote_request();
+		      }
+              break;
 		case TPCC_NEWORDER9 :
-			rc = new_order_9( w_id, d_id, remote, ol_i_id, ol_supply_w_id, ol_quantity,  ol_number, ol_amount, o_id, row); 
-      break;
+            rc = new_order_9( w_id, d_id, remote, ol_i_id, ol_supply_w_id, ol_quantity,  ol_number, ol_amount, o_id, row);
+            break;
     case TPCC_FIN :
-      state = TPCC_FIN;
-      if(tpcc_query->rbk)
-        return Abort;
-		  //return finish(tpcc_query,false);
-      break;
-		default:
-			assert(false);
+        state = TPCC_FIN;
+        if(tpcc_query->rbk)
+            return Abort;
+            //return finish(tpcc_query,false);
+        break;
+    default:
+        assert(false);
 	}
 
   if(rc == RCOK)

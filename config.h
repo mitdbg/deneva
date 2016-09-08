@@ -6,7 +6,7 @@
 // Simulation + Hardware
 /***********************************************/
 #define NODE_CNT 2
-#define THREAD_CNT 2
+#define THREAD_CNT 1
 #define REM_THREAD_CNT THREAD_CNT
 #define SEND_THREAD_CNT THREAD_CNT
 #define CORE_CNT 8
@@ -252,10 +252,10 @@ extern TPCCTxnType          g_tpcc_txn_type;
 #define PERC_PPS_GETPART 0.00
 #define PERC_PPS_GETSUPPLIER 0.00 
 #define PERC_PPS_GETPRODUCT 0.0
-#define PERC_PPS_GETPARTBYSUPPLIER 0.0
-#define PERC_PPS_GETPARTBYPRODUCT 0.0
+#define PERC_PPS_GETPARTBYSUPPLIER 0.1
+#define PERC_PPS_GETPARTBYPRODUCT 0.2
 #define PERC_PPS_ORDERPRODUCT 0.2
-#define PERC_PPS_UPDATEPRODUCTPART 0.8
+#define PERC_PPS_UPDATEPRODUCTPART 0.5
 #define PERC_PPS_UPDATEPART 0.0
 
 enum PPSTxnType {PPS_ALL, 

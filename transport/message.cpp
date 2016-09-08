@@ -696,6 +696,10 @@ void PPSClientQueryMessage::copy_to_txn(TxnManager * txn) {
     ((PPSTxnManager*)txn)->state = PPS_GETPARTBYSUPPLIER0;
   else if(pps_query->txn_type == PPS_ORDERPRODUCT)
     ((PPSTxnManager*)txn)->state = PPS_ORDERPRODUCT0;
+  else if(pps_query->txn_type == PPS_UPDATEPRODUCTPART)
+    ((PPSTxnManager*)txn)->state = PPS_UPDATEPRODUCTPART0;
+  else if(pps_query->txn_type == PPS_UPDATEPART)
+    ((PPSTxnManager*)txn)->state = PPS_UPDATEPART0;
   pps_query->part_key = part_key;
   pps_query->product_key = product_key;
   pps_query->supplier_key = supplier_key;
@@ -1553,7 +1557,13 @@ void PPSQueryMessage::copy_from_txn(TxnManager * txn) {
     part_key = pps_query->part_key;
   }
   if (txn_type == PPS_ORDERPRODUCT) {
-    product_key = pps_query->part_key;
+      part_key = pps_query->part_key;
+  }
+  if (txn_type == PPS_UPDATEPRODUCTPART) {
+      product_key = pps_query->product_key;
+  }
+  if (txn_type == PPS_UPDATEPART) {
+      part_key = pps_query->part_key;
   }
 
   part_keys.copy(pps_query->part_keys);
@@ -1589,6 +1599,12 @@ void PPSQueryMessage::copy_to_txn(TxnManager * txn) {
     //pps_query->product_key = product_key;
     pps_query->part_key = part_key;
   }
+  if (txn_type == PPS_UPDATEPRODUCTPART) {
+      pps_query->product_key = product_key;
+  }
+  if (txn_type == PPS_UPDATEPART) {
+      pps_query->part_key = part_key;
+  }
   pps_query->part_keys.append(part_keys);
 
 }
@@ -1620,6 +1636,12 @@ void PPSQueryMessage::copy_from_buf(char * buf) {
   if (txn_type == PPS_ORDERPRODUCT) {
     //COPY_VAL(product_key,buf,ptr); 
     COPY_VAL(part_key,buf,ptr); 
+  }
+  if (txn_type == PPS_UPDATEPRODUCTPART) {
+      COPY_VAL(product_key,buf,ptr);
+  }
+  if (txn_type == PPS_UPDATEPART) {
+      COPY_VAL(part_key,buf,ptr);
   }
 
   size_t size;
@@ -1662,6 +1684,14 @@ void PPSQueryMessage::copy_to_buf(char * buf) {
   if (txn_type == PPS_ORDERPRODUCT) {
     //COPY_BUF(buf,product_key,ptr); 
     COPY_BUF(buf,part_key,ptr); 
+  }
+  if (txn_type == PPS_UPDATEPRODUCTPART) {
+    //COPY_BUF(buf,product_key,ptr);
+    COPY_BUF(buf,product_key,ptr);
+  }
+  if (txn_type == PPS_UPDATEPART) {
+    //COPY_BUF(buf,product_key,ptr);
+    COPY_BUF(buf,part_key,ptr);
   }
 
   size_t size = part_keys.size();

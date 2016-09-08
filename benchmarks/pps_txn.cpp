@@ -99,7 +99,7 @@ RC PPSTxnManager::run_txn() {
        state == PPS_UPDATEPRODUCTPART0 ||
        state == PPS_UPDATEPART0 
        )) {
-    DEBUG("Running txn %ld\n",txn->txn_id);
+    DEBUG("Running txn %ld, type %d\n",txn->txn_id,((PPSQuery*)query)->txn_type);
 #if DISTR_DEBUG
     query->print();
 #endif
@@ -370,6 +370,9 @@ void PPSTxnManager::next_pps_state() {
       break;
     case PPS_GETPARTBYSUPPLIER5:
       state = PPS_GETPARTBYSUPPLIER2;
+      if (!IS_LOCAL(txn->txn_id)) {
+          state = PPS_FIN;
+      }
       break;
     case PPS_GETPARTBYPRODUCT_S:
       state = PPS_GETPARTBYPRODUCT0;
@@ -397,6 +400,9 @@ void PPSTxnManager::next_pps_state() {
       break;
     case PPS_GETPARTBYPRODUCT5:
       state = PPS_GETPARTBYPRODUCT2;
+      if (!IS_LOCAL(txn->txn_id)) {
+          state = PPS_FIN;
+      }
       //state = PPS_FIN;
       break;
     case PPS_ORDERPRODUCT_S:
@@ -409,14 +415,14 @@ void PPSTxnManager::next_pps_state() {
       state = PPS_ORDERPRODUCT2;
       break;
     case PPS_ORDERPRODUCT2:
-      if (row == NULL) {
-        state = PPS_FIN;
-      }
-      else {
-        ++parts_processed_count;
-        state = PPS_ORDERPRODUCT3;
-      }
-      break;
+        if(!IS_LOCAL(txn->txn_id) && row != NULL) {
+            ++parts_processed_count;
+            state = PPS_ORDERPRODUCT3;
+        }
+        else {
+            state = PPS_FIN;
+        }
+        break;
     case PPS_ORDERPRODUCT3:
       state = PPS_ORDERPRODUCT4;
       break;
@@ -425,7 +431,9 @@ void PPSTxnManager::next_pps_state() {
       break;
     case PPS_ORDERPRODUCT5:
       state = PPS_ORDERPRODUCT2;
-      //state = PPS_FIN;
+      if (!IS_LOCAL(txn->txn_id)) {
+          state = PPS_FIN;
+      }
       break;
     case PPS_UPDATEPRODUCTPART_S:
       state = PPS_UPDATEPRODUCTPART0;
@@ -522,11 +530,11 @@ RC PPSTxnManager::run_txn_state() {
         rc = send_remote_request();
       break;
     case PPS_GETPARTBYSUPPLIER3:
-        rc = run_getpartsbysupplier_3(part_key, row);
+        rc = run_getpartsbysupplier_3(pps_query->part_key, row);
       break;
     case PPS_GETPARTBYSUPPLIER4:
       if (part_loc)
-        rc = run_getpartsbysupplier_4(part_key, row);
+        rc = run_getpartsbysupplier_4(pps_query->part_key, row);
       else
         rc = send_remote_request();
       break;

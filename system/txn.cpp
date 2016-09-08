@@ -730,6 +730,9 @@ RC TxnManager::validate() {
 #if MODE != NORMAL_MODE
   return RCOK;
 #endif
+  if (CC_ALG != OCC && CC_ALG != MAAT) {
+      return RCOK;
+  }
   RC rc = RCOK;
   uint64_t starttime = get_sys_clock();
   if(CC_ALG == OCC && rc == RCOK)

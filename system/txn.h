@@ -74,6 +74,7 @@ public:
     void init();
     void reset();
     void commit_stats(uint64_t txn_id);
+    // FIXME need to ensure that all these are valid and up-to-date
     uint64_t starttime;
     uint64_t wait_starttime;
     uint64_t write_cnt;
@@ -82,10 +83,16 @@ public:
     double process_time;
     double total_local_wait_time;
     double local_wait_time;
-    double total_remote_wait_time;
+    double total_remote_wait_time; // time waiting for a remote response, to help calculate network time
     double remote_wait_time;
     double total_twopc_time;
     double twopc_time;
+    double total_work_queue_time; // time spent on work queue
+    double work_queue_time;
+    double total_cc_block_time; // time spent blocking on a cc resource
+    double cc_block_time;
+    double total_cc_time; // time spent actively doing cc
+    double cc_time;
 };
 
 /*

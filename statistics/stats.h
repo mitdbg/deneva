@@ -229,6 +229,13 @@ public:
   double txn_table_release_time;
   double txn_table_min_ts_time;
 
+  // Latency
+  double client_client_latency;
+  double first_start_commit_latency;
+  double first_start_commit_latency_cnt;
+  double start_abort_commit_latency;
+  double start_abort_commit_latency_cnt;
+
   double * mtx;
 
 	char _pad[CL_SIZE];
