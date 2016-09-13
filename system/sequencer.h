@@ -29,6 +29,8 @@ typedef struct qlite_entry {
   BaseQuery * qry;
 	uint32_t client_id;
 	uint64_t client_startts;
+	uint64_t seq_startts;
+	uint64_t seq_first_startts;
 	uint32_t server_ack_cnt;
   Message * msg;
 } qlite;

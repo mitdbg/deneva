@@ -28,9 +28,12 @@ void Maat::init() {
 
 RC Maat::validate(TxnManager * txn) {
   uint64_t start_time = get_sys_clock();
+  uint64_t timespan;
   sem_wait(&_semaphore);
 
-  INC_STATS(txn->get_thd_id(),maat_cs_wait_time,get_sys_clock() - start_time);
+  timespan = get_sys_clock() - start_time;
+  txn->txn_stats.cc_block_time += timespan;
+  INC_STATS(txn->get_thd_id(),maat_cs_wait_time,timespan);
   start_time = get_sys_clock();
   RC rc = RCOK;
   uint64_t lower = time_table.get_lower(txn->get_thd_id(),txn->get_txn_id());
@@ -186,7 +189,9 @@ RC Maat::validate(TxnManager * txn) {
   time_table.set_lower(txn->get_thd_id(),txn->get_txn_id(),lower);
   time_table.set_upper(txn->get_thd_id(),txn->get_txn_id(),upper);
   INC_STATS(txn->get_thd_id(),maat_validate_cnt,1);
-  INC_STATS(txn->get_thd_id(),maat_validate_time,get_sys_clock() - start_time);
+  timespan = get_sys_clock() - start_time;
+  INC_STATS(txn->get_thd_id(),maat_validate_time,timespan);
+  txn->txn_stats.cc_time += timespan;
   DEBUG("MAAT Validate End %ld: %d [%lu,%lu]\n",txn->get_txn_id(),rc==RCOK,lower,upper);
   sem_post(&_semaphore);
   return rc;

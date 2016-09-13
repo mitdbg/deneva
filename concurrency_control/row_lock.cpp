@@ -191,14 +191,17 @@ RC Row_lock::lock_get(lock_t type, TxnManager * txn, uint64_t* &txnids, int &txn
 
     }
 final:
+    uint64_t timespan = get_sys_clock() - starttime;
+    txn->txn_stats.cc_time += timespan;
+INC_STATS(txn->get_thd_id(),twopl_getlock_time,timespan);
+INC_STATS(txn->get_thd_id(),twopl_getlock_cnt,1);
 	
     if (g_central_man)
         glob_manager.release_row(_row);
     else
         pthread_mutex_unlock( latch );
 
-    INC_STATS(txn->get_thd_id(),twopl_getlock_time,get_sys_clock() - starttime);
-    INC_STATS(txn->get_thd_id(),twopl_getlock_cnt,1);
+
 	return rc;
 }
 
@@ -307,10 +310,9 @@ RC Row_lock::lock_release(TxnManager * txn) {
           printf("LOCK %ld %ld\n",entry->txn->get_txn_id(),get_sys_clock());
 #endif
           DEBUG("2lock (%ld,%ld): owners %d, own type %d, req type %d, key %ld %lx\n",entry->txn->get_txn_id(),entry->txn->get_batch_id(),owner_cnt,lock_type,entry->type,_row->get_primary_key(),(uint64_t)_row);
-          INC_STATS(txn->get_thd_id(),twopl_wait_time,get_sys_clock() - entry->txn->twopl_wait_start);
-          //printf("2lock %ld %ld %lx\n",entry->txn->get_txn_id(),_row->get_primary_key(),(uint64_t)_row);
-          // Stats
-          //t = get_sys_clock() - entry->start_ts;
+          uint64_t timespan = get_sys_clock() - entry->txn->twopl_wait_start;
+          txn->txn_stats.cc_block_time += timespan;
+          INC_STATS(txn->get_thd_id(),twopl_wait_time,timespan);
 
 #if CC_ALG != NO_WAIT
           STACK_PUSH(owners[hash(entry->txn->get_txn_id())], entry);
@@ -333,13 +335,17 @@ RC Row_lock::lock_release(TxnManager * txn) {
 #endif
       }
 
+      uint64_t timespan = get_sys_clock() - starttime;
+      txn->txn_stats.cc_time += timespan;
+      INC_STATS(txn->get_thd_id(),twopl_release_time,timespan);
+      INC_STATS(txn->get_thd_id(),twopl_release_cnt,1);
+
       if (g_central_man)
           glob_manager.release_row(_row);
       else
           pthread_mutex_unlock( latch );
 
-    INC_STATS(txn->get_thd_id(),twopl_release_time,get_sys_clock() - starttime);
-    INC_STATS(txn->get_thd_id(),twopl_release_cnt,1);
+
     return RCOK;
 }
 

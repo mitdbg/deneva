@@ -111,6 +111,7 @@ RC InputThread::client_recv_loop() {
       INC_STATS(get_thd_id(),txn_cnt,1);
       uint64_t timespan = get_sys_clock() - ((ClientResponseMessage*)msg)->client_startts; 
       INC_STATS(get_thd_id(),txn_run_time, timespan);
+      INC_STATS_ARR(get_thd_id(),client_client_latency, timespan);
       //INC_STATS_ARR(get_thd_id(),all_lat,timespan);
       inf = client_man.dec_inflight(return_node_offset);
       DEBUG("Recv %ld from %ld, %ld -- %f\n",((ClientResponseMessage*)msg)->txn_id,msg->return_node_id,inf,float(timespan)/BILLION);

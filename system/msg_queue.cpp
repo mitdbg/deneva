@@ -128,6 +128,7 @@ uint64_t MessageQueue::dequeue(uint64_t thd_id, Message *& msg) {
     DEBUG("MQ Dequeue %ld\n",dest)
     INC_STATS(thd_id,msg_queue_delay_time,curr_time - entry->starttime);
     INC_STATS(thd_id,msg_queue_cnt,1);
+    msg->mq_time = curr_time - entry->starttime;
     //msg_pool.put(entry);
     DEBUG_M("MessageQueue::enqueue msg_entry free\n");
     mem_allocator.free(entry,sizeof(struct msg_entry));

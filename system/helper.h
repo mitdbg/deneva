@@ -47,6 +47,12 @@
     fflush(stdout); \
   }
 
+#define PRINT_LATENCY(...) \
+  if(DEBUG_LATENCY) { \
+    fprintf(stdout,__VA_ARGS__); \
+    fflush(stdout); \
+  }
+
 
 /************************************************/
 // atomic operations

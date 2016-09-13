@@ -44,7 +44,7 @@ struct CompareAbortEntry {
 class AbortQueue {
 public:
   void init();
-  void enqueue(uint64_t thd_id, uint64_t txn_id, uint64_t abort_cnt);
+  uint64_t enqueue(uint64_t thd_id, uint64_t txn_id, uint64_t abort_cnt);
   void process(uint64_t thd_id);
 private:
   std::priority_queue<abort_entry*,std::vector<abort_entry*>,CompareAbortEntry> queue;

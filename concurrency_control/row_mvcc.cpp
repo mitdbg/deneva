@@ -242,6 +242,7 @@ bool Row_mvcc::conflict(TsType type, ts_t ts) {
 RC Row_mvcc::access(TxnManager * txn, TsType type, row_t * row) {
 	RC rc = RCOK;
 	ts_t ts = txn->get_timestamp();
+	uint64_t starttime = get_sys_clock();
 
 	if (g_central_man)
 		glob_manager.lock_row(_row);
@@ -320,6 +321,8 @@ RC Row_mvcc::access(TxnManager * txn, TsType type, row_t * row) {
 		}
 	}
 	
+	txn->txn_stats.cc_time += get_sys_clock() - starttime;
+
 	if (g_central_man)
 		glob_manager.release_row(_row);
 	else
@@ -348,6 +351,7 @@ void Row_mvcc::update_buffer(TxnManager * txn) {
 
     // TODO: add req->txn to work queue
 		req->txn->ts_ready = true;
+		req->txn->txn_stats.cc_block_time += get_sys_clock() - req->starttime;
     txn_table.restart_txn(txn->get_thd_id(),req->txn->get_txn_id(),0);
 		tofree = req;
 		req = req->next;

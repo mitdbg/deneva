@@ -68,6 +68,7 @@ void Row_ts::buffer_req(TsType type, TxnManager * txn, row_t * row)
 	req_entry->txn = txn;
 	req_entry->row = row;
 	req_entry->ts = txn->get_timestamp();
+	req_entry->starttime = get_sys_clock();
 	if (type == R_REQ) {
 		req_entry->next = readreq;
 		readreq = req_entry;
@@ -165,6 +166,7 @@ ts_t Row_ts::cal_min(TsType type) {
 
 RC Row_ts::access(TxnManager * txn, TsType type, row_t * row) {
 	RC rc;
+	uint64_t starttime = get_sys_clock();
 	ts_t ts = txn->get_timestamp();
 	if (g_central_man)
 		glob_manager.lock_row(_row);
@@ -253,6 +255,7 @@ RC Row_ts::access(TxnManager * txn, TsType type, row_t * row) {
 		assert(false);
 	
 final:
+    txn->txn_stats.cc_time += get_sys_clock() - starttime;
 	if (g_central_man)
 		glob_manager.release_row(_row);
 	else
@@ -275,11 +278,12 @@ void Row_ts::update_buffer(uint64_t thd_id) {
 		TsReqEntry * req = ready_read;
 		while (req != NULL) {			
 			req->txn->cur_row->copy(_row);
-			if (rts < req->ts)
+			if (rts < req->ts) {
 				rts = req->ts;
-      // TODO: Add req->txn to work queue
+			}
 			req->txn->ts_ready = true;
-      txn_table.restart_txn(thd_id,req->txn->get_txn_id(),0);
+			req->txn->txn_stats.cc_block_time += get_sys_clock() - req->starttime;
+			txn_table.restart_txn(thd_id,req->txn->get_txn_id(),0);
 			req = req->next;
 		}
 		// return all the req_entry back to freelist

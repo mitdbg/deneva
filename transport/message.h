@@ -43,6 +43,9 @@ public:
   uint64_t batch_id;
   uint64_t return_node_id;
 
+  uint64_t wq_time;
+  uint64_t mq_time;
+
   uint64_t mget_size();
   uint64_t get_txn_id() {return txn_id;}
   uint64_t get_batch_id() {return batch_id;}
@@ -245,6 +248,7 @@ public:
   uint64_t txn_id;
 #endif
   uint64_t client_startts;
+  uint64_t first_startts;
   Array<uint64_t> partitions;
 };
 

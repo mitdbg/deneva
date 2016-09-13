@@ -24,6 +24,7 @@ class StatsArr {
       void quicksort(int low_idx, int high_idx);
       void resize();
       void insert(uint64_t item);
+      void append(StatsArr arr);
       void print(FILE * f);
       void print(FILE * f,uint64_t min, uint64_t max); 
       uint64_t get_idx(uint64_t idx); 

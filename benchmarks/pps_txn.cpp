@@ -83,6 +83,7 @@ RC PPSTxnManager::run_txn() {
   return RCOK;
 #endif
   RC rc = RCOK;
+  uint64_t starttime = get_sys_clock();
 
 #if CC_ALG == CALVIN
   rc = run_calvin_txn();
@@ -110,6 +111,8 @@ RC PPSTxnManager::run_txn() {
   while(rc == RCOK && !is_done()) {
     rc = run_txn_state();
   }
+
+  txn_stats.process_time += get_sys_clock() - starttime;
 
   if(IS_LOCAL(get_txn_id())) {
     if(is_done() && rc == RCOK) 
@@ -866,7 +869,7 @@ inline RC PPSTxnManager::run_orderproduct_4(uint64_t part_key, row_t *& r_local)
     item = index_read(index, part_key, parts_to_partition(part_key));
     assert(item != NULL);
     row_t* r_loc = (row_t *) item->location;
-    rc = get_row(r_loc, RD, r_local);
+    rc = get_row(r_loc, WR, r_local);
     return rc;
 }
 inline RC PPSTxnManager::run_orderproduct_5(row_t *& r_local) {
@@ -964,7 +967,7 @@ inline RC PPSTxnManager::run_updateproductpart_0(uint64_t product_key, row_t *& 
     item = index_read(index, product_key, products_to_partition(product_key));
     assert(item != NULL);
     row_t* r_loc = (row_t *) item->location;
-    rc = get_row(r_loc, RD, r_local);
+    rc = get_row(r_loc, WR, r_local);
     return rc;
 }
 inline RC PPSTxnManager::run_updateproductpart_1(uint64_t part_key, row_t *& r_local) {
@@ -986,7 +989,7 @@ inline RC PPSTxnManager::run_updatepart_0(uint64_t part_key, row_t *& r_local) {
 		item = index_read(index, part_key, parts_to_partition(part_key));
 		assert(item != NULL);
 		row_t* r_loc = (row_t *) item->location;
-    rc = get_row(r_loc, RD, r_local);
+    rc = get_row(r_loc, WR, r_local);
     return rc;
 }
 inline RC PPSTxnManager::run_updatepart_1(row_t *& r_local) {

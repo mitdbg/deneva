@@ -167,6 +167,8 @@ Message * Message::create_message(RemReqType rtype) {
   msg->txn_id = UINT64_MAX;
   msg->batch_id = UINT64_MAX;
   msg->return_node_id = g_node_id;
+  msg->wq_time = 0;
+  msg->mq_time = 0;
   return msg;
 }
 
@@ -177,6 +179,8 @@ uint64_t Message::mget_size() {
 #if CC_ALG == CALVIN
   size += sizeof(uint64_t);
 #endif
+  // for stats, send message queue time
+  size += sizeof(uint64_t);
   return size;
 }
 
@@ -200,6 +204,7 @@ void Message::mcopy_from_buf(char * buf) {
 #if CC_ALG == CALVIN
   COPY_VAL(batch_id,buf,ptr);
 #endif
+  COPY_VAL(mq_time,buf,ptr);
 }
 
 void Message::mcopy_to_buf(char * buf) {
@@ -209,6 +214,7 @@ void Message::mcopy_to_buf(char * buf) {
 #if CC_ALG == CALVIN
   COPY_BUF(buf,batch_id,ptr);
 #endif
+  COPY_BUF(buf,mq_time,ptr);
 }
 
 void Message::release_message(Message * msg) {
@@ -708,13 +714,14 @@ void PPSClientQueryMessage::copy_to_txn(TxnManager * txn) {
 #if CC_ALG == CALVIN
   txn->recon = recon;
 #endif
-
+#if DEBUG_DISTR
   std::cout << "PPSClient::copy_to_txn "
     << "type " << (PPSTxnType)txn_type
     << " part_key " << part_key
     << " product_key " << product_key
     << " supplier_key " << supplier_key
     << std::endl;
+#endif
 
 }
 
@@ -742,13 +749,14 @@ void PPSClientQueryMessage::copy_from_buf(char * buf) {
 #endif
 
  assert(ptr == get_size());
-
+#if DEBUG_DISTR
   std::cout << "PPSClient::copy_from_buf "
     << "type " << (PPSTxnType)txn_type
     << " part_key " << part_key
     << " product_key " << product_key
     << " supplier_key " << supplier_key
     << std::endl;
+#endif
 }
 
 void PPSClientQueryMessage::copy_to_buf(char * buf) {
@@ -773,19 +781,21 @@ void PPSClientQueryMessage::copy_to_buf(char * buf) {
 #endif
 
  assert(ptr == get_size());
-
+#if DEBUG_DISTR
   std::cout << "PPSClient::copy_to_buf "
     << "type " << (PPSTxnType)txn_type
     << " part_key " << part_key
     << " product_key " << product_key
     << " supplier_key " << supplier_key
     << std::endl;
+#endif
 }
 
 
 /************************/
 
 void ClientQueryMessage::init() {
+    first_startts = 0;
 }
 
 void ClientQueryMessage::release() {

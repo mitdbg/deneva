@@ -166,7 +166,9 @@ void WorkerThread::abort() {
   ++txn_man->abort_cnt;
   txn_man->reset();
 
-  abort_queue.enqueue(get_thd_id(), txn_man->get_txn_id(),txn_man->get_abort_cnt());
+  uint64_t penalty = abort_queue.enqueue(get_thd_id(), txn_man->get_txn_id(),txn_man->get_abort_cnt());
+
+  txn_man->txn_stats.total_abort_time += penalty;
 
 }
 
@@ -206,6 +208,9 @@ RC WorkerThread::run() {
 
     if(msg->rtype != CL_QRY || CC_ALG == CALVIN) {
       txn_man = get_transaction_manager(msg);
+      txn_man->txn_stats.msg_queue_time += msg->mq_time;
+      txn_man->txn_stats.work_queue_time += msg->wq_time;
+      txn_man->txn_stats.work_queue_cnt += 1;
       ready_starttime = get_sys_clock();
       bool ready = txn_man->unset_ready();
       INC_STATS(get_thd_id(),worker_activate_txn_time,get_sys_clock() - ready_starttime);
@@ -444,11 +449,13 @@ RC WorkerThread::process_rtxn(Message * msg) {
             txn_man->set_timestamp(get_next_ts());
           }
           txn_man->txn_stats.starttime = get_sys_clock();
+          txn_man->txn_stats.restart_starttime = txn_man->txn_stats.starttime;
           msg->copy_to_txn(txn_man);
           DEBUG("START %ld %f %lu\n",txn_man->get_txn_id(),simulation->seconds_from_start(get_sys_clock()),txn_man->txn_stats.starttime);
           INC_STATS(get_thd_id(),local_txn_start_cnt,1);
 
-				} else {
+        } else {
+            txn_man->txn_stats.restart_starttime = get_sys_clock();
           DEBUG("RESTART %ld %f %lu\n",txn_man->get_txn_id(),simulation->seconds_from_start(get_sys_clock()),txn_man->txn_stats.starttime);
         }
 

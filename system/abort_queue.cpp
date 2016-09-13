@@ -24,7 +24,7 @@ void AbortQueue::init() {
 }
 
 // FIXME: Rewrite abort queue
-void AbortQueue::enqueue(uint64_t thd_id, uint64_t txn_id, uint64_t abort_cnt) {
+uint64_t AbortQueue::enqueue(uint64_t thd_id, uint64_t txn_id, uint64_t abort_cnt) {
   uint64_t starttime = get_sys_clock();
   uint64_t penalty = g_abort_penalty;
 #if BACKOFF
@@ -46,6 +46,8 @@ void AbortQueue::enqueue(uint64_t thd_id, uint64_t txn_id, uint64_t abort_cnt) {
   pthread_mutex_unlock(&mtx);
   
   INC_STATS(thd_id,abort_queue_enqueue_time,get_sys_clock() - starttime);
+
+  return penalty - starttime;
 }
 
 void AbortQueue::process(uint64_t thd_id) {

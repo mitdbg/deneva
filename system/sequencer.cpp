@@ -27,6 +27,7 @@
 #include "msg_thread.h"
 #include "work_queue.h"
 #include "message.h"
+#include "stats.h"
 #include <boost/lockfree/queue.hpp>
 
 void Sequencer::init(Workload * wl) {
@@ -80,6 +81,7 @@ void Sequencer::process_ack(Message * msg, uint64_t thd_id) {
       PPSClientQueryMessage* cl_msg = (PPSClientQueryMessage*)wait_list[id].msg;
 
 #endif
+#if WORKLOAD == PPS
       if ( WORKLOAD == PPS && CC_ALG == CALVIN && ((cl_msg->txn_type == PPS_GETPARTBYSUPPLIER) ||
               (cl_msg->txn_type == PPS_GETPARTBYPRODUCT) ||
               (cl_msg->txn_type == PPS_ORDERPRODUCT))
@@ -90,21 +92,30 @@ void Sequencer::process_ack(Message * msg, uint64_t thd_id) {
               DEBUG("Finished RECON (%ld,%ld)\n",msg->get_txn_id(),msg->get_batch_id());
           }
           else {
+              uint64_t timespan = get_sys_clock() - wait_list[id].seq_startts;
+              INC_STATS_ARR(0,start_abort_commit_latency, timespan);
               cl_msg->part_keys.clear();
               DEBUG("Aborted (%ld,%ld)\n",msg->get_txn_id(),msg->get_batch_id());
           }
 
           cl_msg->return_node_id = wait_list[id].client_id;
+          cl_msg->first_startts = wait_list[id].seq_first_startts;
           // restart
           process_txn(cl_msg, thd_id);
       }
       else {
+#endif
+          uint64_t timespan = get_sys_clock() - wait_list[id].seq_first_startts;
+          INC_STATS_ARR(0,first_start_commit_latency, timespan);
           cl_msg->release();
 
           ClientResponseMessage * rsp_msg = (ClientResponseMessage*)Message::create_message(msg->get_txn_id(),CL_RSP);
           rsp_msg->client_startts = wait_list[id].client_startts;
           msg_queue.enqueue(thd_id,rsp_msg,wait_list[id].client_id);
+#if WORKLOAD == PPS
       }
+#endif
+
       INC_STATS(thd_id,seq_complete_cnt,1);
 
   }
@@ -163,6 +174,11 @@ void Sequencer::process_txn( Message * msg,uint64_t thd_id) {
     assert(ISCLIENTN(msg->get_return_id()));
     en->list[id].client_id = msg->get_return_id();
     en->list[id].client_startts = ((ClientQueryMessage*)msg)->client_startts;
+    en->list[id].seq_startts = get_sys_clock();
+    en->list[id].seq_first_startts = ((ClientQueryMessage*)msg)->first_startts;
+    if (en->list[id].seq_first_startts == 0) {
+        en->list[id].seq_first_startts = en->list[id].seq_startts;
+    }
     en->list[id].server_ack_cnt = server_ack_cnt;
     en->list[id].msg = msg;
     en->size++;

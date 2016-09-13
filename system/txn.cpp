@@ -50,6 +50,18 @@ void TxnStats::init() {
   twopc_time=0;
   write_cnt = 0;
   abort_cnt = 0;
+
+   total_work_queue_time = 0;
+   work_queue_time = 0;
+   total_cc_block_time = 0;
+   cc_block_time = 0;
+   total_cc_time = 0;
+   cc_time = 0;
+   total_work_queue_cnt = 0;
+   work_queue_cnt = 0;
+   total_msg_queue_time = 0;
+   msg_queue_time = 0;
+   total_abort_time = 0;
 }
 
 void TxnStats::reset() {
@@ -63,14 +75,61 @@ void TxnStats::reset() {
   total_twopc_time += twopc_time;
   twopc_time = 0;
   write_cnt = 0;
+
+  total_work_queue_time += work_queue_time;
+  work_queue_time = 0;
+  total_cc_block_time += cc_block_time;
+  cc_block_time = 0;
+  total_cc_time += cc_time;
+  cc_time = 0;
+  total_work_queue_cnt += work_queue_cnt;
+  work_queue_cnt = 0;
+  total_msg_queue_time += msg_queue_time;
+  msg_queue_time = 0;
+
 }
 
-void TxnStats::commit_stats(uint64_t thd_id) {
+void TxnStats::commit_stats(uint64_t thd_id, uint64_t txn_id, uint64_t timespan_long, uint64_t timespan_short) {
   total_process_time += process_time;
   total_local_wait_time += local_wait_time;
   total_remote_wait_time += remote_wait_time;
   total_twopc_time += twopc_time;
+  total_work_queue_time += work_queue_time;
+  total_msg_queue_time += msg_queue_time;
+  total_cc_block_time += cc_block_time;
+  total_cc_time += cc_time;
+  total_work_queue_cnt += work_queue_cnt;
   assert(total_process_time >= process_time);
+
+  // latency from start of transaction
+  PRINT_LATENCY("lat_l %ld %ld %ld %f %f %f %f %f %f %f\n"
+          , txn_id
+          , total_work_queue_cnt
+          , abort_cnt
+          , (double) timespan_long / BILLION
+          , (double) total_work_queue_time / BILLION
+          , (double) total_msg_queue_time / BILLION
+          , (double) total_cc_block_time / BILLION
+          , (double) total_cc_time / BILLION
+          , (double) total_process_time / BILLION
+          , (double) total_abort_time / BILLION
+          );
+  // latency from most recent start or restart of transaction
+  PRINT_LATENCY("lat_s %ld %ld %f %f %f %f %f %f\n"
+          , txn_id
+          , work_queue_cnt
+          , (double) timespan_short / BILLION
+          , (double) work_queue_time / BILLION
+          , (double) msg_queue_time / BILLION
+          , (double) cc_block_time / BILLION
+          , (double) cc_time / BILLION
+          , (double) process_time / BILLION
+          );
+
+  if (!IS_LOCAL(txn_id)) {
+      return;
+  }
+
   INC_STATS(thd_id,txn_total_process_time,total_process_time);
   INC_STATS(thd_id,txn_process_time,process_time);
   INC_STATS(thd_id,txn_total_local_wait_time,total_local_wait_time);
@@ -85,6 +144,7 @@ void TxnStats::commit_stats(uint64_t thd_id) {
   if(abort_cnt > 0) {
     INC_STATS(thd_id,unique_txn_abort_cnt,1);
   }
+
 }
 
 
@@ -278,12 +338,31 @@ RC TxnManager::abort() {
   } else {
     INC_STATS(get_thd_id(), remote_txn_abort_cnt, 1);
   }
+
   aborted = true;
   release_locks(Abort);
 #if CC_ALG == MAAT
   //assert(time_table.get_state(get_txn_id()) == MAAT_ABORTED);
   time_table.release(get_thd_id(),get_txn_id());
 #endif
+
+  uint64_t timespan = get_sys_clock() - txn_stats.restart_starttime;
+  if (IS_LOCAL(get_txn_id())) {
+      INC_STATS_ARR(get_thd_id(),start_abort_commit_latency, timespan);
+  }
+  /*
+  // latency from most recent start or restart of transaction
+  PRINT_LATENCY("lat_s %ld %ld 0 %f %f %f %f %f %f 0.0\n"
+          , get_txn_id()
+          , txn_stats.work_queue_cnt
+          , (double) timespan / BILLION
+          , (double) txn_stats.work_queue_time / BILLION
+          , (double) txn_stats.msg_queue_time / BILLION
+          , (double) txn_stats.cc_block_time / BILLION
+          , (double) txn_stats.cc_time / BILLION
+          , (double) txn_stats.process_time / BILLION
+          );
+          */
   //commit_stats();
   return Abort;
 }
@@ -362,39 +441,44 @@ bool TxnManager::waiting_for_response() {
 }
 
 bool TxnManager::is_multi_part() {
-  return query->partitions.size() > 1;
+  return query->partitions_touched.size() > 1;
+  //return query->partitions.size() > 1;
 }
 
 void TxnManager::commit_stats() {
+    uint64_t timespan_short = get_sys_clock() - txn_stats.restart_starttime;
+    uint64_t timespan_long  = get_sys_clock() - txn_stats.starttime;
   INC_STATS(get_thd_id(),total_txn_commit_cnt,1);
   if(!IS_LOCAL(get_txn_id()) && CC_ALG != CALVIN) {
     INC_STATS(get_thd_id(),remote_txn_commit_cnt,1);
+    txn_stats.commit_stats(get_thd_id(),get_txn_id(),timespan_long, timespan_short);
     return;
   }
-  uint64_t timespan = get_sys_clock() - txn_stats.starttime; 
 
+  INC_STATS_ARR(get_thd_id(),start_abort_commit_latency, timespan_short);
+  INC_STATS_ARR(get_thd_id(),first_start_commit_latency, timespan_long);
   INC_STATS(get_thd_id(),txn_cnt,1);
   INC_STATS(get_thd_id(),local_txn_commit_cnt,1);
-  INC_STATS(get_thd_id(), txn_run_time, timespan);
-  if(query->partitions.size() > 1) {
+  INC_STATS(get_thd_id(), txn_run_time, timespan_long);
+  if(query->partitions_touched.size() > 1) {
     INC_STATS(get_thd_id(),multi_part_txn_cnt,1);
-    INC_STATS(get_thd_id(),multi_part_txn_run_time,timespan);
+    INC_STATS(get_thd_id(),multi_part_txn_run_time,timespan_long);
   } else {
     INC_STATS(get_thd_id(),single_part_txn_cnt,1);
-    INC_STATS(get_thd_id(),single_part_txn_run_time,timespan);
+    INC_STATS(get_thd_id(),single_part_txn_run_time,timespan_long);
   }
   /*if(cflt) {
     INC_STATS(get_thd_id(),cflt_cnt_txn,1);
   }*/
-  txn_stats.commit_stats(get_thd_id());
+  txn_stats.commit_stats(get_thd_id(),get_txn_id(),timespan_long, timespan_short);
 #if CC_ALG == CALVIN
   return;
 #endif
 
   assert(query->partitions_touched.size() > 0);
   INC_STATS(get_thd_id(),part_cnt[query->partitions_touched.size()-1],1);
-  for(uint64_t i = 0 ; i < query->partitions.size(); i++) {
-    INC_STATS(get_thd_id(),part_acc[query->partitions[i]],1);
+  for(uint64_t i = 0 ; i < query->partitions_touched.size(); i++) {
+    INC_STATS(get_thd_id(),part_acc[query->partitions_touched[i]],1);
   }
 }
 
@@ -581,33 +665,33 @@ RC TxnManager::get_lock(row_t * row, access_t type) {
 }
 
 RC TxnManager::get_row(row_t * row, access_t type, row_t *& row_rtn) {
-	uint64_t starttime = get_sys_clock();
-  uint64_t timespan;
-	RC rc = RCOK;
-  DEBUG_M("TxnManager::get_row access alloc\n");
-  Access * access;
-  access_pool.get(get_thd_id(),access);
-  //uint64_t row_cnt = txn->row_cnt;
-  //assert(txn->accesses.get_count() - 1 == row_cnt);
+    uint64_t starttime = get_sys_clock();
+    uint64_t timespan;
+    RC rc = RCOK;
+    DEBUG_M("TxnManager::get_row access alloc\n");
+    Access * access;
+    access_pool.get(get_thd_id(),access);
+    //uint64_t row_cnt = txn->row_cnt;
+    //assert(txn->accesses.get_count() - 1 == row_cnt);
 
-  this->last_row = row;
-  this->last_type = type;
+    this->last_row = row;
+    this->last_type = type;
 
-  rc = row->get_row(type, this, access->data);
+    rc = row->get_row(type, this, access->data);
 
-	if (rc == Abort || rc == WAIT) {
-    row_rtn = NULL;
-    DEBUG_M("TxnManager::get_row(abort) access free\n");
-    access_pool.put(get_thd_id(),access);
-	  timespan = get_sys_clock() - starttime;
-	  INC_STATS(get_thd_id(), txn_manager_time, timespan);
-    INC_STATS(get_thd_id(), txn_conflict_cnt, 1);
-    //cflt = true;
+    if (rc == Abort || rc == WAIT) {
+        row_rtn = NULL;
+        DEBUG_M("TxnManager::get_row(abort) access free\n");
+        access_pool.put(get_thd_id(),access);
+        timespan = get_sys_clock() - starttime;
+        INC_STATS(get_thd_id(), txn_manager_time, timespan);
+        INC_STATS(get_thd_id(), txn_conflict_cnt, 1);
+        //cflt = true;
 #if DEBUG_TIMELINE
-    printf("CONFLICT %ld %ld\n",get_txn_id(),get_sys_clock());
+        printf("CONFLICT %ld %ld\n",get_txn_id(),get_sys_clock());
 #endif
-		return rc;
-	}
+        return rc;
+    }
 	access->type = type;
 	access->orig_row = row;
 #if ROLL_BACK && (CC_ALG == DL_DETECT || CC_ALG == NO_WAIT || CC_ALG == WAIT_DIE || CC_ALG == HSTORE || CC_ALG == HSTORE_SPEC)
@@ -616,8 +700,8 @@ RC TxnManager::get_row(row_t * row, access_t type, row_t *& row_rtn) {
     uint64_t part_id = row->get_part_id();
     DEBUG_M("TxnManager::get_row row_t alloc\n")
     row_pool.get(get_thd_id(),access->orig_data);
-		access->orig_data->init(row->get_table(), part_id, 0);
-		access->orig_data->copy(row);
+    access->orig_data->init(row->get_table(), part_id, 0);
+    access->orig_data->copy(row);
     assert(access->orig_data->get_schema() == row->get_schema());
 
     // ARIES-style physiological logging

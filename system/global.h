@@ -288,9 +288,9 @@ typedef uint64_t (*func_ptr)(idx_key_t);	// part_id func_ptr(index_key);
 /* general concurrency control */
 enum access_t {RD, WR, XP, SCAN};
 /* LOCK */
-enum lock_t {LOCK_EX, LOCK_SH, LOCK_NONE };
+enum lock_t {LOCK_EX = 0, LOCK_SH, LOCK_NONE };
 /* TIMESTAMP */
-enum TsType {R_REQ, W_REQ, P_REQ, XP_REQ}; 
+enum TsType {R_REQ = 0, W_REQ, P_REQ, XP_REQ}; 
 
 #define GET_THREAD_ID(id)	(id % g_thread_cnt)
 #define GET_NODE_ID(id)	(id % g_node_cnt)

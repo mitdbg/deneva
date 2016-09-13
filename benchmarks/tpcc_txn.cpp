@@ -60,6 +60,7 @@ RC TPCCTxnManager::run_txn() {
   return RCOK;
 #endif
   RC rc = RCOK;
+  uint64_t starttime = get_sys_clock();
 
 #if CC_ALG == CALVIN
   rc = run_calvin_txn();
@@ -78,6 +79,8 @@ RC TPCCTxnManager::run_txn() {
   while(rc == RCOK && !is_done()) {
     rc = run_txn_state();
   }
+
+  txn_stats.process_time += get_sys_clock() - starttime;
 
   if(IS_LOCAL(get_txn_id())) {
     if(is_done() && rc == RCOK) 

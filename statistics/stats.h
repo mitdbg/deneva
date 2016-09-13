@@ -230,11 +230,9 @@ public:
   double txn_table_min_ts_time;
 
   // Latency
-  double client_client_latency;
-  double first_start_commit_latency;
-  double first_start_commit_latency_cnt;
-  double start_abort_commit_latency;
-  double start_abort_commit_latency_cnt;
+  StatsArr client_client_latency;
+  StatsArr first_start_commit_latency;
+  StatsArr start_abort_commit_latency;
 
   double * mtx;
 

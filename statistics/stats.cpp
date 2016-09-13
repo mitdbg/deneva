@@ -39,6 +39,10 @@ void Stats_thd::init(uint64_t thd_id) {
 	clear();
 	//all_lat.init(g_max_txn_per_part,ArrIncr);
 
+	client_client_latency.init(g_max_txn_per_part,ArrIncr);
+	first_start_commit_latency.init(g_max_txn_per_part,ArrIncr);
+	start_abort_commit_latency.init(g_max_txn_per_part,ArrIncr);
+
 }
 
 void Stats_thd::clear() {
@@ -329,6 +333,37 @@ void Stats_thd::print_client(FILE * outf) {
   ,msg_copy_output_time / BILLION
   );
 
+  client_client_latency.quicksort(0,client_client_latency.cnt-1);
+  fprintf(outf,
+          ",ccl0=%f"
+          ",ccl1=%f"
+          ",ccl10=%f"
+          ",ccl25=%f"
+          ",ccl50=%f"
+          ",ccl75=%f"
+          ",ccl90=%f"
+          ",ccl95=%f"
+          ",ccl96=%f"
+          ",ccl97=%f"
+          ",ccl98=%f"
+          ",ccl99=%f"
+          ",ccl100=%f"
+          ,(double)client_client_latency.get_idx(0) / BILLION
+          ,(double)client_client_latency.get_percentile(1) / BILLION
+          ,(double)client_client_latency.get_percentile(10) / BILLION
+          ,(double)client_client_latency.get_percentile(25) / BILLION
+          ,(double)client_client_latency.get_percentile(50) / BILLION
+          ,(double)client_client_latency.get_percentile(75) / BILLION
+          ,(double)client_client_latency.get_percentile(90) / BILLION
+          ,(double)client_client_latency.get_percentile(95) / BILLION
+          ,(double)client_client_latency.get_percentile(96) / BILLION
+          ,(double)client_client_latency.get_percentile(97) / BILLION
+          ,(double)client_client_latency.get_percentile(98) / BILLION
+          ,(double)client_client_latency.get_percentile(99) / BILLION
+          ,(double)client_client_latency.get_idx(client_client_latency.cnt-1) / BILLION
+          );
+
+  //client_client_latency.print(outf);
 
 }
 
@@ -891,11 +926,82 @@ void Stats_thd::print(FILE * outf) {
       ,mtx[i] / BILLION
       );
   }
+
+  first_start_commit_latency.quicksort(0,first_start_commit_latency.cnt-1);
+  start_abort_commit_latency.quicksort(0,start_abort_commit_latency.cnt-1);
+
+  fprintf(outf,
+          ",fscl0=%f"
+          ",fscl1=%f"
+          ",fscl10=%f"
+          ",fscl25=%f"
+          ",fscl50=%f"
+          ",fscl75=%f"
+          ",fscl90=%f"
+          ",fscl95=%f"
+          ",fscl96=%f"
+          ",fscl97=%f"
+          ",fscl98=%f"
+          ",fscl99=%f"
+          ",fscl100=%f"
+          ,(double)first_start_commit_latency.get_idx(0) / BILLION
+          ,(double)first_start_commit_latency.get_percentile(1) / BILLION
+          ,(double)first_start_commit_latency.get_percentile(10) / BILLION
+          ,(double)first_start_commit_latency.get_percentile(25) / BILLION
+          ,(double)first_start_commit_latency.get_percentile(50) / BILLION
+          ,(double)first_start_commit_latency.get_percentile(75) / BILLION
+          ,(double)first_start_commit_latency.get_percentile(90) / BILLION
+          ,(double)first_start_commit_latency.get_percentile(95) / BILLION
+          ,(double)first_start_commit_latency.get_percentile(96) / BILLION
+          ,(double)first_start_commit_latency.get_percentile(97) / BILLION
+          ,(double)first_start_commit_latency.get_percentile(98) / BILLION
+          ,(double)first_start_commit_latency.get_percentile(99) / BILLION
+          ,(double)first_start_commit_latency.get_idx(first_start_commit_latency.cnt-1) / BILLION
+          );
+
+
+  fprintf(outf,
+          ",sacl0=%f"
+          ",sacl1=%f"
+          ",sacl10=%f"
+          ",sacl25=%f"
+          ",sacl50=%f"
+          ",sacl75=%f"
+          ",sacl90=%f"
+          ",sacl95=%f"
+          ",sacl96=%f"
+          ",sacl97=%f"
+          ",sacl98=%f"
+          ",sacl99=%f"
+          ",sacl100=%f"
+          ,(double)start_abort_commit_latency.get_idx(0) / BILLION
+          ,(double)start_abort_commit_latency.get_percentile(1) / BILLION
+          ,(double)start_abort_commit_latency.get_percentile(10) / BILLION
+          ,(double)start_abort_commit_latency.get_percentile(25) / BILLION
+          ,(double)start_abort_commit_latency.get_percentile(50) / BILLION
+          ,(double)start_abort_commit_latency.get_percentile(75) / BILLION
+          ,(double)start_abort_commit_latency.get_percentile(90) / BILLION
+          ,(double)start_abort_commit_latency.get_percentile(95) / BILLION
+          ,(double)start_abort_commit_latency.get_percentile(96) / BILLION
+          ,(double)start_abort_commit_latency.get_percentile(97) / BILLION
+          ,(double)start_abort_commit_latency.get_percentile(98) / BILLION
+          ,(double)start_abort_commit_latency.get_percentile(99) / BILLION
+          ,(double)start_abort_commit_latency.get_idx(start_abort_commit_latency.cnt-1) / BILLION
+          );
+
+  //first_start_commit_latency.print(outf);
+
+  //start_abort_commit_latency.print(outf);
 }
 
 void Stats_thd::combine(Stats_thd * stats) {
   if(stats->total_runtime > total_runtime)
     total_runtime = stats->total_runtime;
+
+  // TODO: only combine for final stats collection for performance reasons
+  first_start_commit_latency.append(stats->first_start_commit_latency);
+  start_abort_commit_latency.append(stats->start_abort_commit_latency);
+  client_client_latency.append(stats->client_client_latency);
   // Execution
   txn_cnt+=stats->txn_cnt;
   remote_txn_cnt+=stats->remote_txn_cnt;

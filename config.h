@@ -6,7 +6,7 @@
 // Simulation + Hardware
 /***********************************************/
 #define NODE_CNT 2
-#define THREAD_CNT 1
+#define THREAD_CNT 2
 #define REM_THREAD_CNT THREAD_CNT
 #define SEND_THREAD_CNT THREAD_CNT
 #define CORE_CNT 8
@@ -37,7 +37,7 @@
 // # of transactions to run for warmup
 #define WARMUP            0
 // YCSB or TPCC or PPS
-#define WORKLOAD PPS
+#define WORKLOAD PPS 
 // print the transaction latency distribution
 #define PRT_LAT_DISTR false
 #define STATS_ENABLE        true
@@ -98,7 +98,7 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, OCC, VLL, CALVIN, MAAT
-#define CC_ALG NO_WAIT
+#define CC_ALG NO_WAIT 
 #define ISOLATION_LEVEL SERIALIZABLE
 #define YCSB_ABORT_MODE true
 
@@ -179,8 +179,8 @@
 #define INIT_PARALLELISM 8
 #define SYNTH_TABLE_SIZE 65536
 #define ZIPF_THETA 0.3
-#define TXN_WRITE_PERC 0.0
-#define TUP_WRITE_PERC 0.0
+#define TXN_WRITE_PERC 0.5
+#define TUP_WRITE_PERC 0.5
 #define SCAN_PERC           0
 #define SCAN_LEN          20
 #define PART_PER_TXN PART_CNT
@@ -253,12 +253,12 @@ extern TPCCTxnType          g_tpcc_txn_type;
 #define PERC_PPS_GETSUPPLIER 0.00 
 #define PERC_PPS_GETPRODUCT 0.0
 #define PERC_PPS_GETPARTBYSUPPLIER 0.1
-#define PERC_PPS_GETPARTBYPRODUCT 0.2
-#define PERC_PPS_ORDERPRODUCT 0.2
-#define PERC_PPS_UPDATEPRODUCTPART 0.5
+#define PERC_PPS_GETPARTBYPRODUCT 0.1
+#define PERC_PPS_ORDERPRODUCT 0.6
+#define PERC_PPS_UPDATEPRODUCTPART 0.2
 #define PERC_PPS_UPDATEPART 0.0
 
-enum PPSTxnType {PPS_ALL, 
+enum PPSTxnType {PPS_ALL = 0, 
           PPS_GETPART, 
           PPS_GETSUPPLIER, 
           PPS_GETPRODUCT, 
@@ -299,11 +299,12 @@ extern TestCases          g_test_case;
 #define DEBUG_TIMESTAMP       false
 #define DEBUG_SYNTH         false
 #define DEBUG_ASSERT        false
-#define DEBUG_DISTR true
+#define DEBUG_DISTR false
 #define DEBUG_ALLOC false
 #define DEBUG_RACE false
 #define DEBUG_TIMELINE        false
 #define DEBUG_BREAKDOWN       false
+#define DEBUG_LATENCY       true
 
 /***********************************************/
 // MODES

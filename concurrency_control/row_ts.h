@@ -26,6 +26,7 @@ struct TsReqEntry {
 	row_t * row;
 	itemid_t * item;
 	ts_t ts;
+	uint64_t starttime;
 	TsReqEntry * next;
 };
 

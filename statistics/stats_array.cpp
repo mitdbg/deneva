@@ -92,6 +92,12 @@ void StatsArr::insert(uint64_t item) {
   pthread_mutex_unlock(&mtx);
 }
 
+void StatsArr::append(StatsArr array) {
+    for(uint64_t i = 0; i < array.cnt; i++) {
+        insert(array.get_idx(i));
+    }
+}
+
 void StatsArr::print(FILE * f) {
   if(type == ArrIncr) {
 	  for (UInt32 i = 0; i < cnt; i ++) {
