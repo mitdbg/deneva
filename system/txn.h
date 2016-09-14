@@ -73,7 +73,7 @@ class TxnStats {
 public:
     void init();
     void reset();
-    void commit_stats(uint64_t thd_id, uint64_t txn_id, uint64_t timespan_long, uint64_t timespan_short);
+    void commit_stats(uint64_t thd_id, uint64_t txn_id, uint64_t batch_id, uint64_t timespan_long, uint64_t timespan_short);
     // FIXME need to ensure that all these are valid and up-to-date
     uint64_t starttime;
     uint64_t restart_starttime;

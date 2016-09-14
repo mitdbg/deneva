@@ -58,6 +58,10 @@ void Sequencer::process_ack(Message * msg, uint64_t thd_id) {
   // Decrement the number of acks needed for this txn
   uint32_t query_acks_left = ATOM_SUB_FETCH(wait_list[id].server_ack_cnt, 1);
 
+  if (wait_list[id].skew_startts == 0) {
+      wait_list[id].skew_startts = get_sys_clock();
+  }
+
   if (query_acks_left == 0) {
       en->txns_left--;
       ATOM_FETCH_ADD(total_txns_finished,1);
@@ -86,6 +90,7 @@ void Sequencer::process_ack(Message * msg, uint64_t thd_id) {
               (cl_msg->txn_type == PPS_GETPARTBYPRODUCT) ||
               (cl_msg->txn_type == PPS_ORDERPRODUCT))
               && (cl_msg->recon || ((AckMessage*)msg)->rc == Abort)) {
+          int abort_cnt = wait_list[id].abort_cnt;
           if (cl_msg->recon) {
               // Copy over part keys
               cl_msg->part_keys.copy( ((AckMessage*)msg)->part_keys);
@@ -93,20 +98,42 @@ void Sequencer::process_ack(Message * msg, uint64_t thd_id) {
           }
           else {
               uint64_t timespan = get_sys_clock() - wait_list[id].seq_startts;
-              INC_STATS_ARR(0,start_abort_commit_latency, timespan);
+              if (warmup_done) {
+                INC_STATS_ARR(0,start_abort_commit_latency, timespan);
+              }
               cl_msg->part_keys.clear();
               DEBUG("Aborted (%ld,%ld)\n",msg->get_txn_id(),msg->get_batch_id());
+              INC_STATS(0,total_txn_abort_cnt,1);
+              abort_cnt++;
           }
 
           cl_msg->return_node_id = wait_list[id].client_id;
-          cl_msg->first_startts = wait_list[id].seq_first_startts;
+          wait_list[id].total_batch_time += en->batch_send_time - wait_list[id].seq_startts;
           // restart
-          process_txn(cl_msg, thd_id);
+          process_txn(cl_msg, thd_id, wait_list[id].seq_first_startts, wait_list[id].total_batch_time, abort_cnt);
       }
       else {
 #endif
           uint64_t timespan = get_sys_clock() - wait_list[id].seq_first_startts;
-          INC_STATS_ARR(0,first_start_commit_latency, timespan);
+          uint64_t skew_timespan = get_sys_clock() - wait_list[id].skew_startts;
+          wait_list[id].total_batch_time += en->batch_send_time - wait_list[id].seq_startts;
+          if (warmup_done) {
+            INC_STATS_ARR(0,first_start_commit_latency, timespan);
+          }
+          if (wait_list[id].abort_cnt > 0) {
+              INC_STATS(0,unique_txn_abort_cnt,1);
+          }
+
+
+          PRINT_LATENCY("lat_l_seq %ld %ld %d %f %f %f\n"
+                  , msg->get_txn_id()
+                  , msg->get_batch_id()
+                  , wait_list[id].abort_cnt
+                  , (double) timespan / BILLION
+                  , (double) skew_timespan / BILLION
+                  , (double) wait_list[id].total_batch_time / BILLION
+                  );
+
           cl_msg->release();
 
           ClientResponseMessage * rsp_msg = (ClientResponseMessage*)Message::create_message(msg->get_txn_id(),CL_RSP);
@@ -132,7 +159,7 @@ void Sequencer::process_ack(Message * msg, uint64_t thd_id) {
 }
 
 // FIXME: Assumes 1 thread does sequencer work
-void Sequencer::process_txn( Message * msg,uint64_t thd_id) {
+void Sequencer::process_txn( Message * msg,uint64_t thd_id, uint64_t early_start, uint64_t wait_time, uint32_t abort_cnt) {
 
     uint64_t starttime = get_sys_clock();
     DEBUG("SEQ Processing msg\n");
@@ -175,10 +202,14 @@ void Sequencer::process_txn( Message * msg,uint64_t thd_id) {
     en->list[id].client_id = msg->get_return_id();
     en->list[id].client_startts = ((ClientQueryMessage*)msg)->client_startts;
     en->list[id].seq_startts = get_sys_clock();
-    en->list[id].seq_first_startts = ((ClientQueryMessage*)msg)->first_startts;
-    if (en->list[id].seq_first_startts == 0) {
+    if (early_start == 0) {
         en->list[id].seq_first_startts = en->list[id].seq_startts;
+    } else {
+        en->list[id].seq_first_startts = early_start;
     }
+    en->list[id].total_batch_time = wait_time;
+    en->list[id].abort_cnt = abort_cnt;
+    en->list[id].skew_startts = 0;
     en->list[id].server_ack_cnt = server_ack_cnt;
     en->list[id].msg = msg;
     en->size++;
@@ -226,13 +257,15 @@ void Sequencer::send_next_batch(uint64_t thd_id) {
   if(en && en->epoch == simulation->get_seq_epoch()) {
     DEBUG("SEND NEXT BATCH %ld [%ld,%ld] %ld\n",thd_id,simulation->get_seq_epoch(),en->epoch,en->size);
     empty = false;
+
+    en->batch_send_time = prof_stat;
   }
 
   Message * msg;
   for(uint64_t j = 0; j < g_node_cnt; j++) {
     while(fill_queue[j].pop(msg)) {
       if(j == g_node_id) {
-        work_queue.sched_enqueue(thd_id,msg);
+          work_queue.sched_enqueue(thd_id,msg);
       } else {
         msg_queue.enqueue(thd_id,msg,j);
       }

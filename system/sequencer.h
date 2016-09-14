@@ -31,7 +31,10 @@ typedef struct qlite_entry {
 	uint64_t client_startts;
 	uint64_t seq_startts;
 	uint64_t seq_first_startts;
+	uint64_t skew_startts;
+	uint64_t total_batch_time;
 	uint32_t server_ack_cnt;
+	uint32_t abort_cnt;
   Message * msg;
 } qlite;
 
@@ -41,6 +44,7 @@ typedef struct qlite_ll_entry {
 	uint32_t max_size;
 	uint32_t txns_left;
 	uint64_t epoch;
+	uint64_t batch_send_time;
   qlite_ll_entry * next;
   qlite_ll_entry * prev;
 } qlite_ll;
@@ -50,7 +54,7 @@ class Sequencer {
  public:
 	void init(Workload * wl);	
 	void process_ack(Message * msg, uint64_t thd_id);
-	void process_txn(Message * msg,uint64_t thd_id);
+	void process_txn(Message * msg,uint64_t thd_id, uint64_t early_start, uint64_t wait_time, uint32_t abort_cnt);
 	void send_next_batch(uint64_t thd_id);
 
  private:

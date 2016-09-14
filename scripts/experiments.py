@@ -49,6 +49,17 @@ fmt_title=["NODE_CNT","CC_ALG","ACCESS_PERC","TXN_WRITE_PERC","PERC_PAYMENT","MP
 # VLDB PAPER PLOTS
 ##############################
 
+def pps_scaling():
+    wl = 'PPS'
+    nnodes = [1,2,4,8,16,32,64]
+    nalgos=['NO_WAIT','WAIT_DIE','MVCC','MAAT','CALVIN','TIMESTAMP']
+    nalgos=['NO_WAIT','WAIT_DIE','MVCC','CALVIN','TIMESTAMP']
+    load = [10000]
+    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","MAX_TXN_IN_FLIGHT"]
+    exp = [[wl,n,cc,tif] for tif,n,cc in itertools.product(load,nnodes,nalgos)]
+    return fmt,exp
+
+
 def ycsb_scaling():
     wl = 'YCSB'
     nnodes = [1,2,4,8,16,32,64]
@@ -61,9 +72,9 @@ def ycsb_scaling():
     skew = [0.6,0.7]
     fmt = ["WORKLOAD","NODE_CNT","CC_ALG","SYNTH_TABLE_SIZE","TUP_WRITE_PERC","TXN_WRITE_PERC","MAX_TXN_IN_FLIGHT","ZIPF_THETA","THREAD_CNT"]
     exp = [[wl,n,algo,base_table_size*n,tup_wr_perc,txn_wr_perc,ld,sk,thr] for thr,txn_wr_perc,tup_wr_perc,sk,ld,n,algo in itertools.product(tcnt,txn_write_perc,tup_write_perc,skew,load,nnodes,algos)]
-    txn_write_perc = [0.0]
-    skew = [0.0]
-    exp = exp + [[wl,n,algo,base_table_size*n,tup_wr_perc,txn_wr_perc,ld,sk,thr] for thr,txn_wr_perc,tup_wr_perc,sk,ld,n,algo in itertools.product(tcnt,txn_write_perc,tup_write_perc,skew,load,nnodes,algos)]
+#    txn_write_perc = [0.0]
+#    skew = [0.0]
+#    exp = exp + [[wl,n,algo,base_table_size*n,tup_wr_perc,txn_wr_perc,ld,sk,thr] for thr,txn_wr_perc,tup_wr_perc,sk,ld,n,algo in itertools.product(tcnt,txn_write_perc,tup_write_perc,skew,load,nnodes,algos)]
     return fmt,exp
 
 def ycsb_scaling_abort():
@@ -861,6 +872,7 @@ def network_test():
 
 experiment_map = {
     'network_test':network_test,
+    'pps_scaling': pps_scaling,
     'ycsb_scaling': ycsb_scaling,
     'ycsb_scaling_plot': ycsb_scaling_plot,
     'ycsb_scaling_abort': ycsb_scaling_abort,
@@ -975,7 +987,7 @@ configs = {
     "STRICT_PPT":0,
     "SET_AFFINITY":"true",
     "LOGGING":"false",
-    "SIM_FULL_ROW":"false",
+#    "SIM_FULL_ROW":"false",
     "SERVER_GENERATE_QUERIES":"false",
     "SKEW_METHOD":"ZIPF",
     "ENVIRONMENT_EC2":"false",

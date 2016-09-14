@@ -158,7 +158,7 @@ def delete_remote_results():
 def copy_schema():
     if env.dry_run:
         return
-    schemas = ["benchmarks/TPCC_full_schema.txt","benchmarks/YCSB_schema.txt"]
+    schemas = ["benchmarks/TPCC_full_schema.txt","benchmarks/YCSB_schema.txt","benchmarks/PPS_schema.txt"]
     # Copying regular files should always succeed unless node is down
     for schema in schemas:
         if env.shmem:
@@ -813,6 +813,8 @@ def run_exp_old(exps,network_test=False,delay=''):
 #                        schema = "benchmarks/TPCC_short_schema.txt"
                     elif cfgs["WORKLOAD"] == "YCSB":
                         schema = "benchmarks/YCSB_schema.txt"
+                    elif cfgs["WORKLOAD"] == "PPS":
+                        schema = "benchmarks/PPS_schema.txt"
                     # NOTE: copy_files will fail if any (possibly) stray processes
                     # are still running one of the executables. Setting the 'kill'
                     # flag in environment.py to true to kill these processes. This
@@ -1099,6 +1101,8 @@ def run_exp(exps,network_test=False,delay=''):
 #                schema = "benchmarks/TPCC_short_schema.txt"
             elif cfgs["WORKLOAD"] == "YCSB":
                 schema = "benchmarks/YCSB_schema.txt"
+            elif cfgs["WORKLOAD"] == "PPS":
+                schema = "benchmarks/PPS_schema.txt"
             # NOTE: copy_files will fail if any (possibly) stray processes
             # are still running one of the executables. Setting the 'kill'
             # flag in environment.py to true to kill these processes. This

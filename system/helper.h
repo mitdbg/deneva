@@ -48,7 +48,7 @@
   }
 
 #define PRINT_LATENCY(...) \
-  if(DEBUG_LATENCY) { \
+  if(DEBUG_LATENCY && warmup_done) { \
     fprintf(stdout,__VA_ARGS__); \
     fflush(stdout); \
   }

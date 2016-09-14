@@ -163,6 +163,7 @@ double g_mpr = MPR;
 double g_mpitem = MPIR;
 
 // PPS (Product-Part-Supplier)
+UInt32 g_max_parts_per = MAX_PPS_PARTS_PER;
 UInt32 g_max_part_key = MAX_PPS_PART_KEY;
 UInt32 g_max_product_key = MAX_PPS_PRODUCT_KEY;
 UInt32 g_max_supplier_key = MAX_PPS_SUPPLIER_KEY;

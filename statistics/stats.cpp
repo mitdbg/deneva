@@ -239,7 +239,7 @@ void Stats_thd::clear() {
   }
 }
 
-void Stats_thd::print_client(FILE * outf) {
+void Stats_thd::print_client(FILE * outf, bool prog) {
   double txn_run_avg_time = 0;
   double tput = 0;
   if(txn_cnt > 0)
@@ -333,6 +333,7 @@ void Stats_thd::print_client(FILE * outf) {
   ,msg_copy_output_time / BILLION
   );
 
+  if (!prog) {
   client_client_latency.quicksort(0,client_client_latency.cnt-1);
   fprintf(outf,
           ",ccl0=%f"
@@ -362,12 +363,13 @@ void Stats_thd::print_client(FILE * outf) {
           ,(double)client_client_latency.get_percentile(99) / BILLION
           ,(double)client_client_latency.get_idx(client_client_latency.cnt-1) / BILLION
           );
+  }
 
   //client_client_latency.print(outf);
 
 }
 
-void Stats_thd::print(FILE * outf) {
+void Stats_thd::print(FILE * outf, bool prog) {
   fprintf(outf,
       "total_runtime=%f"
       ,total_runtime/BILLION
@@ -927,6 +929,7 @@ void Stats_thd::print(FILE * outf) {
       );
   }
 
+  if (!prog) {
   first_start_commit_latency.quicksort(0,first_start_commit_latency.cnt-1);
   start_abort_commit_latency.quicksort(0,start_abort_commit_latency.cnt-1);
 
@@ -988,6 +991,7 @@ void Stats_thd::print(FILE * outf) {
           ,(double)start_abort_commit_latency.get_percentile(99) / BILLION
           ,(double)start_abort_commit_latency.get_idx(start_abort_commit_latency.cnt-1) / BILLION
           );
+  }
 
   //first_start_commit_latency.print(outf);
 
@@ -1232,7 +1236,7 @@ void Stats::print_client(bool prog) {
 	  fprintf(outf, "[prog] ");
   else
 	  fprintf(outf, "[summary] ");
-  totals->print_client(outf);
+  totals->print_client(outf,prog);
   mem_util(outf);
   cpu_util(outf);
 
@@ -1320,7 +1324,7 @@ void Stats::print(bool prog) {
 	  fprintf(outf, "[prog] ");
   else
 	  fprintf(outf, "[summary] ");
-  totals->print(outf);
+  totals->print(outf,prog);
   mem_util(outf);
   cpu_util(outf);
 

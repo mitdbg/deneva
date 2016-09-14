@@ -157,6 +157,9 @@ RC Row_lock::lock_get(lock_t type, TxnManager * txn, uint64_t* &txnids, int &txn
             DEBUG("lk_wait (%ld,%ld): owners %d, own type %d, req type %d, key %ld %lx\n",txn->get_txn_id(),txn->get_batch_id(),owner_cnt,lock_type,type,_row->get_primary_key(),(uint64_t)_row);
             LIST_PUT_TAIL(waiters_head, waiters_tail, entry);
             waiter_cnt ++;
+            if (txn->twopl_wait_start == 0) {
+                txn->twopl_wait_start = get_sys_clock();
+            }
             //txn->lock_ready = false;
             ATOM_CAS(txn->lock_ready,true,false);
             txn->incr_lr();
@@ -311,7 +314,9 @@ RC Row_lock::lock_release(TxnManager * txn) {
 #endif
           DEBUG("2lock (%ld,%ld): owners %d, own type %d, req type %d, key %ld %lx\n",entry->txn->get_txn_id(),entry->txn->get_batch_id(),owner_cnt,lock_type,entry->type,_row->get_primary_key(),(uint64_t)_row);
           uint64_t timespan = get_sys_clock() - entry->txn->twopl_wait_start;
+#if CC_ALG != CALVIN
           txn->txn_stats.cc_block_time += timespan;
+#endif
           INC_STATS(txn->get_thd_id(),twopl_wait_time,timespan);
 
 #if CC_ALG != NO_WAIT
@@ -319,16 +324,22 @@ RC Row_lock::lock_release(TxnManager * txn) {
 #endif 
           owner_cnt ++;
           waiter_cnt --;
-      if(entry->txn->get_timestamp() > max_owner_ts)
-        max_owner_ts = entry->txn->get_timestamp();
+          if(entry->txn->get_timestamp() > max_owner_ts) {
+              max_owner_ts = entry->txn->get_timestamp();
+          }
           ASSERT(entry->txn->lock_ready == false);
       //if(entry->txn->decr_lr() == 0 && entry->txn->locking_done) {
-      if(entry->txn->decr_lr() == 0) {
-        if(ATOM_CAS(entry->txn->lock_ready,false,true))
-          txn_table.restart_txn(txn->get_thd_id(),entry->txn->get_txn_id(),entry->txn->get_batch_id());
-      }
-      if(lock_type == LOCK_NONE)
-        own_starttime = get_sys_clock();
+          if(entry->txn->decr_lr() == 0) {
+              if(ATOM_CAS(entry->txn->lock_ready,false,true)) {
+#if CC_ALG == CALVIN
+                  txn->txn_stats.cc_block_time += timespan;
+#endif
+                  txn_table.restart_txn(txn->get_thd_id(),entry->txn->get_txn_id(),entry->txn->get_batch_id());
+              }
+          }
+          if(lock_type == LOCK_NONE) {
+              own_starttime = get_sys_clock();
+          }
           lock_type = entry->type;
 #if CC_AlG == NO_WAIT
           return_entry(entry);

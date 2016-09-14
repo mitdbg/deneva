@@ -239,6 +239,10 @@ void parser(int argc, char * argv[]) {
     g_this_send_thread_cnt = g_send_thread_cnt;
     g_this_total_thread_cnt = g_total_thread_cnt;
   }
+  // Scale # of keys with cluster size
+  g_max_part_key *= g_node_cnt;
+  g_max_product_key *= g_node_cnt;
+  g_max_supplier_key *= g_node_cnt;
 
     //g_inflight_max = g_inflight_max / g_node_cnt;
       printf("CC Alg %d\n",CC_ALG);
@@ -276,6 +280,9 @@ void parser(int argc, char * argv[]) {
 			printf("g_txn_read_perc %f\n",g_txn_read_perc );
 			printf("g_txn_write_perc %f\n",g_txn_write_perc );
 			printf("g_synth_table_size %ld\n",g_synth_table_size );
+			printf("g_max_part_key %d\n",g_max_part_key);
+			printf("g_max_product_key %d\n",g_max_product_key);
+			printf("g_max_supplier_key %d\n",g_max_supplier_key);
 			printf("g_field_per_tuple %d\n",g_field_per_tuple );
       printf("g_data_perc %f\n",g_data_perc);
       printf("g_access_perc %f\n",g_access_perc);

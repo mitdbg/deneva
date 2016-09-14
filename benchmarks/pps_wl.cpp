@@ -202,7 +202,7 @@ void PPSWorkload::init_tab_products() {
 void PPSWorkload::init_tab_supplies() {
   for (UInt32 id = 1; id <= g_max_supplier_key; id++) {
     std::set<uint64_t> parts_set;
-    for (UInt32 i = 0; i < MAX_PPS_PART_PER_SUPPLIER; i++) {
+    for (UInt32 i = 0; i < g_max_parts_per; i++) {
       parts_set.insert(URand(1,g_max_part_key));
     }
     for(auto it = parts_set.begin(); it != parts_set.end();it++) {
@@ -224,7 +224,7 @@ void PPSWorkload::init_tab_supplies() {
 void PPSWorkload::init_tab_uses() {
   for (UInt32 id = 1; id <= g_max_product_key; id++) {
     std::set<uint64_t> parts_set;
-    for (UInt32 i = 0; i < MAX_PPS_PART_PER_PRODUCT; i++) {
+    for (UInt32 i = 0; i < g_max_parts_per; i++) {
       parts_set.insert(URand(1,g_max_part_key));
     }
     for(auto it = parts_set.begin(); it != parts_set.end();it++) {

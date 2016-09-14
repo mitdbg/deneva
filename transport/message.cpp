@@ -800,6 +800,7 @@ void ClientQueryMessage::init() {
 
 void ClientQueryMessage::release() {
   partitions.release();
+  first_startts = 0;
 }
 
 uint64_t ClientQueryMessage::get_size() {

@@ -89,7 +89,7 @@ void TxnStats::reset() {
 
 }
 
-void TxnStats::commit_stats(uint64_t thd_id, uint64_t txn_id, uint64_t timespan_long, uint64_t timespan_short) {
+void TxnStats::commit_stats(uint64_t thd_id, uint64_t txn_id, uint64_t batch_id, uint64_t timespan_long, uint64_t timespan_short) {
   total_process_time += process_time;
   total_local_wait_time += local_wait_time;
   total_remote_wait_time += remote_wait_time;
@@ -101,6 +101,20 @@ void TxnStats::commit_stats(uint64_t thd_id, uint64_t txn_id, uint64_t timespan_
   total_work_queue_cnt += work_queue_cnt;
   assert(total_process_time >= process_time);
 
+#if CC_ALG == CALVIN
+  // latency from start of transaction at this node
+  PRINT_LATENCY("lat_l %ld %ld %ld %f %f %f %f %f %f\n"
+          , txn_id
+          , batch_id
+          , total_work_queue_cnt
+          , (double) timespan_long / BILLION
+          , (double) total_work_queue_time / BILLION
+          , (double) total_msg_queue_time / BILLION
+          , (double) total_cc_block_time / BILLION
+          , (double) total_cc_time / BILLION
+          , (double) total_process_time / BILLION
+          );
+#else
   // latency from start of transaction
   PRINT_LATENCY("lat_l %ld %ld %ld %f %f %f %f %f %f %f\n"
           , txn_id
@@ -114,8 +128,9 @@ void TxnStats::commit_stats(uint64_t thd_id, uint64_t txn_id, uint64_t timespan_
           , (double) total_process_time / BILLION
           , (double) total_abort_time / BILLION
           );
-  // latency from most recent start or restart of transaction
-  PRINT_LATENCY("lat_s %ld %ld %f %f %f %f %f %f\n"
+  if (timespan_short < timespan_long) {
+    // latency from most recent start or restart of transaction
+    PRINT_LATENCY("lat_s %ld %ld %f %f %f %f %f %f\n"
           , txn_id
           , work_queue_cnt
           , (double) timespan_short / BILLION
@@ -125,6 +140,8 @@ void TxnStats::commit_stats(uint64_t thd_id, uint64_t txn_id, uint64_t timespan_
           , (double) cc_time / BILLION
           , (double) process_time / BILLION
           );
+  }
+#endif
 
   if (!IS_LOCAL(txn_id)) {
       return;
@@ -235,6 +252,7 @@ void TxnManager::init(uint64_t thd_id, Workload * h_wl) {
 #endif
   
   txn_ready = true;
+  twopl_wait_start = 0;
 
   txn_stats.init();
 }
@@ -248,6 +266,7 @@ void TxnManager::reset() {
   rsp_cnt = 0;
   aborted = false;
   return_id = UINT64_MAX;
+  twopl_wait_start = 0;
 
   //ready = true;
 
@@ -347,7 +366,7 @@ RC TxnManager::abort() {
 #endif
 
   uint64_t timespan = get_sys_clock() - txn_stats.restart_starttime;
-  if (IS_LOCAL(get_txn_id())) {
+  if (IS_LOCAL(get_txn_id()) && warmup_done) {
       INC_STATS_ARR(get_thd_id(),start_abort_commit_latency, timespan);
   }
   /*
@@ -446,17 +465,17 @@ bool TxnManager::is_multi_part() {
 }
 
 void TxnManager::commit_stats() {
-    uint64_t timespan_short = get_sys_clock() - txn_stats.restart_starttime;
-    uint64_t timespan_long  = get_sys_clock() - txn_stats.starttime;
+    uint64_t commit_time = get_sys_clock();
+    uint64_t timespan_short = commit_time - txn_stats.restart_starttime;
+    uint64_t timespan_long  = commit_time - txn_stats.starttime;
   INC_STATS(get_thd_id(),total_txn_commit_cnt,1);
   if(!IS_LOCAL(get_txn_id()) && CC_ALG != CALVIN) {
     INC_STATS(get_thd_id(),remote_txn_commit_cnt,1);
-    txn_stats.commit_stats(get_thd_id(),get_txn_id(),timespan_long, timespan_short);
+    txn_stats.commit_stats(get_thd_id(),get_txn_id(),get_batch_id(), timespan_long, timespan_short);
     return;
   }
 
-  INC_STATS_ARR(get_thd_id(),start_abort_commit_latency, timespan_short);
-  INC_STATS_ARR(get_thd_id(),first_start_commit_latency, timespan_long);
+
   INC_STATS(get_thd_id(),txn_cnt,1);
   INC_STATS(get_thd_id(),local_txn_commit_cnt,1);
   INC_STATS(get_thd_id(), txn_run_time, timespan_long);
@@ -470,10 +489,15 @@ void TxnManager::commit_stats() {
   /*if(cflt) {
     INC_STATS(get_thd_id(),cflt_cnt_txn,1);
   }*/
-  txn_stats.commit_stats(get_thd_id(),get_txn_id(),timespan_long, timespan_short);
+  txn_stats.commit_stats(get_thd_id(),get_txn_id(),get_batch_id(),timespan_long, timespan_short);
 #if CC_ALG == CALVIN
   return;
 #endif
+
+  if (warmup_done) {
+    INC_STATS_ARR(get_thd_id(),start_abort_commit_latency, timespan_short);
+    INC_STATS_ARR(get_thd_id(),first_start_commit_latency, timespan_long);
+  }
 
   assert(query->partitions_touched.size() > 0);
   INC_STATS(get_thd_id(),part_cnt[query->partitions_touched.size()-1],1);

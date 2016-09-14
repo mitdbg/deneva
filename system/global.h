@@ -216,6 +216,7 @@ extern UInt32 g_cust_per_dist;
 extern UInt32 g_max_items_per_txn;
 
 // PPS (Product-Part-Supplier)
+extern UInt32 g_max_parts_per;
 extern UInt32 g_max_part_key;
 extern UInt32 g_max_product_key;
 extern UInt32 g_max_supplier_key;
