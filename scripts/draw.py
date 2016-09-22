@@ -501,42 +501,6 @@ def draw_bars_single(data, xlabels,
     plt.close()
 
 
-
-def draw_stack(data, xlabels, slabels, figname='stack', title=None, figsize=(8, 3),ymin=0, ymax=1,ltitle=''
-        ,legend=False) :
-    fig = figure(figsize=figsize)
-    ind = range(0, len(xlabels))
-
-    plots = ()
-    bottom = [0] * len(xlabels)
-
-    ylim([ymin, ymax])
-    #xlabels = [str(x) for x in xlabels]
-
-    xticks( ind,  xlabels, rotation=30, ha='center')
-    clr = itertools.cycle(['#4d4d4d','#F15854','#DECF3F','#5DA5DA','#FAA43A','#B276B2','#60BD68'])
-    htch = itertools.cycle(['','//','\\','-','\\\\','/'])
-
-    for s in range(len(slabels)):
-        p = plt.bar(ind, data[s], color=clr.next(), hatch=htch.next(), bottom=bottom)
-        plots = plots + (p,)
-        bottom = [a + b for a,b in zip(bottom, data[s])]
-
-    subplots_adjust(bottom=0.25, right=0.7, top=None)
-    if title:
-        plt.title("\n".join(wrap(title)))
-    if legend:
-        fig.legend(reversed(plots), tuple(slabels), bbox_to_anchor = (1, 1), loc='left',prop={'size':11})
-#        fig.legend(reversed(plots), tuple(slabels), bbox_to_anchor = (0.38, -0.2, 1, 1), prop={'size':11})
-    savefig('../figs/' + figname + '.pdf', bbox_inches='tight')
-    plt.close()
-#    fig = figure(figsize=((7.2, 0.4)))
-    fig = figure(figsize=figsize)
-    fig.legend(reversed(plots), tuple(slabels), bbox_to_anchor = (1,1, 1, 1), prop={'size':10})
-    savefig('../figs/' + figname + '_legend.pdf')
-    plt.close()
-
-
 def draw_bars(data, xlabels, 
         figname='stack', 
         figsize=(8, 3),
@@ -599,8 +563,6 @@ def draw_stack(data, xlabels, slabels, figname='stack', title=None, figsize=(8, 
     if title:
         plt.title("\n".join(wrap(title)))
     if legend:
-#        fig.legend(reversed(plots), tuple(slabels), bbox_to_anchor = (0.38, -0.2, 1, 1), prop={'size':11})
-#        fig.legend(reversed(plots), tuple(slabels), bbox_to_anchor = (1,0.5), loc='right',prop={'size':11})
         fig.legend(reversed(plots), tuple(slabels),loc='right',prop={'size':11})
     subplots_adjust(bottom=0.25, right=0.7, top=None)
     savefig('../figs/' + figname + '.pdf', bbox_inches='tight')

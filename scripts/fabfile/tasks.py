@@ -338,6 +338,11 @@ def run_cmd(cmd):
 
 @task
 @parallel
+def put_cmd(cmd):
+    put(cmd,env.rem_homedir,mirror_local_mode=True)
+
+@task
+@parallel
 def deploy(schema_path,nids,exps,runfiles,fmt):
     nid = iter(nids[env.host])
     exp = iter(exps[env.host])

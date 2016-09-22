@@ -142,7 +142,7 @@ RC CalvinSequencerThread::run() {
           case CL_QRY:
             // Query from client
             DEBUG("SEQ process_txn\n");
-            seq_man.process_txn(msg,get_thd_id(),0,0,0);
+            seq_man.process_txn(msg,get_thd_id(),0,0,0,0);
             // TODO: Don't free message yet
             break;
           case CALVIN_ACK:

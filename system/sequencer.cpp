@@ -110,20 +110,26 @@ void Sequencer::process_ack(Message * msg, uint64_t thd_id) {
           cl_msg->return_node_id = wait_list[id].client_id;
           wait_list[id].total_batch_time += en->batch_send_time - wait_list[id].seq_startts;
           // restart
-          process_txn(cl_msg, thd_id, wait_list[id].seq_first_startts, wait_list[id].total_batch_time, abort_cnt);
+          process_txn(cl_msg, thd_id, wait_list[id].seq_first_startts, wait_list[id].seq_startts, wait_list[id].total_batch_time, abort_cnt);
       }
       else {
 #endif
-          uint64_t timespan = get_sys_clock() - wait_list[id].seq_first_startts;
+          uint64_t curr_clock = get_sys_clock();
+          uint64_t timespan = curr_clock - wait_list[id].seq_first_startts;
+          uint64_t timespan2 = curr_clock - wait_list[id].seq_startts;
           uint64_t skew_timespan = get_sys_clock() - wait_list[id].skew_startts;
           wait_list[id].total_batch_time += en->batch_send_time - wait_list[id].seq_startts;
           if (warmup_done) {
             INC_STATS_ARR(0,first_start_commit_latency, timespan);
+            INC_STATS_ARR(0,last_start_commit_latency, timespan2);
+            INC_STATS_ARR(0,start_abort_commit_latency, timespan2);
           }
           if (wait_list[id].abort_cnt > 0) {
               INC_STATS(0,unique_txn_abort_cnt,1);
           }
 
+    INC_STATS(0,lat_l_loc_msg_queue_time,wait_list[id].total_batch_time);
+    INC_STATS(0,lat_l_loc_process_time,skew_timespan);
 
           PRINT_LATENCY("lat_l_seq %ld %ld %d %f %f %f\n"
                   , msg->get_txn_id()
@@ -159,7 +165,7 @@ void Sequencer::process_ack(Message * msg, uint64_t thd_id) {
 }
 
 // FIXME: Assumes 1 thread does sequencer work
-void Sequencer::process_txn( Message * msg,uint64_t thd_id, uint64_t early_start, uint64_t wait_time, uint32_t abort_cnt) {
+void Sequencer::process_txn( Message * msg,uint64_t thd_id, uint64_t early_start, uint64_t last_start, uint64_t wait_time, uint32_t abort_cnt) {
 
     uint64_t starttime = get_sys_clock();
     DEBUG("SEQ Processing msg\n");
@@ -201,12 +207,8 @@ void Sequencer::process_txn( Message * msg,uint64_t thd_id, uint64_t early_start
     assert(ISCLIENTN(msg->get_return_id()));
     en->list[id].client_id = msg->get_return_id();
     en->list[id].client_startts = ((ClientQueryMessage*)msg)->client_startts;
-    en->list[id].seq_startts = get_sys_clock();
-    if (early_start == 0) {
-        en->list[id].seq_first_startts = en->list[id].seq_startts;
-    } else {
-        en->list[id].seq_first_startts = early_start;
-    }
+    //en->list[id].seq_startts = get_sys_clock();
+
     en->list[id].total_batch_time = wait_time;
     en->list[id].abort_cnt = abort_cnt;
     en->list[id].skew_startts = 0;
@@ -223,16 +225,26 @@ void Sequencer::process_txn( Message * msg,uint64_t thd_id, uint64_t early_start
             cl_msg->txn_type == PPS_ORDERPRODUCT) {
         if (cl_msg->part_keys.size() == 0) {
             cl_msg->recon = true;
+            en->list[id].seq_startts = get_sys_clock();
         }
         else {
             cl_msg->recon = false;
+            en->list[id].seq_startts = last_time;
         }
 
     }
     else {
         cl_msg->recon = false;
+        en->list[id].seq_startts = get_sys_clock();
     }
+#else
+    en->list[id].seq_startts = get_sys_clock();
 #endif
+    if (early_start == 0) {
+        en->list[id].seq_first_startts = en->list[id].seq_startts;
+    } else {
+        en->list[id].seq_first_startts = early_start;
+    }
     assert(en->size == en->txns_left);
     assert(en->size <= ((uint64_t)g_inflight_max * g_node_cnt));
 

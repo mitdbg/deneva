@@ -209,7 +209,9 @@ RC WorkerThread::run() {
     if(msg->rtype != CL_QRY || CC_ALG == CALVIN) {
       txn_man = get_transaction_manager(msg);
       txn_man->txn_stats.msg_queue_time += msg->mq_time;
+      msg->mq_time = 0;
       txn_man->txn_stats.work_queue_time += msg->wq_time;
+      msg->wq_time = 0;
       txn_man->txn_stats.work_queue_cnt += 1;
       ready_starttime = get_sys_clock();
       bool ready = txn_man->unset_ready();

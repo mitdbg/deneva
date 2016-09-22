@@ -189,9 +189,11 @@ int main(int argc, char* argv[])
 
 	endtime = get_server_clock();
 	
+  fflush(stdout);
   printf("CLIENT PASS! SimTime = %ld\n", endtime - starttime);
   if (STATS_ENABLE)
     stats.print_client(false);
+  fflush(stdout);
   // Free stuff
 	//tport_man.shutdown();
   /*

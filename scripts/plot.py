@@ -15,7 +15,7 @@ PATH=os.getcwd()
 ###########################################
 
 result_dir = PATH + "/../results/"
-result_dir = PATH + "/../results/vldb_results_0530/"
+#result_dir = PATH + "/../results/vldb_results_0530/"
 
 blah = False
 drop = False

@@ -116,6 +116,8 @@ TxnManager * TxnTable::get_transaction_manager(uint64_t thd_id, uint64_t txn_id,
     txn_man->set_txn_id(txn_id);
     txn_man->set_batch_id(batch_id);
     t_node->txn_man = txn_man;
+    txn_man->txn_stats.starttime = get_sys_clock();
+    txn_man->txn_stats.restart_starttime = txn_man->txn_stats.starttime;
     LIST_PUT_TAIL(pool[pool_id]->head,pool[pool_id]->tail,t_node);
 
     INC_STATS(thd_id,mtx[23],get_sys_clock()-prof_starttime);

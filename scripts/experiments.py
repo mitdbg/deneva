@@ -53,7 +53,6 @@ def pps_scaling():
     wl = 'PPS'
     nnodes = [1,2,4,8,16,32,64]
     nalgos=['NO_WAIT','WAIT_DIE','MVCC','MAAT','CALVIN','TIMESTAMP']
-    nalgos=['NO_WAIT','WAIT_DIE','MVCC','CALVIN','TIMESTAMP']
     load = [10000]
     fmt = ["WORKLOAD","NODE_CNT","CC_ALG","MAX_TXN_IN_FLIGHT"]
     exp = [[wl,n,cc,tif] for tif,n,cc in itertools.product(load,nnodes,nalgos)]
@@ -63,13 +62,16 @@ def pps_scaling():
 def ycsb_scaling():
     wl = 'YCSB'
     nnodes = [1,2,4,8,16,32,64]
+    nnodes = [16]
     algos=['NO_WAIT','WAIT_DIE','MVCC','MAAT','CALVIN','TIMESTAMP']
+#    algos=['TIMESTAMP']
     base_table_size=2097152*8
     txn_write_perc = [0.5]
     tup_write_perc = [0.5]
     load = [10000]
     tcnt = [4]
     skew = [0.6,0.7]
+    skew = [0.6]
     fmt = ["WORKLOAD","NODE_CNT","CC_ALG","SYNTH_TABLE_SIZE","TUP_WRITE_PERC","TXN_WRITE_PERC","MAX_TXN_IN_FLIGHT","ZIPF_THETA","THREAD_CNT"]
     exp = [[wl,n,algo,base_table_size*n,tup_wr_perc,txn_wr_perc,ld,sk,thr] for thr,txn_wr_perc,tup_wr_perc,sk,ld,n,algo in itertools.product(tcnt,txn_write_perc,tup_write_perc,skew,load,nnodes,algos)]
 #    txn_write_perc = [0.0]
@@ -908,6 +910,8 @@ experiment_map = {
     'ppr_network_sweep_plot': ppr_network_plot,
     'ppr_network_sweep_abort': network_sweep_abort,
     'ppr_network_sweep_abort_plot': ppr_network_abort_plot,
+    'ppr_pps_scaling': pps_scaling,
+    'ppr_pps_scaling_plot': ppr_pps_scaling_plot,
     'ppr_ycsb_scaling': ycsb_scaling,
     'ppr_ycsb_scaling_plot': ppr_ycsb_scaling_plot,
     'ppr_ycsb_skew': ycsb_skew,

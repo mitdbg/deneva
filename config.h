@@ -5,17 +5,17 @@
 /***********************************************/
 // Simulation + Hardware
 /***********************************************/
-#define NODE_CNT 2
-#define THREAD_CNT 2
+#define NODE_CNT 2 
+#define THREAD_CNT 4
 #define REM_THREAD_CNT THREAD_CNT
 #define SEND_THREAD_CNT THREAD_CNT
 #define CORE_CNT 8
 // PART_CNT should be at least NODE_CNT
 #define PART_CNT NODE_CNT
 #define CLIENT_NODE_CNT NODE_CNT
-#define CLIENT_THREAD_CNT 1
-#define CLIENT_REM_THREAD_CNT 1
-#define CLIENT_SEND_THREAD_CNT 1
+#define CLIENT_THREAD_CNT 4
+#define CLIENT_REM_THREAD_CNT 2
+#define CLIENT_SEND_THREAD_CNT 2
 #define CLIENT_RUNTIME false
 
 #define LOAD_METHOD LOAD_MAX
@@ -37,14 +37,14 @@
 // # of transactions to run for warmup
 #define WARMUP            0
 // YCSB or TPCC or PPS
-#define WORKLOAD PPS 
+#define WORKLOAD YCSB 
 // print the transaction latency distribution
 #define PRT_LAT_DISTR false
 #define STATS_ENABLE        true
 #define TIME_ENABLE         true //STATS_ENABLE
 
 #define FIN_BY_TIME true
-#define MAX_TXN_IN_FLIGHT 1000
+#define MAX_TXN_IN_FLIGHT 100
 
 #define SERVER_GENERATE_QUERIES false
 
@@ -75,9 +75,9 @@
 #define TPORT_TYPE TCP
 #define TPORT_PORT 17000
 #define SET_AFFINITY true
-//#define TPORT_TYPE IPC 
-//#define TPORT_PORT 17000 
-//#define SET_AFFINITY true
+#define TPORT_TYPE TCP
+#define TPORT_PORT 17000
+#define SET_AFFINITY true
 
 #define MAX_TPORT_NAME 128
 #define MSG_SIZE 128 // in bytes
@@ -97,10 +97,10 @@
 /***********************************************/
 // Concurrency Control
 /***********************************************/
-// WAIT_DIE, NO_WAIT, TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, OCC, VLL, CALVIN, MAAT
-#define CC_ALG NO_WAIT 
+// WAIT_DIE, NO_WAIT, WDL (wait-depth limited), TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, OCC, VLL, CALVIN, MAAT
+#define CC_ALG TIMESTAMP 
 #define ISOLATION_LEVEL SERIALIZABLE
-#define YCSB_ABORT_MODE true
+#define YCSB_ABORT_MODE false
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER         false
@@ -179,8 +179,8 @@
 #define INIT_PARALLELISM 8
 #define SYNTH_TABLE_SIZE 65536
 #define ZIPF_THETA 0.3
-#define TXN_WRITE_PERC 0.5
-#define TUP_WRITE_PERC 0.5
+#define TXN_WRITE_PERC 0.0
+#define TUP_WRITE_PERC 0.0
 #define SCAN_PERC           0
 #define SCAN_LEN          20
 #define PART_PER_TXN PART_CNT
@@ -305,7 +305,7 @@ extern TestCases          g_test_case;
 #define DEBUG_RACE false
 #define DEBUG_TIMELINE        false
 #define DEBUG_BREAKDOWN       false
-#define DEBUG_LATENCY       true
+#define DEBUG_LATENCY       false
 
 /***********************************************/
 // MODES
@@ -341,6 +341,7 @@ extern TestCases          g_test_case;
 #define VLL             9
 #define CALVIN      10
 #define MAAT      11
+#define WDL           12
 // TIMESTAMP allocation method.
 #define TS_MUTEX          1
 #define TS_CAS            2
@@ -381,11 +382,11 @@ extern TestCases          g_test_case;
 #define STAT_ARR_SIZE 1024
 #define PROG_TIMER 10 * BILLION // in s
 #define BATCH_TIMER 0
-#define SEQ_BATCH_TIMER 1 * BILLION//5 * 1 * MILLION // ~5ms -- same as CALVIN paper
-//#define DONE_TIMER 1 * 60 * BILLION // ~1 minutes
+#define SEQ_BATCH_TIMER 5 * 1 * MILLION // ~5ms -- same as CALVIN paper
 #define DONE_TIMER 1 * 60 * BILLION // ~1 minutes
-#define WARMUP_TIMER 0 * BILLION // ~1 minutes
-//#define WARMUP_TIMER 1 * 60 * BILLION // ~1 minutes
+#define DONE_TIMER 1 * 60 * BILLION // ~1 minutes
+#define WARMUP_TIMER 1 * 60 * BILLION // ~1 minutes
+#define WARMUP_TIMER 1 * 60 * BILLION // ~1 minutes
 
 #define SEED 0
 #define SHMEM_ENV false

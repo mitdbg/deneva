@@ -63,6 +63,10 @@ void StatsArr::init(uint64_t size,StatsArrType type) {
   pthread_mutex_init(&mtx,NULL);
 }
 
+void StatsArr::clear() {
+    cnt = 0;
+}
+
 void StatsArr::resize() {
   size = size * 2;
 	arr = (uint64_t *)

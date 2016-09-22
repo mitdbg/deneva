@@ -388,6 +388,45 @@ stat_map = OrderedDict([
   ('proc_time_type17', []),
   ('proc_time_type18', []),
   ('proc_time_type19', []),
+
+# Latency
+  ('ccl50', []),
+  ('ccl99', []),
+  ('fscl50', []),
+  ('fscl99', []),
+  ('fscl_avg', []),
+  ('lscl50', []),
+  ('lscl99', []),
+  ('lscl_avg', []),
+  ('sacl50', []),
+  ('sacl99', []),
+  ('sacl_avg', []),
+  ('lat_l_loc_work_queue_time', []),
+  ('lat_l_loc_msg_queue_time', []),
+  ('lat_l_loc_cc_block_time', []),
+  ('lat_l_loc_cc_time', []),
+  ('lat_l_loc_process_time', []),
+  ('lat_l_loc_abort_time', []),
+
+  ('lat_s_loc_work_queue_time', []),
+  ('lat_s_loc_msg_queue_time', []),
+  ('lat_s_loc_cc_block_time', []),
+  ('lat_s_loc_cc_time', []),
+  ('lat_s_loc_process_time', []),
+
+  ('lat_l_rem_work_queue_time', []),
+  ('lat_l_rem_msg_queue_time', []),
+  ('lat_l_rem_cc_block_time', []),
+  ('lat_l_rem_cc_time', []),
+  ('lat_l_rem_process_time', []),
+
+  ('lat_s_rem_work_queue_time', []),
+  ('lat_s_rem_msg_queue_time', []),
+  ('lat_s_rem_cc_block_time', []),
+  ('lat_s_rem_cc_time', []),
+  ('lat_s_rem_process_time', []),
+
+
 ])
 
 stat_map2 = {
@@ -544,6 +583,46 @@ stat_map2 = {
   'mtx17': [],
   'mtx18': [],
   'mtx19': [],
+
+# Latency
+  'ccl50': [],
+  'ccl99': [],
+  'fscl50': [],
+  'fscl99': [],
+  'fscl_avg': [],
+  'fscl_cnt': [],
+  'lscl50': [],
+  'lscl99': [],
+  'lscl_avg': [],
+  'lscl_cnt': [],
+  'sacl50': [],
+  'sacl99': [],
+  'sacl_avg': [],
+  'sacl_cnt': [],
+  'lat_l_loc_work_queue_time': [],
+  'lat_l_loc_msg_queue_time': [],
+  'lat_l_loc_cc_block_time': [],
+  'lat_l_loc_cc_time': [],
+  'lat_l_loc_process_time': [],
+  'lat_l_loc_abort_time': [],
+
+  'lat_s_loc_work_queue_time': [],
+  'lat_s_loc_msg_queue_time': [],
+  'lat_s_loc_cc_block_time': [],
+  'lat_s_loc_cc_time': [],
+  'lat_s_loc_process_time': [],
+
+  'lat_l_rem_work_queue_time': [],
+  'lat_l_rem_msg_queue_time': [],
+  'lat_l_rem_cc_block_time': [],
+  'lat_l_rem_cc_time': [],
+  'lat_l_rem_process_time': [],
+
+  'lat_s_rem_work_queue_time': [],
+  'lat_s_rem_msg_queue_time': [],
+  'lat_s_rem_cc_block_time': [],
+  'lat_s_rem_cc_time': [],
+  'lat_s_rem_process_time': [],
 
 }
 

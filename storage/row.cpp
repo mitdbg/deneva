@@ -195,14 +195,14 @@ RC row_t::get_lock(access_t type, TxnManager * txn) {
 }
 
 RC row_t::get_row(access_t type, TxnManager * txn, row_t *& row) {
-	RC rc = RCOK;
+    RC rc = RCOK;
 #if MODE==NOCC_MODE || MODE==QRY_ONLY_MODE 
-  row = this;
-  return rc;
+    row = this;
+    return rc;
 #endif
 #if ISOLATION_LEVEL == NOLOCK
-  row = this;
-  return rc;
+    row = this;
+    return rc;
 #endif
   /*
 #if ISOLATION_LEVEL == READ_UNCOMMITTED
@@ -214,12 +214,13 @@ RC row_t::get_row(access_t type, TxnManager * txn, row_t *& row) {
 */
 #if CC_ALG == MAAT
 
-  DEBUG_M("row_t::get_row MAAT alloc \n");
+    DEBUG_M("row_t::get_row MAAT alloc \n");
 	txn->cur_row = (row_t *) mem_allocator.alloc(sizeof(row_t));
 	txn->cur_row->init(get_table(), get_part_id());
-  rc = this->manager->access(type,txn);
+    rc = this->manager->access(type,txn);
+    txn->cur_row->copy(this);
 	row = txn->cur_row;
-  assert(rc == RCOK);
+    assert(rc == RCOK);
 	goto end;
 #endif
 #if CC_ALG == WAIT_DIE || CC_ALG == NO_WAIT 
@@ -258,19 +259,21 @@ RC row_t::get_row(access_t type, TxnManager * txn, row_t *& row) {
 		if (rc == RCOK ) {
 			row = txn->cur_row;
 		} else if (rc == WAIT) {
-      rc = WAIT;
-      goto end;
+		      rc = WAIT;
+		      goto end;
 
-		} else if (rc == Abort) { }
-		if (rc != Abort) {
-			assert(row->get_data() != NULL);
-			assert(row->get_table() != NULL);
-			assert(row->get_schema() == this->get_schema());
-			assert(row->get_table_name() != NULL);
+		} else if (rc == Abort) {
+
 		}
+        if (rc != Abort) {
+            assert(row->get_data() != NULL);
+            assert(row->get_table() != NULL);
+            assert(row->get_schema() == this->get_schema());
+            assert(row->get_table_name() != NULL);
+        }
 	}
 	if (rc != Abort && CC_ALG == MVCC && type == WR) {
-    DEBUG_M("row_t::get_row MVCC alloc \n");
+	    DEBUG_M("row_t::get_row MVCC alloc \n");
 		row_t * newr = (row_t *) mem_allocator.alloc(sizeof(row_t));
 		newr->init(this->get_table(), get_part_id());
 		newr->copy(row);

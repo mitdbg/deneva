@@ -315,6 +315,7 @@ int main(int argc, char* argv[])
 
 	endtime = get_server_clock();
 	
+  fflush(stdout);
   printf("PASS! SimTime = %f\n", (float)(endtime - starttime) / BILLION);
   if (STATS_ENABLE)
     stats.print(false);

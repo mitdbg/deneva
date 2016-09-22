@@ -21,6 +21,7 @@ enum StatsArrType {ArrInsert, ArrIncr};
 class StatsArr {
     public:
       void init(uint64_t size,StatsArrType type);
+      void clear();
       void quicksort(int low_idx, int high_idx);
       void resize();
       void insert(uint64_t item);

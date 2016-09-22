@@ -36,12 +36,15 @@ void Stats_thd::init(uint64_t thd_id) {
   worker_process_time_by_type= (double *) mem_allocator.align_alloc(sizeof(double) * NO_MSG);
   DEBUG_M("Stats_thd::init mtx alloc\n");
   mtx= (double *) mem_allocator.align_alloc(sizeof(double) * 40);
-	clear();
+
 	//all_lat.init(g_max_txn_per_part,ArrIncr);
 
 	client_client_latency.init(g_max_txn_per_part,ArrIncr);
+	last_start_commit_latency.init(g_max_txn_per_part,ArrIncr);
 	first_start_commit_latency.init(g_max_txn_per_part,ArrIncr);
 	start_abort_commit_latency.init(g_max_txn_per_part,ArrIncr);
+
+    clear();
 
 }
 
@@ -237,6 +240,37 @@ void Stats_thd::clear() {
   for(uint64_t i = 0; i < 40; i ++) {
     mtx[i]=0;
   }
+  lat_l_loc_work_queue_time=0;
+  lat_l_loc_msg_queue_time=0;
+  lat_l_loc_cc_block_time=0;
+  lat_l_loc_cc_time=0;
+  lat_l_loc_process_time=0;
+  lat_l_loc_abort_time=0;
+
+  lat_s_loc_work_queue_time=0;
+  lat_s_loc_msg_queue_time=0;
+  lat_s_loc_cc_block_time=0;
+  lat_s_loc_cc_time=0;
+  lat_s_loc_process_time=0;
+
+  lat_l_rem_work_queue_time=0;
+  lat_l_rem_msg_queue_time=0;
+  lat_l_rem_cc_block_time=0;
+  lat_l_rem_cc_time=0;
+  lat_l_rem_process_time=0;
+
+  lat_s_rem_work_queue_time=0;
+  lat_s_rem_msg_queue_time=0;
+  lat_s_rem_cc_block_time=0;
+  lat_s_rem_cc_time=0;
+  lat_s_rem_process_time=0;
+
+  client_client_latency.clear();
+    last_start_commit_latency.clear();
+    first_start_commit_latency.clear();
+    start_abort_commit_latency.clear();
+
+
 }
 
 void Stats_thd::print_client(FILE * outf, bool prog) {
@@ -928,8 +962,60 @@ void Stats_thd::print(FILE * outf, bool prog) {
       ,mtx[i] / BILLION
       );
   }
+  fprintf(outf,
+  ",lat_l_loc_work_queue_time=%f"
+  ",lat_l_loc_msg_queue_time=%f"
+  ",lat_l_loc_cc_block_time=%f"
+  ",lat_l_loc_cc_time=%f"
+  ",lat_l_loc_process_time=%f"
+  ",lat_l_loc_abort_time=%f"
+
+  ",lat_s_loc_work_queue_time=%f"
+  ",lat_s_loc_msg_queue_time=%f"
+  ",lat_s_loc_cc_block_time=%f"
+  ",lat_s_loc_cc_time=%f"
+  ",lat_s_loc_process_time=%f"
+
+  ",lat_l_rem_work_queue_time=%f"
+  ",lat_l_rem_msg_queue_time=%f"
+  ",lat_l_rem_cc_block_time=%f"
+  ",lat_l_rem_cc_time=%f"
+  ",lat_l_rem_process_time=%f"
+
+  ",lat_s_rem_work_queue_time=%f"
+  ",lat_s_rem_msg_queue_time=%f"
+  ",lat_s_rem_cc_block_time=%f"
+  ",lat_s_rem_cc_time=%f"
+  ",lat_s_rem_process_time=%f"
+
+  ,lat_l_loc_work_queue_time/BILLION
+  ,lat_l_loc_msg_queue_time/BILLION
+  ,lat_l_loc_cc_block_time/BILLION
+  ,lat_l_loc_cc_time/BILLION
+  ,lat_l_loc_process_time/BILLION
+  ,lat_l_loc_abort_time/BILLION
+
+  ,lat_s_loc_work_queue_time/BILLION
+  ,lat_s_loc_msg_queue_time/BILLION
+  ,lat_s_loc_cc_block_time/BILLION
+  ,lat_s_loc_cc_time/BILLION
+  ,lat_s_loc_process_time/BILLION
+
+  ,lat_l_rem_work_queue_time/BILLION
+  ,lat_l_rem_msg_queue_time/BILLION
+  ,lat_l_rem_cc_block_time/BILLION
+  ,lat_l_rem_cc_time/BILLION
+  ,lat_l_rem_process_time/BILLION
+
+  ,lat_s_rem_work_queue_time/BILLION
+  ,lat_s_rem_msg_queue_time/BILLION
+  ,lat_s_rem_cc_block_time/BILLION
+  ,lat_s_rem_cc_time/BILLION
+  ,lat_s_rem_process_time/BILLION
+      );
 
   if (!prog) {
+      last_start_commit_latency.quicksort(0,last_start_commit_latency.cnt-1);
   first_start_commit_latency.quicksort(0,first_start_commit_latency.cnt-1);
   start_abort_commit_latency.quicksort(0,start_abort_commit_latency.cnt-1);
 
@@ -947,6 +1033,8 @@ void Stats_thd::print(FILE * outf, bool prog) {
           ",fscl98=%f"
           ",fscl99=%f"
           ",fscl100=%f"
+          ",fscl_avg=%f"
+          ",fscl_cnt=%ld"
           ,(double)first_start_commit_latency.get_idx(0) / BILLION
           ,(double)first_start_commit_latency.get_percentile(1) / BILLION
           ,(double)first_start_commit_latency.get_percentile(10) / BILLION
@@ -960,6 +1048,41 @@ void Stats_thd::print(FILE * outf, bool prog) {
           ,(double)first_start_commit_latency.get_percentile(98) / BILLION
           ,(double)first_start_commit_latency.get_percentile(99) / BILLION
           ,(double)first_start_commit_latency.get_idx(first_start_commit_latency.cnt-1) / BILLION
+          ,(double)first_start_commit_latency.get_avg() / BILLION
+          ,first_start_commit_latency.cnt
+          );
+
+  fprintf(outf,
+          ",lscl0=%f"
+          ",lscl1=%f"
+          ",lscl10=%f"
+          ",lscl25=%f"
+          ",lscl50=%f"
+          ",lscl75=%f"
+          ",lscl90=%f"
+          ",lscl95=%f"
+          ",lscl96=%f"
+          ",lscl97=%f"
+          ",lscl98=%f"
+          ",lscl99=%f"
+          ",lscl100=%f"
+          ",lscl_avg=%f"
+          ",lscl_cnt=%ld"
+          ,(double)last_start_commit_latency.get_idx(0) / BILLION
+          ,(double)last_start_commit_latency.get_percentile(1) / BILLION
+          ,(double)last_start_commit_latency.get_percentile(10) / BILLION
+          ,(double)last_start_commit_latency.get_percentile(25) / BILLION
+          ,(double)last_start_commit_latency.get_percentile(50) / BILLION
+          ,(double)last_start_commit_latency.get_percentile(75) / BILLION
+          ,(double)last_start_commit_latency.get_percentile(90) / BILLION
+          ,(double)last_start_commit_latency.get_percentile(95) / BILLION
+          ,(double)last_start_commit_latency.get_percentile(96) / BILLION
+          ,(double)last_start_commit_latency.get_percentile(97) / BILLION
+          ,(double)last_start_commit_latency.get_percentile(98) / BILLION
+          ,(double)last_start_commit_latency.get_percentile(99) / BILLION
+          ,(double)last_start_commit_latency.get_idx(last_start_commit_latency.cnt-1) / BILLION
+          ,(double)last_start_commit_latency.get_avg() / BILLION
+          ,last_start_commit_latency.cnt
           );
 
 
@@ -977,6 +1100,8 @@ void Stats_thd::print(FILE * outf, bool prog) {
           ",sacl98=%f"
           ",sacl99=%f"
           ",sacl100=%f"
+          ",sacl_avg=%f"
+          ",sacl_cnt=%ld"
           ,(double)start_abort_commit_latency.get_idx(0) / BILLION
           ,(double)start_abort_commit_latency.get_percentile(1) / BILLION
           ,(double)start_abort_commit_latency.get_percentile(10) / BILLION
@@ -990,6 +1115,8 @@ void Stats_thd::print(FILE * outf, bool prog) {
           ,(double)start_abort_commit_latency.get_percentile(98) / BILLION
           ,(double)start_abort_commit_latency.get_percentile(99) / BILLION
           ,(double)start_abort_commit_latency.get_idx(start_abort_commit_latency.cnt-1) / BILLION
+          ,(double)start_abort_commit_latency.get_avg() / BILLION
+          ,start_abort_commit_latency.cnt
           );
   }
 
@@ -1003,6 +1130,7 @@ void Stats_thd::combine(Stats_thd * stats) {
     total_runtime = stats->total_runtime;
 
   // TODO: only combine for final stats collection for performance reasons
+  last_start_commit_latency.append(stats->first_start_commit_latency);
   first_start_commit_latency.append(stats->first_start_commit_latency);
   start_abort_commit_latency.append(stats->start_abort_commit_latency);
   client_client_latency.append(stats->client_client_latency);
@@ -1191,6 +1319,33 @@ void Stats_thd::combine(Stats_thd * stats) {
   for(uint64_t i = 0; i < 40; i ++) {
     mtx[i]+=stats->mtx[i];
   }
+
+  // Latency
+
+  lat_l_loc_work_queue_time+=stats->lat_l_loc_work_queue_time;
+  lat_l_loc_msg_queue_time+=stats->lat_l_loc_msg_queue_time;
+  lat_l_loc_cc_block_time+=stats->lat_l_loc_cc_block_time;
+  lat_l_loc_cc_time+=stats->lat_l_loc_cc_time;
+  lat_l_loc_process_time+=stats->lat_l_loc_process_time;
+  lat_l_loc_abort_time+=stats->lat_l_loc_abort_time;
+
+  lat_s_loc_work_queue_time+=stats->lat_s_loc_work_queue_time;
+  lat_s_loc_msg_queue_time+=stats->lat_s_loc_msg_queue_time;
+  lat_s_loc_cc_block_time+=stats->lat_s_loc_cc_block_time;
+  lat_s_loc_cc_time+=stats->lat_s_loc_cc_time;
+  lat_s_loc_process_time+=stats->lat_s_loc_process_time;
+
+  lat_l_rem_work_queue_time+=stats->lat_l_rem_work_queue_time;
+  lat_l_rem_msg_queue_time+=stats->lat_l_rem_msg_queue_time;
+  lat_l_rem_cc_block_time+=stats->lat_l_rem_cc_block_time;
+  lat_l_rem_cc_time+=stats->lat_l_rem_cc_time;
+  lat_l_rem_process_time+=stats->lat_l_rem_process_time;
+
+  lat_s_rem_work_queue_time+=stats->lat_s_rem_work_queue_time;
+  lat_s_rem_msg_queue_time+=stats->lat_s_rem_msg_queue_time;
+  lat_s_rem_cc_block_time+=stats->lat_s_rem_cc_block_time;
+  lat_s_rem_cc_time+=stats->lat_s_rem_cc_time;
+  lat_s_rem_process_time+=stats->lat_s_rem_process_time;
 }
 
 

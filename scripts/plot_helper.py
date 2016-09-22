@@ -316,12 +316,15 @@ def latency(xval,vval,summary,summary_cl,
 #        legend=True,
         ):
     global plot_cnt
-    lat = {}
-    lat2 = {}
+    ccl50 = {}
+    ccl99 = {}
+    fscl50 = {}
+    fscl99 = {}
+    sacl50 = {}
+    sacl99 = {}
     if name == "":
-        name = 'tput_plot{}'.format(plot_cnt)
+        name = 'latency_plot{}'.format(plot_cnt)
     plot_cnt += 1
-    name2 = name + '_2'
 #    name += '_{}'.format(title.replace(" ","_").lower())
 #    _title = 'System Throughput {}'.format(title)
     _title = title
@@ -347,8 +350,12 @@ def latency(xval,vval,summary,summary_cl,
             _v = mode_nice[v]
         else:
             _v = v
-        lat[_v] = [0] * len(xval)
-        lat2[_v] = [0] * len(xval)
+        ccl50[_v] = [0] * len(xval)
+        ccl99[_v] = [0] * len(xval)
+        fscl50[_v] = [0] * len(xval)
+        fscl99[_v] = [0] * len(xval)
+        sacl50[_v] = [0] * len(xval)
+        sacl99[_v] = [0] * len(xval)
 
         for x,xi in zip(xval,range(len(xval))):
             if new_cfgs != {}:
@@ -378,33 +385,31 @@ def latency(xval,vval,summary,summary_cl,
             tmp = 0
             try:
                 s = summary
-                tot_run_time = sum(s[cfgs]['total_runtime'])
-                tmp = 1
-                tot_txn_cnt = sum(s[cfgs]['txn_cnt'])
-                tot_txn_cnt = sum(s[cfgs]['txn_cnt']) - sum(s[cfgs]['post_warmup_txn_cnt'])
-#                tot_txn_cnt = sum(s[cfgs]['txn_cnt']) - sum(s[cfgs]["progress"][5]['txn_cnt'])
-                print("{} - {} -> {}".format(s[cfgs]['txn_cnt'],s[cfgs]['post_warmup_txn_cnt'],tot_txn_cnt))
-                tmp = 2
-                avg_run_time = avg(s[cfgs]['total_runtime'])
-                avg_run_time = 60
-                tmp = 3
-                tot_lat = sum(s[cfgs]['txn_run_time'])
+                s2 = summary_cl
+                ccl50[_v][xi] = avg(s2[cfgs]['ccl50'])
+                ccl99[_v][xi] = avg(s2[cfgs]['ccl99'])
+                fscl50[_v][xi] = avg(s[cfgs]['fscl50'])
+                fscl99[_v][xi] = avg(s[cfgs]['fscl99'])
+                sacl50[_v][xi] = avg(s[cfgs]['sacl50'])
+                sacl99[_v][xi] = avg(s[cfgs]['sacl99'])
             except KeyError:
                 print("KeyError: {}, {} {} -- {}".format(tmp,v,x,cfgs))
-                lat[_v][xi] = 0
-                lat2[_v][xi] = 0
+                ccl50[_v][xi] = 0
+                ccl99[_v][xi] = 0
+                fscl50[_v][xi] = 0
+                fscl99[_v][xi] = 0
+                sacl50[_v][xi] = 0
+                sacl99[_v][xi] = 0
                 continue
             stats = get_summary_stats(stats,summary[cfgs],summary_cl[cfgs],x,v,cc)
-            # System Throughput: total txn count / average of all node's run time
-            # Per Node Throughput: avg txn count / average of all node's run time
-            # Per txn latency: total of all node's run time / total txn count
-            lat[_v][xi] = tot_run_time / tot_txn_cnt 
-            lat2[_v][xi] = tot_lat / tot_txn_cnt
 
     pp = pprint.PrettyPrinter()
-    pp.pprint(lat)
-    pp.pprint(lat2)
-#    bbox = [0.8,0.35]
+    pp.pprint(ccl50)
+    pp.pprint(ccl99)
+    pp.pprint(fscl50)
+    pp.pprint(fscl99)
+    pp.pprint(sacl50)
+    pp.pprint(sacl99)
     bbox = [1.0,0.95]
     base = 2
     if xname == 'TXN_WRITE_PERC':
@@ -422,23 +427,24 @@ def latency(xval,vval,summary,summary_cl,
     print("Created plot {} {}".format(name,_title))
     if logscalex:
         _xlab = _xlab + " (Log Scale)"
-    _ylab= 'System Throughput\n(Thousand txn/s)'
+    _ylab= 'Latency (s)'
     if logscale:
-        _ylab = 'System Throughput\n(Thousand txn/s, Log Scale)'
+        _ylab = 'Latency\n(s, Log Scale)'
     print(_xval)
     
     # FIXME (Dana): MAAT --> OCC quick fix
-    print lat.keys()
-    if "MAAT" in lat.keys():
-        occ_tput = lat["MAAT"]
-        del lat["MAAT"]
-        lat["OCC"] = occ_tput
-        occ_tput = lat2["MAAT"]
-        del lat2["MAAT"]
-        lat2["OCC"] = occ_tput
+#    if "MAAT" in fscl50.keys():
+#        for x in [ccl50,ccl99,fscl50,fscl99,sacl50,fscl99]:
+#            occ_tput = ["MAAT"]
+#            del x["MAAT"]
+#            x["OCC"] = occ_tput
         
-    draw_line(name,lat,_xval,ylab=_ylab,xlab=_xlab,title=_title,bbox=bbox,ncol=2,ltitle=vname,ylimit=ylimit,logscale=logscale,logscalex=logscalex,legend=legend,base=base)
-    draw_line(name,lat2,_xval,ylab=_ylab,xlab=_xlab,title=_title,bbox=bbox,ncol=2,ltitle=vname,ylimit=ylimit,logscale=logscale,logscalex=logscalex,legend=legend,base=base)
+    draw_line(name+'ccl50',ccl50,_xval,ylab=_ylab,xlab=_xlab,title=_title,bbox=bbox,ncol=2,ltitle=vname,ylimit=ylimit,logscale=logscale,logscalex=logscalex,legend=legend,base=base)
+    draw_line(name+'ccl99',ccl99,_xval,ylab=_ylab,xlab=_xlab,title=_title,bbox=bbox,ncol=2,ltitle=vname,ylimit=ylimit,logscale=logscale,logscalex=logscalex,legend=legend,base=base)
+    draw_line(name+'fscl50',fscl50,_xval,ylab=_ylab,xlab=_xlab,title=_title,bbox=bbox,ncol=2,ltitle=vname,ylimit=ylimit,logscale=logscale,logscalex=logscalex,legend=legend,base=base)
+    draw_line(name+'fscl99',fscl99,_xval,ylab=_ylab,xlab=_xlab,title=_title,bbox=bbox,ncol=2,ltitle=vname,ylimit=ylimit,logscale=logscale,logscalex=logscalex,legend=legend,base=base)
+    draw_line(name+'sacl50',sacl50,_xval,ylab=_ylab,xlab=_xlab,title=_title,bbox=bbox,ncol=2,ltitle=vname,ylimit=ylimit,logscale=logscale,logscalex=logscalex,legend=legend,base=base)
+    draw_line(name+'sacl99',sacl99,_xval,ylab=_ylab,xlab=_xlab,title=_title,bbox=bbox,ncol=2,ltitle=vname,ylimit=ylimit,logscale=logscale,logscalex=logscalex,legend=legend,base=base)
 
 
    
@@ -885,15 +891,25 @@ def lat_tbl(totals,msg_bytes,ts,
     draw_lat_matrix(name,table,lat_types=stats,rows=stats,columns=msg_bytes,title=_title)
     
 
-def abort_rate(xval,vval,summary,
+def abort_rate(xval,
+        vval,
+        summary,
+        summary_cl,
         cfg_fmt=[],
         cfg=[],
+        lst={},
         xname="MPR",
         vname="CC_ALG",
-        title=""
+        title="",
+        extras={},
+        name="",
+        xlab="",
+        new_cfgs = {},
+        logscalex=False
         ):
     tpt = {}
-    name = 'abortrate_{}_{}_{}'.format(xname.lower(),vname.lower(),title.replace(" ","_").lower())
+    if name == "":
+        name = 'abortrate_{}_{}_{}'.format(xname.lower(),vname.lower(),title.replace(" ","_").lower())
     _title = 'Abort Rate {}'.format(title)
 
     for v in vval:
@@ -904,40 +920,30 @@ def abort_rate(xval,vval,summary,
         tpt[_v] = [0] * len(xval)
 
         for x,xi in zip(xval,range(len(xval))):
-            my_cfg_fmt = cfg_fmt + [xname] + [vname]
-            my_cfg = cfg + [x] + [v]
-#            my_cfg_fmt = cfg_fmt
-#            my_cfg = cfg
-#            my_cfg[my_cfg_fmt.index(xname)] = x
-#            my_cfg[my_cfg_fmt.index(vname)] = v
-            n_cnt = my_cfg[my_cfg_fmt.index("NODE_CNT")]
-            n_clt = my_cfg[my_cfg_fmt.index("CLIENT_NODE_CNT")]
-            my_cfg[my_cfg_fmt.index("CLIENT_NODE_CNT")] = int(math.ceil(n_cnt/2)) if n_cnt > 1 else 1
-            n_ppt = my_cfg[my_cfg_fmt.index("PART_PER_TXN")]
-            my_cfg[my_cfg_fmt.index("PART_PER_TXN")] = n_ppt if n_ppt <= n_cnt else 1
-            n_thd =  my_cfg[my_cfg_fmt.index("THREAD_CNT")]
-            n_alg =  my_cfg[my_cfg_fmt.index("CC_ALG")]
-#            my_cfg[my_cfg_fmt.index("THREAD_CNT")] = 1 if n_alg == "HSTORE" or n_alg == "HSTORE_SPEC" else n_thd
-            if n_alg == "HSTORE" or n_alg == "HSTORE_SPEC":
-#                my_cfg[my_cfg_fmt.index("PART_CNT")] = n_thd*n_cnt
-                my_cfg_fmt = my_cfg_fmt + ["PART_CNT"]
-                my_cfg = my_cfg + [n_thd*n_cnt]
+            if new_cfgs != {}:
+                my_cfg_fmt = cfg_fmt + [xname] + [vname]
+                my_cfg = new_cfgs[(x,v)] + [x] + [v]
+                my_cfg,my_cfg_fmt = apply_extras(my_cfg_fmt,my_cfg,extras,xname,vname)
             else:
-#                my_cfg[my_cfg_fmt.index("PART_CNT")] = n_cnt
-                my_cfg_fmt = my_cfg_fmt + ["PART_CNT"]
-                my_cfg = my_cfg + [n_cnt]
-#                my_cfg.pop(my_cfg_fmt.index("PART_CNT"))
-#                my_cfg_fmt.remove("PART_CNT")
-#            if "CLIENT_NODE_CNT" not in my_cfg_fmt:
-#                my_cfg_fmt = my_cfg_fmt + ["CLIENT_NODE_CNT"]
-#                my_cfg = my_cfg + [int(math.ceil(n_cnt/2)) if n_cnt > 1 else 1]
+                my_cfg_fmt = cfg_fmt + [xname] + [vname]
+                my_cfg = cfg + [x] + [v]
+                my_cfg,my_cfg_fmt = apply_extras(my_cfg_fmt,my_cfg,extras,xname,vname)
+            if lst != {}:
+                my_cfg_fmt = cfg_fmt + [xname] + [vname]
+                my_cfg = lst[(x,v)] + [x] + [v]
+                my_cfg,my_cfg_fmt = apply_extras(my_cfg_fmt,my_cfg,extras,xname,vname)
+                print("fmt ({},{}): {}".format(x,v,my_cfg_fmt))
+                print("lst ({},{}): {}".format(x,v,my_cfg))
 
-#            my_cfg[my_cfg_fmt.index("MAX_TXN_IN_FLIGHT")] /= my_cfg[my_cfg_fmt.index("NODE_CNT")]
             cfgs = get_cfgs(my_cfg_fmt, my_cfg)
+            cc = cfgs["CC_ALG"]
+            nnodes = cfgs["NODE_CNT"]
             cfgs = get_outfile_name(cfgs,my_cfg_fmt)
+            print(cfgs)
+            tmp = 0
             if cfgs not in summary.keys(): 
                 print("Not in summary: {}".format(cfgs))
-                break
+                continue            
             try:
                 tot_txn_cnt = sum(summary[cfgs]['txn_cnt'])
                 avg_txn_cnt = avg(summary[cfgs]['txn_cnt'])
@@ -1257,6 +1263,190 @@ def time_breakdown(xval,summary,
         _xval[_xval.index("MAAT")] = "OCC"
     draw_stack(data,_xval,stack_names,figname=name,title=_title,ymax=_ymax,legend=legend)
     print("Created plot {}".format(name))
+
+
+# Stack graph of average txn latency breakdown 
+# nodes: node count to plot
+# algos: CC algo to plot
+# summary: dictionary loaded with results
+# normalized: if true, normalize the results
+def latency_breakdown(xval,summary,
+        normalized=True,
+        xname="NODE_CNT",
+        cfg_fmt=[],
+        cfg=[],
+        title='',
+        extras = {},
+        name='',
+        new_cfgs = {},
+        legend=False
+        ):
+    stack_names = [
+    'Abort',
+    'Network',
+    'Message Queue',
+    'Work Queue',
+    'CC Manager',
+    'CC Blocking',
+    'Processing'
+    ]
+    global plot_cnt
+    pp = pprint.PrettyPrinter()
+    if name == "":
+        name = 'breakdown_{}'.format(plot_cnt)
+    plot_cnt += 1
+    _ymax=1.0
+#    if normalized:
+#        _title = 'Normalized {}'.format(title)
+#    else:
+#        _title = title
+    _title = title
+    pp.pprint(cfg)
+
+    if xname == "ABORT_PENALTY":
+        _xval = [(float(x.replace("UL","")))/1000000000 for x in xval]
+        sort_idxs = sorted(range(len(_xval)),key=lambda x:_xval[x])
+        xval = [xval[i] for i in sort_idxs]
+        _xval = sorted(_xval)
+        _xlab = xname + " (Sec)"
+    else:
+        _xval = xval
+        _xlab = xname
+
+    time_abort = [0] * len(xval)
+    time_network = [0] * len(xval)
+    time_msg_q = [0] * len(xval)
+    time_work_q = [0] * len(xval)
+    time_ccman = [0] * len(xval)
+    time_cc_block = [0] * len(xval)
+    time_work = [0] * len(xval)
+    total = [1] * len(xval)
+    txn_cnt = [1] * len(xval)
+
+    ltime_abort = [0] * len(xval)
+    ltime_network = [0] * len(xval)
+    ltime_msg_q = [0] * len(xval)
+    ltime_work_q = [0] * len(xval)
+    ltime_ccman = [0] * len(xval)
+    ltime_cc_block = [0] * len(xval)
+    ltime_work = [0] * len(xval)
+    ltotal = [1] * len(xval)
+
+    for x,i in zip(xval,range(len(xval))):
+        if new_cfgs != {}:
+            my_cfg_fmt = cfg_fmt + [xname]
+            my_cfg = new_cfgs[(x,0)] + [x]
+            my_cfg,my_cfg_fmt = apply_extras(my_cfg_fmt,my_cfg,extras,xname,'')
+        else:
+            my_cfg_fmt = cfg_fmt + [xname]
+            my_cfg = cfg + [x]
+            my_cfg,my_cfg_fmt = apply_extras(my_cfg_fmt,my_cfg,extras,xname,'')
+
+        cfgs = get_cfgs(my_cfg_fmt, my_cfg)
+        cfgs = get_outfile_name(cfgs,my_cfg_fmt)
+        print(cfgs)
+        if cfgs not in summary.keys(): 
+            print("Not in summary")
+            continue
+        try:
+            if "CALVIN" == x:
+                txn_cnt[i] = sum(summary[cfgs]['seq_txn_cnt'])
+            else:
+                txn_cnt[i] = sum(summary[cfgs]['txn_cnt'])
+#            time_abort[i] = avg(summary[cfgs]['lat_l_loc_abort_time']) / txn_cnt[i]
+            time_msg_q[i] = (avg(summary[cfgs]['lat_s_loc_msg_queue_time']) + avg(summary[cfgs]['lat_l_rem_msg_queue_time'])) / txn_cnt[i]
+            time_work_q[i] = (sum(summary[cfgs]['lat_s_loc_work_queue_time']) + sum(summary[cfgs]['lat_l_rem_work_queue_time'])) / txn_cnt[i]
+            time_ccman[i] = (sum(summary[cfgs]['lat_s_loc_cc_time']) + sum(summary[cfgs]['lat_l_rem_cc_time'])) / txn_cnt[i]
+            time_cc_block[i] = (sum(summary[cfgs]['lat_s_loc_cc_block_time']) + sum(summary[cfgs]['lat_l_rem_cc_block_time'])) / txn_cnt[i]
+            time_work[i] = (sum(summary[cfgs]['lat_s_loc_process_time']) + sum(summary[cfgs]['lat_l_rem_process_time'])) / txn_cnt[i]
+            total[i] = sum(time_abort[i] + time_msg_q[i] +time_work_q[i] + time_ccman[i] + time_cc_block[i] + time_work[i])
+
+            if "CALVIN" == x:
+                time_network[i] = avg(summary[cfgs]['lscl_avg']) - total[i]
+            else:
+                time_network[i] = avg(summary[cfgs]['lscl_avg']) - total[i]
+            total[i] += time_network[i]
+
+            ltime_abort[i] = sum(summary[cfgs]['lat_l_loc_abort_time']) / txn_cnt[i]
+            ltime_msg_q[i] = (sum(summary[cfgs]['lat_l_loc_msg_queue_time']) + sum(summary[cfgs]['lat_l_rem_msg_queue_time'])+ sum(summary[cfgs]['lat_s_rem_msg_queue_time'])) / txn_cnt[i]
+            ltime_work_q[i] = (sum(summary[cfgs]['lat_l_loc_work_queue_time']) + sum(summary[cfgs]['lat_l_rem_work_queue_time'])+ sum(summary[cfgs]['lat_s_rem_work_queue_time'])) / txn_cnt[i]
+            ltime_ccman[i] = (sum(summary[cfgs]['lat_l_loc_cc_time']) + sum(summary[cfgs]['lat_l_rem_cc_time'])+ sum(summary[cfgs]['lat_s_rem_cc_time'])) / txn_cnt[i]
+            ltime_cc_block[i] = (sum(summary[cfgs]['lat_l_loc_cc_block_time']) + sum(summary[cfgs]['lat_l_rem_cc_block_time'])+ sum(summary[cfgs]['lat_s_rem_cc_block_time'])) / txn_cnt[i]
+            ltime_work[i] = (sum(summary[cfgs]['lat_l_loc_process_time']) + sum(summary[cfgs]['lat_l_rem_process_time'])+ sum(summary[cfgs]['lat_s_rem_process_time'])) / txn_cnt[i]
+            ltotal[i] = sum(ltime_abort[i] + ltime_msg_q[i] +ltime_work_q[i] + ltime_ccman[i] + ltime_cc_block[i] + ltime_work[i])
+
+            ltime_network[i] = avg(summary[cfgs]['fscl_avg']) - ltotal[i]
+            ltotal[i] += ltime_network[i]
+
+        except KeyError:
+            print("KeyError: {}".format(cfgs))
+
+
+    if normalized:
+        time_abort = [i / j for i,j in zip(time_abort,total)]
+        time_network = [i / j for i,j in zip(time_network,total)]
+        time_msg_q = [i / j for i,j in zip(time_msg_q,total)]
+        time_work_q = [i / j for i,j in zip(time_work_q,total)]
+        time_ccman = [i / j for i,j in zip(time_ccman,total)]
+        time_cc_block = [i / j for i,j in zip(time_cc_block,total)]
+        time_work = [i / j for i,j in zip(time_work,total)]
+
+        ltime_abort = [i / j for i,j in zip(ltime_abort,ltotal)]
+        ltime_network = [i / j for i,j in zip(ltime_network,ltotal)]
+        ltime_msg_q = [i / j for i,j in zip(ltime_msg_q,ltotal)]
+        ltime_work_q = [i / j for i,j in zip(ltime_work_q,ltotal)]
+        ltime_ccman = [i / j for i,j in zip(ltime_ccman,ltotal)]
+        ltime_cc_block = [i / j for i,j in zip(ltime_cc_block,ltotal)]
+        ltime_work = [i / j for i,j in zip(ltime_work,ltotal)]
+        _ymax = 1
+        _ymaxl = 1
+    else:
+        _ymax = max(total)
+        _ymaxl = max(ltotal)
+    print("time_abort")
+    pp.pprint(time_abort)
+    print("time_network")
+    pp.pprint(time_network)
+    print("time_msg_q")
+    pp.pprint(time_msg_q)
+    print("time_work_q")
+    pp.pprint(time_work_q)
+    print("time_ccman")
+    pp.pprint(time_ccman)
+    print("time_cc_block")
+    pp.pprint(time_cc_block)
+    print("time_work")
+    pp.pprint(time_work)
+    data = [
+        time_abort,
+        time_network,
+        time_msg_q,
+        time_work_q,
+        time_ccman,
+        time_cc_block,
+        time_work
+        ]
+    pp.pprint(data)
+    
+    # Quick and dirty label fix by Dana
+    if "MAAT" in _xval:
+        _xval[_xval.index("MAAT")] = "OCC"
+    draw_stack(data,_xval,stack_names,figname="sa"+name,title=_title,ymax=_ymax,legend=True)
+
+    data = [
+        ltime_abort,
+        ltime_network,
+        ltime_msg_q,
+        ltime_work_q,
+        ltime_ccman,
+        ltime_cc_block,
+        ltime_work
+        ]
+    pp.pprint(data)
+ 
+    draw_stack(data,_xval,stack_names,figname="fs"+name,title=_title,ymax=_ymax,legend=True)
+    print("Created plot {}".format(name))
+
 
 
 # Stack graph of time breakdowns

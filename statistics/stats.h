@@ -36,8 +36,8 @@ class Stats_thd {
 public:
 	void init(uint64_t thd_id);
 	void combine(Stats_thd * stats);
-	void print(FILE * outf);
-	void print_client(FILE * outf);
+	void print(FILE * outf, bool prog);
+	void print_client(FILE * outf, bool prog);
 	void clear();
 
 	char _pad2[CL_SIZE];
@@ -232,7 +232,37 @@ public:
   // Latency
   StatsArr client_client_latency;
   StatsArr first_start_commit_latency;
+  StatsArr last_start_commit_latency;
   StatsArr start_abort_commit_latency;
+
+  // stats from committed local transactions from the first starttime of the transaction
+  double lat_l_loc_work_queue_time;
+  double lat_l_loc_msg_queue_time;
+  double lat_l_loc_cc_block_time;
+  double lat_l_loc_cc_time;
+  double lat_l_loc_process_time;
+  double lat_l_loc_abort_time;
+
+  // stats from committed local transactions only from the most recent start time
+  double lat_s_loc_work_queue_time;
+  double lat_s_loc_msg_queue_time;
+  double lat_s_loc_cc_block_time;
+  double lat_s_loc_cc_time;
+  double lat_s_loc_process_time;
+
+  // stats from committed non-local transactions
+  double lat_l_rem_work_queue_time;
+  double lat_l_rem_msg_queue_time;
+  double lat_l_rem_cc_block_time;
+  double lat_l_rem_cc_time;
+  double lat_l_rem_process_time;
+
+  // stats from aborted non-local transactions
+  double lat_s_rem_work_queue_time;
+  double lat_s_rem_msg_queue_time;
+  double lat_s_rem_cc_block_time;
+  double lat_s_rem_cc_time;
+  double lat_s_rem_process_time;
 
   double * mtx;
 
