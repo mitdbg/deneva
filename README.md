@@ -39,4 +39,7 @@ Run
 
 The DBMS can be run with 
 
-    ./rundb
+    ./rundb -nid[N]
+    ./runcl -nid[M]
+
+where N and M are the ID of a server and client, respectively
