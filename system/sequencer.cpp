@@ -131,6 +131,22 @@ void Sequencer::process_ack(Message * msg, uint64_t thd_id) {
     INC_STATS(0,lat_l_loc_msg_queue_time,wait_list[id].total_batch_time);
     INC_STATS(0,lat_l_loc_process_time,skew_timespan);
 
+    INC_STATS(0,lat_short_work_queue_time,msg->lat_work_queue_time);
+    INC_STATS(0,lat_short_msg_queue_time,msg->lat_msg_queue_time);
+    INC_STATS(0,lat_short_cc_block_time,msg->lat_cc_block_time);
+    INC_STATS(0,lat_short_cc_time,msg->lat_cc_time);
+    INC_STATS(0,lat_short_process_time,msg->lat_process_time);
+
+    if (msg->return_node_id != g_node_id) {
+      /*
+          if (msg->lat_network_time/BILLION > 1.0) {
+            printf("%ld %d %ld -> %d: %f %f\n",msg->txn_id, msg->rtype, msg->return_node_id,g_node_id ,msg->lat_network_time/BILLION, msg->lat_other_time/BILLION);
+          } 
+          */
+      INC_STATS(0,lat_short_network_time,msg->lat_network_time);
+    }
+    INC_STATS(0,lat_short_batch_time,wait_list[id].total_batch_time);
+
           PRINT_LATENCY("lat_l_seq %ld %ld %d %f %f %f\n"
                   , msg->get_txn_id()
                   , msg->get_batch_id()
@@ -218,6 +234,8 @@ void Sequencer::process_txn( Message * msg,uint64_t thd_id, uint64_t early_start
     en->txns_left++;
     // Note: Modifying msg!
     msg->return_node_id = g_node_id;
+    msg->lat_network_time = 0;
+    msg->lat_other_time = 0;
 #if CC_ALG == CALVIN && WORKLOAD == PPS
     PPSClientQueryMessage* cl_msg = (PPSClientQueryMessage*) msg;
     if (cl_msg->txn_type == PPS_GETPARTBYSUPPLIER ||

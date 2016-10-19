@@ -45,6 +45,16 @@ public:
 
   uint64_t wq_time;
   uint64_t mq_time;
+  uint64_t ntwk_time;
+
+  // Collect other stats
+  double lat_work_queue_time;
+  double lat_msg_queue_time;
+  double lat_cc_block_time;
+  double lat_cc_time;
+  double lat_process_time;
+  double lat_network_time;
+  double lat_other_time;
 
   uint64_t mget_size();
   uint64_t get_txn_id() {return txn_id;}

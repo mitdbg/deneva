@@ -68,6 +68,10 @@ RC CalvinLockThread::run() {
         while(!txn_man->unset_ready()) { }
         assert(ISSERVERN(msg->get_return_id()));
         txn_man->txn_stats.starttime = get_sys_clock();
+
+        txn_man->txn_stats.lat_network_time_start = msg->lat_network_time;
+        txn_man->txn_stats.lat_other_time_start = msg->lat_other_time;
+
         msg->copy_to_txn(txn_man);
         txn_man->register_thread(this);
         assert(ISSERVERN(txn_man->return_id));

@@ -62,9 +62,8 @@ def pps_scaling():
 def ycsb_scaling():
     wl = 'YCSB'
     nnodes = [1,2,4,8,16,32,64]
-    nnodes = [16]
+#    nnodes = [16]
     algos=['NO_WAIT','WAIT_DIE','MVCC','MAAT','CALVIN','TIMESTAMP']
-#    algos=['TIMESTAMP']
     base_table_size=2097152*8
     txn_write_perc = [0.5]
     tup_write_perc = [0.5]
@@ -78,6 +77,21 @@ def ycsb_scaling():
 #    skew = [0.0]
 #    exp = exp + [[wl,n,algo,base_table_size*n,tup_wr_perc,txn_wr_perc,ld,sk,thr] for thr,txn_wr_perc,tup_wr_perc,sk,ld,n,algo in itertools.product(tcnt,txn_write_perc,tup_write_perc,skew,load,nnodes,algos)]
     return fmt,exp
+
+def ecwc():
+    wl = 'YCSB'
+    nnodes = [2]
+    algos=['NO_WAIT','WAIT_DIE','MVCC','CALVIN','TIMESTAMP','MAAT']
+    base_table_size=2097152*8
+    txn_write_perc = [0.5]
+    tup_write_perc = [0.5]
+    load = [10000]
+    tcnt = [4]
+    skew = [0.6]
+    fmt = ["WORKLOAD","NODE_CNT","CC_ALG","SYNTH_TABLE_SIZE","TUP_WRITE_PERC","TXN_WRITE_PERC","MAX_TXN_IN_FLIGHT","ZIPF_THETA","THREAD_CNT"]
+    exp = [[wl,n,algo,base_table_size*n,tup_wr_perc,txn_wr_perc,ld,sk,thr] for thr,txn_wr_perc,tup_wr_perc,sk,ld,n,algo in itertools.product(tcnt,txn_write_perc,tup_write_perc,skew,load,nnodes,algos)]
+    return fmt,exp
+
 
 def ycsb_scaling_abort():
     wl = 'YCSB'
@@ -914,6 +928,9 @@ experiment_map = {
     'ppr_pps_scaling_plot': ppr_pps_scaling_plot,
     'ppr_ycsb_scaling': ycsb_scaling,
     'ppr_ycsb_scaling_plot': ppr_ycsb_scaling_plot,
+    'ecwc': ecwc,
+    'ppr_ecwc': ecwc,
+    'ppr_ecwc_plot': ppr_ecwc_plot,
     'ppr_ycsb_skew': ycsb_skew,
     'ppr_ycsb_skew_plot': ppr_ycsb_skew_plot,
     'ppr_ycsb_skew_abort': ycsb_skew_abort,

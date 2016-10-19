@@ -205,14 +205,43 @@ RC WorkerThread::run() {
       INC_STATS(_thd_id,worker_idle_time,get_sys_clock() - idle_starttime);
       idle_starttime = 0;
     }
+    //uint64_t starttime = get_sys_clock();
 
     if(msg->rtype != CL_QRY || CC_ALG == CALVIN) {
       txn_man = get_transaction_manager(msg);
+
+      if (CC_ALG != CALVIN && IS_LOCAL(txn_man->get_txn_id())) {
+        if (msg->rtype != RTXN_CONT && ((msg->rtype != RACK_PREP) || (txn_man->get_rsp_cnt() == 1))) {
+          txn_man->txn_stats.work_queue_time_short += msg->lat_work_queue_time;
+          txn_man->txn_stats.cc_block_time_short += msg->lat_cc_block_time;
+          txn_man->txn_stats.cc_time_short += msg->lat_cc_time;
+          txn_man->txn_stats.msg_queue_time_short += msg->lat_msg_queue_time;
+          txn_man->txn_stats.process_time_short += msg->lat_process_time;
+          /*
+          if (msg->lat_network_time/BILLION > 1.0) {
+            printf("%ld %d %ld -> %ld: %f %f\n",msg->txn_id, msg->rtype, msg->return_node_id,get_node_id() ,msg->lat_network_time/BILLION, msg->lat_other_time/BILLION);
+          } 
+          */
+          txn_man->txn_stats.network_time_short += msg->lat_network_time;
+        }
+
+      } else {
+          txn_man->txn_stats.clear_short();
+      }
+      if (CC_ALG != CALVIN) {
+        txn_man->txn_stats.lat_network_time_start = msg->lat_network_time;
+        txn_man->txn_stats.lat_other_time_start = msg->lat_other_time;
+      }
       txn_man->txn_stats.msg_queue_time += msg->mq_time;
+      txn_man->txn_stats.msg_queue_time_short += msg->mq_time;
       msg->mq_time = 0;
       txn_man->txn_stats.work_queue_time += msg->wq_time;
+      txn_man->txn_stats.work_queue_time_short += msg->wq_time;
+      //txn_man->txn_stats.network_time += msg->ntwk_time;
       msg->wq_time = 0;
       txn_man->txn_stats.work_queue_cnt += 1;
+
+
       ready_starttime = get_sys_clock();
       bool ready = txn_man->unset_ready();
       INC_STATS(get_thd_id(),worker_activate_txn_time,get_sys_clock() - ready_starttime);

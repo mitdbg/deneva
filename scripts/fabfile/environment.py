@@ -54,9 +54,11 @@ def set_env_istc():
 def set_env_ec2():
     env.user = "ubuntu"
     env.uname = "ubuntu"
+#    env.user = "ec2-user"
+#    env.uname = "ec2-user"
     env.cluster = "ec2"
     env.remote = True
-    env.key_filename = "~/.ssh/devenv-key.pem"
+    env.key_filename = ["~/.ssh/devenv-key.pem","~/.ssh/devenv-key-wc.pem"]
     env.ifconfig = os.path.join(env.local_path,"ec2_ifconfig.txt")
     env.rem_homedir = os.path.join("/home/",env.uname)
     env.shmem = False

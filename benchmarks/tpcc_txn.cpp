@@ -80,7 +80,9 @@ RC TPCCTxnManager::run_txn() {
     rc = run_txn_state();
   }
 
-  txn_stats.process_time += get_sys_clock() - starttime;
+  uint64_t curr_time = get_sys_clock();
+  txn_stats.process_time += curr_time - starttime;
+  txn_stats.process_time_short += curr_time - starttime;
 
   if(IS_LOCAL(get_txn_id())) {
     if(is_done() && rc == RCOK) 
@@ -992,7 +994,9 @@ RC TPCCTxnManager::run_calvin_txn() {
         assert(false);
     }
   }
-  txn_stats.process_time += get_sys_clock() - starttime;
+  uint64_t curr_time = get_sys_clock();
+  txn_stats.process_time += curr_time - starttime;
+  txn_stats.process_time_short += curr_time - starttime;
   txn_stats.wait_starttime = get_sys_clock();
   return rc;
   

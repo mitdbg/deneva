@@ -115,6 +115,8 @@ stat_map = OrderedDict([
   ('single_part_txn_avg_time', []),
   ('txn_write_cnt', []),
   ('record_write_cnt', []),
+  ('parts_touched', []),
+  ('avg_parts_touched', []),
 
   # Client
   ('txn_sent_cnt', []),
@@ -408,6 +410,14 @@ stat_map = OrderedDict([
   ('lat_l_loc_process_time', []),
   ('lat_l_loc_abort_time', []),
 
+  ('lat_short_work_queue_time', []),
+  ('lat_short_msg_queue_time', []),
+  ('lat_short_cc_block_time', []),
+  ('lat_short_cc_time', []),
+  ('lat_short_process_time', []),
+  ('lat_short_network_time', []),
+  ('lat_short_batch_time', []),
+
   ('lat_s_loc_work_queue_time', []),
   ('lat_s_loc_msg_queue_time', []),
   ('lat_s_loc_cc_block_time', []),
@@ -446,6 +456,8 @@ stat_map2 = {
   'single_part_txn_cnt': [],
   'single_part_txn_run_time': [],
   'single_part_txn_avg_time': [],
+  'parts_touched': [],
+  'avg_parts_touched': [],
 
   # Client
   'txn_sent_cnt': [],
@@ -605,6 +617,14 @@ stat_map2 = {
   'lat_l_loc_cc_time': [],
   'lat_l_loc_process_time': [],
   'lat_l_loc_abort_time': [],
+
+  'lat_short_work_queue_time': [],
+  'lat_short_msg_queue_time': [],
+  'lat_short_cc_block_time': [],
+  'lat_short_cc_time': [],
+  'lat_short_process_time': [],
+  'lat_short_network_time': [],
+  'lat_short_batch_time': [],
 
   'lat_s_loc_work_queue_time': [],
   'lat_s_loc_msg_queue_time': [],

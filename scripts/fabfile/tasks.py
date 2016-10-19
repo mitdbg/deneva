@@ -567,17 +567,20 @@ def assign_roles(server_cnt,client_cnt,append=False):
     return new_roles
 
 def get_good_hosts():
-    good_hosts = []
+#    good_hosts = []
     set_hosts()
+    good_hosts = env.hosts
 
     # Find and skip bad hosts
     ping_results = execute(ping)
     for host in ping_results:
         if ping_results[host] == 0:
-            good_hosts.append(host)
+#            good_hosts.append(host)
+            continue
         else:
             with color("warn"):
                 puts("Skipping non-responsive host {}".format(host),show_prefix=True)
+            good_hosts.remove(host)
     return good_hosts
 
 @task

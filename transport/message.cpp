@@ -62,6 +62,16 @@ Message * Message::create_message(TxnManager * txn, RemReqType rtype) {
  Message * msg = create_message(rtype);
  msg->mcopy_from_txn(txn);
  msg->copy_from_txn(txn);
+
+ // copy latency here
+ msg->lat_work_queue_time = txn->txn_stats.work_queue_time_short;
+ msg->lat_msg_queue_time = txn->txn_stats.msg_queue_time_short;
+ msg->lat_cc_block_time = txn->txn_stats.cc_block_time_short;
+ msg->lat_cc_time = txn->txn_stats.cc_time_short;
+ msg->lat_process_time = txn->txn_stats.process_time_short;
+ msg->lat_network_time = txn->txn_stats.lat_network_time_start;
+ msg->lat_other_time = txn->txn_stats.lat_other_time_start;
+
  return msg;
 }
 
@@ -169,6 +179,17 @@ Message * Message::create_message(RemReqType rtype) {
   msg->return_node_id = g_node_id;
   msg->wq_time = 0;
   msg->mq_time = 0;
+  msg->ntwk_time = 0;
+
+  msg->lat_work_queue_time = 0;
+  msg->lat_msg_queue_time = 0;
+  msg->lat_cc_block_time = 0;
+  msg->lat_cc_time = 0;
+  msg->lat_process_time = 0;
+  msg->lat_network_time = 0;
+  msg->lat_other_time = 0;
+
+
   return msg;
 }
 
@@ -181,6 +202,9 @@ uint64_t Message::mget_size() {
 #endif
   // for stats, send message queue time
   size += sizeof(uint64_t);
+
+  // for stats, latency
+  size += sizeof(uint64_t) * 7;
   return size;
 }
 
@@ -205,6 +229,20 @@ void Message::mcopy_from_buf(char * buf) {
   COPY_VAL(batch_id,buf,ptr);
 #endif
   COPY_VAL(mq_time,buf,ptr);
+
+  COPY_VAL(lat_work_queue_time,buf,ptr);
+  COPY_VAL(lat_msg_queue_time,buf,ptr);
+  COPY_VAL(lat_cc_block_time,buf,ptr);
+  COPY_VAL(lat_cc_time,buf,ptr);
+  COPY_VAL(lat_process_time,buf,ptr);
+  COPY_VAL(lat_network_time,buf,ptr);
+  COPY_VAL(lat_other_time,buf,ptr);
+  if ((CC_ALG == CALVIN && rtype == CALVIN_ACK && txn_id % g_node_cnt == g_node_id) || (CC_ALG != CALVIN && IS_LOCAL(txn_id))) {
+    lat_network_time = (get_sys_clock() - lat_network_time) - lat_other_time;
+  } else {
+    lat_other_time = get_sys_clock();
+  }
+  //printf("buftot %ld: %f, %f\n",txn_id,lat_network_time,lat_other_time);
 }
 
 void Message::mcopy_to_buf(char * buf) {
@@ -215,6 +253,20 @@ void Message::mcopy_to_buf(char * buf) {
   COPY_BUF(buf,batch_id,ptr);
 #endif
   COPY_BUF(buf,mq_time,ptr);
+
+  COPY_BUF(buf,lat_work_queue_time,ptr);
+  COPY_BUF(buf,lat_msg_queue_time,ptr);
+  COPY_BUF(buf,lat_cc_block_time,ptr);
+  COPY_BUF(buf,lat_cc_time,ptr);
+  COPY_BUF(buf,lat_process_time,ptr);
+  if ((CC_ALG == CALVIN && rtype == CL_QRY && txn_id % g_node_cnt == g_node_id) || (CC_ALG != CALVIN && IS_LOCAL(txn_id))) {
+    lat_network_time = get_sys_clock();
+  } else {
+    lat_other_time = get_sys_clock() - lat_other_time;
+  }
+  //printf("mtobuf %ld: %f, %f\n",txn_id,lat_network_time,lat_other_time);
+  COPY_BUF(buf,lat_network_time,ptr);
+  COPY_BUF(buf,lat_other_time,ptr);
 }
 
 void Message::release_message(Message * msg) {

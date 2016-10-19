@@ -142,7 +142,7 @@ RC Row_lock::lock_get(lock_t type, TxnManager * txn, uint64_t* &txnids, int &txn
 
                 waiter_cnt ++;
                 DEBUG("lk_wait (%ld,%ld): owners %d, own type %d, req type %d, key %ld %lx\n",txn->get_txn_id(),txn->get_batch_id(),owner_cnt,lock_type,type,_row->get_primary_key(),(uint64_t)_row);
-                txn->twopl_wait_start = get_sys_clock();
+                //txn->twopl_wait_start = get_sys_clock();
                 rc = WAIT;
                 //txn->wait_starttime = get_sys_clock();
             } else {
@@ -157,9 +157,11 @@ RC Row_lock::lock_get(lock_t type, TxnManager * txn, uint64_t* &txnids, int &txn
             DEBUG("lk_wait (%ld,%ld): owners %d, own type %d, req type %d, key %ld %lx\n",txn->get_txn_id(),txn->get_batch_id(),owner_cnt,lock_type,type,_row->get_primary_key(),(uint64_t)_row);
             LIST_PUT_TAIL(waiters_head, waiters_tail, entry);
             waiter_cnt ++;
+            /*
             if (txn->twopl_wait_start == 0) {
                 txn->twopl_wait_start = get_sys_clock();
             }
+            */
             //txn->lock_ready = false;
             ATOM_CAS(txn->lock_ready,true,false);
             txn->incr_lr();
@@ -194,8 +196,13 @@ RC Row_lock::lock_get(lock_t type, TxnManager * txn, uint64_t* &txnids, int &txn
 
     }
 final:
-    uint64_t timespan = get_sys_clock() - starttime;
+    uint64_t curr_time = get_sys_clock();
+    uint64_t timespan = curr_time - starttime;
+    if (rc == WAIT && txn->twopl_wait_start == 0) {
+        txn->twopl_wait_start = curr_time;
+    }
     txn->txn_stats.cc_time += timespan;
+    txn->txn_stats.cc_time_short += timespan;
 INC_STATS(txn->get_thd_id(),twopl_getlock_time,timespan);
 INC_STATS(txn->get_thd_id(),twopl_getlock_cnt,1);
 	
@@ -314,8 +321,10 @@ RC Row_lock::lock_release(TxnManager * txn) {
 #endif
           DEBUG("2lock (%ld,%ld): owners %d, own type %d, req type %d, key %ld %lx\n",entry->txn->get_txn_id(),entry->txn->get_batch_id(),owner_cnt,lock_type,entry->type,_row->get_primary_key(),(uint64_t)_row);
           uint64_t timespan = get_sys_clock() - entry->txn->twopl_wait_start;
+          entry->txn->twopl_wait_start = 0;
 #if CC_ALG != CALVIN
-          txn->txn_stats.cc_block_time += timespan;
+          entry->txn->txn_stats.cc_block_time += timespan;
+          entry->txn->txn_stats.cc_block_time_short += timespan;
 #endif
           INC_STATS(txn->get_thd_id(),twopl_wait_time,timespan);
 
@@ -332,7 +341,8 @@ RC Row_lock::lock_release(TxnManager * txn) {
           if(entry->txn->decr_lr() == 0) {
               if(ATOM_CAS(entry->txn->lock_ready,false,true)) {
 #if CC_ALG == CALVIN
-                  txn->txn_stats.cc_block_time += timespan;
+                  entry->txn->txn_stats.cc_block_time += timespan;
+                  entry->txn->txn_stats.cc_block_time_short += timespan;
 #endif
                   txn_table.restart_txn(txn->get_thd_id(),entry->txn->get_txn_id(),entry->txn->get_batch_id());
               }
@@ -348,6 +358,7 @@ RC Row_lock::lock_release(TxnManager * txn) {
 
       uint64_t timespan = get_sys_clock() - starttime;
       txn->txn_stats.cc_time += timespan;
+      txn->txn_stats.cc_time_short += timespan;
       INC_STATS(txn->get_thd_id(),twopl_release_time,timespan);
       INC_STATS(txn->get_thd_id(),twopl_release_cnt,1);
 

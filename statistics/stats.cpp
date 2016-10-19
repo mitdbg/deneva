@@ -71,6 +71,7 @@ void Stats_thd::clear() {
   single_part_txn_run_time=0;
   txn_write_cnt=0;
   record_write_cnt=0;
+  parts_touched=0;
 
   // Breakdown
   ts_alloc_time=0;
@@ -240,12 +241,30 @@ void Stats_thd::clear() {
   for(uint64_t i = 0; i < 40; i ++) {
     mtx[i]=0;
   }
+
+  lat_work_queue_time=0;
+  lat_msg_queue_time=0;
+  lat_cc_block_time=0;
+  lat_cc_time=0;
+  lat_process_time=0;
+  lat_abort_time=0;
+  lat_network_time=0;
+  lat_other_time=0;
+
   lat_l_loc_work_queue_time=0;
   lat_l_loc_msg_queue_time=0;
   lat_l_loc_cc_block_time=0;
   lat_l_loc_cc_time=0;
   lat_l_loc_process_time=0;
   lat_l_loc_abort_time=0;
+
+  lat_short_work_queue_time=0;
+  lat_short_msg_queue_time=0;
+  lat_short_cc_block_time=0;
+  lat_short_cc_time=0;
+  lat_short_process_time=0;
+  lat_short_network_time=0;
+  lat_short_batch_time=0;
 
   lat_s_loc_work_queue_time=0;
   lat_s_loc_msg_queue_time=0;
@@ -413,10 +432,13 @@ void Stats_thd::print(FILE * outf, bool prog) {
   double txn_run_avg_time = 0;
   double multi_part_txn_avg_time = 0;
   double single_part_txn_avg_time = 0;
+  double avg_parts_touched = 0;
   if(total_runtime > 0) 
     tput = txn_cnt / (total_runtime / BILLION);
-  if(txn_cnt > 0) 
+  if(txn_cnt > 0) {
     txn_run_avg_time = txn_run_time / txn_cnt;
+    avg_parts_touched = ((double)parts_touched) / txn_cnt;
+  }
   if(multi_part_txn_cnt > 0)
     multi_part_txn_avg_time = multi_part_txn_run_time / multi_part_txn_cnt;
   if(single_part_txn_cnt > 0)
@@ -444,6 +466,8 @@ void Stats_thd::print(FILE * outf, bool prog) {
   ",single_part_txn_avg_time=%f"
   ",txn_write_cnt=%ld"
   ",record_write_cnt=%ld"
+  ",parts_touched=%ld"
+  ",avg_parts_touched=%f"
   ,tput
   ,txn_cnt
   ,remote_txn_cnt
@@ -466,6 +490,8 @@ void Stats_thd::print(FILE * outf, bool prog) {
   ,single_part_txn_avg_time / BILLION
   ,txn_write_cnt
   ,record_write_cnt
+  ,parts_touched
+  ,avg_parts_touched
   );
 
   // Breakdown
@@ -963,12 +989,29 @@ void Stats_thd::print(FILE * outf, bool prog) {
       );
   }
   fprintf(outf,
+          ",lat_work_queue_time=%f"
+          ",lat_msg_queue_time=%f"
+          ",lat_cc_block_time=%f"
+          ",lat_cc_time=%f"
+          ",lat_process_time=%f"
+          ",lat_abort_time=%f"
+          ",lat_network_time=%f"
+          ",lat_other_time=%f"
+
   ",lat_l_loc_work_queue_time=%f"
   ",lat_l_loc_msg_queue_time=%f"
   ",lat_l_loc_cc_block_time=%f"
   ",lat_l_loc_cc_time=%f"
   ",lat_l_loc_process_time=%f"
   ",lat_l_loc_abort_time=%f"
+
+  ",lat_short_work_queue_time=%f"
+  ",lat_short_msg_queue_time=%f"
+  ",lat_short_cc_block_time=%f"
+  ",lat_short_cc_time=%f"
+  ",lat_short_process_time=%f"
+  ",lat_short_network_time=%f"
+  ",lat_short_batch_time=%f"
 
   ",lat_s_loc_work_queue_time=%f"
   ",lat_s_loc_msg_queue_time=%f"
@@ -988,12 +1031,29 @@ void Stats_thd::print(FILE * outf, bool prog) {
   ",lat_s_rem_cc_time=%f"
   ",lat_s_rem_process_time=%f"
 
+          ,lat_work_queue_time/BILLION
+          ,lat_msg_queue_time/BILLION
+          ,lat_cc_block_time/BILLION
+          ,lat_cc_time/BILLION
+          ,lat_process_time/BILLION
+          ,lat_abort_time/BILLION
+          ,lat_network_time/BILLION
+          ,lat_other_time/BILLION
+
   ,lat_l_loc_work_queue_time/BILLION
   ,lat_l_loc_msg_queue_time/BILLION
   ,lat_l_loc_cc_block_time/BILLION
   ,lat_l_loc_cc_time/BILLION
   ,lat_l_loc_process_time/BILLION
   ,lat_l_loc_abort_time/BILLION
+
+  ,lat_short_work_queue_time/BILLION
+  ,lat_short_msg_queue_time/BILLION
+  ,lat_short_cc_block_time/BILLION
+  ,lat_short_cc_time/BILLION
+  ,lat_short_process_time/BILLION
+  ,lat_short_network_time/BILLION
+  ,lat_short_batch_time/BILLION
 
   ,lat_s_loc_work_queue_time/BILLION
   ,lat_s_loc_msg_queue_time/BILLION
@@ -1153,6 +1213,7 @@ void Stats_thd::combine(Stats_thd * stats) {
   single_part_txn_run_time+=stats->single_part_txn_run_time;
   txn_write_cnt+=stats->txn_write_cnt;
   record_write_cnt+=stats->record_write_cnt;
+  parts_touched+=stats->parts_touched;
 
   // Breakdown
   ts_alloc_time+=stats->ts_alloc_time;
@@ -1322,12 +1383,29 @@ void Stats_thd::combine(Stats_thd * stats) {
 
   // Latency
 
+  lat_work_queue_time+=stats->lat_work_queue_time;
+  lat_msg_queue_time+=stats->lat_msg_queue_time;
+  lat_cc_block_time+=stats->lat_cc_block_time;
+  lat_cc_time+=stats->lat_cc_time;
+  lat_process_time+=stats->lat_process_time;
+  lat_abort_time+=stats->lat_abort_time;
+  lat_network_time+=stats->lat_network_time;
+  lat_other_time+=stats->lat_other_time;
+
   lat_l_loc_work_queue_time+=stats->lat_l_loc_work_queue_time;
   lat_l_loc_msg_queue_time+=stats->lat_l_loc_msg_queue_time;
   lat_l_loc_cc_block_time+=stats->lat_l_loc_cc_block_time;
   lat_l_loc_cc_time+=stats->lat_l_loc_cc_time;
   lat_l_loc_process_time+=stats->lat_l_loc_process_time;
   lat_l_loc_abort_time+=stats->lat_l_loc_abort_time;
+
+  lat_short_work_queue_time+=stats->lat_short_work_queue_time;
+  lat_short_msg_queue_time+=stats->lat_short_msg_queue_time;
+  lat_short_cc_block_time+=stats->lat_short_cc_block_time;
+  lat_short_cc_time+=stats->lat_short_cc_time;
+  lat_short_process_time+=stats->lat_short_process_time;
+  lat_short_network_time+=stats->lat_short_network_time;
+  lat_short_batch_time+=stats->lat_short_batch_time;
 
   lat_s_loc_work_queue_time+=stats->lat_s_loc_work_queue_time;
   lat_s_loc_msg_queue_time+=stats->lat_s_loc_msg_queue_time;

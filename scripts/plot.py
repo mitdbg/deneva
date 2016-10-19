@@ -16,6 +16,8 @@ PATH=os.getcwd()
 
 result_dir = PATH + "/../results/"
 #result_dir = PATH + "/../results/vldb_results_0530/"
+#result_dir = PATH + "/../results/vldb_revision_esults_1015/"
+#result_dir = PATH + "/../results/east-west-coast-network-experiment/"
 
 blah = False
 drop = False

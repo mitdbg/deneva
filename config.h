@@ -5,7 +5,7 @@
 /***********************************************/
 // Simulation + Hardware
 /***********************************************/
-#define NODE_CNT 2 
+#define NODE_CNT 16
 #define THREAD_CNT 4
 #define REM_THREAD_CNT THREAD_CNT
 #define SEND_THREAD_CNT THREAD_CNT
@@ -37,7 +37,7 @@
 // # of transactions to run for warmup
 #define WARMUP            0
 // YCSB or TPCC or PPS
-#define WORKLOAD YCSB 
+#define WORKLOAD YCSB
 // print the transaction latency distribution
 #define PRT_LAT_DISTR false
 #define STATS_ENABLE        true
@@ -98,7 +98,7 @@
 // Concurrency Control
 /***********************************************/
 // WAIT_DIE, NO_WAIT, WDL (wait-depth limited), TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, OCC, VLL, CALVIN, MAAT
-#define CC_ALG TIMESTAMP 
+#define CC_ALG TIMESTAMP
 #define ISOLATION_LEVEL SERIALIZABLE
 #define YCSB_ABORT_MODE false
 
@@ -384,13 +384,11 @@ extern TestCases          g_test_case;
 #define BATCH_TIMER 0
 #define SEQ_BATCH_TIMER 5 * 1 * MILLION // ~5ms -- same as CALVIN paper
 #define DONE_TIMER 1 * 60 * BILLION // ~1 minutes
-#define DONE_TIMER 1 * 60 * BILLION // ~1 minutes
-#define WARMUP_TIMER 1 * 60 * BILLION // ~1 minutes
 #define WARMUP_TIMER 1 * 60 * BILLION // ~1 minutes
 
 #define SEED 0
 #define SHMEM_ENV false
-#define ENVIRONMENT_EC2 false
+#define ENVIRONMENT_EC2 true
 
 #endif
 

@@ -540,7 +540,7 @@ def draw_bars(data, xlabels,
 
 
 def draw_stack(data, xlabels, slabels, figname='stack', title=None, figsize=(8, 3),ymin=0, ymax=1,ltitle=''
-        ,legend=False) :
+        ,legend=False,ylab='') :
     fig = figure(figsize=figsize)
     slabels = list(reversed(slabels))
     ind = range(0, len(xlabels))
@@ -550,6 +550,7 @@ def draw_stack(data, xlabels, slabels, figname='stack', title=None, figsize=(8, 
 
     ylim([ymin, ymax])
     #xlabels = [str(x) for x in xlabels]
+    ylabel(ylab,fontsize=18)
 
     xticks( ind,  xlabels, rotation=30, ha='center')
     clr = itertools.cycle(['#4d4d4d','#F15854','#DECF3F','#5DA5DA','#FAA43A','#B276B2','#60BD68'])
@@ -571,6 +572,14 @@ def draw_stack(data, xlabels, slabels, figname='stack', title=None, figsize=(8, 
     fig.legend(reversed(plots), tuple(slabels), prop={'size':8},ncol=len(slabels), columnspacing=1)
 #    fig.legend(reversed(plots), tuple(slabels), bbox_to_anchor = (1,1, 1, 1), prop={'size':10})
     savefig('../figs/breakdown_legend.pdf')
+    plt.close()
+    fig = figure(figsize=((3.6, 0.6)))
+    fig.legend(reversed(plots), tuple(slabels), prop={'size':8},ncol=3)
+    savefig('../figs/breakdown_legend_half.pdf')
+    plt.close()
+    fig = figure(figsize=((1.3, 2)))
+    fig.legend(reversed(plots), tuple(slabels), prop={'size':8},ncol=1)
+    savefig('../figs/breakdown_legend_stacked.pdf')
     plt.close()
 
 

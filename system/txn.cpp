@@ -62,6 +62,18 @@ void TxnStats::init() {
    total_msg_queue_time = 0;
    msg_queue_time = 0;
    total_abort_time = 0;
+
+   clear_short();
+}
+
+void TxnStats::clear_short() {
+
+   work_queue_time_short = 0;
+   cc_block_time_short = 0;
+   cc_time_short = 0;
+   msg_queue_time_short = 0;
+   process_time_short = 0;
+   network_time_short = 0;
 }
 
 void TxnStats::reset() {
@@ -86,6 +98,8 @@ void TxnStats::reset() {
   work_queue_cnt = 0;
   total_msg_queue_time += msg_queue_time;
   msg_queue_time = 0;
+
+  clear_short();
 
 }
 
@@ -154,6 +168,15 @@ void TxnStats::commit_stats(uint64_t thd_id, uint64_t txn_id, uint64_t batch_id,
     INC_STATS(thd_id,lat_s_loc_cc_block_time,cc_block_time);
     INC_STATS(thd_id,lat_s_loc_cc_time,cc_time);
     INC_STATS(thd_id,lat_s_loc_process_time,process_time);
+
+    INC_STATS(thd_id,lat_short_work_queue_time,work_queue_time_short);
+    INC_STATS(thd_id,lat_short_msg_queue_time,msg_queue_time_short);
+    INC_STATS(thd_id,lat_short_cc_block_time,cc_block_time_short);
+    INC_STATS(thd_id,lat_short_cc_time,cc_time_short);
+    INC_STATS(thd_id,lat_short_process_time,process_time_short);
+    INC_STATS(thd_id,lat_short_network_time,network_time_short);
+
+
   }
   else {
     INC_STATS(thd_id,lat_l_rem_work_queue_time,total_work_queue_time);
@@ -163,6 +186,17 @@ void TxnStats::commit_stats(uint64_t thd_id, uint64_t txn_id, uint64_t batch_id,
     INC_STATS(thd_id,lat_l_rem_process_time,total_process_time);
   }
   if (IS_LOCAL(txn_id)) {
+    PRINT_LATENCY("lat_s %ld %ld %f %f %f %f %f %f\n"
+          , txn_id
+          , work_queue_cnt
+          , (double) timespan_short / BILLION
+          , (double) work_queue_time / BILLION
+          , (double) msg_queue_time / BILLION
+          , (double) cc_block_time / BILLION
+          , (double) cc_time / BILLION
+          , (double) process_time / BILLION
+          );
+   /*
   PRINT_LATENCY("lat_l %ld %ld %ld %f %f %f %f %f %f %f\n"
           , txn_id
           , total_work_queue_cnt
@@ -175,7 +209,21 @@ void TxnStats::commit_stats(uint64_t thd_id, uint64_t txn_id, uint64_t batch_id,
           , (double) total_process_time / BILLION
           , (double) total_abort_time / BILLION
           );
+          */
   }
+  else {
+    PRINT_LATENCY("lat_rs %ld %ld %f %f %f %f %f %f\n"
+          , txn_id
+          , work_queue_cnt
+          , (double) timespan_short / BILLION
+          , (double) total_work_queue_time / BILLION
+          , (double) total_msg_queue_time / BILLION
+          , (double) total_cc_block_time / BILLION
+          , (double) total_cc_time / BILLION
+          , (double) total_process_time / BILLION
+          );
+  }
+  /*
   if (!IS_LOCAL(txn_id) || timespan_short < timespan_long) {
     // latency from most recent start or restart of transaction
     PRINT_LATENCY("lat_s %ld %ld %f %f %f %f %f %f\n"
@@ -189,6 +237,7 @@ void TxnStats::commit_stats(uint64_t thd_id, uint64_t txn_id, uint64_t batch_id,
           , (double) process_time / BILLION
           );
   }
+  */
 #endif
 
   if (!IS_LOCAL(txn_id)) {
@@ -549,6 +598,7 @@ void TxnManager::commit_stats() {
     INC_STATS_ARR(get_thd_id(),first_start_commit_latency, timespan_long);
 
     assert(query->partitions_touched.size() > 0);
+    INC_STATS(get_thd_id(),parts_touched,query->partitions_touched.size());
     INC_STATS(get_thd_id(),part_cnt[query->partitions_touched.size()-1],1);
     for(uint64_t i = 0 ; i < query->partitions_touched.size(); i++) {
         INC_STATS(get_thd_id(),part_acc[query->partitions_touched[i]],1);

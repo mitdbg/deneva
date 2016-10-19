@@ -47,6 +47,8 @@ public:
 
   double total_runtime;
 
+  uint64_t parts_touched;
+
   // Execution
   uint64_t txn_cnt;
   uint64_t remote_txn_cnt;
@@ -235,6 +237,16 @@ public:
   StatsArr last_start_commit_latency;
   StatsArr start_abort_commit_latency;
 
+  // stats accumulated
+  double lat_work_queue_time;
+  double lat_msg_queue_time;
+  double lat_cc_block_time;
+  double lat_cc_time;
+  double lat_process_time;
+  double lat_abort_time;
+  double lat_network_time;
+  double lat_other_time;
+
   // stats from committed local transactions from the first starttime of the transaction
   double lat_l_loc_work_queue_time;
   double lat_l_loc_msg_queue_time;
@@ -249,6 +261,15 @@ public:
   double lat_s_loc_cc_block_time;
   double lat_s_loc_cc_time;
   double lat_s_loc_process_time;
+
+  // stats from message-managed latency
+  double lat_short_work_queue_time;
+  double lat_short_msg_queue_time;
+  double lat_short_cc_block_time;
+  double lat_short_cc_time;
+  double lat_short_process_time;
+  double lat_short_network_time;
+  double lat_short_batch_time;
 
   // stats from committed non-local transactions
   double lat_l_rem_work_queue_time;

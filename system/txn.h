@@ -72,6 +72,7 @@ public:
 class TxnStats {
 public:
     void init();
+    void clear_short();
     void reset();
     void abort_stats(uint64_t thd_id);
     void commit_stats(uint64_t thd_id, uint64_t txn_id, uint64_t batch_id, uint64_t timespan_long, uint64_t timespan_short);
@@ -100,6 +101,17 @@ public:
     double cc_time;
     uint64_t total_work_queue_cnt;
     uint64_t work_queue_cnt;
+
+    // short stats
+    double work_queue_time_short;
+    double cc_block_time_short;
+    double cc_time_short;
+    double msg_queue_time_short;
+    double process_time_short;
+    double network_time_short;
+
+    double lat_network_time_start;
+    double lat_other_time_start;
 };
 
 /*
