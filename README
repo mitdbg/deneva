@@ -4,8 +4,6 @@ SETUP
 nanomsg (nanomsg.org)
 jemalloc (www.canonware.com/jemalloc)
 
-
-
 DBMS BENCHMARK
 ------------------------------
 
@@ -18,21 +16,22 @@ DBMS BENCHMARK
 	WAIT_DIE[1]		: wait and die two phase locking
 	TIMESTAMP[1]	: basic T/O
 	MVCC[2]			: multi-version T/O
-	OCC[3]			: optimistic concurrency control
+	OCC[3]			: optimistic concurrency control (MaaT)
 	CALVIN[4]		: Calvin
 
   [1] Phlip Bernstein, Nathan Goodman, "Concurrency Control in Distributed Database Systems", Computing Surveys, June 1981
   [2] Phlip Bernstein, Nathan Goodman, "Multiversion Concurrency Control -- Theory and Algorithms", Transactions on Database Systems, Dec 1983
-  [3] H.T. Kung, John Robinson, "On Optimistic Methods for Concurrency Control", Transactions on Database Systems, June 1981
+  [3] H. Mahmoud et al, "MaaT: Effective and Scalable Coordination of Distributed Transactions in the Cloud", VLDB 2014
   [4] A. Thomson et al, "Calvin: Fast Distributed Transactions for Partitioned Database Systems", SIGMOD 2012
 	
-  2. Two benchmarks are supported. 
-    2.1 YCSB[4]
-	2.2 TPCC[5] 
-	  Only Payment and New Order transactions are modeled. 
+  2. Three benchmarks are supported. 
+    2.1 YCSB[5]
+		2.2 TPCC[6] 
+			Only Payment and New Order transactions are modeled. 
+		2.2 Product-Parts-Supplier (PPS)
 	
-  [4] B. Cooper et al, "Benchmarking Cloud Serving Systems with YCSB", SoCC 201
-  [5] http://www.tpc.org/tpcc/ 
+  [5] B. Cooper et al, "Benchmarking Cloud Serving Systems with YCSB", SoCC 201
+  [6] http://www.tpc.org/tpcc/ 
 
 == Config File ==
 
@@ -96,4 +95,8 @@ dbms benchmark has the following parameters in the config file. Parameters with 
   MIDDLE_LEN	: length of middle name
   LASTNAME_LEN	: length of last name
 
-  // !! centralized CC management should be ignored.
+  // for PPS Benchmark
+	MAX_PPS_PART_KEY : number of parts in the parts table
+	MAX_PPS_PRODUCT_KEY :  number of products in the products table
+	MAX_PPS_SUPPLIER_KEY :  number of suppliers in the suppliers table
+	MAX_PPS_PARTS_PER : number of parts per product or supplier
