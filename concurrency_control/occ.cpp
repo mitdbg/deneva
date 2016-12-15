@@ -64,7 +64,6 @@ OptCC::per_row_validate(TxnManager * txn) {
 	RC rc = RCOK;
 #if CC_ALG == OCC
 	// sort all rows accessed in primary key order.
-	// TODO for migration, should first sort by partition id
 	for (uint64_t i = txn->get_access_cnt() - 1; i > 0; i--) {
 		for (uint64_t j = 0; j < i; j ++) {
 			int tabcmp = strcmp(txn->get_access_original_row(j)->get_table_name(), 
@@ -276,9 +275,11 @@ void OptCC::central_finish(RC rc, TxnManager * txn) {
 			active = act->next;
 		active_len --;
 		if (rc == RCOK) {
-			// TODO remove the assert for performance
+			// remove the assert for performance
+      /*
 			if (history)
 				assert(history->tn == tnc);
+      */
 			tnc ++;
 			wset->tn = tnc;
 			STACK_PUSH(history, wset);

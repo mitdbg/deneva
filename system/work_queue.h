@@ -94,8 +94,6 @@ private:
   boost::lockfree::queue<work_queue_entry* > * new_txn_queue;
   boost::lockfree::queue<work_queue_entry* > * seq_queue;
   boost::lockfree::queue<work_queue_entry* > ** sched_queue;
-  // TODO: move to many separate lock free queues to avoid bottleneck
-  //std::priority_queue<work_queue_entry*,std::vector<work_queue_entry*>,CompareSchedEntry> scheduler_queue;
   uint64_t sched_ptr;
   BaseQuery * last_sched_dq;
   uint64_t curr_epoch;

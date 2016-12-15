@@ -21,7 +21,7 @@
 #include "semaphore.h"
 
 
-// TODO For simplicity, the txn hisotry for OCC is oganized as follows:
+// For simplicity, the txn hisotry for OCC is oganized as follows:
 // 1. history is never deleted.
 // 2. hisotry forms a single directional list. 
 //		history head -> hist_1 -> hist_2 -> hist_3 -> ... -> hist_n

@@ -21,7 +21,6 @@
 #include "helper.h"
 #include "index_base.h"
 
-//TODO make proper variables private
 // each BucketNode contains items sharing the same key
 class BucketNode {
 public: 

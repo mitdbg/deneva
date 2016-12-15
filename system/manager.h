@@ -30,8 +30,6 @@ public:
 	ts_t			get_ts(uint64_t thread_id);
 
 	// For MVCC. To calculate the min active ts in the system
-	void 			add_ts(uint64_t node_id, uint64_t thd_id, ts_t ts);
-	void 			add_ts(uint64_t thd_id, ts_t ts);
 	ts_t 			get_min_ts(uint64_t tid = 0);
 
 	// HACK! the following mutexes are used to model a centralized

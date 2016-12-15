@@ -31,7 +31,6 @@ struct MVReqEntry {
 struct MVHisEntry {	
 	ts_t ts;
 	// only for write history. The value needs to be stored.
-	//TODO change row to data
 //	char * data;
 	row_t * row;
 	MVHisEntry * next;

@@ -5,7 +5,7 @@
 /***********************************************/
 // Simulation + Hardware
 /***********************************************/
-#define NODE_CNT 16
+#define NODE_CNT 2
 #define THREAD_CNT 4
 #define REM_THREAD_CNT THREAD_CNT
 #define SEND_THREAD_CNT THREAD_CNT
@@ -97,7 +97,7 @@
 /***********************************************/
 // Concurrency Control
 /***********************************************/
-// WAIT_DIE, NO_WAIT, WDL (wait-depth limited), TIMESTAMP, MVCC, HSTORE, HSTORE_SPEC, OCC, VLL, CALVIN, MAAT
+// WAIT_DIE, NO_WAIT, TIMESTAMP, MVCC, CALVIN, MAAT
 #define CC_ALG TIMESTAMP
 #define ISOLATION_LEVEL SERIALIZABLE
 #define YCSB_ABORT_MODE false
@@ -119,11 +119,6 @@
 #define INDEX_STRUCT        IDX_HASH
 #define BTREE_ORDER         16
 
-// [DL_DETECT] 
-#define DL_LOOP_DETECT        100000  // 100 us
-#define DL_LOOP_TRIAL       1000  // 1 us
-#define NO_DL           KEY_ORDER
-#define TIMEOUT           100000000000
 // [TIMESTAMP]
 #define TS_TWR            false
 #define TS_ALLOC          TS_CLOCK
@@ -139,16 +134,10 @@
 // [OCC]
 #define MAX_WRITE_SET       10
 #define PER_ROW_VALID       false
-// [HSTORE]
-// when set to true, hstore will not access the global timestamp.
-// This is fine for single partition transactions. 
-#define HSTORE_LOCAL_TS       false
 // [VLL] 
 #define TXN_QUEUE_SIZE_LIMIT    THREAD_CNT
 // [CALVIN]
 #define SEQ_THREAD_CNT 4 
-#define MAX_BATCH_WAITTIME 5000000  //5ms, currently unused
-
 
 /***********************************************/
 // Logging
@@ -232,13 +221,6 @@ extern TPCCTxnType          g_tpcc_txn_type;
 #define LASTNAME_LEN        16
 
 #define DIST_PER_WH       10
-//#define WH_TAB_SIZE NUM_WH
-//#define ITEM_TAB_SIZE MAX_ITEMS_SMALL
-//#define DIST_TAB_SIZE NUM_WH * DIST_PER_WH
-//#define STOC_TAB_SIZE NUM_WH * MAX_ITEMS_SMALL
-//#define CUST_TAB_SIZE NUM_WH * DIST_PER_WH * CUST_PER_DIST_SMALL
-//#define HIST_TAB_SIZE NUM_WH * DIST_PER_WH * CUST_PER_DIST_SMALL
-//#define ORDE_TAB_SIZE NUM_WH * DIST_PER_WH * CUST_PER_DIST_SMALL
 
 // PPS (Product-Part-Supplier)
 #define MAX_PPS_PARTS_PER 10
@@ -246,9 +228,9 @@ extern TPCCTxnType          g_tpcc_txn_type;
 #define MAX_PPS_PRODUCT_KEY 1000
 #define MAX_PPS_SUPPLIER_KEY 1000
 #define MAX_PPS_PART_PER_PRODUCT 10
-#define MAX_PPS_PART_PER_SUPPLIER 10 // keep same as MAX_PPS_PART_PER_PRODUCT for now
-#define MAX_PPS_PART_PER_PRODUCT_KEY 10 // keep same as MAX_PPS_PART_PER_PRODUCT for now
-#define MAX_PPS_PART_PER_SUPPLIER_KEY 10 // keep same as MAX_PPS_PART_PER_PRODUCT for now
+#define MAX_PPS_PART_PER_SUPPLIER 10 
+#define MAX_PPS_PART_PER_PRODUCT_KEY 10 
+#define MAX_PPS_PART_PER_SUPPLIER_KEY 10 
 
 #define PERC_PPS_GETPART 0.00
 #define PERC_PPS_GETSUPPLIER 0.00 
@@ -270,25 +252,6 @@ enum PPSTxnType {PPS_ALL = 0,
           PPS_UPDATEPART 
           };
 
-/***********************************************/
-// TODO centralized CC management. 
-/***********************************************/
-#define MAX_LOCK_CNT        (20 * THREAD_CNT) 
-#define TSTAB_SIZE                  50 * THREAD_CNT
-#define TSTAB_FREE                  TSTAB_SIZE 
-#define TSREQ_FREE                  4 * TSTAB_FREE
-#define MVHIS_FREE                  4 * TSTAB_FREE
-#define SPIN                        false
-
-/***********************************************/
-// Test cases
-/***********************************************/
-#define TEST_ALL          true
-enum TestCases {
-    READ_WRITE,
-      CONFLICT
-};
-extern TestCases          g_test_case;
 /***********************************************/
 // DEBUG info
 /***********************************************/

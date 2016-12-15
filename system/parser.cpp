@@ -50,32 +50,17 @@ void print_usage() {
 
 	printf("\t-rnINT       ; REPLICA_CNT (0+)\n");
 	printf("\t-rtINT       ; REPL_TYPE (AA: 1, AP: 2)\n");
-//	printf("\t-GcINT      ; CENTRAL_MAN\n");
-//	printf("\t-GtINT      ; TS_ALLOC\n");
-//	printf("\t-GkINT      ; KEY_ORDER\n");
-//	printf("\t-GnINT      ; NO_DL\n");
-//	printf("\t-GoINT      ; TIMEOUT\n");
-//	printf("\t-GlINT      ; DL_LOOP_DETECT\n");
-
-//	printf("\t-GbINT      ; TS_BATCH_ALLOC\n");
-//	printf("\t-GuINT      ; TS_BATCH_NUM\n");
 	
 	printf("\t-o STRING   ; output file\n");
 	printf("\t-i STRING   ; input file\n");
 	printf("\t-cf STRING   ; txn file\n");
 	printf("\t-ndly   ; NETWORK_DELAY\n");
-  /*
-	printf("------ Migration ----\n");
-	printf("\t-MeINT      ; HW_MIGRATE\n");
-  */
 	printf("  [YCSB]:\n");
-//	printf("\t-cINT     ; CC_ALG (1:NO_WAIT, 2:WAIT_DIE, 3:DL_DETECT, 4:TIMESTAMP, 5:MVCC, 6:HSTORE)\n");
 	printf("\t-dpFLOAT       ; DATA_PERC\n");
 	printf("\t-apFLOAT       ; ACCESS_PERC\n");
 	printf("\t-pptINT       ; PART_PER_TXN\n");
 	printf("\t-spptINT       ; STRICT_PPT\n");
 	printf("\t-eINT       ; PERC_MULTI_PART\n");
-	//printf("\t-rFLOAT     ; READ_PERC\n");
 	printf("\t-wFLOAT     ; WRITE_PERC\n");
 	printf("\t-zipfFLOAT     ; ZIPF_THETA\n");
 	printf("\t-sINT       ; SYNTH_TABLE_SIZE\n");
@@ -85,11 +70,7 @@ void print_usage() {
 	printf("\t-whINT       ; NUM_WH\n");
 	printf("\t-ppFLOAT    ; PERC_PAYMENT\n");
 	printf("\t-upINT      ; WH_UPDATE\n");
-  /*
-	printf("  [TEST]:\n");
-	printf("\t-Ar         ; Test READ_WRITE\n");
-	printf("\t-Ac         ; Test CONFLIT\n");
-  */
+  
 }
 
 void parser(int argc, char * argv[]) {
@@ -180,11 +161,6 @@ void parser(int argc, char * argv[]) {
 			input_file = argv[++i];
     else if (argv[i][1] == 'e')
 			g_perc_multi_part = atof( &argv[i][2] );
-    /*
-    else if (argv[i][1] == 'r')
-			g_read_perc = atof( &argv[i][2] );
-			g_write_perc = 1.0 - atof( &argv[i][2] );
-      */
     else if (argv[i][1] == 'w') {
 			g_tup_write_perc = atof( &argv[i][2] );
 			g_tup_read_perc = 1.0 - atof( &argv[i][2] );
@@ -207,21 +183,7 @@ void parser(int argc, char * argv[]) {
   g_total_thread_cnt += g_logger_thread_cnt; // logger thread
 #endif
 #if CC_ALG == CALVIN
-  /*
-  if(g_thread_cnt > 2)
-    g_thread_cnt = g_thread_cnt -2;
-  else
-  */
     g_total_thread_cnt += 2; // sequencer + scheduler thread
-  /*
-  if(g_thread_cnt > 1) {
-    g_thread_cnt = g_thread_cnt -1; // scheduler thread
-    g_total_thread_cnt += 1; // sequencer thread
-  }
-  else {
-    g_total_thread_cnt += 2; // sequencer + scheduler thread
-  }
-    */
   // Remove abort thread
   g_abort_thread_cnt = 0;
   g_total_thread_cnt -= 1;

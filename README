@@ -4,6 +4,16 @@ SETUP
 nanomsg (nanomsg.org)
 jemalloc (www.canonware.com/jemalloc)
 
+
+HOW TO RUN
+-----------------------------
+
+Create a file called ifconfig.txt with IP addresses for the servers and clients, one per line.
+
+$ make
+$ ./rundb -nid[unique server ID] &
+$ ./runcl -nid[unique client ID] &
+
 DBMS BENCHMARK
 ------------------------------
 
@@ -40,21 +50,26 @@ dbms benchmark has the following parameters in the config file. Parameters with 
   CORE_CNT		: number of cores modeled in the system.
   NODE_CNT		: number of computation nodes modeled in the system
   PART_CNT		: number of logical partitions in the system; Should equal CORE_CNT * NODE_CNT
-  THREAD_CNT	: number of threads running at the same time
+  THREAD_CNT	: number of worker threads 
+  REM_THREAD_CNT	: number of message receiver threads 
+  SEND_THREAD_CNT	: number of message sender threads 
+  TPORT_TYPE : communication protocol (TCP, IPC)
+  ENVIRONMENT_EC2 : true if running on Amazon EC2
+
   PAGE_SIZE		: memory page size
   CL_SIZE		: cache line size
-  WARMUP		: number of transactions to run for warmup
-  HW_MIGRATE	: enable execution migration
 
-  WORKLOAD		: workload supported (TPCC or YCSB)
+  DONE_TIMER : number of nanoseconds to run experiment
+  WARMUP_TIMER		: number of nanoseconds to run for warmup
+  SEQ_BATCH_TIMER : number of nanoseconds between CALVIN batches
+  WORKLOAD		: workload supported (TPCC, YCSB, or PPS)
+  CC_ALG		: concurrency control algorithm (WAIT_DIE, NO_WAIT, TIMESTAMP, MVCC, CALVIN, or MAAT)
+  ISOLATION_LEVEL : system isolation level (SERIALIZABLE, READ_COMMITTED, READ_UNCOMMITTED, or NOLOCK)
   
   THREAD_ALLOC	: per thread allocator. 
   * MEM_PAD		: enable memory padding to avoid false sharing.
   MEM_ALLIGN	: allocated blocks are alligned to MEM_ALLIGN bytes
 
-  PRT_LAT_DISTR	: print out latency distribution of transactions
-
-  CC_ALG		: concurrency control algorithm
   * ROLL_BACK		: roll back the modifications if a transaction aborts.
   
   ENABLE_LATCH  : enable latching in btree index
@@ -63,7 +78,6 @@ dbms benchmark has the following parameters in the config file. Parameters with 
   INDEX_STRCT	: data structure for index. 
   BTREE_ORDER	: fanout of each B-tree node
 
-  DL_TIMEOUT_LOOP	: the max waiting time in DL_DETECT. after timeout, deadlock will be detected.
   TS_TWR		: enable Thomas Write Rule (TWR) in TIMESTAMP
   HIS_RECYCLE_LEN	: in MVCC, history will be recycled if they are too long.
   MAX_WRITE_SET	: the max size of a write set in OCC.
@@ -85,10 +99,10 @@ dbms benchmark has the following parameters in the config file. Parameters with 
   FIRST_PART_LOCAL	: with this being true, the first touched partition is always the local partition.
   
   // for TPCC Benchmark
-  NUM_HW		: number of warehouses being modeled.
+  NUM_WH		: number of warehouses being modeled.
   PERC_PAYMENT	: percentage of payment transactions.
-  DIST_PER_WARE	: number of districts in one warehouse
-  MAXITEMS		: number of items modeled.
+  DIST_PER_WH	: number of districts in one warehouse
+  MAX_ITEMS		: number of items modeled.
   CUST_PER_DIST	: number of customers per district
   ORD_PER_DIST	: number of orders per district
   FIRSTNAME_LEN	: length of first name

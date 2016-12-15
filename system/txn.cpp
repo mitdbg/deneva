@@ -269,7 +269,7 @@ void Transaction::init() {
   txn_id = UINT64_MAX;
   batch_id = UINT64_MAX;
   DEBUG_M("Transaction::init array insert_rows\n");
-  insert_rows.init(g_max_items_per_txn + 10); // FIXME: arbitrary number
+  insert_rows.init(g_max_items_per_txn + 10); 
   DEBUG_M("Transaction::reset array accesses\n");
   accesses.init(MAX_ROW_PER_TXN);  
 
@@ -832,7 +832,6 @@ RC TxnManager::get_row(row_t * row, access_t type, row_t *& row_rtn) {
     //LogRecord * record = logger.createRecord(LRT_UPDATE,L_UPDATE,get_txn_id(),part_id,row->get_table()->get_table_id(),row->get_primary_key());
     LogRecord * record = logger.createRecord(get_txn_id(),L_UPDATE,row->get_table()->get_table_id(),row->get_primary_key());
     if(g_repl_cnt > 0) {
-      // FIXME > 1 replica
       msg_queue.enqueue(get_thd_id(),Message::create_message(record,LOG_MSG),g_node_id + g_node_cnt + g_client_node_cnt); 
     }
     logger.enqueueRecord(record);
@@ -961,7 +960,6 @@ TxnManager::send_remote_reads() {
 #if !YCSB_ABORT_MODE && WORKLOAD == YCSB
   return RCOK;
 #endif
-  // TODO: only send relevant reads
   assert(query->active_nodes.size() == g_node_cnt);
   for(uint64_t i = 0; i < query->active_nodes.size(); i++) {
     if(i == g_node_id)
@@ -992,7 +990,6 @@ bool TxnManager::calvin_collect_phase_done() {
 }
 
 void TxnManager::release_locks(RC rc) {
-  // FIXME: Handle aborts?
 	uint64_t starttime = get_sys_clock();
 
   cleanup(rc);

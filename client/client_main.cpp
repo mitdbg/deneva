@@ -37,8 +37,6 @@ void network_test();
 void network_test_recv();
 void * run_thread(void *);
 
-
-// TODO the following global variables are HACK
 ClientThread * client_thds;
 InputThread * input_thds;
 OutputThread * output_thds;
@@ -194,12 +192,6 @@ int main(int argc, char* argv[])
   if (STATS_ENABLE)
     stats.print_client(false);
   fflush(stdout);
-  // Free stuff
-	//tport_man.shutdown();
-  /*
-  msg_pool.free_all();
-  qry_pool.free_all();
-  */
 	return 0;
 }
 

@@ -448,7 +448,6 @@ void YCSBClientQueryMessage::release() {
   requests.release();
 }
 
-// FIXME: does sizeof(YCSBClientQueryMessage) include ptr to requests?
 uint64_t YCSBClientQueryMessage::get_size() {
   uint64_t size = ClientQueryMessage::get_size();
   size += sizeof(size_t);
@@ -592,7 +591,6 @@ void TPCCClientQueryMessage::copy_to_txn(TxnManager * txn) {
 
 
   tpcc_query->txn_type = (TPCCTxnType)txn_type;
-  // FIXME: bad programming style
   if(tpcc_query->txn_type == TPCC_PAYMENT)
     ((TPCCTxnManager*)txn)->state = TPCC_PAYMENT0;
   else if (tpcc_query->txn_type == TPCC_NEW_ORDER) 

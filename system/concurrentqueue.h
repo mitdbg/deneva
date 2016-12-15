@@ -3442,7 +3442,7 @@ private:
       for (size_t i = count; i != 0; ) {
         (p + --i)->~U();
       }
-      //(Traits::free)(p); // FIXME: this is causing a malloc error
+      //(Traits::free)(p); 
     }
   }
   

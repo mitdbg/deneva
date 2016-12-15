@@ -23,7 +23,6 @@ void AbortQueue::init() {
   pthread_mutex_init(&mtx,NULL);
 }
 
-// FIXME: Rewrite abort queue
 uint64_t AbortQueue::enqueue(uint64_t thd_id, uint64_t txn_id, uint64_t abort_cnt) {
   uint64_t starttime = get_sys_clock();
   uint64_t penalty = g_abort_penalty;
@@ -62,7 +61,6 @@ void AbortQueue::process(uint64_t thd_id) {
     entry = queue.top();
     if(entry->penalty_end < starttime) {
       queue.pop();
-      // FIXME: add restart to work queue
       DEBUG("AQ Dequeue %ld %f -- %f\n",entry->txn_id,float(starttime - entry->penalty_end)/BILLION,simulation->seconds_from_start(starttime));
       INC_STATS(thd_id,abort_queue_penalty_extra,starttime - entry->penalty_end);
       INC_STATS(thd_id,abort_queue_dequeue_cnt,1);

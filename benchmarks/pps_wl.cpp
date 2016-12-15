@@ -245,8 +245,6 @@ void PPSWorkload::init_tab_uses() {
 }
 
 
-// TODO: init other tables
-
 /*==================================================================+
 | ROUTINE NAME
 | InitPermutation

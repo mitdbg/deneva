@@ -241,7 +241,6 @@ RC YCSBTxnManager::run_ycsb_1(access_t acctype, row_t * row_local) {
 	  char * data = row_local->get_data();
 	  *(uint64_t *)(&data[fid * 100]) = 0;
 #if YCSB_ABORT_MODE
-    //TODO: add conditional logic here
     if(data[0] == 'a')
       return RCOK;
 #endif

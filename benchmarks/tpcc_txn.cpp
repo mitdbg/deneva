@@ -678,7 +678,6 @@ inline RC TPCCTxnManager::run_payment_5(uint64_t w_id, uint64_t d_id,uint64_t c_
 	r_cust_local->get_value(C_PAYMENT_CNT, c_payment_cnt);
 	r_cust_local->set_value(C_PAYMENT_CNT, c_payment_cnt + 1);
 
-	// FIXME? c_credit not used
 	//char * c_credit = r_cust_local->get_value(C_CREDIT);
 
 	/*=============================================================================+

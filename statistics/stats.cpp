@@ -1189,7 +1189,6 @@ void Stats_thd::combine(Stats_thd * stats) {
   if(stats->total_runtime > total_runtime)
     total_runtime = stats->total_runtime;
 
-  // TODO: only combine for final stats collection for performance reasons
   last_start_commit_latency.append(stats->first_start_commit_latency);
   first_start_commit_latency.append(stats->first_start_commit_latency);
   start_abort_commit_latency.append(stats->start_abort_commit_latency);

@@ -232,7 +232,6 @@ void TPCCWorkload::init_tab_item(int id) {
 		row->set_value(I_PRICE, URand(1, 100));
 		char data[50];
     //MakeAlphaString(26, 50, data);
-		// TODO in TPCC, "original" should start at a random position
 		if (RAND(10) == 0) 
 			strcpy(data, "original");		
 		row->set_value(I_DATA, data);

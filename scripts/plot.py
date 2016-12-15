@@ -15,9 +15,6 @@ PATH=os.getcwd()
 ###########################################
 
 result_dir = PATH + "/../results/"
-#result_dir = PATH + "/../results/vldb_results_0530/"
-#result_dir = PATH + "/../results/vldb_revision_esults_1015/"
-#result_dir = PATH + "/../results/east-west-coast-network-experiment/"
 
 blah = False
 drop = False
@@ -49,10 +46,6 @@ for arg in sys.argv[1:]:
         res_dir = True
     elif arg == "-n" or arg == "-tdate":
         blah = True
-#    elif exp_cnt == sys.maxint:
-#        exp_cnt = int(arg)
-#if arg == "-n":
-#        exp_cnt = sys.maxint
     elif arg == "-d":
         drop = True
     elif arg == "-help" or arg == "-h":
@@ -61,13 +54,6 @@ for arg in sys.argv[1:]:
         exps.append(arg)
     last_arg = arg
 
-#result_dir = PATH + "/../results/plotting_results_0524/"
-#result_dir = PATH + "/../results/ec2_results_0524/"
-#result_dir = PATH + "/../results/sigmod_results/"
-#result_dir = PATH + "/../results/1108_results/"
-#result_dir = PATH + "/../results/1027_ec2_full_experiments/"
-#result_dir = PATH + "/../results/1028_ec2_results/"
-#result_dir = PATH + "/../results/results_201503pt2/"
 test_dir = ""
 if res_dir:
     result_dir = PATH + "/../results/"
@@ -82,24 +68,14 @@ summary_client = {}
 pp = pprint.PrettyPrinter()
 
 for exp in exps:
-#    summary = {}
-#    summary_client = {}
     fmt,experiments = experiment_map[exp]()
 
     for e in experiments:
         s = {}
         s2 = {}
         timestamp = 0
-#        if "HSTORE" in e or "HSTORE_SPEC" in e:
-#            nfmt=fmt
-#            ne=e
-#        else:
-#            nfmt=fmt[:-1]
-#            ne=e[:-1]
-#        cfgs = get_cfgs(nfmt,ne)
         cfgs = get_cfgs(fmt,e)
         output_f = get_outfile_name(cfgs,fmt,["*","*"])
-#        output_f = get_outfile_name(cfgs,nfmt,["*","*"])
         nnodes = cfgs["NODE_CNT"]
         nclients = cfgs["CLIENT_NODE_CNT"]
         try:
@@ -131,7 +107,6 @@ for exp in exps:
                         md = stat.get_metadata()
                         nodes.append(md['n0'])
                         nodes.append(md['n1'])
-                        #num_msg_bytes = md['bytes']
                         if msg_bytes not in all_latencies:
                             all_latencies[msg_bytes] = []
                         all_latencies[msg_bytes].append(stat.get_latencies())
@@ -147,7 +122,6 @@ for exp in exps:
             timedate = []
             print("Experiment count: {}".format(exp_cnt))
             if _timedate == []:
-#                ofile = "{}{}_{}*.out".format(result_dir,0,output_f)
                 ofile = "{}/0_{}*".format(result_dir,output_f)
                 res_list = sorted(glob.glob(ofile),key=os.path.getmtime,reverse=True)
                 if res_list == 0:
@@ -197,8 +171,6 @@ for exp in exps:
                         r2 = p.load()
                         opened = True
 
-#                merge_results(r,cfgs["NODE_CNT"],0)
-#                merge_results(r2,cfgs["CLIENT_NODE_CNT"],0)
                 try:
                     print("Tput: {} / {} = {}".format(avg(r2["txn_cnt"]),avg(r2["total_runtime"]),sum(r2["txn_cnt"])/sum(r2["total_runtime"])))
                 except KeyError:
@@ -209,33 +181,14 @@ for exp in exps:
                 else:
                     merge(s,r)
                     merge(s2,r2)
-#                pp.pprint(s)
-#                pp.pprint(s2)
 
             if plot:
-#                print("Pre-Merge:")
-#                pp.pprint(s)
-#                pp.pprint(s2)
-#                if nnodes == 64:
-#                    write_breakdown_file(output_f,s,s2)
-#                write_breakdown_file(output_f,s,s2)
                 s = merge_results(s,exp_cnt,drop,nnodes)
                 s2 = merge_results(s2,exp_cnt,drop,nclients)
                 summary[output_f] = s
-#                pp.pprint(summary[output_f]['txn_cnt'])
-#                pp.pprint(summary[output_f]['thd1'])
-#                pp.pprint(summary[output_f]['thd2'])
-#                pp.pprint(summary[output_f]['thd3'])
                 summary_client[output_f] = s2
-#                print("Post-Merge:")
-#                pp.pprint(s)
-#                pp.pprint(s2)
-#                print(output_f)
-#                print(summary[output_f])
 
     if plot:
-#        pp.pprint(summary)
-#        pp.pprint(summary_client)
         exp_plot = exp + '_plot'
         if is_network_test:
             experiment_map[exp_plot](all_exps,all_nodes,timestamps)

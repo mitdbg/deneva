@@ -215,7 +215,7 @@ BaseQuery * TPCCQueryGenerator::gen_new_order(uint64_t home_partition) {
 
 	query->d_id = URand(1, g_dist_per_wh);
 	query->c_id = NURand(1023, 1, g_cust_per_dist);
-  // FIXME: No rollback
+  // TODO TPCC rollback
 	//rbk = URand(1, 100) == 1 ? true : false;
 	query->rbk = false;
 	query->ol_cnt = URand(5, g_max_items_per_txn);

@@ -68,41 +68,15 @@ Manager::get_ts(uint64_t thread_id) {
 	return time;
 }
 
-// FIXME: get min ts from remote_query txns, which is min of all queries in flight
 ts_t Manager::get_min_ts(uint64_t tid) {
 	uint64_t now = get_sys_clock();
 	if (now - last_min_ts_time > MIN_TS_INTVL) { 
 		last_min_ts_time = now;
     uint64_t min = txn_table.get_min_ts(tid);
-    /*
-    assert(min != UINT64_MAX);
-		assert(min >= min_ts);
-    */
     if(min > min_ts)
 		  min_ts = min;
 	} 
-//uint64_t tt4 = get_sys_clock() - now;
-//INC_STATS(tid, debug4, tt4);
 	return min_ts;
-}
-
-void Manager::add_ts(uint64_t node_id, uint64_t thd_id, ts_t ts) {
-  //uint64_t id = g_thread_cnt + node_id;
-  /*
-  uint64_t id = g_thread_cnt * node_id + thd_id;
-	assert( ts >= all_ts[id]); 
-	all_ts[id] = ts;
-  */
-}
-
-void Manager::add_ts(uint64_t thd_id, ts_t ts) {
-//uint64_t t4 = get_sys_clock();
-	//assert( ts >= all_ts[thd_id]); 
-//		|| all_ts[thd_id] == UINT64_MAX);
-	//all_ts[thd_id] = ts;
-//uint64_t tt4 = get_sys_clock() - t4;
-//INC_STATS(thd_id, debug4, tt4);
-  //add_ts(g_node_id,thd_id,ts);
 }
 
 void Manager::set_txn_man(TxnManager * txn) {

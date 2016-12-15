@@ -65,7 +65,7 @@ public:
   //LogRecord();
   LogRecType getType() { return rcd.type; }
   void copyRecord( LogRecord * record);
-  // FIXME: compute a reasonable checksum
+  // TODO: compute a reasonable checksum
   uint64_t computeChecksum() {return (uint64_t)rcd.txn_id;};
 #if LOG_COMMAND
   CmdLogRecord rcd;

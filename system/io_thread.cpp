@@ -118,7 +118,7 @@ RC InputThread::client_recv_loop() {
       inf = client_man.dec_inflight(return_node_offset);
       DEBUG("Recv %ld from %ld, %ld -- %f\n",((ClientResponseMessage*)msg)->txn_id,msg->return_node_id,inf,float(timespan)/BILLION);
       assert(inf >=0);
-      // TODO: delete message
+      // delete message here
       msgs->erase(msgs->begin());
     }
     delete msgs;

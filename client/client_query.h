@@ -27,8 +27,8 @@ class YCSBClientQuery;
 class TPCCQuery;
 class tpcc_client_query;
 
-// TODO we assume a separate task queue for each thread in order to avoid 
-// contention in a centralized query queue. In reality, more sofisticated 
+// We assume a separate task queue for each thread in order to avoid 
+// contention in a centralized query queue. In reality, more sophisticated 
 // queue model might be implemented.
 class Client_query_queue {
 public:

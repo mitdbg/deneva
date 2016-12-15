@@ -142,7 +142,7 @@ MVReqEntry * Row_mvcc::debuffer_req( TsType type, TxnManager * txn) {
 	} else {
 		assert(type == R_REQ);
 		// should return all non-conflicting read requests
-		// TODO The following code makes the assumption that each write op
+		// The following code makes the assumption that each write op
 		// must read the row first. i.e., there is no write-only operation.
 		uint64_t min_pts = UINT64_MAX;
 		//uint64_t min_pts = (1UL << 32);
@@ -305,7 +305,7 @@ RC Row_mvcc::access(TxnManager * txn, TsType type, row_t * row) {
 			ts_t t_th = glob_manager.get_min_ts(txn->get_thd_id());
 			if (readhistail && readhistail->ts < t_th)
 				clear_history(R_REQ, t_th);
-			// TODO. Here is a tricky bug. The oldest transaction might be 
+			// Here is a tricky bug. The oldest transaction might be 
 			// reading an even older version whose timestamp < t_th.
 			// But we cannot recycle that version because it is still being used.
 			// So the HACK here is to make sure that the first version older than
@@ -351,7 +351,6 @@ void Row_mvcc::update_buffer(TxnManager * txn) {
 		assert(row->get_table() != NULL);
 		assert(row->get_schema() == _row->get_schema());
 
-    // TODO: add req->txn to work queue
 		req->txn->ts_ready = true;
 		uint64_t timespan = get_sys_clock() - req->starttime;
 		req->txn->txn_stats.cc_block_time += timespan;

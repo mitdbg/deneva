@@ -40,7 +40,7 @@ void Sequencer::init(Workload * wl) {
   fill_queue = new boost::lockfree::queue<Message*, boost::lockfree::capacity<65526> > [g_node_cnt];
 }
 
-// FIXME: Assumes 1 thread does sequencer work
+// Assumes 1 thread does sequencer work
 void Sequencer::process_ack(Message * msg, uint64_t thd_id) {
   qlite_ll * en = wl_head;
   while(en != NULL && en->epoch != msg->get_batch_id()) {
@@ -180,14 +180,14 @@ void Sequencer::process_ack(Message * msg, uint64_t thd_id) {
   INC_STATS(thd_id,seq_ack_time,get_sys_clock() - prof_stat);
 }
 
-// FIXME: Assumes 1 thread does sequencer work
+// Assumes 1 thread does sequencer work
 void Sequencer::process_txn( Message * msg,uint64_t thd_id, uint64_t early_start, uint64_t last_start, uint64_t wait_time, uint32_t abort_cnt) {
 
     uint64_t starttime = get_sys_clock();
     DEBUG("SEQ Processing msg\n");
     qlite_ll * en = wl_tail;
 
-    // FIXME: LL is potentially a bottleneck here
+    // LL is potentially a bottleneck here
     if(!en || en->epoch != simulation->get_seq_epoch()+1) {
       DEBUG("SEQ new wait list for epoch %ld\n",simulation->get_seq_epoch()+1);
       // First txn of new wait list
@@ -279,7 +279,7 @@ void Sequencer::process_txn( Message * msg,uint64_t thd_id, uint64_t early_start
 }
 
 
-// FIXME: Assumes 1 thread does sequencer work
+// Assumes 1 thread does sequencer work
 void Sequencer::send_next_batch(uint64_t thd_id) {
   uint64_t prof_stat = get_sys_clock();
   qlite_ll * en = wl_tail;

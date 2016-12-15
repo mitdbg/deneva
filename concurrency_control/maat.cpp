@@ -45,7 +45,6 @@ RC Maat::validate(TxnManager * txn) {
   // lower bound of txn greater than write timestamp
   if(lower <= txn->greatest_write_timestamp) {
     lower = txn->greatest_write_timestamp + 1;
-    DEBUG("MAAT %ld: case1 %ld\n",txn->get_txn_id(),lower);
     INC_STATS(txn->get_thd_id(),maat_case1_cnt,1);
   }
   // lower bound of uncommitted writes greater than upper bound of txn
@@ -54,7 +53,6 @@ RC Maat::validate(TxnManager * txn) {
     if(upper >= it_lower) {
       MAATState state = time_table.get_state(txn->get_thd_id(),*it);
       if(state == MAAT_VALIDATED || state == MAAT_COMMITTED) {
-        DEBUG("MAAT case2 %ld: %lu < %ld: %lu, %d \n",txn->get_txn_id(),upper,*it,it_lower,state);
         INC_STATS(txn->get_thd_id(),maat_case2_cnt,1);
         if(it_lower > 0) {
           upper = it_lower - 1;
@@ -62,12 +60,6 @@ RC Maat::validate(TxnManager * txn) {
           upper = it_lower;
         }
       }
-      /*
-      if(state == MAAT_ABORTED) {
-        //FIXME: potential for race condition if time table entry removed and reinstalled
-        time_table.set_lower(*it,upper-1);
-      }
-      */
       if(state == MAAT_RUNNING) {
         after.insert(*it);
       }
@@ -76,7 +68,6 @@ RC Maat::validate(TxnManager * txn) {
   // lower bound of txn greater than read timestamp
   if(lower <= txn->greatest_read_timestamp) {
     lower = txn->greatest_read_timestamp + 1;
-    DEBUG("MAAT %ld: case3 %ld\n",txn->get_txn_id(),lower);
     INC_STATS(txn->get_thd_id(),maat_case3_cnt,1);
   }
   // upper bound of uncommitted reads less than lower bound of txn
@@ -85,7 +76,6 @@ RC Maat::validate(TxnManager * txn) {
     if(lower <= it_upper) {
       MAATState state = time_table.get_state(txn->get_thd_id(),*it);
       if(state == MAAT_VALIDATED || state == MAAT_COMMITTED) {
-        DEBUG("MAAT case4 %ld: %lu > %ld: %lu, %d \n",txn->get_txn_id(),lower,*it,it_upper,state);
         INC_STATS(txn->get_thd_id(),maat_case4_cnt,1);
         if(it_upper < UINT64_MAX) {
           lower = it_upper + 1;
@@ -93,11 +83,6 @@ RC Maat::validate(TxnManager * txn) {
           lower = it_upper;
         }
       }
-      /*
-      if(state == MAAT_ABORTED) {
-        time_table.set_upper(*it,lower+1);
-      }
-      */
       if(state == MAAT_RUNNING) {
         before.insert(*it);
       }
@@ -112,7 +97,6 @@ RC Maat::validate(TxnManager * txn) {
       }
       if(state == MAAT_VALIDATED || state == MAAT_COMMITTED) {
         if(lower <= it_upper) {
-          DEBUG("MAAT case5 %ld: %lu > %ld: %lu, %d \n",txn->get_txn_id(),lower,*it,it_upper,state);
           INC_STATS(txn->get_thd_id(),maat_case5_cnt,1);
           if(it_upper < UINT64_MAX) {
             lower = it_upper + 1;
@@ -133,15 +117,11 @@ RC Maat::validate(TxnManager * txn) {
     // Validated
     time_table.set_state(txn->get_thd_id(),txn->get_txn_id(),MAAT_VALIDATED);
     rc = RCOK;
-    // TODO: Optimize lower and upper to minimize aborts in before and after
-    // Hopefully this would keep upper from being max int...
 
     for(auto it = before.begin(); it != before.end();it++) {
       uint64_t it_upper = time_table.get_upper(txn->get_thd_id(),*it);
-      DEBUG("MAAT before %ld: %lu > %ld: %lu \n",txn->get_txn_id(),lower,*it,it_upper);
       if(it_upper > lower && it_upper < upper-1) {
         lower = it_upper + 1;
-        DEBUG("MAAT before set %ld: %lu\n",txn->get_txn_id(),lower);
       }
     }
     for(auto it = before.begin(); it != before.end();it++) {
@@ -149,24 +129,19 @@ RC Maat::validate(TxnManager * txn) {
       if(it_upper >= lower) {
         if(lower > 0) {
           time_table.set_upper(txn->get_thd_id(),*it,lower-1);
-          DEBUG("MAAT before set %ld: %lu\n",*it,lower-1);
         } else {
           time_table.set_upper(txn->get_thd_id(),*it,lower);
-          DEBUG("MAAT before set %ld: %lu\n",*it,lower);
         }
       }
     }
     for(auto it = after.begin(); it != after.end();it++) {
       uint64_t it_lower = time_table.get_lower(txn->get_thd_id(),*it);
       uint64_t it_upper = time_table.get_upper(txn->get_thd_id(),*it);
-      DEBUG("MAAT after %ld: %lu < %ld: %lu \n",txn->get_txn_id(),upper,*it,it_lower);
       if(it_upper != UINT64_MAX && it_upper > lower + 2 && it_upper < upper ) {
         upper = it_upper - 2;
-        DEBUG("MAAT after set %ld: %lu\n",txn->get_txn_id(),upper);
       } 
       if((it_lower < upper && it_lower > lower+1)) {
         upper = it_lower - 1;
-        DEBUG("MAAT after set %ld: %lu\n",txn->get_txn_id(),upper);
       } 
     }
     // set all upper and lower bounds to meet inequality
@@ -175,10 +150,8 @@ RC Maat::validate(TxnManager * txn) {
       if(it_lower <= upper) {
         if(upper < UINT64_MAX) {
           time_table.set_lower(txn->get_thd_id(),*it,upper+1);
-          DEBUG("MAAT after set %ld: %lu\n",*it,upper+1);
         } else {
           time_table.set_lower(txn->get_thd_id(),*it,upper);
-          DEBUG("MAAT after set %ld: %lu\n",*it,upper);
         }
       }
     }
@@ -209,8 +182,7 @@ RC Maat::find_bound(TxnManager * txn) {
     rc = Abort;
   } else {
     time_table.set_state(txn->get_thd_id(),txn->get_txn_id(),MAAT_COMMITTED);
-    // TODO: pick commit_time in a smarter way
-    //txn->commit_timestamp = (upper - lower) / 2;
+    // TODO: can commit_time be selected in a smarter way?
     txn->commit_timestamp = lower; 
   }
   DEBUG("MAAT Bound %ld: %d [%lu,%lu] %lu\n",txn->get_txn_id(),rc,lower,upper,txn->commit_timestamp);

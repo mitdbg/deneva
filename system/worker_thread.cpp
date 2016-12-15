@@ -111,7 +111,6 @@ void WorkerThread::process(Message * msg) {
 }
 
 void WorkerThread::check_if_done(RC rc) {
-  //TODO: get txn_id in non-hacky way, or change the way commit() is handled
   if(txn_man->waiting_for_response())
     return;
   if(rc == Commit)
@@ -490,7 +489,6 @@ RC WorkerThread::process_rtxn(Message * msg) {
           DEBUG("RESTART %ld %f %lu\n",txn_man->get_txn_id(),simulation->seconds_from_start(get_sys_clock()),txn_man->txn_stats.starttime);
         }
 
-        // FIXME: Make sure we are coming from a new txn or restart, not a wait
           // Get new timestamps
           if(is_cc_new_timestamp()) {
             txn_man->set_timestamp(get_next_ts());
@@ -590,10 +588,7 @@ RC WorkerThread::process_calvin_rtxn(Message * msg) {
 
 
 bool WorkerThread::is_cc_new_timestamp() {
-  return (CC_ALG == HSTORE && !HSTORE_LOCAL_TS)
-							|| (CC_ALG == HSTORE_SPEC && !HSTORE_LOCAL_TS)
-							|| CC_ALG == MVCC 
-							|| CC_ALG == TIMESTAMP;
+  return (CC_ALG == MVCC || CC_ALG == TIMESTAMP);
 }
 
 ts_t WorkerThread::get_next_ts() {
