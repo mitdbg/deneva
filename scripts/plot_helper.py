@@ -499,6 +499,8 @@ def tput(xval,vval,summary,summary_cl,
         else:
             _xlab = xlab
     for v in vval:
+        print("============================================================")
+        print(v)
         if vname == 'MODE':
             mode_nice = {"NOCC_MODE":"No CC","NORMAL_MODE":"Serializable Execution","QRY_ONLY_MODE":"No Concurrency Control"}
             _v = mode_nice[v]
@@ -595,7 +597,7 @@ def tput(xval,vval,summary,summary_cl,
     print(_xval)
     
     # FIXME (Dana): MAAT --> OCC quick fix
-    print tpt.keys()
+    print (tpt.keys())
     if "MAAT" in tpt.keys():
         occ_tput = tpt["MAAT"]
         del tpt["MAAT"]
@@ -1289,6 +1291,9 @@ def time_breakdown(xval,summary,
     for x,i in zip(xval,range(len(xval))):
         if new_cfgs != {}:
             my_cfg_fmt = cfg_fmt + [xname]
+            print("==============================================================")
+            print(new_cfgs)
+            print("==============================================================")
             my_cfg = new_cfgs[(x,0)] + [x]
             my_cfg,my_cfg_fmt = apply_extras(my_cfg_fmt,my_cfg,extras,xname,'')
         else:

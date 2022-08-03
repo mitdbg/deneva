@@ -66,18 +66,17 @@ for exp in exps:
         cfgs = get_cfgs(fmt,e)
         if remote:
             cfgs["TPORT_TYPE"],cfgs["TPORT_TYPE_IPC"],cfgs["TPORT_PORT"]="\"tcp\"","false",7000
-
-        output_f = get_outfile_name(cfgs)
+        output_f = get_outfile_name(cfgs, fmt)
 
         # Check whether experiment has been already been run in this batch
         if skip:
             if len(glob.glob('{}*{}*.out'.format(result_dir,output_f))) > 0:
-                print "Experiment exists in results folder... skipping"
+                print ("Experiment exists in results folder... skipping")
                 continue
 
         output_dir = output_f + "/"
         output_f = output_f + strnow 
-        print output_f
+        print (output_f)
 
         f = open("config.h",'r');
         lines = f.readlines()
@@ -182,7 +181,16 @@ for exp in exps:
             else:
                 nnodes = cfgs["NODE_CNT"]
                 nclnodes = cfgs["CLIENT_NODE_CNT"]
+                if not isinstance(nnodes, int):
+                    nnodes = cfgs[nnodes]
+                if not isinstance(nclnodes, int):
+                    nclnodes = cfgs[nclnodes]
                 pids = []
+
+                with open("ifconfig.txt",'w') as f_ifcfg:
+                    for i in range(nnodes+nclnodes):
+                        f_ifcfg.write("172.31.39.16\n")
+                
                 print("Deploying: {}".format(output_f))
                 for n in range(nnodes+nclnodes):
                     if n < nnodes:

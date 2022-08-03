@@ -155,18 +155,18 @@ for exp in exps:
                                 r2 = get_summary(res_list[0],r2)
                     get_lstats(r)
                     get_lstats(r2)
-                    with open(p_sfile,'w') as f:
+                    with open(p_sfile,'wb') as f:
                         p = pickle.Pickler(f)
                         p.dump(r)
-                    with open(p_cfile,'w') as f:
+                    with open(p_cfile,'wb') as f:
                         p = pickle.Pickler(f)
                         p.dump(r2)
                 else:
-                    with open(p_sfile,'r') as f:
+                    with open(p_sfile,'rb') as f:
                         p = pickle.Unpickler(f)
                         r = p.load()
                         opened = True
-                    with open(p_cfile,'r') as f:
+                    with open(p_cfile,'rb') as f:
                         p = pickle.Unpickler(f)
                         r2 = p.load()
                         opened = True

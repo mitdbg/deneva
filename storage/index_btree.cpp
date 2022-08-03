@@ -403,11 +403,12 @@ RC index_btree::insert_into_leaf(glob_param params, bt_node * leaf, idx_key_t ke
 		leaf->pointers[idx] = (void *) item;
 		return RCOK;
 	}
-    while (insertion_point < leaf->num_keys && leaf->keys[insertion_point] < key)
+    while (insertion_point < leaf->num_keys && leaf->keys[insertion_point] < key ){
         insertion_point++;
 	for (i = leaf->num_keys; i > insertion_point; i--) {
         leaf->keys[i] = leaf->keys[i - 1];
         leaf->pointers[i] = leaf->pointers[i - 1];
+    }
     }
     leaf->keys[insertion_point] = key;
     leaf->pointers[insertion_point] = (void *)item;
@@ -499,22 +500,22 @@ RC index_btree::insert_into_parent(
     bt_node * parent = left->parent;
 
     /* Case: new root. */
-    if (parent == NULL)
+    if (parent == NULL){
         return insert_into_new_root(params, left, key, right);
-    
+    }
 	UInt32 insert_idx = 0;
 	while (parent->keys[insert_idx] < key && insert_idx < parent->num_keys)
 		insert_idx ++;
 	// the parent has enough space, just insert into it
     if (parent->num_keys < order - 1) {
-		for (UInt32 i = parent->num_keys-1; i >= insert_idx; i--) {
-			parent->keys[i + 1] = parent->keys[i];
-			parent->pointers[i+2] = parent->pointers[i+1];
-		}
-		parent->num_keys ++;
-		parent->keys[insert_idx] = key;
-		parent->pointers[insert_idx + 1] = right;
-		return RCOK;
+	    for (UInt32 i = parent->num_keys-1; i >= insert_idx; i--) {
+		    parent->keys[i + 1] = parent->keys[i];
+		    parent->pointers[i+2] = parent->pointers[i+1];
+	    }
+	    parent->num_keys ++;
+	    parent->keys[insert_idx] = key;
+	    parent->pointers[insert_idx + 1] = right;
+	    return RCOK;
 	}
 
     /* Harder case:  split a node in order 

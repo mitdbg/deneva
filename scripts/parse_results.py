@@ -29,17 +29,17 @@ def get_summary(sfile):
     return results
 
 def process_results(results):
-	for r in results:
-		(name,val) = re.split('=',r)
-		val = float(val)
-		if name not in summary.keys():
-		    summary[name] = [val]
-		else:
-		    summary[name].append(val)
+    for r in results:
+        (name,val) = re.split('=',r)
+        val = float(val)
+        if name not in summary.keys():
+            summary[name] = [val]
+        else:
+            summary[name].append(val)
 
 
 if len(sys.argv) < 2:
-	sys.exit("Usage: %s [output-file-name]" % sys.argv[0])
+    sys.exit("Usage: %s [output-file-name]" % sys.argv[0])
 
 for arg in sys.argv[1:]:
     if not os.path.exists(arg):
@@ -50,8 +50,8 @@ names = summary.keys()
 
 names.sort()
 
-print summary
-print names
+print(summary)
+print(names)
 
 s_avg = {}
 time_breakdown_total = 0
@@ -60,11 +60,11 @@ for n in names:
     s_avg[n] = avg(summary[n])
     if re.search('^time_',n):
         time_breakdown_total += s_avg[n]
-        print "{0}: {1}".format(n,s_avg[n] / s_avg['run_time'])
+        print("{0}: {1}").format(n,s_avg[n] / s_avg['run_time'])
 
-print "% Runtime measured: {0}".format(time_breakdown_total / s_avg['run_time'])
-print "Compute time / txn: {0}".format( (s_avg['run_time'] - time_breakdown_total) / s_avg['txn_cnt'])
-print "Per-thread throughput: {0}".format(s_avg['txn_cnt'] / s_avg['run_time'])
-print "Throughput w/o waiting: {0}".format(s_avg['txn_cnt'] / (s_avg['run_time'] - s_avg['time_wait_lock'] - s_avg['time_wait_rem']))
-print "% Remote measured: {0}".format(( (0.000033 * s_avg['msg_sent'])+ s_avg['rtime_unpack'] + s_avg['rtime_proc']) / (s_avg['time_wait_lock'] + s_avg['time_wait_rem']))
-print s_avg
+print("% Runtime measured: {0}").format(time_breakdown_total / s_avg['run_time'])
+print("Compute time / txn: {0}").format( (s_avg['run_time'] - time_breakdown_total) / s_avg['txn_cnt'])
+print("Per-thread throughput: {0}").format(s_avg['txn_cnt'] / s_avg['run_time'])
+print("Throughput w/o waiting: {0}").format(s_avg['txn_cnt'] / (s_avg['run_time'] - s_avg['time_wait_lock'] - s_avg['time_wait_rem']))
+print("% Remote measured: {0}").format(( (0.000033 * s_avg['msg_sent'])+ s_avg['rtime_unpack'] + s_avg['rtime_proc']) / (s_avg['time_wait_lock'] + s_avg['time_wait_rem']))
+print(s_avg)

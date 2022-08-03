@@ -384,7 +384,7 @@ def draw_line(fname, data, xticks,
     if logscale :
         ax.set_yscale('log')
     if logscalex:
-        ax.set_xscale('log',basex=base)
+        ax.set_xscale('log')
     n = 0
     if xlabels != None :
         ax.set_xticklabels([x if i%2 else '' for x,i in zip(xlabels,range(len(xlabels)))]) 
@@ -432,17 +432,17 @@ def draw_line(fname, data, xticks,
             ax.get_xaxis().set_major_formatter(matplotlib.ticker.FormatStrFormatter('%d'))
     if legend :
         #fig.legend(lines, linenames, loc='upper right',bbox_to_anchor = (1,1), prop={'size':9}, ncol=ncol)
-        fig.legend(lines, linenames, loc='upper center',bbox_to_anchor = (0.4,1), prop={'size':10},ncol=len(linenames)/2)
+        fig.legend(lines, linenames, loc='upper center',bbox_to_anchor = (0.4,1), prop={'size':10},ncol=len(linenames)//2)
 #        fig.legend(lines, linenames, loc='upper right',bbox_to_anchor = bbox, prop={'size':8},ncol=ncol,title=ltitle)
     if title:
         ax.set_title("\n".join(wrap(title)))
-    axes = ax.get_axes()
-    axes.yaxis.grid(True,
+    axes = ax.get_yaxis()
+    axes.grid(True,
         linestyle='-',
         which='major',
         color='0.75'
     )
-    axes.yaxis.set_major_locator(matplotlib.ticker.MaxNLocator(num_yticks))
+    axes.set_major_locator(matplotlib.ticker.MaxNLocator(num_yticks))
     ax.set_axisbelow(True)
     ax.spines['right'].set_color('black')
     ax.spines['left'].set_color('black')
@@ -457,7 +457,7 @@ def draw_line(fname, data, xticks,
         savefig('../figs/' + 'legend.pdf')
         plt.close()
         fig = figure(figsize=((3.9, 0.6)))
-        fig.legend(lines, linenames,bbox_to_anchor = (1,1), prop={'size':10},frameon=False,ncol=len(linenames)/2)
+        fig.legend(lines, linenames,bbox_to_anchor = (1,1), prop={'size':10},frameon=False,ncol=len(linenames)//2)
         savefig('../figs/' + 'legend_half.pdf')
         plt.close()
 #        fig = figure(figsize=((4.2, 0.4)))
@@ -557,7 +557,7 @@ def draw_stack(data, xlabels, slabels, figname='stack', title=None, figsize=(8, 
     htch = itertools.cycle(['','//','\\','-','\\\\','/'])
 
     for s in range(len(slabels)):
-        p = plt.bar(ind, data[s], color=clr.next(), hatch=htch.next(), bottom=bottom)
+        p = plt.bar(ind, data[s], color=next(clr), hatch=next(htch), bottom=bottom)
         plots = plots + (p,)
         bottom = [a + b for a,b in zip(bottom, data[s])]
 
