@@ -765,6 +765,8 @@ def get_summary(sfile,summary={}):
                 prog_tmp = {}
                 process_results(prog_tmp,results)
                 prog.append(prog_tmp)
+                if len(prog_tmp) == 0:
+                    continue
                 if int(prog_tmp["total_runtime"][0]) == 60:
                     if "post_warmup_txn_cnt" not in summary.keys():
                         summary["post_warmup_txn_cnt"] = [prog_tmp["txn_cnt"][0]]
@@ -1112,7 +1114,7 @@ def print_keys(result_dir="../results",keys=['txn_cnt']):
             elif len(summary_line) == 1:
                 res_line=summary_line[0][len('[summary]'):].strip()
             else:
-                assert false
+                assert False
             if res_line:
                 avail_keys = res_line.split(',')
                 keys_to_print=[k for k in avail_keys if k.split('=')[0] in keys]

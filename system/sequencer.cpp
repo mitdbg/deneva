@@ -247,7 +247,7 @@ void Sequencer::process_txn( Message * msg,uint64_t thd_id, uint64_t early_start
         }
         else {
             cl_msg->recon = false;
-            en->list[id].seq_startts = last_time;
+            en->list[id].seq_startts = last_time_batch;
         }
 
     }
